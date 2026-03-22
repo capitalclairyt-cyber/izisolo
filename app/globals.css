@@ -1,0 +1,376 @@
+@import "tailwindcss";
+
+/* ============================================
+   IziSolo — Design System
+   Personnalité : chaleureux, doux, mobile-first
+   ============================================ */
+
+:root {
+  /* --- Palette par défaut : Rose (yoga) --- */
+  --brand: #d4a0a0;
+  --brand-light: #f5e6e6;
+  --brand-dark: #b07878;
+  --brand-50: #fdf2f2;
+  --brand-100: #f5e6e6;
+  --brand-200: #e8c5c5;
+  --brand-500: #d4a0a0;
+  --brand-600: #b07878;
+  --brand-700: #8c5858;
+
+  /* --- Neutres organiques --- */
+  --cream: #faf8f5;
+  --cream-dark: #f0ece5;
+  --taupe: #8c7b6b;
+  --taupe-light: #b8a99a;
+  --brown: #5c4a3a;
+  --brown-dark: #3d3028;
+
+  /* --- Sauge / accent vert --- */
+  --sage: #a8b5a0;
+  --sage-light: #d4ddd0;
+  --sage-dark: #7a8a72;
+
+  /* --- Terre / accent chaud --- */
+  --terre: #c4956a;
+  --terre-light: #e8d4be;
+
+  /* --- Sémantiques --- */
+  --success: #7ab07a;
+  --warning: #d4b06a;
+  --danger: #c47070;
+  --info: #7aa0c4;
+
+  /* --- Texte --- */
+  --text-primary: #3d3028;
+  --text-secondary: #8c7b6b;
+  --text-muted: #b8a99a;
+  --text-inverse: #faf8f5;
+
+  /* --- Surfaces --- */
+  --bg-page: #faf8f5;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f5f0ea;
+  --bg-input: #ffffff;
+  --bg-nav: #ffffff;
+
+  /* --- Bordures --- */
+  --border: #e8e2da;
+  --border-focus: var(--brand);
+
+  /* --- Ombres douces --- */
+  --shadow-sm: 0 1px 2px rgba(92, 74, 58, 0.05);
+  --shadow-md: 0 4px 12px rgba(92, 74, 58, 0.08);
+  --shadow-lg: 0 8px 24px rgba(92, 74, 58, 0.12);
+
+  /* --- Rayons arrondis (doux) --- */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-full: 9999px;
+
+  /* --- Transitions --- */
+  --transition-fast: 150ms ease;
+  --transition-normal: 250ms ease;
+
+  /* --- Navigation --- */
+  --bottom-nav-height: 72px;
+  --sidebar-width: 260px;
+}
+
+/* === Palettes alternatives === */
+[data-theme="ocean"] {
+  --brand: #7aa0c4;
+  --brand-light: #dce8f2;
+  --brand-dark: #5a80a4;
+  --brand-50: #f0f5fa;
+  --brand-100: #dce8f2;
+  --brand-200: #b4cfe0;
+  --brand-500: #7aa0c4;
+  --brand-600: #5a80a4;
+  --brand-700: #3d6080;
+}
+
+[data-theme="foret"] {
+  --brand: #7ab07a;
+  --brand-light: #d4e8d4;
+  --brand-dark: #5a905a;
+  --brand-50: #f0f8f0;
+  --brand-100: #d4e8d4;
+  --brand-200: #a8d4a8;
+  --brand-500: #7ab07a;
+  --brand-600: #5a905a;
+  --brand-700: #3d703d;
+}
+
+[data-theme="soleil"] {
+  --brand: #d4b06a;
+  --brand-light: #f2e8d4;
+  --brand-dark: #b4904a;
+  --brand-50: #faf5ec;
+  --brand-100: #f2e8d4;
+  --brand-200: #e0d0a8;
+  --brand-500: #d4b06a;
+  --brand-600: #b4904a;
+  --brand-700: #8c702a;
+}
+
+[data-theme="lavande"] {
+  --brand: #a890c4;
+  --brand-light: #e6ddf2;
+  --brand-dark: #8870a4;
+  --brand-50: #f5f0fa;
+  --brand-100: #e6ddf2;
+  --brand-200: #c8b8e0;
+  --brand-500: #a890c4;
+  --brand-600: #8870a4;
+  --brand-700: #685080;
+}
+
+[data-theme="terre"] {
+  --brand: #c4956a;
+  --brand-light: #f2e0d0;
+  --brand-dark: #a4754a;
+  --brand-50: #faf2ec;
+  --brand-100: #f2e0d0;
+  --brand-200: #e0c8a8;
+  --brand-500: #c4956a;
+  --brand-600: #a4754a;
+  --brand-700: #80582a;
+}
+
+/* === Reset & Base === */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  background: var(--bg-page);
+  color: var(--text-primary);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* === Mobile-first : espace pour la bottom nav === */
+@media (max-width: 1023px) {
+  main {
+    padding-bottom: calc(var(--bottom-nav-height) + 16px);
+  }
+}
+
+/* === Desktop : espace pour la sidebar === */
+@media (min-width: 1024px) {
+  .dashboard-content {
+    margin-left: var(--sidebar-width);
+  }
+}
+
+/* === Utilitaires IziSolo === */
+.izi-card {
+  background: var(--bg-card);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border);
+  transition: box-shadow var(--transition-normal);
+}
+
+.izi-card:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.izi-card-interactive {
+  cursor: pointer;
+}
+
+.izi-card-interactive:active {
+  transform: scale(0.98);
+  transition: transform var(--transition-fast);
+}
+
+.izi-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.izi-badge-success {
+  background: #d4e8d4;
+  color: #3d703d;
+}
+
+.izi-badge-warning {
+  background: #f2e8d4;
+  color: #8c702a;
+}
+
+.izi-badge-danger {
+  background: #f2d4d4;
+  color: #8c2a2a;
+}
+
+.izi-badge-brand {
+  background: var(--brand-light);
+  color: var(--brand-700);
+}
+
+.izi-badge-neutral {
+  background: var(--cream-dark);
+  color: var(--taupe);
+}
+
+/* === Bouton flottant (FAB) === */
+.izi-fab {
+  position: fixed;
+  bottom: calc(var(--bottom-nav-height) + 20px);
+  right: 20px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--brand);
+  color: white;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-lg);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  z-index: 40;
+}
+
+.izi-fab:hover {
+  background: var(--brand-dark);
+  transform: scale(1.05);
+}
+
+.izi-fab:active {
+  transform: scale(0.95);
+}
+
+@media (min-width: 1024px) {
+  .izi-fab {
+    bottom: 32px;
+    right: 32px;
+  }
+}
+
+/* === Input tactile === */
+.izi-input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg-input);
+  color: var(--text-primary);
+  font-size: 16px; /* empêche le zoom iOS */
+  transition: border-color var(--transition-fast);
+  outline: none;
+}
+
+.izi-input:focus {
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px var(--brand-100);
+}
+
+.izi-input::placeholder {
+  color: var(--text-muted);
+}
+
+/* === Boutons === */
+.izi-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  font-size: 0.9375rem;
+  cursor: pointer;
+  border: none;
+  transition: all var(--transition-fast);
+  min-height: 48px; /* cible tactile min */
+}
+
+.izi-btn-primary {
+  background: var(--brand);
+  color: white;
+}
+
+.izi-btn-primary:hover {
+  background: var(--brand-dark);
+}
+
+.izi-btn-secondary {
+  background: var(--brand-light);
+  color: var(--brand-700);
+}
+
+.izi-btn-secondary:hover {
+  background: var(--brand-200);
+}
+
+.izi-btn-ghost {
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+.izi-btn-ghost:hover {
+  background: var(--cream-dark);
+}
+
+.izi-btn-danger {
+  background: var(--danger);
+  color: white;
+}
+
+.izi-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* === Scrollbar douce === */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--taupe-light);
+  border-radius: var(--radius-full);
+}
+
+/* === Animations === */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease forwards;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.4s ease forwards;
+}
