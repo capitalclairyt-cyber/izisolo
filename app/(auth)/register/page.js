@@ -13,6 +13,7 @@ export default function RegisterPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [cguAccepted, setCguAccepted] = useState(false);
 
   async function handleRegister(e) {
     e.preventDefault();
@@ -21,6 +22,12 @@ export default function RegisterPage() {
 
     if (password.length < 6) {
       setError('Le mot de passe doit faire au moins 6 caractères');
+      setLoading(false);
+      return;
+    }
+
+    if (!cguAccepted) {
+      setError('Tu dois accepter les CGU et la politique de confidentialité pour continuer');
       setLoading(false);
       return;
     }
@@ -123,7 +130,21 @@ export default function RegisterPage() {
             </div>
           </div>
 
-          <button type="submit" className="izi-btn izi-btn-primary auth-submit" disabled={loading}>
+          <label className="cgu-check">
+            <input
+              type="checkbox"
+              checked={cguAccepted}
+              onChange={e => setCguAccepted(e.target.checked)}
+            />
+            <span>
+              J'accepte les{' '}
+              <Link href="/legal/cgu" target="_blank">CGU</Link>
+              {' '}et la{' '}
+              <Link href="/legal/rgpd" target="_blank">politique de confidentialité</Link>
+            </span>
+          </label>
+
+          <button type="submit" className="izi-btn izi-btn-primary auth-submit" disabled={loading || !cguAccepted}>
             {loading ? 'Création...' : 'Créer mon studio'}
           </button>
         </form>
@@ -133,7 +154,7 @@ export default function RegisterPage() {
         </div>
       </div>
 
-      <style jsx>{`
+      <style jsx global>{`
         .auth-container {
           min-height: 100vh;
           display: flex;
@@ -202,6 +223,17 @@ export default function RegisterPage() {
           font-size: 0.875rem;
           text-align: center;
         }
+        .cgu-check {
+          display: flex; align-items: flex-start; gap: 10px;
+          font-size: 0.875rem; color: var(--text-secondary);
+          cursor: pointer; line-height: 1.4;
+        }
+        .cgu-check input[type="checkbox"] {
+          flex-shrink: 0; width: 16px; height: 16px; margin-top: 2px;
+          accent-color: var(--brand);
+        }
+        .cgu-check a { color: var(--brand); font-weight: 600; text-decoration: none; }
+        .cgu-check a:hover { text-decoration: underline; }
         .auth-submit {
           width: 100%;
           margin-top: 4px;

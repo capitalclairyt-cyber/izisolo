@@ -4,7 +4,7 @@ import { createServerClient } from '@supabase/ssr';
 // Routes publiques (pas besoin d'auth)
 const PUBLIC_ROUTES = ['/login', '/register', '/onboarding', '/portail', '/offline'];
 
-export async function middleware(request) {
+export async function proxy(request) {
   const { pathname } = request.nextUrl;
 
   // Laisser passer les routes publiques, API, assets statiques

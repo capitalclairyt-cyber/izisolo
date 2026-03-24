@@ -1,0 +1,85 @@
+import { createServerClient } from '@/lib/supabase-server';
+import { redirect } from 'next/navigation';
+import { notFound } from 'next/navigation';
+import EspaceClient from './EspaceClient';
+
+export const metadata = { title: 'Mon espace — IziSolo' };
+
+async function getData(studioSlug, userEmail) {
+  const supabase = await createServerClient();
+
+  // Studio
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('id, studio_nom, studio_slug')
+    .eq('studio_slug', studioSlug)
+    .single();
+  if (!profile) return null;
+
+  // Client lié à ce studio
+  const { data: client } = await supabase
+    .from('clients')
+    .select('id, prenom, nom, email, telephone')
+    .eq('profile_id', profile.id)
+    .ilike('email', userEmail)
+    .single();
+
+  if (!client) {
+    return { profile, client: null, aVenir: [], passes: [] };
+  }
+
+  // Ses réservations avec détail des cours
+  const { data: presences } = await supabase
+    .from('presences')
+    .select(`
+      id,
+      present,
+      created_at,
+      cours:cours_id (
+        id, nom, date, heure, duree, lieu, type_cours, est_annule
+      )
+    `)
+    .eq('client_id', client.id)
+    .eq('profile_id', profile.id)
+    .order('created_at', { ascending: false });
+
+  const today = new Date().toISOString().slice(0, 10);
+  const all = presences || [];
+
+  const aVenir = all
+    .filter(p => p.cours && p.cours.date >= today && !p.cours.est_annule)
+    .sort((a, b) => {
+      if (a.cours.date !== b.cours.date) return a.cours.date.localeCompare(b.cours.date);
+      return (a.cours.heure || '').localeCompare(b.cours.heure || '');
+    });
+
+  const passes = all
+    .filter(p => p.cours && (p.cours.date < today || p.cours.est_annule))
+    .sort((a, b) => b.cours.date.localeCompare(a.cours.date));
+
+  return { profile, client, aVenir, passes };
+}
+
+export default async function EspacePage({ params }) {
+  const { studioSlug } = await params;
+  const supabase = await createServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect(`/p/${studioSlug}/connexion`);
+  }
+
+  const data = await getData(studioSlug, user.email);
+  if (!data) notFound();
+
+  return (
+    <EspaceClient
+      profile={data.profile}
+      client={data.client}
+      aVenir={data.aVenir || []}
+      passes={data.passes || []}
+      studioSlug={studioSlug}
+      userEmail={user.email}
+    />
+  );
+}

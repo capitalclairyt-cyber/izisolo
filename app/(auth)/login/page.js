@@ -119,9 +119,14 @@ export default function LoginPage() {
             </div>
           </div>
 
-          <button type="submit" className="izi-btn izi-btn-primary auth-submit" disabled={loading}>
-            {loading ? 'Connexion...' : 'Se connecter'}
-          </button>
+          <div className="auth-pwd-row">
+            <button type="submit" className="izi-btn izi-btn-primary auth-submit" disabled={loading}>
+              {loading ? 'Connexion...' : 'Se connecter'}
+            </button>
+            <Link href="/mot-de-passe-oublie" className="auth-forgot">
+              Mot de passe oublié ?
+            </Link>
+          </div>
 
           <button
             type="button"
@@ -138,7 +143,7 @@ export default function LoginPage() {
         </div>
       </div>
 
-      <style jsx>{`
+      <style jsx global>{`
         .auth-container {
           min-height: 100vh;
           display: flex;
@@ -218,10 +223,18 @@ export default function LoginPage() {
           font-size: 0.875rem;
           text-align: center;
         }
+        .auth-pwd-row {
+          display: flex; flex-direction: column; gap: 8px; align-items: center;
+        }
         .auth-submit {
           width: 100%;
           margin-top: 4px;
         }
+        .auth-forgot {
+          font-size: 0.8125rem; color: var(--text-muted);
+          text-decoration: none; transition: color 0.15s;
+        }
+        .auth-forgot:hover { color: var(--brand); text-decoration: underline; }
         .auth-magic {
           width: 100%;
           font-size: 0.875rem;

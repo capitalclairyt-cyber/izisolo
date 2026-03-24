@@ -1,12 +1,19 @@
-'use client';
-import { Users } from 'lucide-react';
+import { createServerClient } from '@/lib/supabase-server';
+import ClientsClient from './ClientsClient';
 
-export default function Clients() {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', gap: '16px', textAlign: 'center' }}>
-      <Users size={40} style={{ color: 'var(--brand)' }} />
-      <h1 style={{ fontSize: '1.5rem', fontWeight: 700 }}>Tes élèves</h1>
-      <p style={{ color: 'var(--text-muted)', fontSize: '0.9375rem' }}>Bientôt disponible — Phase 1</p>
-    </div>
-  );
+export default async function ClientsPage() {
+  const supabase = await createServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  const [
+    { data: profile },
+    { data: clients },
+  ] = await Promise.all([
+    supabase.from('profiles').select('metier, vocabulaire, niveaux, sources').eq('id', user.id).single(),
+    supabase.from('clients').select('*, abonnements(id, type, offre_nom, seances_total, seances_utilisees, statut, date_fin)')
+      .eq('profile_id', user.id)
+      .order('updated_at', { ascending: false }),
+  ]);
+
+  return <ClientsClient clients={clients || []} profile={profile} />;
 }

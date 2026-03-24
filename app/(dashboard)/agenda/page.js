@@ -1,12 +1,43 @@
-'use client';
-import { Calendar } from 'lucide-react';
+import { createServerClient } from '@/lib/supabase-server';
+import AgendaClient from './AgendaClient';
 
-export default function Agenda() {
+export default async function AgendaPage() {
+  const supabase = await createServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('metier, vocabulaire, types_cours')
+    .eq('id', user.id)
+    .single();
+
+  // Charger les cours du mois en cours (± 1 semaine pour la grille mois)
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = now.getMonth();
+  const debut = new Date(y, m - 1, 1); // mois précédent
+  const fin = new Date(y, m + 2, 0);   // fin du mois suivant
+
+  const debutStr = `${debut.getFullYear()}-${String(debut.getMonth() + 1).padStart(2, '0')}-${String(debut.getDate()).padStart(2, '0')}`;
+  const finStr = `${fin.getFullYear()}-${String(fin.getMonth() + 1).padStart(2, '0')}-${String(fin.getDate()).padStart(2, '0')}`;
+
+  const { data: cours } = await supabase
+    .from('cours')
+    .select('*, presences(pointee)')
+    .eq('profile_id', user.id)
+    .gte('date', debutStr)
+    .lte('date', finStr)
+    .order('date')
+    .order('heure');
+
+  // Date du jour en local
+  const todayStr = `${y}-${String(m + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', gap: '16px', textAlign: 'center' }}>
-      <Calendar size={40} style={{ color: 'var(--brand)' }} />
-      <h1 style={{ fontSize: '1.5rem', fontWeight: 700 }}>Agenda</h1>
-      <p style={{ color: 'var(--text-muted)', fontSize: '0.9375rem' }}>Bientôt disponible — Phase 1</p>
-    </div>
+    <AgendaClient
+      cours={cours || []}
+      profile={profile}
+      initialDate={todayStr}
+    />
   );
 }

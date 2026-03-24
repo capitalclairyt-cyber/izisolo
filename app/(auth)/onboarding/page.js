@@ -244,7 +244,7 @@ export default function OnboardingPage() {
         )}
       </div>
 
-      <style jsx>{`
+      <style jsx global>{`
         .onboarding-container {
           min-height: 100vh;
           display: flex;

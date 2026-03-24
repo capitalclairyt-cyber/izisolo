@@ -4,18 +4,20 @@ export const metadata = {
   title: 'IziSolo — Gère ton studio simplement',
   description: 'L\'app des praticien·es indépendant·es : yoga, pilates, danse, musique, coaching. Gère tes élèves, tes cours et tes crédits.',
   manifest: '/manifest.json',
-  themeColor: '#d4a0a0',
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 1,
-    userScalable: false,
-  },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
     title: 'IziSolo',
   },
+};
+
+// Next.js 15+ : themeColor et viewport doivent être dans un export séparé
+export const viewport = {
+  themeColor: '#d4a0a0',
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 };
 
 export default function RootLayout({ children }) {
