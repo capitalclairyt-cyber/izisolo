@@ -19,6 +19,16 @@ const THEME_MAP = {
   terre: 'terre',
 };
 
+// Couleur principale par thème (pour theme-color mobile)
+const BRAND_HEX = {
+  rose:    '#d4a0a0',
+  ocean:   '#7aa0c4',
+  foret:   '#7ab07a',
+  soleil:  '#d4b06a',
+  lavande: '#a890c4',
+  terre:   '#c4956a',
+};
+
 export default function DashboardLayoutClient({ children, profile }) {
   const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
@@ -28,7 +38,7 @@ export default function DashboardLayoutClient({ children, profile }) {
     setMounted(true);
   }, []);
 
-  // Appliquer le thème de couleur
+  // Appliquer le thème de couleur + theme-color mobile
   useEffect(() => {
     if (profile?.ui_couleur) {
       const theme = THEME_MAP[profile.ui_couleur] || 'rose';
@@ -37,6 +47,16 @@ export default function DashboardLayoutClient({ children, profile }) {
       } else {
         document.documentElement.removeAttribute('data-theme');
       }
+
+      // Mettre à jour la couleur du bandeau mobile (status bar)
+      const hex = BRAND_HEX[profile.ui_couleur] || BRAND_HEX.rose;
+      let metaTheme = document.querySelector('meta[name="theme-color"]');
+      if (!metaTheme) {
+        metaTheme = document.createElement('meta');
+        metaTheme.name = 'theme-color';
+        document.head.appendChild(metaTheme);
+      }
+      metaTheme.content = hex;
     }
   }, [profile?.ui_couleur]);
 
