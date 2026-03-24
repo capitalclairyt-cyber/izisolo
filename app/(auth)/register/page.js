@@ -1,19 +1,18 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
-import { Sparkles, Mail, Lock, User } from 'lucide-react';
+import { Sparkles, Mail, Lock, User, CheckCircle } from 'lucide-react';
 
 export default function RegisterPage() {
-  const router = useRouter();
   const [prenom, setPrenom] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [cguAccepted, setCguAccepted] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
 
   async function handleRegister(e) {
     e.preventDefault();
@@ -37,7 +36,7 @@ export default function RegisterPage() {
       password,
       options: {
         data: { prenom },
-        emailRedirectTo: `${window.location.origin}/onboarding`,
+        emailRedirectTo: `${window.location.origin}/auth/callback?next=/onboarding`,
       },
     });
 
@@ -56,9 +55,45 @@ export default function RegisterPage() {
       return;
     }
 
-    // Rediriger vers l'onboarding
-    router.push('/onboarding');
-    router.refresh();
+    // Afficher l'écran de confirmation email
+    setEmailSent(true);
+    setLoading(false);
+  }
+
+  if (emailSent) {
+    return (
+      <div className="auth-container">
+        <div className="auth-card">
+          <div className="auth-header">
+            <div className="auth-logo" style={{ color: 'var(--success, #16a34a)' }}>
+              <CheckCircle size={28} />
+            </div>
+            <h1 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-primary)', marginTop: 8 }}>
+              Vérifie ta boîte mail
+            </h1>
+            <p className="auth-subtitle" style={{ marginTop: 8 }}>
+              Un lien de confirmation a été envoyé à <strong>{email}</strong>.
+              Clique dessus pour activer ton compte et démarrer la configuration de ton studio.
+            </p>
+          </div>
+          <p style={{ textAlign: 'center', fontSize: '0.875rem', color: 'var(--text-muted)', marginTop: 16 }}>
+            Pas reçu ? Vérifie tes spams ou{' '}
+            <button
+              style={{ background: 'none', border: 'none', color: 'var(--brand)', cursor: 'pointer', fontWeight: 600, padding: 0 }}
+              onClick={() => setEmailSent(false)}
+            >
+              réessaie
+            </button>.
+          </p>
+        </div>
+        <style jsx global>{`
+          .auth-container { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; background: var(--bg-page); }
+          .auth-card { width: 100%; max-width: 420px; background: var(--bg-card); border-radius: var(--radius-xl); box-shadow: var(--shadow-lg); padding: 40px 32px; }
+          .auth-header { text-align: center; margin-bottom: 32px; }
+          .auth-subtitle { color: var(--text-secondary); font-size: 0.9375rem; }
+        `}</style>
+      </div>
+    );
   }
 
   return (

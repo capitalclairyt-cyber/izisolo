@@ -18,7 +18,6 @@ export default function OnboardingPage() {
   // Données du formulaire
   const [metier, setMetier] = useState('');
   const [studioNom, setStudioNom] = useState('');
-  const [ville, setVille] = useState('');
   const [offreNom, setOffreNom] = useState('');
   const [offrePrix, setOffrePrix] = useState('');
   const [offreSeances, setOffreSeances] = useState('10');
@@ -62,7 +61,6 @@ export default function OnboardingPage() {
         studio_nom: studioNom || 'Mon Studio',
         studio_slug: slugify(studioNom || 'mon-studio'),
         metier,
-        ville: ville || null,
         ui_couleur: couleur,
         types_cours: typesCours,
         vocabulaire,
@@ -149,16 +147,6 @@ export default function OnboardingPage() {
                   value={studioNom}
                   onChange={e => setStudioNom(e.target.value)}
                   autoFocus
-                />
-              </div>
-              <div className="auth-field">
-                <label>Ville (optionnel)</label>
-                <input
-                  type="text"
-                  className="izi-input"
-                  placeholder="Paris"
-                  value={ville}
-                  onChange={e => setVille(e.target.value)}
                 />
               </div>
             </div>
