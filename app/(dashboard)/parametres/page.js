@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  Save, Palette, User, Building2, Bell, MapPin, Tag,
+  Save, Palette, User, Building2, Bell, MapPin,
   Plus, X, Trash2, Flower2, Sliders, Crown, Mail, Home,
   Eye, Settings, Zap, Gift, ToggleLeft, ToggleRight, Cake
 } from 'lucide-react';
@@ -50,8 +50,6 @@ export default function Parametres() {
   const [profile, setProfile] = useState(null);
   const [lieux, setLieux] = useState([]);
   const [newLieu, setNewLieu] = useState('');
-  const [newType, setNewType] = useState('');
-  const [typesCours, setTypesCours] = useState([]);
   const [activeTab, setActiveTab] = useState('profil');
   const [reglagesSubTab, setReglagesSubTab] = useState('apparences');
   // Sous-onglet notifications
@@ -85,11 +83,6 @@ export default function Parametres() {
       setLieux(lieuxData || []);
       setOffresDisponibles(offresData || []);
 
-      const tc = prof?.types_cours;
-      if (tc) {
-        setTypesCours(typeof tc === 'string' ? JSON.parse(tc) : tc);
-      }
-
       // Notifs générales
       setNotifNouveauClient(prof?.notif_nouveau_client !== false);
       setNotifPaiementRetard(prof?.notif_paiement_retard !== false);
@@ -110,17 +103,6 @@ export default function Parametres() {
 
   const handleChange = (field) => (e) => {
     setProfile(prev => ({ ...prev, [field]: e.target.value }));
-  };
-
-  // --- Types de cours ---
-  const addType = () => {
-    if (!newType.trim() || typesCours.includes(newType.trim())) return;
-    setTypesCours(prev => [...prev, newType.trim()]);
-    setNewType('');
-  };
-
-  const removeType = (type) => {
-    setTypesCours(prev => prev.filter(t => t !== type));
   };
 
   // --- Lieux ---
@@ -170,7 +152,6 @@ export default function Parametres() {
       ui_illustration: profile.ui_illustration || 'lotus',
       ui_grille_active: profile.ui_grille_active !== false,
       ui_animation_active: profile.ui_animation_active !== false,
-      types_cours: typesCours,
       alerte_seances_seuil: parseInt(profile.alerte_seances_seuil) || 2,
       alerte_expiration_jours: parseInt(profile.alerte_expiration_jours) || 7,
       anniversaire_mode:            annivMode,
@@ -294,32 +275,6 @@ export default function Parametres() {
                 </select>
               </div>
             )}
-          </div>
-
-          {/* Types de cours */}
-          <div className="section izi-card">
-            <div className="section-top"><div className="section-icon"><Tag size={20} /></div><h2>Types de cours</h2></div>
-            <p className="section-desc">Personnalise les types de cours proposés.</p>
-            <div className="chips-list">
-              {typesCours.map((type, idx) => (
-                <span key={idx} className="chip-editable">
-                  {type}
-                  <button className="chip-remove" onClick={() => removeType(type)}><X size={14} /></button>
-                </span>
-              ))}
-            </div>
-            <div className="add-row">
-              <input
-                className="izi-input"
-                value={newType}
-                onChange={e => setNewType(e.target.value)}
-                placeholder="Nouveau type de cours..."
-                onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addType())}
-              />
-              <button className="izi-btn izi-btn-secondary add-btn" onClick={addType} disabled={!newType.trim()}>
-                <Plus size={18} />
-              </button>
-            </div>
           </div>
 
           {/* Lieux */}
@@ -842,14 +797,17 @@ export default function Parametres() {
           display: flex; gap: 0; padding: 0;
           background: var(--bg-card); border-radius: var(--radius-lg) var(--radius-lg) 0 0;
           border: 1.5px solid var(--border); border-bottom: none;
-          overflow: hidden;
+          overflow-x: auto; overflow-y: hidden;
+          -webkit-overflow-scrolling: touch;
+          scrollbar-width: none;
           box-shadow: 0 -2px 8px rgba(0,0,0,0.03);
         }
+        .tabs-bar::-webkit-scrollbar { display: none; }
         .tab-btn {
-          flex: 1; display: flex; align-items: center; justify-content: center; gap: 7px;
-          padding: 14px 12px; border: none; border-bottom: 3px solid transparent;
+          flex: 1 0 auto; display: flex; align-items: center; justify-content: center; gap: 7px;
+          padding: 14px 14px; border: none; border-bottom: 3px solid transparent;
           background: transparent; color: var(--text-muted);
-          font-size: 0.875rem; font-weight: 600; cursor: pointer;
+          font-size: 0.875rem; font-weight: 600; cursor: pointer; white-space: nowrap;
           transition: all 0.2s ease;
         }
         .tab-btn:hover {
