@@ -766,11 +766,11 @@ export default function PointageClient({ cours, presences: initialPresences, tou
             </div>
 
             {/* Onglets */}
-            <div className="add-tabs">
-              <button className={`add-tab ${addMode === 'search' ? 'active' : ''}`} onClick={() => setAddMode('search')}>
+            <div className="subtabs-bar">
+              <button className={`subtab-btn ${addMode === 'search' ? 'active' : ''}`} onClick={() => setAddMode('search')}>
                 Élève existant
               </button>
-              <button className={`add-tab ${addMode === 'new' ? 'active' : ''}`} onClick={() => setAddMode('new')}>
+              <button className={`subtab-btn ${addMode === 'new' ? 'active' : ''}`} onClick={() => setAddMode('new')}>
                 <Plus size={13} /> Nouveau client
               </button>
             </div>
@@ -1527,23 +1527,7 @@ export default function PointageClient({ cours, presences: initialPresences, tou
         .tpm-hint  { font-size: 0.7rem; color: var(--text-muted); }
         .tpm-check { color: var(--brand); font-size: 0.75rem; font-weight: 800; }
 
-        /* ── Onglets add modal ── */
-        .add-tabs {
-          display: flex; gap: 0; border-bottom: 1px solid var(--border);
-        }
-        .add-tab {
-          flex: 1; padding: 10px 12px;
-          font-size: 0.8125rem; font-weight: 600;
-          background: none; border: none;
-          color: var(--text-muted); cursor: pointer;
-          display: flex; align-items: center; justify-content: center; gap: 5px;
-          border-bottom: 2px solid transparent;
-          transition: color 0.15s, border-color 0.15s;
-        }
-        .add-tab.active {
-          color: var(--brand);
-          border-bottom-color: var(--brand);
-        }
+        /* subtabs-bar / subtab-btn → globals.css */
 
         /* ── Sélecteur type présence dans add modal ── */
         .add-type-row {

@@ -162,9 +162,9 @@ export default function CoursEventsClient({
       />
 
       {/* ── Onglets ── */}
-      <div className="ce-tabs">
+      <div className="tabs-bar">
         <button
-          className={`ce-tab ${onglet === 'recurrents' ? 'active' : ''}`}
+          className={`tab-btn ${onglet === 'recurrents' ? 'active' : ''}`}
           onClick={() => setOnglet('recurrents')}
         >
           <Repeat size={15} />
@@ -172,7 +172,7 @@ export default function CoursEventsClient({
           <span className="ce-tab-count">{recurrences.length}</span>
         </button>
         <button
-          className={`ce-tab ${onglet === 'ponctuels' ? 'active' : ''}`}
+          className={`tab-btn ${onglet === 'ponctuels' ? 'active' : ''}`}
           onClick={() => setOnglet('ponctuels')}
         >
           <CalendarDays size={15} />
@@ -915,11 +915,9 @@ function CeStyles() {
       }
 
       /* ── Onglets ── */
-      .ce-tabs { display: flex; gap: 4px; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 4px; }
-      .ce-tab { flex: 1; display: flex; align-items: center; justify-content: center; gap: 7px; padding: 9px 12px; border: none; border-radius: var(--radius-sm); background: none; color: var(--text-secondary); font-size: 0.875rem; font-weight: 500; cursor: pointer; transition: all var(--transition-fast); }
-      .ce-tab.active { background: var(--brand); color: white; font-weight: 600; }
-      .ce-tab-count { font-size: 0.6875rem; font-weight: 700; background: rgba(0,0,0,0.12); color: inherit; border-radius: var(--radius-full); padding: 1px 7px; min-width: 20px; text-align: center; }
-      .ce-tab.active .ce-tab-count { background: rgba(255,255,255,0.25); }
+      /* tabs-bar / tab-btn → globals.css */
+      .ce-tab-count { font-size: 0.6875rem; font-weight: 700; background: rgba(0,0,0,0.1); color: inherit; border-radius: var(--radius-full); padding: 1px 7px; min-width: 20px; text-align: center; }
+      .tab-btn.active .ce-tab-count { background: rgba(255,255,255,0.3); }
 
       /* ── Liste ── */
       .ce-list { display: flex; flex-direction: column; gap: 10px; }

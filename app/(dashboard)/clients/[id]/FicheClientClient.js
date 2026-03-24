@@ -366,15 +366,15 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
       )}
 
       {/* Tabs */}
-      <div className="tabs animate-slide-up">
+      <div className="tabs-bar animate-slide-up">
         <button
-          className={`tab ${activeTab === 'abonnements' ? 'active' : ''}`}
+          className={`tab-btn ${activeTab === 'abonnements' ? 'active' : ''}`}
           onClick={() => setActiveTab('abonnements')}
         >
           <Ticket size={16} /> Offres ({abonnements.length})
         </button>
         <button
-          className={`tab ${activeTab === 'presences' ? 'active' : ''}`}
+          className={`tab-btn ${activeTab === 'presences' ? 'active' : ''}`}
           onClick={() => setActiveTab('presences')}
         >
           <CheckCircle2 size={16} /> Présences ({presences.length})
@@ -493,9 +493,7 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
         .profile-notes { font-size: 0.875rem; color: var(--text-secondary); font-style: italic; padding: 8px 12px; background: var(--cream-dark); border-radius: var(--radius-sm); max-width: 100%; }
         .profile-meta { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; font-size: 0.75rem; color: var(--text-muted); }
 
-        .tabs { display: flex; gap: 4px; background: var(--cream-dark); border-radius: var(--radius-md); padding: 4px; }
-        .tab { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 10px; border-radius: var(--radius-sm); border: none; background: none; color: var(--text-secondary); font-size: 0.8125rem; font-weight: 600; cursor: pointer; min-height: 44px; }
-        .tab.active { background: var(--bg-card); color: var(--brand-700); box-shadow: var(--shadow-sm); }
+        /* tabs-bar / tab-btn → globals.css */
 
         .tab-content { display: flex; flex-direction: column; gap: 8px; }
         .tab-actions { display: flex; justify-content: flex-end; }

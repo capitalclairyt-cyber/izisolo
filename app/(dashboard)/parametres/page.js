@@ -792,49 +792,6 @@ export default function Parametres() {
         .page-header { margin-bottom: 12px; }
         .page-header h1 { font-size: 1.375rem; font-weight: 700; }
 
-        /* === ONGLETS PRINCIPAUX === */
-        @keyframes shimmer-tabs {
-          0%   { transform: translateX(-150%); }
-          50%  { transform: translateX(150%); }
-          100% { transform: translateX(-150%); }
-        }
-        .tabs-bar {
-          display: flex; gap: 0; padding: 0;
-          background: linear-gradient(135deg, var(--brand-100, var(--brand-light)) 0%, var(--brand-light) 60%, var(--brand-50, #fff) 100%);
-          border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-          border: 1.5px solid var(--brand-200, var(--border)); border-bottom: none;
-          overflow-x: auto; overflow-y: hidden;
-          -webkit-overflow-scrolling: touch;
-          scrollbar-width: none;
-          box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
-          position: relative;
-        }
-        .tabs-bar::-webkit-scrollbar { display: none; }
-        .tabs-bar::after {
-          content: '';
-          position: absolute; top: 0; left: 0;
-          width: 55%; height: 100%;
-          background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.5) 50%, transparent 100%);
-          animation: shimmer-tabs 5s ease-in-out infinite;
-          pointer-events: none; z-index: 0;
-        }
-        .tab-btn {
-          flex: 1 0 auto; display: flex; align-items: center; justify-content: center; gap: 7px;
-          padding: 14px 14px; border: none; border-bottom: 3px solid transparent;
-          background: transparent; color: var(--brand-700);
-          font-size: 0.875rem; font-weight: 600; cursor: pointer; white-space: nowrap;
-          transition: all 0.2s ease; position: relative; z-index: 1;
-        }
-        .tab-btn:hover {
-          color: var(--brand-700);
-          background: rgba(255,255,255,0.45);
-        }
-        .tab-btn.active {
-          color: var(--brand-700);
-          border-bottom-color: var(--brand);
-          background: rgba(255,255,255,0.65);
-        }
-
         /* === CONTENU — collé aux onglets === */
         .tab-content {
           display: flex; flex-direction: column; gap: 0;
@@ -860,25 +817,7 @@ export default function Parametres() {
           margin-top: 4px;
         }
 
-        /* === SOUS-ONGLETS RÉGLAGES — collés au contenu === */
-        .subtabs-bar {
-          display: flex; gap: 0; padding: 0;
-          background: var(--cream); border-radius: var(--radius-md) var(--radius-md) 0 0;
-          border: 1px solid var(--border); border-bottom: none;
-          overflow: hidden;
-        }
-        .subtab-btn {
-          flex: 1; display: flex; align-items: center; justify-content: center; gap: 5px;
-          padding: 10px 10px; border: none; border-bottom: 2px solid transparent;
-          background: transparent; color: var(--text-muted);
-          font-size: 0.8125rem; font-weight: 600; cursor: pointer;
-          transition: all 0.2s ease;
-        }
-        .subtab-btn:hover { color: var(--text-primary); background: rgba(255,255,255,0.5); }
-        .subtab-btn.active {
-          color: var(--brand-700); border-bottom-color: var(--brand);
-          background: var(--bg-card);
-        }
+        /* subtabs-bar / subtab-btn → globals.css */
 
         .subtab-content {
           display: flex; flex-direction: column; gap: 0;

@@ -542,12 +542,12 @@ function CommunicationInner() {
             <p className="comm-subtitle">Envoyez un message à vos élèves</p>
           </div>
         </div>
-        <div className="comm-tabs">
-          <button className={`comm-tab ${activeTab === 'composer' ? 'active' : ''}`}
+        <div className="tabs-bar">
+          <button className={`tab-btn ${activeTab === 'composer' ? 'active' : ''}`}
                   onClick={() => setActiveTab('composer')}>
             <Pencil size={14} /> Nouveau
           </button>
-          <button className={`comm-tab ${activeTab === 'historique' ? 'active' : ''}`}
+          <button className={`tab-btn ${activeTab === 'historique' ? 'active' : ''}`}
                   onClick={() => setActiveTab('historique')}>
             <History size={14} /> Historique
             {historique.length > 0 && <span className="comm-tab-count">{historique.length}</span>}
@@ -1081,10 +1081,7 @@ function CommunicationInner() {
         .comm-subtitle { font-size: 0.8125rem; color: var(--text-muted); margin-top: 2px; }
         .comm-loading { display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 40vh; color: var(--text-muted); }
 
-        /* ── Tabs ── */
-        .comm-tabs { display: flex; gap: 4px; background: var(--border); border-radius: 10px; padding: 3px; }
-        .comm-tab { display: flex; align-items: center; gap: 5px; padding: 6px 14px; border-radius: 8px; border: none; background: none; font-size: 0.8125rem; font-weight: 600; color: var(--text-muted); cursor: pointer; transition: all 0.15s; }
-        .comm-tab.active { background: var(--bg-card); color: var(--text-primary); box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+        /* ── Tabs → globals.css ── */
         .comm-tab-count { background: var(--brand); color: white; font-size: 0.6rem; padding: 1px 5px; border-radius: 8px; font-weight: 800; }
 
         /* ── Layout deux colonnes ── */
