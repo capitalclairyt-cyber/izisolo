@@ -48,7 +48,7 @@ export async function POST(request, { params }) {
   // Vérifier que la présence appartient bien à ce client dans ce studio
   const { data: presence } = await supabaseAdmin
     .from('presences')
-    .select('id, cours:cours_id(date, est_annule)')
+    .select('id, cours:cours_id(date, heure, est_annule)')
     .eq('id', presenceId)
     .eq('client_id', client.id)
     .eq('profile_id', profile.id)
@@ -62,6 +62,19 @@ export async function POST(request, { params }) {
   const today = new Date().toISOString().slice(0, 10);
   if (presence.cours && presence.cours.date < today) {
     return Response.json({ error: 'Ce cours est déjà passé' }, { status: 400 });
+  }
+
+  // Vérifier le délai d'annulation : impossible si le cours est dans moins de 24h
+  if (presence.cours) {
+    const heure = presence.cours.heure || '00:00';
+    const coursDateTime = new Date(`${presence.cours.date}T${heure}:00`);
+    const diffHeures = (coursDateTime - Date.now()) / (1000 * 60 * 60);
+    if (diffHeures < 24) {
+      return Response.json(
+        { error: 'Annulation impossible : le cours commence dans moins de 24h' },
+        { status: 400 }
+      );
+    }
   }
 
   // Supprimer la présence (annulation)

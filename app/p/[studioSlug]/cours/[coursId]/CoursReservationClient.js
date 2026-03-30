@@ -18,13 +18,14 @@ function formatHeure(h) {
   return mm === '00' ? `${parseInt(hh)}h` : `${parseInt(hh)}h${mm}`;
 }
 
-export default function CoursReservationClient({ cours, profile, nbInscrits, studioSlug }) {
-  const [nom, setNom]       = useState('');
-  const [email, setEmail]   = useState('');
-  const [tel, setTel]       = useState('');
+export default function CoursReservationClient({ cours, profile, nbInscrits, studioSlug, currentUser }) {
+  const [nom, setNom]       = useState(currentUser?.nom || '');
+  const [email, setEmail]   = useState(currentUser?.email || '');
+  const [tel, setTel]       = useState(currentUser?.tel || '');
   const [loading, setLoading] = useState(false);
   const [done, setDone]     = useState(false);
   const [error, setError]   = useState('');
+  const isConnected = !!currentUser;
 
   const places = cours.capacite_max ? cours.capacite_max - nbInscrits : null;
   const complet = places !== null && places <= 0;
@@ -127,14 +128,22 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
       ) : (
         <div className="portail-card">
           <h2 style={{ fontSize: '1.0625rem', fontWeight: 700, margin: '0 0 16px', color: '#1a1a2e' }}>Réserver ma place</h2>
+
+          {isConnected && (
+            <div style={{ background: '#f0faf0', border: '1px solid #c8e6c9', borderRadius: '10px', padding: '10px 14px', marginBottom: '16px', fontSize: '0.8125rem', color: '#2e7d32', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              ✓ Connecté·e en tant que <strong>{email}</strong>
+            </div>
+          )}
+
           <form onSubmit={handleReserver}>
             <div className="portail-field">
               <label className="portail-label">Prénom et nom *</label>
               <input
                 type="text"
-                className="portail-input"
+                className={`portail-input${isConnected && nom ? ' portail-input--readonly' : ''}`}
                 value={nom}
-                onChange={e => setNom(e.target.value)}
+                onChange={isConnected ? undefined : e => setNom(e.target.value)}
+                readOnly={isConnected && !!nom}
                 placeholder="Marie Dupont"
                 required
                 autoComplete="name"
@@ -144,25 +153,28 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
               <label className="portail-label">Email *</label>
               <input
                 type="email"
-                className="portail-input"
+                className={`portail-input${isConnected ? ' portail-input--readonly' : ''}`}
                 value={email}
-                onChange={e => setEmail(e.target.value)}
+                onChange={isConnected ? undefined : e => setEmail(e.target.value)}
+                readOnly={isConnected}
                 placeholder="marie@exemple.fr"
                 required
                 autoComplete="email"
               />
             </div>
-            <div className="portail-field">
-              <label className="portail-label">Téléphone <span style={{ color: '#aaa', fontWeight: 400 }}>(optionnel)</span></label>
-              <input
-                type="tel"
-                className="portail-input"
-                value={tel}
-                onChange={e => setTel(e.target.value)}
-                placeholder="06 12 34 56 78"
-                autoComplete="tel"
-              />
-            </div>
+            {!isConnected && (
+              <div className="portail-field">
+                <label className="portail-label">Téléphone <span style={{ color: '#aaa', fontWeight: 400 }}>(optionnel)</span></label>
+                <input
+                  type="tel"
+                  className="portail-input"
+                  value={tel}
+                  onChange={e => setTel(e.target.value)}
+                  placeholder="06 12 34 56 78"
+                  autoComplete="tel"
+                />
+              </div>
+            )}
 
             {error && (
               <div style={{ background: '#fff0f0', border: '1px solid #ffcdd2', borderRadius: '8px', padding: '10px 14px', color: '#c62828', fontSize: '0.875rem', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -191,6 +203,7 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
         .resa-details { display: flex; flex-direction: column; gap: 8px; }
         .resa-detail-row { display: flex; align-items: center; gap: 8px; font-size: 0.9375rem; color: #555; }
         .resa-detail-row svg { color: #d4a0a0; flex-shrink: 0; }
+        .portail-input--readonly { background: #faf8f5; color: #888; cursor: default; border-color: #eee; }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         .spin { animation: spin 0.8s linear infinite; }
       `}</style>

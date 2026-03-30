@@ -20,11 +20,19 @@ function formatHeure(h) {
   return mm === '00' ? `${parseInt(hh)}h` : `${parseInt(hh)}h${mm}`;
 }
 
+function isAnnulable(date, heure) {
+  const h = heure || '00:00';
+  const coursDateTime = new Date(`${date}T${h}:00`);
+  const diffHeures = (coursDateTime - Date.now()) / (1000 * 60 * 60);
+  return diffHeures >= 24;
+}
+
 function CoursCard({ presence, studioSlug, onAnnuler, annulEnCours }) {
   const c = presence.cours;
   const [confirmOpen, setConfirmOpen] = useState(false);
   const today = new Date().toISOString().slice(0, 10);
   const aVenir = c.date >= today && !c.est_annule;
+  const annulable = aVenir && isAnnulable(c.date, c.heure);
 
   return (
     <div className="espace-cours-card">
@@ -51,7 +59,11 @@ function CoursCard({ presence, studioSlug, onAnnuler, annulEnCours }) {
         )}
 
         {aVenir && !c.est_annule && (
-          confirmOpen ? (
+          !annulable ? (
+            <span className="espace-annul-locked" title="Annulation impossible moins de 24h avant le cours">
+              🔒 &lt;24h
+            </span>
+          ) : confirmOpen ? (
             <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
               <p style={{ fontSize: '0.8rem', color: '#c62828', margin: '0 0 4px', fontWeight: 600 }}>Confirmer l'annulation ?</p>
               <div style={{ display: 'flex', gap: 6 }}>
@@ -237,6 +249,13 @@ export default function EspaceClient({ profile, client, aVenir, passes, studioSl
         </div>
       )}
 
+      {/* Bouton rebooking */}
+      <div style={{ marginTop: 28, paddingTop: 20, borderTop: '1px solid #f0ebe8', textAlign: 'center' }}>
+        <Link href={`/p/${studioSlug}`} className="portail-btn-primary" style={{ maxWidth: 280, margin: '0 auto' }}>
+          📅 Voir les prochains cours
+        </Link>
+      </div>
+
       <style jsx global>{`
         .portail-back-link { display: inline-flex; align-items: center; gap: 6px; color: #888; font-size: 0.875rem; text-decoration: none; margin-bottom: 20px; }
         .portail-back-link:hover { color: #d4a0a0; }
@@ -276,6 +295,11 @@ export default function EspaceClient({ profile, client, aVenir, passes, studioSl
           padding: 4px 10px; cursor: pointer; transition: all 0.15s;
         }
         .espace-annul-btn:hover { color: #c62828; border-color: #c62828; background: #fff0f0; }
+        .espace-annul-locked {
+          font-size: 0.7rem; color: #bbb; background: #f8f8f8;
+          border: 1px solid #eee; border-radius: 99px;
+          padding: 3px 8px; cursor: default;
+        }
 
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         .spin { animation: spin 0.8s linear infinite; }

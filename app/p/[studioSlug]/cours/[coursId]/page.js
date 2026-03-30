@@ -25,7 +25,29 @@ async function getData(studioSlug, coursId) {
     .select('id', { count: 'exact', head: true })
     .eq('cours_id', coursId);
 
-  return { profile, cours, nbInscrits: nbInscrits || 0 };
+  // Récupérer l'utilisateur connecté et son profil client dans ce studio
+  const { data: { user } } = await supabase.auth.getUser();
+  let currentUser = null;
+  if (user) {
+    const { data: client } = await supabase
+      .from('clients')
+      .select('prenom, nom, email, telephone')
+      .eq('profile_id', profile.id)
+      .ilike('email', user.email)
+      .single();
+    if (client) {
+      currentUser = {
+        nom: [client.prenom, client.nom].filter(Boolean).join(' '),
+        email: client.email,
+        tel: client.telephone || '',
+      };
+    } else {
+      // Connecté mais pas encore client dans ce studio
+      currentUser = { nom: '', email: user.email, tel: '' };
+    }
+  }
+
+  return { profile, cours, nbInscrits: nbInscrits || 0, currentUser };
 }
 
 export async function generateMetadata({ params }) {
@@ -46,6 +68,7 @@ export default async function CoursDetailPortailPage({ params }) {
       profile={data.profile}
       nbInscrits={data.nbInscrits}
       studioSlug={studioSlug}
+      currentUser={data.currentUser}
     />
   );
 }

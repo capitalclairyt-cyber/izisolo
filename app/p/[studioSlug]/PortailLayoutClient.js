@@ -1,8 +1,45 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { User } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
 
 export default function PortailLayoutClient({ studioSlug, children }) {
+  const [prenom, setPrenom] = useState(null); // null = chargement en cours
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        // Récupérer le prénom du client dans ce studio
+        supabase
+          .from('profiles')
+          .select('id')
+          .eq('studio_slug', studioSlug)
+          .single()
+          .then(({ data: profile }) => {
+            if (!profile) { setPrenom(''); return; }
+            supabase
+              .from('clients')
+              .select('prenom')
+              .eq('profile_id', profile.id)
+              .ilike('email', session.user.email)
+              .single()
+              .then(({ data: client }) => {
+                setPrenom(client?.prenom || session.user.email.split('@')[0]);
+              });
+          });
+      } else {
+        setPrenom('');
+      }
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!session) setPrenom('');
+    });
+    return () => subscription.unsubscribe();
+  }, [studioSlug]);
+
   return (
     <div className="portail-layout">
       <header className="portail-header">
@@ -10,9 +47,15 @@ export default function PortailLayoutClient({ studioSlug, children }) {
           🌿 <span className="portail-logo-text">IziSolo</span>
         </Link>
         <div className="portail-header-actions">
-          <Link href={`/p/${studioSlug}/espace`} className="portail-espace-btn">
-            Mon espace
-          </Link>
+          {prenom ? (
+            <Link href={`/p/${studioSlug}/espace`} className="portail-espace-btn portail-espace-btn--connected">
+              <User size={13} /> {prenom}
+            </Link>
+          ) : (
+            <Link href={`/p/${studioSlug}/espace`} className="portail-espace-btn">
+              Mon espace
+            </Link>
+          )}
         </div>
       </header>
 
@@ -40,11 +83,17 @@ export default function PortailLayoutClient({ studioSlug, children }) {
         .portail-logo-link { display: flex; align-items: center; gap: 6px; text-decoration: none; font-weight: 700; font-size: 1rem; color: #1a1a2e; }
         .portail-logo-text { color: #d4a0a0; }
         .portail-espace-btn {
+          display: inline-flex; align-items: center; gap: 6px;
           font-size: 0.875rem; font-weight: 600; padding: 7px 16px;
           background: #d4a0a0; color: white; border-radius: 99px;
           text-decoration: none; transition: background 0.15s;
         }
         .portail-espace-btn:hover { background: #c08080; }
+        .portail-espace-btn--connected {
+          background: white; color: #d4a0a0;
+          border: 1.5px solid #d4a0a0;
+        }
+        .portail-espace-btn--connected:hover { background: #fce8e8; }
         .portail-main { flex: 1; max-width: 680px; margin: 0 auto; width: 100%; padding: 24px 16px 48px; }
         .portail-footer {
           text-align: center; padding: 20px; border-top: 1px solid #f0ebe8;
