@@ -31,6 +31,72 @@ const JOURS_SEMAINE = [
   { value: 7, label: 'Dim' },
 ];
 
+// Preview des 8 premières dates générées par la récurrence — donne au prof
+// une vraie idée de ce qui sera créé avant de cliquer "Créer la série".
+function RecurrencePreview({ form }) {
+  const dates = useMemo(() => {
+    const out = [];
+    const start = parseDate(form.date);
+    if (!start || isNaN(start.getTime())) return out;
+    const end = form.date_fin
+      ? parseDate(form.date_fin)
+      : new Date(start.getFullYear(), start.getMonth(), start.getDate() + 7 * 12);
+    if (!end || end < start) return out;
+
+    const cursor = new Date(start);
+    let safety = 0;
+    while (cursor <= end && out.length < 8 && safety < 500) {
+      safety++;
+      const day = cursor.getDay() === 0 ? 7 : cursor.getDay();
+      let include = false;
+      if (form.frequence === 'quotidien') include = true;
+      else if (form.frequence === 'hebdomadaire') include = day === ((start.getDay() === 0 ? 7 : start.getDay()));
+      else if (form.frequence === 'bimensuel') {
+        const sameDay = day === ((start.getDay() === 0 ? 7 : start.getDay()));
+        const weeks = Math.floor((cursor - start) / (7 * 86400000));
+        include = sameDay && weeks % 2 === 0;
+      }
+      else if (form.frequence === 'mensuel') include = cursor.getDate() === start.getDate();
+      else if (form.frequence === 'personnalise') include = (form.jours_semaine || []).includes(day);
+
+      if (include) out.push(new Date(cursor));
+      cursor.setDate(cursor.getDate() + 1);
+    }
+    return out;
+  }, [form.date, form.date_fin, form.frequence, form.jours_semaine]);
+
+  if (dates.length === 0) {
+    return (
+      <div className="rec-preview rec-preview-empty">
+        ⚠ Avec ces réglages, aucune date ne sera générée.
+        {form.frequence === 'personnalise' && (form.jours_semaine || []).length === 0 &&
+          <> Choisis au moins un jour de la semaine.</>}
+      </div>
+    );
+  }
+
+  const total = form.date_fin
+    ? `jusqu'au ${parseDate(form.date_fin).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}`
+    : 'sur 12 semaines';
+
+  return (
+    <div className="rec-preview">
+      <div className="rec-preview-head">
+        <strong>Aperçu</strong>
+        <span className="rec-preview-meta">{dates.length === 8 ? '8 premières dates' : `${dates.length} date${dates.length > 1 ? 's' : ''}`} {total}</span>
+      </div>
+      <div className="rec-preview-list">
+        {dates.map((d, i) => (
+          <span key={i} className="rec-preview-chip">
+            {d.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })}
+          </span>
+        ))}
+        {dates.length === 8 && <span className="rec-preview-more">…</span>}
+      </div>
+    </div>
+  );
+}
+
 function NouveauCoursInner() {
   const router       = useRouter();
   const { toast }    = useToast();
@@ -39,8 +105,6 @@ function NouveauCoursInner() {
   const dateInitiale = searchParams.get('date') || toDateStr(new Date());
   const [loading, setLoading] = useState(false);
   const [typesCours, setTypesCours] = useState([]);
-  const [duplicates, setDuplicates] = useState([]);
-  const [showDuplicateModal, setShowDuplicateModal] = useState(false);
   const [rawTypesCours, setRawTypesCours] = useState([]);
   const [showNewType, setShowNewType] = useState(false);
   const [newTypeName, setNewTypeName] = useState('');
@@ -54,7 +118,7 @@ function NouveauCoursInner() {
     nom: '',
     type_cours: '',
     date: dateInitiale,
-    heure: '09:00',
+    heure: '18:00', // 18h = créneau le plus courant pour cours après-travail
     duree_minutes: '60',
     lieu_id: '',
     capacite_max: '',
@@ -88,6 +152,32 @@ function NouveauCoursInner() {
       }
       setLieux(lieuxData || []);
       setClientsPro(prosData || []);
+
+      // Duplication : si ?from=COURS_ID, on pré-remplit le formulaire avec les détails du cours source
+      const fromId = searchParams.get('from');
+      if (fromId) {
+        const { data: source } = await supabase
+          .from('cours')
+          .select('nom, type_cours, heure, duree_minutes, lieu_id, capacite_max, client_pro_id, notes')
+          .eq('id', fromId)
+          .eq('profile_id', user.id)
+          .maybeSingle();
+        if (source) {
+          setForm(prev => ({
+            ...prev,
+            nom: source.nom || '',
+            type_cours: source.type_cours || '',
+            heure: source.heure || '09:00',
+            duree_minutes: String(source.duree_minutes || '60'),
+            lieu_id: source.lieu_id || '',
+            capacite_max: source.capacite_max ? String(source.capacite_max) : '',
+            client_pro_id: source.client_pro_id || '',
+            notes: source.notes || '',
+            // date reste à dateInitiale (aujourd'hui ou ?date=...) — le prof choisit la nouvelle date
+          }));
+          toast.info('Cours dupliqué — choisis une nouvelle date.');
+        }
+      }
     };
     load();
   }, []);
@@ -245,41 +335,31 @@ function NouveauCoursInner() {
     }
   };
 
-  // Soumission : vérifie les doublons avant création
+  // Soumission directe — pas de modale doublon bloquante.
+  // Si vraie collision (même nom + même date + même heure pour un cours unique),
+  // on affiche un toast warning non-bloquant et on crée quand même.
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.nom.trim() || !form.date) return;
 
-    try {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      const nom = form.nom.trim();
-
-      // Chercher les doublons (insensible à la casse) dans les séries et cours uniques
-      const [{ data: dupSeries }, { data: dupUniques }] = await Promise.all([
-        supabase.from('recurrences')
-          .select('id, nom, frequence, type_cours, date_debut')
+    if (form.frequence === 'unique') {
+      try {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        const { data: collision } = await supabase
+          .from('cours')
+          .select('id')
           .eq('profile_id', user.id)
-          .ilike('nom', nom),
-        supabase.from('cours')
-          .select('id, nom, date, heure, type_cours')
-          .eq('profile_id', user.id)
-          .is('recurrence_parent_id', null)
-          .ilike('nom', nom),
-      ]);
-
-      const allDups = [
-        ...(dupSeries  || []).map(r => ({ ...r, isRecurrent: true })),
-        ...(dupUniques || []).map(c => ({ ...c, isRecurrent: false })),
-      ];
-
-      if (allDups.length > 0) {
-        setDuplicates(allDups);
-        setShowDuplicateModal(true);
-        return;
+          .ilike('nom', form.nom.trim())
+          .eq('date', form.date)
+          .eq('heure', form.heure || '10:00')
+          .maybeSingle();
+        if (collision) {
+          toast.warning('Un cours identique existe déjà à cette date et heure — création en cours quand même.');
+        }
+      } catch {
+        // erreur réseau : on continue
       }
-    } catch {
-      // En cas d'erreur réseau sur la vérif, on laisse passer
     }
 
     await doCreate();
@@ -401,12 +481,12 @@ function NouveauCoursInner() {
         {/* Durée + Capacité */}
         <div className="form-row">
           <div className="form-group">
-            <label className="form-label">Durée (min)</label>
+            <label className="form-label">Durée <span style={{ color: 'var(--text-muted)', fontWeight: 400, fontSize: '0.75rem' }}>(min)</span></label>
             <input className="izi-input" type="number" value={form.duree_minutes} onChange={handleChange('duree_minutes')} placeholder="60" />
           </div>
           <div className="form-group">
             <label className="form-label"><Users size={14} /> Capacité max</label>
-            <input className="izi-input" type="number" value={form.capacite_max} onChange={handleChange('capacite_max')} placeholder="Illimité" />
+            <input className="izi-input" type="number" value={form.capacite_max} onChange={handleChange('capacite_max')} placeholder="ex : 12 — vide = illimité" />
           </div>
         </div>
 
@@ -493,6 +573,11 @@ function NouveauCoursInner() {
           </div>
         )}
 
+        {/* Aperçu des dates générées (si récurrent et date renseignée) */}
+        {form.frequence !== 'unique' && form.date && (
+          <RecurrencePreview form={form} />
+        )}
+
         {/* Notes */}
         <div className="form-group">
           <label className="form-label">Notes</label>
@@ -506,67 +591,46 @@ function NouveauCoursInner() {
         </button>
       </form>
 
-      {/* Modale doublon */}
-      {showDuplicateModal && (
-        <div className="modal-overlay" onClick={() => setShowDuplicateModal(false)}>
-          <div className="modal-box dup-modal" onClick={e => e.stopPropagation()}>
-            <div className="dup-modal-header">
-              <AlertTriangle size={20} className="dup-modal-icon" />
-              <div>
-                <div className="dup-modal-title">Ce nom existe déjà</div>
-                <div className="dup-modal-subtitle">
-                  {duplicates.length} cours ou série "{form.nom.trim()}" exist{duplicates.length > 1 ? 'ent' : 'e'} déjà dans ton agenda.
-                </div>
-              </div>
-            </div>
-
-            <div className="dup-list">
-              {duplicates.map(d => (
-                <Link
-                  key={d.id}
-                  href={d.isRecurrent ? '/cours' : `/cours/${d.id}`}
-                  className="dup-item"
-                  onClick={() => setShowDuplicateModal(false)}
-                >
-                  <div className="dup-item-left">
-                    <span className="dup-item-icon">
-                      {d.isRecurrent ? <Repeat size={14} /> : <Calendar size={14} />}
-                    </span>
-                    <div>
-                      <div className="dup-item-nom">{d.nom}</div>
-                      <div className="dup-item-meta">
-                        {d.isRecurrent
-                          ? `Série · ${d.frequence || ''} · depuis ${d.date_debut ? parseDate(d.date_debut).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}`
-                          : `Ponctuel · ${d.date ? parseDate(d.date).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' }) : '—'}`
-                        }
-                        {d.type_cours && <span className="dup-item-type">{d.type_cours}</span>}
-                      </div>
-                    </div>
-                  </div>
-                  <ExternalLink size={14} className="dup-item-arrow" />
-                </Link>
-              ))}
-            </div>
-
-            <div className="dup-modal-actions">
-              <button className="izi-btn izi-btn-ghost" onClick={() => setShowDuplicateModal(false)}>
-                Modifier le nom
-              </button>
-              <button
-                className="izi-btn izi-btn-primary"
-                onClick={() => { setShowDuplicateModal(false); doCreate(); }}
-                disabled={loading}
-              >
-                <Save size={15} />
-                Créer quand même
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       <style jsx global>{`
         .nouveau-cours { display: flex; flex-direction: column; gap: 20px; padding-bottom: 40px; }
+
+        /* Preview récurrence */
+        .rec-preview {
+          background: var(--brand-light);
+          border: 1px solid var(--brand-200, #f0d0d0);
+          border-radius: 12px;
+          padding: 12px 14px;
+          margin-top: 4px;
+        }
+        .rec-preview-empty {
+          background: #fffaf0;
+          border-color: #fcd34d;
+          color: #78350f;
+          font-size: 0.875rem;
+        }
+        .rec-preview-head {
+          display: flex; justify-content: space-between; align-items: center;
+          margin-bottom: 8px;
+        }
+        .rec-preview-head strong {
+          font-size: 0.8125rem; font-weight: 700; color: var(--brand-700, var(--brand));
+          text-transform: uppercase; letter-spacing: 0.04em;
+        }
+        .rec-preview-meta {
+          font-size: 0.75rem; color: var(--text-muted);
+        }
+        .rec-preview-list {
+          display: flex; flex-wrap: wrap; gap: 6px;
+        }
+        .rec-preview-chip {
+          background: white; border: 1px solid var(--brand-200, #f0d0d0);
+          border-radius: 99px; padding: 4px 10px;
+          font-size: 0.75rem; font-weight: 600; color: var(--brand-700, var(--brand));
+          text-transform: capitalize;
+        }
+        .rec-preview-more {
+          padding: 4px 8px; font-size: 0.75rem; color: var(--text-muted); align-self: center;
+        }
         .page-header { display: flex; align-items: center; gap: 12px; }
         .page-header h1 { font-size: 1.25rem; font-weight: 700; }
         .header-date-hint { display: flex; align-items: center; gap: 4px; font-size: 0.8125rem; color: var(--brand); font-weight: 600; margin-top: 2px; text-transform: capitalize; }

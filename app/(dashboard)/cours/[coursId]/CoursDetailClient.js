@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   ArrowLeft, Save, Calendar, Clock, MapPin, Users, Repeat,
-  Trash2, AlertTriangle, CheckCircle2, Edit3, X,
+  Trash2, AlertTriangle, CheckCircle2, Edit3, X, Copy,
   ChevronDown, ChevronUp, Mail, Send, ShieldAlert, Smartphone, CheckCheck, Lock
 } from 'lucide-react';
 import { formatHeure, getAllTypesFromCategories } from '@/lib/utils';
@@ -258,9 +258,18 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
           )}
         </div>
         {!editing && (
-          <button className="edit-btn" onClick={() => setEditing(true)}>
-            <Edit3 size={18} />
-          </button>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              className="edit-btn"
+              onClick={() => router.push(`/cours/nouveau?from=${cours.id}`)}
+              title="Dupliquer ce cours"
+            >
+              <Copy size={18} />
+            </button>
+            <button className="edit-btn" onClick={() => setEditing(true)} title="Modifier">
+              <Edit3 size={18} />
+            </button>
+          </div>
         )}
       </div>
 

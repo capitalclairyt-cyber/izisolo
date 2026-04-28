@@ -19,7 +19,7 @@ function formatHeure(h) {
   return mm === '00' ? `${parseInt(hh)}h` : `${parseInt(hh)}h${mm}`;
 }
 
-export default function CoursReservationClient({ cours, profile, nbInscrits, studioSlug, currentUser }) {
+export default function CoursReservationClient({ cours, profile, nbInscrits, studioSlug, currentUser, alreadyRegistered = false }) {
   const { toast } = useToast();
   const [nom, setNom]       = useState(currentUser?.nom || '');
   const [email, setEmail]   = useState(currentUser?.email || '');
@@ -34,6 +34,7 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
   const complet = places !== null && places <= 0;
   const today = new Date().toISOString().slice(0, 10);
   const passe = cours.date < today;
+  const annule = !!cours.est_annule;
 
   const handleReserver = async (e) => {
     e.preventDefault();
@@ -155,10 +156,36 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
       )}
 
       {/* Formulaire de réservation */}
-      {passe ? (
+      {annule ? (
+        <div className="portail-card" style={{ textAlign: 'center', color: '#888' }}>
+          <AlertCircle size={32} style={{ margin: '0 auto 8px', display: 'block', color: '#dc2626' }} />
+          <p style={{ margin: '0 0 12px', fontWeight: 600 }}>Ce cours a été annulé par le studio.</p>
+          <Link href={`/p/${studioSlug}`} style={{ fontSize: '0.875rem', color: '#d4a0a0', fontWeight: 600, textDecoration: 'none' }}>
+            Voir d'autres cours →
+          </Link>
+        </div>
+      ) : passe ? (
         <div className="portail-card" style={{ textAlign: 'center', color: '#888' }}>
           <AlertCircle size={32} style={{ margin: '0 auto 8px', display: 'block', opacity: 0.5 }} />
           <p style={{ margin: 0 }}>Ce cours est passé.</p>
+        </div>
+      ) : alreadyRegistered ? (
+        <div className="portail-card" style={{ textAlign: 'center', padding: '32px 24px' }}>
+          <CheckCircle size={40} style={{ color: '#4caf50', margin: '0 auto 12px', display: 'block' }} />
+          <h2 style={{ fontSize: '1.125rem', fontWeight: 700, margin: '0 0 8px', color: '#1a1a2e' }}>
+            Tu es déjà inscrit·e à ce cours
+          </h2>
+          <p style={{ color: '#666', margin: '0 0 20px', fontSize: '0.9375rem' }}>
+            Retrouve cette réservation dans ton espace personnel.
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <Link href={`/p/${studioSlug}/espace`} className="portail-btn-primary" style={{ maxWidth: 280, margin: '0 auto', width: '100%' }}>
+              Voir mon espace
+            </Link>
+            <Link href={`/p/${studioSlug}`} className="portail-btn-ghost" style={{ maxWidth: 280, margin: '0 auto', width: '100%' }}>
+              Voir d'autres cours
+            </Link>
+          </div>
         </div>
       ) : complet ? (
         <div className="portail-card" style={{ textAlign: 'center', color: '#888' }}>
