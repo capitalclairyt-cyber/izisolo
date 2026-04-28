@@ -338,56 +338,104 @@ export function Testimonials() {
   );
 }
 
-/* ---- TARIFS — Free / Solo / Pro ---------------------------- */
+/* ---- TARIFS — Free 25 élèves / Solo 9€ / Pro 19€ + toggle annuel -20% ---- */
 export function Pricing() {
+  const [annuel, setAnnuel] = useState(false);
+
   const plans = [
     {
       name: 'Free',
-      price: '0 €',
+      price: { mensuel: '0 €', annuel: '0 €' },
       sub: 'pour toujours',
-      desc: 'Pour démarrer ou tester en douceur, sans engagement.',
-      features: ["Jusqu'à 15 élèves", 'Agenda complet', 'Portail élève public', 'Support email'],
-      cta: 'Commencer',
+      desc: 'Pour démarrer en douceur, sans carte bancaire ni engagement.',
+      features: [
+        "Jusqu'à 25 élèves",
+        'Agenda complet (cours illimités)',
+        'Portail élève public · PWA',
+        'Mini-compta tous modes (espèces, chèque, virement, CB)',
+        'Export CSV pour ton comptable',
+      ],
+      cta: 'Commencer gratuitement',
       ctaHref: '/register',
       featured: false,
     },
     {
       name: 'Solo',
-      price: '14 €',
-      sub: '/mois — sans engagement',
-      desc: "L'essentiel pour faire vivre ton studio sereinement.",
-      features: ['Élèves illimités', 'Mini-compta tous modes', 'Stripe Payment Link', 'Export CSV comptable', 'Email automatisés'],
+      price: { mensuel: '9 €', annuel: '7,20 €' },
+      priceMonthlyEq: { mensuel: '/mois', annuel: '/mois — facturé 86 € à l\'année' },
+      sub: 'élèves illimités, sans engagement',
+      desc: "Quand tu grandis. Moins cher qu'un cours de yoga par mois.",
+      features: [
+        'Tout du plan Free, sans limite d\'élèves',
+        'Email automatisés (rappels, anniversaires)',
+        'Notifications dans l\'app',
+        'Templates de communication',
+        'Support email réactif',
+      ],
       cta: 'Choisir Solo',
       ctaHref: '/register',
       featured: true,
     },
     {
       name: 'Pro',
-      price: '29 €',
-      sub: '/mois — sans engagement',
-      desc: 'Pour les collectifs et studios à plusieurs prof·e·s.',
-      features: ['Tout Solo inclus', 'Multi-utilisateurs', 'Domaine personnalisé', 'Support prioritaire'],
+      price: { mensuel: '19 €', annuel: '15,20 €' },
+      priceMonthlyEq: { mensuel: '/mois', annuel: '/mois — facturé 182 € à l\'année' },
+      sub: 'pour aller plus loin',
+      desc: 'Pour les studios à plusieurs prof·e·s et l\'encaissement en ligne.',
+      features: [
+        'Tout du plan Solo',
+        'Stripe Payment Link (paiement CB par les élèves)',
+        'Multi-utilisateurs (équipe)',
+        'Vidéos de cours (visio + replay)',
+        'Programmes (séries de cours liés)',
+        'Support prioritaire',
+      ],
       cta: 'Choisir Pro',
       ctaHref: '/register',
       featured: false,
     },
   ];
+
   return (
     <section id="tarifs" className="pricing">
       <div className="container">
         <div className="section-head">
           <span className="eyebrow">Tarifs</span>
           <h2 className="serif">Simple,<br /><em>comme tout le reste.</em></h2>
-          <p className="section-sub">Sans engagement · annulable en 1 clic · 14 jours d'essai sur Solo et Pro.</p>
+          <p className="section-sub">Sans engagement · annulable en 1 clic · 14 jours d'essai gratuit sur Solo et Pro.</p>
+
+          <div className="pricing-toggle" role="tablist" aria-label="Période de facturation">
+            <button
+              role="tab"
+              aria-selected={!annuel}
+              className={`pricing-toggle-btn ${!annuel ? 'active' : ''}`}
+              onClick={() => setAnnuel(false)}
+            >
+              Mensuel
+            </button>
+            <button
+              role="tab"
+              aria-selected={annuel}
+              className={`pricing-toggle-btn ${annuel ? 'active' : ''}`}
+              onClick={() => setAnnuel(true)}
+            >
+              Annuel <span className="pricing-toggle-save">−20 %</span>
+            </button>
+          </div>
         </div>
+
         <div className="pricing-grid">
           {plans.map((p, i) => (
             <div key={i} className={`price-card ${p.featured ? 'featured' : ''}`}>
               {p.featured && <div className="price-badge">Le plus choisi</div>}
               <div className="price-name serif">{p.name}</div>
               <div className="price-amt">
-                <span className="price-num serif">{p.price}</span>
-                <span className="price-sub">{p.sub}</span>
+                <span className="price-num serif">{annuel ? p.price.annuel : p.price.mensuel}</span>
+                <span className="price-sub">
+                  {p.priceMonthlyEq
+                    ? (annuel ? p.priceMonthlyEq.annuel : p.priceMonthlyEq.mensuel)
+                    : p.sub}
+                </span>
               </div>
               <p className="price-desc">{p.desc}</p>
               <ul className="price-features">
@@ -401,6 +449,11 @@ export function Pricing() {
             </div>
           ))}
         </div>
+
+        <p className="pricing-fees">
+          Paiements en ligne (Pro) : <strong>tu encaisses sur ton propre compte Stripe</strong> · IziSolo facture
+          1 % du volume sur ta facture mensuelle (jamais prélevé sur tes paiements).
+        </p>
       </div>
     </section>
   );

@@ -1252,6 +1252,64 @@ section.tight { padding-block: clamp(48px, 6vw, 80px); }
   margin: 0 auto;
 }
 @media (max-width: 900px) { .pricing-grid { grid-template-columns: 1fr; } }
+
+/* Toggle Mensuel/Annuel */
+.pricing-toggle {
+  display: inline-flex;
+  background: var(--c-surface-2);
+  border: 1px solid var(--c-line);
+  border-radius: 999px;
+  padding: 4px;
+  margin-top: 16px;
+  gap: 2px;
+}
+.pricing-toggle-btn {
+  padding: 8px 18px;
+  border-radius: 999px;
+  border: none;
+  background: transparent;
+  color: var(--c-ink-soft);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--t-fast) var(--ease);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  letter-spacing: 0.012em;
+}
+.pricing-toggle-btn.active {
+  background: var(--c-accent);
+  color: var(--c-accent-ink);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+}
+.pricing-toggle-save {
+  background: var(--c-success);
+  color: white;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 99px;
+  letter-spacing: 0.04em;
+}
+.pricing-toggle-btn.active .pricing-toggle-save {
+  background: rgba(255,255,255,0.25);
+}
+
+/* Mention frais sous les cards */
+.pricing-fees {
+  margin: 32px auto 0;
+  max-width: 640px;
+  text-align: center;
+  font-size: 0.875rem;
+  color: var(--c-ink-soft);
+  line-height: 1.55;
+  padding: 14px 18px;
+  background: var(--c-bg-warm);
+  border: 1px dashed var(--c-line);
+  border-radius: 12px;
+}
+.pricing-fees strong { color: var(--c-ink); font-weight: 600; }
 .price-card {
   background: var(--c-surface);
   border: 1px solid var(--c-line);
