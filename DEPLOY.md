@@ -194,17 +194,31 @@ Dans cet ordre :
 
 ---
 
-## Étape 8 — Activer Sentry (post-deploy, optionnel)
+## Étape 8 — Activer Sentry (config déjà câblée, juste le DSN à fournir)
+
+Sentry est déjà installé (`@sentry/nextjs`) avec une config no-op : si aucun DSN
+n'est défini, les `Sentry.init()` ne font rien. Pour l'activer :
+
+1. Créer le projet sur https://sentry.io → choisir Next.js
+2. Récupérer le DSN (`https://xxx@oXXX.ingest.sentry.io/YYY`)
+3. Ajouter dans Vercel :
 
 ```bash
-npx @sentry/wizard@latest -i nextjs
+vercel env add SENTRY_DSN production              # côté serveur
+vercel env add NEXT_PUBLIC_SENTRY_DSN production  # côté client (même valeur OK)
+vercel env add SENTRY_ORG production              # slug de l'org Sentry
+vercel env add SENTRY_PROJECT production          # slug du projet (ex: izisolo)
+vercel env add SENTRY_AUTH_TOKEN production       # pour l'upload des sourcemaps au build
 ```
 
-Le wizard demande un projet Sentry, génère :
-- `instrumentation.js`
-- `sentry.client.config.js`, `sentry.server.config.js`, `sentry.edge.config.js`
+4. Trigger un deploy → vérifier sur Sentry qu'un release apparaît
+5. Pour tester : créer une route éphémère `/api/test-error` qui throw, l'appeler,
+   vérifier que l'erreur arrive sur Sentry, supprimer la route.
 
-Ajouter `SENTRY_AUTH_TOKEN` et `NEXT_PUBLIC_SENTRY_DSN` dans Vercel env. Reconfigurer `tracesSampleRate: 0.1` pour démarrer.
+Fichiers de config :
+- `instrumentation.js` (server + edge runtime hook)
+- `sentry.server.config.js`, `sentry.edge.config.js`, `sentry.client.config.js`
+- `next.config.mjs` est wrappé via `withSentryConfig` uniquement si DSN présent
 
 ---
 

@@ -1,4 +1,5 @@
 import withPWA from 'next-pwa';
+import { withSentryConfig } from '@sentry/nextjs';
 
 const pwaConfig = withPWA({
   dest: 'public',
@@ -29,4 +30,17 @@ const nextConfig = {
   },
 };
 
-export default pwaConfig(nextConfig);
+const sentryEnabled = !!process.env.SENTRY_DSN || !!process.env.NEXT_PUBLIC_SENTRY_DSN;
+
+const sentryOptions = {
+  silent: true,
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  widenClientFileUpload: true,
+  hideSourceMaps: true,
+  disableLogger: true,
+};
+
+const baseConfig = pwaConfig(nextConfig);
+
+export default sentryEnabled ? withSentryConfig(baseConfig, sentryOptions) : baseConfig;
