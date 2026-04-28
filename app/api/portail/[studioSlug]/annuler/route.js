@@ -1,6 +1,7 @@
 import { createServerClient } from '@/lib/supabase-server';
 import { createClient as createAdminSupabase } from '@supabase/supabase-js';
 import { parseJsonBody, annulationSchema } from '@/lib/validation';
+import { evaluerAnnulation } from '@/lib/regles-annulation';
 
 export async function POST(request, { params }) {
   const { studioSlug } = await params;
@@ -21,10 +22,10 @@ export async function POST(request, { params }) {
     process.env.SUPABASE_SERVICE_ROLE_KEY
   );
 
-  // Vérifier que le studio existe
+  // Vérifier que le studio existe + récupérer ses règles d'annulation
   const { data: profile } = await supabaseAdmin
     .from('profiles')
-    .select('id')
+    .select('id, regles_annulation')
     .eq('studio_slug', studioSlug)
     .single();
 
@@ -47,7 +48,7 @@ export async function POST(request, { params }) {
   // Vérifier que la présence appartient bien à ce client dans ce studio
   const { data: presence } = await supabaseAdmin
     .from('presences')
-    .select('id, cours:cours_id(date, heure, est_annule)')
+    .select('id, abonnement_id, cours:cours_id(date, heure, type_cours, est_annule)')
     .eq('id', presenceId)
     .eq('client_id', client.id)
     .eq('profile_id', profile.id)
@@ -63,29 +64,66 @@ export async function POST(request, { params }) {
     return Response.json({ error: 'Ce cours est déjà passé' }, { status: 400 });
   }
 
-  // Vérifier le délai d'annulation : impossible si le cours est dans moins de 24h
-  if (presence.cours) {
-    const heure = presence.cours.heure || '00:00';
-    const coursDateTime = new Date(`${presence.cours.date}T${heure}:00`);
-    const diffHeures = (coursDateTime - Date.now()) / (1000 * 60 * 60);
-    if (diffHeures < 24) {
-      return Response.json(
-        { error: 'Annulation impossible : le cours commence dans moins de 24h' },
-        { status: 400 }
-      );
+  // Évaluer la règle d'annulation (délai libre vs tardif)
+  const evaluation = evaluerAnnulation(
+    profile,
+    presence.cours?.date,
+    presence.cours?.heure,
+    presence.cours?.type_cours
+  );
+
+  // ── Cas 1 : Annulation libre (dans les délais) → suppression de la presence
+  if (evaluation.annulable) {
+    const { error: deleteErr } = await supabaseAdmin
+      .from('presences')
+      .delete()
+      .eq('id', presenceId);
+
+    if (deleteErr) {
+      console.error('annulation libre — delete error:', deleteErr);
+      return Response.json({ error: 'Erreur lors de l\'annulation' }, { status: 500 });
     }
+    return Response.json({ ok: true, tardive: false });
   }
 
-  // Supprimer la présence (annulation)
-  const { error: deleteErr } = await supabaseAdmin
+  // ── Cas 2 : Annulation tardive (au-delà du délai libre) → la séance est due
+  // On NE supprime PAS la presence : on la garde marquée comme "annulation tardive"
+  // ET on incrémente seances_utilisees du carnet/abonnement (si lié) — la séance compte.
+  const motif = `Annulation tardive (moins de ${evaluation.delaiHeures}h avant le cours)`;
+
+  const { error: updateErr } = await supabaseAdmin
     .from('presences')
-    .delete()
+    .update({
+      annulation_tardive: true,
+      est_due: true,
+      motif_due: motif,
+    })
     .eq('id', presenceId);
 
-  if (deleteErr) {
-    console.error('annulation error:', deleteErr);
+  if (updateErr) {
+    console.error('annulation tardive — update error:', updateErr);
     return Response.json({ error: 'Erreur lors de l\'annulation' }, { status: 500 });
   }
 
-  return Response.json({ ok: true });
+  // Incrémenter le compteur de séances utilisées de l'abonnement (si lié)
+  if (presence.abonnement_id) {
+    const { data: abo } = await supabaseAdmin
+      .from('abonnements')
+      .select('seances_utilisees')
+      .eq('id', presence.abonnement_id)
+      .single();
+    if (abo) {
+      await supabaseAdmin
+        .from('abonnements')
+        .update({ seances_utilisees: (abo.seances_utilisees || 0) + 1 })
+        .eq('id', presence.abonnement_id);
+    }
+  }
+
+  return Response.json({
+    ok: true,
+    tardive: true,
+    motif,
+    delaiHeures: evaluation.delaiHeures,
+  });
 }

@@ -8,10 +8,10 @@ export const metadata = { title: 'Mon espace — IziSolo' };
 async function getData(studioSlug, userEmail) {
   const supabase = await createServerClient();
 
-  // Studio
+  // Studio (+ règles d'annulation pour application dans EspaceClient)
   const { data: profile } = await supabase
     .from('profiles')
-    .select('id, studio_nom, studio_slug')
+    .select('id, studio_nom, studio_slug, regles_annulation')
     .eq('studio_slug', studioSlug)
     .single();
   if (!profile) return null;

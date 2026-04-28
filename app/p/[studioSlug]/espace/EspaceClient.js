@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Calendar, Clock, MapPin, ArrowLeft, LogOut, CheckCircle, XCircle, Loader, AlertCircle, User, Lock, CreditCard, Ticket, CalendarCheck, Zap } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/components/ui/ToastProvider';
+import { evaluerAnnulation, formatDateLimite } from '@/lib/regles-annulation';
 
 const STRIPE_TYPE_ICONS = { carnet: Ticket, abonnement: CalendarCheck, cours_unique: Zap };
 
@@ -23,19 +24,17 @@ function formatHeure(h) {
   return mm === '00' ? `${parseInt(hh)}h` : `${parseInt(hh)}h${mm}`;
 }
 
-function isAnnulable(date, heure) {
-  const h = heure || '00:00';
-  const coursDateTime = new Date(`${date}T${h}:00`);
-  const diffHeures = (coursDateTime - Date.now()) / (1000 * 60 * 60);
-  return diffHeures >= 24;
-}
-
-function CoursCard({ presence, studioSlug, onAnnuler, annulEnCours }) {
+function CoursCard({ presence, profile, studioSlug, onAnnuler, annulEnCours }) {
   const c = presence.cours;
   const [confirmOpen, setConfirmOpen] = useState(false);
   const today = new Date().toISOString().slice(0, 10);
   const aVenir = c.date >= today && !c.est_annule;
-  const annulable = aVenir && isAnnulable(c.date, c.heure);
+  // Règle d'annulation lue depuis profile.regles_annulation (fallback 24h)
+  const evaluation = aVenir
+    ? evaluerAnnulation(profile, c.date, c.heure, c.type_cours)
+    : { annulable: false, delaiHeures: 24 };
+  const annulable = aVenir && evaluation.annulable;
+  const futureMaisTardive = aVenir && !annulable;
 
   return (
     <div className="espace-cours-card">
@@ -62,16 +61,44 @@ function CoursCard({ presence, studioSlug, onAnnuler, annulEnCours }) {
         )}
 
         {aVenir && !c.est_annule && (
-          !annulable ? (
-            <span className="espace-annul-locked" title="Annulation impossible à moins de 24h du cours">
-              <Lock size={11} /> Annulation fermée
-            </span>
+          futureMaisTardive ? (
+            // Annulation tardive : on PEUT toujours annuler, mais la séance sera due
+            confirmOpen ? (
+              <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 6, maxWidth: 220 }}>
+                <p style={{ fontSize: '0.75rem', color: '#7c4a03', margin: '0 0 4px', fontWeight: 600, lineHeight: 1.4 }}>
+                  ⚠ Annulation tardive : la séance sera décomptée de ton crédit. Confirmer ?
+                </p>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <button
+                    onClick={() => { onAnnuler(presence.id, true); setConfirmOpen(false); }}
+                    disabled={annulEnCours}
+                    style={{ flex: 1, padding: '6px 10px', borderRadius: 8, border: 'none', background: '#c62828', color: 'white', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}
+                  >
+                    {annulEnCours ? <Loader size={12} className="spin" /> : 'Oui'}
+                  </button>
+                  <button
+                    onClick={() => setConfirmOpen(false)}
+                    style={{ flex: 1, padding: '6px 10px', borderRadius: 8, border: '1px solid #e5e5e5', background: 'white', fontSize: '0.75rem', cursor: 'pointer', color: '#666' }}
+                  >
+                    Non
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                onClick={() => setConfirmOpen(true)}
+                className="espace-annul-btn espace-annul-btn--tardive"
+                title={`Annulation possible mais la séance sera comptée (délai libre : ${evaluation.delaiHeures}h avant)`}
+              >
+                <Lock size={11} /> Annuler (séance due)
+              </button>
+            )
           ) : confirmOpen ? (
             <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
               <p style={{ fontSize: '0.8rem', color: '#c62828', margin: '0 0 4px', fontWeight: 600 }}>Confirmer l'annulation ?</p>
               <div style={{ display: 'flex', gap: 6 }}>
                 <button
-                  onClick={() => { onAnnuler(presence.id); setConfirmOpen(false); }}
+                  onClick={() => { onAnnuler(presence.id, false); setConfirmOpen(false); }}
                   disabled={annulEnCours}
                   style={{ flex: 1, padding: '6px 10px', borderRadius: 8, border: 'none', background: '#c62828', color: 'white', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}
                 >
@@ -107,7 +134,7 @@ export default function EspaceClient({ profile, client, aVenir, passes, offresSt
   const [errMsg, setErrMsg]             = useState('');
   const [loggingOut, setLoggingOut]     = useState(false);
 
-  const handleAnnuler = async (presenceId) => {
+  const handleAnnuler = async (presenceId, tardiveAttendue = false) => {
     setAnnulEnCours(presenceId);
     setErrMsg('');
     try {
@@ -119,7 +146,11 @@ export default function EspaceClient({ profile, client, aVenir, passes, offresSt
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Erreur');
       setAnnuleIds(prev => [...prev, presenceId]);
-      toast.success('Réservation annulée. On t\'attend la prochaine fois 🌿');
+      if (json.tardive) {
+        toast.warning('Annulation enregistrée — la séance a été comptée (annulation tardive).');
+      } else {
+        toast.success('Réservation annulée. On t\'attend la prochaine fois 🌿');
+      }
     } catch (e) {
       setErrMsg(e.message);
       toast.error(e.message);
@@ -228,6 +259,7 @@ export default function EspaceClient({ profile, client, aVenir, passes, offresSt
             <CoursCard
               key={p.id}
               presence={p}
+              profile={profile}
               studioSlug={studioSlug}
               onAnnuler={handleAnnuler}
               annulEnCours={annulEnCours === p.id}
@@ -247,6 +279,7 @@ export default function EspaceClient({ profile, client, aVenir, passes, offresSt
             <CoursCard
               key={p.id}
               presence={p}
+              profile={profile}
               studioSlug={studioSlug}
               onAnnuler={handleAnnuler}
               annulEnCours={false}
@@ -340,6 +373,8 @@ export default function EspaceClient({ profile, client, aVenir, passes, offresSt
           padding: 4px 10px; cursor: pointer; transition: all 0.15s;
         }
         .espace-annul-btn:hover { color: #c62828; border-color: #c62828; background: #fff0f0; }
+        .espace-annul-btn--tardive { color: #d97706; border-color: #fcd34d; background: #fffaf0; }
+        .espace-annul-btn--tardive:hover { background: #fff0d6; color: #92400e; border-color: #d97706; }
         .espace-annul-locked {
           display: inline-flex; align-items: center; gap: 4px;
           font-size: 0.7rem; color: #bbb; background: #f8f8f8;

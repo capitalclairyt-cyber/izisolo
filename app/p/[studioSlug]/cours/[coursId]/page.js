@@ -7,7 +7,7 @@ async function getData(studioSlug, coursId) {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('id, studio_nom, studio_slug, metier, ville')
+    .select('id, studio_nom, studio_slug, metier, ville, regles_annulation')
     .eq('studio_slug', studioSlug)
     .single();
   if (!profile) return null;

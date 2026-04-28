@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { Clock, MapPin, Calendar, Users, ArrowLeft, CheckCircle, AlertCircle, Loader, Mail, Shield } from 'lucide-react';
 import { useToast } from '@/components/ui/ToastProvider';
+import { getDelaiPourCours, evaluerAnnulation, formatDateLimite } from '@/lib/regles-annulation';
 
 const MOIS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
 const JOURS = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
@@ -144,16 +145,24 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
         )}
       </div>
 
-      {/* Politique d'annulation — visible AVANT le formulaire */}
-      {!passe && !complet && (
-        <div className="resa-policy">
-          <Shield size={15} style={{ flexShrink: 0, marginTop: 2 }} />
-          <div>
-            <strong style={{ display: 'block', marginBottom: 2 }}>Annulation flexible</strong>
-            Tu pourras annuler depuis ton espace jusqu'à <strong>24h avant le cours</strong>.
+      {/* Politique d'annulation — délai lu depuis profile.regles_annulation */}
+      {!passe && !complet && !annule && (() => {
+        const delai = getDelaiPourCours(profile, cours.type_cours);
+        const eval2 = evaluerAnnulation(profile, cours.date, cours.heure, cours.type_cours);
+        const limiteStr = eval2.dateLimite ? formatDateLimite(eval2.dateLimite) : null;
+        return (
+          <div className="resa-policy">
+            <Shield size={15} style={{ flexShrink: 0, marginTop: 2 }} />
+            <div>
+              <strong style={{ display: 'block', marginBottom: 2 }}>Annulation flexible</strong>
+              {limiteStr
+                ? <>Annulation libre jusqu'au <strong>{limiteStr}</strong> ({delai}h avant le cours). Après, la séance sera décomptée de ton crédit.</>
+                : <>Annulation libre jusqu'à <strong>{delai}h avant le cours</strong>. Après, la séance sera décomptée de ton crédit.</>
+              }
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Formulaire de réservation */}
       {annule ? (
