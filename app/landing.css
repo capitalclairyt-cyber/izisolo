@@ -661,6 +661,97 @@ section.tight { padding-block: clamp(48px, 6vw, 80px); }
 .app-mockup.mini .app-body { grid-template-columns: 0 1fr; min-height: 280px; }
 .app-mockup.mini .app-sidebar { display: none; }
 .app-mockup.mini .app-main { padding: 16px; }
+
+/* ================================================================
+   App Mockup — adaptation mobile
+   Sur ≤ 720px : sidebar cachée, paddings/font-sizes réduits
+   pour que le mockup tienne sans déborder ni se compresser.
+   ================================================================ */
+@media (max-width: 720px) {
+  .app-mockup {
+    font-size: 13px;
+    border-radius: 14px;
+  }
+  .app-chrome {
+    padding: 8px 12px;
+    grid-template-columns: 60px 1fr 60px;
+  }
+  .app-chrome .url-bar {
+    font-size: 9.5px;
+    padding: 4px 10px;
+  }
+  .app-chrome .dots span { width: 9px; height: 9px; }
+
+  .app-body {
+    grid-template-columns: 1fr;
+    min-height: 360px;
+    background-size: 18px 18px;
+  }
+  .app-sidebar { display: none; }
+
+  .app-main { padding: 18px 16px; }
+  .main-head { gap: 12px; margin-bottom: 18px; }
+  .avatar { width: 36px; height: 36px; font-size: 17px; }
+  .hello { font-size: 21px; line-height: 1.2; }
+  .hello-sub { font-size: 11px; }
+
+  .stat-grid { gap: 8px; margin-bottom: 16px; }
+  .stat-card { padding: 12px 10px; }
+  .stat-icon { width: 22px; height: 22px; margin-bottom: 6px; }
+  .stat-value { font-size: 20px; line-height: 1.1; }
+  .stat-label { font-size: 10.5px; margin-top: 3px; }
+
+  .panel { padding: 14px 14px; }
+  .panel-title { font-size: 13.5px; }
+  .session-list { gap: 6px; }
+  .session-row {
+    grid-template-columns: 4px 48px 1fr auto;
+    gap: 10px;
+    padding: 10px 10px;
+    font-size: 12.5px;
+  }
+  .session-time, .session-attendees { font-size: 11px; }
+  .session-attendees { padding: 3px 8px; }
+  .tone-bar { height: 22px; }
+
+  /* Agenda — vue semaine très étroite, on compacte les colonnes */
+  .agenda-tabs { font-size: 11px; padding: 3px; }
+  .agenda-tabs span { padding: 5px 12px; }
+  .agenda-range { font-size: 12px; padding: 8px 0; }
+  .agenda-grid { gap: 1px; }
+  .agenda-day-head { padding: 6px 0; }
+  .day-name { font-size: 9px; }
+  .day-num { font-size: 13px; }
+  .event { font-size: 9px; padding: 2px 4px; }
+
+  /* Revenus */
+  .revenue-card { padding: 16px 14px; }
+  .revenue-num { font-size: 28px; }
+  .revenue-sub { font-size: 10.5px; }
+  .sparkline { height: 50px; }
+
+  /* FloatingPings du Hero — débordent sur mobile, on les cache */
+  .floating-ping { display: none; }
+
+  /* Hero — le mockup prend la largeur dispo sans marges latérales agressives */
+  .hero-app { margin: 0 -8px; }
+}
+
+/* Très petit (≤ 380px) : cran de plus pour les iPhone SE */
+@media (max-width: 380px) {
+  .app-main { padding: 14px 12px; }
+  .stat-grid { grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .stat-card { padding: 10px 8px; }
+  .stat-value { font-size: 17px; }
+  .stat-label { font-size: 9.5px; }
+  .stat-icon { width: 20px; height: 20px; margin-bottom: 4px; }
+  .hello { font-size: 18px; }
+  .session-row {
+    grid-template-columns: 4px 1fr auto;
+    font-size: 12px;
+  }
+  .session-time { display: none; }
+}
 /* ================================================================
    IziSolo · Sections styles
    ----------------------------------------------------------------
