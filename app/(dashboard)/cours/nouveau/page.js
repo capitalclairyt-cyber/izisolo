@@ -4,10 +4,11 @@ import { useState, useEffect, useMemo, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { parseDate, toDateStr } from '@/lib/dates';
 import { getAllTypesFromCategories, normalizeTypesCours } from '@/lib/utils';
+import { estPendantVacances, estJourFerie, getPeriodeVacances, ZONES_VACANCES } from '@/lib/vacances-scolaires';
 import Link from 'next/link';
 import {
   ArrowLeft, Save, Calendar, Clock, MapPin, Users, Repeat,
-  Building2, Plus, ChevronDown, X, AlertTriangle, ExternalLink
+  Building2, Plus, ChevronDown, X, AlertTriangle, ExternalLink, Sparkles, Sun
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase';
 import { useToast } from '@/components/ui/ToastProvider';
@@ -31,41 +32,70 @@ const JOURS_SEMAINE = [
   { value: 7, label: 'Dim' },
 ];
 
-// Preview des 8 premières dates générées par la récurrence — donne au prof
-// une vraie idée de ce qui sera créé avant de cliquer "Créer la série".
-function RecurrencePreview({ form }) {
-  const dates = useMemo(() => {
-    const out = [];
-    const start = parseDate(form.date);
-    if (!start || isNaN(start.getTime())) return out;
-    const end = form.date_fin
-      ? parseDate(form.date_fin)
-      : new Date(start.getFullYear(), start.getMonth(), start.getDate() + 7 * 12);
-    if (!end || end < start) return out;
+// Generator partagé : renvoie { incluses, exclues } selon mode + exclusions vacances/feries.
+// mode === 'count'   → on s'arrête après nb_occurrences dates incluses (max 1 an de garde)
+// mode === 'date_fin'→ on parcourt jusqu'à date_fin
+function calculerDates(form) {
+  const incluses = [];
+  const exclues  = []; // { date, raison: 'vacances'|'feries', label }
 
-    const cursor = new Date(start);
-    let safety = 0;
-    while (cursor <= end && out.length < 8 && safety < 500) {
-      safety++;
-      const day = cursor.getDay() === 0 ? 7 : cursor.getDay();
-      let include = false;
-      if (form.frequence === 'quotidien') include = true;
-      else if (form.frequence === 'hebdomadaire') include = day === ((start.getDay() === 0 ? 7 : start.getDay()));
-      else if (form.frequence === 'bimensuel') {
-        const sameDay = day === ((start.getDay() === 0 ? 7 : start.getDay()));
-        const weeks = Math.floor((cursor - start) / (7 * 86400000));
-        include = sameDay && weeks % 2 === 0;
-      }
-      else if (form.frequence === 'mensuel') include = cursor.getDate() === start.getDate();
-      else if (form.frequence === 'personnalise') include = (form.jours_semaine || []).includes(day);
+  const start = parseDate(form.date);
+  if (!start || isNaN(start.getTime())) return { incluses, exclues };
 
-      if (include) out.push(new Date(cursor));
-      cursor.setDate(cursor.getDate() + 1);
+  const mode = form.mode_fin || 'count';
+  const limite = mode === 'count'
+    ? new Date(start.getFullYear() + 1, start.getMonth(), start.getDate()) // garde-fou 1 an
+    : (form.date_fin ? parseDate(form.date_fin) : new Date(start.getFullYear(), start.getMonth(), start.getDate() + 7 * 12));
+  if (!limite || limite < start) return { incluses, exclues };
+
+  const cible = mode === 'count' ? Math.max(1, parseInt(form.nb_occurrences) || 12) : 999;
+  const cursor = new Date(start);
+  const startDay = start.getDay() === 0 ? 7 : start.getDay();
+  let safety = 0;
+
+  while (cursor <= limite && incluses.length < cible && safety < 500) {
+    safety++;
+    const day = cursor.getDay() === 0 ? 7 : cursor.getDay();
+    let include = false;
+    if (form.frequence === 'quotidien') include = true;
+    else if (form.frequence === 'hebdomadaire') include = day === startDay;
+    else if (form.frequence === 'bimensuel') {
+      const weeks = Math.floor((cursor - start) / (7 * 86400000));
+      include = day === startDay && weeks % 2 === 0;
     }
-    return out;
-  }, [form.date, form.date_fin, form.frequence, form.jours_semaine]);
+    else if (form.frequence === 'mensuel') include = cursor.getDate() === start.getDate();
+    else if (form.frequence === 'personnalise') include = (form.jours_semaine || []).includes(day);
 
-  if (dates.length === 0) {
+    if (include) {
+      const dateISO = toDateStr(cursor);
+      let exclu = null;
+      if (form.exclure_feries && estJourFerie(dateISO)) {
+        exclu = { date: new Date(cursor), raison: 'feries', label: 'Jour férié' };
+      } else if (form.exclure_vacances && form.zone_vacances) {
+        const periode = getPeriodeVacances(dateISO, form.zone_vacances);
+        if (periode) exclu = { date: new Date(cursor), raison: 'vacances', label: periode.label };
+      }
+      if (exclu) {
+        exclues.push(exclu);
+      } else {
+        incluses.push(new Date(cursor));
+      }
+    }
+    cursor.setDate(cursor.getDate() + 1);
+  }
+
+  return { incluses, exclues };
+}
+
+// Preview enrichi : compteur + 8 premières dates incluses + alerte si exclusions
+function RecurrencePreview({ form }) {
+  const { incluses, exclues } = useMemo(() => calculerDates(form), [
+    form.date, form.date_fin, form.mode_fin, form.nb_occurrences,
+    form.frequence, form.jours_semaine, form.exclure_vacances,
+    form.exclure_feries, form.zone_vacances
+  ]);
+
+  if (incluses.length === 0 && exclues.length === 0) {
     return (
       <div className="rec-preview rec-preview-empty">
         ⚠ Avec ces réglages, aucune date ne sera générée.
@@ -75,24 +105,40 @@ function RecurrencePreview({ form }) {
     );
   }
 
-  const total = form.date_fin
-    ? `jusqu'au ${parseDate(form.date_fin).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}`
-    : 'sur 12 semaines';
+  const apercu = incluses.slice(0, 8);
+  const restantes = incluses.length - apercu.length;
+  const motif = form.mode_fin === 'count'
+    ? `${incluses.length} cours seront créés`
+    : `${incluses.length} cours jusqu'au ${form.date_fin ? parseDate(form.date_fin).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' }) : '…'}`;
 
   return (
     <div className="rec-preview">
       <div className="rec-preview-head">
-        <strong>Aperçu</strong>
-        <span className="rec-preview-meta">{dates.length === 8 ? '8 premières dates' : `${dates.length} date${dates.length > 1 ? 's' : ''}`} {total}</span>
+        <strong>{motif}</strong>
+        {exclues.length > 0 && (
+          <span className="rec-preview-excluded">
+            <Sun size={12} /> {exclues.length} date{exclues.length > 1 ? 's' : ''} sautée{exclues.length > 1 ? 's' : ''}
+          </span>
+        )}
       </div>
       <div className="rec-preview-list">
-        {dates.map((d, i) => (
+        {apercu.map((d, i) => (
           <span key={i} className="rec-preview-chip">
             {d.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })}
           </span>
         ))}
-        {dates.length === 8 && <span className="rec-preview-more">…</span>}
+        {restantes > 0 && <span className="rec-preview-more">+{restantes} autre{restantes > 1 ? 's' : ''}</span>}
       </div>
+      {exclues.length > 0 && (
+        <div className="rec-preview-exclusions">
+          {exclues.slice(0, 3).map((e, i) => (
+            <span key={i} className="rec-preview-skip">
+              {e.date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })} — {e.label}
+            </span>
+          ))}
+          {exclues.length > 3 && <span className="rec-preview-skip-more">+{exclues.length - 3} autres</span>}
+        </div>
+      )}
     </div>
   );
 }
@@ -127,8 +173,13 @@ function NouveauCoursInner() {
     // Récurrence
     frequence: 'unique',
     jours_semaine: [],
-    date_fin: '',
+    mode_fin: 'count',          // 'count' (nb cours) | 'date_fin'
+    nb_occurrences: 12,         // si mode_fin === 'count'
+    date_fin: '',               // si mode_fin === 'date_fin'
     intervalle: 1,
+    exclure_vacances: false,
+    exclure_feries: false,
+    zone_vacances: '',          // 'A' | 'B' | 'C' | 'Corse'
   });
 
   // Charger les données
@@ -138,7 +189,7 @@ function NouveauCoursInner() {
       const { data: { user } } = await supabase.auth.getUser();
 
       const [{ data: prof }, { data: lieuxData }, { data: prosData }] = await Promise.all([
-        supabase.from('profiles').select('types_cours, metier').eq('id', user.id).single(),
+        supabase.from('profiles').select('types_cours, metier, zone_vacances_default').eq('id', user.id).single(),
         supabase.from('lieux').select('*, clients:client_pro_id(id, nom_structure)').eq('profile_id', user.id).eq('actif', true).order('ordre'),
         supabase.from('clients').select('id, nom, prenom, nom_structure, type_client')
           .eq('profile_id', user.id)
@@ -149,6 +200,10 @@ function NouveauCoursInner() {
         const normalized = normalizeTypesCours(prof.types_cours);
         setRawTypesCours(normalized);
         setTypesCours(normalized.flatMap(cat => cat.items || []));
+      }
+      // Pré-remplir zone vacances par défaut (hérité du profil) — le pro peut surcharger
+      if (prof?.zone_vacances_default) {
+        setForm(prev => ({ ...prev, zone_vacances: prof.zone_vacances_default }));
       }
       setLieux(lieuxData || []);
       setClientsPro(prosData || []);
@@ -289,6 +344,12 @@ function NouveauCoursInner() {
         });
         if (error) throw error;
       } else {
+        const { incluses } = calculerDates(form);
+        // Bornes effectives pour la table recurrences (info, pas utilisée pour la génération)
+        const dateFinEffective = form.mode_fin === 'date_fin'
+          ? (form.date_fin || null)
+          : (incluses.length > 0 ? toDateStr(incluses[incluses.length - 1]) : null);
+
         const { data: recurrence, error: recErr } = await supabase.from('recurrences').insert({
           profile_id: user.id,
           nom: form.nom.trim(),
@@ -302,17 +363,20 @@ function NouveauCoursInner() {
           jours_semaine: form.frequence === 'personnalise' ? form.jours_semaine : getJoursSemaine(),
           intervalle: form.frequence === 'bimensuel' ? 2 : 1,
           date_debut: form.date,
-          date_fin: form.date_fin || null,
+          date_fin: dateFinEffective,
+          nb_occurrences: form.mode_fin === 'count' ? parseInt(form.nb_occurrences) || null : null,
+          exclure_vacances: !!form.exclure_vacances,
+          exclure_feries:   !!form.exclure_feries,
+          zone_vacances:    form.exclure_vacances && form.zone_vacances ? form.zone_vacances : null,
         }).select().single();
         if (recErr) throw recErr;
 
-        const dates = genererDates(form, 12);
-        if (dates.length > 0) {
-          const coursACreer = dates.map(d => ({
+        if (incluses.length > 0) {
+          const coursACreer = incluses.map(d => ({
             profile_id: user.id,
             nom: form.nom.trim(),
             type_cours: form.type_cours || null,
-            date: d,
+            date: toDateStr(d),
             heure: form.heure || null,
             duree_minutes: form.duree_minutes ? parseInt(form.duree_minutes) : 60,
             lieu: lieuxFiltres.find(l => l.id === form.lieu_id)?.nom || null,
@@ -323,6 +387,13 @@ function NouveauCoursInner() {
           }));
           const { error: coursErr } = await supabase.from('cours').insert(coursACreer);
           if (coursErr) throw coursErr;
+        }
+
+        // Mémoriser la zone choisie comme défaut sur le profil pour la prochaine fois
+        if (form.zone_vacances && form.exclure_vacances) {
+          await supabase.from('profiles')
+            .update({ zone_vacances_default: form.zone_vacances })
+            .eq('id', user.id);
         }
       }
 
@@ -564,12 +635,94 @@ function NouveauCoursInner() {
           </div>
         )}
 
-        {/* Date de fin (si récurrent) */}
+        {/* Mode de fin : nb cours OU date de fin */}
         {form.frequence !== 'unique' && (
           <div className="form-group">
-            <label className="form-label">Fin de la récurrence</label>
-            <input className="izi-input" type="date" value={form.date_fin} onChange={handleChange('date_fin')} />
-            <span className="form-hint">Laisse vide pour générer 12 semaines de cours</span>
+            <label className="form-label">Combien de cours ?</label>
+            <div className="mode-fin-tabs">
+              <button
+                type="button"
+                className={`mode-fin-tab ${form.mode_fin === 'count' ? 'active' : ''}`}
+                onClick={() => setForm(prev => ({ ...prev, mode_fin: 'count' }))}
+              >
+                Nombre de cours
+              </button>
+              <button
+                type="button"
+                className={`mode-fin-tab ${form.mode_fin === 'date_fin' ? 'active' : ''}`}
+                onClick={() => setForm(prev => ({ ...prev, mode_fin: 'date_fin' }))}
+              >
+                Jusqu'à une date
+              </button>
+            </div>
+
+            {form.mode_fin === 'count' ? (
+              <div className="nb-occurrences-row">
+                <input
+                  className="izi-input nb-occ-input"
+                  type="number"
+                  min="1"
+                  max="100"
+                  value={form.nb_occurrences}
+                  onChange={handleChange('nb_occurrences')}
+                />
+                <span className="form-hint" style={{ margin: 0 }}>cours seront créés</span>
+              </div>
+            ) : (
+              <input
+                className="izi-input"
+                type="date"
+                value={form.date_fin}
+                onChange={handleChange('date_fin')}
+                min={form.date}
+              />
+            )}
+          </div>
+        )}
+
+        {/* Exclusions vacances + jours fériés */}
+        {form.frequence !== 'unique' && (
+          <div className="form-group">
+            <label className="form-label"><Sun size={14} /> Exclusions automatiques</label>
+
+            <div className="exclu-row">
+              <label className="exclu-toggle">
+                <input
+                  type="checkbox"
+                  checked={form.exclure_vacances}
+                  onChange={(e) => setForm(prev => ({ ...prev, exclure_vacances: e.target.checked }))}
+                />
+                <span>Sauter les vacances scolaires</span>
+              </label>
+              {form.exclure_vacances && (
+                <select
+                  className="izi-input zone-select"
+                  value={form.zone_vacances}
+                  onChange={handleChange('zone_vacances')}
+                >
+                  <option value="">— Choisis ta zone —</option>
+                  {ZONES_VACANCES.map(z => (
+                    <option key={z.value} value={z.value}>{z.value === 'Corse' ? 'Corse' : `Zone ${z.value}`}</option>
+                  ))}
+                </select>
+              )}
+            </div>
+            {form.exclure_vacances && form.zone_vacances && (
+              <p className="exclu-hint">
+                {ZONES_VACANCES.find(z => z.value === form.zone_vacances)?.label}
+              </p>
+            )}
+
+            <div className="exclu-row" style={{ marginTop: 8 }}>
+              <label className="exclu-toggle">
+                <input
+                  type="checkbox"
+                  checked={form.exclure_feries}
+                  onChange={(e) => setForm(prev => ({ ...prev, exclure_feries: e.target.checked }))}
+                />
+                <span>Sauter les jours fériés français</span>
+              </label>
+            </div>
           </div>
         )}
 
@@ -631,6 +784,62 @@ function NouveauCoursInner() {
         .rec-preview-more {
           padding: 4px 8px; font-size: 0.75rem; color: var(--text-muted); align-self: center;
         }
+        .rec-preview-excluded {
+          display: inline-flex; align-items: center; gap: 4px;
+          font-size: 0.6875rem; font-weight: 600;
+          background: #fef3c7; color: #92400e;
+          padding: 3px 8px; border-radius: 99px;
+        }
+        .rec-preview-exclusions {
+          display: flex; flex-wrap: wrap; gap: 6px;
+          margin-top: 10px; padding-top: 10px;
+          border-top: 1px dashed var(--brand-200, #f0d0d0);
+        }
+        .rec-preview-skip {
+          background: #fef9c3; border: 1px solid #fde68a;
+          color: #78350f; border-radius: 99px;
+          padding: 3px 8px; font-size: 0.6875rem; font-weight: 500;
+          text-transform: capitalize;
+        }
+        .rec-preview-skip-more {
+          font-size: 0.6875rem; color: var(--text-muted); align-self: center;
+        }
+
+        /* Mode fin (nb cours / date) */
+        .mode-fin-tabs {
+          display: inline-flex; background: var(--bg-soft, #faf8f5);
+          border: 1px solid var(--border); border-radius: 99px;
+          padding: 3px; gap: 2px; margin-bottom: 8px;
+        }
+        .mode-fin-tab {
+          padding: 6px 14px; border: none; background: transparent;
+          border-radius: 99px; cursor: pointer;
+          font-size: 0.8125rem; font-weight: 600; color: var(--text-muted);
+        }
+        .mode-fin-tab.active {
+          background: white; color: var(--brand);
+          box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+        }
+        .nb-occurrences-row { display: flex; align-items: center; gap: 10px; }
+        .nb-occ-input { width: 90px; text-align: center; }
+
+        /* Exclusions vacances/feries */
+        .exclu-row {
+          display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+        }
+        .exclu-toggle {
+          display: inline-flex; align-items: center; gap: 8px;
+          font-size: 0.875rem; color: var(--text-primary); cursor: pointer;
+        }
+        .exclu-toggle input[type="checkbox"] {
+          width: 18px; height: 18px; accent-color: var(--brand); cursor: pointer;
+        }
+        .zone-select { flex: 1; min-width: 160px; max-width: 280px; }
+        .exclu-hint {
+          font-size: 0.7rem; color: var(--text-muted);
+          margin-top: 4px; line-height: 1.4;
+        }
+
         .page-header { display: flex; align-items: center; gap: 12px; }
         .page-header h1 { font-size: 1.25rem; font-weight: 700; }
         .header-date-hint { display: flex; align-items: center; gap: 4px; font-size: 0.8125rem; color: var(--brand); font-weight: 600; margin-top: 2px; text-transform: capitalize; }

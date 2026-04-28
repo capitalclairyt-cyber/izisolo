@@ -186,6 +186,11 @@ export default function CoursEventsClient({
 
         {onglet === 'recurrents' && (
           <div className="ce-list animate-slide-up">
+            {recurrences.length > 0 && (
+              <Link href="/cours/recurrences" className="ce-cal-link">
+                <Calendar size={14} /> Voir le calendrier (ajout/retrait par jour)
+              </Link>
+            )}
             {recurrences.length === 0 ? (
               <EmptyState
                 icon={<Repeat size={32} />}
@@ -921,6 +926,16 @@ function CeStyles() {
 
       /* ── Liste ── */
       .ce-list { display: flex; flex-direction: column; gap: 10px; }
+      .ce-cal-link {
+        display: inline-flex; align-items: center; gap: 6px;
+        align-self: flex-start;
+        padding: 8px 14px; border-radius: 99px;
+        background: var(--brand-light); color: var(--brand-700, var(--brand));
+        border: 1px solid var(--brand-200, #f0d0d0);
+        font-size: 0.8125rem; font-weight: 600;
+        text-decoration: none; transition: all 0.15s;
+      }
+      .ce-cal-link:hover { background: var(--brand); color: white; }
 
       /* ── Cartes ── */
       .ce-card { display: flex; overflow: hidden; transition: box-shadow 0.15s, transform 0.15s; }
