@@ -160,18 +160,25 @@ function NouveauCoursInner() {
   const [showNewLieu, setShowNewLieu] = useState(false);
   const [newLieuNom, setNewLieuNom] = useState('');
 
+  // Lecture pré-remplissage depuis query (utilisé par "Convertir un sondage en série")
+  const preNom       = searchParams.get('nom')       || '';
+  const preType      = searchParams.get('type')      || '';
+  const preHeure     = searchParams.get('heure')     || '18:00';
+  const preDuree     = searchParams.get('duree')     || '60';
+  const preFreq      = searchParams.get('frequence') || 'unique';
+
   const [form, setForm] = useState({
-    nom: '',
-    type_cours: '',
+    nom: preNom,
+    type_cours: preType,
     date: dateInitiale,
-    heure: '18:00', // 18h = créneau le plus courant pour cours après-travail
-    duree_minutes: '60',
+    heure: preHeure,
+    duree_minutes: preDuree,
     lieu_id: '',
     capacite_max: '',
     client_pro_id: '',
     notes: '',
     // Récurrence
-    frequence: 'unique',
+    frequence: preFreq,
     jours_semaine: [],
     mode_fin: 'count',          // 'count' (nb cours) | 'date_fin'
     nb_occurrences: 12,         // si mode_fin === 'count'

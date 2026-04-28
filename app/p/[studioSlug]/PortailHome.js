@@ -34,7 +34,7 @@ function PlacesBadge({ capacite, inscrits }) {
   return <span className="portail-tag portail-tag-green">Places disponibles</span>;
 }
 
-export default function PortailHome({ profile, cours, offresStripe = [], offresPubliques = [], studioSlug, isPreview = false }) {
+export default function PortailHome({ profile, cours, offresStripe = [], offresPubliques = [], sondageActif = null, studioSlug, isPreview = false }) {
   const hasAbout = !!(profile.bio || profile.philosophie || profile.formations || profile.annees_experience);
   const hasSocial = !!(profile.instagram_url || profile.facebook_url || profile.website_url);
   const faq = Array.isArray(profile.faq_publique) ? profile.faq_publique.filter(f => f?.q && f?.a) : [];
@@ -79,6 +79,41 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
         }}>
           👁 <strong>Mode aperçu</strong> — tu vois ton brouillon, pas encore publié.
         </div>
+      )}
+
+      {/* Bandeau sondage actif */}
+      {sondageActif && (
+        <Link
+          href={`/p/${studioSlug}/sondage/${sondageActif.slug}`}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 12,
+            padding: '12px 14px', borderRadius: 14, marginBottom: 16,
+            background: 'linear-gradient(135deg, var(--brand-light), white)',
+            border: '1px solid var(--brand-200, #f0d0d0)',
+            textDecoration: 'none', color: 'inherit',
+          }}
+        >
+          <div style={{
+            width: 36, height: 36, borderRadius: '50%', flexShrink: 0,
+            background: 'var(--brand)', color: 'white',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: '1.25rem',
+          }}>✨</div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontWeight: 700, fontSize: '0.875rem', color: 'var(--text-primary)' }}>
+              {sondageActif.titre}
+            </div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 2 }}>
+              Aide {profile.studio_nom} à construire son planning idéal — 30 secondes
+            </div>
+          </div>
+          <span style={{
+            background: 'var(--brand)', color: 'white',
+            padding: '6px 12px', borderRadius: 99,
+            fontSize: '0.75rem', fontWeight: 700,
+            flexShrink: 0,
+          }}>Répondre →</span>
+        </Link>
       )}
 
       {/* Studio header */}

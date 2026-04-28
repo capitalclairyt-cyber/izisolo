@@ -48,7 +48,18 @@ async function getStudioData(studioSlug) {
         .order('ordre')
     : Promise.resolve({ data: [] });
 
-  const [{ data: cours }, { data: offresStripe }, { data: offresPubliques }] = await Promise.all([
+  // Sondage actif (le plus récent, non clos) — pour CTA visible sur le portail
+  const sondageActifPromise = supabase
+    .from('sondages_planning')
+    .select('slug, titre, date_fin')
+    .eq('profile_id', profile.id)
+    .eq('actif', true)
+    .or(`date_fin.is.null,date_fin.gte.${today}`)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const [{ data: cours }, { data: offresStripe }, { data: offresPubliques }, { data: sondageActif }] = await Promise.all([
     supabase
       .from('cours')
       .select('id, nom, date, heure, duree, type_cours, lieu, capacite_max, est_annule, recurrence_parent_id')
@@ -67,6 +78,7 @@ async function getStudioData(studioSlug) {
       .not('stripe_payment_link', 'is', null)
       .order('ordre'),
     offresAffichables,
+    sondageActifPromise,
   ]);
 
   // Count presences per cours
@@ -90,6 +102,7 @@ async function getStudioData(studioSlug) {
     })),
     offresStripe: offresStripe || [],
     offresPubliques: offresPubliques || [],
+    sondageActif: sondageActif || null,
   };
 }
 
@@ -119,6 +132,7 @@ export default async function PortailPage({ params, searchParams }) {
       cours={data.cours}
       offresStripe={data.offresStripe}
       offresPubliques={data.offresPubliques}
+      sondageActif={data.sondageActif}
       studioSlug={studioSlug}
       isPreview={isPreview}
     />

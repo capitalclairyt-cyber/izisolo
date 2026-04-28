@@ -1,0 +1,302 @@
+'use client';
+
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { ArrowLeft, Plus, Trash2, Save, Calendar } from 'lucide-react';
+import { createClient } from '@/lib/supabase';
+import { slugify } from '@/lib/utils';
+import { useToast } from '@/components/ui/ToastProvider';
+
+const JOURS = [
+  { value: 1, label: 'Lundi' },
+  { value: 2, label: 'Mardi' },
+  { value: 3, label: 'Mercredi' },
+  { value: 4, label: 'Jeudi' },
+  { value: 5, label: 'Vendredi' },
+  { value: 6, label: 'Samedi' },
+  { value: 7, label: 'Dimanche' },
+];
+
+const VISIBILITE_OPTIONS = [
+  { value: 'inscrits', label: 'Élèves inscrits uniquement', desc: 'Faut être connecté à son espace pour voter.' },
+  { value: 'mixte',    label: 'Inscrits + visiteurs avec email', desc: 'Visiteurs anonymes peuvent voter en laissant leur email.' },
+  { value: 'public',   label: 'Lien partageable, public',         desc: 'Tout le monde peut voter avec son email.' },
+];
+
+export default function NouveauSondageClient({ typesCours, studioSlug }) {
+  const router = useRouter();
+  const { toast } = useToast();
+  const [saving, setSaving] = useState(false);
+
+  const [titre, setTitre] = useState('Mon planning idéal');
+  const [message, setMessage] = useState("Aide-moi à choisir mes meilleurs créneaux ! Coche tous les cours auxquels tu viendrais — ça m'aide à construire un planning qui te ressemble.");
+  const [dateFin, setDateFin] = useState(() => {
+    const d = new Date(Date.now() + 14 * 86400000);
+    return d.toISOString().slice(0, 10);
+  });
+  const [visibilite, setVisibilite] = useState('mixte');
+
+  // Liste des créneaux candidats
+  const [creneaux, setCreneaux] = useState([
+    { type_cours: typesCours[0] || '', jour_semaine: 2, heure: '19:30', duree_minutes: 60 },
+    { type_cours: typesCours[0] || '', jour_semaine: 4, heure: '10:30', duree_minutes: 60 },
+  ]);
+
+  const updateCreneau = (i, field, value) => {
+    setCreneaux(prev => prev.map((c, idx) => idx === i ? { ...c, [field]: value } : c));
+  };
+  const addCreneau = () => {
+    setCreneaux(prev => [...prev, { type_cours: typesCours[0] || '', jour_semaine: 1, heure: '18:00', duree_minutes: 60 }]);
+  };
+  const removeCreneau = (i) => {
+    setCreneaux(prev => prev.filter((_, idx) => idx !== i));
+  };
+
+  const handleSave = async () => {
+    if (!titre.trim()) { toast.error('Donne un titre à ton sondage.'); return; }
+    if (creneaux.length < 2) { toast.error('Ajoute au moins 2 créneaux candidats.'); return; }
+    const creneauxIncomplets = creneaux.some(c => !c.type_cours || !c.heure);
+    if (creneauxIncomplets) { toast.error('Tous les créneaux doivent avoir un type de cours et une heure.'); return; }
+
+    setSaving(true);
+    try {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+
+      // Slug unique : titre + suffixe court
+      const slugBase = slugify(titre).slice(0, 40);
+      const slug = `${slugBase}-${Math.random().toString(36).slice(2, 7)}`;
+
+      const { data: sondage, error: sErr } = await supabase
+        .from('sondages_planning')
+        .insert({
+          profile_id: user.id,
+          slug,
+          titre: titre.trim(),
+          message: message.trim() || null,
+          date_fin: dateFin || null,
+          visibilite,
+          actif: true,
+        })
+        .select()
+        .single();
+      if (sErr) throw sErr;
+
+      const creneauxRows = creneaux.map((c, ordre) => ({
+        sondage_id: sondage.id,
+        type_cours: c.type_cours,
+        jour_semaine: parseInt(c.jour_semaine),
+        heure: c.heure,
+        duree_minutes: parseInt(c.duree_minutes) || 60,
+        ordre,
+      }));
+      const { error: cErr } = await supabase.from('sondages_creneaux').insert(creneauxRows);
+      if (cErr) throw cErr;
+
+      toast.success('Sondage créé !');
+      router.push(`/sondages/${sondage.id}`);
+    } catch (err) {
+      toast.error('Erreur : ' + err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="ns-page">
+      <header className="ns-header">
+        <Link href="/sondages" className="back-btn"><ArrowLeft size={18} /></Link>
+        <h1>Nouveau sondage planning</h1>
+      </header>
+
+      {/* Titre + message */}
+      <div className="izi-card form-section">
+        <div className="form-group">
+          <label className="form-label">Titre <span className="req">*</span></label>
+          <input
+            className="izi-input"
+            value={titre}
+            onChange={(e) => setTitre(e.target.value)}
+            maxLength={120}
+            placeholder="Ex : Mon planning de rentrée"
+          />
+        </div>
+        <div className="form-group">
+          <label className="form-label">Message d'intro (optionnel)</label>
+          <textarea
+            className="izi-input"
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            rows={3}
+            maxLength={500}
+            placeholder="Quelques mots pour expliquer ta démarche…"
+          />
+          <span className="form-hint">{message.length}/500</span>
+        </div>
+        <div className="form-group">
+          <label className="form-label">Date limite des réponses</label>
+          <input
+            className="izi-input"
+            type="date"
+            value={dateFin}
+            onChange={(e) => setDateFin(e.target.value)}
+            min={new Date().toISOString().slice(0, 10)}
+          />
+          <span className="form-hint">Au-delà, plus personne ne peut voter (tu peux toujours voir les résultats).</span>
+        </div>
+      </div>
+
+      {/* Visibilité */}
+      <div className="izi-card form-section">
+        <h2 className="section-h2">Qui peut répondre ?</h2>
+        {VISIBILITE_OPTIONS.map(opt => (
+          <label key={opt.value} className={`vis-option ${visibilite === opt.value ? 'active' : ''}`}>
+            <input
+              type="radio"
+              name="visibilite"
+              value={opt.value}
+              checked={visibilite === opt.value}
+              onChange={(e) => setVisibilite(e.target.value)}
+            />
+            <div>
+              <div className="vis-label">{opt.label}</div>
+              <div className="vis-desc">{opt.desc}</div>
+            </div>
+          </label>
+        ))}
+      </div>
+
+      {/* Créneaux candidats */}
+      <div className="izi-card form-section">
+        <h2 className="section-h2">Créneaux candidats <span className="ns-counter">{creneaux.length}</span></h2>
+        <p className="ns-hint">Propose 3 à 8 créneaux. Tes élèves voteront oui / peut-être / non sur chacun.</p>
+
+        <div className="creneaux-list">
+          {creneaux.map((c, i) => (
+            <div key={i} className="creneau-row">
+              <input
+                className="izi-input cr-type"
+                value={c.type_cours}
+                onChange={(e) => updateCreneau(i, 'type_cours', e.target.value)}
+                placeholder="Type de cours"
+                list={typesCours.length > 0 ? `types-list-${i}` : undefined}
+              />
+              {typesCours.length > 0 && (
+                <datalist id={`types-list-${i}`}>
+                  {typesCours.map(t => <option key={t} value={t} />)}
+                </datalist>
+              )}
+              <select
+                className="izi-input cr-jour"
+                value={c.jour_semaine}
+                onChange={(e) => updateCreneau(i, 'jour_semaine', e.target.value)}
+              >
+                {JOURS.map(j => <option key={j.value} value={j.value}>{j.label}</option>)}
+              </select>
+              <input
+                className="izi-input cr-heure"
+                type="time"
+                value={c.heure}
+                onChange={(e) => updateCreneau(i, 'heure', e.target.value)}
+              />
+              <input
+                className="izi-input cr-duree"
+                type="number"
+                min="15"
+                max="240"
+                step="15"
+                value={c.duree_minutes}
+                onChange={(e) => updateCreneau(i, 'duree_minutes', e.target.value)}
+              />
+              <button
+                type="button"
+                className="cr-remove"
+                onClick={() => removeCreneau(i)}
+                disabled={creneaux.length <= 1}
+                aria-label="Supprimer"
+              >
+                <Trash2 size={14} />
+              </button>
+            </div>
+          ))}
+        </div>
+
+        <button
+          type="button"
+          className="izi-btn izi-btn-secondary"
+          onClick={addCreneau}
+          disabled={creneaux.length >= 8}
+        >
+          <Plus size={14} /> Ajouter un créneau
+        </button>
+        {creneaux.length >= 8 && (
+          <p className="ns-hint" style={{ marginTop: 8 }}>Maximum 8 créneaux pour rester lisible côté élèves.</p>
+        )}
+      </div>
+
+      {/* Submit */}
+      <button
+        type="button"
+        className="izi-btn izi-btn-primary submit-btn"
+        onClick={handleSave}
+        disabled={saving}
+      >
+        <Save size={16} /> {saving ? 'Création…' : 'Créer le sondage'}
+      </button>
+
+      <style>{`
+        .ns-page { display: flex; flex-direction: column; gap: 16px; padding-bottom: 60px; }
+        .ns-header { display: flex; align-items: center; gap: 12px; }
+        .ns-header h1 { font-size: 1.25rem; font-weight: 700; }
+        .back-btn { width: 40px; height: 40px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-card); display: flex; align-items: center; justify-content: center; color: var(--text-secondary); text-decoration: none; }
+
+        .form-section { display: flex; flex-direction: column; gap: 14px; padding: 16px; }
+        .section-h2 {
+          font-size: 0.9375rem; font-weight: 700; color: var(--text-primary);
+          display: flex; align-items: center; gap: 8px;
+        }
+        .ns-counter {
+          font-size: 0.75rem; font-weight: 700;
+          background: var(--brand-light); color: var(--brand);
+          padding: 2px 8px; border-radius: 99px;
+        }
+        .ns-hint { font-size: 0.75rem; color: var(--text-muted); margin-top: -6px; }
+        .req { color: var(--brand); }
+
+        .vis-option {
+          display: flex; align-items: flex-start; gap: 10px;
+          padding: 10px 12px; border: 1.5px solid var(--border);
+          border-radius: 10px; cursor: pointer;
+          transition: all 0.15s;
+        }
+        .vis-option.active { border-color: var(--brand); background: var(--brand-light); }
+        .vis-option input { margin-top: 4px; accent-color: var(--brand); }
+        .vis-label { font-size: 0.875rem; font-weight: 600; color: var(--text-primary); }
+        .vis-desc { font-size: 0.75rem; color: var(--text-secondary); margin-top: 2px; }
+
+        .creneaux-list { display: flex; flex-direction: column; gap: 8px; }
+        .creneau-row {
+          display: grid;
+          grid-template-columns: 1.4fr 1fr 0.7fr 0.6fr auto;
+          gap: 6px; align-items: center;
+        }
+        @media (max-width: 600px) {
+          .creneau-row { grid-template-columns: 1fr 1fr; }
+          .cr-type { grid-column: span 2; }
+          .cr-remove { grid-column: span 2; justify-self: end; }
+        }
+        .cr-remove {
+          width: 36px; height: 36px; border-radius: var(--radius-sm);
+          border: 1px solid var(--border); background: white;
+          color: #dc2626; cursor: pointer;
+          display: flex; align-items: center; justify-content: center;
+        }
+        .cr-remove:disabled { opacity: 0.4; cursor: not-allowed; }
+        .cr-remove:hover:not(:disabled) { background: #fef2f2; border-color: #dc2626; }
+
+        .submit-btn { align-self: stretch; justify-content: center; }
+      `}</style>
+    </div>
+  );
+}
