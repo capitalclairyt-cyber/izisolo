@@ -1,11 +1,10 @@
 import { createServerClient } from '@/lib/supabase-server';
+import { parseJsonBody, adminTicketUpdateSchema } from '@/lib/validation';
 
 const ADMIN_EMAILS = [
   'admin@melutek.fr',
   'colin.boulgakoff@free.fr',
 ];
-
-const VALID_STATUSES = ['open', 'in_progress', 'resolved'];
 
 export async function POST(request) {
   const supabase = await createServerClient();
@@ -15,11 +14,12 @@ export async function POST(request) {
     return new Response('Forbidden', { status: 403 });
   }
 
-  const { ticketId, status, admin_reply } = await request.json();
-  if (!ticketId) return new Response('Bad request', { status: 400 });
+  const { data, errorResponse } = await parseJsonBody(request, adminTicketUpdateSchema);
+  if (errorResponse) return errorResponse;
+  const { ticketId, status, admin_reply } = data;
 
   const updates = { updated_at: new Date().toISOString() };
-  if (status && VALID_STATUSES.includes(status)) updates.status = status;
+  if (status) updates.status = status;
   if (admin_reply !== undefined) updates.admin_reply = admin_reply;
 
   const { error } = await supabase

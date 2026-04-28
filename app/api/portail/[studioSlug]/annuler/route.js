@@ -1,13 +1,12 @@
 import { createServerClient } from '@/lib/supabase-server';
 import { createClient as createAdminSupabase } from '@supabase/supabase-js';
+import { parseJsonBody, annulationSchema } from '@/lib/validation';
 
 export async function POST(request, { params }) {
   const { studioSlug } = await params;
-  const { presenceId } = await request.json();
-
-  if (!presenceId) {
-    return Response.json({ error: 'Données manquantes' }, { status: 400 });
-  }
+  const { data, errorResponse } = await parseJsonBody(request, annulationSchema);
+  if (errorResponse) return errorResponse;
+  const { presenceId } = data;
 
   // Vérifier que l'utilisateur est authentifié
   const supabase = await createServerClient();

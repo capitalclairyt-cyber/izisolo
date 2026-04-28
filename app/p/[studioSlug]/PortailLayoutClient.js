@@ -4,8 +4,17 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { User } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { ToastProvider } from '@/components/ui/ToastProvider';
 
 export default function PortailLayoutClient({ studioSlug, children }) {
+  return (
+    <ToastProvider>
+      <PortailLayoutInner studioSlug={studioSlug}>{children}</PortailLayoutInner>
+    </ToastProvider>
+  );
+}
+
+function PortailLayoutInner({ studioSlug, children }) {
   const [prenom, setPrenom] = useState(null); // null = chargement en cours
 
   useEffect(() => {
@@ -64,7 +73,7 @@ export default function PortailLayoutClient({ studioSlug, children }) {
       </main>
 
       <footer className="portail-footer">
-        <span>Propulsé par <a href="https://izisolo.app" target="_blank" rel="noopener noreferrer">IziSolo</a></span>
+        <span>Propulsé par <a href="https://izisolo.fr" target="_blank" rel="noopener noreferrer">IziSolo</a></span>
         <span className="portail-footer-sep">·</span>
         <a href="/legal/cgu">CGU</a>
         <span className="portail-footer-sep">·</span>

@@ -1,4 +1,5 @@
 import { createServerClient } from '@/lib/supabase-server';
+import { parseJsonBody, supportTicketSchema } from '@/lib/validation';
 
 export async function POST(request) {
   const supabase = await createServerClient();
@@ -6,14 +7,15 @@ export async function POST(request) {
 
   if (!user) return new Response('Unauthorized', { status: 401 });
 
-  const { subject, message } = await request.json();
-  if (!message?.trim()) return new Response('Bad request', { status: 400 });
+  const { data, errorResponse } = await parseJsonBody(request, supportTicketSchema);
+  if (errorResponse) return errorResponse;
+  const { subject, message } = data;
 
   const { error } = await supabase.from('support_tickets').insert({
     user_id: user.id,
     user_email: user.email,
-    subject: subject?.trim() || null,
-    message: message.trim(),
+    subject: subject || null,
+    message,
     status: 'open',
   });
 

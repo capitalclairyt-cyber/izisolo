@@ -6,16 +6,23 @@ import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { Sparkles, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 
+const ERROR_MESSAGES = {
+  auth_callback: 'Le lien de connexion est invalide ou a expiré. Demande un nouveau lien ci-dessous.',
+  session_expired: 'Ta session a expiré. Reconnecte-toi pour continuer.',
+};
+
 function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirect = searchParams.get('redirect') || '/dashboard';
+  const errorParam = searchParams.get('error');
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(errorParam ? (ERROR_MESSAGES[errorParam] || '') : '');
+  const [magicSent, setMagicSent] = useState(false);
 
   async function handleLogin(e) {
     e.preventDefault();
@@ -47,17 +54,17 @@ function LoginContent() {
 
     const { error: authError } = await supabase.auth.signInWithOtp({
       email,
-      options: { emailRedirectTo: `${window.location.origin}${redirect}` },
+      options: { emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirect)}` },
     });
 
     if (authError) {
-      setError('Erreur lors de l\'envoi du lien');
+      setError('Erreur lors de l\'envoi du lien. Réessaie dans quelques instants.');
       setLoading(false);
       return;
     }
 
     setError('');
-    alert('Un lien de connexion a été envoyé à ton adresse email !');
+    setMagicSent(true);
     setLoading(false);
   }
 
@@ -74,6 +81,12 @@ function LoginContent() {
 
         <form onSubmit={handleLogin} className="auth-form">
           {error && <div className="auth-error">{error}</div>}
+          {magicSent && (
+            <div className="auth-success">
+              ✓ Un lien de connexion a été envoyé à <strong>{email}</strong>.<br />
+              <span style={{ fontSize: '0.8125rem' }}>Ouvre l'email pour te connecter (le lien expire dans 1h).</span>
+            </div>
+          )}
 
           <div className="auth-field">
             <label htmlFor="email">Email</label>
@@ -222,6 +235,16 @@ function LoginContent() {
           border-radius: var(--radius-sm);
           font-size: 0.875rem;
           text-align: center;
+          line-height: 1.4;
+        }
+        .auth-success {
+          background: #ecfdf5;
+          color: #065f46;
+          padding: 12px 14px;
+          border-radius: var(--radius-sm);
+          font-size: 0.875rem;
+          text-align: center;
+          line-height: 1.4;
         }
         .auth-pwd-row {
           display: flex; flex-direction: column; gap: 8px; align-items: center;

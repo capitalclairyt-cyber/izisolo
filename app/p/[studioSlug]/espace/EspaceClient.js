@@ -3,8 +3,11 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Calendar, Clock, MapPin, ArrowLeft, LogOut, CheckCircle, XCircle, Loader, AlertCircle, User } from 'lucide-react';
+import { Calendar, Clock, MapPin, ArrowLeft, LogOut, CheckCircle, XCircle, Loader, AlertCircle, User, Lock, CreditCard, Ticket, CalendarCheck, Zap } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { useToast } from '@/components/ui/ToastProvider';
+
+const STRIPE_TYPE_ICONS = { carnet: Ticket, abonnement: CalendarCheck, cours_unique: Zap };
 
 const MOIS  = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
 const JOURS = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
@@ -60,8 +63,8 @@ function CoursCard({ presence, studioSlug, onAnnuler, annulEnCours }) {
 
         {aVenir && !c.est_annule && (
           !annulable ? (
-            <span className="espace-annul-locked" title="Annulation impossible moins de 24h avant le cours">
-              🔒 &lt;24h
+            <span className="espace-annul-locked" title="Annulation impossible à moins de 24h du cours">
+              <Lock size={11} /> Annulation fermée
             </span>
           ) : confirmOpen ? (
             <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -96,8 +99,9 @@ function CoursCard({ presence, studioSlug, onAnnuler, annulEnCours }) {
   );
 }
 
-export default function EspaceClient({ profile, client, aVenir, passes, studioSlug, userEmail }) {
+export default function EspaceClient({ profile, client, aVenir, passes, offresStripe = [], studioSlug, userEmail }) {
   const router = useRouter();
+  const { toast } = useToast();
   const [annulEnCours, setAnnulEnCours] = useState(null);
   const [annuleIds, setAnnuleIds]       = useState([]);
   const [errMsg, setErrMsg]             = useState('');
@@ -115,8 +119,10 @@ export default function EspaceClient({ profile, client, aVenir, passes, studioSl
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Erreur');
       setAnnuleIds(prev => [...prev, presenceId]);
+      toast.success('Réservation annulée. On t\'attend la prochaine fois 🌿');
     } catch (e) {
       setErrMsg(e.message);
+      toast.error(e.message);
     } finally {
       setAnnulEnCours(null);
     }
@@ -249,6 +255,45 @@ export default function EspaceClient({ profile, client, aVenir, passes, studioSl
         </div>
       )}
 
+      {/* Section "Acheter en ligne" via Stripe — uniquement si offres avec Payment Link */}
+      {offresStripe.length > 0 && (
+        <div style={{ marginTop: 28, paddingTop: 20, borderTop: '1px solid #f0ebe8' }}>
+          <h2 className="espace-section-title">
+            <CreditCard size={16} style={{ color: '#635bff' }} /> Acheter en ligne
+          </h2>
+          <p style={{ fontSize: '0.8125rem', color: '#888', margin: '0 0 12px' }}>
+            Recharge ton carnet ou souscris à un abonnement par CB.
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {offresStripe.map(o => {
+              const Icon = STRIPE_TYPE_ICONS[o.type] || Ticket;
+              const url = userEmail
+                ? `${o.stripe_payment_link}?prefilled_email=${encodeURIComponent(userEmail)}`
+                : o.stripe_payment_link;
+              return (
+                <a
+                  key={o.id}
+                  href={url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="espace-stripe-card"
+                >
+                  <div className="espace-stripe-icon"><Icon size={16} /></div>
+                  <div className="espace-stripe-info">
+                    <div className="espace-stripe-nom">{o.nom}</div>
+                    {o.seances && <div className="espace-stripe-meta">{o.seances} séance{o.seances > 1 ? 's' : ''}</div>}
+                  </div>
+                  <div className="espace-stripe-prix">{o.prix}€</div>
+                </a>
+              );
+            })}
+          </div>
+          <p style={{ fontSize: '0.7rem', color: '#aaa', textAlign: 'center', margin: '12px 0 0' }}>
+            🔒 Paiement sécurisé via Stripe
+          </p>
+        </div>
+      )}
+
       {/* Bouton rebooking */}
       <div style={{ marginTop: 28, paddingTop: 20, borderTop: '1px solid #f0ebe8', textAlign: 'center' }}>
         <Link href={`/p/${studioSlug}`} className="portail-btn-primary" style={{ maxWidth: 280, margin: '0 auto' }}>
@@ -296,13 +341,36 @@ export default function EspaceClient({ profile, client, aVenir, passes, studioSl
         }
         .espace-annul-btn:hover { color: #c62828; border-color: #c62828; background: #fff0f0; }
         .espace-annul-locked {
+          display: inline-flex; align-items: center; gap: 4px;
           font-size: 0.7rem; color: #bbb; background: #f8f8f8;
           border: 1px solid #eee; border-radius: 99px;
-          padding: 3px 8px; cursor: default;
+          padding: 3px 8px; cursor: help;
         }
 
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         .spin { animation: spin 0.8s linear infinite; }
+
+        /* Cartes Stripe */
+        .espace-stripe-card {
+          display: flex; align-items: center; gap: 12px;
+          background: white; border: 1px solid #e8e0db; border-radius: 12px;
+          padding: 12px 14px; text-decoration: none; color: inherit;
+          transition: all 0.15s;
+        }
+        .espace-stripe-card:hover {
+          border-color: #635bff; transform: translateX(2px);
+          box-shadow: 0 2px 8px rgba(99, 91, 255, 0.1);
+        }
+        .espace-stripe-icon {
+          width: 32px; height: 32px; border-radius: 8px;
+          background: #f6f9fc; color: #635bff;
+          display: flex; align-items: center; justify-content: center;
+          flex-shrink: 0;
+        }
+        .espace-stripe-info { flex: 1; min-width: 0; }
+        .espace-stripe-nom { font-weight: 600; font-size: 0.9375rem; color: #1a1a2e; }
+        .espace-stripe-meta { font-size: 0.75rem; color: #888; margin-top: 2px; }
+        .espace-stripe-prix { font-weight: 700; font-size: 1rem; color: #635bff; }
       `}</style>
     </div>
   );

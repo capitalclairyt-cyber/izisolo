@@ -16,16 +16,25 @@ async function getData(studioSlug, userEmail) {
     .single();
   if (!profile) return null;
 
-  // Client lié à ce studio
-  const { data: client } = await supabase
-    .from('clients')
-    .select('id, prenom, nom, email, telephone')
-    .eq('profile_id', profile.id)
-    .ilike('email', userEmail)
-    .single();
+  // Client lié à ce studio + offres avec Stripe Payment Link en parallèle
+  const [{ data: client }, { data: offresStripe }] = await Promise.all([
+    supabase
+      .from('clients')
+      .select('id, prenom, nom, email, telephone')
+      .eq('profile_id', profile.id)
+      .ilike('email', userEmail)
+      .single(),
+    supabase
+      .from('offres')
+      .select('id, nom, type, prix, seances, stripe_payment_link')
+      .eq('profile_id', profile.id)
+      .eq('actif', true)
+      .not('stripe_payment_link', 'is', null)
+      .order('ordre'),
+  ]);
 
   if (!client) {
-    return { profile, client: null, aVenir: [], passes: [] };
+    return { profile, client: null, aVenir: [], passes: [], offresStripe: offresStripe || [] };
   }
 
   // Ses réservations avec détail des cours
@@ -57,7 +66,7 @@ async function getData(studioSlug, userEmail) {
     .filter(p => p.cours && (p.cours.date < today || p.cours.est_annule))
     .sort((a, b) => b.cours.date.localeCompare(a.cours.date));
 
-  return { profile, client, aVenir, passes };
+  return { profile, client, aVenir, passes, offresStripe: offresStripe || [] };
 }
 
 export default async function EspacePage({ params }) {
@@ -78,6 +87,7 @@ export default async function EspacePage({ params }) {
       client={data.client}
       aVenir={data.aVenir || []}
       passes={data.passes || []}
+      offresStripe={data.offresStripe || []}
       studioSlug={studioSlug}
       userEmail={user.email}
     />

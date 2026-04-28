@@ -178,46 +178,18 @@ export default function SupportPage() {
         </div>
       </div>
 
-      {/* Chatbot */}
+      {/* Assistant IA — désactivé pour le launch, voir DEPLOY.md "post-launch roadmap" */}
       <div className="support-section">
         <h2 className="support-section-title">
           <Bot size={18} /> Assistant IA
+          <span style={{ marginLeft: 'auto', fontSize: '0.7rem', fontWeight: 600, color: 'var(--text-muted)', background: 'var(--bg-soft)', padding: '3px 10px', borderRadius: '99px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Bientôt</span>
         </h2>
-        <div className="chat-box izi-card">
-          <div className="chat-messages">
-            {messages.map((m, i) => (
-              <div key={i} className={`chat-msg ${m.role}`}>
-                <div className="chat-msg-avatar">
-                  {m.role === 'assistant' ? <Bot size={14} /> : <User size={14} />}
-                </div>
-                <div className="chat-msg-content">{m.content || <Loader size={14} className="chat-loading" />}</div>
-              </div>
-            ))}
-            <div ref={messagesEndRef} />
-          </div>
-
-          {/* Suggestions */}
-          {messages.length <= 1 && (
-            <div className="chat-suggestions">
-              {["Comment créer un cours ?", "Comment pointer les présences ?", "Comment gérer mes abonnements ?"].map(s => (
-                <button key={s} className="chat-suggestion" onClick={() => suggestQuestion(s)}>{s}</button>
-              ))}
-            </div>
-          )}
-
-          <div className="chat-input-row">
-            <input
-              ref={inputRef}
-              className="chat-input"
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleSend())}
-              placeholder="Pose ta question…"
-              disabled={loading}
-            />
-            <button className="chat-send" onClick={handleSend} disabled={loading || !input.trim()}>
-              {loading ? <Loader size={16} className="spin" /> : <Send size={16} />}
-            </button>
+        <div className="izi-card" style={{ padding: '20px', display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+          <Bot size={22} style={{ color: 'var(--brand)', flexShrink: 0, marginTop: 2 }} />
+          <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+            Un assistant IA arrivera bientôt pour répondre à tes questions sur l'app.
+            En attendant, consulte la <strong>FAQ ci-dessus</strong> ou <strong>ouvre un ticket</strong>{' '}
+            ci-dessous — on te répond rapidement.
           </div>
         </div>
       </div>

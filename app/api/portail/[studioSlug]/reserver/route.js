@@ -1,20 +1,17 @@
 import { createServerClient } from '@/lib/supabase-server';
 import { createClient as createAdminSupabase } from '@supabase/supabase-js';
-
-function slugify(str) {
-  return str.toLowerCase()
-    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9\s-]/g, '')
-    .trim().replace(/\s+/g, '-');
-}
+import { parseJsonBody, reservationSchema } from '@/lib/validation';
 
 export async function POST(request, { params }) {
   const { studioSlug } = await params;
-  const { coursId, nom, email, tel } = await request.json();
+  const { data: body, errorResponse } = await parseJsonBody(request, reservationSchema);
+  if (errorResponse) return errorResponse;
+  const { coursId, nom, email, tel } = body;
 
-  if (!coursId || !nom?.trim() || !email?.trim()) {
-    return Response.json({ error: 'Données manquantes' }, { status: 400 });
-  }
+  // Détecter si la requête vient d'un user déjà authentifié
+  const supabaseSession = await createServerClient();
+  const { data: { user: authUser } } = await supabaseSession.auth.getUser();
+  const isAuthenticated = !!authUser && authUser.email?.toLowerCase() === email.toLowerCase();
 
   // Utiliser le service role pour les opérations admin
   const supabaseAdmin = createAdminSupabase(
@@ -57,19 +54,20 @@ export async function POST(request, { params }) {
 
   // Chercher ou créer le client dans la table clients du prof
   let clientId;
+  let prenom;
   const { data: existingClient } = await supabaseAdmin
     .from('clients')
-    .select('id')
+    .select('id, prenom')
     .eq('profile_id', profile.id)
-    .ilike('email', email.trim())
+    .ilike('email', email)
     .single();
 
   if (existingClient) {
     clientId = existingClient.id;
+    prenom = existingClient.prenom;
   } else {
-    // Créer le client
-    const nomParts = nom.trim().split(' ');
-    const prenom = nomParts[0];
+    const nomParts = nom.split(' ');
+    prenom = nomParts[0];
     const clientNom = nomParts.slice(1).join(' ') || '';
     const { data: newClient, error: clientErr } = await supabaseAdmin
       .from('clients')
@@ -77,8 +75,8 @@ export async function POST(request, { params }) {
         profile_id: profile.id,
         prenom,
         nom: clientNom,
-        email: email.trim(),
-        telephone: tel?.trim() || null,
+        email,
+        telephone: tel || null,
       })
       .select('id')
       .single();
@@ -117,36 +115,74 @@ export async function POST(request, { params }) {
     return Response.json({ error: 'Erreur lors de la réservation' }, { status: 500 });
   }
 
+  // Si l'utilisateur n'est pas authentifié, générer un magic link pour qu'il accède
+  // à son espace en un clic. Le lien sera intégré dans l'email Resend de confirmation.
+  let magicLink = null;
+  if (!isAuthenticated) {
+    try {
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://izisolo.fr';
+      const { data: linkData, error: linkErr } = await supabaseAdmin.auth.admin.generateLink({
+        type: 'magiclink',
+        email,
+        options: {
+          redirectTo: `${appUrl}/auth/callback?next=/p/${studioSlug}/espace`,
+        },
+      });
+      if (linkErr) {
+        console.error('magic link error (non-blocking):', linkErr);
+      } else {
+        magicLink = linkData?.properties?.action_link || null;
+      }
+    } catch (linkErr) {
+      console.error('magic link exception (non-blocking):', linkErr);
+    }
+  }
+
   // Envoyer email de confirmation (si Resend configuré)
+  let magicLinkSent = false;
   try {
     if (process.env.RESEND_API_KEY) {
       const { Resend } = await import('resend');
       const resend = new Resend(process.env.RESEND_API_KEY);
       const dateStr = new Date(cours.date + 'T12:00:00').toLocaleDateString('fr-FR', {
-        weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+        weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
       });
       const heureStr = cours.heure ? cours.heure.slice(0, 5).replace(':', 'h') : '';
+      const espaceUrl = magicLink || `${process.env.NEXT_PUBLIC_APP_URL || 'https://izisolo.fr'}/p/${studioSlug}/espace`;
+      magicLinkSent = !!magicLink;
+
       await resend.emails.send({
-        from: process.env.RESEND_FROM_EMAIL || 'IziSolo <no-reply@izisolo.app>',
-        to: email.trim(),
-        subject: `✅ Réservation confirmée — ${cours.nom}`,
+        from: process.env.RESEND_FROM_EMAIL || 'IziSolo <no-reply@izisolo.fr>',
+        to: email,
+        subject: `Réservation confirmée — ${cours.nom}`,
         html: `
-          <div style="font-family: sans-serif; max-width: 560px; margin: 0 auto; padding: 24px;">
-            <h2 style="color: #d4a0a0; margin-bottom: 4px;">Réservation confirmée !</h2>
-            <p style="color: #555;">Bonjour ${prenom || nom},</p>
-            <p style="color: #555;">Ta place est réservée pour :</p>
-            <div style="background: #faf8f5; border-radius: 12px; padding: 16px 20px; margin: 16px 0;">
+          <div style="font-family: -apple-system, BlinkMacSystemFont, sans-serif; max-width: 560px; margin: 0 auto; padding: 24px;">
+            <h2 style="color: #d4a0a0; margin: 0 0 6px;">Réservation confirmée !</h2>
+            <p style="color: #555; margin: 0 0 16px;">Bonjour ${prenom || nom},</p>
+            <p style="color: #555; margin: 0 0 12px;">Ta place est réservée pour :</p>
+            <div style="background: #faf8f5; border-radius: 12px; padding: 16px 20px; margin: 0 0 20px;">
               <strong style="font-size: 1.1rem; color: #1a1a2e;">${cours.nom}</strong><br/>
               <span style="color: #888;">📅 ${dateStr}</span><br/>
-              <span style="color: #888;">🕐 ${heureStr}</span><br/>
-              ${cours.lieu ? `<span style="color: #888;">📍 ${cours.lieu}</span><br/>` : ''}
-              <span style="color: #888;">🏠 ${profile.studio_nom}</span>
+              <span style="color: #888;">🕐 ${heureStr}</span>
+              ${cours.lieu ? `<br/><span style="color: #888;">📍 ${cours.lieu}</span>` : ''}
+              <br/><span style="color: #888;">🏠 ${profile.studio_nom}</span>
             </div>
-            <p style="color: #888; font-size: 0.875rem;">
-              Si tu ne peux plus venir, merci de nous prévenir dès que possible.
-            </p>
-            <p style="color: #aaa; font-size: 0.8rem; margin-top: 32px; border-top: 1px solid #eee; padding-top: 16px;">
-              Propulsé par <a href="https://izisolo.app" style="color: #d4a0a0;">IziSolo</a>
+            <div style="text-align: center; margin: 0 0 20px;">
+              <a href="${espaceUrl}" style="display: inline-block; background: #d4a0a0; color: white; text-decoration: none; padding: 12px 28px; border-radius: 10px; font-weight: 600; font-size: 0.95rem;">
+                ${magicLink ? 'Accéder à mon espace' : 'Voir mon espace'}
+              </a>
+            </div>
+            ${magicLink ? `
+              <p style="color: #888; font-size: 0.8125rem; margin: 0 0 20px; text-align: center;">
+                Ce lien te connecte automatiquement. Il expire dans 1 heure.
+              </p>
+            ` : ''}
+            <div style="background: #fffaf0; border: 1px solid #ffe0b2; border-radius: 10px; padding: 12px 16px; margin: 0 0 16px; color: #7c4a03; font-size: 0.875rem;">
+              <strong>Annulation flexible</strong><br/>
+              Tu peux annuler depuis ton espace jusqu'à 24h avant le cours.
+            </div>
+            <p style="color: #aaa; font-size: 0.8rem; margin: 32px 0 0; border-top: 1px solid #eee; padding-top: 16px; text-align: center;">
+              Propulsé par <a href="https://izisolo.fr" style="color: #d4a0a0;">IziSolo</a>
             </p>
           </div>
         `,
@@ -157,5 +193,5 @@ export async function POST(request, { params }) {
     // On ne fait pas échouer la réservation si l'email plante
   }
 
-  return Response.json({ ok: true });
+  return Response.json({ ok: true, magicLinkSent });
 }

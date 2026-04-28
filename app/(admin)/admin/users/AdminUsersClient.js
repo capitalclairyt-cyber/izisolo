@@ -28,6 +28,16 @@ export default function AdminUsersClient({ initialUsers }) {
   }, [users, search, filterPlan]);
 
   const handleChangePlan = async (userId, newPlan) => {
+    const target = users.find(u => u.id === userId);
+    const currentPlan = target?.plan || 'free';
+    if (currentPlan === newPlan) {
+      setEditingPlan(null);
+      return;
+    }
+    const who = target?.studio_nom || target?.prenom || target?.email || 'cet utilisateur';
+    if (!confirm(`Changer le plan de ${who} : ${currentPlan} → ${newPlan} ?\n\nL'utilisateur ne sera pas notifié automatiquement.`)) {
+      return;
+    }
     setSaving(true);
     setSaveError(null);
     try {

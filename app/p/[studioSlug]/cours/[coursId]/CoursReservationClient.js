@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Clock, MapPin, Calendar, Users, ArrowLeft, CheckCircle, AlertCircle, Loader } from 'lucide-react';
+import { Clock, MapPin, Calendar, Users, ArrowLeft, CheckCircle, AlertCircle, Loader, Mail, Shield } from 'lucide-react';
+import { useToast } from '@/components/ui/ToastProvider';
 
 const MOIS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
 const JOURS = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
@@ -19,11 +20,13 @@ function formatHeure(h) {
 }
 
 export default function CoursReservationClient({ cours, profile, nbInscrits, studioSlug, currentUser }) {
+  const { toast } = useToast();
   const [nom, setNom]       = useState(currentUser?.nom || '');
   const [email, setEmail]   = useState(currentUser?.email || '');
   const [tel, setTel]       = useState(currentUser?.tel || '');
   const [loading, setLoading] = useState(false);
   const [done, setDone]     = useState(false);
+  const [magicLinkSent, setMagicLinkSent] = useState(false);
   const [error, setError]   = useState('');
   const isConnected = !!currentUser;
 
@@ -45,9 +48,12 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Erreur lors de la réservation');
+      setMagicLinkSent(!!json.magicLinkSent);
       setDone(true);
+      toast.success('Réservation confirmée !');
     } catch (e) {
       setError(e.message);
+      toast.error(e.message);
     } finally {
       setLoading(false);
     }
@@ -61,14 +67,37 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
         </Link>
         <div className="portail-card" style={{ textAlign: 'center', padding: '40px 24px' }}>
           <CheckCircle size={48} style={{ color: '#4caf50', margin: '0 auto 16px', display: 'block' }} />
-          <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: '0 0 8px' }}>Réservation confirmée !</h2>
-          <p style={{ color: '#666', margin: '0 0 24px', lineHeight: 1.6 }}>
-            Tu es inscrit·e pour <strong>{cours.nom}</strong> le <strong>{formatDate(cours.date)}</strong> à <strong>{formatHeure(cours.heure)}</strong>.
-            <br />Un email de confirmation a été envoyé à <strong>{email}</strong>.
+          <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: '0 0 8px' }}>C'est réservé !</h2>
+          <p style={{ color: '#666', margin: '0 0 16px', lineHeight: 1.6 }}>
+            Tu es inscrit·e pour <strong>{cours.nom}</strong><br />
+            le <strong>{formatDate(cours.date)}</strong> à <strong>{formatHeure(cours.heure)}</strong>.
           </p>
-          <Link href={`/p/${studioSlug}`} className="portail-btn-primary" style={{ maxWidth: '280px', margin: '0 auto' }}>
-            Voir d'autres cours
-          </Link>
+
+          <div style={{ background: '#f0faf0', border: '1px solid #c8e6c9', borderRadius: '10px', padding: '12px 16px', marginBottom: '16px', fontSize: '0.875rem', color: '#2e7d32', display: 'flex', alignItems: 'flex-start', gap: '8px', textAlign: 'left' }}>
+            <Mail size={16} style={{ flexShrink: 0, marginTop: 2 }} />
+            <div>
+              Email envoyé à <strong>{email}</strong>
+              {!isConnected && magicLinkSent && (
+                <><br /><span style={{ fontSize: '0.8125rem', color: '#1b5e20' }}>Il contient un lien pour accéder à ton espace en un clic.</span></>
+              )}
+            </div>
+          </div>
+
+          <div style={{ background: '#fffaf0', border: '1px solid #ffe0b2', borderRadius: '10px', padding: '12px 16px', marginBottom: '20px', fontSize: '0.8125rem', color: '#7c4a03', display: 'flex', alignItems: 'flex-start', gap: '8px', textAlign: 'left' }}>
+            <Shield size={15} style={{ flexShrink: 0, marginTop: 2 }} />
+            <span>Tu peux annuler depuis ton espace jusqu'à <strong>24h avant le cours</strong>.</span>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {isConnected && (
+              <Link href={`/p/${studioSlug}/espace`} className="portail-btn-primary" style={{ maxWidth: '320px', margin: '0 auto', width: '100%' }}>
+                Voir mon espace
+              </Link>
+            )}
+            <Link href={`/p/${studioSlug}`} className={isConnected ? 'portail-btn-ghost' : 'portail-btn-primary'} style={{ maxWidth: '320px', margin: '0 auto', width: '100%' }}>
+              Voir d'autres cours
+            </Link>
+          </div>
         </div>
         <style jsx global>{`
           .portail-back-link { display: inline-flex; align-items: center; gap: 6px; color: #888; font-size: 0.875rem; text-decoration: none; margin-bottom: 20px; }
@@ -114,6 +143,17 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
         )}
       </div>
 
+      {/* Politique d'annulation — visible AVANT le formulaire */}
+      {!passe && !complet && (
+        <div className="resa-policy">
+          <Shield size={15} style={{ flexShrink: 0, marginTop: 2 }} />
+          <div>
+            <strong style={{ display: 'block', marginBottom: 2 }}>Annulation flexible</strong>
+            Tu pourras annuler depuis ton espace jusqu'à <strong>24h avant le cours</strong>.
+          </div>
+        </div>
+      )}
+
       {/* Formulaire de réservation */}
       {passe ? (
         <div className="portail-card" style={{ textAlign: 'center', color: '#888' }}>
@@ -123,7 +163,10 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
       ) : complet ? (
         <div className="portail-card" style={{ textAlign: 'center', color: '#888' }}>
           <AlertCircle size={32} style={{ margin: '0 auto 8px', display: 'block', opacity: 0.5 }} />
-          <p style={{ margin: 0 }}>Ce cours est complet.</p>
+          <p style={{ margin: '0 0 12px' }}>Ce cours est complet.</p>
+          <Link href={`/p/${studioSlug}`} style={{ fontSize: '0.875rem', color: '#d4a0a0', fontWeight: 600, textDecoration: 'none' }}>
+            Voir d'autres cours →
+          </Link>
         </div>
       ) : (
         <div className="portail-card">
@@ -137,8 +180,9 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
 
           <form onSubmit={handleReserver}>
             <div className="portail-field">
-              <label className="portail-label">Prénom et nom *</label>
+              <label className="portail-label" htmlFor="resa-nom">Prénom et nom *</label>
               <input
+                id="resa-nom"
                 type="text"
                 className={`portail-input${isConnected && nom ? ' portail-input--readonly' : ''}`}
                 value={nom}
@@ -150,8 +194,9 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
               />
             </div>
             <div className="portail-field">
-              <label className="portail-label">Email *</label>
+              <label className="portail-label" htmlFor="resa-email">Email *</label>
               <input
+                id="resa-email"
                 type="email"
                 className={`portail-input${isConnected ? ' portail-input--readonly' : ''}`}
                 value={email}
@@ -161,11 +206,17 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
                 required
                 autoComplete="email"
               />
+              {!isConnected && (
+                <p style={{ fontSize: '0.75rem', color: '#aaa', margin: '6px 0 0' }}>
+                  On t'enverra un lien pour accéder à ton espace et gérer tes réservations.
+                </p>
+              )}
             </div>
             {!isConnected && (
               <div className="portail-field">
-                <label className="portail-label">Téléphone <span style={{ color: '#aaa', fontWeight: 400 }}>(optionnel)</span></label>
+                <label className="portail-label" htmlFor="resa-tel">Téléphone <span style={{ color: '#aaa', fontWeight: 400 }}>(optionnel)</span></label>
                 <input
+                  id="resa-tel"
                   type="tel"
                   className="portail-input"
                   value={tel}
@@ -191,7 +242,7 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
               {loading ? 'Réservation en cours…' : 'Confirmer ma réservation'}
             </button>
             <p style={{ textAlign: 'center', fontSize: '0.8125rem', color: '#aaa', margin: '12px 0 0' }}>
-              En réservant, tu acceptes les <a href="/legal/cgu" target="_blank" style={{ color: '#d4a0a0' }}>CGU</a> d'IziSolo.
+              En réservant, tu acceptes les <a href="/legal/cgu" target="_blank" rel="noopener noreferrer" style={{ color: '#d4a0a0' }}>CGU</a> d'IziSolo.
             </p>
           </form>
         </div>
@@ -204,6 +255,13 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
         .resa-detail-row { display: flex; align-items: center; gap: 8px; font-size: 0.9375rem; color: #555; }
         .resa-detail-row svg { color: #d4a0a0; flex-shrink: 0; }
         .portail-input--readonly { background: #faf8f5; color: #888; cursor: default; border-color: #eee; }
+        .resa-policy {
+          display: flex; gap: 10px; align-items: flex-start;
+          background: #fffaf0; border: 1px solid #ffe0b2; border-radius: 12px;
+          padding: 12px 16px; margin-bottom: 16px;
+          font-size: 0.8125rem; color: #7c4a03; line-height: 1.5;
+        }
+        .resa-policy svg { color: #d97706; }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         .spin { animation: spin 0.8s linear infinite; }
       `}</style>

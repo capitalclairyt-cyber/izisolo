@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation';
 import {
   Save, Palette, User, Building2, Bell, MapPin,
   Plus, X, Trash2, Flower2, Sliders, Crown, Mail, Home,
-  Eye, Settings, Zap, Gift, ToggleLeft, ToggleRight, Cake
+  Eye, Settings, Zap, Gift, ToggleLeft, ToggleRight, Cake,
+  CreditCard, Copy, Check, ExternalLink, AlertCircle,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase';
 import { useToast } from '@/components/ui/ToastProvider';
@@ -42,11 +43,174 @@ const REGLAGES_SUBTABS = [
   { id: 'general', label: 'Général', icon: Settings },
 ];
 
+// ════════════════════════════════════════════════════════════════════════════
+// Section "Paiement en ligne (Stripe)"
+// Le pro renseigne son webhook signing secret. IziSolo lui affiche l'URL endpoint
+// à coller dans son dashboard Stripe (avec son profile_id en query param pour le retrouver).
+// ════════════════════════════════════════════════════════════════════════════
+function StripePaiementSection({ profile, setProfile, setDirty }) {
+  const [copied, setCopied] = useState(false);
+  const [showSecret, setShowSecret] = useState(false);
+
+  const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://izisolo.fr';
+  const webhookUrl = profile?.id ? `${baseUrl}/api/stripe/webhook?profile=${profile.id}` : '';
+  const secret = profile?.stripe_webhook_secret || '';
+  const configured = !!secret;
+
+  const copyWebhookUrl = async () => {
+    try {
+      await navigator.clipboard.writeText(webhookUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {}
+  };
+
+  const handleSecretChange = (e) => {
+    setProfile(prev => ({ ...prev, stripe_webhook_secret: e.target.value }));
+    setDirty(true);
+  };
+
+  return (
+    <div className="section izi-card">
+      <div className="section-top">
+        <div className="section-icon"><CreditCard size={20} /></div>
+        <h2>Paiement en ligne</h2>
+        {configured && (
+          <span className="stripe-status-pill"><Check size={11} /> Configuré</span>
+        )}
+      </div>
+      <p className="section-desc">
+        Branche Stripe pour permettre à tes élèves de payer leurs carnets et abonnements
+        par CB depuis ton portail. <strong>Commission IziSolo : 1%</strong> (ajoutée à ta facture mensuelle, pas prélevée sur tes paiements).
+      </p>
+
+      <div className="stripe-config">
+        <div className="stripe-step">
+          <span className="stripe-step-num">1</span>
+          <div className="stripe-step-body">
+            <strong>URL d'endpoint à configurer sur Stripe</strong>
+            <div className="stripe-url-row">
+              <code className="stripe-url-code">{webhookUrl}</code>
+              <button type="button" onClick={copyWebhookUrl} className="stripe-copy-btn">
+                {copied ? <><Check size={13} /> Copié</> : <><Copy size={13} /> Copier</>}
+              </button>
+            </div>
+            <p className="stripe-step-hint">
+              Va sur <a href="https://dashboard.stripe.com/webhooks" target="_blank" rel="noopener noreferrer">dashboard.stripe.com/webhooks</a>
+              {' '}→ <strong>+ Add endpoint</strong> → colle l'URL → coche l'événement{' '}
+              <code>checkout.session.completed</code> (et optionnellement <code>charge.refunded</code>).
+            </p>
+          </div>
+        </div>
+
+        <div className="stripe-step">
+          <span className="stripe-step-num">2</span>
+          <div className="stripe-step-body">
+            <label className="stripe-label" htmlFor="stripe-webhook-secret">
+              <strong>Webhook signing secret</strong>
+            </label>
+            <p className="stripe-step-hint">
+              Une fois l'endpoint créé sur Stripe, clique dessus → onglet <strong>Signing secret</strong> → <strong>Reveal</strong>. Copie le secret (commence par <code>whsec_</code>) et colle-le ci-dessous.
+            </p>
+            <div className="stripe-secret-row">
+              <input
+                id="stripe-webhook-secret"
+                type={showSecret ? 'text' : 'password'}
+                className="izi-input"
+                value={secret}
+                onChange={handleSecretChange}
+                placeholder="whsec_..."
+                autoComplete="off"
+              />
+              <button type="button" onClick={() => setShowSecret(s => !s)} className="stripe-eye-btn">
+                {showSecret ? 'Masquer' : 'Afficher'}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="stripe-step">
+          <span className="stripe-step-num">3</span>
+          <div className="stripe-step-body">
+            <strong>Crée tes Payment Links sur tes offres</strong>
+            <p className="stripe-step-hint">
+              Va dans <a href="/offres/nouveau" target="_blank">Offres → Nouvelle offre</a> et colle un Payment Link Stripe pour chaque carnet/abonnement vendable en ligne.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {!configured && (
+        <div className="stripe-warning">
+          <AlertCircle size={14} /> Tant que le secret n'est pas renseigné, IziSolo ne pourra pas confirmer automatiquement les paiements Stripe (ils devront être marqués manuellement).
+        </div>
+      )}
+
+      <style jsx global>{`
+        .stripe-status-pill {
+          display: inline-flex; align-items: center; gap: 4px;
+          background: #ecfdf5; color: #065f46;
+          font-size: 0.7rem; font-weight: 700;
+          padding: 3px 9px; border-radius: 99px;
+          margin-left: auto; border: 1px solid #6ee7b7;
+        }
+        .stripe-config { display: flex; flex-direction: column; gap: 18px; margin-top: 14px; }
+        .stripe-step { display: flex; gap: 12px; }
+        .stripe-step-num {
+          flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%;
+          background: #635bff; color: white;
+          display: flex; align-items: center; justify-content: center;
+          font-size: 0.8125rem; font-weight: 700;
+        }
+        .stripe-step-body { flex: 1; min-width: 0; }
+        .stripe-step-body strong { display: block; font-size: 0.875rem; color: var(--text-primary); margin-bottom: 6px; }
+        .stripe-step-hint { font-size: 0.75rem; color: var(--text-secondary); line-height: 1.5; margin: 4px 0 0; }
+        .stripe-step-hint a { color: #635bff; font-weight: 600; }
+        .stripe-step-hint code {
+          background: var(--bg-soft, #f5f5f5); padding: 1px 5px; border-radius: 4px;
+          font-size: 0.7rem; color: var(--text-primary);
+        }
+        .stripe-url-row { display: flex; gap: 6px; margin-top: 4px; align-items: center; }
+        .stripe-url-code {
+          flex: 1; min-width: 0; padding: 7px 10px;
+          background: var(--bg-soft, #faf8f5); border: 1px solid var(--border);
+          border-radius: 6px; font-size: 0.7rem; word-break: break-all;
+          color: var(--text-primary);
+        }
+        .stripe-copy-btn {
+          display: inline-flex; align-items: center; gap: 4px;
+          padding: 6px 12px; border-radius: 6px;
+          background: var(--brand-light); color: var(--brand-700);
+          border: 1px solid var(--brand-200, #fbd5d5); cursor: pointer;
+          font-size: 0.7rem; font-weight: 600; flex-shrink: 0;
+        }
+        .stripe-copy-btn:hover { background: var(--brand); color: white; }
+        .stripe-secret-row { display: flex; gap: 6px; align-items: center; margin-top: 4px; }
+        .stripe-eye-btn {
+          padding: 7px 10px; border-radius: 6px; cursor: pointer;
+          background: white; border: 1px solid var(--border);
+          font-size: 0.7rem; color: var(--text-secondary); flex-shrink: 0;
+        }
+        .stripe-warning {
+          display: flex; align-items: flex-start; gap: 6px;
+          margin-top: 14px; padding: 10px 12px;
+          background: #fffbeb; border: 1px solid #fcd34d;
+          color: #78350f; border-radius: 8px;
+          font-size: 0.75rem; line-height: 1.4;
+        }
+        .stripe-warning svg { flex-shrink: 0; margin-top: 1px; color: #f59e0b; }
+        .stripe-label { font-size: 0.875rem; }
+      `}</style>
+    </div>
+  );
+}
+
 export default function Parametres() {
   const router = useRouter();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [dirty, setDirty] = useState(false);
   const [profile, setProfile] = useState(null);
   const [lieux, setLieux] = useState([]);
   const [newLieu, setNewLieu] = useState('');
@@ -103,7 +267,20 @@ export default function Parametres() {
 
   const handleChange = (field) => (e) => {
     setProfile(prev => ({ ...prev, [field]: e.target.value }));
+    setDirty(true);
   };
+
+  // Avertir si tentative de quitter avec des changements non sauvegardés
+  useEffect(() => {
+    if (!dirty) return undefined;
+    const handler = (e) => {
+      e.preventDefault();
+      e.returnValue = '';
+      return '';
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [dirty]);
 
   // --- Lieux ---
   const addLieu = async () => {
@@ -123,6 +300,11 @@ export default function Parametres() {
   };
 
   const removeLieu = async (id) => {
+    const lieu = lieux.find(l => l.id === id);
+    const nom = lieu?.nom?.trim() || 'ce lieu';
+    if (!confirm(`Supprimer "${nom}" ? Les cours déjà associés à ce lieu garderont leur référence textuelle, mais tu ne pourras plus le sélectionner.`)) {
+      return;
+    }
     const supabase = createClient();
     await supabase.from('lieux').delete().eq('id', id);
     setLieux(prev => prev.filter(l => l.id !== id));
@@ -164,11 +346,13 @@ export default function Parametres() {
       notif_paiement_retard:   notifPaiementRetard,
       notif_carnet_epuise:     notifCarnetEpuise,
       notif_abonnement_expire: notifAbonnementExpire,
+      stripe_webhook_secret:   profile.stripe_webhook_secret || null,
     }).eq('id', profile.id);
 
     if (!error) {
       router.refresh();
       toast.success('Paramètres enregistrés !');
+      setDirty(false);
     } else {
       toast.error('Erreur : ' + error.message);
     }
@@ -291,7 +475,6 @@ export default function Parametres() {
                         className="lieu-nom-input"
                         value={lieu.nom}
                         onChange={e => updateLieu(lieu.id, 'nom', e.target.value)}
-                        onBlur={e => { if (!e.target.value.trim()) removeLieu(lieu.id); }}
                       />
                       <input
                         className="lieu-adresse-input"
@@ -321,6 +504,13 @@ export default function Parametres() {
               </button>
             </div>
           </div>
+
+          {/* Paiement en ligne (Stripe Payment Link) */}
+          <StripePaiementSection
+            profile={profile}
+            setProfile={setProfile}
+            setDirty={setDirty}
+          />
 
           <button onClick={handleSave} className="izi-btn izi-btn-primary save-btn" disabled={saving}>
             <Save size={18} /> {saving ? 'Enregistrement...' : 'Enregistrer'}

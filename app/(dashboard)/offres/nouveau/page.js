@@ -82,6 +82,14 @@ export default function NouvelleOffre() {
   const [proRataActif, setProRataActif]           = useState(false);
   const [proRataDateLimite, setProRataDateLimite] = useState('');
 
+  // Paiement en ligne (Stripe Payment Link)
+  const [stripePaymentLink, setStripePaymentLink] = useState('');
+  const [showStripeHelp, setShowStripeHelp]       = useState(false);
+
+  // Validation du lien Stripe : doit être une URL stripe.com / buy.stripe.com
+  const stripeLinkValid = !stripePaymentLink.trim() ||
+    /^https?:\/\/(buy\.)?stripe\.com\//i.test(stripePaymentLink.trim());
+
   // Charger les offres cours_unique pour la référence prix
   useEffect(() => {
     const load = async () => {
@@ -204,6 +212,15 @@ export default function NouvelleOffre() {
 
       if (type === 'cours_unique') {
         payload.seances = 1;
+      }
+
+      if (stripePaymentLink.trim()) {
+        if (!stripeLinkValid) {
+          toast.warning('Lien Stripe invalide. Doit commencer par https://buy.stripe.com/');
+          setLoading(false);
+          return;
+        }
+        payload.stripe_payment_link = stripePaymentLink.trim();
       }
 
       const { error } = await supabase.from('offres').insert(payload);
@@ -585,6 +602,52 @@ export default function NouvelleOffre() {
           )}
         </div>
 
+        {/* Paiement en ligne (Stripe Payment Link) — optionnel */}
+        <div className="no-section no-section-stripe">
+          <div className="no-section-label">
+            💳 Paiement en ligne <span className="no-optional">(optionnel)</span>
+          </div>
+          <p className="no-stripe-desc">
+            Permet à tes élèves de payer cette offre par CB depuis ton portail.
+            Tu reçois directement les fonds sur ton compte Stripe.
+          </p>
+          <div className="no-field">
+            <label className="no-label" htmlFor="stripe-link">Lien Stripe Payment Link</label>
+            <input
+              id="stripe-link"
+              type="url"
+              className="izi-input"
+              placeholder="https://buy.stripe.com/abc123…"
+              value={stripePaymentLink}
+              onChange={e => setStripePaymentLink(e.target.value)}
+            />
+            {stripePaymentLink && !stripeLinkValid && (
+              <p className="no-stripe-error">
+                ⚠ Ce lien ne ressemble pas à un lien Stripe (doit commencer par https://buy.stripe.com/)
+              </p>
+            )}
+          </div>
+          <button
+            type="button"
+            className="no-stripe-help-toggle"
+            onClick={() => setShowStripeHelp(s => !s)}
+          >
+            {showStripeHelp ? '▾ Masquer' : '▸ Comment générer un Payment Link Stripe ?'}
+          </button>
+          {showStripeHelp && (
+            <div className="no-stripe-help">
+              <ol>
+                <li>Crée un compte gratuit sur <a href="https://dashboard.stripe.com/register" target="_blank" rel="noopener noreferrer">stripe.com</a> (commission ~1.5% + 0.25€ par CB).</li>
+                <li>Renseigne tes informations bancaires (RIB) — Stripe verse automatiquement chaque semaine.</li>
+                <li>Va dans <strong>Produits &rarr; Payment Links &rarr; Nouveau lien</strong>.</li>
+                <li>Crée un produit avec le <strong>même nom et prix que cette offre</strong>.</li>
+                <li>Copie le lien (commence par <code>https://buy.stripe.com/</code>) et colle-le ci-dessus.</li>
+                <li>Quand un élève paye, Stripe t'envoie un email. Reviens dans IziSolo et clique <strong>"Encaissé"</strong> sur le paiement en attente (sera créé automatiquement au prochain sprint via webhook).</li>
+              </ol>
+            </div>
+          )}
+        </div>
+
         <button
           type="submit"
           className="izi-btn izi-btn-primary no-submit"
@@ -600,6 +663,41 @@ export default function NouvelleOffre() {
 
       <style jsx global>{`
         .no-page  { display: flex; flex-direction: column; gap: 20px; padding-bottom: 48px; }
+
+        /* Section Stripe */
+        .no-section-stripe {
+          background: linear-gradient(135deg, #f6f9fc 0%, #ffffff 100%);
+          border: 1.5px dashed #635bff;
+        }
+        .no-section-stripe .no-section-label { color: #635bff; }
+        .no-optional {
+          font-weight: 500; color: var(--text-muted); font-size: 0.75rem; text-transform: none; letter-spacing: 0;
+        }
+        .no-stripe-desc {
+          font-size: 0.875rem; color: var(--text-secondary);
+          margin: 0 0 12px; line-height: 1.5;
+        }
+        .no-stripe-error {
+          font-size: 0.75rem; color: #dc2626; margin: 6px 0 0;
+        }
+        .no-stripe-help-toggle {
+          background: none; border: none; cursor: pointer; padding: 6px 0;
+          font-size: 0.8125rem; font-weight: 600; color: #635bff;
+          text-align: left;
+        }
+        .no-stripe-help {
+          background: white; border: 1px solid var(--border);
+          border-radius: 10px; padding: 14px 16px; margin-top: 6px;
+        }
+        .no-stripe-help ol {
+          margin: 0; padding-left: 20px; font-size: 0.8125rem; color: var(--text-secondary); line-height: 1.6;
+        }
+        .no-stripe-help li { margin-bottom: 6px; }
+        .no-stripe-help a { color: #635bff; font-weight: 600; }
+        .no-stripe-help code {
+          background: #f3f4f6; padding: 1px 5px; border-radius: 4px; font-size: 0.75rem;
+          color: var(--text-primary);
+        }
         .no-header { display: flex; align-items: center; gap: 12px; }
         .no-header h1 { font-size: 1.25rem; font-weight: 700; }
         .back-btn {

@@ -45,6 +45,12 @@ export default async function AdminLayout({ children }) {
       </aside>
 
       <main className="admin-main">
+        <div className="admin-mode-banner" role="status">
+          <span className="admin-mode-icon">⚠️</span>
+          <span>
+            <strong>Mode Admin Mélutek</strong> — actions visibles sur la production. Connecté en tant que <strong>{user.email}</strong>.
+          </span>
+        </div>
         {children}
       </main>
 

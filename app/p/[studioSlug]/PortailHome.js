@@ -2,7 +2,9 @@
 
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
-import { MapPin, Calendar, Clock, Users, ChevronRight, Search } from 'lucide-react';
+import { MapPin, Calendar, Clock, Users, ChevronRight, Search, CreditCard, Ticket, CalendarCheck, Zap } from 'lucide-react';
+
+const TYPE_ICONS = { carnet: Ticket, abonnement: CalendarCheck, cours_unique: Zap };
 
 const JOURS = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
 const MOIS = ['jan', 'fév', 'mar', 'avr', 'mai', 'jun', 'jul', 'aoû', 'sep', 'oct', 'nov', 'déc'];
@@ -32,7 +34,7 @@ function PlacesBadge({ capacite, inscrits }) {
   return <span className="portail-tag portail-tag-green">Places disponibles</span>;
 }
 
-export default function PortailHome({ profile, cours, studioSlug }) {
+export default function PortailHome({ profile, cours, offresStripe = [], studioSlug }) {
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState('');
 
@@ -157,6 +159,49 @@ export default function PortailHome({ profile, cours, studioSlug }) {
           })}
         </div>
       ))}
+
+      {/* Section "Acheter en ligne" — affichée uniquement si au moins 1 offre a un Stripe Payment Link */}
+      {offresStripe.length > 0 && (
+        <div className="portail-stripe-section">
+          <div className="portail-stripe-header">
+            <CreditCard size={16} style={{ color: '#635bff' }} />
+            <h2>Acheter en ligne</h2>
+          </div>
+          <p className="portail-stripe-desc">
+            Paye ton carnet ou abonnement par CB en quelques clics.
+          </p>
+          <div className="portail-stripe-grid">
+            {offresStripe.map(o => {
+              const Icon = TYPE_ICONS[o.type] || Ticket;
+              return (
+                <a
+                  key={o.id}
+                  href={o.stripe_payment_link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="portail-stripe-card"
+                >
+                  <div className="portail-stripe-card-icon">
+                    <Icon size={18} />
+                  </div>
+                  <div className="portail-stripe-card-info">
+                    <div className="portail-stripe-card-nom">{o.nom}</div>
+                    {o.seances && (
+                      <div className="portail-stripe-card-meta">{o.seances} séance{o.seances > 1 ? 's' : ''}</div>
+                    )}
+                  </div>
+                  <div className="portail-stripe-card-prix">
+                    {o.prix}€
+                  </div>
+                </a>
+              );
+            })}
+          </div>
+          <p className="portail-stripe-trust">
+            🔒 Paiement sécurisé via Stripe — IziSolo ne stocke aucune donnée bancaire.
+          </p>
+        </div>
+      )}
 
       <style jsx global>{`
         .portail-studio-header {

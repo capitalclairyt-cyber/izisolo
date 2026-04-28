@@ -32,16 +32,25 @@ async function getStudioData(studioSlug) {
 
   if (!profile) return null;
 
-  const { data: cours } = await supabase
-    .from('cours')
-    .select('id, nom, date, heure, duree, type_cours, lieu, capacite_max, est_annule, recurrence_parent_id')
-    .eq('profile_id', profile.id)
-    .eq('est_annule', false)
-    .gte('date', today)
-    .lte('date', in60)
-    .order('date', { ascending: true })
-    .order('heure', { ascending: true })
-    .limit(40);
+  const [{ data: cours }, { data: offresStripe }] = await Promise.all([
+    supabase
+      .from('cours')
+      .select('id, nom, date, heure, duree, type_cours, lieu, capacite_max, est_annule, recurrence_parent_id')
+      .eq('profile_id', profile.id)
+      .eq('est_annule', false)
+      .gte('date', today)
+      .lte('date', in60)
+      .order('date', { ascending: true })
+      .order('heure', { ascending: true })
+      .limit(40),
+    supabase
+      .from('offres')
+      .select('id, nom, type, prix, seances, duree_jours, stripe_payment_link')
+      .eq('profile_id', profile.id)
+      .eq('actif', true)
+      .not('stripe_payment_link', 'is', null)
+      .order('ordre'),
+  ]);
 
   // Count presences per cours
   const coursIds = (cours || []).map(c => c.id);
@@ -62,6 +71,7 @@ async function getStudioData(studioSlug) {
       ...c,
       nbInscrits: presencesCounts[c.id] || 0,
     })),
+    offresStripe: offresStripe || [],
   };
 }
 
@@ -70,5 +80,5 @@ export default async function PortailPage({ params }) {
   const data = await getStudioData(studioSlug);
   if (!data) notFound();
 
-  return <PortailHome profile={data.profile} cours={data.cours} studioSlug={studioSlug} />;
+  return <PortailHome profile={data.profile} cours={data.cours} offresStripe={data.offresStripe} studioSlug={studioSlug} />;
 }

@@ -1,16 +1,86 @@
-import { dirname } from "path";
-import { fileURLToPath } from "url";
-import { FlatCompat } from "@eslint/eslintrc";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-const compat = new FlatCompat({
-  baseDirectory: __dirname,
-});
-
-const eslintConfig = [
-  ...compat.extends("next/core-web-vitals"),
+// Config ESLint flat minimaliste — Next.js 16 + ESLint 9.
+// FlatCompat avec next/core-web-vitals casse (circular ref) — on garde des règles de base.
+export default [
+  {
+    ignores: [
+      '.next/**',
+      'node_modules/**',
+      'public/sw.js',
+      'public/workbox-*.js',
+      'public/fallback-*.js',
+      '.vercel/**',
+      'playwright-report/**',
+      'test-results/**',
+    ],
+  },
+  {
+    files: ['**/*.{js,jsx,mjs,cjs}'],
+    languageOptions: {
+      ecmaVersion: 'latest',
+      sourceType: 'module',
+      globals: {
+        process: 'readonly',
+        console: 'readonly',
+        fetch: 'readonly',
+        Response: 'readonly',
+        Request: 'readonly',
+        URL: 'readonly',
+        URLSearchParams: 'readonly',
+        TextDecoder: 'readonly',
+        TextEncoder: 'readonly',
+        crypto: 'readonly',
+        Buffer: 'readonly',
+        setTimeout: 'readonly',
+        clearTimeout: 'readonly',
+        setInterval: 'readonly',
+        clearInterval: 'readonly',
+        window: 'readonly',
+        document: 'readonly',
+        navigator: 'readonly',
+        localStorage: 'readonly',
+        sessionStorage: 'readonly',
+        FormData: 'readonly',
+        File: 'readonly',
+        Blob: 'readonly',
+        alert: 'readonly',
+        confirm: 'readonly',
+        prompt: 'readonly',
+        location: 'readonly',
+        history: 'readonly',
+        ReadableStream: 'readonly',
+        WritableStream: 'readonly',
+        TransformStream: 'readonly',
+        Image: 'readonly',
+        Audio: 'readonly',
+        Video: 'readonly',
+        getComputedStyle: 'readonly',
+        MutationObserver: 'readonly',
+        IntersectionObserver: 'readonly',
+        ResizeObserver: 'readonly',
+        requestAnimationFrame: 'readonly',
+        cancelAnimationFrame: 'readonly',
+        requestIdleCallback: 'readonly',
+        cancelIdleCallback: 'readonly',
+        AbortController: 'readonly',
+        AbortSignal: 'readonly',
+        Headers: 'readonly',
+        Event: 'readonly',
+        CustomEvent: 'readonly',
+        MessageChannel: 'readonly',
+        structuredClone: 'readonly',
+        __dirname: 'readonly',
+        __filename: 'readonly',
+        global: 'readonly',
+      },
+      parserOptions: {
+        ecmaFeatures: { jsx: true },
+      },
+    },
+    rules: {
+      'no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
+      'no-undef': 'error',
+      'no-debugger': 'error',
+      'no-console': ['warn', { allow: ['warn', 'error'] }],
+    },
+  },
 ];
-
-export default eslintConfig;

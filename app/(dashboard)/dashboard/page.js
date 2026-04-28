@@ -12,12 +12,14 @@ export default async function DashboardPage() {
     { data: profile },
     { data: coursDuJour },
     { count: nbClients },
+    { count: nbCoursTotal },
     { data: alertesAbos },
     { data: derniersPaiements },
   ] = await Promise.all([
     supabase.from('profiles').select('*').eq('id', user.id).single(),
     supabase.from('cours').select('*, presences(count)').eq('profile_id', user.id).eq('date', today).order('heure'),
     supabase.from('clients').select('*', { count: 'exact', head: true }).eq('profile_id', user.id).in('statut', ['prospect', 'actif', 'fidele']),
+    supabase.from('cours').select('*', { count: 'exact', head: true }).eq('profile_id', user.id),
     supabase.from('abonnements').select('*, clients(nom, prenom)').eq('profile_id', user.id).eq('statut', 'actif'),
     supabase.from('paiements').select('montant').eq('profile_id', user.id).gte('date', new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0]),
   ]);
@@ -52,6 +54,7 @@ export default async function DashboardPage() {
       profile={profile}
       coursDuJour={coursDuJour || []}
       nbClients={nbClients || 0}
+      nbCoursTotal={nbCoursTotal || 0}
       revenusMois={revenusMois}
       alertes={alertes}
     />

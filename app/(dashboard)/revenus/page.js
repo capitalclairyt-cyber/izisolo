@@ -5,31 +5,18 @@ export default async function RevenusPage() {
   const supabase = await createServerClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  const now = new Date();
-  const debutMois = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
-  const debutMoisDernier = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString().split('T')[0];
-  const finMoisDernier = new Date(now.getFullYear(), now.getMonth(), 0).toISOString().split('T')[0];
+  // On charge les paiements des 12 derniers mois ; le filtrage par période
+  // se fait côté client pour un UX réactif sans round-trip serveur.
+  const debutFenetre = new Date();
+  debutFenetre.setMonth(debutFenetre.getMonth() - 12);
+  const debutFenetreStr = debutFenetre.toISOString().split('T')[0];
 
-  const [
-    { data: paiementsMois },
-    { data: paiementsMoisDernier },
-    { data: paiementsRecents },
-  ] = await Promise.all([
-    supabase.from('paiements').select('montant, statut').eq('profile_id', user.id).gte('date', debutMois),
-    supabase.from('paiements').select('montant').eq('profile_id', user.id).gte('date', debutMoisDernier).lte('date', finMoisDernier).eq('statut', 'paid'),
-    supabase.from('paiements').select('*, clients(prenom, nom)').eq('profile_id', user.id).order('date', { ascending: false }).limit(20),
-  ]);
+  const { data: paiements } = await supabase
+    .from('paiements')
+    .select('id, intitule, type, montant, statut, mode, date, date_encaissement, notes, commission_montant, stripe_session_id, client_id, clients(prenom, nom, nom_structure)')
+    .eq('profile_id', user.id)
+    .gte('date', debutFenetreStr)
+    .order('date', { ascending: false });
 
-  const revenuMois = paiementsMois?.filter(p => p.statut === 'paid').reduce((s, p) => s + parseFloat(p.montant || 0), 0) || 0;
-  const enAttente = paiementsMois?.filter(p => p.statut === 'pending').reduce((s, p) => s + parseFloat(p.montant || 0), 0) || 0;
-  const revenuMoisDernier = paiementsMoisDernier?.reduce((s, p) => s + parseFloat(p.montant || 0), 0) || 0;
-
-  return (
-    <RevenusClient
-      revenuMois={revenuMois}
-      enAttente={enAttente}
-      revenuMoisDernier={revenuMoisDernier}
-      paiementsRecents={paiementsRecents || []}
-    />
-  );
+  return <RevenusClient paiements={paiements || []} />;
 }

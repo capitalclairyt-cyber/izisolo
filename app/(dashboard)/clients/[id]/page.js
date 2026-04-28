@@ -12,11 +12,13 @@ export default async function FicheClientPage({ params }) {
     { data: profile },
     { data: abonnements },
     { data: presences },
+    { data: paiements },
   ] = await Promise.all([
     supabase.from('clients').select('*').eq('id', id).eq('profile_id', user.id).single(),
     supabase.from('profiles').select('metier, vocabulaire').eq('id', user.id).single(),
     supabase.from('abonnements').select('*, offre:offres(nom, type)').eq('client_id', id).eq('profile_id', user.id).order('created_at', { ascending: false }),
     supabase.from('presences').select('*, cours(nom, date, heure)').eq('client_id', id).eq('profile_id', user.id).order('created_at', { ascending: false }).limit(20),
+    supabase.from('paiements').select('id, intitule, type, montant, statut, mode, date, date_encaissement, notes').eq('client_id', id).eq('profile_id', user.id).order('date', { ascending: false }),
   ]);
 
   if (!client) notFound();
@@ -38,6 +40,7 @@ export default async function FicheClientPage({ params }) {
       profile={profile}
       abonnements={abonnements || []}
       presences={presences || []}
+      paiements={paiements || []}
       lieux={lieux}
     />
   );

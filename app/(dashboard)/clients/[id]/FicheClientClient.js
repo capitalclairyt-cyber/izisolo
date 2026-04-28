@@ -8,12 +8,13 @@ import {
   CheckCircle2, XCircle, Plus, X, Building2, MapPin,
   Banknote, CreditCard, Landmark, FileText, ChevronRight,
   Package, Zap, CalendarCheck, Loader2, CreditCard as CardIcon,
-  MessageSquare
+  MessageSquare, Wallet, AlertCircle,
 } from 'lucide-react';
 import { formatDate, formatMontant } from '@/lib/utils';
 import { getVocabulaire } from '@/lib/vocabulaire';
-import { STATUTS_CLIENT, STATUTS_ABONNEMENT } from '@/lib/constantes';
+import { STATUTS_CLIENT, STATUTS_ABONNEMENT, STATUTS_PAIEMENT } from '@/lib/constantes';
 import { createClient } from '@/lib/supabase';
+import { useToast } from '@/components/ui/ToastProvider';
 
 // ─── Icônes par type d'offre ────────────────────────────────────────────────
 const TYPE_ICONS = { carnet: Ticket, abonnement: CalendarCheck, cours_unique: Zap };
@@ -256,12 +257,50 @@ function AssignerOffreModal({ client, onClose, onSuccess }) {
 // ═══════════════════════════════════════════════════════════════════════════
 // Composant principal
 // ═══════════════════════════════════════════════════════════════════════════
-export default function FicheClientClient({ client, profile, abonnements: abosInit, presences, lieux }) {
+export default function FicheClientClient({ client, profile, abonnements: abosInit, presences, paiements: paiementsInit = [], lieux }) {
   const router = useRouter();
+  const { toast } = useToast();
   const vocab = getVocabulaire(profile?.metier || 'yoga', profile?.vocabulaire);
   const [activeTab, setActiveTab] = useState('abonnements');
   const [showAssignerModal, setShowAssignerModal] = useState(false);
   const [abonnements, setAbonnements] = useState(abosInit);
+  const [paiements, setPaiements] = useState(paiementsInit);
+  const [encaisserLoading, setEncaisserLoading] = useState(null); // id du paiement en cours
+
+  // Totaux paiements
+  const totaux = (() => {
+    const acc = { paid: 0, pending: 0, unpaid: 0 };
+    for (const p of paiements) {
+      const m = parseFloat(p.montant || 0);
+      if (p.statut === 'paid') acc.paid += m;
+      else if (p.statut === 'pending' || p.statut === 'cb') acc.pending += m;
+      else if (p.statut === 'unpaid') acc.unpaid += m;
+    }
+    return acc;
+  })();
+  const nbImpayes = paiements.filter(p => p.statut === 'pending' || p.statut === 'unpaid' || p.statut === 'cb').length;
+
+  const handleEncaisser = async (paiementId, mode) => {
+    setEncaisserLoading(paiementId);
+    try {
+      const res = await fetch(`/api/paiements/${paiementId}/encaisser`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Erreur');
+      const today = new Date().toISOString().slice(0, 10);
+      setPaiements(prev => prev.map(p =>
+        p.id === paiementId ? { ...p, statut: 'paid', mode, date_encaissement: today } : p
+      ));
+      toast.success('Paiement encaissé !');
+    } catch (e) {
+      toast.error(e.message);
+    } finally {
+      setEncaisserLoading(null);
+    }
+  };
 
   const statutInfo = STATUTS_CLIENT[client.statut] || STATUTS_CLIENT.prospect;
   const isPro = client.type_client && client.type_client !== 'particulier';
@@ -374,6 +413,13 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
           <Ticket size={16} /> Offres ({abonnements.length})
         </button>
         <button
+          className={`tab-btn ${activeTab === 'paiements' ? 'active' : ''}`}
+          onClick={() => setActiveTab('paiements')}
+        >
+          <Wallet size={16} /> Paiements ({paiements.length})
+          {nbImpayes > 0 && <span className="tab-badge">{nbImpayes}</span>}
+        </button>
+        <button
           className={`tab-btn ${activeTab === 'presences' ? 'active' : ''}`}
           onClick={() => setActiveTab('presences')}
         >
@@ -426,6 +472,82 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
         </div>
       )}
 
+      {activeTab === 'paiements' && (
+        <div className="tab-content">
+          {/* Récap totaux */}
+          <div className="paiements-totaux">
+            <div className="totaux-item">
+              <span className="totaux-label">Encaissé</span>
+              <span className="totaux-value" style={{ color: '#16a34a' }}>{formatMontant(totaux.paid)}</span>
+            </div>
+            {totaux.pending > 0 && (
+              <div className="totaux-item">
+                <span className="totaux-label">En attente</span>
+                <span className="totaux-value" style={{ color: '#ca8a04' }}>{formatMontant(totaux.pending)}</span>
+              </div>
+            )}
+            {totaux.unpaid > 0 && (
+              <div className="totaux-item">
+                <span className="totaux-label">Impayés</span>
+                <span className="totaux-value" style={{ color: '#dc2626' }}>{formatMontant(totaux.unpaid)}</span>
+              </div>
+            )}
+          </div>
+
+          <div className="tab-actions">
+            <Link
+              href={`/revenus/nouveau?client_id=${client.id}`}
+              className="izi-btn izi-btn-primary add-offre-btn"
+            >
+              <Plus size={18} /> Saisir un paiement
+            </Link>
+          </div>
+
+          {paiements.length === 0 ? (
+            <div className="empty-mini">Aucun paiement enregistré pour {vocab.client || 'cet élève'}</div>
+          ) : (
+            <div className="paiements-list-fiche">
+              {paiements.map(p => {
+                const sInfo = STATUTS_PAIEMENT[p.statut] || {};
+                const canEncaisser = p.statut === 'pending' || p.statut === 'unpaid' || p.statut === 'cb';
+                const isLoading = encaisserLoading === p.id;
+                return (
+                  <div key={p.id} className="paiement-fiche-item">
+                    <div className="paiement-fiche-info">
+                      <div className="paiement-fiche-nom">{p.intitule || 'Paiement'}</div>
+                      <div className="paiement-fiche-meta">
+                        {formatDate(p.date)} · {p.mode || '—'}
+                        {p.date_encaissement && p.date_encaissement !== p.date && (
+                          <> · encaissé le {formatDate(p.date_encaissement)}</>
+                        )}
+                      </div>
+                      {p.notes && (
+                        <div className="paiement-fiche-notes">{p.notes}</div>
+                      )}
+                    </div>
+                    <div className="paiement-fiche-right">
+                      <div className="paiement-fiche-montant">{formatMontant(p.montant)}</div>
+                      <span className={`izi-badge izi-badge-${sInfo.color || 'neutral'}`}>{sInfo.label || p.statut}</span>
+                      {canEncaisser && (
+                        <button
+                          onClick={() => handleEncaisser(p.id, p.mode || 'especes')}
+                          className="encaisser-btn-fiche"
+                          disabled={isLoading}
+                          title={`Marquer comme encaissé en ${p.mode || 'espèces'}`}
+                        >
+                          {isLoading ? <Loader2 size={12} className="spin" /> : <CheckCircle2 size={12} />}
+                          Encaissé
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
       {activeTab === 'presences' && (
         <div className="tab-content">
           {presences.length === 0 ? (
@@ -459,6 +581,56 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
 
       <style jsx global>{`
         .fiche-client { display: flex; flex-direction: column; gap: 16px; padding-bottom: 40px; }
+
+        /* Tab badge (impayés) */
+        .tab-badge {
+          display: inline-flex; align-items: center; justify-content: center;
+          min-width: 18px; height: 18px; border-radius: 99px;
+          background: #fef2f2; color: #dc2626;
+          font-size: 0.6875rem; font-weight: 700;
+          padding: 0 5px; margin-left: 4px;
+          border: 1px solid #fecaca;
+        }
+
+        /* Onglet Paiements */
+        .paiements-totaux {
+          display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px;
+          margin-bottom: 14px;
+        }
+        .totaux-item {
+          display: flex; flex-direction: column; align-items: center;
+          background: var(--bg-card); border: 1px solid var(--border);
+          border-radius: var(--radius-md); padding: 12px 10px; text-align: center;
+        }
+        .totaux-label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; font-weight: 600; }
+        .totaux-value { font-size: 1.0625rem; font-weight: 700; margin-top: 4px; }
+
+        .paiements-list-fiche { display: flex; flex-direction: column; gap: 6px; }
+        .paiement-fiche-item {
+          display: flex; align-items: flex-start; gap: 12px;
+          background: var(--bg-card); border: 1px solid var(--border);
+          border-radius: var(--radius-md); padding: 12px 14px;
+        }
+        .paiement-fiche-info { flex: 1; min-width: 0; }
+        .paiement-fiche-nom { font-weight: 600; font-size: 0.9375rem; color: var(--text-primary); }
+        .paiement-fiche-meta { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
+        .paiement-fiche-notes {
+          font-size: 0.75rem; color: var(--text-secondary); margin-top: 4px;
+          font-style: italic; line-height: 1.4;
+        }
+        .paiement-fiche-right {
+          display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0;
+        }
+        .paiement-fiche-montant { font-weight: 700; font-size: 1rem; }
+        .encaisser-btn-fiche {
+          display: inline-flex; align-items: center; gap: 4px;
+          padding: 4px 10px; border-radius: var(--radius-full);
+          border: 1px solid #6ee7b7; background: #ecfdf5;
+          font-size: 0.7rem; font-weight: 600; color: #065f46;
+          cursor: pointer; transition: all 0.15s;
+        }
+        .encaisser-btn-fiche:hover:not(:disabled) { background: #6ee7b7; color: #064e3b; }
+        .encaisser-btn-fiche:disabled { opacity: 0.6; cursor: wait; }
         .page-header { display: flex; align-items: center; gap: 12px; }
         .header-title { flex: 1; font-size: 1.0625rem; font-weight: 600; }
         .back-btn, .edit-btn { width: 40px; height: 40px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-card); display: flex; align-items: center; justify-content: center; color: var(--text-secondary); text-decoration: none; flex-shrink: 0; }

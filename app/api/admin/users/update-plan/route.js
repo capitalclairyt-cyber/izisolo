@@ -1,11 +1,10 @@
 import { createServerClient } from '@/lib/supabase-server';
+import { parseJsonBody, adminUpdatePlanSchema } from '@/lib/validation';
 
 const ADMIN_EMAILS = [
   'admin@melutek.fr',
   'colin.boulgakoff@free.fr',
 ];
-
-const VALID_PLANS = ['free', 'solo', 'pro', 'studio', 'premium'];
 
 export async function POST(request) {
   const supabase = await createServerClient();
@@ -15,11 +14,9 @@ export async function POST(request) {
     return new Response('Forbidden', { status: 403 });
   }
 
-  const { userId, plan } = await request.json();
-
-  if (!userId || !VALID_PLANS.includes(plan)) {
-    return new Response('Bad request', { status: 400 });
-  }
+  const { data, errorResponse } = await parseJsonBody(request, adminUpdatePlanSchema);
+  if (errorResponse) return errorResponse;
+  const { userId, plan } = data;
 
   const { error } = await supabase
     .from('profiles')

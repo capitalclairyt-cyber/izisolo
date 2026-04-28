@@ -1,19 +1,59 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   CalendarDays, Users, BarChart3, AlertTriangle, ChevronRight,
-  Clock, Plus, CheckCircle2, XCircle
+  Clock, Plus, CheckCircle2, XCircle, Share2, Copy, ExternalLink, X, Sparkles
 } from 'lucide-react';
-import { formatHeure, formatMontant, formatDateCourte } from '@/lib/utils';
+import { formatHeure, formatMontant } from '@/lib/utils';
 import { getVocabulaire } from '@/lib/vocabulaire';
+import { useToast } from '@/components/ui/ToastProvider';
 
-export default function DashboardClient({ profile, coursDuJour, nbClients, revenusMois, alertes }) {
+export default function DashboardClient({ profile, coursDuJour, nbClients, nbCoursTotal, revenusMois, alertes }) {
   const vocab = getVocabulaire(profile?.metier || 'yoga', profile?.vocabulaire);
   const prenom = profile?.prenom || 'toi';
+  const studioSlug = profile?.studio_slug;
   const router = useRouter();
+  const { toast } = useToast();
+
+  // Checklist d'onboarding : visible tant que tout n'est pas fait, dismissable
+  const [checklistDismissed, setChecklistDismissed] = useState(false);
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setChecklistDismissed(localStorage.getItem('izi_checklist_dismissed') === '1');
+    }
+  }, []);
+
+  const checklistItems = [
+    { key: 'cours',  label: 'Crée ton premier cours',   done: nbCoursTotal > 0, href: '/cours/nouveau' },
+    { key: 'eleve',  label: `Ajoute ton premier ${(vocab.client || 'élève').toLowerCase()}`, done: nbClients > 0, href: '/clients/nouveau' },
+    { key: 'portail', label: 'Partage ton portail élève', done: false, action: 'share' },
+  ];
+  const allCoreDone = checklistItems[0].done && checklistItems[1].done;
+  const showChecklist = !checklistDismissed && !allCoreDone;
+
+  const portalUrl = studioSlug
+    ? `${typeof window !== 'undefined' ? window.location.origin : ''}/p/${studioSlug}`
+    : null;
+
+  const copyPortalUrl = async () => {
+    if (!portalUrl) return;
+    try {
+      await navigator.clipboard.writeText(portalUrl);
+      toast.success('Lien copié — partage-le à tes élèves !');
+    } catch {
+      toast.error('Impossible de copier — copie manuellement le lien');
+    }
+  };
+
+  const dismissChecklist = () => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('izi_checklist_dismissed', '1');
+    }
+    setChecklistDismissed(true);
+  };
 
   // Date du jour formatée
   const today = new Date();
@@ -38,6 +78,48 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, reven
           </div>
         </div>
       </div>
+
+      {/* Checklist de démarrage */}
+      {showChecklist && (
+        <div className="dash-checklist animate-slide-up">
+          <button
+            className="dash-checklist-close"
+            onClick={dismissChecklist}
+            aria-label="Masquer la checklist"
+            title="Masquer"
+          >
+            <X size={14} />
+          </button>
+          <div className="dash-checklist-header">
+            <Sparkles size={16} style={{ color: 'var(--brand)' }} />
+            <span>Démarre ton studio en 3 étapes</span>
+          </div>
+          <div className="dash-checklist-items">
+            {checklistItems.map(item => {
+              const Inner = (
+                <>
+                  <span className={`dash-checklist-bullet${item.done ? ' done' : ''}`}>
+                    {item.done && <CheckCircle2 size={14} />}
+                  </span>
+                  <span className={`dash-checklist-label${item.done ? ' done' : ''}`}>{item.label}</span>
+                  {!item.done && item.action === 'share' && portalUrl ? (
+                    <button onClick={copyPortalUrl} className="dash-checklist-cta">
+                      <Copy size={12} /> Copier le lien
+                    </button>
+                  ) : !item.done ? (
+                    <ChevronRight size={14} style={{ color: 'var(--brand)' }} />
+                  ) : null}
+                </>
+              );
+              return item.done || item.action === 'share' ? (
+                <div key={item.key} className="dash-checklist-item">{Inner}</div>
+              ) : (
+                <Link key={item.key} href={item.href} className="dash-checklist-item">{Inner}</Link>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Bandeau alertes */}
       {alertes.length > 0 && (
@@ -134,6 +216,25 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, reven
           </div>
         )}
       </div>
+
+      {/* Widget portail élève — toujours visible si studio_slug existe */}
+      {studioSlug && portalUrl && (
+        <div className="dash-portal-widget izi-card animate-slide-up">
+          <div className="dash-portal-icon"><Share2 size={18} /></div>
+          <div className="dash-portal-text">
+            <div className="dash-portal-title">Ton portail élève</div>
+            <div className="dash-portal-url">{portalUrl.replace(/^https?:\/\//, '')}</div>
+          </div>
+          <div className="dash-portal-actions">
+            <button onClick={copyPortalUrl} className="dash-portal-btn" title="Copier le lien" aria-label="Copier le lien du portail">
+              <Copy size={14} />
+            </button>
+            <a href={portalUrl} target="_blank" rel="noopener noreferrer" className="dash-portal-btn" title="Voir comme un élève" aria-label="Voir le portail comme un élève">
+              <ExternalLink size={14} />
+            </a>
+          </div>
+        </div>
+      )}
 
       {/* FAB : nouveau cours */}
       <Link href="/cours/nouveau" className="izi-fab" aria-label="Nouvelle séance">
@@ -370,6 +471,91 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, reven
         .cours-pointer-btn:active {
           background: var(--brand-dark);
           transform: scale(0.97);
+        }
+
+        /* Checklist de démarrage */
+        .dash-checklist {
+          position: relative;
+          background: linear-gradient(135deg, var(--brand-light), #fff);
+          border: 1px solid var(--brand-200, #f0d0d0);
+          border-radius: var(--radius-md);
+          padding: 16px 18px 14px;
+        }
+        .dash-checklist-close {
+          position: absolute; top: 10px; right: 10px;
+          background: none; border: none; cursor: pointer;
+          color: var(--text-muted); padding: 4px;
+          border-radius: 50%; transition: background 0.15s;
+        }
+        .dash-checklist-close:hover { background: rgba(0,0,0,0.05); color: var(--text-secondary); }
+        .dash-checklist-header {
+          display: flex; align-items: center; gap: 8px;
+          font-size: 0.875rem; font-weight: 700;
+          color: var(--text-primary); margin-bottom: 12px;
+        }
+        .dash-checklist-items { display: flex; flex-direction: column; gap: 6px; }
+        .dash-checklist-item {
+          display: flex; align-items: center; gap: 12px;
+          padding: 10px 12px; background: white;
+          border: 1px solid var(--border); border-radius: 10px;
+          text-decoration: none; color: var(--text-primary);
+          transition: border-color 0.15s, transform 0.1s;
+        }
+        a.dash-checklist-item:hover { border-color: var(--brand); transform: translateX(2px); }
+        .dash-checklist-bullet {
+          width: 20px; height: 20px; border-radius: 50%;
+          border: 2px solid var(--border); flex-shrink: 0;
+          display: flex; align-items: center; justify-content: center;
+          color: white; transition: all 0.15s;
+        }
+        .dash-checklist-bullet.done {
+          border-color: #4ade80; background: #4ade80;
+        }
+        .dash-checklist-label {
+          flex: 1; font-size: 0.875rem; font-weight: 500;
+        }
+        .dash-checklist-label.done {
+          text-decoration: line-through;
+          color: var(--text-muted);
+        }
+        .dash-checklist-cta {
+          display: inline-flex; align-items: center; gap: 4px;
+          padding: 5px 12px; border-radius: 99px;
+          background: var(--brand); color: white; border: none;
+          font-size: 0.75rem; font-weight: 600; cursor: pointer;
+          transition: background 0.15s;
+        }
+        .dash-checklist-cta:hover { background: var(--brand-dark, #b07070); }
+
+        /* Widget portail élève */
+        .dash-portal-widget {
+          display: flex; align-items: center; gap: 12px;
+          padding: 14px 16px;
+        }
+        .dash-portal-icon {
+          width: 36px; height: 36px; border-radius: 10px;
+          background: var(--brand-light); color: var(--brand);
+          display: flex; align-items: center; justify-content: center;
+          flex-shrink: 0;
+        }
+        .dash-portal-text { flex: 1; min-width: 0; }
+        .dash-portal-title { font-size: 0.8125rem; font-weight: 600; color: var(--text-primary); }
+        .dash-portal-url {
+          font-size: 0.75rem; color: var(--text-muted);
+          font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+          white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+          margin-top: 2px;
+        }
+        .dash-portal-actions { display: flex; gap: 6px; flex-shrink: 0; }
+        .dash-portal-btn {
+          width: 34px; height: 34px; border-radius: 8px;
+          border: 1px solid var(--border); background: white;
+          color: var(--text-secondary); cursor: pointer;
+          display: flex; align-items: center; justify-content: center;
+          transition: all 0.15s; text-decoration: none;
+        }
+        .dash-portal-btn:hover {
+          border-color: var(--brand); color: var(--brand);
         }
       `}</style>
     </div>

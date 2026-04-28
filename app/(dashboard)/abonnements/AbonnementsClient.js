@@ -236,11 +236,23 @@ export default function AbonnementsClient({ abonnements: initAbo, paiementsParAb
       {filtered.length === 0 ? (
         <div className="abo-empty animate-fade-in">
           <Ticket size={36} style={{ color: 'var(--text-muted)' }} />
-          <p>Aucun abonnement trouvé</p>
-          {search && (
-            <button className="izi-btn izi-btn-secondary" onClick={() => setSearch('')}>
-              Effacer la recherche
-            </button>
+          {search ? (
+            <>
+              <p>Aucun abonnement trouvé</p>
+              <button className="izi-btn izi-btn-secondary" onClick={() => setSearch('')}>
+                Effacer la recherche
+              </button>
+            </>
+          ) : (
+            <>
+              <p style={{ fontWeight: 600 }}>Aucun abonnement actif</p>
+              <p style={{ fontSize: '0.8125rem', maxWidth: 320, margin: 0 }}>
+                Crée d'abord une offre, puis assigne-la à un·e élève depuis sa fiche pour démarrer un abonnement.
+              </p>
+              <Link href="/offres/nouveau" className="izi-btn izi-btn-primary">
+                Créer une offre
+              </Link>
+            </>
           )}
         </div>
       ) : (
