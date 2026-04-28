@@ -2,6 +2,7 @@ import { createServerClient } from '@/lib/supabase-server';
 import { createClient as createAdminSupabase } from '@supabase/supabase-js';
 import { parseJsonBody, annulationSchema } from '@/lib/validation';
 import { evaluerAnnulation } from '@/lib/regles-annulation';
+import { sendNotifEleve } from '@/lib/notifs-eleves';
 
 export async function POST(request, { params }) {
   const { studioSlug } = await params;
@@ -22,10 +23,10 @@ export async function POST(request, { params }) {
     process.env.SUPABASE_SERVICE_ROLE_KEY
   );
 
-  // Vérifier que le studio existe + récupérer ses règles d'annulation
+  // Vérifier que le studio existe + récupérer ses règles + config notifs
   const { data: profile } = await supabaseAdmin
     .from('profiles')
-    .select('id, regles_annulation')
+    .select('id, studio_nom, regles_annulation, notifs_eleves, twilio_account_sid, twilio_auth_token, twilio_phone_number')
     .eq('studio_slug', studioSlug)
     .single();
 
@@ -33,10 +34,10 @@ export async function POST(request, { params }) {
     return Response.json({ error: 'Studio introuvable' }, { status: 404 });
   }
 
-  // Trouver le client lié à cet user dans ce studio
+  // Trouver le client lié à cet user dans ce studio (incl. infos pour notif)
   const { data: client } = await supabaseAdmin
     .from('clients')
-    .select('id')
+    .select('id, prenom, nom, email, telephone')
     .eq('profile_id', profile.id)
     .ilike('email', user.email)
     .single();
@@ -128,6 +129,39 @@ export async function POST(request, { params }) {
         .update({ seances_utilisees: (abo.seances_utilisees || 0) + 1 })
         .eq('id', presence.abonnement_id);
     }
+  }
+
+  // Notification : "Pour rappel, ta séance a été comptée"
+  try {
+    const dateStr = presence.cours?.date
+      ? new Date(presence.cours.date + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })
+      : '';
+    const heureStr = presence.cours?.heure ? presence.cours.heure.slice(0, 5).replace(':', 'h') : '';
+    await sendNotifEleve(supabaseAdmin, {
+      profile,
+      client,
+      type: 'annulation_tardive',
+      relatedId: presenceId,
+      contexte: { date: dateStr, heure: heureStr },
+      templates: {
+        email: {
+          sujet: `À noter : ta séance du ${dateStr} a été comptée`,
+          corps:
+`Bonjour {{prenom}},
+
+Pour rappel, l'annulation de ta séance prévue le ${dateStr}${heureStr ? ` à ${heureStr}` : ''} est intervenue moins de ${evaluation.delaiHeures}h avant le cours. Conformément à la politique d'annulation du studio, la séance a été décomptée de ton crédit.
+
+Tu peux retrouver le détail dans ton espace personnel.
+
+À très vite,`,
+        },
+        sms: {
+          corps: `Annulation tardive (<${evaluation.delaiHeures}h) — la seance du ${dateStr}${heureStr ? ` ${heureStr}` : ''} a ete decomptee de ton credit. — {{studio}}`,
+        },
+      },
+    });
+  } catch (notifErr) {
+    console.error('annulation tardive — notif (non-blocking):', notifErr);
   }
 
   return Response.json({

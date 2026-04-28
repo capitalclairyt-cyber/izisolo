@@ -110,7 +110,8 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
   // Annuler un cours
   const handleCancel = async () => {
     const supabase = createClient();
-    await supabase.from('cours').update({ est_annule: true }).eq('id', cours.id);
+    // Passe par l'API pour déclencher les notifications email/SMS aux inscrits
+    await fetch(`/api/cours/${cours.id}/annuler`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
     router.refresh();
   };
 

@@ -524,9 +524,9 @@ function CoursCard({ cours: c, todayStr, onCoursMaj }) {
     e.stopPropagation();
     setAnnulant(true);
     try {
-      const supabase = createClient();
-      const { error } = await supabase.from('cours').update({ est_annule: true }).eq('id', c.id);
-      if (!error) onCoursMaj?.({ id: c.id, est_annule: true });
+      // Passe par /api/cours/[id]/annuler pour déclencher email/SMS auto aux inscrits
+      const res = await fetch(`/api/cours/${c.id}/annuler`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+      if (res.ok) onCoursMaj?.({ id: c.id, est_annule: true });
     } catch (err) {
       console.error('Erreur annulation:', err);
     } finally {

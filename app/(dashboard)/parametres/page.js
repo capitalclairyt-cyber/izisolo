@@ -44,6 +44,121 @@ const REGLAGES_SUBTABS = [
 ];
 
 // ════════════════════════════════════════════════════════════════════════════
+// Section "Notifications élèves" — emails/SMS automatiques que l'app envoie
+// directement aux élèves. Le pro coche ce qu'il veut activer.
+// ════════════════════════════════════════════════════════════════════════════
+const NOTIFS_TYPES = [
+  { key: 'cours_annule',       label: 'Cours annulé par mes soins',       desc: "Email/SMS automatique aux inscrits quand j'annule un cours." },
+  { key: 'annulation_tardive', label: 'Annulation tardive — séance comptée', desc: "L'élève reçoit un rappel transparent : sa séance a été décomptée." },
+  { key: 'credits_faibles',    label: 'Crédits faibles',                  desc: "Quand il reste peu de séances sur un carnet (seuil dans Notifications)." },
+  { key: 'expiration_abo',     label: 'Expiration prochaine d\'abonnement', desc: "X jours avant la date de fin (seuil dans Notifications)." },
+];
+
+function NotifsElevesSection({ profile, setProfile, setDirty }) {
+  const [smsConso, setSmsConso] = useState(null);
+  const notifs = profile?.notifs_eleves || {};
+
+  // Charger la conso SMS du mois pour info au pro
+  useEffect(() => {
+    if (!profile?.id) return;
+    const supabase = createClient();
+    const debutMois = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString();
+    supabase
+      .from('notifications_eleves')
+      .select('id', { count: 'exact', head: true })
+      .eq('profile_id', profile.id)
+      .eq('channel', 'sms')
+      .eq('statut', 'sent')
+      .gte('sent_at', debutMois)
+      .then(({ count }) => setSmsConso(count || 0));
+  }, [profile?.id]);
+
+  const toggle = (typeKey, channel) => () => {
+    const current = notifs[typeKey] || { email: false, sms: false };
+    setProfile(prev => ({
+      ...prev,
+      notifs_eleves: {
+        ...(prev?.notifs_eleves || {}),
+        [typeKey]: { ...current, [channel]: !current[channel] },
+      },
+    }));
+    setDirty(true);
+  };
+
+  return (
+    <div className="section izi-card">
+      <div className="section-top">
+        <div className="section-icon"><Bell size={20} /></div>
+        <h2>Notifications élèves automatiques</h2>
+      </div>
+      <p className="section-desc">
+        L'app envoie ces emails (et SMS) <strong>directement à tes élèves</strong>, en ton nom.
+        Tu n'as plus rien à faire à la main.
+      </p>
+
+      <table className="notifs-table">
+        <thead>
+          <tr>
+            <th>Type</th>
+            <th style={{ width: 80, textAlign: 'center' }}>Email</th>
+            <th style={{ width: 80, textAlign: 'center' }}>SMS</th>
+          </tr>
+        </thead>
+        <tbody>
+          {NOTIFS_TYPES.map(t => {
+            const pref = notifs[t.key] || { email: false, sms: false };
+            return (
+              <tr key={t.key}>
+                <td>
+                  <div style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--text-primary)' }}>{t.label}</div>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: 2 }}>{t.desc}</div>
+                </td>
+                <td style={{ textAlign: 'center' }}>
+                  <button type="button" onClick={toggle(t.key, 'email')} className="toggle-btn-mini">
+                    {pref.email ? <ToggleRight size={26} style={{ color: 'var(--brand)' }} /> : <ToggleLeft size={26} style={{ color: 'var(--text-muted)' }} />}
+                  </button>
+                </td>
+                <td style={{ textAlign: 'center' }}>
+                  <button type="button" onClick={toggle(t.key, 'sms')} className="toggle-btn-mini">
+                    {pref.sms ? <ToggleRight size={26} style={{ color: 'var(--brand)' }} /> : <ToggleLeft size={26} style={{ color: 'var(--text-muted)' }} />}
+                  </button>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+
+      <div style={{
+        marginTop: 16, padding: 14, background: 'var(--bg-soft, #faf8f5)',
+        border: '1px dashed var(--border)', borderRadius: 12,
+        display: 'flex', flexDirection: 'column', gap: 6,
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+          <span style={{ fontSize: '0.875rem', fontWeight: 600 }}>📱 SMS — facturation au volume</span>
+          {smsConso !== null && (
+            <span style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>
+              <strong>{smsConso} SMS</strong> ce mois · <strong>{(smsConso * 0.10).toFixed(2).replace('.', ',')} €</strong>
+            </span>
+          )}
+        </div>
+        <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.5 }}>
+          Les SMS sont facturés <strong>0,10 € l'unité</strong> sur ta facture mensuelle IziSolo (frais Twilio + petite marge IziSolo). Les emails restent gratuits, illimités. Tu peux activer/désactiver à tout moment.
+        </p>
+      </div>
+
+      <style jsx global>{`
+        .notifs-table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+        .notifs-table th { font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; padding: 8px 0; border-bottom: 1px solid var(--border); text-align: left; }
+        .notifs-table td { padding: 12px 0; border-bottom: 1px solid var(--border); vertical-align: middle; }
+        .notifs-table tr:last-child td { border-bottom: none; }
+        .toggle-btn-mini { background: none; border: none; cursor: pointer; padding: 0; display: inline-flex; }
+      `}</style>
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════════════════════════════
 // Section "Abonnement" — Stripe SaaS Mélutek
 // 2 plans payants (Solo 9€ / Pro 19€) en mensuel ou annuel (-20%)
 // ════════════════════════════════════════════════════════════════════════════
@@ -797,6 +912,8 @@ export default function Parametres() {
       stripe_webhook_secret:   profile.stripe_webhook_secret || null,
       // Règles d'annulation (v5 + v15)
       regles_annulation:       profile.regles_annulation || null,
+      // Notifications élèves (v19) — Twilio Mélutek global, on persiste juste les toggles
+      notifs_eleves:           profile.notifs_eleves || null,
       // Page publique enrichie (v14)
       photo_url:               profile.photo_url || null,
       photo_couverture:        profile.photo_couverture || null,
@@ -970,6 +1087,13 @@ export default function Parametres() {
 
           {/* Règles d'annulation */}
           <ReglesAnnulationSection
+            profile={profile}
+            setProfile={setProfile}
+            setDirty={setDirty}
+          />
+
+          {/* Notifications élèves automatiques */}
+          <NotifsElevesSection
             profile={profile}
             setProfile={setProfile}
             setDirty={setDirty}
