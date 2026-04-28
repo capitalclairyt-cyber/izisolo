@@ -6,13 +6,14 @@ import {
   Save, Palette, User, Building2, Bell, MapPin,
   Plus, X, Trash2, Flower2, Sliders, Crown, Mail, Home,
   Eye, Settings, Zap, Gift, ToggleLeft, ToggleRight, Cake,
-  CreditCard, Copy, Check, ExternalLink, AlertCircle,
+  CreditCard, Copy, Check, ExternalLink, AlertCircle, Loader2,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase';
 import { useToast } from '@/components/ui/ToastProvider';
 import { METIERS } from '@/lib/constantes';
 import BackgroundDecor, { ILLUSTRATION_OPTIONS } from '@/components/background/BackgroundDecor';
 import ReglesTab from './ReglesTab';
+import PhotoUploader from '@/components/ui/PhotoUploader';
 
 const PALETTES = [
   { id: 'rose', label: 'Rose', color: '#d4a0a0' },
@@ -57,6 +58,8 @@ const NOTIFS_TYPES = [
 function NotifsElevesSection({ profile, setProfile, setDirty }) {
   const [smsConso, setSmsConso] = useState(null);
   const notifs = profile?.notifs_eleves || {};
+  const smsGlobalOff = notifs.sms_global_off === true;
+  const seuilMois = profile?.sms_seuil_mois ?? '';
 
   // Charger la conso SMS du mois pour info au pro
   useEffect(() => {
@@ -85,6 +88,26 @@ function NotifsElevesSection({ profile, setProfile, setDirty }) {
     setDirty(true);
   };
 
+  const toggleSmsGlobalOff = () => {
+    setProfile(prev => ({
+      ...prev,
+      notifs_eleves: {
+        ...(prev?.notifs_eleves || {}),
+        sms_global_off: !smsGlobalOff,
+      },
+    }));
+    setDirty(true);
+  };
+
+  const updateSeuilMois = (val) => {
+    setProfile(prev => ({ ...prev, sms_seuil_mois: val === '' ? null : Math.max(0, parseInt(val) || 0) }));
+    setDirty(true);
+  };
+
+  // Alerte si on s'approche du seuil
+  const alerteSeuil = seuilMois && smsConso !== null && smsConso >= (seuilMois * 0.8);
+  const seuilAtteint = seuilMois && smsConso !== null && smsConso >= seuilMois;
+
   return (
     <div className="section izi-card">
       <div className="section-top">
@@ -95,6 +118,23 @@ function NotifsElevesSection({ profile, setProfile, setDirty }) {
         L'app envoie ces emails (et SMS) <strong>directement à tes élèves</strong>, en ton nom.
         Tu n'as plus rien à faire à la main.
       </p>
+
+      {/* Master kill-switch SMS */}
+      <div className={`sms-master ${smsGlobalOff ? 'off' : ''}`}>
+        <div className="sms-master-left">
+          <div style={{ fontSize: '0.875rem', fontWeight: 700 }}>
+            {smsGlobalOff ? '🔇 Tous les SMS sont coupés' : '📱 SMS activés'}
+          </div>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 2 }}>
+            {smsGlobalOff
+              ? 'Aucun SMS ne sera envoyé, même si tu coches une case ci-dessous.'
+              : 'Master switch — coupe tout d\'un coup en cas de doute sur la facture.'}
+          </div>
+        </div>
+        <button type="button" onClick={toggleSmsGlobalOff} className="toggle-btn-mini" aria-label={smsGlobalOff ? 'Réactiver les SMS' : 'Couper tous les SMS'}>
+          {smsGlobalOff ? <ToggleLeft size={32} style={{ color: '#dc2626' }} /> : <ToggleRight size={32} style={{ color: 'var(--brand)' }} />}
+        </button>
+      </div>
 
       <table className="notifs-table">
         <thead>
@@ -119,7 +159,13 @@ function NotifsElevesSection({ profile, setProfile, setDirty }) {
                   </button>
                 </td>
                 <td style={{ textAlign: 'center' }}>
-                  <button type="button" onClick={toggle(t.key, 'sms')} className="toggle-btn-mini">
+                  <button
+                    type="button"
+                    onClick={toggle(t.key, 'sms')}
+                    className="toggle-btn-mini"
+                    disabled={smsGlobalOff}
+                    style={{ opacity: smsGlobalOff ? 0.3 : 1 }}
+                  >
                     {pref.sms ? <ToggleRight size={26} style={{ color: 'var(--brand)' }} /> : <ToggleLeft size={26} style={{ color: 'var(--text-muted)' }} />}
                   </button>
                 </td>
@@ -132,19 +178,46 @@ function NotifsElevesSection({ profile, setProfile, setDirty }) {
       <div style={{
         marginTop: 16, padding: 14, background: 'var(--bg-soft, #faf8f5)',
         border: '1px dashed var(--border)', borderRadius: 12,
-        display: 'flex', flexDirection: 'column', gap: 6,
+        display: 'flex', flexDirection: 'column', gap: 10,
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
           <span style={{ fontSize: '0.875rem', fontWeight: 600 }}>📱 SMS — facturation au volume</span>
           {smsConso !== null && (
             <span style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>
-              <strong>{smsConso} SMS</strong> ce mois · <strong>{(smsConso * 0.10).toFixed(2).replace('.', ',')} €</strong>
+              <strong>{smsConso} SMS</strong> ce mois · <strong>{(smsConso * 0.08).toFixed(2).replace('.', ',')} €</strong>
             </span>
           )}
         </div>
         <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.5 }}>
-          Les SMS sont facturés <strong>0,10 € l'unité</strong> sur ta facture mensuelle IziSolo (frais Twilio + petite marge IziSolo). Les emails restent gratuits, illimités. Tu peux activer/désactiver à tout moment.
+          Les SMS sont facturés <strong>0,08 € l'unité</strong> sur ta facture IziSolo. Les emails restent gratuits, illimités.
         </p>
+
+        {/* Seuil mensuel optionnel */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <label htmlFor="sms_seuil" style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>
+            🛡️ Bloquer après
+          </label>
+          <input
+            id="sms_seuil"
+            type="number"
+            min="0"
+            placeholder="illimité"
+            value={seuilMois}
+            onChange={(e) => updateSeuilMois(e.target.value)}
+            style={{ width: 90, padding: '6px 10px', borderRadius: 8, border: '1px solid var(--border)', fontSize: '0.875rem', textAlign: 'right' }}
+          />
+          <span style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>SMS / mois</span>
+        </div>
+        {seuilAtteint && (
+          <div style={{ fontSize: '0.75rem', background: '#fee2e2', color: '#991b1b', padding: '6px 10px', borderRadius: 8, fontWeight: 600 }}>
+            ⛔ Seuil atteint — les nouveaux SMS sont bloqués jusqu'au mois prochain.
+          </div>
+        )}
+        {alerteSeuil && !seuilAtteint && (
+          <div style={{ fontSize: '0.75rem', background: '#fef3c7', color: '#854d0e', padding: '6px 10px', borderRadius: 8, fontWeight: 600 }}>
+            ⚠️ Tu as utilisé {smsConso}/{seuilMois} SMS ce mois.
+          </div>
+        )}
       </div>
 
       <style jsx global>{`
@@ -153,6 +226,18 @@ function NotifsElevesSection({ profile, setProfile, setDirty }) {
         .notifs-table td { padding: 12px 0; border-bottom: 1px solid var(--border); vertical-align: middle; }
         .notifs-table tr:last-child td { border-bottom: none; }
         .toggle-btn-mini { background: none; border: none; cursor: pointer; padding: 0; display: inline-flex; }
+        .toggle-btn-mini:disabled { cursor: not-allowed; }
+
+        .sms-master {
+          display: flex; align-items: center; justify-content: space-between;
+          gap: 12px; padding: 12px 14px; border-radius: 12px;
+          background: var(--brand-light); border: 1px solid var(--brand-200, #f0d0d0);
+          margin: 12px 0;
+        }
+        .sms-master.off {
+          background: #fef2f2; border-color: #fecaca;
+        }
+        .sms-master-left { flex: 1; }
       `}</style>
     </div>
   );
@@ -361,6 +446,8 @@ function PagePubliqueSection({ profile, setProfile, setDirty }) {
   const studioSlug = profile?.studio_slug;
   const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://izisolo.fr';
   const publicUrl = studioSlug ? `${baseUrl}/p/${studioSlug}` : null;
+  const previewUrl = publicUrl ? `${publicUrl}?preview=1` : null;
+  const [previewLoading, setPreviewLoading] = useState(false);
 
   const set = (field) => (e) => {
     const value = e?.target ? e.target.value : e;
@@ -370,6 +457,39 @@ function PagePubliqueSection({ profile, setProfile, setDirty }) {
   const toggle = (field) => () => {
     setProfile(prev => ({ ...prev, [field]: !prev?.[field] }));
     setDirty(true);
+  };
+
+  const openPreview = async () => {
+    if (!previewUrl) return;
+    setPreviewLoading(true);
+    try {
+      // Pousser un brouillon contenant les valeurs actuelles non encore sauvegardées
+      const draft = {
+        bio: profile?.bio || null,
+        philosophie: profile?.philosophie || null,
+        formations: profile?.formations || null,
+        annees_experience: profile?.annees_experience ? parseInt(profile.annees_experience) : null,
+        horaires_studio: profile?.horaires_studio || null,
+        afficher_tarifs: profile?.afficher_tarifs === true,
+        faq_publique: profile?.faq_publique || [],
+        photo_url: profile?.photo_url || null,
+        photo_couverture: profile?.photo_couverture || null,
+        instagram_url: profile?.instagram_url || null,
+        facebook_url: profile?.facebook_url || null,
+        website_url: profile?.website_url || null,
+      };
+      await fetch('/api/profile/page-publique', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(draft),
+      });
+      window.open(previewUrl, '_blank', 'noopener,noreferrer');
+    } catch (err) {
+      console.error('[preview] save draft err:', err);
+      window.open(previewUrl, '_blank', 'noopener,noreferrer');
+    } finally {
+      setPreviewLoading(false);
+    }
   };
 
   // FAQ : array de { q, a }
@@ -404,17 +524,40 @@ function PagePubliqueSection({ profile, setProfile, setDirty }) {
         Tout ce que tes futur·e·s élèves voient sur <strong>{publicUrl || 'ta page'}</strong>. Tous les champs sont optionnels — laisse vide ce que tu ne veux pas montrer.
       </p>
 
-      {/* Photo */}
+      {/* Workflow brouillon → aperçu → publication */}
+      {studioSlug && (
+        <div className="page-pub-workflow">
+          <div className="page-pub-workflow-info">
+            <strong>Aperçu avant publication</strong> — visualise tes modifs comme tes élèves les verront, avant de cliquer Enregistrer en bas de page.
+          </div>
+          <div className="page-pub-workflow-actions">
+            <button
+              type="button"
+              onClick={openPreview}
+              disabled={previewLoading}
+              className="izi-btn izi-btn-secondary"
+            >
+              <Eye size={14} /> {previewLoading ? 'Préparation…' : "Voir l'aperçu"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Photo de profil — upload direct via Vercel Blob, resize 1024px côté client */}
       <div className="form-group">
-        <label className="form-label"><User size={14} /> Photo de profil (URL)</label>
-        <input
-          type="url"
-          className="izi-input"
-          value={profile?.photo_url || ''}
-          onChange={set('photo_url')}
-          placeholder="https://… (Imgur, Cloudinary, ton site…)"
+        <label className="form-label"><User size={14} /> Photo de profil</label>
+        <PhotoUploader
+          currentUrl={profile?.photo_url || null}
+          kind="profil"
+          onUploaded={(url) => {
+            setProfile(prev => ({ ...prev, photo_url: url }));
+            // Pas de setDirty : la mise à jour DB est faite côté API (immédiate)
+          }}
+          label="Téléverser une photo"
         />
-        <p className="form-hint">L'upload direct arrive bientôt. Pour l'instant, héberge ailleurs et colle le lien.</p>
+        <p className="form-hint" style={{ marginTop: 8 }}>
+          JPG, PNG ou WebP, max 8 Mo (resize automatique à 1024×1024 avant envoi).
+        </p>
       </div>
 
       {/* Bio */}
@@ -575,6 +718,16 @@ function PagePubliqueSection({ profile, setProfile, setDirty }) {
           border: 1px solid var(--brand-200, #f0d0d0);
         }
         .page-public-preview:hover { background: var(--brand); color: white; }
+        .page-pub-workflow {
+          display: flex; align-items: center; justify-content: space-between;
+          gap: 12px; flex-wrap: wrap;
+          padding: 12px 14px; margin: 4px 0 16px;
+          background: var(--bg-soft, #faf8f5);
+          border: 1px solid var(--border); border-radius: 12px;
+        }
+        .page-pub-workflow-info { font-size: 0.8125rem; color: var(--text-secondary); flex: 1; min-width: 220px; }
+        .page-pub-workflow-info strong { color: var(--text-primary); font-weight: 600; }
+        .page-pub-workflow-actions { display: flex; gap: 6px; flex-shrink: 0; }
         .toggle-row .toggle-btn {
           display: inline-flex; align-items: center; gap: 10px;
           background: none; border: none; cursor: pointer;
@@ -912,8 +1065,9 @@ export default function Parametres() {
       stripe_webhook_secret:   profile.stripe_webhook_secret || null,
       // Règles d'annulation (v5 + v15)
       regles_annulation:       profile.regles_annulation || null,
-      // Notifications élèves (v19) — Twilio Mélutek global, on persiste juste les toggles
+      // Notifications élèves (v19+v21) — OctoPush Mélutek, toggles + kill-switch + seuil
       notifs_eleves:           profile.notifs_eleves || null,
+      sms_seuil_mois:          profile.sms_seuil_mois ? parseInt(profile.sms_seuil_mois) : null,
       // Page publique enrichie (v14)
       photo_url:               profile.photo_url || null,
       photo_couverture:        profile.photo_couverture || null,

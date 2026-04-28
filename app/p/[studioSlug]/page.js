@@ -30,7 +30,8 @@ async function getStudioData(studioSlug) {
       id, studio_nom, studio_slug, metier, adresse, code_postal, ville, types_cours,
       photo_url, photo_couverture, bio, philosophie, formations, annees_experience,
       horaires_studio, afficher_tarifs, faq_publique,
-      instagram_url, facebook_url, website_url
+      instagram_url, facebook_url, website_url,
+      page_publique_draft
     `)
     .eq('studio_slug', studioSlug)
     .single();
@@ -92,18 +93,34 @@ async function getStudioData(studioSlug) {
   };
 }
 
-export default async function PortailPage({ params }) {
+export default async function PortailPage({ params, searchParams }) {
   const { studioSlug } = await params;
+  const sp = await searchParams;
   const data = await getStudioData(studioSlug);
   if (!data) notFound();
 
+  // Mode preview : si ?preview=1 ET le visiteur est le pro propriétaire du studio,
+  // on applique le brouillon (page_publique_draft) sur les champs publics pour
+  // simuler ce que verrait un visiteur après publication.
+  let profile = data.profile;
+  let isPreview = false;
+  if (sp?.preview === '1') {
+    const supabase = await createServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user && user.id === profile.id && profile.page_publique_draft) {
+      profile = { ...profile, ...profile.page_publique_draft };
+      isPreview = true;
+    }
+  }
+
   return (
     <PortailHome
-      profile={data.profile}
+      profile={profile}
       cours={data.cours}
       offresStripe={data.offresStripe}
       offresPubliques={data.offresPubliques}
       studioSlug={studioSlug}
+      isPreview={isPreview}
     />
   );
 }

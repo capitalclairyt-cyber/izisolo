@@ -1,11 +1,14 @@
 import { createServerClient } from '@/lib/supabase-server';
 import DashboardClient from './DashboardClient';
+import { SMS_PRIX_UNITAIRE } from '@/lib/notifs-eleves';
 
 export default async function DashboardPage() {
   const supabase = await createServerClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   const today = new Date().toISOString().split('T')[0];
+  const debutMois = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10);
+  const debutMoisISO = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString();
 
   // Charger les données en parallèle
   const [
@@ -15,17 +18,23 @@ export default async function DashboardPage() {
     { count: nbCoursTotal },
     { data: alertesAbos },
     { data: derniersPaiements },
+    { count: smsMois },
   ] = await Promise.all([
     supabase.from('profiles').select('*').eq('id', user.id).single(),
     supabase.from('cours').select('*, presences(count)').eq('profile_id', user.id).eq('date', today).order('heure'),
     supabase.from('clients').select('*', { count: 'exact', head: true }).eq('profile_id', user.id).in('statut', ['prospect', 'actif', 'fidele']),
     supabase.from('cours').select('*', { count: 'exact', head: true }).eq('profile_id', user.id),
     supabase.from('abonnements').select('*, clients(nom, prenom)').eq('profile_id', user.id).eq('statut', 'actif'),
-    supabase.from('paiements').select('montant').eq('profile_id', user.id).gte('date', new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0]),
+    supabase.from('paiements').select('montant, commission_montant').eq('profile_id', user.id).gte('date', debutMois),
+    supabase.from('notifications_eleves').select('id', { count: 'exact', head: true })
+      .eq('profile_id', user.id).eq('channel', 'sms').eq('statut', 'sent').gte('sent_at', debutMoisISO),
   ]);
 
   // Calculer les stats
   const revenusMois = derniersPaiements?.reduce((sum, p) => sum + parseFloat(p.montant || 0), 0) || 0;
+  const fraisStripeMois = derniersPaiements?.reduce((sum, p) => sum + parseFloat(p.commission_montant || 0), 0) || 0;
+  const coutSmsMois = (smsMois || 0) * SMS_PRIX_UNITAIRE;
+  const totalACoutsMois = parseFloat((coutSmsMois + fraisStripeMois).toFixed(2));
 
   // Alertes simples
   const alertes = [];
@@ -57,6 +66,11 @@ export default async function DashboardPage() {
       nbCoursTotal={nbCoursTotal || 0}
       revenusMois={revenusMois}
       alertes={alertes}
+      coutsMois={{
+        sms: { count: smsMois || 0, montant: parseFloat(coutSmsMois.toFixed(2)) },
+        stripe: { montant: parseFloat(fraisStripeMois.toFixed(2)) },
+        total: totalACoutsMois,
+      }}
     />
   );
 }

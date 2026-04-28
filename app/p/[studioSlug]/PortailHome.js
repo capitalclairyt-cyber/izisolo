@@ -34,7 +34,7 @@ function PlacesBadge({ capacite, inscrits }) {
   return <span className="portail-tag portail-tag-green">Places disponibles</span>;
 }
 
-export default function PortailHome({ profile, cours, offresStripe = [], offresPubliques = [], studioSlug }) {
+export default function PortailHome({ profile, cours, offresStripe = [], offresPubliques = [], studioSlug, isPreview = false }) {
   const hasAbout = !!(profile.bio || profile.philosophie || profile.formations || profile.annees_experience);
   const hasSocial = !!(profile.instagram_url || profile.facebook_url || profile.website_url);
   const faq = Array.isArray(profile.faq_publique) ? profile.faq_publique.filter(f => f?.q && f?.a) : [];
@@ -71,6 +71,16 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
 
   return (
     <div>
+      {isPreview && (
+        <div style={{
+          background: '#fffaf0', border: '1px solid #ffe0b2', color: '#7c4a03',
+          padding: '10px 14px', borderRadius: 10, marginBottom: 16,
+          fontSize: '0.8125rem', display: 'flex', alignItems: 'center', gap: 8,
+        }}>
+          👁 <strong>Mode aperçu</strong> — tu vois ton brouillon, pas encore publié.
+        </div>
+      )}
+
       {/* Studio header */}
       <div className="portail-studio-header">
         <div className="portail-studio-avatar">

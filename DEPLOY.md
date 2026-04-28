@@ -46,7 +46,17 @@ Exécuter dans cet ordre, **uniquement les migrations qui ne sont pas encore app
 4. `migrations-v4-visual-themes.sql`
 5. `migrations-v5-pointage.sql`
 6. `migrations-v10-notifications.sql`
-7. `migrations-v11-support-tickets.sql` ← **probablement la seule manquante**
+7. `migrations-v11-support-tickets.sql`
+8. `migrations-v12-paiements-compta.sql`
+9. `migrations-v13-stripe-payment-link.sql`
+10. `migrations-v14-profil-prof-public.sql`
+11. `migrations-v15-dette-annulation-tardive.sql`
+12. `migrations-v16-liste-attente.sql`
+13. `migrations-v17-templates-communication.sql`
+14. `migrations-v18-videos-cours.sql`
+15. `migrations-v19-notifs-eleves.sql`
+16. `migrations-v20-page-publique-brouillon.sql`
+17. `migrations-v21-sms-kill-switch.sql`
 
 Pour vérifier rapidement quoi est déjà appliqué :
 
@@ -108,6 +118,9 @@ vercel env add NEXT_PUBLIC_APP_URL production
 vercel env add ANTHROPIC_API_KEY production
 vercel env add RESEND_API_KEY production
 vercel env add RESEND_FROM_EMAIL production
+vercel env add OCTOPUSH_LOGIN production
+vercel env add OCTOPUSH_API_KEY production
+vercel env add OCTOPUSH_SENDER production
 vercel env add CRON_SECRET production
 ```
 
@@ -122,6 +135,9 @@ vercel env add CRON_SECRET production
 | `ANTHROPIC_API_KEY` | Clé API Anthropic prod |
 | `RESEND_API_KEY` | API key Resend prod |
 | `RESEND_FROM_EMAIL` | `IziSolo <no-reply@izisolo.fr>` |
+| `OCTOPUSH_LOGIN` | Email du compte OctoPush Mélutek |
+| `OCTOPUSH_API_KEY` | API key OctoPush (Dashboard → API & integrations) |
+| `OCTOPUSH_SENDER` | `IziSolo` (alphanumérique, max 11 chars, doit être validé côté OctoPush) |
 | `CRON_SECRET` | **Générer 32+ chars aléatoires** : `openssl rand -hex 32` |
 
 (Stripe pas configuré — abonnements gérés manuellement via `/admin/users` jusqu'au sprint Stripe post-launch.)

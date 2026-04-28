@@ -5,13 +5,14 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   CalendarDays, Users, BarChart3, AlertTriangle, ChevronRight,
-  Clock, Plus, CheckCircle2, XCircle, Share2, Copy, ExternalLink, X, Sparkles
+  Clock, Plus, CheckCircle2, XCircle, Share2, Copy, ExternalLink, X, Sparkles,
+  Receipt, MessageSquare, Settings as SettingsIcon
 } from 'lucide-react';
 import { formatHeure, formatMontant } from '@/lib/utils';
 import { getVocabulaire } from '@/lib/vocabulaire';
 import { useToast } from '@/components/ui/ToastProvider';
 
-export default function DashboardClient({ profile, coursDuJour, nbClients, nbCoursTotal, revenusMois, alertes }) {
+export default function DashboardClient({ profile, coursDuJour, nbClients, nbCoursTotal, revenusMois, alertes, coutsMois }) {
   const vocab = getVocabulaire(profile?.metier || 'yoga', profile?.vocabulaire);
   const prenom = profile?.prenom || 'toi';
   const studioSlug = profile?.studio_slug;
@@ -164,6 +165,55 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
           <div className="stat-label">Ce mois</div>
         </Link>
       </div>
+
+      {/* Widget Mes coûts — visible dès qu'il y a au moins un coût ce mois */}
+      {coutsMois && (coutsMois.sms.count > 0 || coutsMois.stripe.montant > 0) && (
+        <div className="dash-couts izi-card animate-slide-up">
+          <div className="dash-couts-header">
+            <div className="dash-couts-title">
+              <Receipt size={16} style={{ color: 'var(--brand)' }} />
+              <span>Mes coûts ce mois</span>
+            </div>
+            <Link href="/parametres" className="dash-couts-cog" aria-label="Régler mes notifs" title="Régler mes notifs">
+              <SettingsIcon size={14} />
+            </Link>
+          </div>
+
+          <div className="dash-couts-rows">
+            <div className="dash-couts-row">
+              <div className="dash-couts-row-left">
+                <MessageSquare size={14} />
+                <span>SMS envoyés</span>
+                <span className="dash-couts-badge">{coutsMois.sms.count}</span>
+              </div>
+              <span className="dash-couts-amount">
+                {formatMontant(coutsMois.sms.montant)}
+              </span>
+            </div>
+
+            <div className="dash-couts-row">
+              <div className="dash-couts-row-left">
+                <BarChart3 size={14} />
+                <span>Frais IziSolo (1 % paiements en ligne)</span>
+              </div>
+              <span className="dash-couts-amount">
+                {formatMontant(coutsMois.stripe.montant)}
+              </span>
+            </div>
+
+            <div className="dash-couts-row dash-couts-total">
+              <span>Total à régler</span>
+              <span className="dash-couts-amount">
+                {formatMontant(coutsMois.total)}
+              </span>
+            </div>
+          </div>
+
+          <p className="dash-couts-note">
+            Facturé sur ton abonnement IziSolo en fin de mois. Tu peux couper les SMS à tout moment depuis <Link href="/parametres">Paramètres</Link>.
+          </p>
+        </div>
+      )}
 
       {/* Prochaines séances */}
       <div className="dash-section animate-slide-up">
@@ -526,6 +576,58 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
           transition: background 0.15s;
         }
         .dash-checklist-cta:hover { background: var(--brand-dark, #b07070); }
+
+        /* Widget Mes coûts */
+        .dash-couts {
+          display: flex; flex-direction: column; gap: 10px;
+          padding: 14px 16px;
+        }
+        .dash-couts-header {
+          display: flex; justify-content: space-between; align-items: center;
+        }
+        .dash-couts-title {
+          display: inline-flex; align-items: center; gap: 8px;
+          font-size: 0.875rem; font-weight: 700; color: var(--text-primary);
+        }
+        .dash-couts-cog {
+          width: 30px; height: 30px; border-radius: 8px;
+          display: inline-flex; align-items: center; justify-content: center;
+          color: var(--text-muted); border: 1px solid var(--border);
+          background: white; transition: all 0.15s;
+        }
+        .dash-couts-cog:hover { color: var(--brand); border-color: var(--brand); }
+        .dash-couts-rows {
+          display: flex; flex-direction: column; gap: 4px;
+          padding: 8px 0; border-top: 1px solid var(--border);
+        }
+        .dash-couts-row {
+          display: flex; justify-content: space-between; align-items: center;
+          padding: 6px 0; font-size: 0.8125rem;
+        }
+        .dash-couts-row-left {
+          display: inline-flex; align-items: center; gap: 8px;
+          color: var(--text-secondary);
+        }
+        .dash-couts-badge {
+          background: var(--brand-light); color: var(--brand-700);
+          font-size: 0.6875rem; font-weight: 700;
+          padding: 2px 8px; border-radius: 99px;
+        }
+        .dash-couts-amount {
+          font-weight: 600; color: var(--text-primary);
+          font-variant-numeric: tabular-nums;
+        }
+        .dash-couts-total {
+          padding-top: 10px; margin-top: 4px;
+          border-top: 1px dashed var(--border);
+          font-weight: 700; font-size: 0.9375rem;
+        }
+        .dash-couts-total .dash-couts-amount { color: var(--brand); }
+        .dash-couts-note {
+          font-size: 0.7rem; color: var(--text-muted); line-height: 1.5;
+          margin: 4px 0 0;
+        }
+        .dash-couts-note a { color: var(--brand); text-decoration: underline; }
 
         /* Widget portail élève */
         .dash-portal-widget {

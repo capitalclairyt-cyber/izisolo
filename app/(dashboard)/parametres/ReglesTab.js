@@ -95,20 +95,37 @@ function RegleBuilderModal({ onClose, onSave, editingRegle }) {
               </select>
 
               {/* Params de condition */}
-              {currentConditionDef?.params.map(param => (
-                param.type === 'select' ? (
-                  <select
-                    key={param.key}
-                    className="izi-input"
-                    value={conditionParams[param.key] ?? param.default ?? ''}
-                    onChange={e => setConditionParams(prev => ({ ...prev, [param.key]: e.target.value }))}
-                  >
-                    {param.options.map(o => (
-                      <option key={o.value} value={o.value}>{o.label}</option>
-                    ))}
-                  </select>
-                ) : null
-              ))}
+              {currentConditionDef?.params.map(param => {
+                if (param.type === 'select') {
+                  return (
+                    <select
+                      key={param.key}
+                      className="izi-input"
+                      value={conditionParams[param.key] ?? param.default ?? ''}
+                      onChange={e => setConditionParams(prev => ({ ...prev, [param.key]: e.target.value }))}
+                    >
+                      {param.options.map(o => (
+                        <option key={o.value} value={o.value}>{o.label}</option>
+                      ))}
+                    </select>
+                  );
+                }
+                if (param.type === 'number') {
+                  return (
+                    <div key={param.key} className="param-row">
+                      <input
+                        className="izi-input param-number"
+                        type="number"
+                        min={param.min ?? 0}
+                        value={conditionParams[param.key] ?? param.default}
+                        onChange={e => setConditionParams(prev => ({ ...prev, [param.key]: parseInt(e.target.value) || param.default }))}
+                      />
+                      {param.suffix && <span className="param-suffix">{param.suffix}</span>}
+                    </div>
+                  );
+                }
+                return null;
+              })}
 
               {currentConditionDef?.description && (
                 <p className="builder-hint">{currentConditionDef.description}</p>
@@ -135,20 +152,52 @@ function RegleBuilderModal({ onClose, onSave, editingRegle }) {
               </select>
 
               {/* Params d'action */}
-              {currentActionDef?.params.map(param => (
-                param.type === 'number' ? (
-                  <div key={param.key} className="param-row">
-                    <input
-                      className="izi-input param-number"
-                      type="number"
-                      min={param.min || 1}
-                      value={actionParams[param.key] ?? param.default}
-                      onChange={e => setActionParams(prev => ({ ...prev, [param.key]: parseInt(e.target.value) || param.default }))}
-                    />
-                    {param.suffix && <span className="param-suffix">{param.suffix}</span>}
-                  </div>
-                ) : null
-              ))}
+              {currentActionDef?.params.map(param => {
+                if (param.type === 'number') {
+                  return (
+                    <div key={param.key} className="param-row">
+                      <input
+                        className="izi-input param-number"
+                        type="number"
+                        min={param.min || 1}
+                        value={actionParams[param.key] ?? param.default}
+                        onChange={e => setActionParams(prev => ({ ...prev, [param.key]: parseInt(e.target.value) || param.default }))}
+                      />
+                      {param.suffix && <span className="param-suffix">{param.suffix}</span>}
+                    </div>
+                  );
+                }
+                if (param.type === 'text') {
+                  return (
+                    <div key={param.key} className="param-text-row">
+                      {param.label && <label className="param-label">{param.label}</label>}
+                      <input
+                        className="izi-input"
+                        type="text"
+                        maxLength={200}
+                        value={actionParams[param.key] ?? param.default ?? ''}
+                        onChange={e => setActionParams(prev => ({ ...prev, [param.key]: e.target.value }))}
+                      />
+                    </div>
+                  );
+                }
+                if (param.type === 'textarea') {
+                  return (
+                    <div key={param.key} className="param-text-row">
+                      {param.label && <label className="param-label">{param.label}</label>}
+                      <textarea
+                        className="izi-input"
+                        rows={4}
+                        maxLength={2000}
+                        value={actionParams[param.key] ?? param.default ?? ''}
+                        onChange={e => setActionParams(prev => ({ ...prev, [param.key]: e.target.value }))}
+                      />
+                      <p className="param-hint">Variables disponibles : <code>{'{{prenom}}'}</code>, <code>{'{{nom}}'}</code>, <code>{'{{studio}}'}</code></p>
+                    </div>
+                  );
+                }
+                return null;
+              })}
 
               {currentActionDef?.bientot && (
                 <div className="action-bientot-notice">
@@ -418,6 +467,12 @@ export default function ReglesTab({ profileId }) {
         .param-row { display: flex; align-items: center; gap: 8px; }
         .param-number { width: 80px; text-align: center; }
         .param-suffix { font-size: 0.875rem; color: var(--text-secondary); }
+
+        /* Param row (text/textarea) */
+        .param-text-row { display: flex; flex-direction: column; gap: 4px; }
+        .param-label { font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); }
+        .param-hint { font-size: 0.7rem; color: var(--text-muted); margin-top: 2px; }
+        .param-hint code { background: var(--bg-soft, #faf8f5); padding: 1px 4px; border-radius: 4px; font-size: 0.7rem; }
 
         /* Notice bientôt */
         .action-bientot-notice { display: flex; align-items: center; gap: 6px; padding: 8px 12px; background: #fef9c3; border-radius: var(--radius-sm); font-size: 0.8rem; color: #854d0e; }
