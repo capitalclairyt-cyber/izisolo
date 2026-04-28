@@ -26,13 +26,28 @@ async function getStudioData(studioSlug) {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('id, studio_nom, studio_slug, metier, adresse, code_postal, ville, photo_url, types_cours')
+    .select(`
+      id, studio_nom, studio_slug, metier, adresse, code_postal, ville, types_cours,
+      photo_url, photo_couverture, bio, philosophie, formations, annees_experience,
+      horaires_studio, afficher_tarifs, faq_publique,
+      instagram_url, facebook_url, website_url
+    `)
     .eq('studio_slug', studioSlug)
     .single();
 
   if (!profile) return null;
 
-  const [{ data: cours }, { data: offresStripe }] = await Promise.all([
+  // Si le pro a coché "Afficher mes tarifs", on charge aussi toutes les offres actives
+  const offresAffichables = profile.afficher_tarifs
+    ? supabase
+        .from('offres')
+        .select('id, nom, type, prix, seances, duree_jours, stripe_payment_link')
+        .eq('profile_id', profile.id)
+        .eq('actif', true)
+        .order('ordre')
+    : Promise.resolve({ data: [] });
+
+  const [{ data: cours }, { data: offresStripe }, { data: offresPubliques }] = await Promise.all([
     supabase
       .from('cours')
       .select('id, nom, date, heure, duree, type_cours, lieu, capacite_max, est_annule, recurrence_parent_id')
@@ -50,6 +65,7 @@ async function getStudioData(studioSlug) {
       .eq('actif', true)
       .not('stripe_payment_link', 'is', null)
       .order('ordre'),
+    offresAffichables,
   ]);
 
   // Count presences per cours
@@ -72,6 +88,7 @@ async function getStudioData(studioSlug) {
       nbInscrits: presencesCounts[c.id] || 0,
     })),
     offresStripe: offresStripe || [],
+    offresPubliques: offresPubliques || [],
   };
 }
 
@@ -80,5 +97,13 @@ export default async function PortailPage({ params }) {
   const data = await getStudioData(studioSlug);
   if (!data) notFound();
 
-  return <PortailHome profile={data.profile} cours={data.cours} offresStripe={data.offresStripe} studioSlug={studioSlug} />;
+  return (
+    <PortailHome
+      profile={data.profile}
+      cours={data.cours}
+      offresStripe={data.offresStripe}
+      offresPubliques={data.offresPubliques}
+      studioSlug={studioSlug}
+    />
+  );
 }

@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
-import { MapPin, Calendar, Clock, Users, ChevronRight, Search, CreditCard, Ticket, CalendarCheck, Zap } from 'lucide-react';
+import { MapPin, Calendar, Clock, Users, ChevronRight, Search, CreditCard, Ticket, CalendarCheck, Zap, Instagram, Facebook, Globe, Award, BookOpen } from 'lucide-react';
 
 const TYPE_ICONS = { carnet: Ticket, abonnement: CalendarCheck, cours_unique: Zap };
 
@@ -34,7 +34,12 @@ function PlacesBadge({ capacite, inscrits }) {
   return <span className="portail-tag portail-tag-green">Places disponibles</span>;
 }
 
-export default function PortailHome({ profile, cours, offresStripe = [], studioSlug }) {
+export default function PortailHome({ profile, cours, offresStripe = [], offresPubliques = [], studioSlug }) {
+  const hasAbout = !!(profile.bio || profile.philosophie || profile.formations || profile.annees_experience);
+  const hasSocial = !!(profile.instagram_url || profile.facebook_url || profile.website_url);
+  const faq = Array.isArray(profile.faq_publique) ? profile.faq_publique.filter(f => f?.q && f?.a) : [];
+  const adresseComplete = [profile.adresse, profile.code_postal, profile.ville].filter(Boolean).join(', ');
+  const mapsQuery = adresseComplete ? encodeURIComponent(adresseComplete) : null;
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState('');
 
@@ -160,6 +165,128 @@ export default function PortailHome({ profile, cours, offresStripe = [], studioS
         </div>
       ))}
 
+      {/* Section "À propos" — bio, philosophie, formations, années d'expérience */}
+      {hasAbout && (
+        <section className="portail-about">
+          <h2 className="portail-section-title">À propos</h2>
+          <div className="portail-about-card">
+            {profile.bio && <p className="portail-about-bio">{profile.bio}</p>}
+            {profile.philosophie && (
+              <p className="portail-about-philo"><em>{profile.philosophie}</em></p>
+            )}
+            <div className="portail-about-meta">
+              {profile.annees_experience && (
+                <span className="portail-about-pill">
+                  <Award size={13} /> {profile.annees_experience} an{profile.annees_experience > 1 ? 's' : ''} d'expérience
+                </span>
+              )}
+              {profile.formations && (
+                <span className="portail-about-pill">
+                  <BookOpen size={13} /> {profile.formations}
+                </span>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Section "Tarifs" publique — uniquement si afficher_tarifs activé */}
+      {profile.afficher_tarifs && offresPubliques.length > 0 && (
+        <section className="portail-prices">
+          <h2 className="portail-section-title">Tarifs</h2>
+          <div className="portail-prices-grid">
+            {offresPubliques.map(o => {
+              const Icon = TYPE_ICONS[o.type] || Ticket;
+              const sub =
+                o.type === 'carnet'      ? `Carnet de ${o.seances} séances` :
+                o.type === 'abonnement'  ? (o.duree_jours ? `Abonnement ${o.duree_jours} jours` : 'Abonnement') :
+                                            'Cours à l\'unité';
+              return (
+                <div key={o.id} className="portail-price-card">
+                  <div className="portail-price-icon"><Icon size={18} /></div>
+                  <div className="portail-price-info">
+                    <div className="portail-price-nom">{o.nom}</div>
+                    <div className="portail-price-sub">{sub}</div>
+                  </div>
+                  <div className="portail-price-prix">{o.prix}€</div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {/* Section "Adresse & horaires" — carte Maps + horaires */}
+      {(adresseComplete || profile.horaires_studio) && (
+        <section className="portail-venue">
+          <h2 className="portail-section-title">Où nous trouver</h2>
+          <div className="portail-venue-card">
+            {adresseComplete && (
+              <div className="portail-venue-row">
+                <MapPin size={16} />
+                <div>
+                  <div className="portail-venue-addr">{adresseComplete}</div>
+                  {mapsQuery && (
+                    <a
+                      href={`https://www.google.com/maps/search/?api=1&query=${mapsQuery}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="portail-venue-link"
+                    >
+                      Itinéraire Google Maps →
+                    </a>
+                  )}
+                </div>
+              </div>
+            )}
+            {profile.horaires_studio && (
+              <div className="portail-venue-row">
+                <Clock size={16} />
+                <div className="portail-venue-hours">{profile.horaires_studio}</div>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* Section "FAQ" publique */}
+      {faq.length > 0 && (
+        <section className="portail-faq">
+          <h2 className="portail-section-title">Questions fréquentes</h2>
+          <div className="portail-faq-list">
+            {faq.map((item, i) => (
+              <details key={i} className="portail-faq-item">
+                <summary className="portail-faq-q">{item.q}</summary>
+                <p className="portail-faq-a">{item.a}</p>
+              </details>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Section "Réseaux sociaux & site" */}
+      {hasSocial && (
+        <section className="portail-social">
+          <div className="portail-social-row">
+            {profile.instagram_url && (
+              <a href={profile.instagram_url} target="_blank" rel="noopener noreferrer" className="portail-social-link" aria-label="Instagram">
+                <Instagram size={18} />
+              </a>
+            )}
+            {profile.facebook_url && (
+              <a href={profile.facebook_url} target="_blank" rel="noopener noreferrer" className="portail-social-link" aria-label="Facebook">
+                <Facebook size={18} />
+              </a>
+            )}
+            {profile.website_url && (
+              <a href={profile.website_url} target="_blank" rel="noopener noreferrer" className="portail-social-link" aria-label="Site web">
+                <Globe size={18} />
+              </a>
+            )}
+          </div>
+        </section>
+      )}
+
       {/* Section "Acheter en ligne" — affichée uniquement si au moins 1 offre a un Stripe Payment Link */}
       {offresStripe.length > 0 && (
         <div className="portail-stripe-section">
@@ -260,6 +387,106 @@ export default function PortailHome({ profile, cours, offresStripe = [], studioS
           color: #888; background: white; border-radius: 16px;
           box-shadow: 0 1px 6px rgba(0,0,0,0.04);
         }
+
+        /* Sections enrichies (v14) */
+        .portail-section-title {
+          font-size: 0.8125rem; font-weight: 700; color: #888;
+          text-transform: uppercase; letter-spacing: 0.05em;
+          margin: 32px 0 12px; padding-left: 2px;
+        }
+
+        /* À propos */
+        .portail-about-card {
+          background: white; border-radius: 16px; padding: 20px;
+          box-shadow: 0 1px 6px rgba(0,0,0,0.05);
+        }
+        .portail-about-bio { font-size: 0.9375rem; color: #1a1a2e; line-height: 1.6; margin: 0 0 12px; }
+        .portail-about-philo {
+          font-size: 0.9rem; color: #555; line-height: 1.6; margin: 0 0 14px;
+          padding-left: 12px; border-left: 3px solid #d4a0a0;
+        }
+        .portail-about-meta { display: flex; flex-wrap: wrap; gap: 8px; }
+        .portail-about-pill {
+          display: inline-flex; align-items: center; gap: 6px;
+          background: #faf8f5; border: 1px solid #f0ebe8;
+          border-radius: 99px; padding: 5px 12px;
+          font-size: 0.8125rem; color: #555;
+        }
+        .portail-about-pill svg { color: #d4a0a0; flex-shrink: 0; }
+
+        /* Tarifs publics */
+        .portail-prices-grid {
+          display: flex; flex-direction: column; gap: 8px;
+        }
+        .portail-price-card {
+          display: flex; align-items: center; gap: 12px;
+          background: white; border-radius: 14px; padding: 14px 16px;
+          box-shadow: 0 1px 6px rgba(0,0,0,0.05);
+        }
+        .portail-price-icon {
+          width: 36px; height: 36px; border-radius: 10px;
+          background: #fce8e8; color: #d4a0a0;
+          display: flex; align-items: center; justify-content: center;
+          flex-shrink: 0;
+        }
+        .portail-price-info { flex: 1; min-width: 0; }
+        .portail-price-nom { font-weight: 600; font-size: 0.9375rem; color: #1a1a2e; }
+        .portail-price-sub { font-size: 0.75rem; color: #888; margin-top: 2px; }
+        .portail-price-prix { font-weight: 700; font-size: 1.125rem; color: #d4a0a0; }
+
+        /* Venue */
+        .portail-venue-card {
+          background: white; border-radius: 16px; padding: 18px 20px;
+          box-shadow: 0 1px 6px rgba(0,0,0,0.05);
+          display: flex; flex-direction: column; gap: 14px;
+        }
+        .portail-venue-row {
+          display: flex; align-items: flex-start; gap: 10px;
+          font-size: 0.9375rem; color: #1a1a2e;
+        }
+        .portail-venue-row svg { color: #d4a0a0; flex-shrink: 0; margin-top: 2px; }
+        .portail-venue-addr { font-weight: 600; line-height: 1.4; }
+        .portail-venue-hours { white-space: pre-wrap; line-height: 1.5; color: #555; font-size: 0.875rem; }
+        .portail-venue-link {
+          display: inline-block; margin-top: 4px;
+          font-size: 0.8125rem; color: #d4a0a0; text-decoration: none; font-weight: 600;
+        }
+        .portail-venue-link:hover { text-decoration: underline; }
+
+        /* FAQ */
+        .portail-faq-list { display: flex; flex-direction: column; gap: 6px; }
+        .portail-faq-item {
+          background: white; border-radius: 12px; padding: 14px 18px;
+          box-shadow: 0 1px 6px rgba(0,0,0,0.05);
+        }
+        .portail-faq-item[open] { background: #faf8f5; }
+        .portail-faq-q {
+          font-weight: 600; color: #1a1a2e; cursor: pointer;
+          font-size: 0.9375rem; list-style: none; position: relative; padding-right: 24px;
+        }
+        .portail-faq-q::-webkit-details-marker { display: none; }
+        .portail-faq-q::after {
+          content: '+'; position: absolute; right: 0; top: 0;
+          font-size: 1.25rem; color: #d4a0a0; line-height: 1; transition: transform 0.2s;
+        }
+        .portail-faq-item[open] .portail-faq-q::after { content: '−'; }
+        .portail-faq-a {
+          margin: 10px 0 0; color: #555; font-size: 0.875rem; line-height: 1.6;
+          padding-top: 10px; border-top: 1px solid #f0ebe8;
+        }
+
+        /* Social */
+        .portail-social { margin-top: 24px; }
+        .portail-social-row {
+          display: flex; gap: 10px; justify-content: center;
+        }
+        .portail-social-link {
+          width: 40px; height: 40px; border-radius: 50%;
+          background: white; color: #888; border: 1px solid #f0ebe8;
+          display: flex; align-items: center; justify-content: center;
+          transition: all 0.15s;
+        }
+        .portail-social-link:hover { color: #d4a0a0; border-color: #d4a0a0; transform: translateY(-2px); }
       `}</style>
     </div>
   );

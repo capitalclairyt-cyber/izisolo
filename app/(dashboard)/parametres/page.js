@@ -44,6 +44,258 @@ const REGLAGES_SUBTABS = [
 ];
 
 // ════════════════════════════════════════════════════════════════════════════
+// Section "Page publique" — enrichit ce que voient les visiteurs sur /p/[slug]
+// Bio, photo, formations, horaires, FAQ, réseaux sociaux. Tous champs optionnels.
+// ════════════════════════════════════════════════════════════════════════════
+function PagePubliqueSection({ profile, setProfile, setDirty }) {
+  const studioSlug = profile?.studio_slug;
+  const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://izisolo.fr';
+  const publicUrl = studioSlug ? `${baseUrl}/p/${studioSlug}` : null;
+
+  const set = (field) => (e) => {
+    const value = e?.target ? e.target.value : e;
+    setProfile(prev => ({ ...prev, [field]: value }));
+    setDirty(true);
+  };
+  const toggle = (field) => () => {
+    setProfile(prev => ({ ...prev, [field]: !prev?.[field] }));
+    setDirty(true);
+  };
+
+  // FAQ : array de { q, a }
+  const faq = Array.isArray(profile?.faq_publique) ? profile.faq_publique : [];
+  const updateFaq = (next) => {
+    setProfile(prev => ({ ...prev, faq_publique: next }));
+    setDirty(true);
+  };
+  const addFaq = () => updateFaq([...faq, { q: '', a: '' }]);
+  const removeFaq = (i) => updateFaq(faq.filter((_, idx) => idx !== i));
+  const editFaq = (i, key, value) =>
+    updateFaq(faq.map((item, idx) => idx === i ? { ...item, [key]: value } : item));
+
+  return (
+    <div className="section izi-card">
+      <div className="section-top">
+        <div className="section-icon"><Eye size={20} /></div>
+        <h2>Ma page publique</h2>
+        {publicUrl && (
+          <a
+            href={publicUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="page-public-preview"
+            title="Voir ma page publique"
+          >
+            <ExternalLink size={13} /> Voir
+          </a>
+        )}
+      </div>
+      <p className="section-desc">
+        Tout ce que tes futur·e·s élèves voient sur <strong>{publicUrl || 'ta page'}</strong>. Tous les champs sont optionnels — laisse vide ce que tu ne veux pas montrer.
+      </p>
+
+      {/* Photo */}
+      <div className="form-group">
+        <label className="form-label"><User size={14} /> Photo de profil (URL)</label>
+        <input
+          type="url"
+          className="izi-input"
+          value={profile?.photo_url || ''}
+          onChange={set('photo_url')}
+          placeholder="https://… (Imgur, Cloudinary, ton site…)"
+        />
+        <p className="form-hint">L'upload direct arrive bientôt. Pour l'instant, héberge ailleurs et colle le lien.</p>
+      </div>
+
+      {/* Bio */}
+      <div className="form-group">
+        <label className="form-label">Bio courte</label>
+        <textarea
+          className="izi-input"
+          rows={3}
+          value={profile?.bio || ''}
+          onChange={set('bio')}
+          placeholder="Ex : Prof de Hatha & Vinyasa depuis 8 ans. J'ai à cœur de transmettre une pratique douce et accessible…"
+          maxLength={400}
+        />
+        <p className="form-hint">~2-3 phrases pour te présenter. {(profile?.bio || '').length}/400</p>
+      </div>
+
+      {/* Années d'expérience + formations */}
+      <div className="form-row">
+        <div className="form-group" style={{ flex: 1 }}>
+          <label className="form-label">Années d'expérience</label>
+          <input
+            type="number"
+            min="0"
+            max="80"
+            className="izi-input"
+            value={profile?.annees_experience || ''}
+            onChange={set('annees_experience')}
+            placeholder="Ex : 8"
+          />
+        </div>
+      </div>
+
+      <div className="form-group">
+        <label className="form-label">Formations / certifications</label>
+        <textarea
+          className="izi-input"
+          rows={2}
+          value={profile?.formations || ''}
+          onChange={set('formations')}
+          placeholder="Ex : RYT 500 — Yoga Alliance · Diplôme Hatha (Sivananda) · Formation prénatal"
+        />
+      </div>
+
+      {/* Philosophie */}
+      <div className="form-group">
+        <label className="form-label">Ma philosophie / ce qui me rend unique</label>
+        <textarea
+          className="izi-input"
+          rows={3}
+          value={profile?.philosophie || ''}
+          onChange={set('philosophie')}
+          placeholder="Ex : Mes cours mêlent rigueur de la posture et écoute du souffle. Je crois qu'un yoga juste se construit lentement, sans course à la performance…"
+          maxLength={600}
+        />
+      </div>
+
+      {/* Horaires */}
+      <div className="form-group">
+        <label className="form-label">Horaires d'ouverture du studio</label>
+        <textarea
+          className="izi-input"
+          rows={2}
+          value={profile?.horaires_studio || ''}
+          onChange={set('horaires_studio')}
+          placeholder={'Ex :\nLun–Ven 9h–20h · Sam 10h–14h · Dim fermé'}
+        />
+      </div>
+
+      {/* Tarifs visibles */}
+      <div className="form-group toggle-row">
+        <button
+          type="button"
+          onClick={toggle('afficher_tarifs')}
+          className="toggle-btn"
+          aria-pressed={profile?.afficher_tarifs === true}
+        >
+          {profile?.afficher_tarifs ? <ToggleRight size={28} style={{ color: 'var(--brand)' }} /> : <ToggleLeft size={28} style={{ color: 'var(--text-muted)' }} />}
+          <span>Afficher mes tarifs (offres) sur ma page publique</span>
+        </button>
+        <p className="form-hint">Liste tes carnets, abonnements et cours unitaires actifs avec leur prix.</p>
+      </div>
+
+      {/* Réseaux sociaux */}
+      <div className="form-group">
+        <label className="form-label">Réseaux sociaux & site</label>
+        <div className="form-row">
+          <input
+            type="url"
+            className="izi-input"
+            value={profile?.instagram_url || ''}
+            onChange={set('instagram_url')}
+            placeholder="https://instagram.com/…"
+          />
+          <input
+            type="url"
+            className="izi-input"
+            value={profile?.facebook_url || ''}
+            onChange={set('facebook_url')}
+            placeholder="https://facebook.com/…"
+          />
+        </div>
+        <input
+          type="url"
+          className="izi-input"
+          value={profile?.website_url || ''}
+          onChange={set('website_url')}
+          placeholder="https://mon-site.fr"
+          style={{ marginTop: 8 }}
+        />
+      </div>
+
+      {/* FAQ publique */}
+      <div className="form-group">
+        <label className="form-label">FAQ — questions de tes élèves</label>
+        <p className="form-hint" style={{ marginTop: 0, marginBottom: 8 }}>
+          Anticipe les questions classiques (« dois-je amener mon tapis ? », « où me garer ? »).
+        </p>
+        <div className="faq-editor-list">
+          {faq.map((item, i) => (
+            <div key={i} className="faq-editor-item">
+              <input
+                className="izi-input"
+                value={item.q || ''}
+                onChange={e => editFaq(i, 'q', e.target.value)}
+                placeholder="Question"
+              />
+              <textarea
+                className="izi-input"
+                rows={2}
+                value={item.a || ''}
+                onChange={e => editFaq(i, 'a', e.target.value)}
+                placeholder="Réponse"
+              />
+              <button
+                type="button"
+                onClick={() => removeFaq(i)}
+                className="izi-btn izi-btn-ghost faq-remove-btn"
+                aria-label="Supprimer cette question"
+              >
+                <Trash2 size={14} />
+              </button>
+            </div>
+          ))}
+        </div>
+        <button type="button" onClick={addFaq} className="izi-btn izi-btn-secondary" style={{ marginTop: 8 }}>
+          <Plus size={14} /> Ajouter une question
+        </button>
+      </div>
+
+      <style jsx global>{`
+        .page-public-preview {
+          margin-left: auto;
+          display: inline-flex; align-items: center; gap: 4px;
+          padding: 5px 10px; border-radius: 999px;
+          background: var(--brand-light); color: var(--brand-700);
+          font-size: 0.75rem; font-weight: 600;
+          text-decoration: none;
+          border: 1px solid var(--brand-200, #f0d0d0);
+        }
+        .page-public-preview:hover { background: var(--brand); color: white; }
+        .toggle-row .toggle-btn {
+          display: inline-flex; align-items: center; gap: 10px;
+          background: none; border: none; cursor: pointer;
+          padding: 0; font-size: 0.875rem; color: var(--text-primary);
+          font-weight: 500;
+        }
+        .form-hint { font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; line-height: 1.4; }
+        .faq-editor-list { display: flex; flex-direction: column; gap: 12px; margin-top: 4px; }
+        .faq-editor-item {
+          display: grid;
+          grid-template-columns: 1fr 36px;
+          grid-template-areas: "q remove" "a remove";
+          gap: 8px;
+          padding: 12px;
+          background: var(--bg-soft, #faf8f5);
+          border: 1px solid var(--border);
+          border-radius: 10px;
+        }
+        .faq-editor-item input { grid-area: q; }
+        .faq-editor-item textarea { grid-area: a; resize: vertical; min-height: 60px; font-family: inherit; }
+        .faq-remove-btn {
+          grid-area: remove; padding: 0; width: 36px; min-height: 36px;
+          color: var(--danger, #dc2626);
+          align-self: start;
+        }
+      `}</style>
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════════════════════════════
 // Section "Paiement en ligne (Stripe)"
 // Le pro renseigne son webhook signing secret. IziSolo lui affiche l'URL endpoint
 // à coller dans son dashboard Stripe (avec son profile_id en query param pour le retrouver).
@@ -348,6 +600,19 @@ export default function Parametres() {
       notif_carnet_epuise:     notifCarnetEpuise,
       notif_abonnement_expire: notifAbonnementExpire,
       stripe_webhook_secret:   profile.stripe_webhook_secret || null,
+      // Page publique enrichie (v14)
+      photo_url:               profile.photo_url || null,
+      photo_couverture:        profile.photo_couverture || null,
+      bio:                     profile.bio || null,
+      philosophie:             profile.philosophie || null,
+      formations:              profile.formations || null,
+      annees_experience:       profile.annees_experience ? parseInt(profile.annees_experience) : null,
+      horaires_studio:         profile.horaires_studio || null,
+      afficher_tarifs:         profile.afficher_tarifs === true,
+      faq_publique:            profile.faq_publique || [],
+      instagram_url:           profile.instagram_url || null,
+      facebook_url:            profile.facebook_url || null,
+      website_url:             profile.website_url || null,
     }).eq('id', profile.id);
 
     if (!error) {
@@ -505,6 +770,13 @@ export default function Parametres() {
               </button>
             </div>
           </div>
+
+          {/* Page publique enrichie */}
+          <PagePubliqueSection
+            profile={profile}
+            setProfile={setProfile}
+            setDirty={setDirty}
+          />
 
           {/* Paiement en ligne (Stripe Payment Link) */}
           <StripePaiementSection
