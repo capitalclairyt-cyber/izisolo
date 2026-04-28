@@ -4,6 +4,10 @@ const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://izisolo.fr';
 
 const STATIC_PATHS = [
   { path: '/',                     changeFrequency: 'monthly',  priority: 1.0 },
+  { path: '/profs-de-yoga',        changeFrequency: 'monthly',  priority: 0.9 },
+  { path: '/profs-de-pilates',     changeFrequency: 'monthly',  priority: 0.9 },
+  { path: '/coachs-bien-etre',     changeFrequency: 'monthly',  priority: 0.9 },
+  { path: '/therapeutes',          changeFrequency: 'monthly',  priority: 0.9 },
   { path: '/login',                changeFrequency: 'yearly',   priority: 0.5 },
   { path: '/register',             changeFrequency: 'yearly',   priority: 0.7 },
   { path: '/legal/cgu',            changeFrequency: 'yearly',   priority: 0.3 },

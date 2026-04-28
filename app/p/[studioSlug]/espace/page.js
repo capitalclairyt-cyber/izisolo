@@ -34,8 +34,16 @@ async function getData(studioSlug, userEmail) {
   ]);
 
   if (!client) {
-    return { profile, client: null, aVenir: [], passes: [], offresStripe: offresStripe || [] };
+    return { profile, client: null, aVenir: [], passes: [], paiements: [], offresStripe: offresStripe || [] };
   }
+
+  // Mes paiements (pour l'historique + téléchargement reçus PDF)
+  const { data: paiements } = await supabase
+    .from('paiements')
+    .select('id, intitule, montant, mode, date, date_encaissement, statut')
+    .eq('profile_id', profile.id)
+    .eq('client_id', client.id)
+    .order('date', { ascending: false });
 
   // Ses réservations avec détail des cours
   const { data: presences } = await supabase
@@ -66,7 +74,7 @@ async function getData(studioSlug, userEmail) {
     .filter(p => p.cours && (p.cours.date < today || p.cours.est_annule))
     .sort((a, b) => b.cours.date.localeCompare(a.cours.date));
 
-  return { profile, client, aVenir, passes, offresStripe: offresStripe || [] };
+  return { profile, client, aVenir, passes, paiements: paiements || [], offresStripe: offresStripe || [] };
 }
 
 export default async function EspacePage({ params }) {
@@ -87,6 +95,7 @@ export default async function EspacePage({ params }) {
       client={data.client}
       aVenir={data.aVenir || []}
       passes={data.passes || []}
+      paiements={data.paiements || []}
       offresStripe={data.offresStripe || []}
       studioSlug={studioSlug}
       userEmail={user.email}

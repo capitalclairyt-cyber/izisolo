@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Calendar, Clock, MapPin, ArrowLeft, LogOut, CheckCircle, XCircle, Loader, AlertCircle, User, Lock, CreditCard, Ticket, CalendarCheck, Zap } from 'lucide-react';
+import { Calendar, Clock, MapPin, ArrowLeft, LogOut, CheckCircle, XCircle, Loader, AlertCircle, User, Lock, CreditCard, Ticket, CalendarCheck, Zap, Download, Receipt, MessageCircle, Send, X } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/components/ui/ToastProvider';
 import { evaluerAnnulation, formatDateLimite } from '@/lib/regles-annulation';
@@ -22,6 +22,131 @@ function formatHeure(h) {
   if (!h) return '';
   const [hh, mm] = h.split(':');
   return mm === '00' ? `${parseInt(hh)}h` : `${parseInt(hh)}h${mm}`;
+}
+
+// Mini chatbot Claude pour aider l'élève à choisir un cours
+function AssistantBookingButton({ studioSlug, prenom }) {
+  const [open, setOpen] = useState(false);
+  const [messages, setMessages] = useState([
+    { role: 'assistant', content: prenom
+      ? `Bonjour ${prenom} ! Je peux t'aider à trouver un cours dans les 14 prochains jours. Qu'est-ce qui te ferait plaisir ?`
+      : `Bonjour ! Je peux t'aider à trouver un cours dans les 14 prochains jours. Qu'est-ce qui te ferait plaisir ?`
+    },
+  ]);
+  const [input, setInput] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const send = async (e) => {
+    e?.preventDefault();
+    const text = input.trim();
+    if (!text || loading) return;
+    const next = [...messages, { role: 'user', content: text }];
+    setMessages(next);
+    setInput('');
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/portail/${studioSlug}/assistant`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: next }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Erreur');
+      setMessages([...next, { role: 'assistant', content: json.message }]);
+    } catch (err) {
+      setMessages([...next, { role: 'assistant', content: `Désolé, je rencontre un souci technique : ${err.message}. Réessaie dans un instant.` }]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <>
+      <button
+        onClick={() => setOpen(true)}
+        title="Aide-moi à choisir un cours"
+        style={{
+          position: 'fixed', bottom: 20, right: 20, zIndex: 50,
+          width: 54, height: 54, borderRadius: '50%',
+          background: '#d4a0a0', color: 'white', border: 'none',
+          boxShadow: '0 4px 16px rgba(212,160,160,0.45)',
+          cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}
+      >
+        <MessageCircle size={22} />
+      </button>
+
+      {open && (
+        <div style={{
+          position: 'fixed', bottom: 84, right: 20, zIndex: 51,
+          width: 'calc(100vw - 40px)', maxWidth: 360,
+          height: 460, maxHeight: 'calc(100vh - 120px)',
+          background: 'white', borderRadius: 16,
+          boxShadow: '0 10px 40px rgba(0,0,0,0.18)',
+          display: 'flex', flexDirection: 'column', overflow: 'hidden',
+        }}>
+          <div style={{ padding: '14px 16px', background: '#d4a0a0', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <MessageCircle size={16} />
+              <span style={{ fontWeight: 600, fontSize: '0.875rem' }}>Aide-moi à choisir</span>
+            </div>
+            <button onClick={() => setOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'white', padding: 0, display: 'flex' }}>
+              <X size={18} />
+            </button>
+          </div>
+          <div style={{ flex: 1, overflowY: 'auto', padding: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {messages.map((m, i) => (
+              <div key={i} style={{
+                alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start',
+                maxWidth: '85%',
+                background: m.role === 'user' ? '#d4a0a0' : '#faf8f5',
+                color: m.role === 'user' ? 'white' : '#1a1a2e',
+                padding: '8px 12px', borderRadius: 12,
+                fontSize: '0.875rem', lineHeight: 1.5,
+                whiteSpace: 'pre-wrap',
+              }}>
+                {/* Markdown links basiques [text](url) → vrai <a> */}
+                {m.content.split(/(\[[^\]]+\]\([^)]+\))/g).map((part, j) => {
+                  const m2 = part.match(/\[([^\]]+)\]\(([^)]+)\)/);
+                  if (m2) return <a key={j} href={m2[2]} style={{ color: m.role === 'user' ? 'white' : '#d4a0a0', fontWeight: 600 }}>{m2[1]}</a>;
+                  return <span key={j}>{part}</span>;
+                })}
+              </div>
+            ))}
+            {loading && (
+              <div style={{ alignSelf: 'flex-start', color: '#888', fontSize: '0.875rem' }}>
+                <Loader size={14} className="spin" /> Recherche…
+              </div>
+            )}
+          </div>
+          <form onSubmit={send} style={{ padding: 12, borderTop: '1px solid #f0ebe8', display: 'flex', gap: 6 }}>
+            <input
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              placeholder="Ex : un Hatha doux mardi soir"
+              disabled={loading}
+              style={{
+                flex: 1, padding: '8px 12px', borderRadius: 10,
+                border: '1px solid #e8e0db', fontSize: '0.875rem', outline: 'none',
+              }}
+            />
+            <button type="submit" disabled={loading || !input.trim()} style={{
+              padding: '8px 12px', borderRadius: 10,
+              background: '#d4a0a0', color: 'white', border: 'none', cursor: 'pointer',
+              opacity: loading || !input.trim() ? 0.6 : 1,
+            }}>
+              <Send size={14} />
+            </button>
+          </form>
+        </div>
+      )}
+    </>
+  );
+}
+
+function modeLabel(mode) {
+  const map = { especes: 'Espèces', cheque: 'Chèque', virement: 'Virement', CB: 'CB' };
+  return map[mode] || mode;
 }
 
 function CoursCard({ presence, profile, studioSlug, onAnnuler, annulEnCours }) {
@@ -126,7 +251,7 @@ function CoursCard({ presence, profile, studioSlug, onAnnuler, annulEnCours }) {
   );
 }
 
-export default function EspaceClient({ profile, client, aVenir, passes, offresStripe = [], studioSlug, userEmail }) {
+export default function EspaceClient({ profile, client, aVenir, passes, paiements = [], offresStripe = [], studioSlug, userEmail }) {
   const router = useRouter();
   const { toast } = useToast();
   const [annulEnCours, setAnnulEnCours] = useState(null);
@@ -288,6 +413,53 @@ export default function EspaceClient({ profile, client, aVenir, passes, offresSt
         </div>
       )}
 
+      {/* Section "Mes paiements" — historique + téléchargement reçu PDF */}
+      {paiements.length > 0 && (
+        <div style={{ marginTop: 28, paddingTop: 20, borderTop: '1px solid #f0ebe8' }}>
+          <h2 className="espace-section-title">
+            <Receipt size={16} style={{ color: '#d4a0a0' }} />
+            Mes paiements
+            <span className="espace-count">{paiements.length}</span>
+          </h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {paiements.slice(0, 10).map(p => (
+              <div key={p.id} className="paiement-row">
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 600, fontSize: '0.875rem', color: '#1a1a2e' }}>
+                    {p.intitule || 'Paiement'}
+                  </div>
+                  <div style={{ fontSize: '0.7rem', color: '#888', marginTop: 2 }}>
+                    {new Date(p.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
+                    {p.mode && <> · {modeLabel(p.mode)}</>}
+                  </div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                  <span style={{ fontWeight: 700, fontSize: '0.9375rem', color: p.statut === 'paid' ? '#1a1a2e' : '#888' }}>
+                    {parseFloat(p.montant).toFixed(2).replace('.', ',')} €
+                  </span>
+                  {p.statut === 'paid' && (
+                    <a
+                      href={`/api/portail/${studioSlug}/facture/${p.id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title="Télécharger le reçu PDF"
+                      className="paiement-pdf-btn"
+                    >
+                      <Download size={13} />
+                    </a>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+          {paiements.length > 10 && (
+            <p style={{ fontSize: '0.75rem', color: '#888', textAlign: 'center', marginTop: 12 }}>
+              {paiements.length - 10} paiement{paiements.length - 10 > 1 ? 's' : ''} plus ancien{paiements.length - 10 > 1 ? 's' : ''} non affichés
+            </p>
+          )}
+        </div>
+      )}
+
       {/* Section "Acheter en ligne" via Stripe — uniquement si offres avec Payment Link */}
       {offresStripe.length > 0 && (
         <div style={{ marginTop: 28, paddingTop: 20, borderTop: '1px solid #f0ebe8' }}>
@@ -326,6 +498,9 @@ export default function EspaceClient({ profile, client, aVenir, passes, offresSt
           </p>
         </div>
       )}
+
+      {/* Assistant Claude — bouton flottant + chat */}
+      <AssistantBookingButton studioSlug={studioSlug} prenom={client?.prenom} />
 
       {/* Bouton rebooking */}
       <div style={{ marginTop: 28, paddingTop: 20, borderTop: '1px solid #f0ebe8', textAlign: 'center' }}>
@@ -406,6 +581,20 @@ export default function EspaceClient({ profile, client, aVenir, passes, offresSt
         .espace-stripe-nom { font-weight: 600; font-size: 0.9375rem; color: #1a1a2e; }
         .espace-stripe-meta { font-size: 0.75rem; color: #888; margin-top: 2px; }
         .espace-stripe-prix { font-weight: 700; font-size: 1rem; color: #635bff; }
+
+        /* Paiements */
+        .paiement-row {
+          display: flex; align-items: center; gap: 12px;
+          background: white; border: 1px solid #f0ebe8; border-radius: 12px;
+          padding: 10px 14px;
+        }
+        .paiement-pdf-btn {
+          width: 30px; height: 30px; border-radius: 8px;
+          background: #faf8f5; color: #888; border: 1px solid #f0ebe8;
+          display: flex; align-items: center; justify-content: center;
+          text-decoration: none; transition: all 0.15s;
+        }
+        .paiement-pdf-btn:hover { background: #d4a0a0; color: white; border-color: #d4a0a0; }
       `}</style>
     </div>
   );

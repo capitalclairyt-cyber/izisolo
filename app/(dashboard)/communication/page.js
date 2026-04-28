@@ -11,6 +11,55 @@ import {
 import { createClient } from '@/lib/supabase';
 import { useToast } from '@/components/ui/ToastProvider';
 import { formatMontant } from '@/lib/utils';
+import { TEMPLATES_DEFAUT } from '@/lib/templates-defaut';
+
+/**
+ * Sélecteur de templates pré-définis (email + SMS).
+ * Au clic sur un template, on remplit sujet + corps via le callback onSelect.
+ */
+function TemplatesSelecteur({ canal, onSelect }) {
+  const [open, setOpen] = useState(false);
+  const templates = TEMPLATES_DEFAUT.filter(t => t.type === canal);
+  if (templates.length === 0) return null;
+  return (
+    <div className="compose-field" style={{ position: 'relative' }}>
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        className="izi-btn izi-btn-ghost"
+        style={{ width: '100%', justifyContent: 'space-between', fontSize: '0.875rem' }}
+      >
+        <span>📋 Utiliser un template ({templates.length} dispo)</span>
+        <span style={{ fontSize: '1.25rem', lineHeight: 1, color: 'var(--text-muted)' }}>{open ? '−' : '+'}</span>
+      </button>
+      {open && (
+        <div style={{
+          marginTop: 8, background: 'var(--bg-card)', border: '1px solid var(--border)',
+          borderRadius: 12, padding: 8, display: 'flex', flexDirection: 'column', gap: 4,
+          maxHeight: 320, overflowY: 'auto',
+        }}>
+          {templates.map(t => (
+            <button
+              key={t.cle}
+              type="button"
+              onClick={() => { onSelect(t); setOpen(false); }}
+              style={{
+                textAlign: 'left', padding: '10px 12px', borderRadius: 8,
+                border: 'none', background: 'transparent', cursor: 'pointer',
+                display: 'flex', flexDirection: 'column', gap: 2,
+              }}
+              onMouseOver={e => e.currentTarget.style.background = 'var(--bg-soft, #faf8f5)'}
+              onMouseOut={e => e.currentTarget.style.background = 'transparent'}
+            >
+              <span style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--text-primary)' }}>{t.nom}</span>
+              {t.sujet && <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{t.sujet}</span>}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 // ── Canaux ─────────────────────────────────────────────────────────────────
 const CANAUX = [
@@ -794,6 +843,17 @@ function CommunicationInner() {
                 )}
               </div>
             </div>
+
+            {/* Sélecteur de templates pré-définis */}
+            <TemplatesSelecteur
+              canal={canal}
+              onSelect={(t) => {
+                if (t.sujet) setSujet(t.sujet);
+                if (t.corps && editorRef.current) {
+                  editorRef.current.textContent = t.corps;
+                }
+              }}
+            />
 
             {/* Sujet — email uniquement */}
             {canal === 'email' && (

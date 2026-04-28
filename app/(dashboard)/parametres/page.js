@@ -44,6 +44,86 @@ const REGLAGES_SUBTABS = [
 ];
 
 // ════════════════════════════════════════════════════════════════════════════
+// Section "Abonnement" — Stripe SaaS Mélutek
+// 2 plans payants (Solo 9€ / Pro 19€) en mensuel ou annuel (-20%)
+// ════════════════════════════════════════════════════════════════════════════
+function AbonnementCheckout({ currentPlan }) {
+  const [annuel, setAnnuel] = useState(false);
+  const [loading, setLoading] = useState(null); // 'solo' | 'pro' | null
+
+  const PLANS_PUB = [
+    { id: 'solo', nom: 'Solo', prix: { mensuel: '9 €', annuel: '7,20 €' }, sub: { mensuel: '/mois', annuel: '/mois (86 €/an)' }, desc: 'Élèves illimités, mailing automatisé.', features: ['Élèves illimités', 'Email auto', 'Notifications', 'Support email'] },
+    { id: 'pro',  nom: 'Pro',  prix: { mensuel: '19 €', annuel: '15,20 €' }, sub: { mensuel: '/mois', annuel: '/mois (182 €/an)' }, desc: 'Multi-prof + Stripe Payment Link + vidéos.', features: ['Tout Solo', 'Stripe Payment Link', 'Multi-utilisateurs', 'Vidéos cours', 'Support prioritaire'] },
+  ];
+
+  const subscribe = async (plan) => {
+    setLoading(plan);
+    try {
+      const res = await fetch('/api/stripe/checkout-saas', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan, periode: annuel ? 'annuel' : 'mensuel' }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Erreur');
+      if (json.url) window.location.href = json.url;
+    } catch (err) {
+      alert('Erreur : ' + err.message);
+      setLoading(null);
+    }
+  };
+
+  return (
+    <div className="section izi-card">
+      <h2 style={{ fontSize: '1.0625rem', fontWeight: 700, marginBottom: 4 }}>Passer à la vitesse supérieure</h2>
+      <p className="section-desc">Débloque toutes les fonctionnalités pour développer ton activité.</p>
+
+      <div style={{ display: 'inline-flex', background: 'var(--bg-soft, #faf8f5)', border: '1px solid var(--border)', borderRadius: 999, padding: 4, gap: 2, marginBottom: 16 }}>
+        <button onClick={() => setAnnuel(false)} style={pillStyle(!annuel)}>Mensuel</button>
+        <button onClick={() => setAnnuel(true)} style={pillStyle(annuel)}>Annuel <span style={{ background: '#10b981', color: 'white', fontSize: '0.65rem', fontWeight: 700, padding: '2px 6px', borderRadius: 99, marginLeft: 4 }}>−20%</span></button>
+      </div>
+
+      <div className="plans-grid">
+        {PLANS_PUB.map(p => {
+          const isCurrent = currentPlan === p.id;
+          return (
+            <div key={p.id} className={`plan-card ${p.id === 'pro' ? 'recommended' : ''}`}>
+              {p.id === 'pro' && <div className="plan-badge">Recommandé</div>}
+              <div className="plan-name">{p.nom}</div>
+              <div className="plan-price">
+                <span className="plan-amount">{annuel ? p.prix.annuel : p.prix.mensuel}</span>
+                <span className="plan-period">{annuel ? p.sub.annuel : p.sub.mensuel}</span>
+              </div>
+              <p className="plan-desc">{p.desc}</p>
+              <ul style={{ listStyle: 'none', padding: 0, margin: '12px 0', fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>
+                {p.features.map(f => <li key={f} style={{ padding: '3px 0' }}>✓ {f}</li>)}
+              </ul>
+              <button
+                onClick={() => subscribe(p.id)}
+                disabled={isCurrent || loading === p.id}
+                className={`izi-btn ${p.id === 'pro' ? 'izi-btn-primary' : 'izi-btn-secondary'} plan-cta`}
+              >
+                {isCurrent ? 'Plan actuel' : loading === p.id ? 'Redirection…' : `Passer à ${p.nom}`}
+              </button>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+
+  function pillStyle(active) {
+    return {
+      padding: '6px 14px', borderRadius: 999, border: 'none',
+      background: active ? 'var(--brand)' : 'transparent',
+      color: active ? 'white' : 'var(--text-secondary)',
+      fontSize: '0.8125rem', fontWeight: 600, cursor: 'pointer',
+      display: 'inline-flex', alignItems: 'center',
+    };
+  }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
 // Section "Règles d'annulation" — l'app applique automatiquement les règles
 // configurées ici (délai libre, séance comptée si tardive). La prof n'a plus à
 // se positionner en "méchant·e" face à ses élèves.
@@ -1350,25 +1430,12 @@ export default function Parametres() {
           </div>
 
           {/* Plans */}
-          <div className="section izi-card">
-            <h2 style={{ fontSize: '1.0625rem', fontWeight: 700, marginBottom: 4 }}>Passer à la vitesse supérieure</h2>
-            <p className="section-desc">Débloquez toutes les fonctionnalités pour développer votre activité.</p>
+          <AbonnementCheckout currentPlan={profile?.plan || 'free'} />
 
-            <div className="plans-grid">
-              <div className="plan-card">
-                <div className="plan-name">Solo</div>
-                <div className="plan-price"><span className="plan-amount">9€</span><span className="plan-period">/mois</span></div>
-                <p className="plan-desc">Pour les indépendants qui démarrent.</p>
-                <button className="izi-btn izi-btn-secondary plan-cta">Bientôt disponible</button>
-              </div>
-              <div className="plan-card recommended">
-                <div className="plan-badge">Recommandé</div>
-                <div className="plan-name">Pro</div>
-                <div className="plan-price"><span className="plan-amount">19€</span><span className="plan-period">/mois</span></div>
-                <p className="plan-desc">Tout ce qu'il faut pour gérer son activité sereinement.</p>
-                <button className="izi-btn izi-btn-primary plan-cta">Bientôt disponible</button>
-              </div>
-            </div>
+          <div className="section izi-card" style={{ background: 'var(--bg-soft, #faf8f5)', border: '1px dashed var(--border)' }}>
+            <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.5 }}>
+              <strong>Frais de fonctionnement IziSolo</strong> : 1 % du volume payé en ligne via Stripe — ajoutés à ta facture mensuelle, jamais prélevés sur tes paiements. Tu encaisses sur ton propre compte Stripe, IziSolo ne touche jamais l'argent de tes élèves.
+            </p>
           </div>
 
         </div>
