@@ -3,8 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { CheckCircle2, Sparkles, Lock, ArrowLeft } from 'lucide-react';
-
-const JOURS_LONG = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
+import CalendarBuilder from '@/components/sondage/CalendarBuilder';
 
 export default function SondageReponseClient({ profile, sondage, creneaux, isClosed, connectedClient, isLoggedIn }) {
   const [reponses, setReponses] = useState({}); // { creneauId: 'oui'|'peut_etre'|'non' }
@@ -16,10 +15,18 @@ export default function SondageReponseClient({ profile, sondage, creneaux, isClo
   const [done, setDone] = useState(false);
   const [error, setError] = useState(null);
 
-  const setRep = (id, valeur) => setReponses(prev => ({ ...prev, [id]: valeur }));
+  const handleVote = (creneauId, valeur) => {
+    setReponses(prev => {
+      const next = { ...prev };
+      if (valeur === null) delete next[creneauId];
+      else next[creneauId] = valeur;
+      return next;
+    });
+  };
 
-  const ouiCount = Object.values(reponses).filter(v => v === 'oui').length;
+  const ouiCount      = Object.values(reponses).filter(v => v === 'oui').length;
   const peutEtreCount = Object.values(reponses).filter(v => v === 'peut_etre').length;
+  const nonCount      = Object.values(reponses).filter(v => v === 'non').length;
 
   const visibiliteInscrits = sondage.visibilite === 'inscrits';
   const needsEmail = !connectedClient && !visibiliteInscrits;
@@ -71,7 +78,7 @@ export default function SondageReponseClient({ profile, sondage, creneaux, isClo
   const submit = async () => {
     setError(null);
     if (Object.keys(reponses).length === 0) {
-      setError('Choisis au moins une réponse.');
+      setError('Choisis au moins une réponse en cliquant sur les créneaux.');
       return;
     }
     if (needsEmail && !email.trim()) {
@@ -89,7 +96,7 @@ export default function SondageReponseClient({ profile, sondage, creneaux, isClo
           email: needsEmail ? email.trim() : undefined,
           prenom: prenom.trim() || undefined,
           commentaire: commentaire.trim() || undefined,
-          website, // honeypot
+          website,
         }),
       });
       const json = await res.json();
@@ -135,44 +142,14 @@ export default function SondageReponseClient({ profile, sondage, creneaux, isClo
         </div>
       </div>
 
-      {/* Tableau de créneaux */}
-      <div className="sr-creneaux">
-        {creneaux.map(c => (
-          <div key={c.id} className="sr-creneau izi-card">
-            <div className="sr-cr-info">
-              <div className="sr-cr-titre">
-                {JOURS_LONG[c.jour_semaine - 1]} · {c.heure?.slice(0, 5)}
-              </div>
-              <div className="sr-cr-meta">{c.type_cours} · {c.duree_minutes}min</div>
-            </div>
-            <div className="sr-cr-vote">
-              <button
-                type="button"
-                onClick={() => setRep(c.id, 'oui')}
-                className={`vote-btn vote-oui ${reponses[c.id] === 'oui' ? 'active' : ''}`}
-                aria-label={`Oui pour ${c.type_cours}`}
-              >
-                Oui
-              </button>
-              <button
-                type="button"
-                onClick={() => setRep(c.id, 'peut_etre')}
-                className={`vote-btn vote-peut ${reponses[c.id] === 'peut_etre' ? 'active' : ''}`}
-                aria-label={`Peut-être pour ${c.type_cours}`}
-              >
-                Peut-être
-              </button>
-              <button
-                type="button"
-                onClick={() => setRep(c.id, 'non')}
-                className={`vote-btn vote-non ${reponses[c.id] === 'non' ? 'active' : ''}`}
-                aria-label={`Non pour ${c.type_cours}`}
-              >
-                Non
-              </button>
-            </div>
-          </div>
-        ))}
+      {/* Calendrier votant */}
+      <div className="izi-card" style={{ padding: 12 }}>
+        <CalendarBuilder
+          mode="vote"
+          creneaux={creneaux}
+          votes={reponses}
+          onVote={handleVote}
+        />
       </div>
 
       {/* Identification (anonyme) */}
@@ -234,8 +211,9 @@ export default function SondageReponseClient({ profile, sondage, creneaux, isClo
       {/* Submit */}
       <div className="sr-submit-bar">
         <div className="sr-summary">
-          {ouiCount > 0 && <span className="sr-pill pill-oui">{ouiCount} oui</span>}
+          {ouiCount > 0      && <span className="sr-pill pill-oui">{ouiCount} oui</span>}
           {peutEtreCount > 0 && <span className="sr-pill pill-peut">{peutEtreCount} peut-être</span>}
+          {nonCount > 0      && <span className="sr-pill pill-non">{nonCount} non</span>}
         </div>
         <button
           type="button"
@@ -255,9 +233,9 @@ export default function SondageReponseClient({ profile, sondage, creneaux, isClo
 const styleBlock = (
   <style jsx global>{`
     .sr-page {
-      max-width: 640px; margin: 0 auto; padding: 16px;
+      max-width: 740px; margin: 0 auto; padding: 16px;
       display: flex; flex-direction: column; gap: 16px;
-      padding-bottom: 60px;
+      padding-bottom: 80px;
     }
 
     .sr-studio { display: flex; align-items: center; gap: 12px; }
@@ -288,29 +266,6 @@ const styleBlock = (
     .sr-intro h1 { font-size: 1.125rem; font-weight: 700; }
     .sr-intro-msg { font-size: 0.875rem; color: var(--text-secondary); margin-top: 4px; line-height: 1.5; white-space: pre-line; }
 
-    .sr-creneaux { display: flex; flex-direction: column; gap: 8px; }
-    .sr-creneau {
-      display: flex; flex-direction: column; gap: 8px;
-      padding: 12px 14px;
-    }
-    .sr-cr-info { display: flex; flex-direction: column; }
-    .sr-cr-titre { font-weight: 700; font-size: 0.9375rem; color: var(--text-primary); }
-    .sr-cr-meta { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
-
-    .sr-cr-vote { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
-    .vote-btn {
-      padding: 10px; border: 1.5px solid var(--border);
-      background: var(--bg-card); border-radius: 10px;
-      cursor: pointer; font-size: 0.8125rem; font-weight: 600;
-      color: var(--text-secondary);
-      transition: all 0.15s;
-      min-height: 44px;
-    }
-    .vote-btn:hover { border-color: var(--text-secondary); }
-    .vote-oui.active   { background: #dcfce7; color: #15803d; border-color: #16a34a; }
-    .vote-peut.active  { background: #fef3c7; color: #92400e; border-color: #f59e0b; }
-    .vote-non.active   { background: #fee2e2; color: #991b1b; border-color: #dc2626; }
-
     .sr-form { padding: 14px; }
     .sr-form h3 { font-size: 0.9375rem; font-weight: 700; margin-bottom: 12px; }
     .sr-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -334,13 +289,14 @@ const styleBlock = (
       border-radius: 14px; box-shadow: 0 4px 24px rgba(0,0,0,0.08);
       border: 1px solid var(--border);
     }
-    .sr-summary { display: flex; gap: 6px; }
+    .sr-summary { display: flex; gap: 6px; flex-wrap: wrap; }
     .sr-pill {
       font-size: 0.75rem; font-weight: 700;
       padding: 4px 10px; border-radius: 99px;
     }
-    .sr-pill.pill-oui { background: #dcfce7; color: #15803d; }
+    .sr-pill.pill-oui  { background: #dcfce7; color: #15803d; }
     .sr-pill.pill-peut { background: #fef3c7; color: #92400e; }
+    .sr-pill.pill-non  { background: #fee2e2; color: #991b1b; }
     .sr-submit { padding: 10px 22px; }
 
     .sr-locked, .sr-done {

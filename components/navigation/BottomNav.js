@@ -6,7 +6,7 @@ import Link from 'next/link';
 import {
   Home, CalendarDays, Users, Menu, X,
   Package, BarChart3, BookOpen, Mail, Sparkles,
-  Settings, LogOut
+  Settings, LogOut, ClipboardList
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase';
 
@@ -36,6 +36,7 @@ const ALL_NAV = [
     title: 'Communication',
     items: [
       { href: '/mailing', label: 'Mailing', icon: Mail },
+      { href: '/sondages', label: 'Planning idéal', icon: ClipboardList },
       { href: '/assistant', label: 'Assistant IA', icon: Sparkles },
     ],
   },

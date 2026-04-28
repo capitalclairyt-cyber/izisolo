@@ -6,13 +6,13 @@ import { useRouter } from 'next/navigation';
 import {
   CalendarDays, Users, BarChart3, AlertTriangle, ChevronRight,
   Clock, Plus, CheckCircle2, XCircle, Share2, Copy, ExternalLink, X, Sparkles,
-  Receipt, MessageSquare, Settings as SettingsIcon
+  Receipt, MessageSquare, Settings as SettingsIcon, ClipboardList
 } from 'lucide-react';
 import { formatHeure, formatMontant } from '@/lib/utils';
 import { getVocabulaire } from '@/lib/vocabulaire';
 import { useToast } from '@/components/ui/ToastProvider';
 
-export default function DashboardClient({ profile, coursDuJour, nbClients, nbCoursTotal, revenusMois, alertes, coutsMois }) {
+export default function DashboardClient({ profile, coursDuJour, nbClients, nbCoursTotal, revenusMois, alertes, coutsMois, hasSondage = false }) {
   const vocab = getVocabulaire(profile?.metier || 'yoga', profile?.vocabulaire);
   const prenom = profile?.prenom || 'toi';
   const studioSlug = profile?.studio_slug;
@@ -165,6 +165,20 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
           <div className="stat-label">Ce mois</div>
         </Link>
       </div>
+
+      {/* CTA Planning idéal — visible si pas encore de sondage créé */}
+      {!hasSondage && (
+        <Link href="/sondages/nouveau" className="dash-sondage-cta animate-slide-up">
+          <div className="dash-sondage-icon"><ClipboardList size={20} /></div>
+          <div className="dash-sondage-text">
+            <div className="dash-sondage-title">Planning idéal — sonde tes élèves</div>
+            <div className="dash-sondage-desc">
+              Découvre quels créneaux les rempliraient le mieux. 30 secondes pour eux, gros gain pour toi.
+            </div>
+          </div>
+          <ChevronRight size={16} style={{ color: 'var(--brand)', flexShrink: 0 }} />
+        </Link>
+      )}
 
       {/* Widget Mes coûts — visible dès qu'il y a au moins un coût ce mois */}
       {coutsMois && (coutsMois.sms.count > 0 || coutsMois.stripe.montant > 0) && (
@@ -576,6 +590,28 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
           transition: background 0.15s;
         }
         .dash-checklist-cta:hover { background: var(--brand-dark, #b07070); }
+
+        /* CTA Planning idéal */
+        .dash-sondage-cta {
+          display: flex; align-items: center; gap: 12px;
+          padding: 14px 16px; border-radius: 14px;
+          background: linear-gradient(135deg, var(--brand-light), white);
+          border: 1px solid var(--brand-200, #f0d0d0);
+          text-decoration: none; color: inherit;
+          transition: transform 0.15s, box-shadow 0.15s;
+        }
+        .dash-sondage-cta:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(212, 160, 160, 0.18);
+        }
+        .dash-sondage-icon {
+          width: 40px; height: 40px; border-radius: 10px;
+          background: var(--brand); color: white; flex-shrink: 0;
+          display: flex; align-items: center; justify-content: center;
+        }
+        .dash-sondage-text { flex: 1; min-width: 0; }
+        .dash-sondage-title { font-size: 0.875rem; font-weight: 700; color: var(--text-primary); }
+        .dash-sondage-desc { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; line-height: 1.4; }
 
         /* Widget Mes coûts */
         .dash-couts {

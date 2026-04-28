@@ -6,7 +6,7 @@ import Link from 'next/link';
 import {
   Home, CalendarDays, Users, Settings,
   BookOpen, Mail, ChevronRight, Sparkles,
-  Package, BarChart3, LogOut, Menu, X, GraduationCap, LifeBuoy
+  Package, BarChart3, LogOut, Menu, X, GraduationCap, LifeBuoy, ClipboardList
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase';
 import NotificationBell from '@/components/notifications/NotificationBell';
@@ -26,7 +26,13 @@ const NAV_SECTIONS = [
       { href: '/offres',         label: 'Offres',         icon: Package },
       { href: '/revenus',        label: 'Revenus',        icon: BarChart3 },
       { href: '/abonnements',    label: 'Abonnements',    icon: BookOpen },
-      { href: '/communication',  label: 'Communication',  icon: Mail },
+    ],
+  },
+  {
+    title: 'Communication',
+    items: [
+      { href: '/communication',  label: 'Mailing',         icon: Mail },
+      { href: '/sondages',       label: 'Planning idéal',  icon: ClipboardList },
     ],
   },
 ];

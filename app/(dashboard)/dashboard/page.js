@@ -30,6 +30,12 @@ export default async function DashboardPage() {
       .eq('profile_id', user.id).eq('channel', 'sms').eq('statut', 'sent').gte('sent_at', debutMoisISO),
   ]);
 
+  // A-t-il déjà créé un sondage ? (pour décider d'afficher le CTA)
+  const { count: nbSondages } = await supabase
+    .from('sondages_planning')
+    .select('id', { count: 'exact', head: true })
+    .eq('profile_id', user.id);
+
   // Calculer les stats
   const revenusMois = derniersPaiements?.reduce((sum, p) => sum + parseFloat(p.montant || 0), 0) || 0;
   const fraisStripeMois = derniersPaiements?.reduce((sum, p) => sum + parseFloat(p.commission_montant || 0), 0) || 0;
@@ -71,6 +77,7 @@ export default async function DashboardPage() {
         stripe: { montant: parseFloat(fraisStripeMois.toFixed(2)) },
         total: totalACoutsMois,
       }}
+      hasSondage={(nbSondages || 0) > 0}
     />
   );
 }
