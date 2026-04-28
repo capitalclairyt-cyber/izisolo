@@ -2,7 +2,20 @@ import { NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 
 // Routes publiques (pas besoin d'auth)
-const PUBLIC_ROUTES = ['/login', '/register', '/onboarding', '/portail', '/offline'];
+//   - Auth flows : login, register, onboarding, mot de passe
+//   - Portails publics élèves : /p/[studioSlug]/...
+//   - Pages SEO marketing : /profs-de-yoga, /profs-de-pilates, /coachs-bien-etre, /therapeutes
+//   - Pages légales : /legal/...
+//   - Offline, sitemap, robots
+const PUBLIC_ROUTES = [
+  '/login', '/register', '/onboarding', '/offline',
+  '/mot-de-passe-oublie', '/nouveau-mot-de-passe',
+  '/auth/',                 // /auth/callback Supabase
+  '/p/',                    // portails publics studio (sondages, cours, espace, etc.)
+  '/legal/',                // CGU/CGV/Mentions/RGPD
+  '/profs-de-yoga', '/profs-de-pilates', '/coachs-bien-etre', '/therapeutes',
+  '/sitemap.xml', '/robots.txt',
+];
 
 export async function proxy(request) {
   const { pathname } = request.nextUrl;
@@ -14,6 +27,7 @@ export async function proxy(request) {
     pathname.startsWith('/_next/') ||
     pathname.startsWith('/manifest.json') ||
     pathname.startsWith('/sw.js') ||
+    pathname.startsWith('/icons/') ||
     pathname === '/'
   ) {
     return NextResponse.next();
