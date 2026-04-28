@@ -20,6 +20,105 @@ function formatHeure(h) {
   return mm === '00' ? `${parseInt(hh)}h` : `${parseInt(hh)}h${mm}`;
 }
 
+function CompletAvecListeAttente({ cours, studioSlug, currentUser }) {
+  const { toast } = useToast();
+  const [nom, setNom]     = useState(currentUser?.nom || '');
+  const [email, setEmail] = useState(currentUser?.email || '');
+  const [tel, setTel]     = useState(currentUser?.tel || '');
+  const [submitting, setSubmitting] = useState(false);
+  const [done, setDone] = useState(false);
+  const [position, setPosition] = useState(null);
+  const [error, setError] = useState('');
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!nom.trim() || !email.trim()) return;
+    setSubmitting(true);
+    setError('');
+    try {
+      const res = await fetch(`/api/portail/${studioSlug}/liste-attente`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          coursId: cours.id,
+          nom: nom.trim(),
+          email: email.trim(),
+          tel: tel.trim(),
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Erreur');
+      setPosition(json.position);
+      setDone(true);
+      toast.success('Tu es sur la liste d\'attente — on te prévient si une place se libère.');
+    } catch (e) {
+      setError(e.message);
+      toast.error(e.message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (done) {
+    return (
+      <div className="portail-card" style={{ textAlign: 'center', padding: '32px 24px' }}>
+        <CheckCircle size={40} style={{ color: '#4caf50', margin: '0 auto 12px', display: 'block' }} />
+        <h2 style={{ fontSize: '1.125rem', fontWeight: 700, margin: '0 0 8px', color: '#1a1a2e' }}>
+          C'est noté !
+        </h2>
+        <p style={{ color: '#666', margin: '0 0 12px', fontSize: '0.9375rem', lineHeight: 1.6 }}>
+          Tu es <strong>n°{position}</strong> sur la liste d'attente.<br />
+          Si une place se libère, on t'envoie un email à <strong>{email}</strong>.
+        </p>
+        <Link href={`/p/${studioSlug}`} className="portail-btn-ghost" style={{ maxWidth: 280, margin: '12px auto 0', width: '100%' }}>
+          Voir d'autres cours
+        </Link>
+      </div>
+    );
+  }
+
+  return (
+    <div className="portail-card">
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '12px 14px', background: '#fffaf0', border: '1px solid #ffe0b2', borderRadius: 12, marginBottom: 16 }}>
+        <AlertCircle size={18} style={{ color: '#d97706', flexShrink: 0, marginTop: 1 }} />
+        <div style={{ fontSize: '0.875rem', color: '#7c4a03', lineHeight: 1.5 }}>
+          <strong>Ce cours est complet.</strong><br />
+          Inscris-toi sur la liste d'attente — on te prévient en priorité si une place se libère.
+        </div>
+      </div>
+
+      <form onSubmit={handleSubmit}>
+        <div className="portail-field">
+          <label className="portail-label" htmlFor="la-nom">Prénom et nom *</label>
+          <input id="la-nom" type="text" className="portail-input" value={nom} onChange={e => setNom(e.target.value)} placeholder="Marie Dupont" required autoComplete="name" />
+        </div>
+        <div className="portail-field">
+          <label className="portail-label" htmlFor="la-email">Email *</label>
+          <input id="la-email" type="email" className="portail-input" value={email} onChange={e => setEmail(e.target.value)} placeholder="marie@exemple.fr" required autoComplete="email" />
+        </div>
+        <div className="portail-field">
+          <label className="portail-label" htmlFor="la-tel">Téléphone <span style={{ color: '#aaa', fontWeight: 400 }}>(optionnel — SMS si place libérée)</span></label>
+          <input id="la-tel" type="tel" className="portail-input" value={tel} onChange={e => setTel(e.target.value)} placeholder="06 12 34 56 78" autoComplete="tel" />
+        </div>
+
+        {error && (
+          <div style={{ background: '#fff0f0', border: '1px solid #ffcdd2', borderRadius: '8px', padding: '10px 14px', color: '#c62828', fontSize: '0.875rem', marginBottom: '14px' }}>
+            {error}
+          </div>
+        )}
+
+        <button type="submit" disabled={submitting || !nom.trim() || !email.trim()} className="portail-btn-primary">
+          {submitting ? <><Loader size={16} className="spin" /> Inscription…</> : <>M'inscrire à la liste d'attente</>}
+        </button>
+
+        <Link href={`/p/${studioSlug}`} style={{ display: 'block', textAlign: 'center', fontSize: '0.8125rem', color: '#888', textDecoration: 'none', marginTop: 14 }}>
+          ou voir d'autres cours →
+        </Link>
+      </form>
+    </div>
+  );
+}
+
 export default function CoursReservationClient({ cours, profile, nbInscrits, studioSlug, currentUser, alreadyRegistered = false }) {
   const { toast } = useToast();
   const [nom, setNom]       = useState(currentUser?.nom || '');
@@ -197,13 +296,11 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
           </div>
         </div>
       ) : complet ? (
-        <div className="portail-card" style={{ textAlign: 'center', color: '#888' }}>
-          <AlertCircle size={32} style={{ margin: '0 auto 8px', display: 'block', opacity: 0.5 }} />
-          <p style={{ margin: '0 0 12px' }}>Ce cours est complet.</p>
-          <Link href={`/p/${studioSlug}`} style={{ fontSize: '0.875rem', color: '#d4a0a0', fontWeight: 600, textDecoration: 'none' }}>
-            Voir d'autres cours →
-          </Link>
-        </div>
+        <CompletAvecListeAttente
+          cours={cours}
+          studioSlug={studioSlug}
+          currentUser={currentUser}
+        />
       ) : (
         <div className="portail-card">
           <h2 style={{ fontSize: '1.0625rem', fontWeight: 700, margin: '0 0 16px', color: '#1a1a2e' }}>Réserver ma place</h2>
