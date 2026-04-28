@@ -81,7 +81,8 @@ function StripePaiementSection({ profile, setProfile, setDirty }) {
       </div>
       <p className="section-desc">
         Branche Stripe pour permettre à tes élèves de payer leurs carnets et abonnements
-        par CB depuis ton portail. <strong>Commission IziSolo : 1%</strong> (ajoutée à ta facture mensuelle, pas prélevée sur tes paiements).
+        par CB depuis ton portail. <strong>Frais de fonctionnement IziSolo : 1%</strong> du volume — ajoutés
+        à ta facture mensuelle, jamais prélevés sur tes paiements.
       </p>
 
       <div className="stripe-config">

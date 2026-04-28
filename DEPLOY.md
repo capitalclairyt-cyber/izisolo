@@ -207,7 +207,7 @@ Pour le DB, utiliser les **point-in-time recovery** de Supabase si besoin (Setti
 
 ## Stripe Payment Link (paiements élève → pro) — déjà branché
 
-**Architecture** : chaque pro IziSolo branche **son propre compte Stripe**. Pas de Stripe Connect côté Mélutek (donc pas de KYC ni de TVA sur commission marchande). Mélutek prélève **1% sur chaque paiement** confirmé via webhook (champ `paiements.commission_montant`), à ajouter à la facture mensuelle SaaS dans le sprint post-launch.
+**Architecture** : chaque pro IziSolo branche **son propre compte Stripe**. Pas de Stripe Connect côté Mélutek (donc pas de KYC ni de TVA sur commission marchande). Mélutek facture **1% de frais de fonctionnement** sur chaque paiement confirmé via webhook (champ `paiements.commission_montant` côté DB, libellé "Frais IziSolo" côté UI), à ajouter à la facture mensuelle SaaS dans le sprint post-launch.
 
 ### Côté pro (à expliquer dans la doc utilisateur)
 
@@ -238,7 +238,7 @@ vercel logs --filter "/api/stripe/webhook"
 
 ## Sprint post-launch — Stripe SaaS Mélutek (facturation pros)
 
-Pour activer la facturation automatique des plans (free / solo / pro / studio / premium) **plus la commission 1% sur les paiements en ligne** :
+Pour activer la facturation automatique des plans (free / solo / pro / studio / premium) **plus les frais de fonctionnement 1% sur les paiements en ligne** :
 
 1. Stripe Checkout pour les abonnements par plan (côté Mélutek)
 2. Customer Portal pour la gestion d'abonnement

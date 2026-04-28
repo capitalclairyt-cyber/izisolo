@@ -239,14 +239,14 @@ export default function RevenusClient({ paiements: initialPaiements }) {
         </div>
       )}
 
-      {/* Récap commission IziSolo (sur paiements Stripe uniquement) */}
+      {/* Récap frais de fonctionnement IziSolo (sur paiements Stripe uniquement) */}
       {stats.commission > 0 && (
         <div className="commission-card animate-slide-up">
           <div className="commission-icon">💳</div>
           <div className="commission-text">
-            <div className="commission-label">Commission IziSolo · {periodeLabel.toLowerCase()}</div>
+            <div className="commission-label">Frais IziSolo · {periodeLabel.toLowerCase()}</div>
             <div className="commission-sub">
-              {stats.stripeCount} paiement{stats.stripeCount > 1 ? 's' : ''} en ligne · 1% du montant
+              {stats.stripeCount} paiement{stats.stripeCount > 1 ? 's' : ''} en ligne · 1% pour le fonctionnement du portail
             </div>
           </div>
           <div className="commission-amount">{formatMontant(stats.commission)}</div>

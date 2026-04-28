@@ -1,8 +1,9 @@
 import { createClient as createAdminSupabase } from '@supabase/supabase-js';
 import { verifyStripeSignature, getCheckoutSessionAmount, getCheckoutSessionEmail } from '@/lib/stripe';
 
-// Commission IziSolo prélevée sur chaque paiement encaissé via le portail (Stripe).
-// Calculée et stockée en DB pour facturation SaaS mensuelle (sprint post-launch).
+// Frais de fonctionnement IziSolo sur chaque paiement encaissé via le portail (Stripe).
+// Calculés et stockés en DB pour facturation SaaS mensuelle (sprint post-launch).
+// 1% du volume — ajouté à la facture mensuelle du pro, jamais prélevé sur le paiement Stripe.
 const COMMISSION_RATE = 0.01; // 1%
 
 // Désactiver le parsing JSON automatique : on a besoin du raw body pour la signature.
