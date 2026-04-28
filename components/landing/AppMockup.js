@@ -87,9 +87,9 @@ function AccueilView() {
   return (
     <>
       <div className="main-head">
-        <div className="avatar">C</div>
+        <div className="avatar">S</div>
         <div>
-          <div className="hello">Bonjour Colin <span className="hand">✿</span></div>
+          <div className="hello">Bonjour Sophie <span className="hand">✿</span></div>
           <div className="hello-sub">Mardi 28 Avril</div>
         </div>
       </div>
