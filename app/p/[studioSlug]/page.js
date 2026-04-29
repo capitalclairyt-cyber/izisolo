@@ -62,7 +62,7 @@ async function getStudioData(studioSlug) {
   const [{ data: cours }, { data: offresStripe }, { data: offresPubliques }, { data: sondageActif }] = await Promise.all([
     supabase
       .from('cours')
-      .select('id, nom, date, heure, duree, type_cours, lieu, capacite_max, est_annule, recurrence_parent_id')
+      .select('id, nom, date, heure, duree_minutes, type_cours, lieu, capacite_max, est_annule, recurrence_parent_id')
       .eq('profile_id', profile.id)
       .eq('est_annule', false)
       .gte('date', today)
@@ -94,9 +94,24 @@ async function getStudioData(studioSlug) {
     });
   }
 
+  // Filtrer les cours du jour dont l'heure est déjà passée
+  // (ex : à 18h, ne pas afficher le cours de 9h ce matin)
+  const now = new Date();
+  const todayStr = now.toISOString().slice(0, 10);
+  const coursFutur = (cours || []).filter(c => {
+    if (c.date > todayStr) return true;
+    if (c.date < todayStr) return false;
+    // Aujourd'hui : compare l'heure
+    if (!c.heure) return true; // pas d'heure → on garde
+    const [hh, mm] = c.heure.split(':').map(Number);
+    const coursDateTime = new Date(now);
+    coursDateTime.setHours(hh, mm, 0, 0);
+    return coursDateTime > now;
+  });
+
   return {
     profile,
-    cours: (cours || []).map(c => ({
+    cours: coursFutur.map(c => ({
       ...c,
       nbInscrits: presencesCounts[c.id] || 0,
     })),

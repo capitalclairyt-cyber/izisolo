@@ -168,7 +168,7 @@ function CoursCard({ presence, profile, studioSlug, onAnnuler, annulEnCours }) {
         {c.type_cours && <span className="portail-tag portail-tag-rose" style={{ marginBottom: 6, display: 'inline-block' }}>{c.type_cours}</span>}
         <div className="espace-cours-details">
           <span><Calendar size={13} /> {formatDate(c.date)}</span>
-          {c.heure && <span><Clock size={13} /> {formatHeure(c.heure)}{c.duree ? ` · ${c.duree} min` : ''}</span>}
+          {c.heure && <span><Clock size={13} /> {formatHeure(c.heure)}{c.duree_minutes ? ` · ${c.duree_minutes} min` : ''}</span>}
           {c.lieu && <span><MapPin size={13} /> {c.lieu}</span>}
         </div>
       </div>
@@ -355,6 +355,21 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
         </div>
         <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid #f5f0ee', fontSize: '0.8125rem', color: '#888' }}>
           Studio : <strong style={{ color: '#555' }}>{profile.studio_nom}</strong>
+        </div>
+
+        {/* Quick actions : Messages */}
+        <div style={{ marginTop: 14, display: 'flex', gap: 8 }}>
+          <Link
+            href={`/p/${studioSlug}/espace/messages`}
+            style={{
+              flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+              padding: '10px 14px', border: '1.5px solid #d4a0a0', borderRadius: 10,
+              color: '#d4a0a0', fontWeight: 600, fontSize: '0.875rem', textDecoration: 'none',
+              background: 'white',
+            }}
+          >
+            <MessageCircle size={15} /> Mes messages
+          </Link>
         </div>
       </div>
 

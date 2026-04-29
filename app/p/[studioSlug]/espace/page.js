@@ -50,10 +50,10 @@ async function getData(studioSlug, userEmail) {
     .from('presences')
     .select(`
       id,
-      present,
+      statut_pointage,
       created_at,
       cours:cours_id (
-        id, nom, date, heure, duree, lieu, type_cours, est_annule
+        id, nom, date, heure, duree_minutes, lieu, type_cours, est_annule
       )
     `)
     .eq('client_id', client.id)

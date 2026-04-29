@@ -195,7 +195,7 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
                 <div className="portail-cours-info">
                   <div className="portail-cours-nom">{c.nom}</div>
                   <div className="portail-cours-details">
-                    <span><Clock size={12} /> {formatHeure(c.heure)}{c.duree ? ` · ${c.duree}min` : ''}</span>
+                    <span><Clock size={12} /> {formatHeure(c.heure)}{c.duree_minutes ? ` · ${c.duree_minutes}min` : ''}</span>
                     {c.lieu && <span><MapPin size={12} /> {c.lieu}</span>}
                     {c.type_cours && <span className="portail-tag portail-tag-rose">{c.type_cours}</span>}
                   </div>

@@ -132,8 +132,18 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
 
   const places = cours.capacite_max ? cours.capacite_max - nbInscrits : null;
   const complet = places !== null && places <= 0;
-  const today = new Date().toISOString().slice(0, 10);
-  const passe = cours.date < today;
+  // "Passé" = date avant aujourd'hui, OU date = aujourd'hui mais heure déjà dépassée
+  const now = new Date();
+  const today = now.toISOString().slice(0, 10);
+  let passe = false;
+  if (cours.date < today) {
+    passe = true;
+  } else if (cours.date === today && cours.heure) {
+    const [hh, mm] = cours.heure.split(':').map(Number);
+    const coursDateTime = new Date(now);
+    coursDateTime.setHours(hh, mm, 0, 0);
+    if (coursDateTime <= now) passe = true;
+  }
   const annule = !!cours.est_annule;
 
   const handleReserver = async (e) => {
@@ -222,7 +232,7 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
         )}
         <div className="resa-details">
           <div className="resa-detail-row"><Calendar size={15} /><span>{formatDate(cours.date)}</span></div>
-          <div className="resa-detail-row"><Clock size={15} /><span>{formatHeure(cours.heure)}{cours.duree ? ` · ${cours.duree} min` : ''}</span></div>
+          <div className="resa-detail-row"><Clock size={15} /><span>{formatHeure(cours.heure)}{cours.duree_minutes ? ` · ${cours.duree_minutes} min` : ''}</span></div>
           {cours.lieu && <div className="resa-detail-row"><MapPin size={15} /><span>{cours.lieu}</span></div>}
           {cours.capacite_max && (
             <div className="resa-detail-row">
@@ -312,52 +322,61 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
           )}
 
           <form onSubmit={handleReserver}>
-            <div className="portail-field">
-              <label className="portail-label" htmlFor="resa-nom">Prénom et nom *</label>
-              <input
-                id="resa-nom"
-                type="text"
-                className={`portail-input${isConnected && nom ? ' portail-input--readonly' : ''}`}
-                value={nom}
-                onChange={isConnected ? undefined : e => setNom(e.target.value)}
-                readOnly={isConnected && !!nom}
-                placeholder="Marie Dupont"
-                required
-                autoComplete="name"
-              />
-            </div>
-            <div className="portail-field">
-              <label className="portail-label" htmlFor="resa-email">Email *</label>
-              <input
-                id="resa-email"
-                type="email"
-                className={`portail-input${isConnected ? ' portail-input--readonly' : ''}`}
-                value={email}
-                onChange={isConnected ? undefined : e => setEmail(e.target.value)}
-                readOnly={isConnected}
-                placeholder="marie@exemple.fr"
-                required
-                autoComplete="email"
-              />
-              {!isConnected && (
-                <p style={{ fontSize: '0.75rem', color: '#aaa', margin: '6px 0 0' }}>
-                  On t'enverra un lien pour accéder à ton espace et gérer tes réservations.
-                </p>
-              )}
-            </div>
-            {!isConnected && (
-              <div className="portail-field">
-                <label className="portail-label" htmlFor="resa-tel">Téléphone <span style={{ color: '#aaa', fontWeight: 400 }}>(optionnel)</span></label>
-                <input
-                  id="resa-tel"
-                  type="tel"
-                  className="portail-input"
-                  value={tel}
-                  onChange={e => setTel(e.target.value)}
-                  placeholder="06 12 34 56 78"
-                  autoComplete="tel"
-                />
+            {/* Quand connecté avec un client identifié, on n'affiche pas de form
+                — juste un récap et un bouton. */}
+            {isConnected && nom ? (
+              <div style={{ background: '#faf8f5', border: '1px solid #eee', borderRadius: 12, padding: '12px 14px', marginBottom: 14, fontSize: '0.875rem', color: '#555' }}>
+                Tu réserves au nom de <strong>{nom}</strong> ({email}).
               </div>
+            ) : (
+              <>
+                <div className="portail-field">
+                  <label className="portail-label" htmlFor="resa-nom">Prénom et nom *</label>
+                  <input
+                    id="resa-nom"
+                    type="text"
+                    className="portail-input"
+                    value={nom}
+                    onChange={e => setNom(e.target.value)}
+                    placeholder="Marie Dupont"
+                    required
+                    autoComplete="name"
+                  />
+                </div>
+                <div className="portail-field">
+                  <label className="portail-label" htmlFor="resa-email">Email *</label>
+                  <input
+                    id="resa-email"
+                    type="email"
+                    className={`portail-input${isConnected ? ' portail-input--readonly' : ''}`}
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    readOnly={isConnected}
+                    placeholder="marie@exemple.fr"
+                    required
+                    autoComplete="email"
+                  />
+                  {!isConnected && (
+                    <p style={{ fontSize: '0.75rem', color: '#aaa', margin: '6px 0 0' }}>
+                      On t'enverra un lien pour accéder à ton espace et gérer tes réservations.
+                    </p>
+                  )}
+                </div>
+                {!isConnected && (
+                  <div className="portail-field">
+                    <label className="portail-label" htmlFor="resa-tel">Téléphone <span style={{ color: '#aaa', fontWeight: 400 }}>(optionnel)</span></label>
+                    <input
+                      id="resa-tel"
+                      type="tel"
+                      className="portail-input"
+                      value={tel}
+                      onChange={e => setTel(e.target.value)}
+                      placeholder="06 12 34 56 78"
+                      autoComplete="tel"
+                    />
+                  </div>
+                )}
+              </>
             )}
 
             {error && (
