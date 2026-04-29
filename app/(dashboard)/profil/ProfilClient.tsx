@@ -1,7 +1,10 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { Identity, ProfileGroup, ListRow, ScreenHeader } from '@/components/mobile';
+import {
+  Screen, ScreenHeader, ScreenBody, HeaderIconBtn,
+  Identity, ProfileGroup, ListRow,
+} from '@/components/np';
 import { createClient } from '@/lib/supabase';
 
 interface Profile {
@@ -11,6 +14,7 @@ interface Profile {
   studio_nom?: string;
   metier?: string;
   plan?: string;
+  ville?: string;
 }
 
 export default function ProfilClient({ profile }: { profile: Profile | null }) {
@@ -22,112 +26,57 @@ export default function ProfilClient({ profile }: { profile: Profile | null }) {
     router.push('/login');
   };
 
-  const fullName = [profile?.prenom, profile?.nom].filter(Boolean).join(' ') || profile?.studio_nom || 'Mon studio';
-  const meta = [profile?.metier, profile?.plan && profile.plan !== 'free' ? profile.plan : null]
-    .filter(Boolean).join(' · ') || 'Plan Free';
+  const fullName = [profile?.prenom, profile?.nom].filter(Boolean).join(' ')
+    || profile?.studio_nom || 'Mon studio';
+  const initials = ((profile?.prenom?.[0] || '') + (profile?.nom?.[0] || '')) || 'M';
+  const planLabel = profile?.plan && profile.plan !== 'free'
+    ? `Plan ${profile.plan.charAt(0).toUpperCase() + profile.plan.slice(1)}`
+    : 'Plan Free';
+  const meta = [planLabel, profile?.ville].filter(Boolean).join(' · ');
 
   return (
-    <div className="profil-page">
-      <ScreenHeader title="Profil" />
-
-      <Identity
-        name={fullName}
-        meta={meta}
-        onEdit={() => router.push('/parametres')}
+    <Screen>
+      <ScreenHeader
+        date="PROFIL"
+        title=""
+        actions={
+          <HeaderIconBtn
+            icon="settings" ariaLabel="Paramètres"
+            onClick={() => router.push('/parametres')}
+          />
+        }
       />
 
-      <ProfileGroup label="ACTIVITÉ">
-        <ListRow
-          icon="chart"
-          title="Statistiques"
-          meta="Présence, taux de remplissage"
-          iconTone="rose"
-          onClick={() => router.push('/dashboard')}
+      <ScreenBody>
+        <Identity
+          initials={initials}
+          name={fullName}
+          meta={meta}
+          onEdit={() => router.push('/parametres')}
         />
-        <ListRow
-          icon="euro"
-          title="Revenus"
-          meta="Comptabilité et paiements"
-          iconTone="sand"
-          onClick={() => router.push('/revenus')}
-        />
-        <ListRow
-          icon="bookmark"
-          title="Événements"
-          meta="Stages, ateliers ponctuels"
-          iconTone="lavender"
-          onClick={() => router.push('/evenements')}
-        />
-      </ProfileGroup>
 
-      <ProfileGroup label="BUSINESS">
-        <ListRow
-          icon="bag"
-          title="Offres"
-          meta="Carnets, abonnements"
-          iconTone="rose"
-          onClick={() => router.push('/offres')}
-        />
-        <ListRow
-          icon="cal"
-          title="Abonnements actifs"
-          meta="Suivi crédits & expirations"
-          iconTone="sage"
-          onClick={() => router.push('/abonnements')}
-        />
-        <ListRow
-          icon="bell"
-          title="Messagerie"
-          meta="Conversations + annonces"
-          iconTone="rose"
-          onClick={() => router.push('/messagerie')}
-        />
-        <ListRow
-          icon="sparkle"
-          title="Sondages planning"
-          meta="Découvre tes meilleurs créneaux"
-          iconTone="lavender"
-          onClick={() => router.push('/sondages')}
-        />
-        <ListRow
-          icon="film"
-          title="Vidéos"
-          meta="Bibliothèque cours en ligne"
-          iconTone="sand"
-          onClick={() => router.push('/videos')}
-        />
-      </ProfileGroup>
+        <ProfileGroup label="ACTIVITÉ">
+          <ListRow icon="chart"    tone="rose"     title="Statistiques"     meta="Rétention, présence" onClick={() => router.push('/dashboard')} />
+          <ListRow icon="euro"     tone="sage"     title="Revenus"          meta="Comptabilité et paiements"   onClick={() => router.push('/revenus')} />
+          <ListRow icon="bookmark" tone="sand"     title="Ateliers & événements" meta="Stages, ateliers ponctuels" onClick={() => router.push('/evenements')} />
+        </ProfileGroup>
 
-      <ProfileGroup label="COMPTE">
-        <ListRow
-          icon="settings"
-          title="Paramètres"
-          meta="Studio, profil, palette"
-          iconTone="ink"
-          onClick={() => router.push('/parametres')}
-        />
-        <ListRow
-          icon="help"
-          title="Support"
-          meta="Aide et contact"
-          iconTone="mute"
-          onClick={() => router.push('/support')}
-        />
-        <ListRow
-          icon="logout"
-          title="Se déconnecter"
-          iconTone="mute"
-          muted
-          hideChevron
-          onClick={handleLogout}
-        />
-      </ProfileGroup>
+        <ProfileGroup label="BUSINESS">
+          <ListRow icon="tag"      tone="lavender" title="Offres"          meta="Carnets, abonnements"        onClick={() => router.push('/offres')} />
+          <ListRow icon="cal"      tone="rose"     title="Abonnements actifs" meta="Suivi crédits & expirations" onClick={() => router.push('/abonnements')} />
+          <ListRow icon="bell"     tone="sage"     title="Messagerie"       meta="Conversations + annonces"   onClick={() => router.push('/messagerie')} />
+          <ListRow icon="sparkle"  tone="lavender" title="Sondages planning" meta="Tes meilleurs créneaux"     onClick={() => router.push('/sondages')} />
+          <ListRow icon="music"    tone="sand"     title="Vidéos"           meta="Bibliothèque cours en ligne" onClick={() => router.push('/videos')} />
+        </ProfileGroup>
 
-      <style jsx>{`
-        .profil-page {
-          padding-bottom: 40px;
-        }
-      `}</style>
-    </div>
+        <ProfileGroup label="COMPTE">
+          <ListRow icon="settings" tone="ink" title="Paramètres"     meta="Studio, profil, palette" onClick={() => router.push('/parametres')} />
+          <ListRow icon="help"               title="Aide & support"                                onClick={() => router.push('/support')} />
+          <ListRow icon="out"                title="Se déconnecter"  muted                          onClick={handleLogout} />
+        </ProfileGroup>
+
+        <div className="np-foot">IziSolo · v0.1 — fait à Lyon</div>
+      </ScreenBody>
+    </Screen>
   );
 }

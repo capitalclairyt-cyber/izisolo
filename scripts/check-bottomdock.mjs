@@ -18,9 +18,8 @@ const ctxMobile = await browser.newContext({ viewport: { width: 390, height: 844
 const pageMobile = await ctxMobile.newPage();
 
 const PAGES = [
+  { url: '/np-preview',          name: 'np-preview' },
   { url: '/components-showcase', name: 'showcase' },
-  { url: '/test-tokens',         name: 'tokens' },
-  { url: '/login',               name: 'login' },
 ];
 
 for (const p of PAGES) {

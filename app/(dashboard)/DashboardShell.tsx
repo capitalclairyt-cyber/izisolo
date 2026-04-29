@@ -8,7 +8,7 @@ import Sidebar from '@/components/navigation/Sidebar';
 import BackgroundDecor from '@/components/background/BackgroundDecor';
 import { getVocabulaire } from '@/lib/vocabulaire';
 import { ToastProvider } from '@/components/ui/ToastProvider';
-import { BottomDock, NewSheet, type DockTab } from '@/components/mobile';
+import { BottomDock, NewSheet, type DockTab, type NewKind } from '@/components/np';
 
 interface Profile {
   id?: string;
@@ -16,8 +16,6 @@ interface Profile {
   studio_nom?: string;
   metier?: string;
   vocabulaire?: any;
-  ui_couleur?: string;
-  palette?: string;
   ui_illustration?: string;
   ui_grille_active?: boolean;
   ui_animation_active?: boolean;
@@ -28,6 +26,15 @@ const DOCK_ROUTES: Record<DockTab, string> = {
   cal: '/agenda',
   users: '/clients',
   me: '/profil',
+};
+
+const NEW_ROUTES: Record<NewKind, string> = {
+  cours:    '/cours/nouveau',
+  eleve:    '/clients/nouveau',
+  paiement: '/revenus/nouveau',
+  atelier:  '/evenements',
+  facture:  '/revenus',
+  modele:   '/sondages/nouveau',
 };
 
 function pathToTab(pathname: string): DockTab | null {
@@ -53,14 +60,10 @@ export default function DashboardShell({
 
   useEffect(() => { setMounted(true); }, []);
 
-  // Pages où on cache le shell (chat plein écran, pointage)
   const isAssistant = pathname === '/assistant';
   const hideShell = pathname.startsWith('/pointage/') || pathname === '/assistant';
 
-  const vocabulaire = getVocabulaire(
-    profile?.metier || 'yoga',
-    profile?.vocabulaire
-  );
+  const vocabulaire = getVocabulaire(profile?.metier || 'yoga', profile?.vocabulaire);
   const illustration = profile?.ui_illustration || 'lotus';
   const grilleActive = profile?.ui_grille_active !== false;
   const animationActive = profile?.ui_animation_active !== false;
@@ -69,21 +72,8 @@ export default function DashboardShell({
 
   const activeTab = pathToTab(pathname);
 
-  const goTab = (tab: DockTab) => {
-    router.push(DOCK_ROUTES[tab]);
-  };
-
-  const goNew = (kind: string) => {
-    const routes: Record<string, string> = {
-      cours:    '/cours/nouveau',
-      eleve:    '/clients/nouveau',
-      paiement: '/revenus/nouveau',
-      atelier:  '/evenements',
-      facture:  '/revenus',
-      modele:   '/sondages/nouveau',
-    };
-    if (routes[kind]) router.push(routes[kind]);
-  };
+  const goTab = (tab: DockTab) => router.push(DOCK_ROUTES[tab]);
+  const goNew = (kind: NewKind) => router.push(NEW_ROUTES[kind]);
 
   return (
     <ToastProvider>
@@ -94,37 +84,34 @@ export default function DashboardShell({
           animationActive={animationActive}
         />
 
+        {/* Sidebar desktop ≥1024px */}
         <Sidebar
           studioNom={profile?.studio_nom || 'Mon Studio'}
           vocabulaire={vocabulaire}
           illustration={illustration}
         />
 
-        <main className="ds-content">
-          <div className="ds-content-inner">
+        {/* Container scrollable. Sur mobile, .np-app gère le layout interne
+            (header sticky + body scrollable + dock fixe). */}
+        <main className="ds-main">
+          <div className="ds-mobile">
             {children}
+            {!hideShell && activeTab && (
+              <BottomDock
+                active={activeTab}
+                onChange={goTab}
+                onPlus={() => setNewSheetOpen(true)}
+              />
+            )}
+            <NewSheet
+              open={newSheetOpen}
+              onClose={() => setNewSheetOpen(false)}
+              onPick={goNew}
+            />
           </div>
         </main>
 
-        {/* BottomDock (mobile only) — affichage natif du designer
-            via le wrapper .ds-dock-host qui sert de parent positionné. */}
-        {!hideShell && activeTab && (
-          <div className="ds-dock-host">
-            <BottomDock
-              active={activeTab}
-              onChange={goTab}
-              onPlus={() => setNewSheetOpen(true)}
-            />
-          </div>
-        )}
-
-        <NewSheet
-          open={newSheetOpen}
-          onClose={() => setNewSheetOpen(false)}
-          onPick={goNew as any}
-        />
-
-        {/* FAB Assistant IA — toujours visible (sauf sur /assistant) */}
+        {/* FAB Assistant IA */}
         {!isAssistant && (
           <Link href="/assistant" className="ai-fab" aria-label="Assistant IA">
             <Sparkles size={20} />
@@ -136,39 +123,28 @@ export default function DashboardShell({
       <style jsx global>{`
         .ds-shell {
           min-height: 100vh;
-          background: var(--c-bg);
-          color: var(--c-ink);
-          font-family: var(--font-body);
-        }
-        .ds-content {
-          padding-bottom: 100px;
-          min-height: 100vh;
-        }
-        @media (min-width: 1024px) {
-          .ds-content { padding-left: var(--sidebar-width, 230px); padding-bottom: 0; }
-        }
-        .ds-content-inner {
-          max-width: 1200px;
-          margin: 0 auto;
-          padding: 16px;
-        }
-        @media (min-width: 1024px) {
-          .ds-content-inner { padding: 24px; }
+          background: var(--m-bg);
+          color: var(--m-ink);
         }
 
-        /* Dock host : parent positionné où le BottomDock interne se pose
-           en absolute bottom-0 (pattern designer). */
-        .ds-dock-host {
-          position: fixed;
-          left: 0; right: 0; bottom: 0;
-          height: 96px;                       /* hauteur de la zone occupée par le dock + safe-area */
-          padding-bottom: env(safe-area-inset-bottom, 0px);
-          z-index: 50;
-          pointer-events: none;
+        /* Wrapper mobile : structure layout correct pour .np-app + .np-dock */
+        .ds-mobile {
+          position: relative;
+          min-height: 100vh;
+          width: 100%;
+          max-width: 480px;
+          margin: 0 auto;
+          background: var(--m-bg);
         }
-        .ds-dock-host > * { pointer-events: auto; }
+
         @media (min-width: 1024px) {
-          .ds-dock-host { display: none; }
+          .ds-main { padding-left: var(--sidebar-width, 230px); }
+          .ds-mobile { max-width: 1100px; }
+          /* Sur desktop, on cache le BottomDock (sidebar à la place) */
+          .ds-mobile .np-dock { display: none; }
+          /* Et on rend le scroll natif au body, pas dans .np-body */
+          .ds-mobile .np-app { padding-top: 0; }
+          .ds-mobile .np-body { overflow: visible; padding-bottom: 24px; }
         }
 
         /* FAB Assistant IA */
@@ -176,20 +152,20 @@ export default function DashboardShell({
           position: fixed;
           bottom: calc(96px + env(safe-area-inset-bottom, 0px));
           right: 16px;
-          width: 52px;
-          height: 52px;
+          width: 48px;
+          height: 48px;
           border-radius: 50%;
-          background: var(--c-accent);
-          color: var(--c-accent-ink);
+          background: var(--m-accent);
+          color: white;
           display: flex; align-items: center; justify-content: center;
           flex-direction: column; gap: 1px;
-          box-shadow: var(--shadow-md);
+          box-shadow: var(--m-shadow-fab);
           text-decoration: none;
           z-index: 49;
-          transition: transform var(--t-fast);
+          transition: transform 150ms;
         }
         .ai-fab:active { transform: scale(0.95); }
-        .ai-fab-label { font-size: 0.5rem; font-weight: 700; }
+        .ai-fab-label { font-size: 8.5px; font-weight: 700; letter-spacing: 0.04em; }
         @media (min-width: 1024px) {
           .ai-fab { bottom: 24px; right: 24px; }
         }
