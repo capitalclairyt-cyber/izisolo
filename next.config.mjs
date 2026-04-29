@@ -1,14 +1,11 @@
 import withPWA from 'next-pwa';
 import { withSentryConfig } from '@sentry/nextjs';
 
-// PWA temporairement désactivée pour exclure les bugs de cache service-worker
-// pendant la refonte. À réactiver quand la prod sera stable :
-//   disable: process.env.NODE_ENV === 'development'
 const pwaConfig = withPWA({
   dest: 'public',
   register: true,
   skipWaiting: true,
-  disable: true,
+  disable: process.env.NODE_ENV === 'development',
 });
 
 const securityHeaders = [
@@ -23,13 +20,6 @@ const securityHeaders = [
 const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
-  // Big-bang TS migration en cours : les pages JS existantes ne sont pas
-  // typées strict. On laisse passer le build (les erreurs TS restent
-  // visibles via npx tsc et l'IDE) jusqu'à ce que toutes les pages soient
-  // migrées en .tsx. À retirer ensuite.
-  typescript: {
-    ignoreBuildErrors: true,
-  },
   async headers() {
     return [
       {

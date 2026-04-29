@@ -6,10 +6,9 @@ import Link from 'next/link';
 import {
   Home, CalendarDays, Users, Menu, X,
   Package, BarChart3, BookOpen, Mail, Sparkles,
-  Settings, LogOut, ClipboardList, MessageSquare
+  Settings, LogOut, ClipboardList
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase';
-import MessagesBadge from '@/components/messagerie/MessagesBadge';
 
 const QUICK_ITEMS = [
   { href: '/dashboard', label: 'Accueil', icon: Home },
@@ -36,8 +35,8 @@ const ALL_NAV = [
   {
     title: 'Communication',
     items: [
-      { href: '/messagerie', label: 'Messagerie', icon: MessageSquare, badge: true },
-      { href: '/sondages', label: 'Sondage planning', icon: ClipboardList },
+      { href: '/mailing', label: 'Mailing', icon: Mail },
+      { href: '/sondages', label: 'Planning idéal', icon: ClipboardList },
       { href: '/assistant', label: 'Assistant IA', icon: Sparkles },
     ],
   },
@@ -119,7 +118,7 @@ export default function BottomNav({ vocabulaire = {}, illustration = 'lotus', st
               {section.title && (
                 <div className="drawer-section-title">{section.title}</div>
               )}
-              {section.items.map(({ href, label, icon: Icon, badge }) => {
+              {section.items.map(({ href, label, icon: Icon }) => {
                 const isActive = pathname === href || pathname.startsWith(href + '/');
                 return (
                   <Link
@@ -128,10 +127,7 @@ export default function BottomNav({ vocabulaire = {}, illustration = 'lotus', st
                     className={`drawer-item ${isActive ? 'active' : ''}`}
                     onClick={() => setDrawerOpen(false)}
                   >
-                    <span style={{ position: 'relative', display: 'inline-flex' }}>
-                      <Icon size={20} strokeWidth={isActive ? 2.2 : 1.8} />
-                      {badge && <MessagesBadge />}
-                    </span>
+                    <Icon size={20} strokeWidth={isActive ? 2.2 : 1.8} />
                     <span>{label}</span>
                   </Link>
                 );

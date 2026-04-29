@@ -80,7 +80,7 @@ export default function AbonnementsClient({ abonnements: initAbo, paiementsParAb
           .order('created_at', { ascending: false }),
         supabase
           .from('paiements')
-          .select('id, abonnement_id, montant, mode, created_at')
+          .select('id, abonnement_id, montant, mode_paiement, created_at')
           .eq('profile_id', user.id),
       ]);
 
@@ -397,7 +397,7 @@ function AboCard({ abo, paiements }) {
 
   // Montant total payé pour cet abonnement
   const montantPaye = paiements.reduce((s, p) => s + (p.montant || 0), 0);
-  const modePrincipal = paiements[0]?.mode;
+  const modePrincipal = paiements[0]?.mode_paiement;
   const ModePaiementIcon = modePrincipal ? (MODE_ICONES[modePrincipal] || CreditCard) : null;
 
   // Date de fin

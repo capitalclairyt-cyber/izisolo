@@ -1,6 +1,6 @@
 import { createServerClient } from '@/lib/supabase-server';
 import { redirect } from 'next/navigation';
-import DashboardShell from './DashboardShell';
+import DashboardLayoutClient from './DashboardLayoutClient';
 
 export default async function DashboardLayout({ children }) {
   const supabase = await createServerClient();
@@ -10,15 +10,22 @@ export default async function DashboardLayout({ children }) {
     redirect('/login');
   }
 
+  // Charger le profil
   const { data: profile } = await supabase
     .from('profiles')
     .select('*')
     .eq('id', user.id)
     .single();
 
+  // Si pas de profil ou pas d'onboarding complété, rediriger
+  if (!profile || !profile.studio_nom || profile.studio_nom === 'Mon Studio') {
+    // Vérifier si l'onboarding a été fait (studio_nom modifié)
+    // On laisse passer pour l'instant, l'onboarding est optionnel
+  }
+
   return (
-    <DashboardShell profile={profile}>
+    <DashboardLayoutClient profile={profile}>
       {children}
-    </DashboardShell>
+    </DashboardLayoutClient>
   );
 }
