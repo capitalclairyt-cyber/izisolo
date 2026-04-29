@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Save } from 'lucide-react';
 import { createClient } from '@/lib/supabase';
-import { PageHeader } from '@/components/np';
 import { slugify } from '@/lib/utils';
 import { useToast } from '@/components/ui/ToastProvider';
 import CalendarBuilder from '@/components/sondage/CalendarBuilder';
@@ -94,12 +93,10 @@ export default function NouveauSondageClient({ typesCours, studioSlug }) {
 
   return (
     <div className="ns-page">
-      <PageHeader eyebrow="NOUVEAU" title="Nouveau sondage" />
-      <div style={{ padding: '0 22px 8px' }}>
-        <Link href="/sondages" className="izi-btn izi-btn-ghost" style={{ fontSize: '0.8125rem' }}>
-          <ArrowLeft size={14} /> Tous les sondages
-        </Link>
-      </div>
+      <header className="ns-header">
+        <Link href="/sondages" className="back-btn"><ArrowLeft size={18} /></Link>
+        <h1>Nouveau sondage planning</h1>
+      </header>
 
       {/* Titre + message */}
       <div className="izi-card form-section">

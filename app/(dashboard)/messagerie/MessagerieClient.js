@@ -5,7 +5,6 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft, MessageSquare, Megaphone, Plus, Search, X, Send, Loader2, Users } from 'lucide-react';
 import ConversationList from '@/components/messagerie/ConversationList';
 import ChatRoom from '@/components/messagerie/ChatRoom';
-import { PageHeader } from '@/components/np';
 import { useToast } from '@/components/ui/ToastProvider';
 
 const SCOPES = [
@@ -120,15 +119,14 @@ export default function MessagerieClient({ profile, clients, cours, offres }) {
 
   return (
     <div className="msg-page">
-      {selectedConvId ? (
-        <div style={{ padding: '12px 22px' }}>
-          <button onClick={() => setSelectedConvId(null)} className="izi-btn izi-btn-ghost" style={{ fontSize: '0.8125rem' }}>
-            <ArrowLeft size={14} /> Toutes les conversations
+      <header className="msg-header">
+        {selectedConvId ? (
+          <button onClick={() => setSelectedConvId(null)} className="back-btn" aria-label="Retour">
+            <ArrowLeft size={18} />
           </button>
-        </div>
-      ) : (
-        <PageHeader eyebrow="MESSAGERIE" title="Messagerie" />
-      )}
+        ) : null}
+        <h1>{selectedConvId ? '' : 'Messagerie'}</h1>
+      </header>
 
       {!selectedConvId && (
         <div className="msg-tabs">

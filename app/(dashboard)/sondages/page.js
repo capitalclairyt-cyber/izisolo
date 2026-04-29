@@ -2,7 +2,6 @@ import { createServerClient } from '@/lib/supabase-server';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { Plus, BarChart3, Calendar, ChevronRight, ExternalLink } from 'lucide-react';
-import { PageHeader } from '@/components/np';
 
 export const metadata = { title: 'Sondage planning — sondages élèves' };
 
@@ -26,16 +25,15 @@ export default async function SondagesPage() {
 
   return (
     <div className="sondages-page">
-      <PageHeader
-        eyebrow="SONDAGES"
-        title="Sondage planning"
-        meta="Sonde tes élèves pour découvrir tes meilleurs créneaux"
-      />
-      <div style={{ padding: '0 22px 12px' }}>
+      <header className="sp-header">
+        <div>
+          <h1>Sondage planning</h1>
+          <p className="sp-subtitle">Sonde tes élèves pour découvrir tes meilleurs créneaux.</p>
+        </div>
         <Link href="/sondages/nouveau" className="izi-btn izi-btn-primary">
           <Plus size={16} /> Nouveau sondage
         </Link>
-      </div>
+      </header>
 
       {sondagesAvecStats.length === 0 ? (
         <div className="sp-empty izi-card">

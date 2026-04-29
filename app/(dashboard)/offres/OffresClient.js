@@ -12,7 +12,6 @@ import {
 import { formatMontant } from '@/lib/utils';
 import { TYPES_OFFRE } from '@/lib/constantes';
 import { createClient } from '@/lib/supabase';
-import { PageHeader } from '@/components/np';
 
 const TYPE_ICONS = { carnet: Ticket, abonnement: CalendarCheck, cours_unique: Zap };
 
@@ -342,13 +341,12 @@ export default function OffresClient({ offres, profile }) {
 
   return (
     <div className="offres-page">
-      <PageHeader
-        eyebrow="OFFRES"
-        title="Tes offres"
-        meta={offres.length > 0 ? `${offres.length} offre${offres.length > 1 ? 's' : ''} active${offres.length > 1 ? 's' : ''}` : undefined}
-      />
-      <div style={{ padding: '0 22px 12px' }}>
-        <Link href="/offres/nouveau" className="izi-btn izi-btn-primary">
+      <div className="page-header animate-fade-in">
+        <div className="page-header-left">
+          <h1>Tes offres</h1>
+          {offres.length > 0 && <span className="count-badge">{offres.length}</span>}
+        </div>
+        <Link href="/offres/nouveau" className="izi-btn izi-btn-primary header-cta-btn">
           <Plus size={16} /> Nouvelle offre
         </Link>
       </div>

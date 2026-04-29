@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeft, Save, User, Building2, MapPin, Plus, Trash2, Sparkles, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase';
-import { PageHeader } from '@/components/np';
 import { validerEmail, validerTelephone, formaterTelephone, validerSiret, formaterSiret } from '@/lib/validation';
 import { useToast } from '@/components/ui/ToastProvider';
 import AutocompleteEntreprise from '@/components/forms/AutocompleteEntreprise';
@@ -188,11 +187,9 @@ export default function NouveauClient() {
 
   return (
     <div className="nouveau-client">
-      <PageHeader eyebrow="NOUVEAU" title="Nouveau contact" />
-      <div style={{ padding: '0 22px 8px' }}>
-        <Link href="/clients" className="izi-btn izi-btn-ghost" style={{ fontSize: '0.8125rem' }}>
-          <ArrowLeft size={14} /> Mes élèves
-        </Link>
+      <div className="page-header animate-fade-in">
+        <Link href="/clients" className="back-btn"><ArrowLeft size={20} /></Link>
+        <h1>Nouveau contact</h1>
       </div>
 
       {/* Toggle Particulier / Pro */}

@@ -12,7 +12,6 @@ import { formatHeure } from '@/lib/utils';
 import { normalizeTypesCours } from '@/lib/utils';
 import { parseDate } from '@/lib/dates';
 import { useToast } from '@/components/ui/ToastProvider';
-import { PageHeader } from '@/components/np';
 
 // ── Libellés fréquence ──────────────────────────────
 const FREQ_LABELS = {
@@ -137,10 +136,14 @@ export default function CoursEventsClient({
   return (
     <div className="ce-page animate-fade-in">
 
-      <PageHeader eyebrow="COURS" title="Cours & Évènements" />
-      <div style={{ padding: '0 22px 12px' }}>
-        <Link href="/cours/nouveau" className="izi-btn izi-btn-primary">
-          <Plus size={16} /> Nouveau cours
+      {/* ── En-tête ── */}
+      <div className="ce-header">
+        <div className="ce-header-left">
+          <GraduationCap size={22} />
+          <h1>Cours &amp; Évènements</h1>
+        </div>
+        <Link href="/cours/nouveau" className="izi-btn izi-btn-primary ce-btn-new">
+          <Plus size={16} /> Nouveau
         </Link>
       </div>
 
