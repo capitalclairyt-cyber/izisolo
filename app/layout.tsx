@@ -10,7 +10,7 @@ const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://izisolo.fr';
 
 const VALID_PALETTES = ['rose', 'sauge', 'sable', 'lavande'] as const;
 type Palette = typeof VALID_PALETTES[number];
-const DEFAULT_PALETTE: Palette = 'sable'; // sable = palette historique IziSolo
+const DEFAULT_PALETTE: Palette = 'rose'; // rose = palette terracotta du handoff designer
 
 export const metadata: Metadata = {
   metadataBase: new URL(baseUrl),

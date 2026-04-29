@@ -106,9 +106,10 @@ export default function DashboardShell({
           </div>
         </main>
 
-        {/* BottomDock (mobile only) — masqué en desktop ≥1024px via CSS */}
+        {/* BottomDock (mobile only) — affichage natif du designer
+            via le wrapper .ds-dock-host qui sert de parent positionné. */}
         {!hideShell && activeTab && (
-          <div className="ds-mobile-dock">
+          <div className="ds-dock-host">
             <BottomDock
               active={activeTab}
               onChange={goTab}
@@ -155,28 +156,19 @@ export default function DashboardShell({
           .ds-content-inner { padding: 24px; }
         }
 
-        /* BottomDock (mobile only) */
-        .ds-mobile-dock {
-          position: fixed; left: 0; right: 0; bottom: 0;
+        /* Dock host : parent positionné où le BottomDock interne se pose
+           en absolute bottom-0 (pattern designer). */
+        .ds-dock-host {
+          position: fixed;
+          left: 0; right: 0; bottom: 0;
+          height: 96px;                       /* hauteur de la zone occupée par le dock + safe-area */
+          padding-bottom: env(safe-area-inset-bottom, 0px);
           z-index: 50;
-          padding: 12px 16px calc(18px + env(safe-area-inset-bottom, 0px));
           pointer-events: none;
         }
-        .ds-mobile-dock > div { pointer-events: auto; }
-        .ds-mobile-dock > div > div {
-          position: static !important;
-          background: var(--c-surface);
-          border-radius: 999px;
-          border: 1px solid var(--c-line);
-          box-shadow: var(--shadow-md);
-          padding: 6px;
-          height: 56px;
-          display: grid;
-          grid-template-columns: 1fr 1fr 56px 1fr 1fr;
-          align-items: center;
-        }
+        .ds-dock-host > * { pointer-events: auto; }
         @media (min-width: 1024px) {
-          .ds-mobile-dock { display: none; }
+          .ds-dock-host { display: none; }
         }
 
         /* FAB Assistant IA */

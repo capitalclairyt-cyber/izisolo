@@ -1,19 +1,127 @@
 /* ================================================================
    IziSolo · globals.css
    ----------------------------------------------------------------
-   À placer dans : src/app/globals.css (Next.js App Router)
-                ou src/index.css     (Vite)
-   Importé une fois dans le layout racine.
-
-   Contient :
-   - Tokens CSS variables (palettes web + tokens mobile)
-   - Reset léger
-   - Utility classes typo (.serif, .mono, .eyebrow)
-   - Animation keyframes globales
-
-   Pour switcher de palette : <html data-palette="rose|sauge|sable|lavande">
-   Default = rose.
+   Tailwind 4 : on importe le runtime + on pointe vers le config
+   JS legacy (tailwind.config.ts) qui contient le mapping des couleurs
+   Tokens CSS variables (palettes web + tokens mobile)
    ================================================================ */
+
+@import "tailwindcss";
+
+/* Tailwind 4 : on déclare les sources à scanner (le default scan le repo
+   entier mais on est explicite pour éviter de scanner node_modules etc.).
+   Note : pas de @config legacy — on définit tout via @theme ci-dessous,
+   sinon conflit silencieux entre les 2 mécanismes. */
+@source "../app";
+@source "../components";
+@source "../lib";
+
+/* ============================================================
+   TAILWIND 4 — @theme inline
+   ----------------------------------------------------------------
+   En Tailwind 4, les couleurs/fonts/radius custom doivent être
+   déclarées via @theme dans le CSS pour que les utility classes
+   (bg-accent, bg-m-ink, bg-tone-rose, font-display, etc.) soient
+   générées. Le `@config` ci-dessus charge bien le fichier mais en
+   v4, c'est `@theme` qui prime pour ce mapping.
+   `inline` = lecture des CSS vars qui changent par data-palette.
+   ============================================================ */
+/**
+ * Tailwind 4 @theme — couleurs par DÉFAUT (palette sable).
+ * Pour le palette switching dynamique, voir le bloc `[data-palette]`
+ * plus bas qui override les CSS vars `--c-*` et `--m-*` en cascade —
+ * comme `bg-accent` est généré ici en RAW oklch, on doit donc maj
+ * les utilities via `[data-palette="rose"] .bg-accent { ... }` pour
+ * vraiment switcher live. Compromis pragmatique : on accepte que la
+ * palette ne switche que sur reload (cookie persist), c'est largement
+ * suffisant pour un changement rare de prefs (1×/an).
+ */
+@theme {
+  /* === Couleurs sémantiques web (palette ROSE/terracotta — default designer) === */
+  --color-bg: oklch(0.985 0.008 60);
+  --color-bg-warm: oklch(0.972 0.014 50);
+  --color-surface: oklch(1 0 0);
+  --color-surface-2: oklch(0.97 0.012 50);
+  --color-ink: oklch(0.24 0.022 30);
+  --color-ink-soft: oklch(0.42 0.022 30);
+  --color-ink-muted: oklch(0.58 0.018 30);
+  --color-line: oklch(0.91 0.014 40);
+  --color-line-strong: oklch(0.84 0.018 40);
+  --color-accent: oklch(0.65 0.10 25);
+  --color-accent-deep: oklch(0.52 0.11 25);
+  --color-accent-soft: oklch(0.93 0.04 25);
+  --color-accent-tint: oklch(0.97 0.018 25);
+  --color-accent-ink: oklch(1 0 0);
+  --color-secondary: oklch(0.72 0.06 90);
+  --color-secondary-soft: oklch(0.94 0.03 90);
+  --color-success: oklch(0.62 0.08 150);
+  --color-warn: oklch(0.72 0.10 75);
+
+  /* === Couleurs mobile (préfixe m-) === */
+  --color-m-bg: oklch(0.985 0.008 60);
+  --color-m-bg-soft: oklch(0.97 0.014 50);
+  --color-m-surface: oklch(1 0 0);
+  --color-m-surface-2: oklch(0.965 0.012 50);
+  --color-m-surface-warm: oklch(0.985 0.018 60);
+  --color-m-surface-dark: oklch(0.18 0.022 30);
+  --color-m-surface-tint: oklch(0.96 0.025 30);
+  --color-m-ink: oklch(0.22 0.022 30);
+  --color-m-ink-soft: oklch(0.40 0.022 30);
+  --color-m-ink-mute: oklch(0.58 0.018 30);
+  --color-m-ink-onDark: oklch(0.95 0.012 60);
+  --color-m-ink-onDarkSoft: oklch(0.82 0.018 60);
+  --color-m-ink-onDarkMute: oklch(0.65 0.025 60);
+  --color-m-accent: oklch(0.65 0.10 25);
+  --color-m-accent-deep: oklch(0.52 0.11 25);
+  --color-m-accent-soft: oklch(0.93 0.04 25);
+  --color-m-accent-tint: oklch(0.97 0.018 25);
+  --color-m-accent-ink: oklch(1 0 0);
+  --color-m-line: oklch(0.92 0.014 40);
+  --color-m-line-strong: oklch(0.84 0.018 40);
+  --color-m-line-onDark: oklch(1 0 0 / 0.10);
+
+  /* === Tones sémantiques (SessionCard, ListRow icons) === */
+  --color-tone-rose: oklch(0.94 0.04 25);
+  --color-tone-rose-ink: oklch(0.42 0.10 25);
+  --color-tone-rose-accent: oklch(0.62 0.12 25);
+  --color-tone-sage: oklch(0.93 0.04 145);
+  --color-tone-sage-ink: oklch(0.40 0.06 145);
+  --color-tone-sage-accent: oklch(0.55 0.08 145);
+  --color-tone-sand: oklch(0.94 0.035 75);
+  --color-tone-sand-ink: oklch(0.42 0.06 60);
+  --color-tone-sand-accent: oklch(0.58 0.10 65);
+  --color-tone-lavender: oklch(0.93 0.035 295);
+  --color-tone-lavender-ink: oklch(0.40 0.06 295);
+  --color-tone-lavender-accent: oklch(0.55 0.08 295);
+  --color-tone-ink: oklch(0.20 0.02 30);
+  --color-tone-ink-text: oklch(0.98 0.01 30);
+
+  /* === Fonts === */
+  --font-display: var(--font-display, "Fraunces", Georgia, serif);
+  --font-sans: var(--font-inter, "Inter", system-ui, sans-serif);
+  --font-mono: var(--font-mono-jb, "JetBrains Mono", monospace);
+
+  /* === Radius === */
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 22px;
+  --radius-xl: 32px;
+  --radius-pill: 999px;
+
+  /* === Shadows === */
+  --shadow-xs: 0 1px 2px oklch(0.4 0.04 40 / 0.05);
+  --shadow-sm: 0 2px 8px oklch(0.4 0.04 40 / 0.06);
+  --shadow-md: 0 8px 24px oklch(0.4 0.04 40 / 0.08);
+  --shadow-lg: 0 24px 48px oklch(0.4 0.04 40 / 0.10);
+
+  /* === Easing & duration === */
+  --ease-base: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-soft: cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-duration-fast: 160ms;
+  --transition-duration-med: 320ms;
+  --transition-duration-slow: 600ms;
+}
 
 /* ============================================================
    TOKENS WEB
