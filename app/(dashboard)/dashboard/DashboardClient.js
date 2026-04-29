@@ -166,12 +166,12 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
         </Link>
       </div>
 
-      {/* CTA Planning idéal — visible si pas encore de sondage créé */}
+      {/* CTA Sondage planning — visible si pas encore de sondage créé */}
       {!hasSondage && (
         <Link href="/sondages/nouveau" className="dash-sondage-cta animate-slide-up">
           <div className="dash-sondage-icon"><ClipboardList size={20} /></div>
           <div className="dash-sondage-text">
-            <div className="dash-sondage-title">Planning idéal — sonde tes élèves</div>
+            <div className="dash-sondage-title">Sondage planning — découvre tes meilleurs créneaux</div>
             <div className="dash-sondage-desc">
               Découvre quels créneaux les rempliraient le mieux. 30 secondes pour eux, gros gain pour toi.
             </div>
@@ -591,7 +591,7 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
         }
         .dash-checklist-cta:hover { background: var(--brand-dark, #b07070); }
 
-        /* CTA Planning idéal */
+        /* CTA Sondage planning */
         .dash-sondage-cta {
           display: flex; align-items: center; gap: 12px;
           padding: 14px 16px; border-radius: 14px;

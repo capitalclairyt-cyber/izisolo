@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { Plus, BarChart3, Calendar, ChevronRight, ExternalLink } from 'lucide-react';
 
-export const metadata = { title: 'Planning idéal — sondages élèves' };
+export const metadata = { title: 'Sondage planning — sondages élèves' };
 
 export default async function SondagesPage() {
   const supabase = await createServerClient();
@@ -27,7 +27,7 @@ export default async function SondagesPage() {
     <div className="sondages-page">
       <header className="sp-header">
         <div>
-          <h1>Planning idéal</h1>
+          <h1>Sondage planning</h1>
           <p className="sp-subtitle">Sonde tes élèves pour découvrir tes meilleurs créneaux.</p>
         </div>
         <Link href="/sondages/nouveau" className="izi-btn izi-btn-primary">
