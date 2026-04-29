@@ -1,9 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Sparkles } from 'lucide-react';
 import Sidebar from '@/components/navigation/Sidebar';
 import BackgroundDecor from '@/components/background/BackgroundDecor';
 import { getVocabulaire } from '@/lib/vocabulaire';
@@ -60,7 +58,7 @@ export default function DashboardShell({
 
   useEffect(() => { setMounted(true); }, []);
 
-  const isAssistant = pathname === '/assistant';
+  // Pages plein écran qui cachent le shell (pas de dock, pas de sidebar)
   const hideShell = pathname.startsWith('/pointage/') || pathname === '/assistant';
 
   const vocabulaire = getVocabulaire(profile?.metier || 'yoga', profile?.vocabulaire);
@@ -85,39 +83,38 @@ export default function DashboardShell({
         />
 
         {/* Sidebar desktop ≥1024px */}
-        <Sidebar
-          studioNom={profile?.studio_nom || 'Mon Studio'}
-          vocabulaire={vocabulaire}
-          illustration={illustration}
-        />
+        {!hideShell && (
+          <Sidebar
+            studioNom={profile?.studio_nom || 'Mon Studio'}
+            vocabulaire={vocabulaire}
+            illustration={illustration}
+          />
+        )}
 
-        {/* Container scrollable. Sur mobile, .np-app gère le layout interne
-            (header sticky + body scrollable + dock fixe). */}
+        {/* Container scrollable principal — flow normal de la page */}
         <main className="ds-main">
-          <div className="ds-mobile">
+          <div className="ds-content">
             {children}
-            {!hideShell && activeTab && (
-              <BottomDock
-                active={activeTab}
-                onChange={goTab}
-                onPlus={() => setNewSheetOpen(true)}
-              />
-            )}
-            <NewSheet
-              open={newSheetOpen}
-              onClose={() => setNewSheetOpen(false)}
-              onPick={goNew}
-            />
           </div>
         </main>
 
-        {/* FAB Assistant IA */}
-        {!isAssistant && (
-          <Link href="/assistant" className="ai-fab" aria-label="Assistant IA">
-            <Sparkles size={20} />
-            <span className="ai-fab-label">IA</span>
-          </Link>
+        {/* BottomDock mobile : position fixed bottom 0 → vraiment collé en bas
+            quel que soit le contenu de la page. Cache desktop ≥1024px. */}
+        {!hideShell && activeTab && (
+          <div className="ds-dock-fixed">
+            <BottomDock
+              active={activeTab}
+              onChange={goTab}
+              onPlus={() => setNewSheetOpen(true)}
+            />
+          </div>
         )}
+
+        <NewSheet
+          open={newSheetOpen}
+          onClose={() => setNewSheetOpen(false)}
+          onPick={goNew}
+        />
       </div>
 
       <style jsx global>{`
@@ -127,47 +124,43 @@ export default function DashboardShell({
           color: var(--m-ink);
         }
 
-        /* Wrapper mobile : structure layout correct pour .np-app + .np-dock */
-        .ds-mobile {
-          position: relative;
-          min-height: 100vh;
-          width: 100%;
+        .ds-main { min-height: 100vh; }
+        .ds-content {
+          /* padding-bottom = hauteur dock (~80px) + safe-area pour pas être caché */
+          padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px));
           max-width: 480px;
           margin: 0 auto;
-          background: var(--m-bg);
+          padding-left: 0; padding-right: 0;
         }
 
         @media (min-width: 1024px) {
           .ds-main { padding-left: var(--sidebar-width, 230px); }
-          .ds-mobile { max-width: 1100px; }
-          /* Sur desktop, on cache le BottomDock (sidebar à la place) */
-          .ds-mobile .np-dock { display: none; }
-          /* Et on rend le scroll natif au body, pas dans .np-body */
-          .ds-mobile .np-app { padding-top: 0; }
-          .ds-mobile .np-body { overflow: visible; padding-bottom: 24px; }
+          .ds-content {
+            max-width: 1100px;
+            padding-bottom: 24px;  /* pas de dock en desktop */
+          }
         }
 
-        /* FAB Assistant IA */
-        .ai-fab {
+        /* Wrapper fixed du BottomDock : collé bottom 0 viewport */
+        .ds-dock-fixed {
           position: fixed;
-          bottom: calc(96px + env(safe-area-inset-bottom, 0px));
-          right: 16px;
-          width: 48px;
-          height: 48px;
-          border-radius: 50%;
-          background: var(--m-accent);
-          color: white;
-          display: flex; align-items: center; justify-content: center;
-          flex-direction: column; gap: 1px;
-          box-shadow: var(--m-shadow-fab);
-          text-decoration: none;
-          z-index: 49;
-          transition: transform 150ms;
+          left: 0; right: 0; bottom: 0;
+          z-index: 50;
+          display: flex;
+          justify-content: center;
+          padding-bottom: env(safe-area-inset-bottom, 0px);
+          pointer-events: none;
         }
-        .ai-fab:active { transform: scale(0.95); }
-        .ai-fab-label { font-size: 8.5px; font-weight: 700; letter-spacing: 0.04em; }
+        .ds-dock-fixed > .np-dock {
+          /* Override le position absolute natif → relative dans notre wrapper fixed */
+          position: relative !important;
+          width: 100%;
+          max-width: 480px;
+          pointer-events: auto;
+        }
+
         @media (min-width: 1024px) {
-          .ai-fab { bottom: 24px; right: 24px; }
+          .ds-dock-fixed { display: none; }
         }
       `}</style>
     </ToastProvider>
