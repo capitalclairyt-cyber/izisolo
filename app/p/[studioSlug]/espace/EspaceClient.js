@@ -65,25 +65,16 @@ function AssistantBookingButton({ studioSlug, prenom }) {
       <button
         onClick={() => setOpen(true)}
         title="Aide-moi à choisir un cours"
-        className="ai-assistant-fab"
+        style={{
+          position: 'fixed', bottom: 20, right: 20, zIndex: 50,
+          width: 54, height: 54, borderRadius: '50%',
+          background: '#d4a0a0', color: 'white', border: 'none',
+          boxShadow: '0 4px 16px rgba(212, 160, 160, 0.45)',
+          cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}
       >
         <MessageCircle size={22} />
       </button>
-      <style jsx>{`
-        .ai-assistant-fab {
-          position: fixed; bottom: 20px; right: 20px; z-index: 50;
-          width: 54px; height: 54px; border-radius: 50%;
-          background: #d4a0a0; color: white; border: none;
-          box-shadow: 0 4px 16px rgba(212, 160, 160, 0.45);
-          cursor: pointer;
-          display: flex; align-items: center; justify-content: center;
-        }
-        /* Mobile : caché car la BottomNav occupe déjà le bas + son rôle est
-           couvert par le bouton + central (Réserver). Reste accessible en desktop. */
-        @media (max-width: 768px) {
-          .ai-assistant-fab { display: none; }
-        }
-      `}</style>
 
       {open && (
         <div style={{
@@ -523,8 +514,9 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
         </div>
       )}
 
-      {/* Assistant Claude — bouton flottant + chat */}
-      <AssistantBookingButton studioSlug={studioSlug} prenom={client?.prenom} />
+      {/* Assistant Claude — désactivé temporairement (UX pas au point).
+          Pour réactiver, déscommenter la ligne ci-dessous. */}
+      {/* <AssistantBookingButton studioSlug={studioSlug} prenom={client?.prenom} /> */}
 
       {/* Bouton rebooking */}
       <div style={{ marginTop: 28, paddingTop: 20, borderTop: '1px solid #f0ebe8', textAlign: 'center' }}>

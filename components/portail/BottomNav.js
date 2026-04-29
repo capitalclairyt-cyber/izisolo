@@ -88,24 +88,20 @@ export default function BottomNav({ studioSlug, unread = 0 }) {
         .bnav-wrap {
           position: fixed;
           left: 0; right: 0; bottom: 0;
-          padding: 12px 16px calc(18px + env(safe-area-inset-bottom, 0));
           z-index: 40;
-          background: linear-gradient(to top, #faf8f5 30%, transparent);
-          pointer-events: none;
+          padding: 0;
+          padding-bottom: env(safe-area-inset-bottom, 0); /* iOS notch */
+          background: white;
+          border-top: 1px solid #f0ebe8;
+          box-shadow: 0 -4px 16px rgba(30, 20, 25, 0.06);
         }
         .bnav-bar {
-          pointer-events: auto;
           background: white;
-          border-radius: 999px;
-          height: 56px;
+          height: 64px;
           display: grid;
           grid-template-columns: 1fr 1fr 56px 1fr 1fr;
           align-items: center;
           padding: 0 6px;
-          box-shadow:
-            0 8px 28px rgba(30, 20, 25, 0.10),
-            0 2px 6px rgba(30, 20, 25, 0.04);
-          border: 1px solid #f0ebe8;
         }
         .bnav-btn {
           height: 100%;
