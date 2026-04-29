@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { User, MessageCircle } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { ToastProvider } from '@/components/ui/ToastProvider';
+import BottomNav from '@/components/portail/BottomNav';
 
 export default function PortailLayoutClient({ studioSlug, children }) {
   return (
@@ -103,6 +104,11 @@ function PortailLayoutInner({ studioSlug, children }) {
         {children}
       </main>
 
+      {/* BottomNav fixe (élève connecté, mobile uniquement) */}
+      {prenom && (
+        <BottomNav studioSlug={studioSlug} unread={unread} />
+      )}
+
       <footer className="portail-footer">
         <span>Propulsé par <a href="https://izisolo.fr" target="_blank" rel="noopener noreferrer">IziSolo</a></span>
         <span className="portail-footer-sep">·</span>
@@ -152,6 +158,10 @@ function PortailLayoutInner({ studioSlug, children }) {
           display: inline-flex; align-items: center; justify-content: center;
         }
         .portail-main { flex: 1; max-width: 680px; margin: 0 auto; width: 100%; padding: 24px 16px 48px; }
+        /* Mobile : padding-bottom pour ne pas masquer le contenu sous le BottomNav (~90px) */
+        @media (max-width: 768px) {
+          .portail-main { padding-bottom: 100px; }
+        }
         .portail-footer {
           text-align: center; padding: 20px; border-top: 1px solid #f0ebe8;
           background: white; font-size: 0.8125rem; color: #888; display: flex;
