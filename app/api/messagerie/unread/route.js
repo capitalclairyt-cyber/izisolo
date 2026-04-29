@@ -14,7 +14,8 @@ export async function GET() {
     ({ user, profile, supabase } = await requireAuth());
   } catch (res) { return res; }
 
-  if (profile?.id) {
+  // Pro = a un studio_slug configuré. Sinon élève.
+  if (profile?.studio_slug) {
     const count = await countUnread(supabase, 'pro', profile.id);
     return Response.json({ count });
   }

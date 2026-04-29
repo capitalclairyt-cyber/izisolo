@@ -30,7 +30,8 @@ export async function POST(request) {
   try {
     ({ profile, supabase } = await requireAuth());
   } catch (res) { return res; }
-  if (!profile?.id) return Response.json({ error: 'Réservé aux pros' }, { status: 403 });
+  // Vrai pro = a un studio_slug (le trigger Supabase crée un profil pour tout user)
+  if (!profile?.studio_slug) return Response.json({ error: 'Réservé aux pros' }, { status: 403 });
 
   let body;
   try { body = await request.json(); } catch { return Response.json({ error: 'JSON invalide' }, { status: 400 }); }
