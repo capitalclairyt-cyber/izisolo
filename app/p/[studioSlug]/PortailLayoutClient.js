@@ -160,7 +160,7 @@ function PortailLayoutInner({ studioSlug, children }) {
         .portail-main { flex: 1; max-width: 680px; margin: 0 auto; width: 100%; padding: 24px 16px 48px; }
         /* Mobile : padding-bottom pour ne pas masquer le contenu sous le BottomNav (~90px) */
         @media (max-width: 768px) {
-          .portail-main { padding-bottom: 100px; }
+          .portail-main { padding-bottom: 110px; }
         }
         .portail-footer {
           text-align: center; padding: 20px; border-top: 1px solid #f0ebe8;
