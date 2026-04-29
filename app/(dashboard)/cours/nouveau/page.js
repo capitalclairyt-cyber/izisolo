@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { parseDate, toDateStr } from '@/lib/dates';
+import { PageHeader } from '@/components/np';
 import { getAllTypesFromCategories, normalizeTypesCours } from '@/lib/utils';
 import { estPendantVacances, estJourFerie, getPeriodeVacances, ZONES_VACANCES } from '@/lib/vacances-scolaires';
 import Link from 'next/link';
@@ -456,16 +457,15 @@ function NouveauCoursInner() {
 
   return (
     <div className="nouveau-cours">
-      <div className="page-header animate-fade-in">
-        <Link href="/agenda" className="back-btn"><ArrowLeft size={20} /></Link>
-        <div>
-          <h1>Nouveau cours</h1>
-          {searchParams.get('date') && (
-            <p className="header-date-hint">
-              <Calendar size={12} /> {parseDate(dateInitiale).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
-            </p>
-          )}
-        </div>
+      <PageHeader
+        eyebrow="NOUVEAU"
+        title="Nouveau cours"
+        meta={searchParams.get('date') ? parseDate(dateInitiale).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }) : undefined}
+      />
+      <div style={{ padding: '0 22px 8px' }}>
+        <Link href="/agenda" className="izi-btn izi-btn-ghost" style={{ fontSize: '0.8125rem' }}>
+          <ArrowLeft size={14} /> Agenda
+        </Link>
       </div>
 
       <form onSubmit={handleSubmit} className="form animate-slide-up">

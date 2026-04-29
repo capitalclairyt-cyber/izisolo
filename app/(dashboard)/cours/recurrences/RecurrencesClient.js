@@ -8,6 +8,7 @@ import {
   Sun, AlertTriangle, ToggleRight, ToggleLeft, X
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase';
+import { PageHeader } from '@/components/np';
 import { useToast } from '@/components/ui/ToastProvider';
 import {
   estPendantVacances, estJourFerie, getPeriodeVacances, ZONES_VACANCES,
@@ -159,13 +160,12 @@ export default function RecurrencesClient({ recurrences: initialRecurrences, cou
   if (recurrences.length === 0) {
     return (
       <div className="rec-page">
-        <header className="rec-header">
-          <Link href="/cours" className="back-btn"><ArrowLeft size={18} /></Link>
-          <div>
-            <h1>Mes cours récurrents</h1>
-            <p className="rec-subtitle">Gère tes séries de cours en un coup d'œil</p>
-          </div>
-        </header>
+        <PageHeader eyebrow="COURS · RÉCURRENCES" title="Mes cours récurrents" meta="Gère tes séries en un coup d'œil" />
+        <div style={{ padding: '0 22px 8px' }}>
+          <Link href="/cours" className="izi-btn izi-btn-ghost" style={{ fontSize: '0.8125rem' }}>
+            <ArrowLeft size={14} /> Retour aux cours
+          </Link>
+        </div>
         <div className="rec-empty izi-card">
           <div className="rec-empty-icon"><Repeat size={28} /></div>
           <p className="rec-empty-title">Tu n'as aucune série de cours récurrents pour l'instant.</p>
@@ -181,16 +181,19 @@ export default function RecurrencesClient({ recurrences: initialRecurrences, cou
 
   return (
     <div className="rec-page">
-      <header className="rec-header">
-        <Link href="/cours" className="back-btn"><ArrowLeft size={18} /></Link>
-        <div style={{ flex: 1 }}>
-          <h1>Mes cours récurrents</h1>
-          <p className="rec-subtitle">{recurrences.length} série{recurrences.length > 1 ? 's' : ''} active{recurrences.length > 1 ? 's' : ''}</p>
-        </div>
-        <Link href="/cours/nouveau" className="izi-btn izi-btn-secondary">
-          <Plus size={16} /> Nouvelle série
+      <PageHeader
+        eyebrow="COURS · RÉCURRENCES"
+        title="Mes cours récurrents"
+        meta={`${recurrences.length} série${recurrences.length > 1 ? 's' : ''} active${recurrences.length > 1 ? 's' : ''}`}
+      />
+      <div style={{ padding: '0 22px 8px', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <Link href="/cours" className="izi-btn izi-btn-ghost" style={{ fontSize: '0.8125rem' }}>
+          <ArrowLeft size={14} /> Retour
         </Link>
-      </header>
+        <Link href="/cours/nouveau" className="izi-btn izi-btn-primary" style={{ fontSize: '0.8125rem' }}>
+          <Plus size={14} /> Nouvelle série
+        </Link>
+      </div>
 
       {/* Liste des récurrences (chips horizontales scrollables) */}
       <div className="rec-list">

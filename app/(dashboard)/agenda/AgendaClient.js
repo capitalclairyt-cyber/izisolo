@@ -13,6 +13,7 @@ import {
   formatDateLong, formatDateCourte
 } from '@/lib/dates';
 import { createClient } from '@/lib/supabase';
+import { PageHeader } from '@/components/np';
 
 // ============================================
 // Constantes
@@ -171,8 +172,10 @@ export default function AgendaClient({ cours: initialCours, profile, initialDate
   return (
     <div className="agenda" ref={agendaRef}>
 
+      <PageHeader eyebrow="AGENDA" title="Agenda" meta={titreNav} />
+
       {/* Sélecteur de vue */}
-      <div className="vue-switcher animate-fade-in">
+      <div className="vue-switcher animate-fade-in" style={{ padding: '0 22px' }}>
         {VUES.map(v => (
           <button
             key={v.id}

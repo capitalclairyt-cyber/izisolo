@@ -10,6 +10,7 @@ import {
   Banknote, FileText, Landmark,
 } from 'lucide-react';
 import { formatDate, formatMontant } from '@/lib/utils';
+import { PageHeader } from '@/components/np';
 
 // ─── Types d'offre ───────────────────────────────────────────────────────────
 const TYPE_CONFIG = {
@@ -165,13 +166,11 @@ export default function AbonnementsClient({ abonnements: initAbo, paiementsParAb
   return (
     <div className="abo-page">
 
-      {/* ── En-tête ── */}
-      <div className="abo-header animate-fade-in">
-        <div>
-          <h1 className="abo-title">Abonnements</h1>
-          <p className="abo-subtitle">{stats.total} au total · {stats.actifs} actifs</p>
-        </div>
-      </div>
+      <PageHeader
+        eyebrow="ABONNEMENTS"
+        title="Abonnements"
+        meta={`${stats.total} au total · ${stats.actifs} actif${stats.actifs > 1 ? 's' : ''}`}
+      />
 
       {/* ── Statistiques ── */}
       <div className="abo-stats animate-slide-up">

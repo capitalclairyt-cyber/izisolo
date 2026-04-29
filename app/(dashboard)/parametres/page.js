@@ -15,6 +15,7 @@ import BackgroundDecor, { ILLUSTRATION_OPTIONS } from '@/components/background/B
 import ReglesTab from './ReglesTab';
 import PhotoUploader from '@/components/ui/PhotoUploader';
 import PalettePicker from '@/components/settings/PalettePicker';
+import { PageHeader } from '@/components/np';
 
 const PALETTES = [
   { id: 'rose', label: 'Rose', color: '#d4a0a0' },
@@ -1104,9 +1105,7 @@ export default function Parametres() {
         animationActive={profile.ui_animation_active !== false}
       />
 
-      <div className="page-header animate-fade-in">
-        <h1>Paramètres</h1>
-      </div>
+      <PageHeader eyebrow="PARAMÈTRES" title="Paramètres" meta="Studio, profil, palette, notifications" />
 
       {/* === ONGLETS PRINCIPAUX === */}
       <div className="tabs-bar animate-fade-in">

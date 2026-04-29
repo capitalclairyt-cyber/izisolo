@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Search, Plus, User, Building2, Phone, Mail, ChevronRight, Filter } from 'lucide-react';
 import { getVocabulaire } from '@/lib/vocabulaire';
 import { STATUTS_CLIENT } from '@/lib/constantes';
+import { PageHeader, PageActionBtn } from '@/components/np';
 
 export default function ClientsClient({ clients, profile }) {
   const vocab = getVocabulaire(profile?.metier || 'yoga', profile?.vocabulaire);
@@ -61,11 +62,15 @@ export default function ClientsClient({ clients, profile }) {
 
   return (
     <div className="clients-page">
-      {/* Header */}
-      <div className="page-header animate-fade-in">
-        <h1>{vocab.Clients || 'Élèves'}</h1>
-        <span className="count-badge">{clients.length}</span>
-      </div>
+      {/* Header — design Claude */}
+      <PageHeader
+        eyebrow={(vocab.Clients || 'ÉLÈVES').toUpperCase()}
+        title={vocab.Clients || 'Élèves'}
+        meta={`${clients.length} ${(vocab.client || 'élève').toLowerCase()}${clients.length > 1 ? 's' : ''}`}
+        actions={
+          <PageActionBtn icon="search" ariaLabel="Recherche" onClick={() => document.querySelector('.search-input')?.focus()} />
+        }
+      />
 
       {/* Recherche sticky */}
       <div className="search-bar animate-slide-up">

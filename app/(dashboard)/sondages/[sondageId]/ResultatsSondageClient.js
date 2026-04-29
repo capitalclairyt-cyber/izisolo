@@ -8,6 +8,7 @@ import {
   TrendingUp, Plus, Award
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase';
+import { PageHeader } from '@/components/np';
 import { useToast } from '@/components/ui/ToastProvider';
 
 const JOURS_LABEL = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
@@ -130,18 +131,20 @@ export default function ResultatsSondageClient({ sondage: initialSondage, crenea
 
   return (
     <div className="rs-page">
-      <header className="rs-header">
-        <Link href="/sondages" className="back-btn"><ArrowLeft size={18} /></Link>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <h1>{sondage.titre}</h1>
-          <p className="rs-subtitle">
-            {totalRepondants} répondant{totalRepondants > 1 ? 's' : ''}
-            {sondage.date_fin && ` · jusqu'au ${new Date(sondage.date_fin).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}`}
-            {' · '}
-            {sondage.actif ? 'actif' : 'clos'}
-          </p>
-        </div>
-      </header>
+      <PageHeader
+        eyebrow="SONDAGE"
+        title={sondage.titre}
+        meta={[
+          `${totalRepondants} répondant${totalRepondants > 1 ? 's' : ''}`,
+          sondage.date_fin && `jusqu'au ${new Date(sondage.date_fin).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}`,
+          sondage.actif ? 'actif' : 'clos',
+        ].filter(Boolean).join(' · ')}
+      />
+      <div style={{ padding: '0 22px 8px' }}>
+        <Link href="/sondages" className="izi-btn izi-btn-ghost" style={{ fontSize: '0.8125rem' }}>
+          <ArrowLeft size={14} /> Tous les sondages
+        </Link>
+      </div>
 
       {/* Bandeau lien public */}
       <div className="rs-link izi-card">

@@ -9,6 +9,7 @@ import {
 import { formatMontant, formatDate } from '@/lib/utils';
 import { STATUTS_PAIEMENT } from '@/lib/constantes';
 import { useToast } from '@/components/ui/ToastProvider';
+import { PageHeader } from '@/components/np';
 
 const MODES = [
   { value: 'especes',  label: 'Espèces',  Icon: Banknote },
@@ -166,16 +167,14 @@ export default function RevenusClient({ paiements: initialPaiements }) {
 
   return (
     <div className="revenus-page">
-      <div className="page-header animate-fade-in">
-        <h1>Revenus</h1>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button onClick={handleExport} className="izi-btn izi-btn-ghost header-cta-btn" title="Export CSV pour ton comptable">
-            <Download size={16} /> Export
-          </button>
-          <Link href="/revenus/nouveau" className="izi-btn izi-btn-primary header-cta-btn">
-            <Plus size={16} /> Paiement
-          </Link>
-        </div>
+      <PageHeader eyebrow="REVENUS" title="Revenus" />
+      <div style={{ padding: '0 22px 12px', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <button onClick={handleExport} className="izi-btn izi-btn-ghost" title="Export CSV pour ton comptable">
+          <Download size={16} /> Export
+        </button>
+        <Link href="/revenus/nouveau" className="izi-btn izi-btn-primary">
+          <Plus size={16} /> Paiement
+        </Link>
       </div>
 
       {/* Sélecteur de période */}
