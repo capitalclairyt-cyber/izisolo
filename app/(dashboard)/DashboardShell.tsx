@@ -66,8 +66,9 @@ export default function DashboardShell({
   const grilleActive = profile?.ui_grille_active !== false;
   const animationActive = profile?.ui_animation_active !== false;
 
-  if (!mounted) return null;
-
+  // Note : on NE retourne plus null avant mount — sinon on risque que les
+  // pages restent vides si l'hydration foire silencieusement. La sidebar et
+  // le dock peuvent flasher 1 frame, c'est OK.
   const activeTab = pathToTab(pathname);
 
   const goTab = (tab: DockTab) => router.push(DOCK_ROUTES[tab]);
