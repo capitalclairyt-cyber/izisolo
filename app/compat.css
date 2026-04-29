@@ -1,0 +1,211 @@
+/* ================================================================
+   IziSolo · COMPAT SHIM — refonte progressive
+   ----------------------------------------------------------------
+   Mapping des anciens noms de CSS variables (--brand, --bg-card,
+   --text-primary, --radius-md, etc.) vers les nouveaux tokens
+   du design system (--c-accent, --c-surface, --c-ink, --r-md).
+
+   Permet aux pages NON encore refondues de continuer à tourner
+   pendant le big-bang. À supprimer quand toutes les pages auront
+   été migrées vers les nouvelles utilities Tailwind / tokens.
+
+   Importé par app/layout.tsx APRÈS globals.css.
+   ================================================================ */
+
+:root {
+  /* --- Anciens noms brand → nouveaux tokens accent --- */
+  --brand:        var(--c-accent);
+  --brand-light:  var(--c-accent-soft);
+  --brand-dark:   var(--c-accent-deep);
+  --brand-50:     var(--c-accent-tint);
+  --brand-100:    var(--c-accent-soft);
+  --brand-200:    oklch(0.88 0.05 25);
+  --brand-500:    var(--c-accent);
+  --brand-600:    oklch(0.58 0.10 25);
+  --brand-700:    var(--c-accent-deep);
+
+  /* --- Backgrounds --- */
+  --bg-page:       var(--c-bg);
+  --bg-card:       var(--c-surface);
+  --bg-card-hover: var(--c-surface-2);
+  --bg-soft:       var(--c-bg-warm);
+  --bg-input:      var(--c-surface);
+  --bg-nav:        var(--c-surface);
+  --cream:         var(--c-bg);
+  --cream-dark:    var(--c-bg-warm);
+
+  /* --- Texte --- */
+  --text-primary:   var(--c-ink);
+  --text-secondary: var(--c-ink-soft);
+  --text-muted:     var(--c-ink-muted);
+  --text-inverse:   var(--c-bg);
+
+  /* --- Borders --- */
+  --border:       var(--c-line);
+  --border-focus: var(--c-accent);
+
+  /* --- Radius (les anciens noms étaient plus petits) --- */
+  --radius-sm:   var(--r-sm);
+  --radius-md:   var(--r-md);
+  --radius-lg:   var(--r-lg);
+  --radius-xl:   var(--r-xl);
+  --radius-full: var(--r-pill);
+
+  /* --- Status couleurs (gardent leurs hex pour ne pas changer le sémantique) --- */
+  --success: oklch(0.62 0.08 150);
+  --warning: oklch(0.72 0.10 75);
+  --danger:  oklch(0.58 0.13 25);
+  --info:    oklch(0.62 0.08 230);
+
+  /* --- Tons earthy supplémentaires (pages anciennes) --- */
+  --brown-dark: oklch(0.32 0.03 50);
+  --brown:      oklch(0.42 0.04 50);
+  --taupe:      oklch(0.55 0.02 50);
+  --taupe-light: oklch(0.74 0.02 50);
+  --terre:      oklch(0.62 0.09 65);
+  --terre-light: oklch(0.85 0.05 70);
+  --sage:       oklch(0.7 0.05 145);
+  --sage-light: oklch(0.85 0.04 145);
+  --sage-dark:  oklch(0.55 0.06 145);
+
+  /* --- Layout --- */
+  --bottom-nav-height: 72px;
+  --sidebar-width:     230px;
+
+  /* --- Transitions --- */
+  --transition-fast:   var(--t-fast);
+  --transition-normal: var(--t-med);
+}
+
+/* Anciennes classes utilitaires utilisées partout — on les conserve telles quelles
+   en pointant vers les nouveaux tokens, pour transition douce. */
+
+.izi-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: var(--r-pill);
+  font-weight: 500;
+  font-size: 0.9375rem;
+  cursor: pointer;
+  transition: all var(--t-fast) var(--ease);
+  text-decoration: none;
+  border: 1px solid transparent;
+  min-height: 44px;
+  font-family: var(--font-body);
+}
+.izi-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.izi-btn-primary {
+  background: var(--c-accent);
+  color: var(--c-accent-ink);
+  box-shadow: var(--shadow-sm);
+}
+.izi-btn-primary:hover:not(:disabled) {
+  background: var(--c-accent-deep);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+.izi-btn-secondary {
+  background: var(--c-accent-soft);
+  color: var(--c-accent-deep);
+  border-color: transparent;
+}
+.izi-btn-secondary:hover:not(:disabled) {
+  background: var(--c-accent-tint);
+}
+
+.izi-btn-ghost {
+  background: transparent;
+  color: var(--c-ink-soft);
+}
+.izi-btn-ghost:hover:not(:disabled) {
+  background: var(--c-surface-2);
+}
+
+.izi-card {
+  background: var(--c-surface);
+  border: 1px solid var(--c-line);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-sm);
+}
+.izi-card-interactive {
+  cursor: pointer;
+  transition: all var(--t-fast) var(--ease);
+}
+.izi-card-interactive:hover {
+  border-color: var(--c-line-strong);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+.izi-input {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--c-line);
+  background: var(--c-surface);
+  color: var(--c-ink);
+  font-size: 0.9375rem;
+  font-family: var(--font-body);
+  transition: border-color var(--t-fast);
+  outline: none;
+}
+.izi-input:focus {
+  border-color: var(--c-accent);
+  box-shadow: 0 0 0 3px var(--c-accent-soft);
+}
+.izi-input::placeholder { color: var(--c-ink-muted); }
+
+.izi-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: var(--r-pill);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.izi-badge-brand {
+  background: var(--c-accent-soft);
+  color: var(--c-accent-deep);
+}
+
+.izi-fab {
+  position: fixed;
+  bottom: calc(var(--bottom-nav-height) + 16px);
+  right: 16px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--c-accent);
+  color: var(--c-accent-ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--m-shadow-fab, 0 12px 28px oklch(0.55 0.13 25 / 0.32));
+  border: none;
+  cursor: pointer;
+  z-index: var(--m-z-fab, 60);
+  text-decoration: none;
+  transition: all var(--t-fast) var(--ease);
+}
+.izi-fab:hover { transform: scale(1.05); }
+
+/* Animations héritées */
+.animate-fade-in {
+  animation: izi-fade-in var(--t-med) var(--ease) backwards;
+}
+.animate-slide-up {
+  animation: izi-slide-up var(--t-med) var(--ease) backwards;
+}
+@keyframes izi-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes izi-slide-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}

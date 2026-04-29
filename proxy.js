@@ -15,6 +15,7 @@ const PUBLIC_ROUTES = [
   '/legal/',                // CGU/CGV/Mentions/RGPD
   '/profs-de-yoga', '/profs-de-pilates', '/coachs-bien-etre', '/therapeutes',
   '/sitemap.xml', '/robots.txt',
+  '/test-tokens', '/components',  // pages QA design system (refonte big-bang)
 ];
 
 export async function proxy(request) {

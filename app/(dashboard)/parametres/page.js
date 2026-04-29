@@ -14,6 +14,7 @@ import { METIERS } from '@/lib/constantes';
 import BackgroundDecor, { ILLUSTRATION_OPTIONS } from '@/components/background/BackgroundDecor';
 import ReglesTab from './ReglesTab';
 import PhotoUploader from '@/components/ui/PhotoUploader';
+import PalettePicker from '@/components/settings/PalettePicker';
 
 const PALETTES = [
   { id: 'rose', label: 'Rose', color: '#d4a0a0' },
@@ -1300,21 +1301,13 @@ export default function Parametres() {
           {reglagesSubTab === 'apparences' && (
             <div className="subtab-content animate-fade-in">
 
-              {/* Thème couleur */}
+              {/* Palette IziSolo (4 thèmes interchangeables) */}
               <div className="section izi-card">
-                <div className="section-top"><div className="section-icon"><Palette size={20} /></div><h2>Thème couleur</h2></div>
-                <div className="palette-grid">
-                  {PALETTES.map(p => (
-                    <button
-                      key={p.id}
-                      className={`palette-btn ${profile.ui_couleur === p.id ? 'selected' : ''}`}
-                      onClick={() => setProfile(prev => ({ ...prev, ui_couleur: p.id }))}
-                    >
-                      <div className="palette-swatch" style={{ background: p.color }} />
-                      <span className="palette-label">{p.label}</span>
-                    </button>
-                  ))}
-                </div>
+                <div className="section-top"><div className="section-icon"><Palette size={20} /></div><h2>Ambiance visuelle</h2></div>
+                <p className="section-desc">
+                  Choisis la palette de couleurs qui te correspond. Le changement s'applique à tout ton espace IziSolo immédiatement.
+                </p>
+                <PalettePicker initial={profile.palette || 'sable'} />
               </div>
 
               {/* Décor visuel */}

@@ -1,24 +1,19 @@
 import { createServerClient } from '@/lib/supabase-server';
 import { redirect } from 'next/navigation';
-import DashboardShell from './DashboardShell';
+import ProfilClient from './ProfilClient';
 
-export default async function DashboardLayout({ children }) {
+export const metadata = { title: 'Profil' };
+
+export default async function ProfilPage() {
   const supabase = await createServerClient();
   const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect('/login');
-  }
+  if (!user) redirect('/login');
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('*')
+    .select('id, prenom, nom, studio_nom, metier, plan, palette')
     .eq('id', user.id)
     .single();
 
-  return (
-    <DashboardShell profile={profile}>
-      {children}
-    </DashboardShell>
-  );
+  return <ProfilClient profile={profile} />;
 }
