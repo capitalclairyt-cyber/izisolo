@@ -7,6 +7,7 @@ import { Calendar, Clock, MapPin, ArrowLeft, LogOut, CheckCircle, XCircle, Loade
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/components/ui/ToastProvider';
 import { evaluerAnnulation, formatDateLimite } from '@/lib/regles-annulation';
+import { toneForCours, toneForPaiement } from '@/lib/tones';
 
 const STRIPE_TYPE_ICONS = { carnet: Ticket, abonnement: CalendarCheck, cours_unique: Zap };
 
@@ -160,12 +161,13 @@ function CoursCard({ presence, profile, studioSlug, onAnnuler, annulEnCours }) {
     : { annulable: false, delaiHeures: 24 };
   const annulable = aVenir && evaluation.annulable;
   const futureMaisTardive = aVenir && !annulable;
+  const tone = toneForCours(c.type_cours);
 
   return (
-    <div className="espace-cours-card">
+    <div className={`espace-cours-card espace-cours-card--${tone}`}>
       <div className="espace-cours-info">
         <div className="espace-cours-nom">{c.nom}</div>
-        {c.type_cours && <span className="portail-tag portail-tag-rose" style={{ marginBottom: 6, display: 'inline-block' }}>{c.type_cours}</span>}
+        {c.type_cours && <span className={`portail-tag portail-tag-${tone}`} style={{ marginBottom: 6, display: 'inline-block' }}>{c.type_cours}</span>}
         <div className="espace-cours-details">
           <span><Calendar size={13} /> {formatDate(c.date)}</span>
           {c.heure && <span><Clock size={13} /> {formatHeure(c.heure)}{c.duree_minutes ? ` · ${c.duree_minutes} min` : ''}</span>}
@@ -437,8 +439,10 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
             <span className="espace-count">{paiements.length}</span>
           </h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {paiements.slice(0, 10).map(p => (
-              <div key={p.id} className="paiement-row">
+            {paiements.slice(0, 10).map(p => {
+              const tone = toneForPaiement(p.statut);
+              return (
+              <div key={p.id} className={`paiement-row paiement-row--${tone}`}>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontWeight: 600, fontSize: '0.875rem', color: '#1a1a2e' }}>
                     {p.intitule || 'Paiement'}
@@ -465,7 +469,8 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
                   )}
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
           {paiements.length > 10 && (
             <p style={{ fontSize: '0.75rem', color: '#888', textAlign: 'center', marginTop: 12 }}>
@@ -546,7 +551,13 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
           padding: 16px; margin-bottom: 8px;
           box-shadow: 0 1px 6px rgba(0,0,0,0.05);
           display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+          border-left: 4px solid transparent;
         }
+        .espace-cours-card--rose     { border-left-color: var(--tone-rose-accent); }
+        .espace-cours-card--sage     { border-left-color: var(--tone-sage-accent); }
+        .espace-cours-card--sand     { border-left-color: var(--tone-sand-accent); }
+        .espace-cours-card--lavender { border-left-color: var(--tone-lavender-accent); }
+        .espace-cours-card--ink      { border-left-color: var(--tone-ink-bg); }
         .espace-cours-info { flex: 1; min-width: 0; }
         .espace-cours-nom { font-weight: 700; font-size: 0.9375rem; color: #1a1a2e; margin-bottom: 4px; }
         .espace-cours-details {
@@ -603,7 +614,12 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
           display: flex; align-items: center; gap: 12px;
           background: white; border: 1px solid #f0ebe8; border-radius: 12px;
           padding: 10px 14px;
+          border-left-width: 4px;
         }
+        .paiement-row--rose     { border-left-color: var(--tone-rose-accent); }
+        .paiement-row--sage     { border-left-color: var(--tone-sage-accent); }
+        .paiement-row--sand     { border-left-color: var(--tone-sand-accent); }
+        .paiement-row--lavender { border-left-color: var(--tone-lavender-accent); }
         .paiement-pdf-btn {
           width: 30px; height: 30px; border-radius: 8px;
           background: #faf8f5; color: #888; border: 1px solid #f0ebe8;

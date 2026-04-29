@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { MapPin, Calendar, Clock, Users, ChevronRight, Search, CreditCard, Ticket, CalendarCheck, Zap, Instagram, Facebook, Globe, Award, BookOpen } from 'lucide-react';
+import { toneForCours } from '@/lib/tones';
 
 const TYPE_ICONS = { carnet: Ticket, abonnement: CalendarCheck, cours_unique: Zap };
 
@@ -186,18 +187,19 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
           {coursDate.map(c => {
             const dispo = c.capacite_max ? c.capacite_max - c.nbInscrits : null;
             const complet = dispo !== null && dispo <= 0;
+            const tone = toneForCours(c.type_cours);
             return (
               <Link
                 key={c.id}
                 href={`/p/${studioSlug}/cours/${c.id}`}
-                className={`portail-cours-card ${complet ? 'complet' : ''}`}
+                className={`portail-cours-card portail-cours-card--${tone} ${complet ? 'complet' : ''}`}
               >
                 <div className="portail-cours-info">
                   <div className="portail-cours-nom">{c.nom}</div>
                   <div className="portail-cours-details">
                     <span><Clock size={12} /> {formatHeure(c.heure)}{c.duree_minutes ? ` · ${c.duree_minutes}min` : ''}</span>
                     {c.lieu && <span><MapPin size={12} /> {c.lieu}</span>}
-                    {c.type_cours && <span className="portail-tag portail-tag-rose">{c.type_cours}</span>}
+                    {c.type_cours && <span className={`portail-tag portail-tag-${tone}`}>{c.type_cours}</span>}
                   </div>
                 </div>
                 <div className="portail-cours-right">
@@ -418,6 +420,7 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
           background: white; border-radius: 14px; padding: 16px;
           box-shadow: 0 1px 6px rgba(0,0,0,0.05); margin-bottom: 8px;
           text-decoration: none; color: inherit; transition: box-shadow 0.15s, transform 0.1s;
+          border-left: 4px solid transparent; /* accent tone */
         }
         .portail-cours-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.1); transform: translateY(-1px); }
         .portail-cours-card.complet { opacity: 0.6; }
@@ -426,6 +429,19 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
         .portail-cours-details { display: flex; flex-wrap: wrap; gap: 8px; font-size: 0.8125rem; color: #888; align-items: center; }
         .portail-cours-details span { display: flex; align-items: center; gap: 4px; }
         .portail-cours-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+
+        /* Tons par type de cours — accent borgnoche + tag coloré */
+        .portail-cours-card--rose     { border-left-color: var(--tone-rose-accent); }
+        .portail-cours-card--sage     { border-left-color: var(--tone-sage-accent); }
+        .portail-cours-card--sand     { border-left-color: var(--tone-sand-accent); }
+        .portail-cours-card--lavender { border-left-color: var(--tone-lavender-accent); }
+        .portail-cours-card--ink      { border-left-color: var(--tone-ink-bg); }
+
+        .portail-tag-rose     { background: var(--tone-rose-bg);     color: var(--tone-rose-ink); }
+        .portail-tag-sage     { background: var(--tone-sage-bg);     color: var(--tone-sage-ink); }
+        .portail-tag-sand     { background: var(--tone-sand-bg);     color: var(--tone-sand-ink); }
+        .portail-tag-lavender { background: var(--tone-lavender-bg); color: var(--tone-lavender-ink); }
+        .portail-tag-ink      { background: var(--tone-ink-bg);      color: var(--tone-ink-text); }
 
         .portail-empty {
           text-align: center; padding: 48px 24px;

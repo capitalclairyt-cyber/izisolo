@@ -76,7 +76,39 @@
   /* --- Navigation --- */
   --bottom-nav-height: 72px;
   --sidebar-width: 230px;
+
+  /* --- Palette tonale Claude Design ---
+     Touches de couleur subtiles pour casser la monotonie sur les cartes
+     (cours, ateliers, paiements, abonnements). Backgrounds très désaturés,
+     ink (texte) plus profond, accent (border/icône) intermédiaire. */
+  --tone-rose-bg:        #fce8e2;
+  --tone-rose-ink:       #8b3838;
+  --tone-rose-accent:    #c47070;
+  --tone-sage-bg:        #e2f0e0;
+  --tone-sage-ink:       #4d6b48;
+  --tone-sage-accent:    #7a9a72;
+  --tone-sand-bg:        #f5ebd8;
+  --tone-sand-ink:       #8a6a3d;
+  --tone-sand-accent:    #c4956a;
+  --tone-lavender-bg:    #ece6f3;
+  --tone-lavender-ink:   #5a4d75;
+  --tone-lavender-accent:#8a7caa;
+  --tone-ink-bg:         #2a2520;
+  --tone-ink-text:       #faf6f0;
 }
+
+/* === Utilitaires tones === */
+.tone-rose     { background: var(--tone-rose-bg); color: var(--tone-rose-ink); }
+.tone-sage     { background: var(--tone-sage-bg); color: var(--tone-sage-ink); }
+.tone-sand     { background: var(--tone-sand-bg); color: var(--tone-sand-ink); }
+.tone-lavender { background: var(--tone-lavender-bg); color: var(--tone-lavender-ink); }
+.tone-ink      { background: var(--tone-ink-bg); color: var(--tone-ink-text); }
+
+/* Border subtle qui s'accord avec le tone */
+.tone-rose-border     { border-color: var(--tone-rose-accent); }
+.tone-sage-border     { border-color: var(--tone-sage-accent); }
+.tone-sand-border     { border-color: var(--tone-sand-accent); }
+.tone-lavender-border { border-color: var(--tone-lavender-accent); }
 
 /* === Palettes alternatives === */
 [data-theme="ocean"] {
