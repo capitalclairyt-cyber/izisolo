@@ -69,6 +69,23 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <head>
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
+        {/* Désinscription automatique du service worker PWA legacy
+            (cause de pages-vides en prod : SW servait des assets cachés
+            obsolètes après la refonte). À retirer quand on réactivera PWA. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistrations().then(regs => {
+                  regs.forEach(r => r.unregister());
+                }).catch(() => {});
+                if ('caches' in window) {
+                  caches.keys().then(keys => keys.forEach(k => caches.delete(k))).catch(() => {});
+                }
+              }
+            `,
+          }}
+        />
       </head>
       <body>
         {children}
