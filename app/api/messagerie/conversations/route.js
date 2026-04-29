@@ -97,26 +97,50 @@ async function getProConversations(supabase, profileId) {
         unread_count = count || 0;
       } catch (e) { console.warn('[messagerie GET] count unread err for', c.id, e?.message); }
 
+      let last_announce_batch_id = null;
       try {
         const { data: lastMsg } = await supabase
           .from('messages')
-          .select('content, sender_type, message_type, created_at')
+          .select('content, sender_type, message_type, created_at, announce_batch_id')
           .eq('conversation_id', c.id)
           .order('created_at', { ascending: false })
           .limit(1)
           .maybeSingle();
         last_message_preview = lastMsg?.content?.slice(0, 80) || (lastMsg?.message_type === 'photo' ? '📷 Photo' : '');
         last_message_from = lastMsg?.sender_type || null;
+        // Si le dernier msg est un announce du pro ET qu'aucun élève n'a répondu
+        // depuis (i.e. pas d'autre msg eleve plus récent), la conv reste dans le
+        // groupe annonce.
+        if (lastMsg?.announce_batch_id && lastMsg.sender_type === 'pro') {
+          last_announce_batch_id = lastMsg.announce_batch_id;
+        }
       } catch (e) { console.warn('[messagerie GET] last msg err for', c.id, e?.message); }
+
+      // Lecture par l'élève (pour afficher "lu/non lu" dans les groupes annonces)
+      let eleve_last_read_at = null;
+      try {
+        const eleveMember = (await supabase
+          .from('conversation_members')
+          .select('last_read_at')
+          .eq('conversation_id', c.id)
+          .not('client_id', 'is', null)
+          .maybeSingle()).data;
+        eleve_last_read_at = eleveMember?.last_read_at || null;
+      } catch (_) {}
 
       return {
         id: c.id,
         type: c.type,
         peer_label,
+        client_id: c.client_id,
+        cours_id: c.cours_id,
+        titre_custom: c.titre,         // titre custom éventuel (pour éditeur pro)
         last_message_at: c.last_message_at,
         unread_count,
         last_message_preview,
         last_message_from,
+        last_announce_batch_id,
+        eleve_last_read_at,
       };
     }));
 

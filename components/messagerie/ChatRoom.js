@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import MessageBubble, { DateSeparator } from './MessageBubble';
 import ChatInput from './ChatInput';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Pencil, Check, X } from 'lucide-react';
 import { createClient } from '@/lib/supabase';
 
 /**
@@ -24,10 +24,44 @@ function isSameDay(a, b) {
 
 export default function ChatRoom({ conversationId, viewerKind, onMessageSent }) {
   const [messages, setMessages] = useState([]);
+  const [conv, setConv]         = useState(null); // {peer_label, titre, is_owner_pro}
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState(null);
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [titleDraft, setTitleDraft] = useState('');
+  const [savingTitle, setSavingTitle] = useState(false);
   const scrollRef = useRef(null);
   const lastFetchAt = useRef(null);
+
+  const fetchConv = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/messagerie/conversations/${conversationId}`);
+      const json = await res.json();
+      if (res.ok && json.conversation) setConv(json.conversation);
+    } catch { /* ignore */ }
+  }, [conversationId]);
+
+  useEffect(() => { fetchConv(); }, [fetchConv]);
+
+  const handleSaveTitle = async () => {
+    setSavingTitle(true);
+    try {
+      const res = await fetch(`/api/messagerie/conversations/${conversationId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ titre: titleDraft.trim() || null }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Erreur');
+      // Refresh conv pour récupérer le nouveau peer_label dérivé
+      await fetchConv();
+      setEditingTitle(false);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSavingTitle(false);
+    }
+  };
 
   const fetchMessages = useCallback(async () => {
     try {
@@ -115,6 +149,61 @@ export default function ChatRoom({ conversationId, viewerKind, onMessageSent }) 
 
   return (
     <div className="chat-room">
+      {/* Header conv : titre + édition pro */}
+      {conv && (
+        <div className="cr-header">
+          {editingTitle ? (
+            <div className="cr-title-edit">
+              <input
+                type="text"
+                className="cr-title-input"
+                value={titleDraft}
+                onChange={e => setTitleDraft(e.target.value)}
+                placeholder={conv.peer_label}
+                maxLength={200}
+                autoFocus
+                onKeyDown={e => {
+                  if (e.key === 'Enter') handleSaveTitle();
+                  if (e.key === 'Escape') setEditingTitle(false);
+                }}
+              />
+              <button
+                type="button"
+                onClick={handleSaveTitle}
+                disabled={savingTitle}
+                className="cr-title-btn cr-title-btn-save"
+                title="Enregistrer"
+              >
+                <Check size={14} />
+              </button>
+              <button
+                type="button"
+                onClick={() => setEditingTitle(false)}
+                className="cr-title-btn"
+                title="Annuler"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          ) : (
+            <div className="cr-title-row">
+              <span className="cr-title">{conv.peer_label}</span>
+              {conv.is_owner_pro && (
+                <button
+                  type="button"
+                  onClick={() => { setTitleDraft(conv.titre || ''); setEditingTitle(true); }}
+                  className="cr-title-btn"
+                  title="Renommer"
+                  aria-label="Renommer la conversation"
+                >
+                  <Pencil size={13} />
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
       <div ref={scrollRef} className="cr-scroll">
         {messages.length === 0 ? (
           <div className="cr-empty">
@@ -144,6 +233,46 @@ export default function ChatRoom({ conversationId, viewerKind, onMessageSent }) 
           display: flex; flex-direction: column;
           height: 100%; min-height: 0;
         }
+        .cr-header {
+          padding: 10px 14px;
+          border-bottom: 1px solid var(--border);
+          background: white;
+          flex-shrink: 0;
+        }
+        .cr-title-row {
+          display: flex; align-items: center; gap: 8px;
+        }
+        .cr-title {
+          font-size: 0.9375rem; font-weight: 600;
+          color: var(--text-primary);
+          flex: 1; min-width: 0;
+          overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        }
+        .cr-title-edit {
+          display: flex; align-items: center; gap: 4px;
+        }
+        .cr-title-input {
+          flex: 1;
+          padding: 6px 10px; border: 1.5px solid var(--brand);
+          border-radius: 8px; font-size: 0.9375rem; font-weight: 600;
+          outline: none; min-width: 0;
+        }
+        .cr-title-btn {
+          width: 28px; height: 28px; flex-shrink: 0;
+          display: inline-flex; align-items: center; justify-content: center;
+          background: white; border: 1px solid var(--border); border-radius: 6px;
+          color: var(--text-muted); cursor: pointer; transition: all 0.1s;
+        }
+        .cr-title-btn:hover {
+          color: var(--brand); border-color: var(--brand);
+        }
+        .cr-title-btn-save {
+          background: var(--brand); color: white; border-color: var(--brand);
+        }
+        .cr-title-btn-save:hover {
+          background: var(--brand); opacity: 0.9; color: white;
+        }
+        .cr-title-btn:disabled { opacity: 0.5; cursor: not-allowed; }
         .cr-scroll {
           flex: 1; overflow-y: auto;
           padding: 12px;
