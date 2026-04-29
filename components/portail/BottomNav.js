@@ -85,14 +85,15 @@ export default function BottomNav({ studioSlug, unread = 0 }) {
       </nav>
 
       <style jsx global>{`
+        /* Palette Claude Design : crème (#faf6f0) + noir (#1a1612) — sobre, chaude, pas saturée. */
         .bnav-wrap {
           position: fixed;
           left: 0; right: 0; bottom: 0;
           z-index: 40;
-          padding-bottom: env(safe-area-inset-bottom, 0); /* iOS notch */
-          background: #fffbf5; /* crème chaud, ton studio bien-être */
+          padding-bottom: env(safe-area-inset-bottom, 0);
+          background: #faf6f0;
           border-top: 1px solid #ecdfd5;
-          box-shadow: 0 -4px 24px rgba(70, 35, 25, 0.08);
+          box-shadow: 0 -4px 24px rgba(70, 35, 25, 0.06);
         }
         .bnav-bar {
           height: 68px;
@@ -110,7 +111,7 @@ export default function BottomNav({ studioSlug, unread = 0 }) {
           align-items: center;
           justify-content: center;
           gap: 3px;
-          color: #9a8985;
+          color: #a89c93; /* gris-beige muted */
           text-decoration: none;
           cursor: pointer;
           padding: 6px 4px;
@@ -120,20 +121,10 @@ export default function BottomNav({ studioSlug, unread = 0 }) {
           transition: color .2s;
           line-height: 1;
         }
-        .bnav-btn:hover { color: #d4a0a0; }
-
-        /* Pastille active : pill brand-light derrière l'icône */
+        .bnav-btn:hover { color: #1a1612; }
         .bnav-btn.is-active {
-          color: #b87575;
+          color: #1a1612; /* noir warm de Claude Design */
           font-weight: 600;
-        }
-        .bnav-btn.is-active .bnav-ico::before {
-          content: '';
-          position: absolute;
-          inset: -6px -10px;
-          background: #fce8e8;
-          border-radius: 999px;
-          z-index: -1;
         }
 
         .bnav-ico {
@@ -141,7 +132,6 @@ export default function BottomNav({ studioSlug, unread = 0 }) {
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          z-index: 1;
         }
         .bnav-lbl {
           line-height: 1;
@@ -153,38 +143,31 @@ export default function BottomNav({ studioSlug, unread = 0 }) {
           min-width: 17px; height: 17px;
           padding: 0 4px;
           background: #dc2626; color: white;
-          border-radius: 99px; border: 2px solid #fffbf5;
+          border-radius: 99px; border: 2px solid #faf6f0;
           font-size: 0.6875rem; font-weight: 700; line-height: 1;
           display: inline-flex; align-items: center; justify-content: center;
-          z-index: 2;
         }
 
-        /* Bouton + central : plus présent, accent rose */
+        /* FAB central : noir warm Claude Design, déborde au-dessus de la barre */
         .bnav-plus {
           width: 52px; height: 52px;
           border-radius: 50%;
-          background: linear-gradient(135deg, #d4a0a0 0%, #c08585 100%);
-          color: white;
-          border: 3px solid #fffbf5;
+          background: #1a1612;
+          color: #faf6f0;
+          border: 3px solid #faf6f0;
           cursor: pointer;
           display: flex; align-items: center; justify-content: center;
           justify-self: center;
           box-shadow:
-            0 4px 12px rgba(212, 160, 160, 0.45),
-            0 1px 3px rgba(30, 20, 25, 0.10);
-          transition: transform .2s, box-shadow .2s;
+            0 4px 14px rgba(30, 20, 15, 0.20),
+            0 1px 3px rgba(30, 20, 15, 0.08);
+          transition: transform .2s;
           text-decoration: none;
-          margin-top: -16px; /* déborde au-dessus de la barre pour effet FAB */
+          margin-top: -16px;
         }
-        .bnav-plus:hover {
-          transform: scale(1.06);
-          box-shadow:
-            0 6px 18px rgba(212, 160, 160, 0.55),
-            0 2px 6px rgba(30, 20, 25, 0.12);
-        }
+        .bnav-plus:hover { transform: scale(1.06); }
         .bnav-plus:active { transform: scale(0.96); }
 
-        /* Hidden on desktop */
         @media (min-width: 769px) {
           .bnav-wrap { display: none; }
         }
