@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * CalendarBuilder — composant partagé pour les sondages "Planning idéal".
+ * CalendarBuilder — composant partagé pour les "Sondages planning".
  *
  * Modes :
  *   - 'edit' : le pro click pour ajouter/supprimer/éditer des créneaux

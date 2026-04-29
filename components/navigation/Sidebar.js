@@ -6,10 +6,12 @@ import Link from 'next/link';
 import {
   Home, CalendarDays, Users, Settings,
   BookOpen, Mail, ChevronRight, Sparkles,
-  Package, BarChart3, LogOut, Menu, X, GraduationCap, LifeBuoy, ClipboardList
+  Package, BarChart3, LogOut, Menu, X, GraduationCap, LifeBuoy, ClipboardList,
+  MessageSquare
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase';
 import NotificationBell from '@/components/notifications/NotificationBell';
+import MessagesBadge from '@/components/messagerie/MessagesBadge';
 
 const NAV_SECTIONS = [
   {
@@ -31,8 +33,8 @@ const NAV_SECTIONS = [
   {
     title: 'Communication',
     items: [
-      { href: '/communication',  label: 'Mailing',         icon: Mail },
-      { href: '/sondages',       label: 'Planning idéal',  icon: ClipboardList },
+      { href: '/messagerie',     label: 'Messagerie',      icon: MessageSquare, badge: true },
+      { href: '/sondages',       label: 'Sondage planning', icon: ClipboardList },
     ],
   },
 ];
@@ -113,7 +115,7 @@ export default function Sidebar({ studioNom = 'Mon Studio', vocabulaire = {}, il
             {section.title && (
               <div className="sidebar-section-title">{section.title}</div>
             )}
-            {section.items.map(({ href, label, icon: Icon }) => {
+            {section.items.map(({ href, label, icon: Icon, badge }) => {
               const isActive = pathname === href || pathname.startsWith(href + '/');
               return (
                 <Link
@@ -122,8 +124,9 @@ export default function Sidebar({ studioNom = 'Mon Studio', vocabulaire = {}, il
                   className={`sidebar-item ${isActive ? 'active' : ''}`}
                   onClick={triggerPulse}
                 >
-                  <span className="sidebar-icon-wrap">
+                  <span className="sidebar-icon-wrap" style={{ position: 'relative' }}>
                     <Icon size={20} strokeWidth={isActive ? 2.2 : 1.8} />
+                    {badge && <MessagesBadge />}
                   </span>
                   <span className="sidebar-label">{label}</span>
                   {isActive && <ChevronRight size={14} className="sidebar-chevron" />}
