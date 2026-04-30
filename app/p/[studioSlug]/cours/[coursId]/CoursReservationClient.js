@@ -254,6 +254,27 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
         )}
       </div>
 
+      {/* Bandeau "Premier cours en essai" — visible si essai_actif et visiteur non connecté */}
+      {profile.essai_actif && !isConnected && !passe && !complet && !annule && (
+        <Link
+          href={`/p/${studioSlug}/essai?cours=${cours.id}`}
+          className="resa-essai-banner"
+        >
+          <div className="resa-essai-icon">✨</div>
+          <div className="resa-essai-body">
+            <div className="resa-essai-title">
+              {profile.essai_paiement === 'gratuit'
+                ? 'Premier cours offert'
+                : `Premier cours d'essai · ${profile.essai_prix}€`}
+            </div>
+            <div className="resa-essai-sub">
+              Tu n'es pas encore client·e ? Profite d'un cours d'essai pour découvrir le studio.
+            </div>
+          </div>
+          <span className="resa-essai-cta">Réserver en essai →</span>
+        </Link>
+      )}
+
       {/* Politique d'annulation — délai lu depuis profile.regles_annulation */}
       {!passe && !complet && !annule && (() => {
         const delai = getDelaiPourCours(profile, cours.type_cours);
@@ -407,6 +428,42 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
         .resa-detail-row { display: flex; align-items: center; gap: 8px; font-size: 0.9375rem; color: #555; }
         .resa-detail-row svg { color: #d4a0a0; flex-shrink: 0; }
         .portail-input--readonly { background: #faf8f5; color: #888; cursor: default; border-color: #eee; }
+        .resa-essai-banner {
+          display: flex; align-items: center; gap: 12px;
+          padding: 14px 16px; margin-bottom: 14px;
+          background: linear-gradient(135deg, var(--tone-rose-bg-soft, #fdf6f4), white);
+          border: 1.5px solid var(--tone-rose-accent, #c47070);
+          border-radius: 14px;
+          text-decoration: none; color: inherit;
+          transition: transform 0.15s, box-shadow 0.15s;
+        }
+        .resa-essai-banner:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 4px 14px rgba(196, 112, 112, 0.16);
+        }
+        .resa-essai-icon {
+          width: 40px; height: 40px; flex-shrink: 0;
+          font-size: 1.3rem;
+          background: white; border: 1.5px solid var(--tone-rose-accent, #c47070);
+          border-radius: 50%;
+          display: flex; align-items: center; justify-content: center;
+        }
+        .resa-essai-body { flex: 1; min-width: 0; }
+        .resa-essai-title {
+          font-weight: 700; font-size: 0.9375rem;
+          color: var(--tone-rose-ink, #8b3838);
+        }
+        .resa-essai-sub { font-size: 0.8125rem; color: #888; margin-top: 2px; }
+        .resa-essai-cta {
+          font-size: 0.8125rem; font-weight: 700;
+          color: var(--tone-rose-ink, #8b3838);
+          flex-shrink: 0;
+          white-space: nowrap;
+        }
+        @media (max-width: 480px) {
+          .resa-essai-cta { display: none; }
+        }
+
         .resa-policy {
           display: flex; gap: 10px; align-items: flex-start;
           background: #fffaf0; border: 1px solid #ffe0b2; border-radius: 12px;

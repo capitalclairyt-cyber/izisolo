@@ -100,19 +100,21 @@ export async function POST(request, { params }) {
   }
 
   // Créer la présence (inscrit, pas encore pointé)
+  // Schéma : pointee BOOLEAN (default false), statut_pointage TEXT (default 'inscrit')
+  // Les colonnes `present` et `source` n'existent pas — bug pré-existant qui faisait
+  // échouer silencieusement TOUTE réservation portail.
   const { error: presenceErr } = await supabaseAdmin
     .from('presences')
     .insert({
       cours_id: coursId,
       client_id: clientId,
       profile_id: profile.id,
-      present: false,
-      source: 'portail',
+      // pointee + statut_pointage prennent leurs defaults ('false' + 'inscrit')
     });
 
   if (presenceErr) {
     console.error('create presence error:', presenceErr);
-    return Response.json({ error: 'Erreur lors de la réservation' }, { status: 500 });
+    return Response.json({ error: 'Erreur lors de la réservation : ' + presenceErr.message }, { status: 500 });
   }
 
   // Si l'utilisateur n'est pas authentifié, générer un magic link pour qu'il accède
