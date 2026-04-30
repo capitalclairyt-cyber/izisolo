@@ -551,13 +551,13 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
           padding: 16px; margin-bottom: 8px;
           box-shadow: 0 1px 6px rgba(0,0,0,0.05);
           display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
-          border-left: 4px solid transparent;
+          border-left: 6px solid transparent;
         }
-        .espace-cours-card--rose     { border-left-color: var(--tone-rose-accent); }
-        .espace-cours-card--sage     { border-left-color: var(--tone-sage-accent); }
-        .espace-cours-card--sand     { border-left-color: var(--tone-sand-accent); }
-        .espace-cours-card--lavender { border-left-color: var(--tone-lavender-accent); }
-        .espace-cours-card--ink      { border-left-color: var(--tone-ink-bg); }
+        .espace-cours-card--rose     { background: var(--tone-rose-bg-soft);     border-left-color: var(--tone-rose-accent); }
+        .espace-cours-card--sage     { background: var(--tone-sage-bg-soft);     border-left-color: var(--tone-sage-accent); }
+        .espace-cours-card--sand     { background: var(--tone-sand-bg-soft);     border-left-color: var(--tone-sand-accent); }
+        .espace-cours-card--lavender { background: var(--tone-lavender-bg-soft); border-left-color: var(--tone-lavender-accent); }
+        .espace-cours-card--ink      { background: var(--tone-ink-bg-soft);      border-left-color: var(--tone-ink-bg); }
         .espace-cours-info { flex: 1; min-width: 0; }
         .espace-cours-nom { font-weight: 700; font-size: 0.9375rem; color: #1a1a2e; margin-bottom: 4px; }
         .espace-cours-details {

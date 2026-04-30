@@ -11,6 +11,7 @@ import {
 import { formatHeure, formatMontant } from '@/lib/utils';
 import { getVocabulaire } from '@/lib/vocabulaire';
 import { useToast } from '@/components/ui/ToastProvider';
+import { toneForCours } from '@/lib/tones';
 
 export default function DashboardClient({ profile, coursDuJour, nbClients, nbCoursTotal, revenusMois, alertes, coutsMois, hasSondage = false }) {
   const vocab = getVocabulaire(profile?.metier || 'yoga', profile?.vocabulaire);
@@ -249,8 +250,10 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
           </div>
         ) : (
           <div className="cours-list">
-            {coursDuJour.map(cours => (
-              <div key={cours.id} className="cours-card izi-card">
+            {coursDuJour.map(cours => {
+              const tone = toneForCours(cours.type_cours);
+              return (
+              <div key={cours.id} className={`cours-card izi-card cours-card--${tone}`}>
                 <div className="cours-color-bar" />
                 <div className="cours-body">
                   <div className="cours-top">
@@ -264,7 +267,7 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
                       </div>
                     </div>
                     {cours.type_cours && (
-                      <span className="izi-badge izi-badge-brand">{cours.type_cours}</span>
+                      <span className={`izi-badge tone-${tone}-bg`}>{cours.type_cours}</span>
                     )}
                   </div>
                   <Link
@@ -276,7 +279,8 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
                   </Link>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
@@ -485,12 +489,22 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
           display: flex;
           overflow: hidden;
         }
+        .cours-card--rose     { background: var(--tone-rose-bg-soft); }
+        .cours-card--sage     { background: var(--tone-sage-bg-soft); }
+        .cours-card--sand     { background: var(--tone-sand-bg-soft); }
+        .cours-card--lavender { background: var(--tone-lavender-bg-soft); }
+        .cours-card--ink      { background: var(--tone-ink-bg-soft); }
         .cours-color-bar {
-          width: 4px;
+          width: 6px;
           background: var(--brand);
           flex-shrink: 0;
           border-radius: var(--radius-md) 0 0 var(--radius-md);
         }
+        .cours-card--rose     .cours-color-bar { background: var(--tone-rose-accent); }
+        .cours-card--sage     .cours-color-bar { background: var(--tone-sage-accent); }
+        .cours-card--sand     .cours-color-bar { background: var(--tone-sand-accent); }
+        .cours-card--lavender .cours-color-bar { background: var(--tone-lavender-accent); }
+        .cours-card--ink      .cours-color-bar { background: var(--tone-ink-bg); }
         .cours-body {
           flex: 1;
           padding: 14px 16px;

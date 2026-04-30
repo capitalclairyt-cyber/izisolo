@@ -78,37 +78,61 @@
   --sidebar-width: 230px;
 
   /* --- Palette tonale Claude Design ---
-     Touches de couleur subtiles pour casser la monotonie sur les cartes
-     (cours, ateliers, paiements, abonnements). Backgrounds très désaturés,
-     ink (texte) plus profond, accent (border/icône) intermédiaire. */
+     Tons signature pour casser la monotonie. Trois niveaux :
+     - bg-soft : fond très désaturé pour tinter une carte sans saturer
+     - bg      : fond plein pour tags/pills/avatars
+     - ink     : texte sombre lisible sur bg
+     - accent  : bord/icône intermédiaire */
+  --tone-rose-bg-soft:   #fdf6f4;
   --tone-rose-bg:        #fce8e2;
   --tone-rose-ink:       #8b3838;
   --tone-rose-accent:    #c47070;
+  --tone-sage-bg-soft:   #f6faf5;
   --tone-sage-bg:        #e2f0e0;
   --tone-sage-ink:       #4d6b48;
   --tone-sage-accent:    #7a9a72;
+  --tone-sand-bg-soft:   #fbf8f1;
   --tone-sand-bg:        #f5ebd8;
   --tone-sand-ink:       #8a6a3d;
   --tone-sand-accent:    #c4956a;
+  --tone-lavender-bg-soft:#f7f4fa;
   --tone-lavender-bg:    #ece6f3;
   --tone-lavender-ink:   #5a4d75;
   --tone-lavender-accent:#8a7caa;
+  --tone-ink-bg-soft:    #f5f3ef;
   --tone-ink-bg:         #2a2520;
   --tone-ink-text:       #faf6f0;
 }
 
-/* === Utilitaires tones === */
-.tone-rose     { background: var(--tone-rose-bg); color: var(--tone-rose-ink); }
-.tone-sage     { background: var(--tone-sage-bg); color: var(--tone-sage-ink); }
-.tone-sand     { background: var(--tone-sand-bg); color: var(--tone-sand-ink); }
-.tone-lavender { background: var(--tone-lavender-bg); color: var(--tone-lavender-ink); }
-.tone-ink      { background: var(--tone-ink-bg); color: var(--tone-ink-text); }
+/* === Utilitaires tones ===
+   .tone-X        : fond soft tinté (cartes principales)
+   .tone-X-bg     : fond plein (tags, pills, avatars)
+   .tone-X-border : bord coloré
+   .tone-X-text   : texte coloré */
 
-/* Border subtle qui s'accord avec le tone */
+.tone-rose     { background: var(--tone-rose-bg-soft); border-color: var(--tone-rose-accent); }
+.tone-sage     { background: var(--tone-sage-bg-soft); border-color: var(--tone-sage-accent); }
+.tone-sand     { background: var(--tone-sand-bg-soft); border-color: var(--tone-sand-accent); }
+.tone-lavender { background: var(--tone-lavender-bg-soft); border-color: var(--tone-lavender-accent); }
+.tone-ink      { background: var(--tone-ink-bg-soft); border-color: var(--tone-ink-bg); }
+
+.tone-rose-bg     { background: var(--tone-rose-bg); color: var(--tone-rose-ink); }
+.tone-sage-bg     { background: var(--tone-sage-bg); color: var(--tone-sage-ink); }
+.tone-sand-bg     { background: var(--tone-sand-bg); color: var(--tone-sand-ink); }
+.tone-lavender-bg { background: var(--tone-lavender-bg); color: var(--tone-lavender-ink); }
+.tone-ink-bg      { background: var(--tone-ink-bg); color: var(--tone-ink-text); }
+
+.tone-rose-text     { color: var(--tone-rose-ink); }
+.tone-sage-text     { color: var(--tone-sage-ink); }
+.tone-sand-text     { color: var(--tone-sand-ink); }
+.tone-lavender-text { color: var(--tone-lavender-ink); }
+.tone-ink-text      { color: var(--tone-ink-bg); }
+
 .tone-rose-border     { border-color: var(--tone-rose-accent); }
 .tone-sage-border     { border-color: var(--tone-sage-accent); }
 .tone-sand-border     { border-color: var(--tone-sand-accent); }
 .tone-lavender-border { border-color: var(--tone-lavender-accent); }
+.tone-ink-border      { border-color: var(--tone-ink-bg); }
 
 /* === Palettes alternatives === */
 [data-theme="ocean"] {
