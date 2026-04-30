@@ -2,8 +2,40 @@
 
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
-import { MapPin, Calendar, Clock, Users, ChevronRight, Search, CreditCard, Ticket, CalendarCheck, Zap, Instagram, Facebook, Globe, Award, BookOpen } from 'lucide-react';
+import { MapPin, Calendar, Clock, Users, ChevronRight, ChevronLeft, Search, CreditCard, Ticket, CalendarCheck, Zap, Instagram, Facebook, Globe, Award, BookOpen, LayoutGrid, List } from 'lucide-react';
 import { toneForCours } from '@/lib/tones';
+
+// Helpers semaine
+function getWeekStart(date) {
+  // Lundi = 1, Dimanche = 0 → on veut le lundi de la semaine
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  const day = d.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  d.setDate(d.getDate() + diff);
+  return d;
+}
+function addDays(date, n) {
+  const d = new Date(date);
+  d.setDate(d.getDate() + n);
+  return d;
+}
+function fmtIsoDate(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+function fmtWeekRange(start) {
+  const end = addDays(start, 6);
+  const sameMonth = start.getMonth() === end.getMonth();
+  const sameYear  = start.getFullYear() === end.getFullYear();
+  if (sameMonth) {
+    return `${start.getDate()}–${end.getDate()} ${MOIS[end.getMonth()]}${sameYear ? '' : ' ' + end.getFullYear()}`;
+  }
+  return `${start.getDate()} ${MOIS[start.getMonth()]} – ${end.getDate()} ${MOIS[end.getMonth()]}`;
+}
+const JOURS_LONG = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
 
 const TYPE_ICONS = { carnet: Ticket, abonnement: CalendarCheck, cours_unique: Zap };
 
@@ -47,6 +79,12 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState('');
   const [tab, setTab] = useState('cours'); // 'cours' | 'propos' | 'tarifs' | 'infos'
+  const [viewMode, setViewMode] = useState('week'); // 'week' | 'list'
+  const [weekStart, setWeekStart] = useState(() => getWeekStart(new Date()));
+
+  const weekEnd = addDays(weekStart, 6);
+  const weekStartIso = fmtIsoDate(weekStart);
+  const weekEndIso   = fmtIsoDate(weekEnd);
 
   // Tous les types uniques présents dans les cours
   const types = useMemo(() => {
@@ -64,15 +102,39 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
     });
   }, [cours, search, filterType]);
 
+  // En mode "semaine" on filtre aussi par plage de dates
+  const filteredForView = useMemo(() => {
+    if (viewMode !== 'week') return filtered;
+    return filtered.filter(c => c.date >= weekStartIso && c.date <= weekEndIso);
+  }, [filtered, viewMode, weekStartIso, weekEndIso]);
+
   // Grouper par date
   const grouped = useMemo(() => {
     const map = new Map();
-    filtered.forEach(c => {
+    filteredForView.forEach(c => {
       if (!map.has(c.date)) map.set(c.date, []);
       map.get(c.date).push(c);
     });
     return [...map.entries()];
-  }, [filtered]);
+  }, [filteredForView]);
+
+  // Pour la vue semaine : on construit les 7 jours (même vides) pour qu'ils soient tous représentés
+  const weekDays = useMemo(() => {
+    if (viewMode !== 'week') return null;
+    const days = [];
+    for (let i = 0; i < 7; i++) {
+      const d = addDays(weekStart, i);
+      const iso = fmtIsoDate(d);
+      const todayIso = fmtIsoDate(new Date());
+      days.push({
+        date: d,
+        iso,
+        isToday: iso === todayIso,
+        cours: filteredForView.filter(c => c.date === iso),
+      });
+    }
+    return days;
+  }, [viewMode, weekStart, filteredForView]);
 
   return (
     <div>
@@ -191,6 +253,51 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
 
       {/* === ONGLET COURS === */}
       {tab === 'cours' && <>
+      {/* Switch vue + nav semaine */}
+      <div className="portail-view-bar">
+        <div className="portail-view-toggle" role="tablist" aria-label="Mode d'affichage">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={viewMode === 'week'}
+            onClick={() => setViewMode('week')}
+            className={`portail-view-btn ${viewMode === 'week' ? 'is-active' : ''}`}
+          >
+            <LayoutGrid size={13} /> Semaine
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={viewMode === 'list'}
+            onClick={() => setViewMode('list')}
+            className={`portail-view-btn ${viewMode === 'list' ? 'is-active' : ''}`}
+          >
+            <List size={13} /> Liste
+          </button>
+        </div>
+        {viewMode === 'week' && (
+          <div className="portail-week-nav">
+            <button
+              type="button"
+              onClick={() => setWeekStart(addDays(weekStart, -7))}
+              className="portail-week-nav-btn"
+              aria-label="Semaine précédente"
+            >
+              <ChevronLeft size={16} />
+            </button>
+            <span className="portail-week-label">{fmtWeekRange(weekStart)}</span>
+            <button
+              type="button"
+              onClick={() => setWeekStart(addDays(weekStart, 7))}
+              className="portail-week-nav-btn"
+              aria-label="Semaine suivante"
+            >
+              <ChevronRight size={16} />
+            </button>
+          </div>
+        )}
+      </div>
+
       {/* Filtres */}
       <div className="portail-filters">
         <div className="portail-search-wrap">
@@ -220,8 +327,55 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
         )}
       </div>
 
-      {/* Liste des cours */}
-      {cours.length === 0 ? (
+      {/* Vue semaine : tous les jours affichés (même vides) */}
+      {viewMode === 'week' && weekDays && (
+        <div className="portail-week-grid">
+          {weekDays.map(day => (
+            <div key={day.iso} className={`portail-week-day ${day.isToday ? 'is-today' : ''}`}>
+              <div className="portail-week-day-label">
+                <span className="portail-week-day-name">{JOURS_LONG[day.date.getDay()]}</span>
+                <span className="portail-week-day-num">{day.date.getDate()}</span>
+                {day.isToday && <span className="portail-week-day-badge">Aujourd'hui</span>}
+              </div>
+              {day.cours.length === 0 ? (
+                <div className="portail-week-day-empty">—</div>
+              ) : day.cours.map(c => {
+                const dispo = c.capacite_max ? c.capacite_max - c.nbInscrits : null;
+                const complet = dispo !== null && dispo <= 0;
+                const tone = toneForCours(c.type_cours);
+                return (
+                  <Link
+                    key={c.id}
+                    href={`/p/${studioSlug}/cours/${c.id}`}
+                    className={`portail-cours-card portail-cours-card--${tone} ${complet ? 'complet' : ''}`}
+                  >
+                    <div className="portail-cours-info">
+                      <div className="portail-cours-nom">{c.nom}</div>
+                      <div className="portail-cours-details">
+                        <span><Clock size={12} /> {formatHeure(c.heure)}{c.duree_minutes ? ` · ${c.duree_minutes}min` : ''}</span>
+                        {c.lieu && <span><MapPin size={12} /> {c.lieu}</span>}
+                        {c.type_cours && <span className={`portail-tag portail-tag-${tone}`}>{c.type_cours}</span>}
+                      </div>
+                    </div>
+                    <div className="portail-cours-right">
+                      <PlacesBadge capacite={c.capacite_max} inscrits={c.nbInscrits} />
+                      <ChevronRight size={16} style={{ color: '#ccc' }} />
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          ))}
+          {filteredForView.length === 0 && (
+            <div className="portail-empty" style={{ marginTop: 8 }}>
+              <p style={{ color: '#888', margin: 0 }}>Aucun cours cette semaine</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Vue liste : groupé par date sur 60 jours (comportement initial) */}
+      {viewMode === 'list' && cours.length === 0 ? (
         <div className="portail-empty">
           <div style={{ fontSize: '2.5rem', marginBottom: '12px' }}>📅</div>
           <p style={{ fontWeight: 600, margin: '0 0 6px' }}>Aucun cours à venir</p>
@@ -229,11 +383,11 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
             Les prochains cours seront affichés ici.
           </p>
         </div>
-      ) : grouped.length === 0 ? (
+      ) : viewMode === 'list' && grouped.length === 0 ? (
         <div className="portail-empty">
           <p style={{ color: '#888' }}>Aucun cours correspond à ta recherche</p>
         </div>
-      ) : grouped.map(([date, coursDate]) => (
+      ) : viewMode === 'list' && grouped.map(([date, coursDate]) => (
         <div key={date} className="portail-day-group">
           <div className="portail-day-label">{formatDateCourt(date)}</div>
           {coursDate.map(c => {
@@ -474,6 +628,81 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
           background: white;
           color: #1a1612;
           box-shadow: 0 1px 3px rgba(70, 35, 25, 0.08);
+        }
+
+        /* View bar (toggle semaine/liste + nav semaine) */
+        .portail-view-bar {
+          display: flex; align-items: center; justify-content: space-between;
+          gap: 10px; margin-bottom: 14px; flex-wrap: wrap;
+        }
+        .portail-view-toggle {
+          display: inline-flex; gap: 2px; padding: 3px;
+          background: #faf6f0; border: 1px solid #ecdfd5; border-radius: 999px;
+        }
+        .portail-view-btn {
+          display: inline-flex; align-items: center; gap: 5px;
+          padding: 6px 12px;
+          font-size: 0.75rem; font-weight: 600;
+          color: #a89c93;
+          background: transparent; border: none; border-radius: 999px;
+          cursor: pointer; transition: all .15s;
+        }
+        .portail-view-btn:hover { color: #1a1612; }
+        .portail-view-btn.is-active {
+          background: white; color: #1a1612;
+          box-shadow: 0 1px 3px rgba(70, 35, 25, 0.06);
+        }
+        .portail-week-nav {
+          display: inline-flex; align-items: center; gap: 4px;
+          font-size: 0.8125rem; font-weight: 600;
+          color: #1a1612;
+        }
+        .portail-week-nav-btn {
+          width: 30px; height: 30px;
+          display: inline-flex; align-items: center; justify-content: center;
+          background: white; border: 1px solid #ecdfd5; border-radius: 50%;
+          color: #888; cursor: pointer; transition: all .15s;
+        }
+        .portail-week-nav-btn:hover { color: #1a1612; border-color: #1a1612; }
+        .portail-week-label {
+          padding: 0 10px; min-width: 110px; text-align: center;
+        }
+
+        /* Vue semaine — colonnes par jour */
+        .portail-week-grid {
+          display: flex; flex-direction: column; gap: 16px;
+        }
+        .portail-week-day {
+          background: white;
+          border: 1px solid #f0ebe8;
+          border-radius: 14px;
+          padding: 12px 14px;
+        }
+        .portail-week-day.is-today {
+          border-color: var(--brand);
+          box-shadow: 0 2px 12px rgba(212, 160, 160, 0.18);
+        }
+        .portail-week-day-label {
+          display: flex; align-items: baseline; gap: 8px;
+          font-size: 0.875rem; font-weight: 700; color: #1a1612;
+          margin-bottom: 10px; padding-bottom: 8px;
+          border-bottom: 1px dashed #ecdfd5;
+        }
+        .portail-week-day-name { text-transform: uppercase; letter-spacing: 0.04em; font-size: 0.75rem; }
+        .portail-week-day-num  { font-size: 1.125rem; font-weight: 800; color: #1a1612; }
+        .portail-week-day-badge {
+          margin-left: auto;
+          padding: 2px 8px; border-radius: 999px;
+          background: var(--brand); color: white;
+          font-size: 0.6875rem; font-weight: 700;
+        }
+        .portail-week-day-empty {
+          color: #ccc; text-align: center; padding: 8px 0;
+          font-size: 0.875rem;
+        }
+        /* Sur tablet+, afficher 2 colonnes pour exploiter l'espace */
+        @media (min-width: 768px) {
+          .portail-week-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         }
 
         .portail-filters { margin-bottom: 20px; display: flex; flex-direction: column; gap: 10px; }
