@@ -93,13 +93,14 @@ export default function DashboardLayoutClient({ children, profile }) {
         </div>
       </main>
 
-      {/* Bouton flottant Assistant IA — toujours présent */}
-      {!isAssistant && (
+      {/* Bouton flottant Assistant IA — désactivé temporairement (UX pas au point).
+          Pour réactiver, déscommenter le bloc ci-dessous. */}
+      {/* {!isAssistant && (
         <Link href="/assistant" className="ai-fab" aria-label="Assistant IA">
           <Sparkles size={20} />
           <span className="ai-fab-label">IA</span>
         </Link>
-      )}
+      )} */}
 
       <style jsx global>{`
         .ai-fab {

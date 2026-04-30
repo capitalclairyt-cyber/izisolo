@@ -24,7 +24,7 @@ const MENU_SECTIONS = [
     items: [
       { href: '/messagerie', label: 'Messagerie', icon: MessageSquare, desc: 'Messages privés et annonces groupées' },
       { href: '/sondages', label: 'Sondage planning', icon: ClipboardList, desc: 'Sonde tes élèves pour découvrir tes meilleurs créneaux' },
-      { href: '/assistant', label: 'Assistant IA', icon: Sparkles, desc: 'Aide intelligente' },
+      // { href: '/assistant', label: 'Assistant IA', icon: Sparkles, desc: 'Aide intelligente' }, // désactivé
     ],
   },
   {

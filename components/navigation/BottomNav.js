@@ -38,7 +38,7 @@ const ALL_NAV = [
     items: [
       { href: '/messagerie', label: 'Messagerie', icon: MessageSquare, badge: true },
       { href: '/sondages', label: 'Sondage planning', icon: ClipboardList },
-      { href: '/assistant', label: 'Assistant IA', icon: Sparkles },
+      // { href: '/assistant', label: 'Assistant IA', icon: Sparkles }, // désactivé
     ],
   },
 ];
