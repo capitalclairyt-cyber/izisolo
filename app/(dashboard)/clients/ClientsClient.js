@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Search, Plus, User, Building2, Phone, Mail, ChevronRight, Filter } from 'lucide-react';
 import { getVocabulaire } from '@/lib/vocabulaire';
 import { STATUTS_CLIENT } from '@/lib/constantes';
+import { toneForClient } from '@/lib/tones';
 
 export default function ClientsClient({ clients, profile }) {
   const vocab = getVocabulaire(profile?.metier || 'yoga', profile?.vocabulaire);
@@ -127,12 +128,13 @@ export default function ClientsClient({ clients, profile }) {
           {filtered.map(client => {
             const seancesRestantes = getSeancesRestantes(client);
             const statutInfo = STATUTS_CLIENT[client.statut] || STATUTS_CLIENT.prospect;
+            const tone = toneForClient(client.statut);
 
             return (
               <Link
                 key={client.id}
                 href={`/clients/${client.id}`}
-                className="client-card izi-card izi-card-interactive"
+                className={`client-card izi-card izi-card-interactive client-card--${tone}`}
               >
                 <div className={`client-avatar ${isPro(client) ? 'pro' : ''}`}>
                   {isPro(client) ? <Building2 size={20} /> : getInitials(client)}
@@ -254,7 +256,12 @@ export default function ClientsClient({ clients, profile }) {
           padding: 14px 16px;
           text-decoration: none;
           color: inherit;
+          border-left: 6px solid transparent;
         }
+        .client-card--rose     { background: var(--tone-rose-bg-soft);     border-left-color: var(--tone-rose-accent); }
+        .client-card--sage     { background: var(--tone-sage-bg-soft);     border-left-color: var(--tone-sage-accent); }
+        .client-card--sand     { background: var(--tone-sand-bg-soft);     border-left-color: var(--tone-sand-accent); }
+        .client-card--lavender { background: var(--tone-lavender-bg-soft); border-left-color: var(--tone-lavender-accent); }
         .filter-divider {
           width: 1px;
           height: 24px;

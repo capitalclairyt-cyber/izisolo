@@ -10,6 +10,7 @@ import {
   Search, CreditCard as CardIcon
 } from 'lucide-react';
 import { formatMontant } from '@/lib/utils';
+import { toneForOffre } from '@/lib/tones';
 import { TYPES_OFFRE } from '@/lib/constantes';
 import { createClient } from '@/lib/supabase';
 
@@ -294,13 +295,14 @@ export default function OffresClient({ offres, profile }) {
   const renderCard = (offre, active) => {
     const TypeIcon = TYPE_ICONS[offre.type] || Package;
     const typeInfo = TYPES_OFFRE[offre.type] || {};
+    const tone = toneForOffre(offre.type);
     return (
-      <div key={offre.id} className={`offre-card izi-card ${!active ? 'offre-inactive' : ''}`}>
+      <div key={offre.id} className={`offre-card izi-card offre-card--${tone} ${!active ? 'offre-inactive' : ''}`}>
         <div className="offre-icon"><TypeIcon size={20} /></div>
         <div className="offre-info">
           <div className="offre-nom">{offre.nom}</div>
           <div className="offre-details">
-            <span className="izi-badge izi-badge-brand">{typeInfo.label || offre.type}</span>
+            <span className={`izi-badge tone-${tone}-bg`}>{typeInfo.label || offre.type}</span>
             {offre.seances && <span className="offre-seances">{offre.seances} séances</span>}
             {offre.duree_jours && <span className="offre-duree">{offre.duree_jours}j</span>}
           </div>
@@ -401,7 +403,15 @@ export default function OffresClient({ offres, profile }) {
         .section { display: flex; flex-direction: column; gap: 8px; }
         .section-title { font-size: 0.8125rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); }
         .offres-list { display: flex; flex-direction: column; gap: 8px; }
-        .offre-card { display: flex; align-items: center; gap: 12px; padding: 14px 16px; }
+        .offre-card { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-left: 6px solid transparent; }
+        .offre-card--rose     { background: var(--tone-rose-bg-soft);     border-left-color: var(--tone-rose-accent); }
+        .offre-card--sage     { background: var(--tone-sage-bg-soft);     border-left-color: var(--tone-sage-accent); }
+        .offre-card--sand     { background: var(--tone-sand-bg-soft);     border-left-color: var(--tone-sand-accent); }
+        .offre-card--lavender { background: var(--tone-lavender-bg-soft); border-left-color: var(--tone-lavender-accent); }
+        .offre-card--rose     .offre-icon { background: var(--tone-rose-bg);     color: var(--tone-rose-ink); }
+        .offre-card--sage     .offre-icon { background: var(--tone-sage-bg);     color: var(--tone-sage-ink); }
+        .offre-card--sand     .offre-icon { background: var(--tone-sand-bg);     color: var(--tone-sand-ink); }
+        .offre-card--lavender .offre-icon { background: var(--tone-lavender-bg); color: var(--tone-lavender-ink); }
         .offre-inactive { opacity: 0.55; }
         .offre-icon { width: 40px; height: 40px; border-radius: var(--radius-sm); background: var(--brand-light); color: var(--brand-700); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
         .offre-info { flex: 1; min-width: 0; }

@@ -10,6 +10,7 @@ import {
   Banknote, FileText, Landmark,
 } from 'lucide-react';
 import { formatDate, formatMontant } from '@/lib/utils';
+import { toneForAbonnement } from '@/lib/tones';
 
 // ─── Types d'offre ───────────────────────────────────────────────────────────
 const TYPE_CONFIG = {
@@ -327,6 +328,7 @@ export default function AbonnementsClient({ abonnements: initAbo, paiementsParAb
         .abo-card {
           background: var(--bg-card);
           border: 1px solid var(--border);
+          border-left-width: 6px;
           border-radius: var(--radius-md);
           padding: 14px 16px;
           display: flex; align-items: flex-start; gap: 12px;
@@ -334,6 +336,11 @@ export default function AbonnementsClient({ abonnements: initAbo, paiementsParAb
           text-decoration: none; color: inherit;
         }
         .abo-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
+        /* Tons par statut d'abonnement */
+        .abo-card--rose     { background: var(--tone-rose-bg-soft);     border-left-color: var(--tone-rose-accent); }
+        .abo-card--sage     { background: var(--tone-sage-bg-soft);     border-left-color: var(--tone-sage-accent); }
+        .abo-card--sand     { background: var(--tone-sand-bg-soft);     border-left-color: var(--tone-sand-accent); }
+        .abo-card--lavender { background: var(--tone-lavender-bg-soft); border-left-color: var(--tone-lavender-accent); }
 
         .abo-card-icon {
           width: 40px; height: 40px; border-radius: var(--radius-sm);
@@ -406,8 +413,11 @@ function AboCard({ abo, paiements }) {
   const isExpiringSoon = dateFin && abo.statut === 'actif'
     && (dateFin - aujourd) / (1000 * 60 * 60 * 24) <= 14;
 
+  const seancesRestantes = (abo.seances_total || 0) - (abo.seances_utilisees || 0);
+  const tone = toneForAbonnement(abo.statut, seancesRestantes);
+
   return (
-    <Link href={`/clients/${abo.client_id}`} className="abo-card">
+    <Link href={`/clients/${abo.client_id}`} className={`abo-card abo-card--${tone}`}>
       {/* Icône type */}
       <div className="abo-card-icon" style={{ background: typeCfg.color + '18' }}>
         <TypeIcon size={20} style={{ color: typeCfg.color }} />
