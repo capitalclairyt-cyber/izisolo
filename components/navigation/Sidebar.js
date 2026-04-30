@@ -35,6 +35,7 @@ const NAV_SECTIONS = [
     items: [
       { href: '/messagerie',     label: 'Messagerie',      icon: MessageSquare, badge: true },
       { href: '/sondages',       label: 'Sondage planning', icon: ClipboardList },
+      { href: '/essais',         label: 'Cours d\'essai',   icon: Sparkles },
     ],
   },
 ];

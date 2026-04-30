@@ -205,6 +205,24 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
         </div>
       </div>
 
+      {/* CTA Cours d'essai (si activé par le pro) */}
+      {profile.essai_actif && (
+        <Link href={`/p/${studioSlug}/essai`} className="portail-essai-cta">
+          <div className="portail-essai-cta-icon">✨</div>
+          <div className="portail-essai-cta-body">
+            <div className="portail-essai-cta-title">
+              {profile.essai_paiement === 'gratuit'
+                ? 'Réserve ton cours d\'essai offert'
+                : `Réserve ton cours d\'essai · ${profile.essai_prix}€`}
+            </div>
+            <div className="portail-essai-cta-sub">
+              Découvre le studio dans l'ambiance d'un vrai cours.
+            </div>
+          </div>
+          <ChevronRight size={18} className="portail-essai-cta-arrow" />
+        </Link>
+      )}
+
       {/* Onglets */}
       <div className="portail-tabs" role="tablist">
         <button
@@ -598,6 +616,40 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
         .portail-studio-name { font-size: 1.375rem; font-weight: 800; margin: 0 0 4px; color: #1a1a2e; }
         .portail-studio-meta { display: flex; flex-wrap: wrap; gap: 10px; font-size: 0.875rem; color: #888; align-items: center; }
         .portail-studio-ville { display: flex; align-items: center; gap: 4px; }
+
+        /* CTA Cours d'essai */
+        .portail-essai-cta {
+          display: flex; align-items: center; gap: 14px;
+          padding: 14px 16px; margin-bottom: 18px;
+          background: linear-gradient(135deg, var(--tone-rose-bg-soft, #fdf6f4), white);
+          border: 1.5px solid var(--tone-rose-accent, #c47070);
+          border-radius: 16px;
+          text-decoration: none; color: inherit;
+          transition: transform 0.15s, box-shadow 0.15s;
+          box-shadow: 0 2px 12px rgba(196, 112, 112, 0.08);
+        }
+        .portail-essai-cta:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 4px 18px rgba(196, 112, 112, 0.15);
+        }
+        .portail-essai-cta-icon {
+          width: 44px; height: 44px; flex-shrink: 0;
+          font-size: 1.4rem;
+          background: white; border: 1.5px solid var(--tone-rose-accent, #c47070);
+          border-radius: 50%;
+          display: flex; align-items: center; justify-content: center;
+        }
+        .portail-essai-cta-body { flex: 1; min-width: 0; }
+        .portail-essai-cta-title {
+          font-weight: 700; font-size: 0.9375rem;
+          color: var(--tone-rose-ink, #8b3838);
+        }
+        .portail-essai-cta-sub {
+          font-size: 0.8125rem; color: #888; margin-top: 2px;
+        }
+        .portail-essai-cta-arrow {
+          color: var(--tone-rose-accent, #c47070); flex-shrink: 0;
+        }
 
         /* Onglets de navigation portail */
         .portail-tabs {

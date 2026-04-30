@@ -31,7 +31,8 @@ async function getStudioData(studioSlug) {
       photo_url, photo_couverture, bio, philosophie, formations, annees_experience,
       horaires_studio, afficher_tarifs, faq_publique,
       instagram_url, facebook_url, website_url,
-      page_publique_draft
+      page_publique_draft,
+      essai_actif, essai_paiement, essai_prix
     `)
     .eq('studio_slug', studioSlug)
     .single();
