@@ -41,8 +41,12 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
   const faq = Array.isArray(profile.faq_publique) ? profile.faq_publique.filter(f => f?.q && f?.a) : [];
   const adresseComplete = [profile.adresse, profile.code_postal, profile.ville].filter(Boolean).join(', ');
   const mapsQuery = adresseComplete ? encodeURIComponent(adresseComplete) : null;
+  const hasTarifs = !!(profile.afficher_tarifs && offresPubliques.length > 0);
+  const hasInfos  = !!(adresseComplete || profile.horaires_studio || faq.length > 0 || hasSocial);
+
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState('');
+  const [tab, setTab] = useState('cours'); // 'cours' | 'propos' | 'tarifs' | 'infos'
 
   // Tous les types uniques présents dans les cours
   const types = useMemo(() => {
@@ -139,6 +143,54 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
         </div>
       </div>
 
+      {/* Onglets */}
+      <div className="portail-tabs" role="tablist">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === 'cours'}
+          onClick={() => setTab('cours')}
+          className={`portail-tab ${tab === 'cours' ? 'is-active' : ''}`}
+        >
+          <Calendar size={14} /> Cours
+        </button>
+        {hasAbout && (
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === 'propos'}
+            onClick={() => setTab('propos')}
+            className={`portail-tab ${tab === 'propos' ? 'is-active' : ''}`}
+          >
+            <Award size={14} /> À propos
+          </button>
+        )}
+        {hasTarifs && (
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === 'tarifs'}
+            onClick={() => setTab('tarifs')}
+            className={`portail-tab ${tab === 'tarifs' ? 'is-active' : ''}`}
+          >
+            <Ticket size={14} /> Tarifs
+          </button>
+        )}
+        {hasInfos && (
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === 'infos'}
+            onClick={() => setTab('infos')}
+            className={`portail-tab ${tab === 'infos' ? 'is-active' : ''}`}
+          >
+            <MapPin size={14} /> Infos
+          </button>
+        )}
+      </div>
+
+      {/* === ONGLET COURS === */}
+      {tab === 'cours' && <>
       {/* Filtres */}
       <div className="portail-filters">
         <div className="portail-search-wrap">
@@ -211,11 +263,12 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
           })}
         </div>
       ))}
+      </>}
+      {/* === / ONGLET COURS === */}
 
-      {/* Section "À propos" — bio, philosophie, formations, années d'expérience */}
-      {hasAbout && (
+      {/* === ONGLET À PROPOS === */}
+      {tab === 'propos' && hasAbout && (
         <section className="portail-about">
-          <h2 className="portail-section-title">À propos</h2>
           <div className="portail-about-card">
             {profile.bio && <p className="portail-about-bio">{profile.bio}</p>}
             {profile.philosophie && (
@@ -237,10 +290,9 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
         </section>
       )}
 
-      {/* Section "Tarifs" publique — uniquement si afficher_tarifs activé */}
-      {profile.afficher_tarifs && offresPubliques.length > 0 && (
+      {/* === ONGLET TARIFS === */}
+      {tab === 'tarifs' && hasTarifs && (
         <section className="portail-prices">
-          <h2 className="portail-section-title">Tarifs</h2>
           <div className="portail-prices-grid">
             {offresPubliques.map(o => {
               const Icon = TYPE_ICONS[o.type] || Ticket;
@@ -263,76 +315,77 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
         </section>
       )}
 
-      {/* Section "Adresse & horaires" — carte Maps + horaires */}
-      {(adresseComplete || profile.horaires_studio) && (
-        <section className="portail-venue">
-          <h2 className="portail-section-title">Où nous trouver</h2>
-          <div className="portail-venue-card">
-            {adresseComplete && (
-              <div className="portail-venue-row">
-                <MapPin size={16} />
-                <div>
-                  <div className="portail-venue-addr">{adresseComplete}</div>
-                  {mapsQuery && (
-                    <a
-                      href={`https://www.google.com/maps/search/?api=1&query=${mapsQuery}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="portail-venue-link"
-                    >
-                      Itinéraire Google Maps →
-                    </a>
-                  )}
+      {/* === ONGLET INFOS === */}
+      {tab === 'infos' && hasInfos && <>
+        {(adresseComplete || profile.horaires_studio) && (
+          <section className="portail-venue">
+            <h2 className="portail-section-title">Où nous trouver</h2>
+            <div className="portail-venue-card">
+              {adresseComplete && (
+                <div className="portail-venue-row">
+                  <MapPin size={16} />
+                  <div>
+                    <div className="portail-venue-addr">{adresseComplete}</div>
+                    {mapsQuery && (
+                      <a
+                        href={`https://www.google.com/maps/search/?api=1&query=${mapsQuery}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="portail-venue-link"
+                      >
+                        Itinéraire Google Maps →
+                      </a>
+                    )}
+                  </div>
                 </div>
-              </div>
-            )}
-            {profile.horaires_studio && (
-              <div className="portail-venue-row">
-                <Clock size={16} />
-                <div className="portail-venue-hours">{profile.horaires_studio}</div>
-              </div>
-            )}
-          </div>
-        </section>
-      )}
+              )}
+              {profile.horaires_studio && (
+                <div className="portail-venue-row">
+                  <Clock size={16} />
+                  <div className="portail-venue-hours">{profile.horaires_studio}</div>
+                </div>
+              )}
+            </div>
+          </section>
+        )}
 
-      {/* Section "FAQ" publique */}
-      {faq.length > 0 && (
-        <section className="portail-faq">
-          <h2 className="portail-section-title">Questions fréquentes</h2>
-          <div className="portail-faq-list">
-            {faq.map((item, i) => (
-              <details key={i} className="portail-faq-item">
-                <summary className="portail-faq-q">{item.q}</summary>
-                <p className="portail-faq-a">{item.a}</p>
-              </details>
-            ))}
-          </div>
-        </section>
-      )}
+        {faq.length > 0 && (
+          <section className="portail-faq">
+            <h2 className="portail-section-title">Questions fréquentes</h2>
+            <div className="portail-faq-list">
+              {faq.map((item, i) => (
+                <details key={i} className="portail-faq-item">
+                  <summary className="portail-faq-q">{item.q}</summary>
+                  <p className="portail-faq-a">{item.a}</p>
+                </details>
+              ))}
+            </div>
+          </section>
+        )}
 
-      {/* Section "Réseaux sociaux & site" */}
-      {hasSocial && (
-        <section className="portail-social">
-          <div className="portail-social-row">
-            {profile.instagram_url && (
-              <a href={profile.instagram_url} target="_blank" rel="noopener noreferrer" className="portail-social-link" aria-label="Instagram">
-                <Instagram size={18} />
-              </a>
-            )}
-            {profile.facebook_url && (
-              <a href={profile.facebook_url} target="_blank" rel="noopener noreferrer" className="portail-social-link" aria-label="Facebook">
-                <Facebook size={18} />
-              </a>
-            )}
-            {profile.website_url && (
-              <a href={profile.website_url} target="_blank" rel="noopener noreferrer" className="portail-social-link" aria-label="Site web">
-                <Globe size={18} />
-              </a>
-            )}
-          </div>
-        </section>
-      )}
+        {hasSocial && (
+          <section className="portail-social">
+            <h2 className="portail-section-title">Suivre le studio</h2>
+            <div className="portail-social-row">
+              {profile.instagram_url && (
+                <a href={profile.instagram_url} target="_blank" rel="noopener noreferrer" className="portail-social-link" aria-label="Instagram">
+                  <Instagram size={18} />
+                </a>
+              )}
+              {profile.facebook_url && (
+                <a href={profile.facebook_url} target="_blank" rel="noopener noreferrer" className="portail-social-link" aria-label="Facebook">
+                  <Facebook size={18} />
+                </a>
+              )}
+              {profile.website_url && (
+                <a href={profile.website_url} target="_blank" rel="noopener noreferrer" className="portail-social-link" aria-label="Site web">
+                  <Globe size={18} />
+                </a>
+              )}
+            </div>
+          </section>
+        )}
+      </>}
 
       {/* Section "Acheter en ligne" — affichée uniquement si au moins 1 offre a un Stripe Payment Link */}
       {offresStripe.length > 0 && (
@@ -391,6 +444,37 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
         .portail-studio-name { font-size: 1.375rem; font-weight: 800; margin: 0 0 4px; color: #1a1a2e; }
         .portail-studio-meta { display: flex; flex-wrap: wrap; gap: 10px; font-size: 0.875rem; color: #888; align-items: center; }
         .portail-studio-ville { display: flex; align-items: center; gap: 4px; }
+
+        /* Onglets de navigation portail */
+        .portail-tabs {
+          display: flex;
+          gap: 4px;
+          margin-bottom: 20px;
+          padding: 4px;
+          background: #faf6f0;
+          border: 1px solid #ecdfd5;
+          border-radius: 999px;
+          overflow-x: auto;
+          scrollbar-width: none;
+        }
+        .portail-tabs::-webkit-scrollbar { display: none; }
+        .portail-tab {
+          display: inline-flex; align-items: center; gap: 6px;
+          padding: 8px 14px;
+          font-size: 0.8125rem; font-weight: 600;
+          color: #a89c93;
+          background: transparent; border: none;
+          border-radius: 999px;
+          cursor: pointer;
+          white-space: nowrap;
+          transition: all .15s;
+        }
+        .portail-tab:hover { color: #1a1612; }
+        .portail-tab.is-active {
+          background: white;
+          color: #1a1612;
+          box-shadow: 0 1px 3px rgba(70, 35, 25, 0.08);
+        }
 
         .portail-filters { margin-bottom: 20px; display: flex; flex-direction: column; gap: 10px; }
         .portail-search-wrap {
