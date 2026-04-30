@@ -124,6 +124,7 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
   const [nom, setNom]       = useState(currentUser?.nom || '');
   const [email, setEmail]   = useState(currentUser?.email || '');
   const [tel, setTel]       = useState(currentUser?.tel || '');
+  const [website, setWebsite] = useState(''); // honeypot — DOIT rester vide
   const [loading, setLoading] = useState(false);
   const [done, setDone]     = useState(false);
   const [magicLinkSent, setMagicLinkSent] = useState(false);
@@ -155,7 +156,16 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
       const res = await fetch(`/api/portail/${studioSlug}/reserver`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ coursId: cours.id, nom: nom.trim(), email: email.trim(), tel: tel.trim() }),
+        body: JSON.stringify({
+          coursId: cours.id,
+          nom: nom.trim(),
+          email: email.trim(),
+          tel: tel.trim(),
+          website,           // honeypot
+          turnstileToken: typeof window !== 'undefined'
+            ? document.querySelector('[name="cf-turnstile-response"]')?.value
+            : undefined,
+        }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Erreur lors de la réservation');
@@ -404,6 +414,32 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
               <div style={{ background: '#fff0f0', border: '1px solid #ffcdd2', borderRadius: '8px', padding: '10px 14px', color: '#c62828', fontSize: '0.875rem', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <AlertCircle size={15} /> {error}
               </div>
+            )}
+
+            {/* Honeypot anti-bot — caché aux humains */}
+            <input
+              type="text"
+              name="website"
+              tabIndex={-1}
+              autoComplete="off"
+              value={website}
+              onChange={e => setWebsite(e.target.value)}
+              aria-hidden="true"
+              style={{ position: 'absolute', left: -9999, width: 1, height: 1, opacity: 0, pointerEvents: 'none' }}
+            />
+
+            {/* Cloudflare Turnstile (actif uniquement si NEXT_PUBLIC_TURNSTILE_SITE_KEY défini) */}
+            {process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && (
+              <>
+                <div
+                  className="cf-turnstile"
+                  data-sitekey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY}
+                  data-theme="light"
+                  data-size="flexible"
+                  style={{ marginBottom: 12 }}
+                />
+                <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer />
+              </>
             )}
 
             <button

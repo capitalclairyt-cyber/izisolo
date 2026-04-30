@@ -1,5 +1,6 @@
 import { createClient as createAdminSupabase } from '@supabase/supabase-js';
 import { finaliserDemande, emailConfirmationVisiteur, emailEnAttenteVisiteur, emailNotifPro } from '@/lib/essai';
+import { checkAntiBot, ipFromRequest } from '@/lib/antibot';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -36,7 +37,7 @@ export async function POST(request, { params }) {
   let body;
   try { body = await request.json(); } catch { return Response.json({ error: 'JSON invalide' }, { status: 400 }); }
 
-  const { coursId, prenom, nom, email, telephone, message } = body;
+  const { coursId, prenom, nom, email, telephone, message, website, turnstileToken } = body;
   if (!coursId || !prenom || !email) {
     return Response.json({ error: 'coursId, prenom et email sont requis' }, { status: 400 });
   }
@@ -45,10 +46,19 @@ export async function POST(request, { params }) {
     return Response.json({ error: 'Email invalide' }, { status: 400 });
   }
 
+  // ── Anti-bot : honeypot + rate limit + Turnstile ──
+  const antibotCheck = await checkAntiBot(request, { honeypot: website, turnstileToken });
+  if (!antibotCheck.ok) {
+    console.warn('[essai] antibot rejected:', antibotCheck.code, 'ip=', ipFromRequest(request));
+    return Response.json({ error: antibotCheck.reason }, { status: antibotCheck.code === 'RATE_LIMITED' ? 429 : 400 });
+  }
+
   const supabaseAdmin = createAdminSupabase(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
     process.env.SUPABASE_SERVICE_ROLE_KEY
   );
+
+  const emailLower = email.trim().toLowerCase();
 
   // 1. Profil + config essai
   const { data: profile } = await supabaseAdmin
@@ -59,6 +69,36 @@ export async function POST(request, { params }) {
 
   if (!profile) return Response.json({ error: 'Studio introuvable' }, { status: 404 });
   if (!profile.essai_actif) return Response.json({ error: 'Les cours d\'essai ne sont pas activés sur ce studio' }, { status: 403 });
+
+  // ── Anti-doublon : un même email ne peut pas demander 2 essais sur le même studio ──
+  const { data: demandeMemeStudio } = await supabaseAdmin
+    .from('cours_essai_demandes')
+    .select('id, statut, created_at')
+    .eq('profile_id', profile.id)
+    .ilike('email', emailLower)
+    .neq('statut', 'refusee')
+    .maybeSingle();
+
+  if (demandeMemeStudio) {
+    return Response.json({
+      error: 'Tu as déjà demandé un cours d\'essai dans ce studio. Si c\'est une erreur, contacte directement ' + (profile.studio_nom || 'le studio') + '.',
+      code: 'ALREADY_REQUESTED',
+    }, { status: 409 });
+  }
+
+  const { data: clientExistant } = await supabaseAdmin
+    .from('clients')
+    .select('id, statut')
+    .eq('profile_id', profile.id)
+    .ilike('email', emailLower)
+    .maybeSingle();
+
+  if (clientExistant) {
+    return Response.json({
+      error: 'Tu es déjà inscrit·e dans ce studio. Connecte-toi à ton espace pour réserver.',
+      code: 'ALREADY_CLIENT',
+    }, { status: 409 });
+  }
 
   // 2. Cours
   const { data: cours } = await supabaseAdmin

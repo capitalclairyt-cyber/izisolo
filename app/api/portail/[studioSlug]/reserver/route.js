@@ -1,12 +1,31 @@
 import { createServerClient } from '@/lib/supabase-server';
 import { createClient as createAdminSupabase } from '@supabase/supabase-js';
 import { parseJsonBody, reservationSchema } from '@/lib/validation';
+import { checkAntiBot, ipFromRequest } from '@/lib/antibot';
 
 export async function POST(request, { params }) {
   const { studioSlug } = await params;
-  const { data: body, errorResponse } = await parseJsonBody(request, reservationSchema);
-  if (errorResponse) return errorResponse;
-  const { coursId, nom, email, tel } = body;
+  // Lire le body brut une seule fois (request.json() n'est consommable qu'une fois)
+  const rawBody = await request.json().catch(() => null);
+  if (!rawBody) return Response.json({ error: 'JSON invalide' }, { status: 400 });
+
+  // ── Anti-bot : honeypot + rate limit + Turnstile (si configuré) ──
+  const antibotCheck = await checkAntiBot(request, {
+    honeypot: rawBody.website,
+    turnstileToken: rawBody.turnstileToken,
+  });
+  if (!antibotCheck.ok) {
+    console.warn('[reserver] antibot rejected:', antibotCheck.code, 'ip=', ipFromRequest(request));
+    return Response.json({ error: antibotCheck.reason }, { status: antibotCheck.code === 'RATE_LIMITED' ? 429 : 400 });
+  }
+
+  // Validation zod (Zod strip les champs inconnus comme website/turnstileToken)
+  const parsed = reservationSchema.safeParse(rawBody);
+  if (!parsed.success) {
+    const issues = parsed.error.issues.map(i => ({ path: i.path.join('.'), message: i.message }));
+    return Response.json({ error: 'Données invalides', issues }, { status: 400 });
+  }
+  const { coursId, nom, email, tel } = parsed.data;
 
   // Détecter si la requête vient d'un user déjà authentifié
   const supabaseSession = await createServerClient();

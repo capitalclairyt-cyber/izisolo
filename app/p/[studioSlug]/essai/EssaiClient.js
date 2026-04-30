@@ -28,6 +28,7 @@ export default function EssaiClient({ profile, cours, studioSlug, preselectedCou
   const [email, setEmail] = useState('');
   const [telephone, setTelephone] = useState('');
   const [message, setMessage] = useState('');
+  const [website, setWebsite] = useState(''); // honeypot — DOIT rester vide
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(null); // { status, paiement, prix, stripeLink }
 
@@ -51,6 +52,10 @@ export default function EssaiClient({ profile, cours, studioSlug, preselectedCou
           email: email.trim(),
           telephone: telephone.trim(),
           message: message.trim(),
+          website,           // honeypot
+          turnstileToken: typeof window !== 'undefined' && window.turnstile
+            ? document.querySelector('[name="cf-turnstile-response"]')?.value
+            : undefined,
         }),
       });
       const json = await res.json();
@@ -264,6 +269,33 @@ export default function EssaiClient({ profile, cours, studioSlug, preselectedCou
           />
         </div>
 
+        {/* Honeypot anti-bot — caché aux humains, visible aux bots naïfs */}
+        <input
+          type="text"
+          name="website"
+          tabIndex={-1}
+          autoComplete="off"
+          value={website}
+          onChange={e => setWebsite(e.target.value)}
+          aria-hidden="true"
+          className="essai-honeypot"
+        />
+
+        {/* Cloudflare Turnstile (silencieux côté visiteur, actif uniquement
+            si NEXT_PUBLIC_TURNSTILE_SITE_KEY est défini) */}
+        {process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && (
+          <>
+            <div
+              className="cf-turnstile"
+              data-sitekey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY}
+              data-theme="light"
+              data-size="flexible"
+              style={{ marginTop: 8 }}
+            />
+            <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer />
+          </>
+        )}
+
         <button
           type="submit"
           disabled={submitting || !coursId || !prenom.trim() || !email.trim()}
@@ -375,6 +407,15 @@ export default function EssaiClient({ profile, cours, studioSlug, preselectedCou
           text-align: center; font-size: 0.75rem; color: #aaa; margin: 4px 0 0;
         }
         .essai-cgu a { color: var(--brand); }
+
+        /* Honeypot — invisible aux humains, visible/remplissable par les bots */
+        .essai-honeypot {
+          position: absolute;
+          left: -9999px;
+          width: 1px; height: 1px;
+          opacity: 0;
+          pointer-events: none;
+        }
 
         @keyframes spin { from { transform: rotate(0); } to { transform: rotate(360deg); } }
         .spin { animation: spin 0.8s linear infinite; }
