@@ -1,6 +1,7 @@
 import { createServerClient } from '@/lib/supabase-server';
 import { notFound } from 'next/navigation';
 import CoursReservationClient from './CoursReservationClient';
+import { canSeeCours, resolveClientInfo } from '@/lib/visibilite';
 
 async function getData(studioSlug, coursId) {
   const supabase = await createServerClient();
@@ -20,13 +21,19 @@ async function getData(studioSlug, coursId) {
     .single();
   if (!cours) return null;
 
+  // Récupérer l'utilisateur connecté et son profil client dans ce studio
+  const { data: { user } } = await supabase.auth.getUser();
+
+  // ── Vérification visibilité — si le cours n'est pas accessible au viewer, on
+  // retourne null (déclenche notFound() côté page) ──
+  const clientInfo = user ? await resolveClientInfo(supabase, profile.id, user.email) : null;
+  if (!canSeeCours(cours.visibilite, clientInfo)) return null;
+
   const { count: nbInscrits } = await supabase
     .from('presences')
     .select('id', { count: 'exact', head: true })
     .eq('cours_id', coursId);
 
-  // Récupérer l'utilisateur connecté et son profil client dans ce studio
-  const { data: { user } } = await supabase.auth.getUser();
   let currentUser = null;
   let alreadyRegistered = false;
   if (user) {

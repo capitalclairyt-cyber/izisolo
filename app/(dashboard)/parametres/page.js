@@ -926,6 +926,69 @@ function StripePaiementSection({ profile, setProfile, setDirty }) {
 // ════════════════════════════════════════════════════════════════════════════
 // Section "Cours d'essai" — pour les visiteurs non encore clients
 // ════════════════════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════════════════════
+// Section "Visibilité par défaut des cours" — pour le portail public
+// ════════════════════════════════════════════════════════════════════════════
+function VisibiliteSection({ profile, setProfile, setDirty }) {
+  const current = profile?.visibilite_default || 'public';
+  const set = (val) => {
+    setProfile(prev => ({ ...prev, visibilite_default: val }));
+    setDirty(true);
+  };
+
+  const options = [
+    { value: 'public',   label: 'Tout le monde',          desc: 'Visible par tous les visiteurs (default).' },
+    { value: 'inscrits', label: 'Élèves inscrits',         desc: 'Seulement ceux qui ont déjà une fiche dans ton studio.' },
+    { value: 'abonnes',  label: 'Détenteurs d\'abonnement', desc: 'Seulement avec un abonnement actif (carnet, mensuel...).' },
+    { value: 'fideles',  label: 'Élèves fidèles',          desc: 'Seulement ceux marqués \'Fidèle\' dans ta CRM.' },
+  ];
+
+  return (
+    <div className="section izi-card">
+      <div className="section-top">
+        <div className="section-icon"><Eye size={20} /></div>
+        <h2>Visibilité des cours</h2>
+      </div>
+      <p className="section-desc">
+        Détermine qui peut voir tes cours sur ton portail public. Ce paramètre s'applique
+        à tous les <strong>nouveaux cours</strong> créés. Tu peux ensuite override la visibilité
+        cours par cours depuis sa fiche.
+      </p>
+
+      <div className="vis-radio-group">
+        {options.map(opt => (
+          <label key={opt.value} className={`vis-radio-opt ${current === opt.value ? 'active' : ''}`}>
+            <input
+              type="radio"
+              name="visibilite_default"
+              value={opt.value}
+              checked={current === opt.value}
+              onChange={() => set(opt.value)}
+            />
+            <div>
+              <div className="vis-radio-label">{opt.label}</div>
+              <div className="vis-radio-desc">{opt.desc}</div>
+            </div>
+          </label>
+        ))}
+      </div>
+
+      <style jsx>{`
+        .vis-radio-group { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+        .vis-radio-opt {
+          display: flex; align-items: flex-start; gap: 10px;
+          padding: 10px 12px; border: 1.5px solid var(--border);
+          border-radius: 10px; cursor: pointer; transition: all 0.15s;
+        }
+        .vis-radio-opt.active { border-color: var(--brand); background: var(--brand-light); }
+        .vis-radio-opt input { margin-top: 4px; accent-color: var(--brand); }
+        .vis-radio-label { font-size: 0.875rem; font-weight: 600; color: var(--text-primary); }
+        .vis-radio-desc { font-size: 0.75rem; color: var(--text-secondary); margin-top: 2px; line-height: 1.4; }
+      `}</style>
+    </div>
+  );
+}
+
 function CoursEssaiSection({ profile, setProfile, setDirty }) {
   const set = (field) => (val) => {
     setProfile(prev => ({ ...prev, [field]: val }));
@@ -1288,6 +1351,8 @@ export default function Parametres() {
       essai_prix:                 parseFloat(profile.essai_prix) || 0,
       essai_stripe_payment_link:  profile.essai_stripe_payment_link || null,
       essai_message:              profile.essai_message || null,
+      // Visibilité par défaut des cours (v30)
+      visibilite_default:         profile.visibilite_default || 'public',
     }).eq('id', profile.id);
 
     if (!error) {
@@ -1480,6 +1545,13 @@ export default function Parametres() {
 
           {/* Paiement en ligne (Stripe Payment Link) */}
           <StripePaiementSection
+            profile={profile}
+            setProfile={setProfile}
+            setDirty={setDirty}
+          />
+
+          {/* Visibilité par défaut des cours */}
+          <VisibiliteSection
             profile={profile}
             setProfile={setProfile}
             setDirty={setDirty}

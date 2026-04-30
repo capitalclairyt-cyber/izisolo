@@ -177,6 +177,7 @@ function NouveauCoursInner() {
     capacite_max: '',
     client_pro_id: '',
     notes: '',
+    visibilite: '', // sera renseigné depuis profile.visibilite_default au load
     // Récurrence
     frequence: preFreq,
     jours_semaine: [],
@@ -196,7 +197,7 @@ function NouveauCoursInner() {
       const { data: { user } } = await supabase.auth.getUser();
 
       const [{ data: prof }, { data: lieuxData }, { data: prosData }] = await Promise.all([
-        supabase.from('profiles').select('types_cours, metier, zone_vacances_default').eq('id', user.id).single(),
+        supabase.from('profiles').select('types_cours, metier, zone_vacances_default, visibilite_default').eq('id', user.id).single(),
         supabase.from('lieux').select('*, clients:client_pro_id(id, nom_structure)').eq('profile_id', user.id).eq('actif', true).order('ordre'),
         supabase.from('clients').select('id, nom, prenom, nom_structure, type_client')
           .eq('profile_id', user.id)
@@ -208,9 +209,15 @@ function NouveauCoursInner() {
         setRawTypesCours(normalized);
         setTypesCours(normalized.flatMap(cat => cat.items || []));
       }
-      // Pré-remplir zone vacances par défaut (hérité du profil) — le pro peut surcharger
-      if (prof?.zone_vacances_default) {
-        setForm(prev => ({ ...prev, zone_vacances: prof.zone_vacances_default }));
+      // Pré-remplir zone vacances + visibilité par défaut (hérités du profil) — le pro peut surcharger
+      if (prof?.zone_vacances_default || prof?.visibilite_default) {
+        setForm(prev => ({
+          ...prev,
+          zone_vacances: prof.zone_vacances_default || prev.zone_vacances,
+          visibilite: prof.visibilite_default || prev.visibilite || 'public',
+        }));
+      } else {
+        setForm(prev => ({ ...prev, visibilite: prev.visibilite || 'public' }));
       }
       setLieux(lieuxData || []);
       setClientsPro(prosData || []);
@@ -348,6 +355,7 @@ function NouveauCoursInner() {
           client_pro_id: form.client_pro_id || null,
           capacite_max: form.capacite_max ? parseInt(form.capacite_max) : null,
           notes: form.notes || null,
+          visibilite: form.visibilite || 'public',
         });
         if (error) throw error;
       } else {
@@ -391,6 +399,7 @@ function NouveauCoursInner() {
             client_pro_id: form.client_pro_id || null,
             capacite_max: form.capacite_max ? parseInt(form.capacite_max) : null,
             recurrence_parent_id: recurrence.id,
+            visibilite: form.visibilite || 'public',
           }));
           const { error: coursErr } = await supabase.from('cours').insert(coursACreer);
           if (coursErr) throw coursErr;
@@ -742,6 +751,20 @@ function NouveauCoursInner() {
         <div className="form-group">
           <label className="form-label">Notes</label>
           <textarea className="izi-input" value={form.notes} onChange={handleChange('notes')} placeholder="Infos complémentaires..." rows={2} style={{ resize: 'vertical' }} />
+        </div>
+
+        {/* Visibilité publique */}
+        <div className="form-group">
+          <label className="form-label">Visibilité sur le portail public</label>
+          <select className="izi-input" value={form.visibilite} onChange={handleChange('visibilite')}>
+            <option value="public">Tout le monde (public)</option>
+            <option value="inscrits">Élèves inscrits seulement</option>
+            <option value="abonnes">Détenteurs d'abonnement actif</option>
+            <option value="fideles">Élèves fidèles</option>
+          </select>
+          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginTop: 4 }}>
+            Détermine qui peut voir ce cours sur ton portail public.
+          </span>
         </div>
 
         {/* Submit */}

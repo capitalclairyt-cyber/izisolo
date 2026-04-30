@@ -2,6 +2,7 @@ import { createServerClient } from '@/lib/supabase-server';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import PortailHome from './PortailHome';
+import { resolveClientInfo, filterCoursVisibles } from '@/lib/visibilite';
 
 export async function generateMetadata({ params }) {
   const { studioSlug } = await params;
@@ -60,17 +61,17 @@ async function getStudioData(studioSlug) {
     .limit(1)
     .maybeSingle();
 
-  const [{ data: cours }, { data: offresStripe }, { data: offresPubliques }, { data: sondageActif }] = await Promise.all([
+  const [{ data: coursRaw }, { data: offresStripe }, { data: offresPubliques }, { data: sondageActif }] = await Promise.all([
     supabase
       .from('cours')
-      .select('id, nom, date, heure, duree_minutes, type_cours, lieu, capacite_max, est_annule, recurrence_parent_id')
+      .select('id, nom, date, heure, duree_minutes, type_cours, lieu, capacite_max, est_annule, recurrence_parent_id, visibilite')
       .eq('profile_id', profile.id)
       .eq('est_annule', false)
       .gte('date', today)
       .lte('date', in60)
       .order('date', { ascending: true })
       .order('heure', { ascending: true })
-      .limit(40),
+      .limit(60),
     supabase
       .from('offres')
       .select('id, nom, type, prix, seances, duree_jours, stripe_payment_link')
@@ -81,6 +82,13 @@ async function getStudioData(studioSlug) {
     offresAffichables,
     sondageActifPromise,
   ]);
+
+  // ── Filtrage par visibilité (selon l'auth context du visiteur) ──
+  // Le visiteur peut être : pas authentifié / authentifié mais pas client /
+  // client (avec statut + abos actifs).
+  const { data: { user } } = await supabase.auth.getUser();
+  const clientInfo = user ? await resolveClientInfo(supabase, profile.id, user.email) : null;
+  const cours = filterCoursVisibles(coursRaw || [], clientInfo);
 
   // Count presences per cours
   const coursIds = (cours || []).map(c => c.id);

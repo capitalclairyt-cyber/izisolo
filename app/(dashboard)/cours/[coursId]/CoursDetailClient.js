@@ -69,6 +69,7 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
     lieu_id: cours.lieu_id || '',
     capacite_max: cours.capacite_max?.toString() || '',
     notes: cours.notes || '',
+    visibilite: cours.visibilite || 'public',
   });
 
   const handleChange = (field) => (e) => {
@@ -94,6 +95,7 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
           lieu: lieuNom,
           capacite_max: form.capacite_max ? parseInt(form.capacite_max) : null,
           notes: form.notes || null,
+          visibilite: form.visibilite || 'public',
         })
         .eq('id', cours.id);
 
@@ -425,6 +427,19 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
             <div className="form-group">
               <label className="form-label">Notes</label>
               <textarea className="izi-input" value={form.notes} onChange={handleChange('notes')} rows={2} style={{ resize: 'vertical' }} />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Visibilité sur le portail public</label>
+              <select className="izi-input" value={form.visibilite} onChange={handleChange('visibilite')}>
+                <option value="public">Tout le monde (public)</option>
+                <option value="inscrits">Élèves inscrits seulement</option>
+                <option value="abonnes">Détenteurs d'abonnement actif</option>
+                <option value="fideles">Élèves fidèles</option>
+              </select>
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginTop: 4 }}>
+                Détermine qui peut voir ce cours dans la liste publique du studio.
+              </span>
             </div>
 
             <div className="edit-actions">
