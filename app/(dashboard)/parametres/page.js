@@ -14,6 +14,8 @@ import { METIERS } from '@/lib/constantes';
 import BackgroundDecor, { ILLUSTRATION_OPTIONS } from '@/components/background/BackgroundDecor';
 import ReglesTab from './ReglesTab';
 import PhotoUploader from '@/components/ui/PhotoUploader';
+import UnsavedChangesBar from '@/components/ui/UnsavedChangesBar';
+import UnsavedChangesGuard from '@/components/ui/UnsavedChangesGuard';
 
 const PALETTES = [
   { id: 'rose', label: 'Rose', color: '#d4a0a0' },
@@ -986,17 +988,31 @@ export default function Parametres() {
     setDirty(true);
   };
 
-  // Avertir si tentative de quitter avec des changements non sauvegardés
-  useEffect(() => {
-    if (!dirty) return undefined;
-    const handler = (e) => {
-      e.preventDefault();
-      e.returnValue = '';
-      return '';
-    };
-    window.addEventListener('beforeunload', handler);
-    return () => window.removeEventListener('beforeunload', handler);
-  }, [dirty]);
+  // Garde des modifs non enregistrées : géré désormais par <UnsavedChangesGuard />
+  // (popstate retour navigateur + beforeunload tab close + modal pretty)
+
+  // Re-charger les données serveur (= annuler les modifs locales)
+  const handleDiscard = async () => {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    const { data: prof } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+    if (prof) {
+      setProfile(prof);
+      // Reset les états notif/anniv qui ne sont pas dans `profile`
+      setNotifNouveauClient(prof.notif_nouveau_client !== false);
+      setNotifPaiementRetard(prof.notif_paiement_retard !== false);
+      setNotifCarnetEpuise(prof.notif_carnet_epuise !== false);
+      setNotifAbonnementExpire(prof.notif_abonnement_expire !== false);
+      setAnnivMode(prof.anniversaire_mode || 'semi');
+      setAnnivMessage(prof.anniversaire_message || '');
+      setAnnivCadeauActif(prof.anniversaire_cadeau_actif || false);
+      setAnnivCadeauOffreId(prof.anniversaire_cadeau_offre_id || '');
+      setAnnivCadeauType(prof.anniversaire_cadeau_type || 'gratuit');
+      setAnnivCadeauRemisePct(prof.anniversaire_cadeau_remise_pct || 20);
+    }
+    setDirty(false);
+    toast.success('Modifications annulées');
+  };
 
   // --- Lieux ---
   const addLieu = async () => {
@@ -1101,6 +1117,17 @@ export default function Parametres() {
         illustration={profile.ui_illustration || 'lotus'}
         grilleActive={profile.ui_grille_active !== false}
         animationActive={profile.ui_animation_active !== false}
+      />
+
+      {/* Garde-fou : intercepte le bouton retour navigateur + beforeunload */}
+      <UnsavedChangesGuard dirty={dirty} onConfirmLeave={() => setDirty(false)} />
+
+      {/* Barre sticky en bas — Enregistrer / Annuler toujours accessibles */}
+      <UnsavedChangesBar
+        dirty={dirty}
+        saving={saving}
+        onSave={handleSave}
+        onDiscard={handleDiscard}
       />
 
       <div className="page-header animate-fade-in">
