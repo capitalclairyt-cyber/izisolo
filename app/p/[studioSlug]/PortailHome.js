@@ -621,7 +621,7 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
         .portail-essai-cta {
           display: flex; align-items: center; gap: 14px;
           padding: 14px 16px; margin-bottom: 18px;
-          background: linear-gradient(135deg, var(--tone-rose-bg-soft, #fdf6f4), white);
+          background: linear-gradient(135deg, var(--tone-rose-bg, #fdf6f4), white);
           border: 1.5px solid var(--tone-rose-accent, #c47070);
           border-radius: 16px;
           text-decoration: none; color: inherit;
@@ -796,11 +796,11 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
         .portail-cours-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 
         /* Tons par type de cours : fond soft tinté + bord épais accent */
-        .portail-cours-card--rose     { background: var(--tone-rose-bg-soft);     border-left-color: var(--tone-rose-accent); }
-        .portail-cours-card--sage     { background: var(--tone-sage-bg-soft);     border-left-color: var(--tone-sage-accent); }
-        .portail-cours-card--sand     { background: var(--tone-sand-bg-soft);     border-left-color: var(--tone-sand-accent); }
-        .portail-cours-card--lavender { background: var(--tone-lavender-bg-soft); border-left-color: var(--tone-lavender-accent); }
-        .portail-cours-card--ink      { background: var(--tone-ink-bg-soft);      border-left-color: var(--tone-ink-bg); }
+        .portail-cours-card--rose     { background: var(--tone-rose-bg);     border-left-color: var(--tone-rose-accent); }
+        .portail-cours-card--sage     { background: var(--tone-sage-bg);     border-left-color: var(--tone-sage-accent); }
+        .portail-cours-card--sand     { background: var(--tone-sand-bg);     border-left-color: var(--tone-sand-accent); }
+        .portail-cours-card--lavender { background: var(--tone-lavender-bg); border-left-color: var(--tone-lavender-accent); }
+        .portail-cours-card--ink      { background: var(--tone-ink-bg);      border-left-color: var(--tone-ink-bg); }
 
         .portail-tag-rose     { background: var(--tone-rose-bg);     color: var(--tone-rose-ink); }
         .portail-tag-sage     { background: var(--tone-sage-bg);     color: var(--tone-sage-ink); }

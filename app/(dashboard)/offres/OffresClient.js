@@ -404,10 +404,10 @@ export default function OffresClient({ offres, profile }) {
         .section-title { font-size: 0.8125rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); }
         .offres-list { display: flex; flex-direction: column; gap: 8px; }
         .offre-card { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-left: 6px solid transparent; }
-        .offre-card--rose     { background: var(--tone-rose-bg-soft);     border-left-color: var(--tone-rose-accent); }
-        .offre-card--sage     { background: var(--tone-sage-bg-soft);     border-left-color: var(--tone-sage-accent); }
-        .offre-card--sand     { background: var(--tone-sand-bg-soft);     border-left-color: var(--tone-sand-accent); }
-        .offre-card--lavender { background: var(--tone-lavender-bg-soft); border-left-color: var(--tone-lavender-accent); }
+        .offre-card--rose     { background: var(--tone-rose-bg);     border-left-color: var(--tone-rose-accent); }
+        .offre-card--sage     { background: var(--tone-sage-bg);     border-left-color: var(--tone-sage-accent); }
+        .offre-card--sand     { background: var(--tone-sand-bg);     border-left-color: var(--tone-sand-accent); }
+        .offre-card--lavender { background: var(--tone-lavender-bg); border-left-color: var(--tone-lavender-accent); }
         .offre-card--rose     .offre-icon { background: var(--tone-rose-bg);     color: var(--tone-rose-ink); }
         .offre-card--sage     .offre-icon { background: var(--tone-sage-bg);     color: var(--tone-sage-ink); }
         .offre-card--sand     .offre-icon { background: var(--tone-sand-bg);     color: var(--tone-sand-ink); }

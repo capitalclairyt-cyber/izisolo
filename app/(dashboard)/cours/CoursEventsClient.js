@@ -857,7 +857,7 @@ function CeStyles() {
       .move-dialog-cat-btn {
         display: flex; align-items: center; gap: 8px;
         padding: 10px 12px; border: 1px solid var(--border);
-        border-radius: var(--radius-sm); background: var(--bg-soft, #f8f9fa);
+        border-radius: var(--radius-sm); background: var(--bg, #f8f9fa);
         color: var(--text-primary); font-size: 0.875rem; font-weight: 500;
         cursor: pointer; text-align: left; transition: all 0.15s;
       }
@@ -946,11 +946,11 @@ function CeStyles() {
       .ce-card-bar.ponctuel  { background: var(--sage, #8fae8b); }
 
       /* Tons par type de cours — fond soft + bord coloré (override des color bars par défaut) */
-      .ce-card--rose     { background: var(--tone-rose-bg-soft); }
-      .ce-card--sage     { background: var(--tone-sage-bg-soft); }
-      .ce-card--sand     { background: var(--tone-sand-bg-soft); }
-      .ce-card--lavender { background: var(--tone-lavender-bg-soft); }
-      .ce-card--ink      { background: var(--tone-ink-bg-soft); }
+      .ce-card--rose     { background: var(--tone-rose-bg); }
+      .ce-card--sage     { background: var(--tone-sage-bg); }
+      .ce-card--sand     { background: var(--tone-sand-bg); }
+      .ce-card--lavender { background: var(--tone-lavender-bg); }
+      .ce-card--ink      { background: var(--tone-ink-bg); }
       .ce-card--rose     .ce-card-bar { background: var(--tone-rose-accent); }
       .ce-card--sage     .ce-card-bar { background: var(--tone-sage-accent); }
       .ce-card--sand     .ce-card-bar { background: var(--tone-sand-accent); }

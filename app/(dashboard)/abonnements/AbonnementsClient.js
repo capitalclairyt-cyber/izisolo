@@ -337,10 +337,10 @@ export default function AbonnementsClient({ abonnements: initAbo, paiementsParAb
         }
         .abo-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
         /* Tons par statut d'abonnement */
-        .abo-card--rose     { background: var(--tone-rose-bg-soft);     border-left-color: var(--tone-rose-accent); }
-        .abo-card--sage     { background: var(--tone-sage-bg-soft);     border-left-color: var(--tone-sage-accent); }
-        .abo-card--sand     { background: var(--tone-sand-bg-soft);     border-left-color: var(--tone-sand-accent); }
-        .abo-card--lavender { background: var(--tone-lavender-bg-soft); border-left-color: var(--tone-lavender-accent); }
+        .abo-card--rose     { background: var(--tone-rose-bg);     border-left-color: var(--tone-rose-accent); }
+        .abo-card--sage     { background: var(--tone-sage-bg);     border-left-color: var(--tone-sage-accent); }
+        .abo-card--sand     { background: var(--tone-sand-bg);     border-left-color: var(--tone-sand-accent); }
+        .abo-card--lavender { background: var(--tone-lavender-bg); border-left-color: var(--tone-lavender-accent); }
 
         .abo-card-icon {
           width: 40px; height: 40px; border-radius: var(--radius-sm);

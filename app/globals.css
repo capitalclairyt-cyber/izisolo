@@ -134,6 +134,26 @@
 .tone-lavender-border { border-color: var(--tone-lavender-accent); }
 .tone-ink-border      { border-color: var(--tone-ink-bg); }
 
+/* === Font display utility — Fraunces avec axes opsz + SOFT pour titres === */
+.font-display {
+  font-family: var(--font-fraunces), Georgia, serif;
+  font-variation-settings: 'opsz' 144, 'SOFT' 100;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+/* Tous les titres .page-header h1 (cours, clients, offres, etc.) en Fraunces */
+.page-header h1 {
+  font-family: var(--font-fraunces), Georgia, serif;
+  font-variation-settings: 'opsz' 144, 'SOFT' 100;
+  font-weight: 500;
+  font-size: 1.875rem;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  color: #1a1612;
+}
+
 /* === Palettes alternatives === */
 [data-theme="ocean"] {
   --brand: #7aa0c4;

@@ -258,10 +258,10 @@ export default function ClientsClient({ clients, profile }) {
           color: inherit;
           border-left: 6px solid transparent;
         }
-        .client-card--rose     { background: var(--tone-rose-bg-soft);     border-left-color: var(--tone-rose-accent); }
-        .client-card--sage     { background: var(--tone-sage-bg-soft);     border-left-color: var(--tone-sage-accent); }
-        .client-card--sand     { background: var(--tone-sand-bg-soft);     border-left-color: var(--tone-sand-accent); }
-        .client-card--lavender { background: var(--tone-lavender-bg-soft); border-left-color: var(--tone-lavender-accent); }
+        .client-card--rose     { background: var(--tone-rose-bg);     border-left-color: var(--tone-rose-accent); }
+        .client-card--sage     { background: var(--tone-sage-bg);     border-left-color: var(--tone-sage-accent); }
+        .client-card--sand     { background: var(--tone-sand-bg);     border-left-color: var(--tone-sand-accent); }
+        .client-card--lavender { background: var(--tone-lavender-bg); border-left-color: var(--tone-lavender-accent); }
         .filter-divider {
           width: 1px;
           height: 24px;
