@@ -11,7 +11,7 @@ import {
 import { createClient } from '@/lib/supabase';
 import { useToast } from '@/components/ui/ToastProvider';
 import { METIERS } from '@/lib/constantes';
-import BackgroundDecor, { ILLUSTRATION_OPTIONS } from '@/components/background/BackgroundDecor';
+// import BackgroundDecor — retiré, plus utilisé (apparences supprimées)
 import ReglesTab from './ReglesTab';
 import PhotoUploader from '@/components/ui/PhotoUploader';
 import UnsavedChangesBar from '@/components/ui/UnsavedChangesBar';
@@ -41,8 +41,9 @@ const ANNIV_MODES = [
   { id: 'auto',   label: 'Automatique',desc: 'Envoi automatique sans confirmation' },
 ];
 
+// Sous-onglets Réglages — Apparences retiré (palette + décor imposés brand
+// pour cohérence visuelle de toute l'app, plus de personnalisation pro).
 const REGLAGES_SUBTABS = [
-  { id: 'apparences', label: 'Apparences', icon: Eye },
   { id: 'general', label: 'Général', icon: Settings },
 ];
 
@@ -1180,7 +1181,7 @@ export default function Parametres() {
   const [lieux, setLieux] = useState([]);
   const [newLieu, setNewLieu] = useState('');
   const [activeTab, setActiveTab] = useState('profil');
-  const [reglagesSubTab, setReglagesSubTab] = useState('apparences');
+  const [reglagesSubTab, setReglagesSubTab] = useState('general');
   // Sous-onglet notifications
   const [notifSubTab, setNotifSubTab] = useState('general');
   // Notifications générales
@@ -1309,10 +1310,8 @@ export default function Parametres() {
       telephone: profile.telephone,
       metier: profile.metier,
       lieu_principal: profile.lieu_principal || null,
-      ui_couleur: profile.ui_couleur,
-      ui_illustration: profile.ui_illustration || 'lotus',
-      ui_grille_active: profile.ui_grille_active !== false,
-      ui_animation_active: profile.ui_animation_active !== false,
+      // ui_couleur / ui_illustration / ui_grille_active / ui_animation_active
+      // ne sont plus modifiables via l'app (palette imposée brand IziSolo).
       alerte_seances_seuil: parseInt(profile.alerte_seances_seuil) || 2,
       alerte_expiration_jours: parseInt(profile.alerte_expiration_jours) || 7,
       anniversaire_mode:            annivMode,
@@ -1369,12 +1368,6 @@ export default function Parametres() {
 
   return (
     <div className="parametres">
-      <BackgroundDecor
-        illustration={profile.ui_illustration || 'lotus'}
-        grilleActive={profile.ui_grille_active !== false}
-        animationActive={profile.ui_animation_active !== false}
-      />
-
       {/* Garde-fou : intercepte le bouton retour navigateur + beforeunload */}
       <UnsavedChangesGuard dirty={dirty} onConfirmLeave={() => setDirty(false)} />
 
@@ -1593,85 +1586,12 @@ export default function Parametres() {
             })}
           </div>
 
-          {/* === SOUS-ONGLET : APPARENCES === */}
-          {reglagesSubTab === 'apparences' && (
-            <div className="subtab-content animate-fade-in">
-
-              {/* Thème couleur */}
-              <div className="section izi-card">
-                <div className="section-top"><div className="section-icon"><Palette size={20} /></div><h2>Thème couleur</h2></div>
-                <div className="palette-grid">
-                  {PALETTES.map(p => (
-                    <button
-                      key={p.id}
-                      className={`palette-btn ${profile.ui_couleur === p.id ? 'selected' : ''}`}
-                      onClick={() => setProfile(prev => ({ ...prev, ui_couleur: p.id }))}
-                    >
-                      <div className="palette-swatch" style={{ background: p.color }} />
-                      <span className="palette-label">{p.label}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Décor visuel */}
-              <div className="section izi-card">
-                <div className="section-top"><div className="section-icon"><Flower2 size={20} /></div><h2>Décor visuel</h2></div>
-                <p className="section-desc">Personnalise l'ambiance visuelle de ton espace.</p>
-
-                <div className="form-group">
-                  <label className="form-label">Illustration</label>
-                  <div className="decor-options">
-                    {ILLUSTRATION_OPTIONS.map(opt => (
-                      <button
-                        key={opt.value}
-                        type="button"
-                        className={`decor-option ${(profile.ui_illustration || 'lotus') === opt.value ? 'selected' : ''}`}
-                        onClick={() => setProfile(prev => ({ ...prev, ui_illustration: opt.value }))}
-                      >
-                        <span className="decor-emoji">{opt.emoji}</span> {opt.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="toggle-row">
-                  <label className="toggle-label">Grille décorative d'arrière-plan</label>
-                  <button
-                    type="button"
-                    className={`toggle-switch ${(profile.ui_grille_active !== false) ? 'active' : ''}`}
-                    onClick={() => setProfile(prev => ({ ...prev, ui_grille_active: !(prev.ui_grille_active !== false) }))}
-                  >
-                    <span className="toggle-knob" />
-                  </button>
-                </div>
-
-                <div className="toggle-row">
-                  <label className="toggle-label">Animation de l'arrière-plan</label>
-                  <button
-                    type="button"
-                    className={`toggle-switch ${(profile.ui_animation_active !== false) ? 'active' : ''}`}
-                    onClick={() => setProfile(prev => ({ ...prev, ui_animation_active: !(prev.ui_animation_active !== false) }))}
-                  >
-                    <span className="toggle-knob" />
-                  </button>
-                </div>
-
-                {(profile.ui_illustration || 'lotus') !== 'aucun' && (
-                  <div className="illustration-preview">
-                    <img
-                      src={`/illustrations/${profile.ui_illustration || 'lotus'}.jpg`}
-                      alt={ILLUSTRATION_OPTIONS.find(o => o.value === (profile.ui_illustration || 'lotus'))?.label || ''}
-                    />
-                  </div>
-                )}
-              </div>
-
-              <button onClick={handleSave} className="izi-btn izi-btn-primary save-btn" disabled={saving}>
-                <Save size={18} /> {saving ? 'Enregistrement...' : 'Enregistrer'}
-              </button>
-            </div>
-          )}
+          {/* === SOUS-ONGLET APPARENCES retiré ===
+              Palette de couleur + décor visuel + grille/animation d'arrière-plan
+              ne sont plus personnalisables — on impose le brand IziSolo (rose
+              tonal Claude Design) pour assurer la cohérence visuelle. Les colonnes
+              ui_couleur / ui_illustration / ui_grille_active / ui_animation_active
+              restent en DB mais ne sont plus exposées. */}
 
           {/* === SOUS-ONGLET : GÉNÉRAL === */}
           {reglagesSubTab === 'general' && (

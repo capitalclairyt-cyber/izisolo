@@ -1,90 +1,28 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Sparkles } from 'lucide-react';
 import Sidebar from '@/components/navigation/Sidebar';
-import BackgroundDecor from '@/components/background/BackgroundDecor';
 import { getVocabulaire } from '@/lib/vocabulaire';
 import { ToastProvider } from '@/components/ui/ToastProvider';
 
-// Mapping couleur → thème CSS
-const THEME_MAP = {
-  rose: 'rose',
-  ocean: 'ocean',
-  foret: 'foret',
-  soleil: 'soleil',
-  lavande: 'lavande',
-  terre: 'terre',
-};
-
-// Couleur principale par thème (pour theme-color mobile)
-const BRAND_HEX = {
-  rose:    '#d4a0a0',
-  ocean:   '#7aa0c4',
-  foret:   '#7ab07a',
-  soleil:  '#d4b06a',
-  lavande: '#a890c4',
-  terre:   '#c4956a',
-};
-
 export default function DashboardLayoutClient({ children, profile }) {
-  const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
-  const isAssistant = pathname === '/assistant';
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  // Appliquer le thème de couleur + theme-color mobile
-  useEffect(() => {
-    if (profile?.ui_couleur) {
-      const theme = THEME_MAP[profile.ui_couleur] || 'rose';
-      if (theme !== 'rose') {
-        document.documentElement.setAttribute('data-theme', theme);
-      } else {
-        document.documentElement.removeAttribute('data-theme');
-      }
-
-      // Mettre à jour la couleur du bandeau mobile (status bar)
-      const hex = BRAND_HEX[profile.ui_couleur] || BRAND_HEX.rose;
-      let metaTheme = document.querySelector('meta[name="theme-color"]');
-      if (!metaTheme) {
-        metaTheme = document.createElement('meta');
-        metaTheme.name = 'theme-color';
-        document.head.appendChild(metaTheme);
-      }
-      metaTheme.content = hex;
-    }
-  }, [profile?.ui_couleur]);
 
   const vocabulaire = getVocabulaire(
     profile?.metier || 'yoga',
     profile?.vocabulaire
   );
 
-  if (!mounted) return null;
-
-  // Décor visuel (stocké dans le profil)
-  const illustration = profile?.ui_illustration || 'lotus';
-  const grilleActive = profile?.ui_grille_active !== false;
-  const animationActive = profile?.ui_animation_active !== false;
-
   return (
     <ToastProvider>
     <div className="dashboard-wrapper">
-      <BackgroundDecor
-        illustration={illustration}
-        grilleActive={grilleActive}
-        animationActive={animationActive}
-      />
+      {/* Palette d'identité visuelle imposée (rose tonal Claude Design),
+          plus de personnalisation côté pro — cohérence brand pour tout le monde.
+          Plus de BackgroundDecor non plus (n'apportait pas grand chose). */}
 
       <Sidebar
         studioNom={profile?.studio_nom || 'Mon Studio'}
         vocabulaire={vocabulaire}
-        illustration={illustration}
       />
 
       <main className="dashboard-content">
