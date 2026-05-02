@@ -17,8 +17,10 @@ const instrumentSerif = Instrument_Serif({
 // Fraunces — police display warm et généreuse (axes opsz + SOFT + wght variables)
 // Utilisée pour les titres dashboard / sections, plus respirante que
 // Instrument Serif qui était trop condensée.
+// Note : Next.js refuse `weight: [...]` + `axes` ensemble — pour activer
+// les axes (opsz, SOFT), on doit charger en variable complète. On contrôle
+// le poids via font-weight ou font-variation-settings dans le CSS.
 const fraunces = Fraunces({
-  weight: ['400', '500', '600'],
   axes: ['opsz', 'SOFT'],
   subsets: ['latin'],
   variable: '--font-fraunces',
