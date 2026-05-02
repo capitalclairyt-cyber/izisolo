@@ -215,10 +215,8 @@ export default function Sidebar({ studioNom = 'Mon Studio', vocabulaire = {}, il
           display: flex;
           flex-direction: column;
           height: 100vh;
-          background: rgba(255, 255, 255, 0.8);
-          backdrop-filter: blur(20px);
-          -webkit-backdrop-filter: blur(20px);
-          border-right: 1px solid rgba(232, 224, 216, 0.5);
+          background: #faf6f0; /* crème warm Claude Design */
+          border-right: 1px solid #ecdfd5;
           z-index: 50;
           overflow: hidden;
         }
@@ -245,12 +243,15 @@ export default function Sidebar({ studioNom = 'Mon Studio', vocabulaire = {}, il
           display: flex;
           align-items: center;
           gap: 8px;
-          color: var(--brand);
+          color: #1a1612;
         }
         .sidebar-brand {
-          font-size: 1.125rem;
-          font-weight: 700;
-          color: var(--brand-dark);
+          font-size: 1.25rem;
+          font-weight: 500;
+          color: #1a1612;
+          font-family: var(--font-fraunces), Georgia, serif;
+          font-variation-settings: 'opsz' 144, 'SOFT' 100;
+          letter-spacing: -0.02em;
         }
         .sidebar-studio {
           margin-top: 4px;
@@ -332,12 +333,14 @@ export default function Sidebar({ studioNom = 'Mon Studio', vocabulaire = {}, il
           flex: 1;
         }
         .sidebar-item:hover {
-          background: rgba(255, 255, 255, 0.7);
-          color: var(--text-primary);
+          background: white;
+          color: #1a1612;
         }
         .sidebar-item.active {
-          background: var(--brand-light);
-          color: var(--brand-700);
+          background: white;
+          color: #1a1612;
+          font-weight: 600;
+          box-shadow: 0 1px 4px rgba(70, 35, 25, 0.08);
         }
         .sidebar-chevron {
           margin-left: auto;
