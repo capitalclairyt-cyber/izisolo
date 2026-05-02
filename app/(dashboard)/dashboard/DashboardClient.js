@@ -331,15 +331,17 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
           font-weight: 700;
           flex-shrink: 0;
           box-shadow: 0 4px 14px rgba(196, 112, 112, 0.25);
-          font-family: var(--font-instrument-serif), Georgia, serif;
+          font-family: var(--font-fraunces), Georgia, serif;
+          font-variation-settings: 'opsz' 144, 'SOFT' 100;
         }
         .dash-greeting h1 {
-          font-size: 1.875rem;
-          font-weight: 400;
+          font-size: 2rem;
+          font-weight: 500;
           color: #1a1612;
-          line-height: 1.1;
-          font-family: var(--font-instrument-serif), Georgia, serif;
-          letter-spacing: -0.01em;
+          line-height: 1.05;
+          font-family: var(--font-fraunces), Georgia, serif;
+          font-variation-settings: 'opsz' 144, 'SOFT' 100;
+          letter-spacing: -0.02em;
         }
         .dash-date {
           font-size: 0.875rem;
@@ -435,11 +437,12 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
           justify-content: center;
         }
         .stat-tile-value {
-          font-size: 1.875rem;
-          font-weight: 600;
+          font-size: 2rem;
+          font-weight: 500;
           line-height: 1;
-          font-family: var(--font-instrument-serif), Georgia, serif;
-          letter-spacing: -0.01em;
+          font-family: var(--font-fraunces), Georgia, serif;
+          font-variation-settings: 'opsz' 144, 'SOFT' 100;
+          letter-spacing: -0.02em;
           margin-top: auto;
         }
         .stat-tile-label {
@@ -464,11 +467,12 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
           padding: 0 4px;
         }
         .section-header h2 {
-          font-size: 1.375rem;
-          font-weight: 400;
+          font-size: 1.5rem;
+          font-weight: 500;
           color: #1a1612;
-          font-family: var(--font-instrument-serif), Georgia, serif;
-          letter-spacing: -0.01em;
+          font-family: var(--font-fraunces), Georgia, serif;
+          font-variation-settings: 'opsz' 144, 'SOFT' 100;
+          letter-spacing: -0.02em;
         }
         .section-link {
           display: flex;

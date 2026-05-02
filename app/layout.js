@@ -1,7 +1,7 @@
 import './globals.css';
 import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
-import { Instrument_Serif, Geist, Geist_Mono } from 'next/font/google';
+import { Instrument_Serif, Fraunces, Geist, Geist_Mono } from 'next/font/google';
 
 const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://izisolo.fr';
 
@@ -11,6 +11,17 @@ const instrumentSerif = Instrument_Serif({
   style: ['normal', 'italic'],
   subsets: ['latin'],
   variable: '--font-instrument-serif',
+  display: 'swap',
+});
+
+// Fraunces — police display warm et généreuse (axes opsz + SOFT + wght variables)
+// Utilisée pour les titres dashboard / sections, plus respirante que
+// Instrument Serif qui était trop condensée.
+const fraunces = Fraunces({
+  weight: ['400', '500', '600'],
+  axes: ['opsz', 'SOFT'],
+  subsets: ['latin'],
+  variable: '--font-fraunces',
   display: 'swap',
 });
 const geist = Geist({
@@ -65,7 +76,7 @@ export const viewport = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="fr" className={`${instrumentSerif.variable} ${geist.variable} ${geistMono.variable}`}>
+    <html lang="fr" className={`${instrumentSerif.variable} ${fraunces.variable} ${geist.variable} ${geistMono.variable}`}>
       <head>
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
