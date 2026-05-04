@@ -83,6 +83,28 @@ export default function RootLayout({ children }) {
       <head>
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
+        {/*
+          AUTH FRAGMENT CATCHER (inline) — s'exécute AVANT React et AVANT hydration.
+          Si l'URL contient un fragment `#access_token=…&refresh_token=…` (lien
+          de confirmation Supabase legacy), on forward immédiatement vers
+          /auth/finaliser pour poser la session et rediriger sur /onboarding.
+          Doit être inline pour être sûr de tourner même si le SW (next-pwa)
+          sert un bundle JS caché. Coût : ~300 octets, exécution instantanée.
+        */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+(function(){try{
+  var h=window.location.hash||'';
+  if(h.indexOf('access_token=')<0 && h.indexOf('refresh_token=')<0 && h.indexOf('error_description=')<0) return;
+  var p=new URLSearchParams(h.replace(/^#/,''));
+  var t=p.get('type')||'';
+  var n=(t==='signup')?'/onboarding':((t==='recovery')?'/nouveau-mot-de-passe':'/dashboard');
+  window.location.replace('/auth/finaliser?next='+encodeURIComponent(n)+h);
+}catch(e){console.warn('[auth-catcher]',e);}})();
+            `.trim(),
+          }}
+        />
       </head>
       <body>
         <AuthFragmentCatcher />
