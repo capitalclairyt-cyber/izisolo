@@ -11,6 +11,7 @@ import {
 import { formatHeure, formatMontant } from '@/lib/utils';
 import { getVocabulaire } from '@/lib/vocabulaire';
 import { useToast } from '@/components/ui/ToastProvider';
+import { toneForCours } from '@/lib/tones';
 
 export default function DashboardClient({ profile, coursDuJour, nbClients, nbCoursTotal, revenusMois, alertes, coutsMois, hasSondage = false }) {
   const vocab = getVocabulaire(profile?.metier || 'yoga', profile?.vocabulaire);
@@ -139,39 +140,33 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
         </div>
       )}
 
-      {/* 3 stat cards */}
+      {/* 3 tuiles stats colorées style Snug Simple */}
       <div className="dash-stats animate-slide-up">
-        <Link href="/agenda" className="stat-card izi-card izi-card-interactive">
-          <div className="stat-icon stat-icon-primary">
-            <CalendarDays size={20} />
-          </div>
-          <div className="stat-value">{coursDuJour.length}</div>
-          <div className="stat-label">Séances</div>
+        <Link href="/agenda" className="stat-tile stat-tile--rose">
+          <div className="stat-tile-icon"><CalendarDays size={22} /></div>
+          <div className="stat-tile-value">{coursDuJour.length}</div>
+          <div className="stat-tile-label">Séances aujourd'hui</div>
         </Link>
 
-        <Link href="/clients" className="stat-card izi-card izi-card-interactive">
-          <div className="stat-icon stat-icon-success">
-            <Users size={20} />
-          </div>
-          <div className="stat-value">{inscritsAujourdhui || nbClients}</div>
-          <div className="stat-label">{coursDuJour.length > 0 ? 'Inscrits' : vocab.Clients || 'Élèves'}</div>
+        <Link href="/clients" className="stat-tile stat-tile--sage">
+          <div className="stat-tile-icon"><Users size={22} /></div>
+          <div className="stat-tile-value">{inscritsAujourdhui || nbClients}</div>
+          <div className="stat-tile-label">{coursDuJour.length > 0 ? 'Inscrits aujourd\'hui' : (vocab.Clients || 'Élèves')}</div>
         </Link>
 
-        <Link href="/revenus" className="stat-card izi-card izi-card-interactive">
-          <div className="stat-icon stat-icon-warning">
-            <BarChart3 size={20} />
-          </div>
-          <div className="stat-value">{formatMontant(revenusMois)}</div>
-          <div className="stat-label">Ce mois</div>
+        <Link href="/revenus" className="stat-tile stat-tile--sand">
+          <div className="stat-tile-icon"><BarChart3 size={22} /></div>
+          <div className="stat-tile-value">{formatMontant(revenusMois)}</div>
+          <div className="stat-tile-label">Revenus ce mois</div>
         </Link>
       </div>
 
-      {/* CTA Planning idéal — visible si pas encore de sondage créé */}
+      {/* CTA Sondage planning — visible si pas encore de sondage créé */}
       {!hasSondage && (
         <Link href="/sondages/nouveau" className="dash-sondage-cta animate-slide-up">
           <div className="dash-sondage-icon"><ClipboardList size={20} /></div>
           <div className="dash-sondage-text">
-            <div className="dash-sondage-title">Planning idéal — sonde tes élèves</div>
+            <div className="dash-sondage-title">Sondage planning — découvre tes meilleurs créneaux</div>
             <div className="dash-sondage-desc">
               Découvre quels créneaux les rempliraient le mieux. 30 secondes pour eux, gros gain pour toi.
             </div>
@@ -249,8 +244,10 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
           </div>
         ) : (
           <div className="cours-list">
-            {coursDuJour.map(cours => (
-              <div key={cours.id} className="cours-card izi-card">
+            {coursDuJour.map(cours => {
+              const tone = toneForCours(cours.type_cours);
+              return (
+              <div key={cours.id} className={`cours-card izi-card cours-card--${tone}`}>
                 <div className="cours-color-bar" />
                 <div className="cours-body">
                   <div className="cours-top">
@@ -264,7 +261,7 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
                       </div>
                     </div>
                     {cours.type_cours && (
-                      <span className="izi-badge izi-badge-brand">{cours.type_cours}</span>
+                      <span className={`izi-badge tone-${tone}-bg`}>{cours.type_cours}</span>
                     )}
                   </div>
                   <Link
@@ -276,7 +273,8 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
                   </Link>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
@@ -313,35 +311,42 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
           padding-bottom: 80px;
         }
 
-        /* Header */
+        /* Header — style Snug Simple, plus d'air, serif sur la salutation */
+        .dash-header { padding: 8px 4px 4px; }
         .dash-header-top {
           display: flex;
           align-items: center;
-          gap: 14px;
+          gap: 16px;
         }
         .dash-avatar {
-          width: 48px;
-          height: 48px;
+          width: 60px;
+          height: 60px;
           border-radius: 50%;
-          background: var(--brand);
+          background: linear-gradient(135deg, var(--tone-rose-accent), var(--tone-rose-ink));
           color: white;
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: 1.25rem;
+          font-size: 1.5rem;
           font-weight: 700;
           flex-shrink: 0;
+          box-shadow: 0 4px 14px rgba(196, 112, 112, 0.25);
+          font-family: var(--font-fraunces), Georgia, serif;
+          font-variation-settings: 'opsz' 144, 'SOFT' 100;
         }
         .dash-greeting h1 {
-          font-size: 1.375rem;
-          font-weight: 700;
-          color: var(--text-primary);
-          line-height: 1.2;
+          font-size: 2rem;
+          font-weight: 500;
+          color: #1a1612;
+          line-height: 1.05;
+          font-family: var(--font-fraunces), Georgia, serif;
+          font-variation-settings: 'opsz' 144, 'SOFT' 100;
+          letter-spacing: -0.02em;
         }
         .dash-date {
           font-size: 0.875rem;
           color: var(--text-muted);
-          margin-top: 2px;
+          margin-top: 4px;
           text-transform: capitalize;
         }
 
@@ -383,64 +388,91 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
           font-weight: 600;
         }
 
-        /* Stats */
+        /* Stats — tuiles pleines tonées style Claude Design */
         .dash-stats {
           display: grid;
           grid-template-columns: repeat(3, 1fr);
           gap: 12px;
         }
-        .stat-card {
+        .stat-tile {
           display: flex;
           flex-direction: column;
-          align-items: center;
-          gap: 6px;
-          padding: 16px 8px;
-          text-align: center;
+          gap: 12px;
+          padding: 18px 16px 20px;
+          border-radius: 22px;
           text-decoration: none;
           color: inherit;
+          transition: transform .15s, box-shadow .15s;
+          position: relative;
+          overflow: hidden;
+          min-height: 130px;
         }
-        .stat-icon {
-          width: 40px;
-          height: 40px;
-          border-radius: var(--radius-sm);
-          display: flex;
+        .stat-tile:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 6px 20px rgba(70, 35, 25, 0.08);
+        }
+        .stat-tile--rose {
+          background: var(--tone-rose-bg);
+          color: var(--tone-rose-ink);
+        }
+        .stat-tile--sage {
+          background: var(--tone-sage-bg);
+          color: var(--tone-sage-ink);
+        }
+        .stat-tile--sand {
+          background: var(--tone-sand-bg);
+          color: var(--tone-sand-ink);
+        }
+        .stat-tile--lavender {
+          background: var(--tone-lavender-bg);
+          color: var(--tone-lavender-ink);
+        }
+        .stat-tile-icon {
+          width: 36px;
+          height: 36px;
+          border-radius: 50%;
+          background: rgba(255, 255, 255, 0.6);
+          display: inline-flex;
           align-items: center;
           justify-content: center;
         }
-        .stat-icon-primary {
-          background: var(--brand-light);
-          color: var(--brand-700);
-        }
-        .stat-icon-success {
-          background: #d4e8d4;
-          color: #3d703d;
-        }
-        .stat-icon-warning {
-          background: #f2e8d4;
-          color: #8c702a;
-        }
-        .stat-value {
-          font-size: 1.375rem;
-          font-weight: 700;
-          color: var(--text-primary);
-          line-height: 1;
-        }
-        .stat-label {
-          font-size: 0.6875rem;
-          color: var(--text-muted);
+        .stat-tile-value {
+          font-size: 2rem;
           font-weight: 500;
+          line-height: 1;
+          font-family: var(--font-fraunces), Georgia, serif;
+          font-variation-settings: 'opsz' 144, 'SOFT' 100;
+          letter-spacing: -0.02em;
+          margin-top: auto;
+        }
+        .stat-tile-label {
+          font-size: 0.75rem;
+          font-weight: 500;
+          opacity: 0.85;
+          line-height: 1.3;
+        }
+        @media (max-width: 480px) {
+          .stat-tile { min-height: 110px; padding: 14px 12px 16px; }
+          .stat-tile-value { font-size: 1.5rem; }
+          .stat-tile-label { font-size: 0.6875rem; }
         }
 
-        /* Section header */
+        /* Section header — gros titre serif Snug Simple */
+        .dash-section { margin-top: 8px; }
         .section-header {
           display: flex;
           justify-content: space-between;
-          align-items: center;
-          margin-bottom: 12px;
+          align-items: baseline;
+          margin-bottom: 14px;
+          padding: 0 4px;
         }
         .section-header h2 {
-          font-size: 1.0625rem;
-          font-weight: 700;
+          font-size: 1.5rem;
+          font-weight: 500;
+          color: #1a1612;
+          font-family: var(--font-fraunces), Georgia, serif;
+          font-variation-settings: 'opsz' 144, 'SOFT' 100;
+          letter-spacing: -0.02em;
         }
         .section-link {
           display: flex;
@@ -475,29 +507,48 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
           margin-bottom: 8px;
         }
 
-        /* Cours list */
+        /* Cours list — fond plein toné + radius + padding généreux */
         .cours-list {
           display: flex;
           flex-direction: column;
-          gap: 10px;
+          gap: 12px;
         }
         .cours-card {
           display: flex;
           overflow: hidden;
+          border-radius: 20px;
+          box-shadow: 0 2px 10px rgba(70, 35, 25, 0.05);
         }
+        .cours-card--rose     { background: var(--tone-rose-bg); }
+        .cours-card--sage     { background: var(--tone-sage-bg); }
+        .cours-card--sand     { background: var(--tone-sand-bg); }
+        .cours-card--lavender { background: var(--tone-lavender-bg); }
+        .cours-card--ink      { background: var(--tone-ink-bg-soft); }
         .cours-color-bar {
-          width: 4px;
+          width: 8px;
           background: var(--brand);
           flex-shrink: 0;
-          border-radius: var(--radius-md) 0 0 var(--radius-md);
         }
+        .cours-card--rose     .cours-color-bar { background: var(--tone-rose-accent); }
+        .cours-card--sage     .cours-color-bar { background: var(--tone-sage-accent); }
+        .cours-card--sand     .cours-color-bar { background: var(--tone-sand-accent); }
+        .cours-card--lavender .cours-color-bar { background: var(--tone-lavender-accent); }
+        .cours-card--ink      .cours-color-bar { background: var(--tone-ink-bg); }
         .cours-body {
           flex: 1;
-          padding: 14px 16px;
+          padding: 18px 20px 16px;
           display: flex;
           flex-direction: column;
-          gap: 10px;
+          gap: 12px;
         }
+        .cours-card--rose     .cours-nom { color: var(--tone-rose-ink); }
+        .cours-card--sage     .cours-nom { color: var(--tone-sage-ink); }
+        .cours-card--sand     .cours-nom { color: var(--tone-sand-ink); }
+        .cours-card--lavender .cours-nom { color: var(--tone-lavender-ink); }
+        .cours-card--rose     .cours-meta { color: var(--tone-rose-ink); opacity: 0.8; }
+        .cours-card--sage     .cours-meta { color: var(--tone-sage-ink); opacity: 0.8; }
+        .cours-card--sand     .cours-meta { color: var(--tone-sand-ink); opacity: 0.8; }
+        .cours-card--lavender .cours-meta { color: var(--tone-lavender-ink); opacity: 0.8; }
         .cours-top {
           display: flex;
           justify-content: space-between;
@@ -522,20 +573,20 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
           align-items: center;
           justify-content: center;
           gap: 8px;
-          padding: 10px 16px;
-          background: var(--brand);
-          color: white;
+          padding: 11px 18px;
+          background: rgba(255, 255, 255, 0.7);
+          color: #1a1612;
+          border: 1.5px solid rgba(0, 0, 0, 0.1);
           border-radius: var(--radius-full);
           text-decoration: none;
           font-size: 0.875rem;
           font-weight: 600;
           min-height: 44px;
-          transition: background var(--transition-fast);
+          transition: all var(--transition-fast);
+          align-self: flex-start;
         }
-        .cours-pointer-btn:active {
-          background: var(--brand-dark);
-          transform: scale(0.97);
-        }
+        .cours-pointer-btn:hover { background: white; border-color: #1a1612; }
+        .cours-pointer-btn:active { transform: scale(0.97); }
 
         /* Checklist de démarrage */
         .dash-checklist {
@@ -591,27 +642,29 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
         }
         .dash-checklist-cta:hover { background: var(--brand-dark, #b07070); }
 
-        /* CTA Planning idéal */
+        /* CTA Sondage planning — style Snug Simple lavender */
         .dash-sondage-cta {
-          display: flex; align-items: center; gap: 12px;
-          padding: 14px 16px; border-radius: 14px;
-          background: linear-gradient(135deg, var(--brand-light), white);
-          border: 1px solid var(--brand-200, #f0d0d0);
-          text-decoration: none; color: inherit;
+          display: flex; align-items: center; gap: 14px;
+          padding: 18px 20px; border-radius: 20px;
+          background: var(--tone-lavender-bg);
+          color: var(--tone-lavender-ink);
+          text-decoration: none;
           transition: transform 0.15s, box-shadow 0.15s;
         }
         .dash-sondage-cta:hover {
-          transform: translateY(-1px);
-          box-shadow: 0 4px 12px rgba(212, 160, 160, 0.18);
+          transform: translateY(-2px);
+          box-shadow: 0 6px 18px rgba(90, 77, 117, 0.18);
         }
         .dash-sondage-icon {
-          width: 40px; height: 40px; border-radius: 10px;
-          background: var(--brand); color: white; flex-shrink: 0;
+          width: 44px; height: 44px; border-radius: 50%;
+          background: rgba(255, 255, 255, 0.7);
+          color: var(--tone-lavender-ink);
+          flex-shrink: 0;
           display: flex; align-items: center; justify-content: center;
         }
         .dash-sondage-text { flex: 1; min-width: 0; }
-        .dash-sondage-title { font-size: 0.875rem; font-weight: 700; color: var(--text-primary); }
-        .dash-sondage-desc { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; line-height: 1.4; }
+        .dash-sondage-title { font-size: 0.9375rem; font-weight: 600; color: var(--tone-lavender-ink); }
+        .dash-sondage-desc { font-size: 0.8125rem; color: var(--tone-lavender-ink); opacity: 0.75; margin-top: 4px; line-height: 1.4; }
 
         /* Widget Mes coûts */
         .dash-couts {
@@ -665,35 +718,70 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
         }
         .dash-couts-note a { color: var(--brand); text-decoration: underline; }
 
-        /* Widget portail élève */
+        /* Widget portail élève — tonal sage */
         .dash-portal-widget {
-          display: flex; align-items: center; gap: 12px;
-          padding: 14px 16px;
+          display: flex; align-items: center; gap: 14px;
+          padding: 18px 20px;
+          border-radius: 20px;
+          background: var(--tone-sage-bg);
+          color: var(--tone-sage-ink);
+          box-shadow: 0 2px 10px rgba(70, 35, 25, 0.05);
         }
         .dash-portal-icon {
-          width: 36px; height: 36px; border-radius: 10px;
-          background: var(--brand-light); color: var(--brand);
+          width: 44px; height: 44px; border-radius: 50%;
+          background: rgba(255, 255, 255, 0.7);
+          color: var(--tone-sage-ink);
           display: flex; align-items: center; justify-content: center;
           flex-shrink: 0;
         }
         .dash-portal-text { flex: 1; min-width: 0; }
-        .dash-portal-title { font-size: 0.8125rem; font-weight: 600; color: var(--text-primary); }
+        .dash-portal-title {
+          font-size: 0.9375rem; font-weight: 600;
+          color: var(--tone-sage-ink);
+        }
         .dash-portal-url {
-          font-size: 0.75rem; color: var(--text-muted);
+          font-size: 0.8125rem; color: var(--tone-sage-ink); opacity: 0.75;
           font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
           white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-          margin-top: 2px;
+          margin-top: 4px;
         }
         .dash-portal-actions { display: flex; gap: 6px; flex-shrink: 0; }
         .dash-portal-btn {
-          width: 34px; height: 34px; border-radius: 8px;
-          border: 1px solid var(--border); background: white;
-          color: var(--text-secondary); cursor: pointer;
+          width: 36px; height: 36px; border-radius: 50%;
+          border: none;
+          background: rgba(255, 255, 255, 0.7);
+          color: var(--tone-sage-ink); cursor: pointer;
           display: flex; align-items: center; justify-content: center;
           transition: all 0.15s; text-decoration: none;
         }
-        .dash-portal-btn:hover {
-          border-color: var(--brand); color: var(--brand);
+        .dash-portal-btn:hover { background: white; transform: scale(1.05); }
+
+        /* Widget Coûts — tonal sand */
+        .dash-couts {
+          display: flex; flex-direction: column; gap: 10px;
+          padding: 18px 20px;
+          border-radius: 20px;
+          background: var(--tone-sand-bg);
+          color: var(--tone-sand-ink);
+          border: none !important;
+        }
+        .dash-couts-title {
+          font-size: 0.9375rem; font-weight: 600; color: var(--tone-sand-ink);
+        }
+        .dash-couts-cog {
+          width: 32px; height: 32px; border-radius: 50%;
+          background: rgba(255, 255, 255, 0.6);
+          color: var(--tone-sand-ink);
+          display: flex; align-items: center; justify-content: center;
+        }
+        .dash-couts-row { color: var(--tone-sand-ink); }
+        .dash-couts-row-left { color: var(--tone-sand-ink); opacity: 0.85; }
+        .dash-couts-amount { color: var(--tone-sand-ink); }
+        .dash-couts-total .dash-couts-amount { color: var(--tone-sand-ink); font-weight: 700; }
+        .dash-couts-note { color: var(--tone-sand-ink); opacity: 0.7; }
+        .dash-couts-badge {
+          background: rgba(255, 255, 255, 0.7);
+          color: var(--tone-sand-ink);
         }
       `}</style>
     </div>

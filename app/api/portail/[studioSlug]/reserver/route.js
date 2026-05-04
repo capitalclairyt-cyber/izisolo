@@ -1,12 +1,31 @@
 import { createServerClient } from '@/lib/supabase-server';
 import { createClient as createAdminSupabase } from '@supabase/supabase-js';
 import { parseJsonBody, reservationSchema } from '@/lib/validation';
+import { checkAntiBot, ipFromRequest } from '@/lib/antibot';
 
 export async function POST(request, { params }) {
   const { studioSlug } = await params;
-  const { data: body, errorResponse } = await parseJsonBody(request, reservationSchema);
-  if (errorResponse) return errorResponse;
-  const { coursId, nom, email, tel } = body;
+  // Lire le body brut une seule fois (request.json() n'est consommable qu'une fois)
+  const rawBody = await request.json().catch(() => null);
+  if (!rawBody) return Response.json({ error: 'JSON invalide' }, { status: 400 });
+
+  // ── Anti-bot : honeypot + rate limit + Turnstile (si configuré) ──
+  const antibotCheck = await checkAntiBot(request, {
+    honeypot: rawBody.website,
+    turnstileToken: rawBody.turnstileToken,
+  });
+  if (!antibotCheck.ok) {
+    console.warn('[reserver] antibot rejected:', antibotCheck.code, 'ip=', ipFromRequest(request));
+    return Response.json({ error: antibotCheck.reason }, { status: antibotCheck.code === 'RATE_LIMITED' ? 429 : 400 });
+  }
+
+  // Validation zod (Zod strip les champs inconnus comme website/turnstileToken)
+  const parsed = reservationSchema.safeParse(rawBody);
+  if (!parsed.success) {
+    const issues = parsed.error.issues.map(i => ({ path: i.path.join('.'), message: i.message }));
+    return Response.json({ error: 'Données invalides', issues }, { status: 400 });
+  }
+  const { coursId, nom, email, tel } = parsed.data;
 
   // Détecter si la requête vient d'un user déjà authentifié
   const supabaseSession = await createServerClient();
@@ -100,19 +119,21 @@ export async function POST(request, { params }) {
   }
 
   // Créer la présence (inscrit, pas encore pointé)
+  // Schéma : pointee BOOLEAN (default false), statut_pointage TEXT (default 'inscrit')
+  // Les colonnes `present` et `source` n'existent pas — bug pré-existant qui faisait
+  // échouer silencieusement TOUTE réservation portail.
   const { error: presenceErr } = await supabaseAdmin
     .from('presences')
     .insert({
       cours_id: coursId,
       client_id: clientId,
       profile_id: profile.id,
-      present: false,
-      source: 'portail',
+      // pointee + statut_pointage prennent leurs defaults ('false' + 'inscrit')
     });
 
   if (presenceErr) {
     console.error('create presence error:', presenceErr);
-    return Response.json({ error: 'Erreur lors de la réservation' }, { status: 500 });
+    return Response.json({ error: 'Erreur lors de la réservation : ' + presenceErr.message }, { status: 500 });
   }
 
   // Si l'utilisateur n'est pas authentifié, générer un magic link pour qu'il accède

@@ -11,9 +11,11 @@ import {
 import { createClient } from '@/lib/supabase';
 import { useToast } from '@/components/ui/ToastProvider';
 import { METIERS } from '@/lib/constantes';
-import BackgroundDecor, { ILLUSTRATION_OPTIONS } from '@/components/background/BackgroundDecor';
+// import BackgroundDecor — retiré, plus utilisé (apparences supprimées)
 import ReglesTab from './ReglesTab';
 import PhotoUploader from '@/components/ui/PhotoUploader';
+import UnsavedChangesBar from '@/components/ui/UnsavedChangesBar';
+import UnsavedChangesGuard from '@/components/ui/UnsavedChangesGuard';
 
 const PALETTES = [
   { id: 'rose', label: 'Rose', color: '#d4a0a0' },
@@ -39,8 +41,9 @@ const ANNIV_MODES = [
   { id: 'auto',   label: 'Automatique',desc: 'Envoi automatique sans confirmation' },
 ];
 
+// Sous-onglets Réglages — Apparences retiré (palette + décor imposés brand
+// pour cohérence visuelle de toute l'app, plus de personnalisation pro).
 const REGLAGES_SUBTABS = [
-  { id: 'apparences', label: 'Apparences', icon: Eye },
   { id: 'general', label: 'Général', icon: Settings },
 ];
 
@@ -921,6 +924,253 @@ function StripePaiementSection({ profile, setProfile, setDirty }) {
   );
 }
 
+// ════════════════════════════════════════════════════════════════════════════
+// Section "Cours d'essai" — pour les visiteurs non encore clients
+// ════════════════════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════════════════════
+// Section "Visibilité par défaut des cours" — pour le portail public
+// ════════════════════════════════════════════════════════════════════════════
+function VisibiliteSection({ profile, setProfile, setDirty }) {
+  const current = profile?.visibilite_default || 'public';
+  const set = (val) => {
+    setProfile(prev => ({ ...prev, visibilite_default: val }));
+    setDirty(true);
+  };
+
+  const options = [
+    { value: 'public',   label: 'Tout le monde',          desc: 'Visible par tous les visiteurs (default).' },
+    { value: 'inscrits', label: 'Élèves inscrits',         desc: 'Seulement ceux qui ont déjà une fiche dans ton studio.' },
+    { value: 'abonnes',  label: 'Détenteurs d\'abonnement', desc: 'Seulement avec un abonnement actif (carnet, mensuel...).' },
+    { value: 'fideles',  label: 'Élèves fidèles',          desc: 'Seulement ceux marqués \'Fidèle\' dans ta CRM.' },
+  ];
+
+  return (
+    <div className="section izi-card">
+      <div className="section-top">
+        <div className="section-icon"><Eye size={20} /></div>
+        <h2>Visibilité des cours</h2>
+      </div>
+      <p className="section-desc">
+        Détermine qui peut voir tes cours sur ton portail public. Ce paramètre s'applique
+        à tous les <strong>nouveaux cours</strong> créés. Tu peux ensuite override la visibilité
+        cours par cours depuis sa fiche.
+      </p>
+
+      <div className="vis-radio-group">
+        {options.map(opt => (
+          <label key={opt.value} className={`vis-radio-opt ${current === opt.value ? 'active' : ''}`}>
+            <input
+              type="radio"
+              name="visibilite_default"
+              value={opt.value}
+              checked={current === opt.value}
+              onChange={() => set(opt.value)}
+            />
+            <div>
+              <div className="vis-radio-label">{opt.label}</div>
+              <div className="vis-radio-desc">{opt.desc}</div>
+            </div>
+          </label>
+        ))}
+      </div>
+
+      <style jsx>{`
+        .vis-radio-group { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+        .vis-radio-opt {
+          display: flex; align-items: flex-start; gap: 10px;
+          padding: 10px 12px; border: 1.5px solid var(--border);
+          border-radius: 10px; cursor: pointer; transition: all 0.15s;
+        }
+        .vis-radio-opt.active { border-color: var(--brand); background: var(--brand-light); }
+        .vis-radio-opt input { margin-top: 4px; accent-color: var(--brand); }
+        .vis-radio-label { font-size: 0.875rem; font-weight: 600; color: var(--text-primary); }
+        .vis-radio-desc { font-size: 0.75rem; color: var(--text-secondary); margin-top: 2px; line-height: 1.4; }
+      `}</style>
+    </div>
+  );
+}
+
+function CoursEssaiSection({ profile, setProfile, setDirty }) {
+  const set = (field) => (val) => {
+    setProfile(prev => ({ ...prev, [field]: val }));
+    setDirty(true);
+  };
+  const actif = profile?.essai_actif === true;
+  const mode  = profile?.essai_mode || 'manuel';
+  const paiement = profile?.essai_paiement || 'gratuit';
+
+  return (
+    <div className="section izi-card">
+      <div className="section-top">
+        <div className="section-icon"><Zap size={20} /></div>
+        <h2>Cours d'essai</h2>
+      </div>
+      <p className="section-desc">
+        Permets aux visiteurs de demander un cours d'essai depuis ta page publique.
+        Idéal pour tester ton activité avant de s'inscrire.
+      </p>
+
+      {/* Toggle actif */}
+      <div className="essai-toggle-row" onClick={() => set('essai_actif')(!actif)}>
+        <div>
+          <div className="essai-toggle-label">{actif ? 'Activé' : 'Désactivé'}</div>
+          <div className="essai-toggle-sub">
+            {actif
+              ? 'Le bouton "Cours d\'essai" est visible sur ton portail public.'
+              : 'Aucun bouton de demande d\'essai sur ton portail public.'}
+          </div>
+        </div>
+        <div className={`essai-switch ${actif ? 'on' : ''}`}>
+          <div className="essai-switch-knob" />
+        </div>
+      </div>
+
+      {actif && (
+        <div className="essai-config">
+          {/* Mode de validation */}
+          <div className="form-group">
+            <label className="form-label">Mode de validation</label>
+            <div className="essai-radio-group">
+              {[
+                { val: 'auto',   label: 'Automatique',   desc: 'La demande est validée immédiatement, sans intervention de ta part.' },
+                { val: 'semi',   label: 'Semi-automatique', desc: 'Validée immédiatement, tu reçois juste un email de notification.' },
+                { val: 'manuel', label: 'Manuel',         desc: 'Tu reçois la demande, tu la valides ou la refuses depuis l\'app.' },
+              ].map(opt => (
+                <label key={opt.val} className={`essai-radio-opt ${mode === opt.val ? 'active' : ''}`}>
+                  <input
+                    type="radio"
+                    name="essai_mode"
+                    value={opt.val}
+                    checked={mode === opt.val}
+                    onChange={() => set('essai_mode')(opt.val)}
+                  />
+                  <div>
+                    <div className="essai-radio-label">{opt.label}</div>
+                    <div className="essai-radio-desc">{opt.desc}</div>
+                  </div>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Paiement */}
+          <div className="form-group">
+            <label className="form-label">Paiement</label>
+            <div className="essai-radio-group">
+              {[
+                { val: 'gratuit',  label: 'Gratuit',         desc: 'Le cours d\'essai est offert.' },
+                { val: 'sur_place', label: 'Payant sur place', desc: 'Le visiteur règle le jour du cours, en espèces / CB / chèque.' },
+                { val: 'stripe',   label: 'Paiement Stripe',  desc: 'Le visiteur règle en ligne via un Stripe Payment Link.' },
+              ].map(opt => (
+                <label key={opt.val} className={`essai-radio-opt ${paiement === opt.val ? 'active' : ''}`}>
+                  <input
+                    type="radio"
+                    name="essai_paiement"
+                    value={opt.val}
+                    checked={paiement === opt.val}
+                    onChange={() => set('essai_paiement')(opt.val)}
+                  />
+                  <div>
+                    <div className="essai-radio-label">{opt.label}</div>
+                    <div className="essai-radio-desc">{opt.desc}</div>
+                  </div>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Prix (sauf si gratuit) */}
+          {paiement !== 'gratuit' && (
+            <div className="form-group">
+              <label className="form-label">Prix du cours d'essai (€)</label>
+              <input
+                type="number"
+                step="0.5"
+                min="0"
+                className="izi-input"
+                value={profile?.essai_prix || ''}
+                onChange={e => set('essai_prix')(parseFloat(e.target.value) || 0)}
+                placeholder="ex : 10"
+              />
+            </div>
+          )}
+
+          {/* Stripe Payment Link */}
+          {paiement === 'stripe' && (
+            <div className="form-group">
+              <label className="form-label">Lien de paiement Stripe</label>
+              <input
+                type="url"
+                className="izi-input"
+                value={profile?.essai_stripe_payment_link || ''}
+                onChange={e => set('essai_stripe_payment_link')(e.target.value)}
+                placeholder="https://buy.stripe.com/..."
+              />
+              <span className="form-hint">
+                Crée un Payment Link dans ton dashboard Stripe (Produits → Payment links) et colle l'URL ici.
+              </span>
+            </div>
+          )}
+
+          {/* Message d'accueil */}
+          <div className="form-group">
+            <label className="form-label">Message d'accueil (optionnel)</label>
+            <textarea
+              className="izi-input"
+              rows={3}
+              maxLength={500}
+              value={profile?.essai_message || ''}
+              onChange={e => set('essai_message')(e.target.value)}
+              placeholder="Bienvenue ! Je serais ravi·e de t'accueillir pour un cours d'essai."
+            />
+            <span className="form-hint">{(profile?.essai_message || '').length}/500</span>
+          </div>
+        </div>
+      )}
+
+      <style jsx>{`
+        .essai-toggle-row {
+          display: flex; align-items: center; justify-content: space-between;
+          gap: 12px; padding: 14px; cursor: pointer;
+          background: var(--bg-soft, #faf8f5); border-radius: 12px;
+          margin-top: 4px;
+        }
+        .essai-toggle-label { font-weight: 700; color: var(--text-primary); font-size: 0.9375rem; }
+        .essai-toggle-sub   { font-size: 0.8125rem; color: var(--text-muted); margin-top: 2px; }
+        .essai-switch {
+          width: 42px; height: 24px; flex-shrink: 0;
+          background: #ccc; border-radius: 999px;
+          position: relative; transition: background .2s;
+        }
+        .essai-switch.on { background: var(--brand); }
+        .essai-switch-knob {
+          position: absolute; top: 2px; left: 2px;
+          width: 20px; height: 20px;
+          background: white; border-radius: 50%;
+          transition: transform .2s;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+        }
+        .essai-switch.on .essai-switch-knob { transform: translateX(18px); }
+        .essai-config {
+          margin-top: 16px; padding-top: 16px;
+          border-top: 1px solid var(--border);
+          display: flex; flex-direction: column; gap: 16px;
+        }
+        .essai-radio-group { display: flex; flex-direction: column; gap: 6px; }
+        .essai-radio-opt {
+          display: flex; align-items: flex-start; gap: 10px;
+          padding: 10px 12px; border: 1.5px solid var(--border);
+          border-radius: 10px; cursor: pointer; transition: all 0.15s;
+        }
+        .essai-radio-opt.active { border-color: var(--brand); background: var(--brand-light); }
+        .essai-radio-opt input { margin-top: 4px; accent-color: var(--brand); }
+        .essai-radio-label { font-size: 0.875rem; font-weight: 600; color: var(--text-primary); }
+        .essai-radio-desc { font-size: 0.75rem; color: var(--text-secondary); margin-top: 2px; line-height: 1.4; }
+      `}</style>
+    </div>
+  );
+}
+
 export default function Parametres() {
   const router = useRouter();
   const { toast } = useToast();
@@ -931,7 +1181,7 @@ export default function Parametres() {
   const [lieux, setLieux] = useState([]);
   const [newLieu, setNewLieu] = useState('');
   const [activeTab, setActiveTab] = useState('profil');
-  const [reglagesSubTab, setReglagesSubTab] = useState('apparences');
+  const [reglagesSubTab, setReglagesSubTab] = useState('general');
   // Sous-onglet notifications
   const [notifSubTab, setNotifSubTab] = useState('general');
   // Notifications générales
@@ -986,17 +1236,31 @@ export default function Parametres() {
     setDirty(true);
   };
 
-  // Avertir si tentative de quitter avec des changements non sauvegardés
-  useEffect(() => {
-    if (!dirty) return undefined;
-    const handler = (e) => {
-      e.preventDefault();
-      e.returnValue = '';
-      return '';
-    };
-    window.addEventListener('beforeunload', handler);
-    return () => window.removeEventListener('beforeunload', handler);
-  }, [dirty]);
+  // Garde des modifs non enregistrées : géré désormais par <UnsavedChangesGuard />
+  // (popstate retour navigateur + beforeunload tab close + modal pretty)
+
+  // Re-charger les données serveur (= annuler les modifs locales)
+  const handleDiscard = async () => {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    const { data: prof } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+    if (prof) {
+      setProfile(prof);
+      // Reset les états notif/anniv qui ne sont pas dans `profile`
+      setNotifNouveauClient(prof.notif_nouveau_client !== false);
+      setNotifPaiementRetard(prof.notif_paiement_retard !== false);
+      setNotifCarnetEpuise(prof.notif_carnet_epuise !== false);
+      setNotifAbonnementExpire(prof.notif_abonnement_expire !== false);
+      setAnnivMode(prof.anniversaire_mode || 'semi');
+      setAnnivMessage(prof.anniversaire_message || '');
+      setAnnivCadeauActif(prof.anniversaire_cadeau_actif || false);
+      setAnnivCadeauOffreId(prof.anniversaire_cadeau_offre_id || '');
+      setAnnivCadeauType(prof.anniversaire_cadeau_type || 'gratuit');
+      setAnnivCadeauRemisePct(prof.anniversaire_cadeau_remise_pct || 20);
+    }
+    setDirty(false);
+    toast.success('Modifications annulées');
+  };
 
   // --- Lieux ---
   const addLieu = async () => {
@@ -1046,10 +1310,8 @@ export default function Parametres() {
       telephone: profile.telephone,
       metier: profile.metier,
       lieu_principal: profile.lieu_principal || null,
-      ui_couleur: profile.ui_couleur,
-      ui_illustration: profile.ui_illustration || 'lotus',
-      ui_grille_active: profile.ui_grille_active !== false,
-      ui_animation_active: profile.ui_animation_active !== false,
+      // ui_couleur / ui_illustration / ui_grille_active / ui_animation_active
+      // ne sont plus modifiables via l'app (palette imposée brand IziSolo).
       alerte_seances_seuil: parseInt(profile.alerte_seances_seuil) || 2,
       alerte_expiration_jours: parseInt(profile.alerte_expiration_jours) || 7,
       anniversaire_mode:            annivMode,
@@ -1081,6 +1343,15 @@ export default function Parametres() {
       instagram_url:           profile.instagram_url || null,
       facebook_url:            profile.facebook_url || null,
       website_url:             profile.website_url || null,
+      // Cours d'essai (v29)
+      essai_actif:                profile.essai_actif === true,
+      essai_mode:                 profile.essai_mode || 'manuel',
+      essai_paiement:             profile.essai_paiement || 'gratuit',
+      essai_prix:                 parseFloat(profile.essai_prix) || 0,
+      essai_stripe_payment_link:  profile.essai_stripe_payment_link || null,
+      essai_message:              profile.essai_message || null,
+      // Visibilité par défaut des cours (v30)
+      visibilite_default:         profile.visibilite_default || 'public',
     }).eq('id', profile.id);
 
     if (!error) {
@@ -1097,10 +1368,15 @@ export default function Parametres() {
 
   return (
     <div className="parametres">
-      <BackgroundDecor
-        illustration={profile.ui_illustration || 'lotus'}
-        grilleActive={profile.ui_grille_active !== false}
-        animationActive={profile.ui_animation_active !== false}
+      {/* Garde-fou : intercepte le bouton retour navigateur + beforeunload */}
+      <UnsavedChangesGuard dirty={dirty} onConfirmLeave={() => setDirty(false)} />
+
+      {/* Barre sticky en bas — Enregistrer / Annuler toujours accessibles */}
+      <UnsavedChangesBar
+        dirty={dirty}
+        saving={saving}
+        onSave={handleSave}
+        onDiscard={handleDiscard}
       />
 
       <div className="page-header animate-fade-in">
@@ -1267,6 +1543,20 @@ export default function Parametres() {
             setDirty={setDirty}
           />
 
+          {/* Visibilité par défaut des cours */}
+          <VisibiliteSection
+            profile={profile}
+            setProfile={setProfile}
+            setDirty={setDirty}
+          />
+
+          {/* Cours d'essai pour visiteurs */}
+          <CoursEssaiSection
+            profile={profile}
+            setProfile={setProfile}
+            setDirty={setDirty}
+          />
+
           <button onClick={handleSave} className="izi-btn izi-btn-primary save-btn" disabled={saving}>
             <Save size={18} /> {saving ? 'Enregistrement...' : 'Enregistrer'}
           </button>
@@ -1296,85 +1586,12 @@ export default function Parametres() {
             })}
           </div>
 
-          {/* === SOUS-ONGLET : APPARENCES === */}
-          {reglagesSubTab === 'apparences' && (
-            <div className="subtab-content animate-fade-in">
-
-              {/* Thème couleur */}
-              <div className="section izi-card">
-                <div className="section-top"><div className="section-icon"><Palette size={20} /></div><h2>Thème couleur</h2></div>
-                <div className="palette-grid">
-                  {PALETTES.map(p => (
-                    <button
-                      key={p.id}
-                      className={`palette-btn ${profile.ui_couleur === p.id ? 'selected' : ''}`}
-                      onClick={() => setProfile(prev => ({ ...prev, ui_couleur: p.id }))}
-                    >
-                      <div className="palette-swatch" style={{ background: p.color }} />
-                      <span className="palette-label">{p.label}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Décor visuel */}
-              <div className="section izi-card">
-                <div className="section-top"><div className="section-icon"><Flower2 size={20} /></div><h2>Décor visuel</h2></div>
-                <p className="section-desc">Personnalise l'ambiance visuelle de ton espace.</p>
-
-                <div className="form-group">
-                  <label className="form-label">Illustration</label>
-                  <div className="decor-options">
-                    {ILLUSTRATION_OPTIONS.map(opt => (
-                      <button
-                        key={opt.value}
-                        type="button"
-                        className={`decor-option ${(profile.ui_illustration || 'lotus') === opt.value ? 'selected' : ''}`}
-                        onClick={() => setProfile(prev => ({ ...prev, ui_illustration: opt.value }))}
-                      >
-                        <span className="decor-emoji">{opt.emoji}</span> {opt.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="toggle-row">
-                  <label className="toggle-label">Grille décorative d'arrière-plan</label>
-                  <button
-                    type="button"
-                    className={`toggle-switch ${(profile.ui_grille_active !== false) ? 'active' : ''}`}
-                    onClick={() => setProfile(prev => ({ ...prev, ui_grille_active: !(prev.ui_grille_active !== false) }))}
-                  >
-                    <span className="toggle-knob" />
-                  </button>
-                </div>
-
-                <div className="toggle-row">
-                  <label className="toggle-label">Animation de l'arrière-plan</label>
-                  <button
-                    type="button"
-                    className={`toggle-switch ${(profile.ui_animation_active !== false) ? 'active' : ''}`}
-                    onClick={() => setProfile(prev => ({ ...prev, ui_animation_active: !(prev.ui_animation_active !== false) }))}
-                  >
-                    <span className="toggle-knob" />
-                  </button>
-                </div>
-
-                {(profile.ui_illustration || 'lotus') !== 'aucun' && (
-                  <div className="illustration-preview">
-                    <img
-                      src={`/illustrations/${profile.ui_illustration || 'lotus'}.jpg`}
-                      alt={ILLUSTRATION_OPTIONS.find(o => o.value === (profile.ui_illustration || 'lotus'))?.label || ''}
-                    />
-                  </div>
-                )}
-              </div>
-
-              <button onClick={handleSave} className="izi-btn izi-btn-primary save-btn" disabled={saving}>
-                <Save size={18} /> {saving ? 'Enregistrement...' : 'Enregistrer'}
-              </button>
-            </div>
-          )}
+          {/* === SOUS-ONGLET APPARENCES retiré ===
+              Palette de couleur + décor visuel + grille/animation d'arrière-plan
+              ne sont plus personnalisables — on impose le brand IziSolo (rose
+              tonal Claude Design) pour assurer la cohérence visuelle. Les colonnes
+              ui_couleur / ui_illustration / ui_grille_active / ui_animation_active
+              restent en DB mais ne sont plus exposées. */}
 
           {/* === SOUS-ONGLET : GÉNÉRAL === */}
           {reglagesSubTab === 'general' && (

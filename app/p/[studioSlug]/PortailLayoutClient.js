@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { User } from 'lucide-react';
+import { User, MessageCircle } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { ToastProvider } from '@/components/ui/ToastProvider';
+import BottomNav from '@/components/portail/BottomNav';
 
 export default function PortailLayoutClient({ studioSlug, children }) {
   return (
@@ -16,6 +17,7 @@ export default function PortailLayoutClient({ studioSlug, children }) {
 
 function PortailLayoutInner({ studioSlug, children }) {
   const [prenom, setPrenom] = useState(null); // null = chargement en cours
+  const [unread, setUnread] = useState(0);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -44,10 +46,27 @@ function PortailLayoutInner({ studioSlug, children }) {
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!session) setPrenom('');
+      if (!session) { setPrenom(''); setUnread(0); }
     });
     return () => subscription.unsubscribe();
   }, [studioSlug]);
+
+  // Polling unread messages count (every 30s) — uniquement si connecté
+  useEffect(() => {
+    if (!prenom) return;
+    let cancelled = false;
+    const fetchUnread = async () => {
+      try {
+        const res = await fetch('/api/messagerie/unread');
+        if (!res.ok) return;
+        const json = await res.json();
+        if (!cancelled) setUnread(json.count || 0);
+      } catch { /* ignore */ }
+    };
+    fetchUnread();
+    const interval = setInterval(fetchUnread, 30000);
+    return () => { cancelled = true; clearInterval(interval); };
+  }, [prenom]);
 
   return (
     <div className="portail-layout">
@@ -56,6 +75,19 @@ function PortailLayoutInner({ studioSlug, children }) {
           🌿 <span className="portail-logo-text">IziSolo</span>
         </Link>
         <div className="portail-header-actions">
+          {prenom && (
+            <Link
+              href={`/p/${studioSlug}/espace/messages`}
+              className="portail-msg-icon"
+              aria-label={unread > 0 ? `Messages (${unread} non lus)` : 'Messages'}
+              title="Mes messages"
+            >
+              <MessageCircle size={18} />
+              {unread > 0 && (
+                <span className="portail-msg-badge">{unread > 9 ? '9+' : unread}</span>
+              )}
+            </Link>
+          )}
           {prenom ? (
             <Link href={`/p/${studioSlug}/espace`} className="portail-espace-btn portail-espace-btn--connected">
               <User size={13} /> {prenom}
@@ -71,6 +103,11 @@ function PortailLayoutInner({ studioSlug, children }) {
       <main className="portail-main">
         {children}
       </main>
+
+      {/* BottomNav fixe (élève connecté, mobile uniquement) */}
+      {prenom && (
+        <BottomNav studioSlug={studioSlug} unread={unread} />
+      )}
 
       <footer className="portail-footer">
         <span>Propulsé par <a href="https://izisolo.fr" target="_blank" rel="noopener noreferrer">IziSolo</a></span>
@@ -103,7 +140,28 @@ function PortailLayoutInner({ studioSlug, children }) {
           border: 1.5px solid #d4a0a0;
         }
         .portail-espace-btn--connected:hover { background: #fce8e8; }
+        .portail-header-actions { display: flex; align-items: center; gap: 8px; }
+        .portail-msg-icon {
+          position: relative;
+          display: inline-flex; align-items: center; justify-content: center;
+          width: 36px; height: 36px; border-radius: 50%;
+          color: #666; background: white; border: 1px solid #e8e0db;
+          text-decoration: none; transition: all 0.15s;
+        }
+        .portail-msg-icon:hover { color: #d4a0a0; border-color: #d4a0a0; }
+        .portail-msg-badge {
+          position: absolute; top: -3px; right: -3px;
+          min-width: 16px; height: 16px; padding: 0 4px;
+          background: #dc2626; color: white;
+          border-radius: 99px; border: 2px solid white;
+          font-size: 0.625rem; font-weight: 700; line-height: 1;
+          display: inline-flex; align-items: center; justify-content: center;
+        }
         .portail-main { flex: 1; max-width: 680px; margin: 0 auto; width: 100%; padding: 24px 16px 48px; }
+        /* Mobile : padding-bottom pour ne pas masquer le contenu sous le BottomNav (~90px) */
+        @media (max-width: 768px) {
+          .portail-main { padding-bottom: 110px; }
+        }
         .portail-footer {
           text-align: center; padding: 20px; border-top: 1px solid #f0ebe8;
           background: white; font-size: 0.8125rem; color: #888; display: flex;

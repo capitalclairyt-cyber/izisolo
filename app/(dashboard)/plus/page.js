@@ -4,7 +4,7 @@ import Link from 'next/link';
 import {
   Package, BarChart3, BookOpen, Calendar, Mail,
   Sparkles, Settings, LogOut, ChevronRight, User,
-  CreditCard, Users2, ClipboardList
+  CreditCard, Users2, ClipboardList, MessageSquare
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase';
@@ -22,9 +22,9 @@ const MENU_SECTIONS = [
   {
     title: 'Communication',
     items: [
-      { href: '/mailing', label: 'Mailing', icon: Mail, desc: 'Emails à tes élèves' },
-      { href: '/sondages', label: 'Planning idéal', icon: ClipboardList, desc: 'Sonde tes élèves pour découvrir tes meilleurs créneaux' },
-      { href: '/assistant', label: 'Assistant IA', icon: Sparkles, desc: 'Aide intelligente' },
+      { href: '/messagerie', label: 'Messagerie', icon: MessageSquare, desc: 'Messages privés et annonces groupées' },
+      { href: '/sondages', label: 'Sondage planning', icon: ClipboardList, desc: 'Sonde tes élèves pour découvrir tes meilleurs créneaux' },
+      // { href: '/assistant', label: 'Assistant IA', icon: Sparkles, desc: 'Aide intelligente' }, // désactivé
     ],
   },
   {

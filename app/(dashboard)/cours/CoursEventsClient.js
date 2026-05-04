@@ -12,6 +12,7 @@ import { formatHeure } from '@/lib/utils';
 import { normalizeTypesCours } from '@/lib/utils';
 import { parseDate } from '@/lib/dates';
 import { useToast } from '@/components/ui/ToastProvider';
+import { toneForCours } from '@/lib/tones';
 
 // ── Libellés fréquence ──────────────────────────────
 const FREQ_LABELS = {
@@ -579,14 +580,14 @@ function SerieCard({ serie, stats, lieuxMap }) {
   const lieuNom = serie.lieu_id ? lieuxMap[serie.lieu_id] : null;
 
   return (
-    <div className="ce-card izi-card">
+    <div className={`ce-card izi-card ce-card--${toneForCours(serie.type_cours)}`}>
       <div className="ce-card-bar recurrent" />
       <Link href={href} className="ce-card-body">
         <div className="ce-card-top">
           <div className="ce-card-title-row">
             <span className="ce-card-nom">{serie.nom}</span>
             {serie.type_cours && (
-              <span className="izi-badge izi-badge-brand">{serie.type_cours}</span>
+              <span className={`izi-badge tone-${toneForCours(serie.type_cours)}-bg`}>{serie.type_cours}</span>
             )}
           </div>
           <div className="ce-card-meta-row">
@@ -649,14 +650,14 @@ function PonctuelCard({ cours: c, lieuxMap }) {
   const nbInscrits = c.presences?.[0]?.count || 0;
 
   return (
-    <div className="ce-card izi-card">
+    <div className={`ce-card izi-card ce-card--${toneForCours(c.type_cours)}`}>
       <div className="ce-card-bar ponctuel" />
       <Link href={`/cours/${c.id}`} className="ce-card-body">
         <div className="ce-card-top">
           <div className="ce-card-title-row">
             <span className="ce-card-nom">{c.nom}</span>
             {c.type_cours && (
-              <span className="izi-badge izi-badge-brand">{c.type_cours}</span>
+              <span className={`izi-badge tone-${toneForCours(c.type_cours)}-bg`}>{c.type_cours}</span>
             )}
           </div>
           <div className="ce-card-meta-row">
@@ -856,7 +857,7 @@ function CeStyles() {
       .move-dialog-cat-btn {
         display: flex; align-items: center; gap: 8px;
         padding: 10px 12px; border: 1px solid var(--border);
-        border-radius: var(--radius-sm); background: var(--bg-soft, #f8f9fa);
+        border-radius: var(--radius-sm); background: var(--bg, #f8f9fa);
         color: var(--text-primary); font-size: 0.875rem; font-weight: 500;
         cursor: pointer; text-align: left; transition: all 0.15s;
       }
@@ -940,9 +941,21 @@ function CeStyles() {
       /* ── Cartes ── */
       .ce-card { display: flex; overflow: hidden; transition: box-shadow 0.15s, transform 0.15s; }
       .ce-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.08); transform: translateY(-1px); }
-      .ce-card-bar { width: 4px; flex-shrink: 0; }
+      .ce-card-bar { width: 6px; flex-shrink: 0; }
       .ce-card-bar.recurrent { background: var(--brand); }
       .ce-card-bar.ponctuel  { background: var(--sage, #8fae8b); }
+
+      /* Tons par type de cours — fond soft + bord coloré (override des color bars par défaut) */
+      .ce-card--rose     { background: var(--tone-rose-bg); }
+      .ce-card--sage     { background: var(--tone-sage-bg); }
+      .ce-card--sand     { background: var(--tone-sand-bg); }
+      .ce-card--lavender { background: var(--tone-lavender-bg); }
+      .ce-card--ink      { background: var(--tone-ink-bg); }
+      .ce-card--rose     .ce-card-bar { background: var(--tone-rose-accent); }
+      .ce-card--sage     .ce-card-bar { background: var(--tone-sage-accent); }
+      .ce-card--sand     .ce-card-bar { background: var(--tone-sand-accent); }
+      .ce-card--lavender .ce-card-bar { background: var(--tone-lavender-accent); }
+      .ce-card--ink      .ce-card-bar { background: var(--tone-ink-bg); }
 
       .ce-card-body { flex: 1; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; min-width: 0; text-decoration: none; color: inherit; }
       .ce-card-top { display: flex; flex-direction: column; gap: 6px; }

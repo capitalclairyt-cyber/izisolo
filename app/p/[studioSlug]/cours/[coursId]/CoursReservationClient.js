@@ -124,6 +124,7 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
   const [nom, setNom]       = useState(currentUser?.nom || '');
   const [email, setEmail]   = useState(currentUser?.email || '');
   const [tel, setTel]       = useState(currentUser?.tel || '');
+  const [website, setWebsite] = useState(''); // honeypot — DOIT rester vide
   const [loading, setLoading] = useState(false);
   const [done, setDone]     = useState(false);
   const [magicLinkSent, setMagicLinkSent] = useState(false);
@@ -132,8 +133,18 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
 
   const places = cours.capacite_max ? cours.capacite_max - nbInscrits : null;
   const complet = places !== null && places <= 0;
-  const today = new Date().toISOString().slice(0, 10);
-  const passe = cours.date < today;
+  // "Passé" = date avant aujourd'hui, OU date = aujourd'hui mais heure déjà dépassée
+  const now = new Date();
+  const today = now.toISOString().slice(0, 10);
+  let passe = false;
+  if (cours.date < today) {
+    passe = true;
+  } else if (cours.date === today && cours.heure) {
+    const [hh, mm] = cours.heure.split(':').map(Number);
+    const coursDateTime = new Date(now);
+    coursDateTime.setHours(hh, mm, 0, 0);
+    if (coursDateTime <= now) passe = true;
+  }
   const annule = !!cours.est_annule;
 
   const handleReserver = async (e) => {
@@ -145,7 +156,16 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
       const res = await fetch(`/api/portail/${studioSlug}/reserver`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ coursId: cours.id, nom: nom.trim(), email: email.trim(), tel: tel.trim() }),
+        body: JSON.stringify({
+          coursId: cours.id,
+          nom: nom.trim(),
+          email: email.trim(),
+          tel: tel.trim(),
+          website,           // honeypot
+          turnstileToken: typeof window !== 'undefined'
+            ? document.querySelector('[name="cf-turnstile-response"]')?.value
+            : undefined,
+        }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Erreur lors de la réservation');
@@ -222,7 +242,7 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
         )}
         <div className="resa-details">
           <div className="resa-detail-row"><Calendar size={15} /><span>{formatDate(cours.date)}</span></div>
-          <div className="resa-detail-row"><Clock size={15} /><span>{formatHeure(cours.heure)}{cours.duree ? ` · ${cours.duree} min` : ''}</span></div>
+          <div className="resa-detail-row"><Clock size={15} /><span>{formatHeure(cours.heure)}{cours.duree_minutes ? ` · ${cours.duree_minutes} min` : ''}</span></div>
           {cours.lieu && <div className="resa-detail-row"><MapPin size={15} /><span>{cours.lieu}</span></div>}
           {cours.capacite_max && (
             <div className="resa-detail-row">
@@ -243,6 +263,27 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
           <p style={{ marginTop: '14px', fontSize: '0.9375rem', color: '#555', lineHeight: 1.6 }}>{cours.description}</p>
         )}
       </div>
+
+      {/* Bandeau "Premier cours en essai" — visible si essai_actif et visiteur non connecté */}
+      {profile.essai_actif && !isConnected && !passe && !complet && !annule && (
+        <Link
+          href={`/p/${studioSlug}/essai?cours=${cours.id}`}
+          className="resa-essai-banner"
+        >
+          <div className="resa-essai-icon">✨</div>
+          <div className="resa-essai-body">
+            <div className="resa-essai-title">
+              {profile.essai_paiement === 'gratuit'
+                ? 'Premier cours offert'
+                : `Premier cours d'essai · ${profile.essai_prix}€`}
+            </div>
+            <div className="resa-essai-sub">
+              Tu n'es pas encore client·e ? Profite d'un cours d'essai pour découvrir le studio.
+            </div>
+          </div>
+          <span className="resa-essai-cta">Réserver en essai →</span>
+        </Link>
+      )}
 
       {/* Politique d'annulation — délai lu depuis profile.regles_annulation */}
       {!passe && !complet && !annule && (() => {
@@ -312,58 +353,93 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
           )}
 
           <form onSubmit={handleReserver}>
-            <div className="portail-field">
-              <label className="portail-label" htmlFor="resa-nom">Prénom et nom *</label>
-              <input
-                id="resa-nom"
-                type="text"
-                className={`portail-input${isConnected && nom ? ' portail-input--readonly' : ''}`}
-                value={nom}
-                onChange={isConnected ? undefined : e => setNom(e.target.value)}
-                readOnly={isConnected && !!nom}
-                placeholder="Marie Dupont"
-                required
-                autoComplete="name"
-              />
-            </div>
-            <div className="portail-field">
-              <label className="portail-label" htmlFor="resa-email">Email *</label>
-              <input
-                id="resa-email"
-                type="email"
-                className={`portail-input${isConnected ? ' portail-input--readonly' : ''}`}
-                value={email}
-                onChange={isConnected ? undefined : e => setEmail(e.target.value)}
-                readOnly={isConnected}
-                placeholder="marie@exemple.fr"
-                required
-                autoComplete="email"
-              />
-              {!isConnected && (
-                <p style={{ fontSize: '0.75rem', color: '#aaa', margin: '6px 0 0' }}>
-                  On t'enverra un lien pour accéder à ton espace et gérer tes réservations.
-                </p>
-              )}
-            </div>
-            {!isConnected && (
-              <div className="portail-field">
-                <label className="portail-label" htmlFor="resa-tel">Téléphone <span style={{ color: '#aaa', fontWeight: 400 }}>(optionnel)</span></label>
-                <input
-                  id="resa-tel"
-                  type="tel"
-                  className="portail-input"
-                  value={tel}
-                  onChange={e => setTel(e.target.value)}
-                  placeholder="06 12 34 56 78"
-                  autoComplete="tel"
-                />
+            {/* Quand connecté avec un client identifié, on n'affiche pas de form
+                — juste un récap et un bouton. */}
+            {isConnected && nom ? (
+              <div style={{ background: '#faf8f5', border: '1px solid #eee', borderRadius: 12, padding: '12px 14px', marginBottom: 14, fontSize: '0.875rem', color: '#555' }}>
+                Tu réserves au nom de <strong>{nom}</strong> ({email}).
               </div>
+            ) : (
+              <>
+                <div className="portail-field">
+                  <label className="portail-label" htmlFor="resa-nom">Prénom et nom *</label>
+                  <input
+                    id="resa-nom"
+                    type="text"
+                    className="portail-input"
+                    value={nom}
+                    onChange={e => setNom(e.target.value)}
+                    placeholder="Marie Dupont"
+                    required
+                    autoComplete="name"
+                  />
+                </div>
+                <div className="portail-field">
+                  <label className="portail-label" htmlFor="resa-email">Email *</label>
+                  <input
+                    id="resa-email"
+                    type="email"
+                    className={`portail-input${isConnected ? ' portail-input--readonly' : ''}`}
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    readOnly={isConnected}
+                    placeholder="marie@exemple.fr"
+                    required
+                    autoComplete="email"
+                  />
+                  {!isConnected && (
+                    <p style={{ fontSize: '0.75rem', color: '#aaa', margin: '6px 0 0' }}>
+                      On t'enverra un lien pour accéder à ton espace et gérer tes réservations.
+                    </p>
+                  )}
+                </div>
+                {!isConnected && (
+                  <div className="portail-field">
+                    <label className="portail-label" htmlFor="resa-tel">Téléphone <span style={{ color: '#aaa', fontWeight: 400 }}>(optionnel)</span></label>
+                    <input
+                      id="resa-tel"
+                      type="tel"
+                      className="portail-input"
+                      value={tel}
+                      onChange={e => setTel(e.target.value)}
+                      placeholder="06 12 34 56 78"
+                      autoComplete="tel"
+                    />
+                  </div>
+                )}
+              </>
             )}
 
             {error && (
               <div style={{ background: '#fff0f0', border: '1px solid #ffcdd2', borderRadius: '8px', padding: '10px 14px', color: '#c62828', fontSize: '0.875rem', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <AlertCircle size={15} /> {error}
               </div>
+            )}
+
+            {/* Honeypot anti-bot — caché aux humains */}
+            <input
+              type="text"
+              name="website"
+              tabIndex={-1}
+              autoComplete="off"
+              value={website}
+              onChange={e => setWebsite(e.target.value)}
+              aria-hidden="true"
+              style={{ position: 'absolute', left: -9999, width: 1, height: 1, opacity: 0, pointerEvents: 'none' }}
+            />
+
+            {/* Cloudflare Turnstile (actif uniquement si NEXT_PUBLIC_TURNSTILE_SITE_KEY défini) */}
+            {process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && (
+              <>
+                <div
+                  className="cf-turnstile"
+                  data-sitekey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY}
+                  data-theme="light"
+                  data-size="flexible"
+                  style={{ marginBottom: 12 }}
+                />
+                <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer />
+              </>
             )}
 
             <button
@@ -388,6 +464,42 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
         .resa-detail-row { display: flex; align-items: center; gap: 8px; font-size: 0.9375rem; color: #555; }
         .resa-detail-row svg { color: #d4a0a0; flex-shrink: 0; }
         .portail-input--readonly { background: #faf8f5; color: #888; cursor: default; border-color: #eee; }
+        .resa-essai-banner {
+          display: flex; align-items: center; gap: 12px;
+          padding: 14px 16px; margin-bottom: 14px;
+          background: linear-gradient(135deg, var(--tone-rose-bg-soft, #fdf6f4), white);
+          border: 1.5px solid var(--tone-rose-accent, #c47070);
+          border-radius: 14px;
+          text-decoration: none; color: inherit;
+          transition: transform 0.15s, box-shadow 0.15s;
+        }
+        .resa-essai-banner:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 4px 14px rgba(196, 112, 112, 0.16);
+        }
+        .resa-essai-icon {
+          width: 40px; height: 40px; flex-shrink: 0;
+          font-size: 1.3rem;
+          background: white; border: 1.5px solid var(--tone-rose-accent, #c47070);
+          border-radius: 50%;
+          display: flex; align-items: center; justify-content: center;
+        }
+        .resa-essai-body { flex: 1; min-width: 0; }
+        .resa-essai-title {
+          font-weight: 700; font-size: 0.9375rem;
+          color: var(--tone-rose-ink, #8b3838);
+        }
+        .resa-essai-sub { font-size: 0.8125rem; color: #888; margin-top: 2px; }
+        .resa-essai-cta {
+          font-size: 0.8125rem; font-weight: 700;
+          color: var(--tone-rose-ink, #8b3838);
+          flex-shrink: 0;
+          white-space: nowrap;
+        }
+        @media (max-width: 480px) {
+          .resa-essai-cta { display: none; }
+        }
+
         .resa-policy {
           display: flex; gap: 10px; align-items: flex-start;
           background: #fffaf0; border: 1px solid #ffe0b2; border-radius: 12px;
