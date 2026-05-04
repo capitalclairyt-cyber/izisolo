@@ -9,7 +9,7 @@ export default async function ClientsPage() {
     { data: profile },
     { data: clients },
   ] = await Promise.all([
-    supabase.from('profiles').select('metier, vocabulaire, niveaux, sources').eq('id', user.id).single(),
+    supabase.from('profiles').select('metier, vocabulaire, niveaux, sources, studio_slug, studio_nom, prenom').eq('id', user.id).single(),
     supabase.from('clients').select('*, abonnements(id, type, offre_nom, seances_total, seances_utilisees, statut, date_fin)')
       .eq('profile_id', user.id)
       .order('updated_at', { ascending: false }),

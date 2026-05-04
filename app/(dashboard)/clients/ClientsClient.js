@@ -2,15 +2,17 @@
 
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
-import { Search, Plus, User, Building2, Phone, Mail, ChevronRight, Filter } from 'lucide-react';
+import { Search, Plus, User, Building2, Phone, Mail, ChevronRight, Filter, Send } from 'lucide-react';
 import { getVocabulaire } from '@/lib/vocabulaire';
 import { STATUTS_CLIENT } from '@/lib/constantes';
 import { toneForClient } from '@/lib/tones';
+import InviteModal from './InviteModal';
 
 export default function ClientsClient({ clients, profile }) {
   const vocab = getVocabulaire(profile?.metier || 'yoga', profile?.vocabulaire);
   const [search, setSearch] = useState('');
   const [filtreStatut, setFiltreStatut] = useState('tous');
+  const [inviteOpen, setInviteOpen] = useState(false);
 
   const [filtreType, setFiltreType] = useState('tous'); // 'tous' | 'particulier' | 'pro'
 
@@ -66,7 +68,22 @@ export default function ClientsClient({ clients, profile }) {
       <div className="page-header animate-fade-in">
         <h1>{vocab.Clients || 'Élèves'}</h1>
         <span className="count-badge">{clients.length}</span>
+        <button
+          className="izi-btn izi-btn-secondary invite-btn"
+          onClick={() => setInviteOpen(true)}
+          type="button"
+          title="Inviter une élève à créer son compte"
+        >
+          <Send size={15} /> <span className="invite-btn-label">Inviter</span>
+        </button>
       </div>
+
+      <InviteModal
+        open={inviteOpen}
+        onClose={() => setInviteOpen(false)}
+        profile={profile}
+        clients={clients}
+      />
 
       {/* Recherche sticky */}
       <div className="search-bar animate-slide-up">
@@ -192,6 +209,16 @@ export default function ClientsClient({ clients, profile }) {
           border-radius: var(--radius-full);
           font-size: 0.8125rem;
           font-weight: 600;
+        }
+        .invite-btn {
+          margin-left: auto;
+          padding: 6px 12px;
+          font-size: 0.8125rem;
+          gap: 6px;
+        }
+        @media (max-width: 480px) {
+          .invite-btn-label { display: none; }
+          .invite-btn { padding: 6px 10px; }
         }
 
         .search-bar {
