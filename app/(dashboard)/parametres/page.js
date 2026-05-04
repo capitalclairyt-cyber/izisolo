@@ -12,6 +12,18 @@ import { createClient } from '@/lib/supabase';
 import { useToast } from '@/components/ui/ToastProvider';
 import { METIERS } from '@/lib/constantes';
 // import BackgroundDecor — retiré, plus utilisé (apparences supprimées)
+
+// Normalise une URL utilisateur :
+//   - vide / null / espaces → null (pour respecter la CHECK constraint NULL OK)
+//   - sans protocole "https://" ou "http://" → on préfixe avec "https://"
+// Évite l'erreur DB : profiles_website_url_format / instagram / facebook
+function normalizeUrl(value) {
+  if (!value) return null;
+  const trimmed = String(value).trim();
+  if (!trimmed) return null;
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  return 'https://' + trimmed;
+}
 import ReglesTab from './ReglesTab';
 import PhotoUploader from '@/components/ui/PhotoUploader';
 import UnsavedChangesBar from '@/components/ui/UnsavedChangesBar';
@@ -1340,9 +1352,11 @@ export default function Parametres() {
       horaires_studio:         profile.horaires_studio || null,
       afficher_tarifs:         profile.afficher_tarifs === true,
       faq_publique:            profile.faq_publique || [],
-      instagram_url:           profile.instagram_url || null,
-      facebook_url:            profile.facebook_url || null,
-      website_url:             profile.website_url || null,
+      // URLs : normaliser pour respecter la contrainte CHECK (must start with http(s)://)
+      // Si vide → null, sinon préfixer https:// si absent
+      instagram_url:           normalizeUrl(profile.instagram_url),
+      facebook_url:            normalizeUrl(profile.facebook_url),
+      website_url:             normalizeUrl(profile.website_url),
       // Cours d'essai (v29)
       essai_actif:                profile.essai_actif === true,
       essai_mode:                 profile.essai_mode || 'manuel',
