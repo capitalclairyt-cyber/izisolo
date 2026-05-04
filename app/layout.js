@@ -2,6 +2,7 @@ import './globals.css';
 import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { Instrument_Serif, Fraunces, Geist, Geist_Mono } from 'next/font/google';
+import AuthFragmentCatcher from '@/components/auth/AuthFragmentCatcher';
 
 const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://izisolo.fr';
 
@@ -84,6 +85,7 @@ export default function RootLayout({ children }) {
         <meta name="apple-mobile-web-app-capable" content="yes" />
       </head>
       <body>
+        <AuthFragmentCatcher />
         {children}
         <Analytics />
         <SpeedInsights />
