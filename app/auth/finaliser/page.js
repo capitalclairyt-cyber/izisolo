@@ -18,12 +18,40 @@
  * callback). Cette page reste utile en filet de sécurité.
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { Sparkles, Loader2, AlertCircle } from 'lucide-react';
 
-export default function FinaliserAuthPage() {
+// Next.js 16 : useSearchParams() force le bailout CSR et exige un <Suspense>
+// boundary parent, sinon le build de prerendering échoue. On force aussi
+// dynamic pour cette page : elle ne doit JAMAIS être servie depuis le cache
+// (chaque visite a un fragment / next param différent).
+export const dynamic = 'force-dynamic';
+
+export default function FinaliserAuthPageWrapper() {
+  return (
+    <Suspense fallback={<FinaliserLoading />}>
+      <FinaliserAuthPage />
+    </Suspense>
+  );
+}
+
+function FinaliserLoading() {
+  return (
+    <div className="finaliser-container">
+      <div className="finaliser-card">
+        <div className="finaliser-icon"><Sparkles size={28} /></div>
+        <h1 className="finaliser-title">Connexion en cours…</h1>
+        <p className="finaliser-text">On finalise ton authentification, un instant.</p>
+        <div className="finaliser-loader"><Loader2 size={20} className="spin" /></div>
+      </div>
+      <FinaliserStyles />
+    </div>
+  );
+}
+
+function FinaliserAuthPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [error, setError] = useState('');
@@ -104,49 +132,55 @@ export default function FinaliserAuthPage() {
         )}
       </div>
 
-      <style jsx global>{`
-        .finaliser-container {
-          min-height: 100vh;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          padding: 20px;
-          background: var(--bg-page);
-        }
-        .finaliser-card {
-          width: 100%;
-          max-width: 420px;
-          background: var(--bg-card);
-          border-radius: var(--radius-xl);
-          box-shadow: var(--shadow-lg);
-          padding: 40px 32px;
-          text-align: center;
-        }
-        .finaliser-icon {
-          width: 64px; height: 64px; border-radius: 50%;
-          background: var(--brand-light);
-          color: var(--brand);
-          display: flex; align-items: center; justify-content: center;
-          margin: 0 auto 16px;
-        }
-        .finaliser-title {
-          font-size: 1.25rem; font-weight: 700;
-          color: var(--text-primary);
-          margin: 0 0 8px;
-        }
-        .finaliser-text {
-          color: var(--text-secondary);
-          font-size: 0.9375rem;
-          margin: 0 0 20px;
-          line-height: 1.5;
-        }
-        .finaliser-loader {
-          display: flex; justify-content: center;
-          color: var(--brand);
-        }
-        .spin { animation: spin 1s linear infinite; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-      `}</style>
+      <FinaliserStyles />
     </div>
+  );
+}
+
+function FinaliserStyles() {
+  return (
+    <style jsx global>{`
+      .finaliser-container {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        background: var(--bg-page);
+      }
+      .finaliser-card {
+        width: 100%;
+        max-width: 420px;
+        background: var(--bg-card);
+        border-radius: var(--radius-xl);
+        box-shadow: var(--shadow-lg);
+        padding: 40px 32px;
+        text-align: center;
+      }
+      .finaliser-icon {
+        width: 64px; height: 64px; border-radius: 50%;
+        background: var(--brand-light);
+        color: var(--brand);
+        display: flex; align-items: center; justify-content: center;
+        margin: 0 auto 16px;
+      }
+      .finaliser-title {
+        font-size: 1.25rem; font-weight: 700;
+        color: var(--text-primary);
+        margin: 0 0 8px;
+      }
+      .finaliser-text {
+        color: var(--text-secondary);
+        font-size: 0.9375rem;
+        margin: 0 0 20px;
+        line-height: 1.5;
+      }
+      .finaliser-loader {
+        display: flex; justify-content: center;
+        color: var(--brand);
+      }
+      .spin { animation: spin 1s linear infinite; }
+      @keyframes spin { to { transform: rotate(360deg); } }
+    `}</style>
   );
 }
