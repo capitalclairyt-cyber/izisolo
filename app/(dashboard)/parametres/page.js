@@ -1398,9 +1398,10 @@ export default function Parametres() {
     const { error } = await supabase.from('profiles').update({
       prenom: profile.prenom,
       nom: profile.nom,
-      // email retiré (la colonne profiles.email n'existe pas — schéma a email_contact qui
-      // est rempli automatiquement par le trigger handle_new_user lors de l'inscription).
-      email_contact: profile.email_contact || profile.email || null,
+      // email_contact = email de contact public (différent de auth.users.email
+      // qui est l'email de connexion, géré par Supabase Auth). Rempli auto au
+      // signup par le trigger handle_new_user, modifiable ici.
+      email_contact: profile.email_contact || null,
       studio_nom: profile.studio_nom,
       studio_slug: computedSlug,
       portail_actif: computedPortailActif,
@@ -1533,7 +1534,7 @@ export default function Parametres() {
             </div>
             <div className="form-group">
               <label className="form-label"><Mail size={14} style={{ display: 'inline', verticalAlign: '-2px', marginRight: 4 }} />Adresse e-mail</label>
-              <input className="izi-input" type="email" value={profile.email || ''} onChange={handleChange('email')} placeholder="ton@email.com" />
+              <input className="izi-input" type="email" value={profile.email_contact || ''} onChange={handleChange('email_contact')} placeholder="ton@email.com" />
             </div>
             <div className="form-group">
               <label className="form-label">Téléphone</label>
