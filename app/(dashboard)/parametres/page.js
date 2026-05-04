@@ -1315,7 +1315,9 @@ export default function Parametres() {
     const { error } = await supabase.from('profiles').update({
       prenom: profile.prenom,
       nom: profile.nom,
-      email: profile.email,
+      // email retiré (la colonne profiles.email n'existe pas — schéma a email_contact qui
+      // est rempli automatiquement par le trigger handle_new_user lors de l'inscription).
+      email_contact: profile.email_contact || profile.email || null,
       studio_nom: profile.studio_nom,
       adresse: profile.adresse,
       ville: profile.ville,
