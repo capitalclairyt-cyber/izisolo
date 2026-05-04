@@ -11,6 +11,7 @@ import {
 import { createClient } from '@/lib/supabase';
 import { useToast } from '@/components/ui/ToastProvider';
 import { METIERS } from '@/lib/constantes';
+import { slugify } from '@/lib/utils';
 // import BackgroundDecor — retiré, plus utilisé (apparences supprimées)
 
 // Normalise une URL utilisateur :
@@ -1312,6 +1313,42 @@ export default function Parametres() {
   const handleSave = async () => {
     setSaving(true);
     const supabase = createClient();
+
+    // === Auto-magie : si la prof a renseigné un studio_nom mais qu'aucun slug
+    // n'existe encore, on en génère un automatiquement + on active le portail public.
+    // Objectif : que l'inscription / configuration soit "zéro friction" pour des
+    // utilisatrices non-tek (profs de yoga, pilates, etc.). Pas besoin qu'elles
+    // comprennent ce qu'est un slug ni d'aller cocher "activer ma page publique".
+    let computedSlug = profile.studio_slug || null;
+    let computedPortailActif = profile.portail_actif === true;
+
+    if (profile.studio_nom && !computedSlug) {
+      const baseSlug = slugify(profile.studio_nom) || 'studio';
+      // Vérifier l'unicité — si déjà pris par un autre studio, on suffixe -2, -3, ...
+      let candidate = baseSlug;
+      let suffix = 1;
+      // Limite de sécurité (ne devrait jamais arriver en pratique)
+      while (suffix < 50) {
+        const { data: existing } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('studio_slug', candidate)
+          .neq('id', profile.id)
+          .maybeSingle();
+        if (!existing) break;
+        suffix += 1;
+        candidate = `${baseSlug}-${suffix}`;
+      }
+      computedSlug = candidate;
+    }
+
+    // Si on a un slug (qu'on vient de générer OU qui existait déjà), on s'assure
+    // que le portail public est actif — sinon la page /p/{slug} renvoie 404 à cause
+    // de la RLS publique (v25) qui filtre sur portail_actif = true.
+    if (computedSlug && !computedPortailActif) {
+      computedPortailActif = true;
+    }
+
     const { error } = await supabase.from('profiles').update({
       prenom: profile.prenom,
       nom: profile.nom,
@@ -1319,6 +1356,8 @@ export default function Parametres() {
       // est rempli automatiquement par le trigger handle_new_user lors de l'inscription).
       email_contact: profile.email_contact || profile.email || null,
       studio_nom: profile.studio_nom,
+      studio_slug: computedSlug,
+      portail_actif: computedPortailActif,
       adresse: profile.adresse,
       ville: profile.ville,
       telephone: profile.telephone,
@@ -1371,8 +1410,19 @@ export default function Parametres() {
     }).eq('id', profile.id);
 
     if (!error) {
+      // Refléter immédiatement le slug + activation auto dans l'état local,
+      // pour que l'UI affiche tout de suite l'URL publique sans rechargement manuel.
+      setProfile(prev => ({
+        ...prev,
+        studio_slug: computedSlug,
+        portail_actif: computedPortailActif,
+      }));
       router.refresh();
-      toast.success('Paramètres enregistrés !');
+      if (computedSlug && computedSlug !== profile.studio_slug) {
+        toast.success(`Page publique activée : /p/${computedSlug}`);
+      } else {
+        toast.success('Paramètres enregistrés !');
+      }
       setDirty(false);
     } else {
       toast.error('Erreur : ' + error.message);
