@@ -17,10 +17,22 @@ export default async function DashboardLayout({ children }) {
     .eq('id', user.id)
     .single();
 
-  // Si pas de profil ou pas d'onboarding complété, rediriger
-  if (!profile || !profile.studio_nom || profile.studio_nom === 'Mon Studio') {
-    // Vérifier si l'onboarding a été fait (studio_nom modifié)
-    // On laisse passer pour l'instant, l'onboarding est optionnel
+  // Onboarding obligatoire : si les infos minimales du studio ne sont pas
+  // renseignées, on force l'utilisateur à passer par /onboarding avant de
+  // pouvoir accéder à l'app. Évite que des profs débarquent sur un dashboard
+  // vide sans comprendre quoi configurer.
+  //   - profile manquant      → /onboarding (cas rare, post-signup raté)
+  //   - studio_nom manquant   → /onboarding
+  //   - studio_nom == défaut  → /onboarding (legacy : ancien défaut "Mon Studio")
+  //   - metier manquant       → /onboarding
+  const onboardingComplet =
+    profile &&
+    profile.studio_nom &&
+    profile.studio_nom !== 'Mon Studio' &&
+    profile.metier;
+
+  if (!onboardingComplet) {
+    redirect('/onboarding');
   }
 
   return (

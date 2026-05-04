@@ -7,6 +7,7 @@ import {
   Plus, X, Trash2, Flower2, Sliders, Crown, Mail, Home,
   Eye, Settings, Zap, Gift, ToggleLeft, ToggleRight, Cake,
   CreditCard, Copy, Check, ExternalLink, AlertCircle, Loader2,
+  Pencil,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase';
 import { useToast } from '@/components/ui/ToastProvider';
@@ -1192,7 +1193,12 @@ export default function Parametres() {
   const [dirty, setDirty] = useState(false);
   const [profile, setProfile] = useState(null);
   const [lieux, setLieux] = useState([]);
-  const [newLieu, setNewLieu] = useState('');
+  // Modal d'édition d'un lieu :
+  //   null            → modal fermée
+  //   { id: null, ...} → mode "création"
+  //   { id: 'uuid', ...} → mode "édition"
+  const [lieuEdit, setLieuEdit] = useState(null);
+  const [lieuSaving, setLieuSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('profil');
   const [reglagesSubTab, setReglagesSubTab] = useState('general');
   // Sous-onglet notifications
@@ -1276,20 +1282,61 @@ export default function Parametres() {
   };
 
   // --- Lieux ---
-  const addLieu = async () => {
-    if (!newLieu.trim()) return;
+  // Ouvre la modal en mode "création" (ou "édition" si on passe un lieu existant)
+  const openLieuModal = (lieu = null) => {
+    setLieuEdit(lieu ? { ...lieu } : { id: null, nom: '', adresse: '', ville: '', notes: '' });
+  };
+
+  // Ferme la modal sans sauvegarder
+  const closeLieuModal = () => {
+    if (lieuSaving) return;
+    setLieuEdit(null);
+  };
+
+  // Sauvegarde le lieu (insert si id null, update sinon)
+  const saveLieu = async () => {
+    if (!lieuEdit?.nom?.trim()) {
+      toast.error('Le nom du lieu est obligatoire');
+      return;
+    }
+    setLieuSaving(true);
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
-    const { data, error } = await supabase.from('lieux').insert({
-      profile_id: user.id,
-      nom: newLieu.trim(),
-      ordre: lieux.length,
-    }).select().single();
 
-    if (!error && data) {
+    const payload = {
+      nom: lieuEdit.nom.trim(),
+      adresse: lieuEdit.adresse?.trim() || null,
+      ville: lieuEdit.ville?.trim() || null,
+      notes: lieuEdit.notes?.trim() || null,
+    };
+
+    if (lieuEdit.id) {
+      // Update existant
+      const { error } = await supabase.from('lieux').update(payload).eq('id', lieuEdit.id);
+      if (error) {
+        toast.error('Erreur : ' + error.message);
+        setLieuSaving(false);
+        return;
+      }
+      setLieux(prev => prev.map(l => l.id === lieuEdit.id ? { ...l, ...payload } : l));
+      toast.success('Lieu modifié');
+    } else {
+      // Création
+      const { data, error } = await supabase.from('lieux').insert({
+        ...payload,
+        profile_id: user.id,
+        ordre: lieux.length,
+      }).select().single();
+      if (error || !data) {
+        toast.error('Erreur : ' + (error?.message || 'lieu non créé'));
+        setLieuSaving(false);
+        return;
+      }
       setLieux(prev => [...prev, data]);
-      setNewLieu('');
+      toast.success('Lieu ajouté');
     }
+    setLieuSaving(false);
+    setLieuEdit(null);
   };
 
   const removeLieu = async (id) => {
@@ -1299,14 +1346,13 @@ export default function Parametres() {
       return;
     }
     const supabase = createClient();
-    await supabase.from('lieux').delete().eq('id', id);
+    const { error } = await supabase.from('lieux').delete().eq('id', id);
+    if (error) {
+      toast.error('Erreur : ' + error.message);
+      return;
+    }
     setLieux(prev => prev.filter(l => l.id !== id));
-  };
-
-  const updateLieu = async (id, field, value) => {
-    const supabase = createClient();
-    await supabase.from('lieux').update({ [field]: value }).eq('id', id);
-    setLieux(prev => prev.map(l => l.id === id ? { ...l, [field]: value } : l));
+    toast.success('Lieu supprimé');
   };
 
   // --- Save profile ---
@@ -1542,44 +1588,140 @@ export default function Parametres() {
             <div className="section-top"><div className="section-icon"><MapPin size={20} /></div><h2>Mes lieux</h2></div>
             <p className="section-desc">Les salles et espaces où tu donnes tes cours.</p>
 
-            {lieux.length > 0 && (
+            {lieux.length > 0 ? (
               <div className="lieux-list">
                 {lieux.map(lieu => (
-                  <div key={lieu.id} className="lieu-item">
-                    <div className="lieu-info">
-                      <input
-                        className="lieu-nom-input"
-                        value={lieu.nom}
-                        onChange={e => updateLieu(lieu.id, 'nom', e.target.value)}
-                      />
-                      <input
-                        className="lieu-adresse-input"
-                        value={lieu.adresse || ''}
-                        onChange={e => updateLieu(lieu.id, 'adresse', e.target.value)}
-                        placeholder="Adresse (optionnel)"
-                      />
+                  <div key={lieu.id} className="lieu-card">
+                    <div className="lieu-card-icon"><MapPin size={18} /></div>
+                    <div className="lieu-card-info">
+                      <div className="lieu-card-nom">{lieu.nom}</div>
+                      {(lieu.adresse || lieu.ville) && (
+                        <div className="lieu-card-adresse">
+                          {[lieu.adresse, lieu.ville].filter(Boolean).join(' — ')}
+                        </div>
+                      )}
+                      {lieu.notes && <div className="lieu-card-notes">{lieu.notes}</div>}
                     </div>
-                    <button className="lieu-delete" onClick={() => removeLieu(lieu.id)} title="Supprimer">
-                      <Trash2 size={16} />
-                    </button>
+                    <div className="lieu-card-actions">
+                      <button
+                        className="lieu-action-btn"
+                        onClick={() => openLieuModal(lieu)}
+                        title="Modifier"
+                        aria-label={`Modifier ${lieu.nom}`}
+                      >
+                        <Pencil size={16} />
+                      </button>
+                      <button
+                        className="lieu-action-btn lieu-action-danger"
+                        onClick={() => removeLieu(lieu.id)}
+                        title="Supprimer"
+                        aria-label={`Supprimer ${lieu.nom}`}
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
+            ) : (
+              <div className="lieux-empty">
+                <MapPin size={20} />
+                <span>Aucun lieu pour l'instant. Ajoute ta première salle pour pouvoir l'associer à tes cours.</span>
+              </div>
             )}
 
-            <div className="add-row">
-              <input
-                className="izi-input"
-                value={newLieu}
-                onChange={e => setNewLieu(e.target.value)}
-                placeholder="Nouveau lieu..."
-                onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addLieu())}
-              />
-              <button className="izi-btn izi-btn-secondary add-btn" onClick={addLieu} disabled={!newLieu.trim()}>
-                <Plus size={18} />
-              </button>
-            </div>
+            <button
+              className="izi-btn izi-btn-secondary lieu-add-btn"
+              onClick={() => openLieuModal(null)}
+              type="button"
+            >
+              <Plus size={18} /> Ajouter un lieu
+            </button>
           </div>
+
+          {/* === Modal édition lieu === */}
+          {lieuEdit && (
+            <div
+              className="modal-backdrop"
+              onClick={e => { if (e.target === e.currentTarget) closeLieuModal(); }}
+            >
+              <div className="modal-sheet animate-slide-up" role="dialog" aria-modal="true">
+                <div className="modal-header">
+                  <span className="modal-title">
+                    {lieuEdit.id ? 'Modifier le lieu' : 'Nouveau lieu'}
+                  </span>
+                  <button className="modal-close" onClick={closeLieuModal} type="button" aria-label="Fermer">
+                    <X size={20} />
+                  </button>
+                </div>
+                <div className="modal-body">
+                  <div className="form-group">
+                    <label className="form-label">Nom d'affichage *</label>
+                    <input
+                      className="izi-input"
+                      value={lieuEdit.nom || ''}
+                      onChange={e => setLieuEdit(prev => ({ ...prev, nom: e.target.value }))}
+                      placeholder="Ex: Studio Lotus, Salle des fêtes..."
+                      autoFocus
+                      onKeyDown={e => {
+                        if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) saveLieu();
+                      }}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Adresse</label>
+                    <input
+                      className="izi-input"
+                      value={lieuEdit.adresse || ''}
+                      onChange={e => setLieuEdit(prev => ({ ...prev, adresse: e.target.value }))}
+                      placeholder="12 rue des Lilas"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Ville</label>
+                    <input
+                      className="izi-input"
+                      value={lieuEdit.ville || ''}
+                      onChange={e => setLieuEdit(prev => ({ ...prev, ville: e.target.value }))}
+                      placeholder="Lyon"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Notes (interne)</label>
+                    <textarea
+                      className="izi-input"
+                      rows={3}
+                      value={lieuEdit.notes || ''}
+                      onChange={e => setLieuEdit(prev => ({ ...prev, notes: e.target.value }))}
+                      placeholder="Code d'entrée, infos parking, etc. (visible uniquement par toi)"
+                    />
+                  </div>
+
+                  <div className="modal-footer">
+                    <button
+                      className="izi-btn izi-btn-secondary"
+                      onClick={closeLieuModal}
+                      type="button"
+                      disabled={lieuSaving}
+                    >
+                      Annuler
+                    </button>
+                    <button
+                      className="izi-btn izi-btn-primary"
+                      onClick={saveLieu}
+                      type="button"
+                      disabled={lieuSaving || !lieuEdit.nom?.trim()}
+                    >
+                      {lieuSaving ? <><Loader2 size={16} className="spin" /> Enregistrement…</> : (lieuEdit.id ? 'Enregistrer' : 'Ajouter')}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Règles d'annulation */}
           <ReglesAnnulationSection
@@ -2059,13 +2201,124 @@ export default function Parametres() {
         .chip-remove:hover { opacity: 1; }
 
         /* Lieux */
-        .lieux-list { display: flex; flex-direction: column; gap: 8px; }
-        .lieu-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--cream); border-radius: var(--radius-sm); border: 1px solid var(--border); }
-        .lieu-info { flex: 1; display: flex; flex-direction: column; gap: 4px; }
-        .lieu-nom-input { border: none; background: none; font-weight: 600; font-size: 0.9375rem; color: var(--text-primary); outline: none; padding: 0; }
-        .lieu-adresse-input { border: none; background: none; font-size: 0.75rem; color: var(--text-muted); outline: none; padding: 0; }
-        .lieu-delete { background: none; border: none; color: var(--danger); cursor: pointer; padding: 4px; border-radius: var(--radius-sm); opacity: 0.5; }
-        .lieu-delete:hover { opacity: 1; background: #fef2f2; }
+        .lieux-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 4px; }
+        .lieu-card {
+          display: flex; align-items: flex-start; gap: 12px;
+          padding: 12px 14px;
+          background: var(--bg-card);
+          border: 1px solid var(--border);
+          border-radius: var(--radius-md);
+          transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+        }
+        .lieu-card:hover {
+          border-color: var(--brand-300, #d4b8a0);
+          box-shadow: 0 1px 4px rgba(70, 35, 25, 0.06);
+        }
+        .lieu-card-icon {
+          flex-shrink: 0;
+          width: 36px; height: 36px;
+          display: flex; align-items: center; justify-content: center;
+          background: var(--brand-light);
+          color: var(--brand-700);
+          border-radius: var(--radius-sm);
+        }
+        .lieu-card-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+        .lieu-card-nom { font-weight: 600; font-size: 0.9375rem; color: var(--text-primary); line-height: 1.3; }
+        .lieu-card-adresse { font-size: 0.8125rem; color: var(--text-secondary); line-height: 1.4; }
+        .lieu-card-notes {
+          font-size: 0.75rem; color: var(--text-muted);
+          font-style: italic; margin-top: 2px;
+          overflow: hidden; text-overflow: ellipsis;
+          display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+        }
+        .lieu-card-actions { display: flex; gap: 4px; flex-shrink: 0; }
+        .lieu-action-btn {
+          width: 32px; height: 32px;
+          display: flex; align-items: center; justify-content: center;
+          background: transparent;
+          border: 1px solid transparent;
+          border-radius: var(--radius-sm);
+          color: var(--text-muted);
+          cursor: pointer;
+          transition: all var(--transition-fast);
+        }
+        .lieu-action-btn:hover {
+          background: var(--cream);
+          color: var(--text-primary);
+          border-color: var(--border);
+        }
+        .lieu-action-danger:hover {
+          background: #fef2f2;
+          color: var(--danger);
+          border-color: #fecaca;
+        }
+        .lieu-add-btn {
+          width: 100%;
+          justify-content: center;
+          gap: 8px;
+        }
+        .lieux-empty {
+          display: flex; align-items: flex-start; gap: 10px;
+          padding: 14px;
+          background: var(--cream);
+          border: 1px dashed var(--border);
+          border-radius: var(--radius-md);
+          color: var(--text-muted);
+          font-size: 0.8125rem;
+          line-height: 1.4;
+          margin-bottom: 8px;
+        }
+        .lieux-empty svg { flex-shrink: 0; margin-top: 2px; opacity: 0.7; }
+
+        /* Modal lieu — réutilise le pattern .modal-* du reste de l'app */
+        .modal-backdrop {
+          position: fixed; inset: 0;
+          background: rgba(0, 0, 0, 0.45);
+          z-index: 200;
+          display: flex; align-items: flex-end; justify-content: center;
+        }
+        @media (min-width: 600px) {
+          .modal-backdrop { align-items: center; }
+        }
+        .modal-sheet {
+          background: var(--bg-card);
+          border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+          width: 100%; max-width: 480px; max-height: 90vh;
+          display: flex; flex-direction: column; overflow: hidden;
+        }
+        @media (min-width: 600px) {
+          .modal-sheet { border-radius: var(--radius-lg); }
+        }
+        .modal-header {
+          display: flex; align-items: center; gap: 8px;
+          padding: 16px 16px 12px;
+          border-bottom: 1px solid var(--border);
+          flex-shrink: 0;
+        }
+        .modal-title { flex: 1; font-weight: 700; font-size: 1rem; color: var(--text-primary); }
+        .modal-close {
+          background: none; border: none;
+          width: 36px; height: 36px;
+          display: flex; align-items: center; justify-content: center;
+          color: var(--text-secondary);
+          cursor: pointer;
+          border-radius: var(--radius-sm);
+        }
+        .modal-close:hover { background: var(--cream-dark); }
+        .modal-body {
+          padding: 16px;
+          overflow-y: auto;
+          display: flex; flex-direction: column; gap: 14px;
+        }
+        .modal-footer {
+          display: flex; gap: 8px; justify-content: flex-end;
+          padding-top: 8px;
+          margin-top: 4px;
+          border-top: 1px solid var(--border);
+        }
+        .modal-footer .izi-btn { min-width: 110px; justify-content: center; }
+        .spin { animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
         /* Add row */
         .add-row { display: flex; gap: 8px; }

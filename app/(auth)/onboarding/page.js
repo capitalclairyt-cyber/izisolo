@@ -20,9 +20,45 @@ export default function OnboardingPage() {
   // Données du formulaire
   const [metier, setMetier] = useState('');
   const [studioNom, setStudioNom] = useState('');
+  // Coordonnées du studio (étape 2) — prénom + nom + ville obligatoires,
+  // téléphone + adresse optionnels.
+  const [prenom, setPrenom] = useState('');
+  const [nom, setNom] = useState('');
+  const [ville, setVille] = useState('');
+  const [telephone, setTelephone] = useState('');
+  const [adresse, setAdresse] = useState('');
   const [offreNom, setOffreNom] = useState('');
   const [offrePrix, setOffrePrix] = useState('');
   const [offreSeances, setOffreSeances] = useState('10');
+
+  // Pré-remplir prénom/email depuis le user déjà connecté pour éviter de
+  // demander 2x les infos qu'on possède déjà (prénom est passé au signup
+  // dans options.data.prenom).
+  useEffect(() => {
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const metaPrenom = user.user_metadata?.prenom;
+        if (metaPrenom && !prenom) setPrenom(metaPrenom);
+        // Si le profil a déjà été partiellement rempli (par ex. l'utilisateur
+        // revient à mi-onboarding), on pré-remplit les champs.
+        const { data: prof } = await supabase
+          .from('profiles')
+          .select('prenom, nom, ville, telephone, adresse, studio_nom, metier')
+          .eq('id', user.id)
+          .maybeSingle();
+        if (prof) {
+          if (prof.prenom && !prenom) setPrenom(prof.prenom);
+          if (prof.nom) setNom(prof.nom);
+          if (prof.ville) setVille(prof.ville);
+          if (prof.telephone) setTelephone(prof.telephone);
+          if (prof.adresse) setAdresse(prof.adresse);
+          if (prof.studio_nom && prof.studio_nom !== 'Mon Studio') setStudioNom(prof.studio_nom);
+          if (prof.metier) setMetier(prof.metier);
+        }
+      }
+    })();
+  }, []);
 
   // Pré-remplir l'offre selon le métier
   useEffect(() => {
@@ -57,16 +93,25 @@ export default function OnboardingPage() {
     const couleur = METIERS[metier]?.couleurDefaut || 'rose';
     const slug = slugify(studioNom || 'mon-studio');
 
-    // Mise à jour du profil
+    // Mise à jour du profil — on enregistre TOUTES les infos collectées
+    // pendant l'onboarding (studio + coordonnées). On active aussi le portail
+    // public d'office (portail_actif=true) pour que /p/{slug} soit accessible
+    // dès la fin de l'onboarding sans manip supplémentaire.
     const { error: profileError } = await supabase
       .from('profiles')
       .update({
         studio_nom: studioNom || 'Mon Studio',
         studio_slug: slug,
         metier,
+        prenom: prenom || null,
+        nom: nom || null,
+        ville: ville || null,
+        telephone: telephone || null,
+        adresse: adresse || null,
         ui_couleur: couleur,
         types_cours: typesCours,
         vocabulaire,
+        portail_actif: true,
       })
       .eq('id', user.id);
 
@@ -149,16 +194,19 @@ export default function OnboardingPage() {
           </div>
         )}
 
-        {/* Étape 2 : Studio */}
+        {/* Étape 2 : Studio + coordonnées */}
         {etape === 1 && (
           <div className="onboarding-step animate-fade-in">
             <div className="step-header">
-              <h2>Comment s'appelle ton studio ?</h2>
-              <p className="step-hint">Ce nom apparaîtra dans ton app et sur ton portail public.</p>
+              <h2>Parle-nous de ton studio</h2>
+              <p className="step-hint">
+                Ces infos apparaîtront sur ton portail public et tes reçus de paiement.
+                Tu pourras tout modifier dans <em>Paramètres</em> plus tard.
+              </p>
             </div>
             <div className="step-fields">
               <div className="auth-field">
-                <label>Nom du studio</label>
+                <label>Nom du studio *</label>
                 <input
                   type="text"
                   className="izi-input"
@@ -168,6 +216,64 @@ export default function OnboardingPage() {
                   autoFocus
                 />
               </div>
+              <div className="step-row">
+                <div className="auth-field" style={{ flex: 1 }}>
+                  <label>Prénom *</label>
+                  <input
+                    type="text"
+                    className="izi-input"
+                    placeholder="Marie"
+                    value={prenom}
+                    onChange={e => setPrenom(e.target.value)}
+                  />
+                </div>
+                <div className="auth-field" style={{ flex: 1 }}>
+                  <label>Nom *</label>
+                  <input
+                    type="text"
+                    className="izi-input"
+                    placeholder="Dupont"
+                    value={nom}
+                    onChange={e => setNom(e.target.value)}
+                  />
+                </div>
+              </div>
+              <div className="step-row">
+                <div className="auth-field" style={{ flex: 1 }}>
+                  <label>Ville *</label>
+                  <input
+                    type="text"
+                    className="izi-input"
+                    placeholder="Lyon"
+                    value={ville}
+                    onChange={e => setVille(e.target.value)}
+                  />
+                </div>
+                <div className="auth-field" style={{ flex: 1 }}>
+                  <label>Téléphone</label>
+                  <input
+                    type="tel"
+                    className="izi-input"
+                    placeholder="06 12 34 56 78"
+                    value={telephone}
+                    onChange={e => setTelephone(e.target.value)}
+                  />
+                </div>
+              </div>
+              <div className="auth-field">
+                <label>Adresse <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>(optionnel)</span></label>
+                <input
+                  type="text"
+                  className="izi-input"
+                  placeholder="12 rue des Lilas"
+                  value={adresse}
+                  onChange={e => setAdresse(e.target.value)}
+                />
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '6px 0 0' }}>
+                  Si tu donnes cours dans plusieurs lieux, tu pourras les ajouter individuellement
+                  dans <em>Paramètres → Mes lieux</em>.
+                </p>
+              </div>
             </div>
             <div className="step-nav">
               <button className="izi-btn izi-btn-ghost" onClick={() => setEtape(0)}>
@@ -175,7 +281,7 @@ export default function OnboardingPage() {
               </button>
               <button
                 className="izi-btn izi-btn-primary"
-                disabled={!studioNom}
+                disabled={!studioNom.trim() || !prenom.trim() || !nom.trim() || !ville.trim()}
                 onClick={() => setEtape(2)}
               >
                 Continuer <ArrowRight size={18} />
