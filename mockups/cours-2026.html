@@ -1,0 +1,615 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>IziSolo — Cours &amp; Évènements 2026 (Sauge &amp; Cuivre)</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,SOFT,wght@9..144,30..100,400..700&family=Inter:wght@400;500;600;700&family=Caveat:wght@600;700&display=swap" rel="stylesheet">
+
+<style>
+/* Mêmes variables que dashboard-2026.html */
+:root {
+  --brand: #B87333; --brand-light: #FBF1E6; --brand-dark: #8B5722;
+  --brand-200: #F0DCC1; --brand-300: #DEB987; --brand-700: #7A4A1E;
+  --sage: #9CAFA0; --sage-light: #E5EBE5; --sage-dark: #5A6B62; --sage-deep: #2C3935;
+  --hot: #E8722A; --hot-light: #FCE8DA;
+  --cream: #FAF7F2; --cream-dark: #EFE9DD;
+  --bg-page: #FAF7F2; --bg-card: #FFFFFF; --bg-card-hover: #F5F0E8; --bg-soft: #F8F4ED;
+  --text-primary: #3D3028; --text-secondary: #6B5A4A; --text-muted: #A89888;
+  --border: #E5DED2; --border-focus: var(--brand);
+  --success: #6B9A6B; --success-light: #E2EDDE;
+  --warning: #D4B06A; --warning-light: #F5EBD2;
+  --danger: #C4574E; --danger-light: #F5DDD8;
+  --info: #5A8AA8; --info-light: #DEE8EE;
+  --shadow-sm: 0 1px 2px rgba(92, 74, 58, 0.05);
+  --shadow-md: 0 4px 12px rgba(92, 74, 58, 0.08);
+  --shadow-lg: 0 8px 24px rgba(92, 74, 58, 0.12);
+  --radius-sm: 8px; --radius-md: 12px; --radius-lg: 16px; --radius-xl: 24px;
+  --font-display: 'Fraunces', Georgia, serif;
+  --font-body: 'Inter', -apple-system, sans-serif;
+  --font-script: 'Caveat', cursive;
+}
+* { box-sizing: border-box; }
+body { margin: 0; font-family: var(--font-body); background: var(--bg-page); color: var(--text-primary); font-size: 15px; line-height: 1.5; }
+
+/* Sidebar (mêmes styles que dashboard) */
+.layout { display: flex; min-height: 100vh; }
+.sidebar { width: 230px; flex-shrink: 0; background: var(--cream); border-right: 1px solid var(--cream-dark); padding: 14px 8px 12px; display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh; }
+.sidebar-header { padding: 0 6px 14px; border-bottom: 1px solid rgba(232, 224, 216, 0.5); }
+.sidebar-logo { display: flex; align-items: center; gap: 8px; font-family: var(--font-display); font-size: 1.25rem; font-weight: 500; font-variation-settings: 'opsz' 144, 'SOFT' 100; letter-spacing: -0.02em; color: var(--text-primary); }
+.sidebar-logo svg { color: var(--brand); }
+.sidebar-studio { font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; padding-left: 26px; }
+.sidebar-section-title { font-size: 0.6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); padding: 14px 14px 4px; }
+.sidebar-item { display: flex; align-items: center; gap: 12px; padding: 9px 14px; margin-bottom: 2px; border-radius: 10px; color: var(--text-secondary); text-decoration: none; font-size: 0.875rem; font-weight: 500; cursor: pointer; transition: background 0.15s, color 0.15s; }
+.sidebar-item:hover { background: white; color: var(--text-primary); }
+.sidebar-item.active { background: white; color: var(--text-primary); font-weight: 600; box-shadow: 0 1px 4px rgba(70, 35, 25, 0.08); }
+.sidebar-item.active svg { color: var(--brand); }
+
+.main { flex: 1; min-width: 0; padding: 24px 32px 80px; max-width: 1200px; }
+
+/* ============= PAGE COURS ============= */
+
+/* Header page */
+.page-header {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 18px;
+}
+.page-title {
+  font-family: var(--font-display);
+  font-size: 1.875rem; font-weight: 500;
+  font-variation-settings: 'opsz' 144, 'SOFT' 100;
+  letter-spacing: -0.015em;
+  color: var(--text-primary);
+  margin: 0;
+}
+.count-badge {
+  background: var(--brand-light); color: var(--brand-700);
+  padding: 3px 12px; border-radius: 99px;
+  font-size: 0.8125rem; font-weight: 600;
+}
+.btn-primary {
+  margin-left: auto;
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 16px;
+  background: var(--brand); color: white;
+  border: none; border-radius: 99px;
+  font-size: 0.875rem; font-weight: 600;
+  font-family: var(--font-body);
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.15s;
+}
+.btn-primary:hover { background: var(--brand-dark); }
+
+/* Tabs */
+.tabs {
+  display: flex; gap: 4px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 22px;
+}
+.tab {
+  padding: 12px 18px;
+  background: none; border: none;
+  font-size: 0.9375rem; font-weight: 500;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  font-family: var(--font-body);
+  transition: color 0.15s;
+  display: inline-flex; align-items: center; gap: 8px;
+}
+.tab:hover { color: var(--text-secondary); }
+.tab.active {
+  color: var(--brand-700);
+  border-bottom-color: var(--brand);
+  font-weight: 600;
+}
+
+/* Catégories de cours (chips colorées par tone) */
+.categories-section {
+  margin-bottom: 24px;
+  padding: 16px 18px;
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+.categories-title {
+  font-size: 0.8125rem; font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase; letter-spacing: 0.04em;
+  margin-bottom: 10px;
+  display: flex; align-items: center; gap: 6px;
+}
+.categories-list { display: flex; flex-wrap: wrap; gap: 8px; }
+.category-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 12px;
+  border-radius: 99px;
+  font-size: 0.8125rem; font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.category-chip--cuivre { background: var(--brand-light); color: var(--brand-700); }
+.category-chip--sage { background: var(--sage-light); color: var(--sage-dark); }
+.category-chip--info { background: var(--info-light); color: var(--info); }
+.category-chip--warm { background: var(--warning-light); color: #856828; }
+.category-chip:hover { transform: translateY(-1px); box-shadow: var(--shadow-sm); }
+.category-chip-add {
+  background: white; color: var(--text-muted);
+  border: 1px dashed var(--border);
+}
+
+/* Liste des séries récurrentes (style "carte horaire") */
+.serie-list { display: flex; flex-direction: column; gap: 10px; }
+.serie-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 18px 20px;
+  display: flex; align-items: center; gap: 18px;
+  transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+  cursor: pointer;
+  text-decoration: none; color: inherit;
+}
+.serie-card:hover {
+  border-color: var(--brand-300);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+/* Bloc gauche : jour + heure (Fraunces, gros) */
+.serie-when {
+  flex-shrink: 0;
+  display: flex; flex-direction: column; align-items: center;
+  padding: 10px 16px;
+  background: var(--brand-light);
+  border-radius: var(--radius-md);
+  min-width: 88px;
+}
+.serie-jour {
+  font-family: var(--font-body);
+  font-size: 0.6875rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--brand-700);
+  margin-bottom: 2px;
+}
+.serie-heure {
+  font-family: var(--font-display);
+  font-size: 1.625rem; font-weight: 600;
+  font-variation-settings: 'opsz' 144;
+  color: var(--brand-dark);
+  line-height: 1;
+}
+
+/* Variantes de couleur du bloc when selon catégorie */
+.serie-card--sage .serie-when { background: var(--sage-light); }
+.serie-card--sage .serie-jour { color: var(--sage-dark); }
+.serie-card--sage .serie-heure { color: var(--sage-deep); }
+
+.serie-card--info .serie-when { background: var(--info-light); }
+.serie-card--info .serie-jour { color: var(--info); }
+.serie-card--info .serie-heure { color: #2A4A5E; }
+
+/* Bloc info principal */
+.serie-info { flex: 1; min-width: 0; }
+.serie-nom {
+  font-family: var(--font-display);
+  font-size: 1.125rem; font-weight: 600;
+  font-variation-settings: 'opsz' 144;
+  color: var(--text-primary);
+  margin: 0 0 4px;
+}
+.serie-meta {
+  display: flex; flex-wrap: wrap; gap: 12px;
+  font-size: 0.8125rem; color: var(--text-secondary);
+}
+.serie-meta-item { display: inline-flex; align-items: center; gap: 4px; }
+.serie-meta-item svg { opacity: 0.7; }
+
+/* Stats droite */
+.serie-stats { display: flex; gap: 16px; align-items: center; }
+.serie-stat {
+  text-align: center; min-width: 56px;
+}
+.serie-stat-value {
+  font-family: var(--font-display);
+  font-size: 1.375rem; font-weight: 600;
+  font-variation-settings: 'opsz' 144;
+  color: var(--text-primary);
+  line-height: 1;
+}
+.serie-stat-label {
+  font-size: 0.6875rem; color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: 0.04em;
+  margin-top: 4px;
+}
+.serie-cta {
+  display: flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: var(--brand);
+  color: white;
+  flex-shrink: 0;
+}
+.serie-card:hover .serie-cta { transform: translateX(2px); }
+
+/* Note manuscrite (Caveat) optionnelle dans une carte */
+.serie-note {
+  font-family: var(--font-script);
+  font-size: 1rem; color: var(--sage-dark);
+  margin-top: 4px;
+  display: block;
+}
+
+/* Section ponctuels (look différent : moins formel) */
+.ponctuel-section { margin-top: 32px; }
+.ponctuel-card {
+  display: grid;
+  grid-template-columns: 80px 1fr auto;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 18px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--hot);
+  border-radius: var(--radius-md);
+  margin-bottom: 8px;
+  text-decoration: none; color: inherit;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.ponctuel-card:hover { transform: translateY(-1px); box-shadow: var(--shadow-sm); }
+.ponctuel-date {
+  text-align: center;
+  padding: 8px 0;
+  background: var(--hot-light);
+  border-radius: var(--radius-sm);
+}
+.ponctuel-date-day {
+  font-family: var(--font-display);
+  font-size: 1.5rem; font-weight: 700;
+  color: var(--hot);
+  line-height: 1;
+}
+.ponctuel-date-month {
+  font-size: 0.6875rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.05em;
+  color: var(--hot);
+  margin-top: 2px;
+}
+.ponctuel-info { min-width: 0; }
+.ponctuel-nom { font-weight: 600; color: var(--text-primary); margin-bottom: 2px; }
+.ponctuel-meta { font-size: 0.8125rem; color: var(--text-secondary); }
+.ponctuel-tag {
+  display: inline-block;
+  padding: 3px 10px;
+  background: var(--hot-light); color: var(--hot);
+  border-radius: 99px;
+  font-size: 0.6875rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.04em;
+  margin-bottom: 4px;
+}
+
+/* Section title */
+.section-title-page {
+  font-family: var(--font-display);
+  font-size: 1.25rem; font-weight: 600;
+  font-variation-settings: 'opsz' 144;
+  margin: 24px 0 14px;
+  color: var(--text-primary);
+}
+
+/* FAB */
+.fab {
+  position: fixed; bottom: 24px; right: 24px;
+  width: 56px; height: 56px;
+  border-radius: 50%;
+  background: var(--brand);
+  color: white;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 6px 20px rgba(184, 115, 51, 0.4);
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  border: none;
+}
+.fab:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(184, 115, 51, 0.5); }
+.fab:active { transform: scale(0.95); }
+
+/* Demo info */
+.demo-info {
+  position: fixed; bottom: 14px; left: 14px;
+  background: rgba(60, 50, 40, 0.92);
+  color: white; padding: 10px 14px;
+  border-radius: var(--radius-md);
+  font-size: 0.75rem; font-family: var(--font-body);
+  box-shadow: var(--shadow-lg);
+  max-width: 320px; line-height: 1.5;
+}
+.demo-info strong { color: var(--brand-300); }
+
+@media (max-width: 1023px) {
+  .sidebar { display: none; }
+  .main { padding: 16px; }
+  .serie-stats { display: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="layout">
+
+  <!-- Sidebar (idem dashboard) -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>
+        <span>IziSolo</span>
+      </div>
+      <div class="sidebar-studio">Atelier Mélusine</div>
+    </div>
+    <nav style="padding: 12px 0;">
+      <a class="sidebar-item" href="#">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+        <span>Accueil</span>
+      </a>
+      <a class="sidebar-item" href="#">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/></svg>
+        <span>Agenda</span>
+      </a>
+      <a class="sidebar-item active" href="#">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+        <span>Cours &amp; Évènements</span>
+      </a>
+      <a class="sidebar-item" href="#">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+        <span>Élèves</span>
+      </a>
+      <div class="sidebar-section-title">Gestion</div>
+      <a class="sidebar-item" href="#">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16.5 9.4 7.55 4.24M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+        <span>Offres</span>
+      </a>
+      <a class="sidebar-item" href="#">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" x2="12" y1="20" y2="10"/><line x1="18" x2="18" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="16"/></svg>
+        <span>Revenus</span>
+      </a>
+    </nav>
+  </aside>
+
+  <main class="main">
+
+    <!-- Header -->
+    <div class="page-header">
+      <h1 class="page-title">Cours &amp; Évènements</h1>
+      <span class="count-badge">12 séries actives</span>
+      <a href="#" class="btn-primary">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" x2="12" y1="5" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/></svg>
+        Nouveau
+      </a>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab active">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+        Récurrents
+      </button>
+      <button class="tab">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        Ponctuels
+      </button>
+      <button class="tab">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+        Catégories
+      </button>
+    </div>
+
+    <!-- Catégories rapides -->
+    <div class="categories-section">
+      <div class="categories-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/></svg>
+        Catégories de cours
+      </div>
+      <div class="categories-list">
+        <span class="category-chip category-chip--cuivre">Vinyasa</span>
+        <span class="category-chip category-chip--cuivre">Hatha</span>
+        <span class="category-chip category-chip--sage">Yin yoga</span>
+        <span class="category-chip category-chip--sage">Méditation</span>
+        <span class="category-chip category-chip--info">Pilates</span>
+        <span class="category-chip category-chip--warm">Workshops</span>
+        <span class="category-chip category-chip-add">+ Catégorie</span>
+      </div>
+    </div>
+
+    <!-- Liste séries récurrentes -->
+    <div class="section-title-page">Mes séries récurrentes</div>
+
+    <div class="serie-list">
+
+      <a href="#" class="serie-card">
+        <div class="serie-when">
+          <div class="serie-jour">Lun</div>
+          <div class="serie-heure">09:00</div>
+        </div>
+        <div class="serie-info">
+          <h3 class="serie-nom">Vinyasa flow matinal</h3>
+          <div class="serie-meta">
+            <span class="serie-meta-item">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              60 min
+            </span>
+            <span class="serie-meta-item">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              Studio Lotus
+            </span>
+            <span class="serie-meta-item">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+              <span class="serie-note">"trouve ton centre"</span>
+            </span>
+          </div>
+        </div>
+        <div class="serie-stats">
+          <div class="serie-stat">
+            <div class="serie-stat-value">8</div>
+            <div class="serie-stat-label">Insc.</div>
+          </div>
+          <div class="serie-stat">
+            <div class="serie-stat-value">12</div>
+            <div class="serie-stat-label">Séances</div>
+          </div>
+          <div class="serie-cta">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+        </div>
+      </a>
+
+      <a href="#" class="serie-card serie-card--sage">
+        <div class="serie-when">
+          <div class="serie-jour">Mar</div>
+          <div class="serie-heure">19:00</div>
+        </div>
+        <div class="serie-info">
+          <h3 class="serie-nom">Yin yoga (lâcher prise)</h3>
+          <div class="serie-meta">
+            <span class="serie-meta-item">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              75 min
+            </span>
+            <span class="serie-meta-item">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/></svg>
+              Studio Lotus
+            </span>
+          </div>
+        </div>
+        <div class="serie-stats">
+          <div class="serie-stat">
+            <div class="serie-stat-value">5</div>
+            <div class="serie-stat-label">Insc.</div>
+          </div>
+          <div class="serie-stat">
+            <div class="serie-stat-value">12</div>
+            <div class="serie-stat-label">Séances</div>
+          </div>
+          <div class="serie-cta">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+        </div>
+      </a>
+
+      <a href="#" class="serie-card">
+        <div class="serie-when">
+          <div class="serie-jour">Mer</div>
+          <div class="serie-heure">12:30</div>
+        </div>
+        <div class="serie-info">
+          <h3 class="serie-nom">Pause méridienne — Hatha doux</h3>
+          <div class="serie-meta">
+            <span class="serie-meta-item">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              45 min
+            </span>
+            <span class="serie-meta-item">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/></svg>
+              Salle Mairie
+            </span>
+          </div>
+        </div>
+        <div class="serie-stats">
+          <div class="serie-stat">
+            <div class="serie-stat-value">6</div>
+            <div class="serie-stat-label">Insc.</div>
+          </div>
+          <div class="serie-stat">
+            <div class="serie-stat-value">8</div>
+            <div class="serie-stat-label">Séances</div>
+          </div>
+          <div class="serie-cta">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+        </div>
+      </a>
+
+      <a href="#" class="serie-card serie-card--info">
+        <div class="serie-when">
+          <div class="serie-jour">Jeu</div>
+          <div class="serie-heure">18:30</div>
+        </div>
+        <div class="serie-info">
+          <h3 class="serie-nom">Pilates contemporain</h3>
+          <div class="serie-meta">
+            <span class="serie-meta-item">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              60 min
+            </span>
+            <span class="serie-meta-item">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/></svg>
+              Studio Lotus
+            </span>
+          </div>
+        </div>
+        <div class="serie-stats">
+          <div class="serie-stat">
+            <div class="serie-stat-value">10</div>
+            <div class="serie-stat-label">Insc.</div>
+          </div>
+          <div class="serie-stat">
+            <div class="serie-stat-value">12</div>
+            <div class="serie-stat-label">Séances</div>
+          </div>
+          <div class="serie-cta">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <!-- Section ponctuels (workshops) -->
+    <div class="ponctuel-section">
+      <div class="section-title-page">Évènements ponctuels</div>
+
+      <a href="#" class="ponctuel-card">
+        <div class="ponctuel-date">
+          <div class="ponctuel-date-day">15</div>
+          <div class="ponctuel-date-month">Mai</div>
+        </div>
+        <div class="ponctuel-info">
+          <span class="ponctuel-tag">Workshop</span>
+          <div class="ponctuel-nom">Yoga &amp; sons (initiation aux bols tibétains)</div>
+          <div class="ponctuel-meta">14h–17h · Studio Lotus · 35 € · 4 / 12 inscrits</div>
+        </div>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+      </a>
+
+      <a href="#" class="ponctuel-card">
+        <div class="ponctuel-date">
+          <div class="ponctuel-date-day">22</div>
+          <div class="ponctuel-date-month">Mai</div>
+        </div>
+        <div class="ponctuel-info">
+          <span class="ponctuel-tag">Stage</span>
+          <div class="ponctuel-nom">Stage week-end « retour au souffle »</div>
+          <div class="ponctuel-meta">Sa 9h–17h · Salle Mairie · 120 € · 6 / 10 inscrits</div>
+        </div>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+      </a>
+
+    </div>
+
+  </main>
+</div>
+
+<button class="fab" aria-label="Nouveau cours">
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" x2="12" y1="5" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/></svg>
+</button>
+
+<div class="demo-info">
+  <strong>Mockup IziSolo 2026</strong> — page Cours &amp; Évènements<br>
+  Phase 1 (Sauge &amp; Cuivre) + Phase 2 (Inter/Fraunces/Caveat) appliquées.
+  Notes manuscrites <span style="font-family:'Caveat',cursive">"trouve ton centre"</span> en accent wellness.
+</div>
+
+</body>
+</html>

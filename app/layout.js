@@ -1,12 +1,20 @@
 import './globals.css';
 import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
-import { Instrument_Serif, Fraunces, Geist, Geist_Mono } from 'next/font/google';
+import { Instrument_Serif, Fraunces, Inter, JetBrains_Mono, Caveat } from 'next/font/google';
 import AuthFragmentCatcher from '@/components/auth/AuthFragmentCatcher';
 
 const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://izisolo.fr';
 
-// Fonts pour la landing (et disponibles partout via CSS variables)
+// === Phase 2 charte 2026 ===
+// On garde Fraunces (display chaud, workhorse 2026 confirmé par typo-bible).
+// On remplace Geist (Inter-like Vercel) par INTER directement — vrai
+// workhorse 2026 (gratuit, variable, optimisé écran). Idem JetBrains Mono
+// remplace Geist Mono — signature "données réelles" reconnue.
+// On ajoute CAVEAT pour les accents manuscrits wellness (citation
+// dashboard, message anniversaire, signature prof). À doser.
+// On conserve Instrument Serif pour la landing legacy.
+
 const instrumentSerif = Instrument_Serif({
   weight: '400',
   style: ['normal', 'italic'],
@@ -15,28 +23,42 @@ const instrumentSerif = Instrument_Serif({
   display: 'swap',
 });
 
-// Fraunces — police display warm et généreuse (axes opsz + SOFT + wght variables)
-// Utilisée pour les titres dashboard / sections, plus respirante que
-// Instrument Serif qui était trop condensée.
-// Note : Next.js refuse `weight: [...]` + `axes` ensemble — pour activer
-// les axes (opsz, SOFT), on doit charger en variable complète. On contrôle
-// le poids via font-weight ou font-variation-settings dans le CSS.
+// Fraunces — police display warm et généreuse (axes opsz + SOFT variables).
+// Utilisée pour titres dashboard, hero, sections. Le poids se contrôle via
+// font-weight ou font-variation-settings dans le CSS (axes + weight: [..]
+// sont mutuellement exclusifs en next/font).
 const fraunces = Fraunces({
   axes: ['opsz', 'SOFT'],
   subsets: ['latin'],
   variable: '--font-fraunces',
   display: 'swap',
 });
-const geist = Geist({
-  weight: ['300', '400', '500', '600'],
+
+// Inter — workhorse 2026 par défaut pour le body / UI.
+// Variable name conservé `--font-geist` pour zéro refacto sur les fichiers
+// qui le référencent déjà (landing.css alias `--font-body` derrière).
+const inter = Inter({
+  weight: ['300', '400', '500', '600', '700'],
   subsets: ['latin'],
   variable: '--font-geist',
   display: 'swap',
 });
-const geistMono = Geist_Mono({
-  weight: ['400', '500'],
+
+// JetBrains Mono — pour data, codes, prix dans factures, etc.
+// Variable name conservé `--font-geist-mono` pour rétrocompat.
+const jetMono = JetBrains_Mono({
+  weight: ['400', '500', '700'],
   subsets: ['latin'],
   variable: '--font-geist-mono',
+  display: 'swap',
+});
+
+// Caveat — accent manuscrit wellness (citation dashboard, message anniv).
+// À doser : 2-3 endroits max, jamais en body.
+const caveat = Caveat({
+  weight: ['600', '700'],
+  subsets: ['latin'],
+  variable: '--font-script',
   display: 'swap',
 });
 
@@ -79,7 +101,7 @@ export const viewport = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="fr" className={`${instrumentSerif.variable} ${fraunces.variable} ${geist.variable} ${geistMono.variable}`}>
+    <html lang="fr" className={`${instrumentSerif.variable} ${fraunces.variable} ${inter.variable} ${jetMono.variable} ${caveat.variable}`}>
       <head>
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />

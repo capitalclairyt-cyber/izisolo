@@ -6,55 +6,71 @@
    ============================================ */
 
 :root {
-  /* --- Palette par défaut : Rose (yoga) --- */
-  --brand: #d4a0a0;
-  --brand-light: #f5e6e6;
-  --brand-dark: #b07878;
-  --brand-50: #fdf2f2;
-  --brand-100: #f5e6e6;
-  --brand-200: #e8c5c5;
-  --brand-500: #d4a0a0;
-  --brand-600: #b07878;
-  --brand-700: #8c5858;
+  /* --- Palette « Sauge & Cuivre » 2026 (charte DESIGN-CHARTE-2026.md) ---
+     Casse l'effet "tout-rose" historique. Base earthy + accent cuivre
+     gender-neutral + sauge calme. Inspirée de la color-bible MéluTek 2026
+     §05 Wellness + §06 Heritage (quiet luxury).
+     L'ancienne palette rose est conservée comme thème optionnel
+     [data-theme="rose"] plus bas. */
+  --brand: #B87333;          /* Cuivre métallique — accent principal */
+  --brand-light: #FBF1E6;    /* Cuivre ultra pâle — hovers, brand-light bg */
+  --brand-dark: #8B5722;     /* Cuivre foncé — états pressed, accents intenses */
+  --brand-50:  #FDF8F1;
+  --brand-100: #FBF1E6;
+  --brand-200: #F0DCC1;
+  --brand-300: #DEB987;
+  --brand-500: #B87333;
+  --brand-600: #9F6228;
+  --brand-700: #7A4A1E;
 
-  /* --- Neutres organiques --- */
-  --cream: #faf8f5;
-  --cream-dark: #f0ece5;
+  /* --- Neutres organiques (warm conservés, légers ajustements) --- */
+  --cream: #FAF7F2;
+  --cream-dark: #EFE9DD;
   --taupe: #8c7b6b;
   --taupe-light: #b8a99a;
   --brown: #5c4a3a;
   --brown-dark: #3d3028;
 
-  /* --- Sauge / accent vert --- */
-  --sage: #a8b5a0;
-  --sage-light: #d4ddd0;
-  --sage-dark: #7a8a72;
+  /* --- Sauge poudré : accent calme principal (badges neutres, hovers) --- */
+  --sage: #9CAFA0;
+  --sage-light: #E5EBE5;
+  --sage-dark: #5A6B62;
+  --sage-deep: #2C3935;
 
-  /* --- Terre / accent chaud --- */
+  /* --- Terre / accent chaud (conservé pour rétrocompat) --- */
   --terre: #c4956a;
   --terre-light: #e8d4be;
 
-  /* --- Sémantiques --- */
-  --success: #7ab07a;
-  --warning: #d4b06a;
-  --danger: #c47070;
-  --info: #7aa0c4;
+  /* --- Hot : persimmon, RÉSERVÉ aux CTAs success / actions chaudes --- */
+  --hot: #E8722A;
+  --hot-light: #FCE8DA;
 
-  /* --- Texte --- */
-  --text-primary: #3d3028;
-  --text-secondary: #8c7b6b;
-  --text-muted: #b8a99a;
-  --text-inverse: #faf8f5;
+  /* --- Sémantiques 2026 (pas de vert Photoshop éco, pas de rouge plat) --- */
+  --success: #6B9A6B;
+  --success-light: #E2EDDE;
+  --warning: #D4B06A;
+  --warning-light: #F5EBD2;
+  --danger:  #C4574E;
+  --danger-light: #F5DDD8;
+  --info:    #5A8AA8;
+  --info-light: #DEE8EE;
+
+  /* --- Texte (warm) --- */
+  --text-primary:   #3D3028;
+  --text-secondary: #6B5A4A;
+  --text-muted:     #A89888;
+  --text-inverse:   #FAF7F2;
 
   /* --- Surfaces --- */
-  --bg-page: #faf8f5;
-  --bg-card: #ffffff;
-  --bg-card-hover: #f5f0ea;
-  --bg-input: #ffffff;
-  --bg-nav: #ffffff;
+  --bg-page:        #FAF7F2;
+  --bg-card:        #FFFFFF;
+  --bg-card-hover:  #F5F0E8;
+  --bg-input:       #FFFFFF;
+  --bg-nav:         #FFFFFF;
+  --bg-soft:        #F8F4ED;  /* nouveau : papier kraft warm pour sections */
 
   /* --- Bordures --- */
-  --border: #e8e2da;
+  --border: #E5DED2;
   --border-focus: var(--brand);
 
   /* --- Ombres douces --- */
@@ -154,7 +170,24 @@
   color: #1a1612;
 }
 
-/* === Palettes alternatives === */
+/* === Palettes alternatives ===
+   Le défaut (Sauge & Cuivre) est défini sur :root ci-dessus.
+   Un studio peut basculer sur `[data-theme="rose"]` pour récupérer la
+   palette historique millennial pink, ou sur les autres thèmes. */
+
+[data-theme="rose"] {
+  /* Ancien défaut historique conservé pour rétrocompat */
+  --brand: #d4a0a0;
+  --brand-light: #f5e6e6;
+  --brand-dark: #b07878;
+  --brand-50: #fdf2f2;
+  --brand-100: #f5e6e6;
+  --brand-200: #e8c5c5;
+  --brand-500: #d4a0a0;
+  --brand-600: #b07878;
+  --brand-700: #8c5858;
+}
+
 [data-theme="ocean"] {
   --brand: #7aa0c4;
   --brand-light: #dce8f2;
@@ -228,7 +261,9 @@ html {
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  /* Phase 2 charte 2026 : Inter en body via --font-geist (variable name
+     historique conservée pour zéro refacto, mais charge Inter derrière). */
+  font-family: var(--font-geist), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   background: var(--bg-page);
   color: var(--text-primary);
   line-height: 1.6;

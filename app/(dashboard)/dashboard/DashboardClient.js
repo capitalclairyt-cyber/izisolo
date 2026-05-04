@@ -140,40 +140,75 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
         </div>
       )}
 
-      {/* 3 tuiles stats colorées style Snug Simple */}
-      <div className="dash-stats animate-slide-up">
-        <Link href="/agenda" className="stat-tile stat-tile--rose">
-          <div className="stat-tile-icon"><CalendarDays size={22} /></div>
-          <div className="stat-tile-value">{coursDuJour.length}</div>
-          <div className="stat-tile-label">Séances aujourd'hui</div>
-        </Link>
-
-        <Link href="/clients" className="stat-tile stat-tile--sage">
-          <div className="stat-tile-icon"><Users size={22} /></div>
-          <div className="stat-tile-value">{inscritsAujourdhui || nbClients}</div>
-          <div className="stat-tile-label">{coursDuJour.length > 0 ? 'Inscrits aujourd\'hui' : (vocab.Clients || 'Élèves')}</div>
-        </Link>
-
-        <Link href="/revenus" className="stat-tile stat-tile--sand">
-          <div className="stat-tile-icon"><BarChart3 size={22} /></div>
-          <div className="stat-tile-value">{formatMontant(revenusMois)}</div>
-          <div className="stat-tile-label">Revenus ce mois</div>
-        </Link>
-      </div>
-
-      {/* CTA Sondage planning — visible si pas encore de sondage créé */}
-      {!hasSondage && (
-        <Link href="/sondages/nouveau" className="dash-sondage-cta animate-slide-up">
-          <div className="dash-sondage-icon"><ClipboardList size={20} /></div>
-          <div className="dash-sondage-text">
-            <div className="dash-sondage-title">Sondage planning — découvre tes meilleurs créneaux</div>
-            <div className="dash-sondage-desc">
-              Découvre quels créneaux les rempliraient le mieux. 30 secondes pour eux, gros gain pour toi.
-            </div>
+      {/* === BENTO GRID — Phase 3 charte 2026 ===
+          Remplace les anciennes 3 stat-tiles par une grille bento qui
+          consolide : revenus (main), agenda, élèves, sondage, portail,
+          + bandeau alerte large (si alertes.length > 0).
+          Couleurs = catégorie métier (cf. uxui-bible §02 Bento Grid). */}
+      <div className="dash-bento animate-slide-up">
+        {/* Grosse tuile : Revenus du mois (KPI principal — la boussole prof) */}
+        <Link href="/revenus" className="bento-cell bento-cell--main">
+          <div>
+            <div className="bento-icon"><BarChart3 size={20} /></div>
+            <div className="bento-label" style={{ marginTop: 14 }}>Revenus ce mois</div>
           </div>
-          <ChevronRight size={16} style={{ color: 'var(--brand)', flexShrink: 0 }} />
+          <div>
+            <div className="bento-value">{formatMontant(revenusMois)}</div>
+          </div>
         </Link>
-      )}
+
+        {/* Agenda — séances aujourd'hui */}
+        <Link href="/agenda" className="bento-cell bento-cell--agenda">
+          <div className="bento-icon"><CalendarDays size={20} /></div>
+          <div>
+            <div className="bento-value">{coursDuJour.length}</div>
+            <div className="bento-label">Séances aujourd'hui</div>
+          </div>
+        </Link>
+
+        {/* Élèves actifs */}
+        <Link href="/clients" className="bento-cell bento-cell--eleves">
+          <div className="bento-icon"><Users size={20} /></div>
+          <div>
+            <div className="bento-value">{inscritsAujourdhui || nbClients}</div>
+            <div className="bento-label">{coursDuJour.length > 0 ? 'Inscrits aujourd\'hui' : (vocab.Clients || 'Élèves')}</div>
+          </div>
+        </Link>
+
+        {/* Sondage : si pas encore créé → CTA, sinon → résumé */}
+        <Link href="/sondages" className="bento-cell bento-cell--info">
+          <div className="bento-icon"><ClipboardList size={20} /></div>
+          <div>
+            <div className="bento-value bento-value--small">{hasSondage ? 'Sondage' : 'Lancer'}</div>
+            <div className="bento-label">{hasSondage ? 'Voir résultats' : 'Découvre tes créneaux'}</div>
+          </div>
+        </Link>
+
+        {/* Portail public */}
+        {studioSlug && portalUrl && (
+          <button onClick={copyPortalUrl} className="bento-cell bento-cell--portal" type="button">
+            <div className="bento-icon"><Share2 size={20} /></div>
+            <div>
+              <div className="bento-value bento-value--small">Portail</div>
+              <div className="bento-label bento-portal-url">{portalUrl.replace(/^https?:\/\//, '')}</div>
+            </div>
+          </button>
+        )}
+
+        {/* Bandeau alerte (full width bottom) — si au moins une alerte */}
+        {alertes.length > 0 && (
+          <Link href="/clients" className="bento-cell bento-cell--alerte">
+            <div className="bento-icon"><AlertTriangle size={20} /></div>
+            <div className="bento-alerte-msg">
+              <div className="bento-alerte-title">{alertes[0].message}</div>
+              {alertes.length > 1 && (
+                <div className="bento-alerte-desc">+{alertes.length - 1} autre{alertes.length > 2 ? 's' : ''} alerte{alertes.length > 2 ? 's' : ''}</div>
+              )}
+            </div>
+            <ChevronRight size={16} />
+          </Link>
+        )}
+      </div>
 
       {/* Widget Mes coûts — visible dès qu'il y a au moins un coût ce mois */}
       {coutsMois && (coutsMois.sms.count > 0 || coutsMois.stripe.montant > 0) && (
@@ -279,24 +314,9 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
         )}
       </div>
 
-      {/* Widget portail élève — toujours visible si studio_slug existe */}
-      {studioSlug && portalUrl && (
-        <div className="dash-portal-widget izi-card animate-slide-up">
-          <div className="dash-portal-icon"><Share2 size={18} /></div>
-          <div className="dash-portal-text">
-            <div className="dash-portal-title">Ton portail élève</div>
-            <div className="dash-portal-url">{portalUrl.replace(/^https?:\/\//, '')}</div>
-          </div>
-          <div className="dash-portal-actions">
-            <button onClick={copyPortalUrl} className="dash-portal-btn" title="Copier le lien" aria-label="Copier le lien du portail">
-              <Copy size={14} />
-            </button>
-            <a href={portalUrl} target="_blank" rel="noopener noreferrer" className="dash-portal-btn" title="Voir comme un élève" aria-label="Voir le portail comme un élève">
-              <ExternalLink size={14} />
-            </a>
-          </div>
-        </div>
-      )}
+      {/* Le widget portail séparé a été retiré (Phase 3 charte 2026) :
+          il est désormais intégré dans la grille bento en haut, qui
+          affiche déjà l'URL + clic pour copier. Évite le doublon. */}
 
       {/* FAB : nouveau cours */}
       <Link href="/cours/nouveau" className="izi-fab" aria-label="Nouvelle séance">
@@ -388,73 +408,131 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
           font-weight: 600;
         }
 
-        /* Stats — tuiles pleines tonées style Claude Design */
-        .dash-stats {
+        /* === BENTO GRID — Phase 3 charte 2026 ===
+           Layout : 1 grosse cellule "main" (revenus) + 4 petites + 1 large bottom alerte.
+           Couleurs = catégorie métier (cuivre = activité, sage = humain, info = comm).
+           Mobile : tout passe en colonne unique sauf paire agenda+élèves. */
+        .dash-bento {
           display: grid;
-          grid-template-columns: repeat(3, 1fr);
+          grid-template-columns: 2fr 1fr 1fr;
+          grid-template-rows: 130px 130px auto;
           gap: 12px;
         }
-        .stat-tile {
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-          padding: 18px 16px 20px;
-          border-radius: 22px;
-          text-decoration: none;
-          color: inherit;
-          transition: transform .15s, box-shadow .15s;
-          position: relative;
-          overflow: hidden;
-          min-height: 130px;
+        .bento-cell {
+          display: flex; flex-direction: column; justify-content: space-between;
+          padding: 18px 16px 18px;
+          background: var(--bg-card);
+          border: 1px solid var(--border);
+          border-radius: 18px;
+          text-decoration: none; color: inherit;
+          cursor: pointer;
+          transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+          font-family: inherit;
+          text-align: left;
         }
-        .stat-tile:hover {
+        .bento-cell:hover {
           transform: translateY(-2px);
           box-shadow: 0 6px 20px rgba(70, 35, 25, 0.08);
         }
-        .stat-tile--rose {
-          background: var(--tone-rose-bg);
-          color: var(--tone-rose-ink);
+
+        /* Tuile MAIN : grosse + sombre, signal "KPI principal" */
+        .bento-cell--main {
+          grid-column: 1; grid-row: 1 / 3;
+          background: linear-gradient(135deg, var(--sage-deep) 0%, var(--sage-dark) 100%);
+          color: white;
+          border-color: transparent;
         }
-        .stat-tile--sage {
-          background: var(--tone-sage-bg);
-          color: var(--tone-sage-ink);
+        .bento-cell--main .bento-icon { background: rgba(255, 255, 255, 0.16); color: white; }
+        .bento-cell--main .bento-label { color: rgba(255, 255, 255, 0.7); }
+        .bento-cell--main .bento-value { color: white; font-size: 2.25rem; }
+
+        /* Agenda : cuivre */
+        .bento-cell--agenda { background: var(--brand-light); border-color: transparent; }
+        .bento-cell--agenda .bento-icon { background: var(--brand); color: white; }
+        .bento-cell--agenda .bento-value { color: var(--brand-700); }
+        .bento-cell--agenda .bento-label { color: var(--brand-700); opacity: 0.8; }
+
+        /* Élèves : sauge */
+        .bento-cell--eleves { background: var(--sage-light); border-color: transparent; }
+        .bento-cell--eleves .bento-icon { background: var(--sage-dark); color: white; }
+        .bento-cell--eleves .bento-value { color: var(--sage-deep); }
+        .bento-cell--eleves .bento-label { color: var(--sage-dark); }
+
+        /* Sondage : bleu fumé info */
+        .bento-cell--info { background: var(--info-light); border-color: transparent; }
+        .bento-cell--info .bento-icon { background: var(--info); color: white; }
+        .bento-cell--info .bento-value { color: var(--info); }
+        .bento-cell--info .bento-label { color: var(--info); opacity: 0.85; }
+
+        /* Portail : cuivre clair (button, pas link) */
+        .bento-cell--portal { background: var(--brand-50); border-color: transparent; }
+        .bento-cell--portal .bento-icon { background: var(--brand); color: white; }
+        .bento-cell--portal .bento-value { color: var(--brand-700); }
+        .bento-cell--portal .bento-label { color: var(--brand-700); opacity: 0.85; }
+        .bento-portal-url {
+          font-family: var(--font-geist-mono), ui-monospace, monospace;
+          font-size: 0.6875rem;
+          overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+          max-width: 100%;
         }
-        .stat-tile--sand {
-          background: var(--tone-sand-bg);
-          color: var(--tone-sand-ink);
+
+        /* Alerte : pleine largeur bas, persimmon hot (signal action) */
+        .bento-cell--alerte {
+          grid-column: 1 / -1; grid-row: 3;
+          background: var(--hot-light);
+          border-color: transparent;
+          flex-direction: row; align-items: center; gap: 14px;
+          padding: 14px 18px;
+          color: var(--hot);
         }
-        .stat-tile--lavender {
-          background: var(--tone-lavender-bg);
-          color: var(--tone-lavender-ink);
+        .bento-cell--alerte .bento-icon {
+          background: var(--hot); color: white;
+          flex-shrink: 0; margin: 0;
         }
-        .stat-tile-icon {
-          width: 36px;
-          height: 36px;
-          border-radius: 50%;
-          background: rgba(255, 255, 255, 0.6);
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
+        .bento-alerte-msg { flex: 1; min-width: 0; }
+        .bento-alerte-title { font-weight: 600; color: var(--text-primary); font-size: 0.9375rem; line-height: 1.3; }
+        .bento-alerte-desc { font-size: 0.75rem; color: var(--text-secondary); margin-top: 2px; }
+
+        /* Atomes communs */
+        .bento-icon {
+          width: 38px; height: 38px;
+          border-radius: 12px;
+          display: inline-flex; align-items: center; justify-content: center;
         }
-        .stat-tile-value {
-          font-size: 2rem;
-          font-weight: 500;
+        .bento-label {
+          font-size: 0.75rem; font-weight: 600;
+          text-transform: uppercase; letter-spacing: 0.04em;
+          color: var(--text-muted);
+          line-height: 1.3;
+        }
+        .bento-value {
+          font-size: 2rem; font-weight: 600;
           line-height: 1;
           font-family: var(--font-fraunces), Georgia, serif;
           font-variation-settings: 'opsz' 144, 'SOFT' 100;
           letter-spacing: -0.02em;
-          margin-top: auto;
+          color: var(--text-primary);
+          margin-bottom: 4px;
         }
-        .stat-tile-label {
-          font-size: 0.75rem;
-          font-weight: 500;
-          opacity: 0.85;
-          line-height: 1.3;
-        }
-        @media (max-width: 480px) {
-          .stat-tile { min-height: 110px; padding: 14px 12px 16px; }
-          .stat-tile-value { font-size: 1.5rem; }
-          .stat-tile-label { font-size: 0.6875rem; }
+        .bento-value--small { font-size: 1.25rem; }
+
+        /* Mobile : 2 colonnes simples, alerte full-width */
+        @media (max-width: 768px) {
+          .dash-bento {
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 130px 110px 110px auto;
+          }
+          .bento-cell--main {
+            grid-column: 1 / 3; grid-row: 1;
+            min-height: 130px;
+          }
+          .bento-cell--agenda { grid-column: 1; grid-row: 2; }
+          .bento-cell--eleves { grid-column: 2; grid-row: 2; }
+          .bento-cell--info   { grid-column: 1; grid-row: 3; }
+          .bento-cell--portal { grid-column: 2; grid-row: 3; }
+          .bento-cell--alerte { grid-column: 1 / 3; grid-row: 4; }
+          .bento-value { font-size: 1.625rem; }
+          .bento-cell--main .bento-value { font-size: 1.875rem; }
         }
 
         /* Section header — gros titre serif Snug Simple */

@@ -1,0 +1,573 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>IziSolo — Dashboard 2026 (Sauge &amp; Cuivre)</title>
+
+<!-- Phase 2 : Inter (body) + Fraunces (display, axes opsz + SOFT) + Caveat (script) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,SOFT,wght@9..144,30..100,400..700&family=Inter:wght@400;500;600;700&family=Caveat:wght@600;700&display=swap" rel="stylesheet">
+
+<style>
+/* ==========================================================
+   PHASE 1 — Palette « Sauge & Cuivre »
+   Casse le tout-rose, base earthy + accent cuivre + sage calme
+   ========================================================== */
+:root {
+  /* Brand : cuivre métallique chaud, gender-neutral */
+  --brand:        #B87333;
+  --brand-light:  #FBF1E6;
+  --brand-dark:   #8B5722;
+  --brand-50:     #FDF8F1;
+  --brand-100:    #FBF1E6;
+  --brand-200:    #F0DCC1;
+  --brand-300:    #DEB987;
+  --brand-500:    #B87333;
+  --brand-600:    #9F6228;
+  --brand-700:    #7A4A1E;
+
+  /* Accents calmes : sauge poudré */
+  --sage:         #9CAFA0;
+  --sage-light:   #E5EBE5;
+  --sage-dark:    #5A6B62;
+  --sage-deep:    #2C3935;
+
+  /* Accent hot : persimmon, réservé CTAs success / actions chaudes */
+  --hot:          #E8722A;
+  --hot-light:    #FCE8DA;
+
+  /* Neutres warm conservés */
+  --cream:        #FAF7F2;
+  --cream-dark:   #EFE9DD;
+  --bg-page:      #FAF7F2;
+  --bg-card:      #FFFFFF;
+  --bg-card-hover:#F5F0E8;
+  --bg-soft:      #F8F4ED;
+
+  /* Texte chaud */
+  --text-primary:    #3D3028;
+  --text-secondary:  #6B5A4A;
+  --text-muted:      #A89888;
+  --text-inverse:    #FAF7F2;
+
+  --border:         #E5DED2;
+  --border-focus:   var(--brand);
+
+  /* Sémantiques 2026 (pas de rouge plat ni de vert Photoshop éco) */
+  --success:        #6B9A6B;
+  --success-light:  #E2EDDE;
+  --warning:        #D4B06A;
+  --warning-light:  #F5EBD2;
+  --danger:         #C4574E;
+  --danger-light:   #F5DDD8;
+  --info:           #5A8AA8;
+  --info-light:     #DEE8EE;
+
+  /* Ombres warm (rgba brun) */
+  --shadow-sm: 0 1px 2px rgba(92, 74, 58, 0.05);
+  --shadow-md: 0 4px 12px rgba(92, 74, 58, 0.08);
+  --shadow-lg: 0 8px 24px rgba(92, 74, 58, 0.12);
+
+  --radius-sm: 8px; --radius-md: 12px; --radius-lg: 16px; --radius-xl: 24px;
+
+  /* Phase 2 — variables typo */
+  --font-display: 'Fraunces', Georgia, serif;
+  --font-body:    'Inter', -apple-system, sans-serif;
+  --font-script:  'Caveat', cursive;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  background: var(--bg-page);
+  color: var(--text-primary);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+/* ==========================================================
+   Layout : sidebar fixe + main
+   ========================================================== */
+.layout { display: flex; min-height: 100vh; }
+.sidebar {
+  width: 230px; flex-shrink: 0;
+  background: var(--cream);
+  border-right: 1px solid var(--cream-dark);
+  padding: 14px 8px 12px;
+  display: flex; flex-direction: column;
+  position: sticky; top: 0; height: 100vh;
+}
+.sidebar-header { padding: 0 6px 14px; border-bottom: 1px solid rgba(232, 224, 216, 0.5); }
+.sidebar-logo {
+  display: flex; align-items: center; gap: 8px;
+  font-family: var(--font-display);
+  font-size: 1.25rem; font-weight: 500;
+  font-variation-settings: 'opsz' 144, 'SOFT' 100;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+}
+.sidebar-logo svg { color: var(--brand); }
+.sidebar-studio { font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; padding-left: 26px; }
+
+.sidebar-section-title {
+  font-size: 0.6875rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.05em;
+  color: var(--text-muted);
+  padding: 14px 14px 4px;
+}
+.sidebar-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 9px 14px; margin-bottom: 2px;
+  border-radius: 10px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 0.875rem; font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.sidebar-item:hover { background: white; color: var(--text-primary); }
+.sidebar-item.active {
+  background: white; color: var(--text-primary); font-weight: 600;
+  box-shadow: 0 1px 4px rgba(70, 35, 25, 0.08);
+}
+.sidebar-item.active svg { color: var(--brand); }
+
+.main {
+  flex: 1; min-width: 0;
+  padding: 24px 32px 80px;
+  max-width: 1200px;
+}
+
+/* ==========================================================
+   Dashboard
+   ========================================================== */
+
+/* — Header greeting — */
+.dash-header { margin-bottom: 18px; }
+.dash-header-top { display: flex; align-items: center; gap: 14px; }
+.dash-avatar {
+  width: 48px; height: 48px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--brand) 0%, var(--brand-dark) 100%);
+  color: white; display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 1.125rem;
+  box-shadow: var(--shadow-sm);
+}
+.dash-greeting h1 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.625rem; font-weight: 500;
+  font-variation-settings: 'opsz' 144, 'SOFT' 100;
+  letter-spacing: -0.015em;
+  color: var(--text-primary);
+}
+.dash-date { margin: 2px 0 0; font-size: 0.875rem; color: var(--text-muted); text-transform: capitalize; }
+
+/* — Citation manuscrite (Caveat) — Phase 2 wellness accent — */
+.dash-quote {
+  margin: 14px 0 22px;
+  padding: 12px 18px;
+  font-family: var(--font-script);
+  font-size: 1.25rem; color: var(--sage-dark);
+  border-left: 3px solid var(--sage);
+  background: var(--sage-light);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  transform: rotate(-0.3deg);
+}
+
+/* ==========================================================
+   PHASE 3 — Bento Grid : 1 grosse cellule + 4-6 secondaires
+   ========================================================== */
+.bento {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  grid-template-rows: 140px 140px 140px;
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
+.bento-cell {
+  border-radius: var(--radius-lg);
+  padding: 22px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  display: flex; flex-direction: column; justify-content: space-between;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s;
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+}
+.bento-cell:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+
+/* Couleurs = catégorie métier (règle bento-bible) */
+.bento-cell--main {
+  grid-column: 1; grid-row: 1 / 3;
+  background: linear-gradient(135deg, #2C3935 0%, #5A6B62 100%);
+  color: white;
+  border-color: transparent;
+}
+.bento-cell--main .bento-icon { background: rgba(255, 255, 255, 0.16); color: white; }
+.bento-cell--main .bento-label { color: rgba(255, 255, 255, 0.7); }
+.bento-cell--main .bento-trend { color: #B6E0B6; }
+
+.bento-cell--agenda { background: var(--brand-light); border-color: transparent; }
+.bento-cell--agenda .bento-icon { background: var(--brand); color: white; }
+.bento-cell--agenda .bento-value { color: var(--brand-700); }
+
+.bento-cell--eleves { background: var(--sage-light); border-color: transparent; }
+.bento-cell--eleves .bento-icon { background: var(--sage-dark); color: white; }
+.bento-cell--eleves .bento-value { color: var(--sage-deep); }
+
+.bento-cell--alerte {
+  grid-column: 2 / 4; grid-row: 3;
+  background: var(--hot-light); border-color: transparent;
+  display: flex; flex-direction: row; align-items: center; gap: 16px;
+}
+.bento-cell--alerte .bento-icon { background: var(--hot); color: white; flex-shrink: 0; }
+
+.bento-icon {
+  width: 40px; height: 40px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+}
+.bento-label {
+  font-size: 0.75rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+.bento-value {
+  font-family: var(--font-display);
+  font-size: 2.25rem; font-weight: 600;
+  font-variation-settings: 'opsz' 144;
+  line-height: 1;
+  color: var(--text-primary);
+}
+.bento-cell--main .bento-value { font-size: 2.625rem; color: white; }
+.bento-trend {
+  font-size: 0.8125rem; font-weight: 500;
+  display: inline-flex; align-items: center; gap: 4px;
+  color: var(--success);
+}
+.bento-context { font-size: 0.875rem; color: var(--text-secondary); margin: 0; }
+
+/* Alerte content */
+.alerte-msg { flex: 1; min-width: 0; }
+.alerte-msg-title { font-weight: 600; color: var(--text-primary); font-size: 0.9375rem; }
+.alerte-msg-desc { font-size: 0.8125rem; color: var(--text-secondary); margin-top: 2px; }
+
+/* — Section : prochains cours — */
+.section-title {
+  font-family: var(--font-display);
+  font-size: 1.25rem; font-weight: 600;
+  font-variation-settings: 'opsz' 144;
+  margin: 24px 0 14px;
+  display: flex; align-items: center; justify-content: space-between;
+  color: var(--text-primary);
+}
+.section-title-link {
+  font-family: var(--font-body);
+  font-size: 0.8125rem; color: var(--brand);
+  text-decoration: none; font-weight: 500;
+}
+.section-title-link:hover { text-decoration: underline; }
+
+.cours-list { display: flex; flex-direction: column; gap: 8px; }
+.cours-card {
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+}
+.cours-card:hover {
+  border-color: var(--brand-300);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+.cours-time {
+  font-family: var(--font-display);
+  font-size: 1.125rem; font-weight: 600;
+  font-variation-settings: 'opsz' 144;
+  color: var(--brand);
+  min-width: 56px;
+}
+.cours-info { flex: 1; min-width: 0; }
+.cours-nom { font-weight: 600; color: var(--text-primary); }
+.cours-meta { font-size: 0.8125rem; color: var(--text-secondary); margin-top: 2px; }
+.cours-inscrits {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 4px 10px;
+  background: var(--sage-light); color: var(--sage-dark);
+  border-radius: 99px;
+  font-size: 0.75rem; font-weight: 600;
+}
+
+/* — Coûts widget — */
+.couts-widget {
+  margin-top: 24px;
+  padding: 18px 20px;
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+.couts-header {
+  display: flex; align-items: center; gap: 8px;
+  font-weight: 600; color: var(--text-primary);
+  margin-bottom: 12px;
+}
+.couts-header svg { color: var(--brand); }
+.couts-rows { display: flex; flex-direction: column; gap: 8px; }
+.couts-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px dashed var(--border);
+}
+.couts-row:last-child { border-bottom: none; }
+.couts-left { display: flex; align-items: center; gap: 8px; color: var(--text-secondary); font-size: 0.875rem; }
+.couts-badge { background: var(--brand-light); color: var(--brand-700); padding: 2px 8px; border-radius: 99px; font-size: 0.75rem; font-weight: 600; }
+.couts-amount { font-weight: 600; color: var(--text-primary); }
+
+/* — Mockup label "before vs after" — */
+.demo-info {
+  position: fixed; bottom: 14px; right: 14px;
+  background: rgba(60, 50, 40, 0.92);
+  color: white; padding: 10px 14px;
+  border-radius: var(--radius-md);
+  font-size: 0.75rem; font-family: var(--font-body);
+  box-shadow: var(--shadow-lg);
+  max-width: 320px; line-height: 1.5;
+}
+.demo-info strong { color: var(--brand-300); }
+
+@media (max-width: 1023px) {
+  .sidebar { display: none; }
+  .main { padding: 16px; }
+  .bento { grid-template-columns: 1fr 1fr; grid-template-rows: 140px 100px 100px 140px; }
+  .bento-cell--main { grid-column: 1 / 3; grid-row: 1; }
+  .bento-cell--alerte { grid-column: 1 / 3; grid-row: 4; }
+}
+</style>
+</head>
+<body>
+
+<div class="layout">
+
+  <!-- ===== SIDEBAR ===== -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>
+        <span>IziSolo</span>
+      </div>
+      <div class="sidebar-studio">Atelier Mélusine</div>
+    </div>
+
+    <nav style="padding: 12px 0;">
+      <a class="sidebar-item active" href="#">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        <span>Accueil</span>
+      </a>
+      <a class="sidebar-item" href="#">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
+        <span>Agenda</span>
+      </a>
+      <a class="sidebar-item" href="#">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+        <span>Cours &amp; Évènements</span>
+      </a>
+      <a class="sidebar-item" href="#">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <span>Élèves</span>
+      </a>
+
+      <div class="sidebar-section-title">Gestion</div>
+      <a class="sidebar-item" href="#">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16.5 9.4 7.55 4.24M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+        <span>Offres</span>
+      </a>
+      <a class="sidebar-item" href="#">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" x2="12" y1="20" y2="10"/><line x1="18" x2="18" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="16"/></svg>
+        <span>Revenus</span>
+      </a>
+    </nav>
+  </aside>
+
+  <!-- ===== MAIN ===== -->
+  <main class="main">
+
+    <!-- Header greeting -->
+    <div class="dash-header">
+      <div class="dash-header-top">
+        <div class="dash-avatar">M</div>
+        <div class="dash-greeting">
+          <h1>Bonjour Maude !</h1>
+          <p class="dash-date">mardi 5 mai</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Citation manuscrite optionnelle (accent Caveat — Phase 2) -->
+    <div class="dash-quote">
+      "Souffle. Le tapis t'attend." 🌿
+    </div>
+
+    <!-- ===== BENTO GRID — Phase 3 ===== -->
+    <div class="bento">
+
+      <!-- Grosse cellule : revenus mois (donnée principale) -->
+      <a href="#" class="bento-cell bento-cell--main">
+        <div>
+          <div class="bento-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          </div>
+          <div class="bento-label" style="margin-top: 14px;">Revenus ce mois</div>
+        </div>
+        <div>
+          <div class="bento-value">2 340 €</div>
+          <div class="bento-trend" style="margin-top: 8px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+            +18% vs avril
+          </div>
+        </div>
+      </a>
+
+      <!-- Agenda : prochains cours -->
+      <a href="#" class="bento-cell bento-cell--agenda">
+        <div class="bento-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
+        </div>
+        <div>
+          <div class="bento-value">3</div>
+          <div class="bento-label">Séances aujourd'hui</div>
+        </div>
+      </a>
+
+      <!-- Élèves actifs -->
+      <a href="#" class="bento-cell bento-cell--eleves">
+        <div class="bento-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+        </div>
+        <div>
+          <div class="bento-value">28</div>
+          <div class="bento-label">Élèves actifs</div>
+        </div>
+      </a>
+
+      <!-- Communication / sondage -->
+      <a href="#" class="bento-cell" style="background: white;">
+        <div class="bento-icon" style="background: var(--info-light); color: var(--info);">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M9 14l2 2 4-4"/></svg>
+        </div>
+        <div>
+          <div class="bento-value" style="font-size: 1.5rem;">Sondage</div>
+          <div class="bento-context">2 réponses sur 12 envoyés</div>
+        </div>
+      </a>
+
+      <!-- Page publique -->
+      <a href="#" class="bento-cell" style="background: white;">
+        <div class="bento-icon" style="background: var(--brand-light); color: var(--brand);">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
+        </div>
+        <div>
+          <div class="bento-value" style="font-size: 1.5rem;">Portail</div>
+          <div class="bento-context">izisolo.fr/p/atelier-melusine</div>
+        </div>
+      </a>
+
+      <!-- Bandeau alerte (largeur 2 cols, hauteur 1) -->
+      <a href="#" class="bento-cell bento-cell--alerte">
+        <div class="bento-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>
+        </div>
+        <div class="alerte-msg">
+          <div class="alerte-msg-title">2 carnets vont expirer cette semaine</div>
+          <div class="alerte-msg-desc">Caroline et Sophie ont moins de 2 séances restantes</div>
+        </div>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+      </a>
+    </div>
+
+    <!-- ===== Section : prochains cours (liste classique) ===== -->
+    <div class="section-title">
+      <span>Prochains cours</span>
+      <a href="#" class="section-title-link">Voir l'agenda complet →</a>
+    </div>
+
+    <div class="cours-list">
+      <a href="#" class="cours-card">
+        <div class="cours-time">09:00</div>
+        <div class="cours-info">
+          <div class="cours-nom">Vinyasa flow</div>
+          <div class="cours-meta">Studio Lotus · 60 min</div>
+        </div>
+        <div class="cours-inscrits">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+          8 / 10
+        </div>
+      </a>
+
+      <a href="#" class="cours-card">
+        <div class="cours-time">12:30</div>
+        <div class="cours-info">
+          <div class="cours-nom">Yin yoga (pause méridienne)</div>
+          <div class="cours-meta">Studio Lotus · 45 min</div>
+        </div>
+        <div class="cours-inscrits">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+          5 / 8
+        </div>
+      </a>
+
+      <a href="#" class="cours-card">
+        <div class="cours-time">19:00</div>
+        <div class="cours-info">
+          <div class="cours-nom">Hatha doux</div>
+          <div class="cours-meta">Salle Mairie · 75 min</div>
+        </div>
+        <div class="cours-inscrits">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+          12 / 12
+        </div>
+      </a>
+    </div>
+
+    <!-- Widget coûts -->
+    <div class="couts-widget">
+      <div class="couts-header">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        <span>Mes coûts ce mois</span>
+      </div>
+      <div class="couts-rows">
+        <div class="couts-row">
+          <div class="couts-left">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            <span>SMS envoyés</span>
+            <span class="couts-badge">14</span>
+          </div>
+          <span class="couts-amount">0,98 €</span>
+        </div>
+        <div class="couts-row">
+          <div class="couts-left">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
+            <span>Stripe (transactions)</span>
+            <span class="couts-badge">6</span>
+          </div>
+          <span class="couts-amount">8,40 €</span>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<div class="demo-info">
+  <strong>Mockup IziSolo 2026</strong> — palette « Sauge &amp; Cuivre »<br>
+  Phase 1 (couleurs) + Phase 2 (Inter/Fraunces/Caveat) + Phase 3 (Bento dashboard) appliquées.
+</div>
+
+</body>
+</html>
