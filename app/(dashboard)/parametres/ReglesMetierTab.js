@@ -102,6 +102,12 @@ export default function ReglesMetierTab({ profileId }) {
           appliquera tes règles automatiquement, ou te remontera le cas dans une
           inbox « À traiter » si tu choisis le mode manuel. Tu peux modifier
           ces règles à tout moment.
+          <div style={{ marginTop: 10 }}>
+            💡 <em>Pas envie de tout configurer ?</em> Les valeurs par défaut sont
+            déjà saines (équilibre strict/souple, notif élève quand pertinent).
+            Tu peux <strong>cliquer Enregistrer en bas tout de suite</strong> et
+            ajuster plus tard si besoin.
+          </div>
         </div>
       </div>
 

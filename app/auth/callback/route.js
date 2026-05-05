@@ -25,12 +25,27 @@ import { createServerClient } from '@/lib/supabase-server';
  * pointer sur :
  *   {{ .SiteURL }}/auth/callback?token_hash={{ .TokenHash }}&type=signup&next=/onboarding
  */
+/**
+ * Valide qu'un paramètre `next` est une URL relative interne sûre.
+ * Empêche les open redirects type `next=//evil.com` ou `next=/\evil.com`
+ * qui peuvent être utilisés pour du phishing via magic link.
+ */
+function safeNext(raw) {
+  if (!raw) return '/dashboard';
+  // Doit commencer par '/' mais pas '//' ni '/\' (qui sont schema-relative)
+  if (!raw.startsWith('/')) return '/dashboard';
+  if (raw.startsWith('//') || raw.startsWith('/\\')) return '/dashboard';
+  // Pas de caractères de contrôle ni de retours à la ligne (injection)
+  if (/[\x00-\x1f\x7f]/.test(raw)) return '/dashboard';
+  return raw;
+}
+
 export async function GET(request) {
   const { searchParams, origin } = new URL(request.url);
   const code       = searchParams.get('code');
   const tokenHash  = searchParams.get('token_hash');
   const type       = searchParams.get('type'); // 'signup' | 'recovery' | 'email' | 'invite' | 'magiclink'
-  const next       = searchParams.get('next') ?? '/dashboard';
+  const next       = safeNext(searchParams.get('next'));
 
   // ─── 1) PKCE flow (`?code=...`) ────────────────────────────────────────
   if (code) {

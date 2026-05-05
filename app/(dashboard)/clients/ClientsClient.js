@@ -198,10 +198,9 @@ export default function ClientsClient({ clients, profile }) {
           align-items: center;
           gap: 10px;
         }
-        .page-header h1 {
-          font-size: 1.375rem;
-          font-weight: 700;
-        }
+        /* H1 page-header hérite désormais du style global (Fraunces 1.875rem)
+           défini dans app/globals.css. On laisse l'override vide pour ne pas
+           casser, mais idéalement vider ou supprimer le sélecteur. */
         .count-badge {
           background: var(--brand-light);
           color: var(--brand-700);
@@ -217,8 +216,10 @@ export default function ClientsClient({ clients, profile }) {
           gap: 6px;
         }
         @media (max-width: 480px) {
-          .invite-btn-label { display: none; }
-          .invite-btn { padding: 6px 10px; }
+          /* On GARDE le label "Inviter" sur mobile (audit UX 2026-05-05 :
+             juste l'icône avion en papier était trop énigmatique pour des
+             profs non-tech). Padding réduit pour gagner un peu de place. */
+          .invite-btn { padding: 6px 10px; font-size: 0.75rem; }
         }
 
         .search-bar {

@@ -15,20 +15,41 @@ import { CASES, getChoixLabel } from '@/lib/regles-metier';
 
 const ACTIONS_PAR_CAS = {
   eleve_sans_carnet: [
-    { value: 'encaisse',   label: 'Encaissé sur place',     desc: 'L\'élève a payé.' },
-    { value: 'carnet_vendu', label: 'Carnet vendu',          desc: 'Élève a acheté un carnet ; cours décompté.' },
-    { value: 'offert',     label: 'Cours offert',           desc: 'Geste commercial, on n\'encaisse pas.' },
-    { value: 'ignore',     label: 'À gérer plus tard',      desc: 'Marquer comme vu mais pas réglé.' },
+    { value: 'encaisse',     label: 'Encaissé sur place',         desc: 'L\'élève a payé.' },
+    { value: 'carnet_vendu', label: 'Carnet vendu',                desc: 'Élève a acheté un carnet ; cours décompté.' },
+    { value: 'offert',       label: 'Cours offert',                desc: 'Geste commercial, on n\'encaisse pas.' },
+    { value: 'ignore',       label: 'À gérer plus tard',           desc: 'Marquer comme vu mais pas réglé.' },
   ],
   annulation_hors_delai: [
-    { value: 'decompte',   label: 'Séance décomptée',       desc: 'On retire la séance du carnet.' },
-    { value: 'excuse',     label: 'Excusé exceptionnellement', desc: 'On rend la séance.' },
+    { value: 'decompte',     label: 'Séance décomptée',            desc: 'On retire la séance du carnet.' },
+    { value: 'excuse',       label: 'Excusé exceptionnellement',   desc: 'On rend la séance.' },
+    { value: 'dette_creee',  label: 'Dette créée',                 desc: 'À régulariser au prochain achat.' },
   ],
   no_show: [
-    { value: 'decompte',   label: 'Séance décomptée',       desc: 'Politique stricte appliquée cette fois.' },
-    { value: 'excuse',     label: 'Excusé',                  desc: 'Crédit reporté.' },
+    { value: 'decompte',     label: 'Séance décomptée',            desc: 'Politique stricte appliquée cette fois.' },
+    { value: 'excuse',       label: 'Excusé',                      desc: 'Crédit reporté.' },
   ],
-  // ... autres cas à venir
+  cours_annule_prof: [
+    { value: 'credit_rendu', label: 'Crédit restitué',             desc: 'La séance est recréditée sur le carnet.' },
+    { value: 'rembourse',    label: 'Remboursement effectué',      desc: 'Cash / virement / Stripe refund.' },
+    { value: 'reporte',      label: 'Reporté sur autre cours',     desc: 'L\'élève a basculé sur une autre séance.' },
+    { value: 'ignore',       label: 'Pas d\'action requise',       desc: 'Élève prévenue, rien à faire de plus.' },
+  ],
+  carnet_expire_avant_cours: [
+    { value: 'prolonge',     label: 'Carnet prolongé',             desc: 'Date de fin étendue jusqu\'à ce cours.' },
+    { value: 'nouveau_carnet', label: 'Nouveau carnet vendu',      desc: 'L\'élève a renouvelé son carnet.' },
+    { value: 'unitaire',     label: 'Cours payé à l\'unité',       desc: 'L\'élève a payé ce cours en one-shot.' },
+    { value: 'annule',       label: 'Réservation annulée',         desc: 'On retire l\'inscription.' },
+  ],
+  liste_attente: [
+    { value: 'place_donnee', label: 'Place attribuée',             desc: 'L\'élève a confirmé son inscription.' },
+    { value: 'declinee',     label: 'Place déclinée',              desc: 'L\'élève n\'a pas confirmé / pas pris la place.' },
+  ],
+  workshop_vs_cours: [
+    { value: 'paye_stripe',  label: 'Paiement Stripe reçu',        desc: 'L\'élève a réglé via le lien Stripe.' },
+    { value: 'paye_place',   label: 'Paiement sur place',          desc: 'Cash / chèque / virement reçu.' },
+    { value: 'ignore',       label: 'À gérer plus tard',           desc: 'Marquer comme vu mais pas réglé.' },
+  ],
 };
 
 export default function CasATraiterClient({ casOuverts, casResolus }) {

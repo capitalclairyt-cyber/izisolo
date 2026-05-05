@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase';
 import { useToast } from '@/components/ui/ToastProvider';
-import { METIERS, PLANS, SMS_ENABLED } from '@/lib/constantes';
+import { METIERS, PLANS, SMS_ENABLED, SMS_PRIX_UNITAIRE } from '@/lib/constantes';
 import { getTrialStatus, effectivePlan as effectivePlanFromTrial } from '@/lib/trial';
 import { slugify } from '@/lib/utils';
 // import BackgroundDecor — retiré, plus utilisé (apparences supprimées)
@@ -220,12 +220,12 @@ function NotifsElevesSection({ profile, setProfile, setDirty }) {
           <span style={{ fontSize: '0.875rem', fontWeight: 600 }}>📱 SMS — facturation au volume</span>
           {smsConso !== null && (
             <span style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>
-              <strong>{smsConso} SMS</strong> ce mois · <strong>{(smsConso * 0.08).toFixed(2).replace('.', ',')} €</strong>
+              <strong>{smsConso} SMS</strong> ce mois · <strong>{(smsConso * SMS_PRIX_UNITAIRE).toFixed(2).replace('.', ',')} €</strong>
             </span>
           )}
         </div>
         <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.5 }}>
-          Les SMS sont facturés <strong>0,08 € l'unité</strong> sur ta facture IziSolo. Les emails restent gratuits, illimités.
+          Les SMS sont facturés <strong>{SMS_PRIX_UNITAIRE.toFixed(2).replace('.', ',')} € l'unité</strong> sur ta facture IziSolo. Les emails restent gratuits, illimités.
         </p>
 
         {/* Seuil mensuel optionnel */}
@@ -318,7 +318,7 @@ function AbonnementCheckout({ currentPlan }) {
         'Jusqu\'à 3 lieux',
         'Tout Solo +',
         'Stripe Payment Link (1% IziSolo)',
-        'Mailing campagnes + SMS (0,07€/SMS)',
+        'Mailing campagnes + SMS (0,08€/SMS)',
         'Notifications auto élèves (rappels, carnets)',
         'Sondages planning',
         'Cours d\'essai pour visiteurs',

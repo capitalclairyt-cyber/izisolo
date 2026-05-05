@@ -6,6 +6,22 @@ import TrialBanner from '@/components/trial/TrialBanner';
 import { getVocabulaire } from '@/lib/vocabulaire';
 import { ToastProvider } from '@/components/ui/ToastProvider';
 
+// Petite touche d'identité : illustration sidebar choisie selon le métier
+// du pro. Améliore le sentiment d'appartenance / personnalisation visuelle.
+const ILLUSTRATIONS_PAR_METIER = {
+  yoga: 'lotus',
+  pilates: 'pilates',
+  danse: 'danseuse',
+  musique: 'clef-sol',
+  coaching: 'meditation',
+  arts: 'pinceau',
+  meditation: 'buddha',
+  autre: 'lotus',
+};
+function illustrationParMetier(metier) {
+  return ILLUSTRATIONS_PAR_METIER[metier] || 'lotus';
+}
+
 export default function DashboardLayoutClient({ children, profile, trial, nbCasATraiter = 0 }) {
   const pathname = usePathname();
 
@@ -24,6 +40,7 @@ export default function DashboardLayoutClient({ children, profile, trial, nbCasA
         studioNom={profile?.studio_nom || 'Mon Studio'}
         vocabulaire={vocabulaire}
         nbCasATraiter={nbCasATraiter}
+        illustration={illustrationParMetier(profile?.metier)}
       />
 
       <main className="dashboard-content">

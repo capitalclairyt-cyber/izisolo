@@ -51,6 +51,15 @@ function FinaliserLoading() {
   );
 }
 
+// Empêche les open redirects : `next` doit être une URL relative interne.
+// Bloque //evil.com, /\evil.com, et toute valeur qui n'est pas relative.
+function safeNext(raw) {
+  if (!raw || !raw.startsWith('/')) return '/dashboard';
+  if (raw.startsWith('//') || raw.startsWith('/\\')) return '/dashboard';
+  if (/[\x00-\x1f\x7f]/.test(raw)) return '/dashboard';
+  return raw;
+}
+
 function FinaliserAuthPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -58,7 +67,7 @@ function FinaliserAuthPage() {
 
   useEffect(() => {
     (async () => {
-      const next = searchParams.get('next') || '/dashboard';
+      const next = safeNext(searchParams.get('next'));
 
       // Lire le fragment URL : #access_token=...&refresh_token=...&type=signup
       // Le hash commence par '#', on l'enlève puis on parse comme query string.

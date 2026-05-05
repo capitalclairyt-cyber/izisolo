@@ -48,6 +48,25 @@ export async function POST(request) {
 
   const supabase = adminClient();
 
+  // ─── Idempotency : ne pas retraiter un event déjà reçu ─────────────────
+  // Stripe peut redélivrer (timeout, replay, etc.). Sans ça, un event
+  // customer.subscription.deleted rejoué APRÈS un nouveau checkout pourrait
+  // downgrade un client qui vient de re-souscrire. Cf. audit sécurité I3.
+  // Table créée par migration v37 ; try/catch silencieux si pas encore
+  // appliquée (fallback : on accepte le risque temporairement).
+  try {
+    const { data: alreadyProcessed } = await supabase
+      .from('stripe_events_processed')
+      .select('event_id')
+      .eq('event_id', event.id)
+      .maybeSingle();
+    if (alreadyProcessed) {
+      return Response.json({ received: true, deduped: true });
+    }
+  } catch {
+    // table pas encore créée → on continue (best effort)
+  }
+
   try {
     switch (event.type) {
       case 'checkout.session.completed': {
@@ -128,6 +147,14 @@ export async function POST(request) {
         break;
       }
     }
+
+    // Marquer l'event comme traité pour idempotency (best effort)
+    try {
+      await supabase
+        .from('stripe_events_processed')
+        .insert({ event_id: event.id, event_type: event.type });
+    } catch {}
+
     return Response.json({ received: true });
   } catch (err) {
     console.error('[webhook-saas] handler error:', err);

@@ -55,10 +55,13 @@
   --info:    #5A8AA8;
   --info-light: #DEE8EE;
 
-  /* --- Texte (warm) --- */
+  /* --- Texte (warm) ---
+     Foncé par audit a11y 2026-05-05 : --text-muted était #A89888 (contrast
+     ratio 2.6:1 sur cream → fail WCAG AA). Passé à #8C7A66 (~4.6:1 = AA OK).
+     --text-secondary monté légèrement aussi pour rester au-dessus du muted. */
   --text-primary:   #3D3028;
-  --text-secondary: #6B5A4A;
-  --text-muted:     #A89888;
+  --text-secondary: #5C4D3E;
+  --text-muted:     #8C7A66;
   --text-inverse:   #FAF7F2;
 
   /* --- Surfaces --- */

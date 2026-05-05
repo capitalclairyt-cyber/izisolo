@@ -727,7 +727,17 @@ function CeStyles() {
       /* En-tête */
       .ce-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
       .ce-header-left { display: flex; align-items: center; gap: 10px; color: var(--brand); }
-      .ce-header-left h1 { font-size: 1.25rem; font-weight: 700; color: var(--text-primary); }
+      .ce-header-left h1 {
+        /* Cohérence Fraunces (charte 2026) : héritage du style global
+           .page-header h1 — on garde juste un override de taille pour ce
+           contexte spécifique mais on assure la même typo display. */
+        font-family: var(--font-fraunces), Georgia, serif;
+        font-variation-settings: 'opsz' 144, 'SOFT' 100;
+        font-size: 1.625rem;
+        font-weight: 500;
+        letter-spacing: -0.015em;
+        color: var(--text-primary);
+      }
       .ce-btn-new { flex-shrink: 0; }
 
       /* ── Category Manager ── */

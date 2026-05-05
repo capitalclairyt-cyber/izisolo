@@ -20,38 +20,40 @@ export default function TrialBanner({ trial }) {
 
   if (trial.active) {
     const daysWord = trial.daysLeft > 1 ? 'jours' : 'jour';
+    // Quand le trial est actif (pas expiré), on reste discret : chip slim
+    // au lieu d'un grand bandeau, pour ne pas concurrencer les alertes
+    // dashboard et autres bandeaux importants (audit UX 2026-05-05).
     return (
       <div className="trial-banner trial-banner--active">
-        <Sparkles size={16} className="trial-banner-icon" />
+        <Sparkles size={14} className="trial-banner-icon" />
         <span className="trial-banner-text">
-          Tu profites d'un essai <strong>Pro</strong> — il te reste{' '}
-          <strong>{trial.daysLeft} {daysWord}</strong>.
+          Essai <strong>Pro</strong> — {trial.daysLeft} {daysWord} restant{trial.daysLeft > 1 ? 's' : ''}
         </span>
         <Link href="/parametres?tab=abonnement" className="trial-banner-cta">
-          Choisir mon abo <ArrowRight size={14} />
+          Choisir mon abo
         </Link>
 
         <style jsx>{`
           .trial-banner {
-            display: flex; align-items: center; gap: 10px;
-            padding: 10px 14px;
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 6px 12px;
             background: var(--brand-light);
             border: 1px solid var(--brand-200);
-            border-radius: var(--radius-md);
-            margin-bottom: 14px;
-            font-size: 0.875rem;
+            border-radius: 99px;
+            margin-bottom: 12px;
+            font-size: 0.8125rem;
             color: var(--brand-700);
             flex-wrap: wrap;
           }
           .trial-banner-icon { flex-shrink: 0; }
-          .trial-banner-text { flex: 1; min-width: 200px; }
+          .trial-banner-text { flex: 0 1 auto; }
           .trial-banner-cta {
             display: inline-flex; align-items: center; gap: 4px;
-            padding: 6px 12px;
+            padding: 3px 10px;
             background: var(--brand);
             color: white;
             border-radius: 99px;
-            font-size: 0.8125rem; font-weight: 600;
+            font-size: 0.75rem; font-weight: 600;
             text-decoration: none;
             transition: background var(--transition-fast);
             white-space: nowrap;
