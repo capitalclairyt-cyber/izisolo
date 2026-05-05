@@ -97,13 +97,22 @@ export default function AgendaClient({ cours: initialCours, profile, initialDate
   }, [vue, dateRef]);
 
   // ---- Chargement dynamique ----
+  // CRITIQUE : on filtre TOUJOURS par profile_id côté client.
+  // Sans ce filtre, la policy RLS v25 "Public lit cours studios portail
+  // actif" laisse passer les cours de TOUS les studios qui ont
+  // portail_actif=true, y compris pour des users authentifiés sur leur
+  // propre dashboard. Bug remonté le 2026-05-05 : un user voyait les
+  // cours d'un autre studio. Ne JAMAIS retirer ce .eq() sans fix RLS.
   const chargerCours = useCallback(async () => {
     setLoading(true);
     try {
       const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { setLoading(false); return; }
       const { data, error } = await supabase
         .from('cours')
         .select('*, presences(pointee)')
+        .eq('profile_id', user.id)
         .gte('date', plage.debut)
         .lte('date', plage.fin)
         .order('date').order('heure');

@@ -50,12 +50,18 @@ function AssignerOffreModal({ client, onClose, onSuccess }) {
   const [error, setError] = useState('');
 
   // Charge les offres actives
+  // CRITIQUE : filtrer par profile_id côté client. La RLS v25 expose les
+  // offres de TOUS les studios actifs, sans filtre on leakerait toutes
+  // les offres de tout le monde.
   useEffect(() => {
     const load = async () => {
       const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { setLoadingOffres(false); return; }
       const { data } = await supabase
         .from('offres')
         .select('*')
+        .eq('profile_id', user.id)
         .eq('actif', true)
         .order('ordre');
       setOffres(data || []);

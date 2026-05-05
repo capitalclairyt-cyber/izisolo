@@ -48,9 +48,15 @@ function AssignerClientModal({ offre, onClose, onSuccess }) {
   useEffect(() => {
     const load = async () => {
       const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { setLoadingClients(false); return; }
+      // Défense en profondeur : on filtre par profile_id même si la table
+      // 'clients' n'est pas (encore) exposée par une policy publique (v25).
+      // Évite tout futur leak si une policy SELECT publique est ajoutée.
       const { data } = await supabase
         .from('clients')
         .select('id, prenom, nom, nom_structure, type_client, statut, telephone')
+        .eq('profile_id', user.id)
         .order('nom');
       setClients(data || []);
       setLoadingClients(false);
