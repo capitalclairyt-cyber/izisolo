@@ -29,7 +29,6 @@ function normalizeUrl(value) {
 }
 import ReglesTab from './ReglesTab';
 import PhotoUploader from '@/components/ui/PhotoUploader';
-import UnsavedChangesBar from '@/components/ui/UnsavedChangesBar';
 import UnsavedChangesGuard from '@/components/ui/UnsavedChangesGuard';
 
 const PALETTES = [
@@ -1566,16 +1565,11 @@ export default function Parametres() {
 
   return (
     <div className="parametres">
-      {/* Garde-fou : intercepte le bouton retour navigateur + beforeunload */}
+      {/* Garde-fou : modal qui s'affiche UNIQUEMENT à la tentative de quitter
+          (bouton retour, fermeture onglet, refresh) si dirty=true. La barre
+          sticky permanente a été retirée le 2026-05-05 — trop intrusive,
+          et chaque section a déjà son propre bouton Enregistrer inline. */}
       <UnsavedChangesGuard dirty={dirty} onConfirmLeave={() => setDirty(false)} />
-
-      {/* Barre sticky en bas — Enregistrer / Annuler toujours accessibles */}
-      <UnsavedChangesBar
-        dirty={dirty}
-        saving={saving}
-        onSave={handleSave}
-        onDiscard={handleDiscard}
-      />
 
       <div className="page-header animate-fade-in">
         <h1>Paramètres</h1>
