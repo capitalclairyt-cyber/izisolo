@@ -1913,19 +1913,87 @@ export default function Parametres() {
           {reglagesSubTab === 'general' && (
             <div className="subtab-content animate-fade-in">
 
-              {/* Alertes & Notifications */}
+              {/* Seuils d'alerte — pilotent à la fois (1) les alertes affichées
+                  sur le dashboard prof et (2) les notifications auto envoyées
+                  aux élèves (cf. section "Notifications élèves auto" ci-dessous
+                  pour activer les canaux email/SMS). */}
               <div className="section izi-card">
-                <div className="section-top"><div className="section-icon"><Bell size={20} /></div><h2>Seuils d'alertes</h2></div>
-                <p className="section-desc">Configure les seuils de notification pour tes élèves.</p>
+                <div className="section-top">
+                  <div className="section-icon"><Bell size={20} /></div>
+                  <h2>Seuils d'alerte</h2>
+                </div>
+                <p className="section-desc">
+                  Ces seuils déterminent quand l'app considère qu'une situation mérite ton
+                  attention. Ils servent à <strong>(1)</strong> afficher des alertes sur
+                  ton tableau de bord, et <strong>(2)</strong> déclencher les
+                  notifications automatiques envoyées à tes élèves (si activées
+                  ci-dessous dans <em>Notifications élèves auto</em>).
+                </p>
+
                 <div className="form-row">
                   <div className="form-group">
-                    <label className="form-label">Seuil séances basses</label>
-                    <input className="izi-input" type="number" value={profile.alerte_seances_seuil || 2} onChange={handleChange('alerte_seances_seuil')} />
+                    <label className="form-label">Carnet bientôt épuisé</label>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <input
+                        className="izi-input"
+                        type="number"
+                        min="1"
+                        max="20"
+                        style={{ maxWidth: 100 }}
+                        value={profile.alerte_seances_seuil || 2}
+                        onChange={handleChange('alerte_seances_seuil')}
+                      />
+                      <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>séances ou moins</span>
+                    </div>
+                    <p className="form-hint">
+                      Ex. <strong>2</strong> → quand un élève n'a plus que 2 séances dans son
+                      carnet, tu vois une alerte « Caroline a 2 séances restantes » + (si activé)
+                      l'élève reçoit un email type « Plus que 2 séances dans ton carnet ».
+                    </p>
                   </div>
+
                   <div className="form-group">
-                    <label className="form-label">Jours avant expiration</label>
-                    <input className="izi-input" type="number" value={profile.alerte_expiration_jours || 7} onChange={handleChange('alerte_expiration_jours')} />
+                    <label className="form-label">Abonnement bientôt expiré</label>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <input
+                        className="izi-input"
+                        type="number"
+                        min="1"
+                        max="60"
+                        style={{ maxWidth: 100 }}
+                        value={profile.alerte_expiration_jours || 7}
+                        onChange={handleChange('alerte_expiration_jours')}
+                      />
+                      <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>jours avant la date de fin</span>
+                    </div>
+                    <p className="form-hint">
+                      Ex. <strong>7</strong> → 7 jours avant l'expiration d'un abonnement, tu vois
+                      une alerte sur le dashboard + (si activé) l'élève reçoit un rappel pour
+                      penser à renouveler.
+                    </p>
                   </div>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Paiement en attente</label>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <input
+                      className="izi-input"
+                      type="number"
+                      min="1"
+                      max="90"
+                      style={{ maxWidth: 100 }}
+                      value={profile.alerte_paiement_attente_jours || 14}
+                      onChange={handleChange('alerte_paiement_attente_jours')}
+                    />
+                    <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>jours après émission</span>
+                  </div>
+                  <p className="form-hint">
+                    Ex. <strong>14</strong> → quand un paiement (chèque, virement, espèces) reste
+                    marqué « en attente » depuis 14 jours, alerte sur ton dashboard pour relancer
+                    l'élève. Pas de notif auto envoyée à l'élève sur ce point — c'est à toi de
+                    décider du ton (gentil rappel ou plus ferme).
+                  </p>
                 </div>
               </div>
 
