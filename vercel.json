@@ -18,6 +18,5 @@
     }
   ],
 
-  "_comment_ignoreCommand": "Skip le build Vercel quand le diff ne contient QUE des fichiers non-build (docs, mockups standalone HTML, migrations SQL non utilisées par le runtime, .env.local.example, README, plans). Économise des minutes de build. Le script renvoie exit 0 quand TOUS les fichiers modifiés matchent les patterns ignorés → Vercel skip. Renvoie exit 1 dès qu'un fichier de code/asset existe → build normal.",
   "ignoreCommand": "git diff --quiet HEAD^ HEAD -- ':!*.md' ':!mockups/' ':!migrations*.sql' ':!.env.local.example' ':!.gitignore' ':!CLAUDE.md' ':!docs/' && exit 0 || exit 1"
 }
