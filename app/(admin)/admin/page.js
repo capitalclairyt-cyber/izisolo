@@ -42,7 +42,7 @@ export default async function AdminDashboard() {
     .order('created_at', { ascending: false })
     .limit(10);
 
-  const PLAN_COLORS = { free: 'free', solo: 'solo', pro: 'pro', studio: 'studio', premium: 'premium' };
+  const PLAN_COLORS = { free: 'free', solo: 'solo', pro: 'pro', premium: 'premium' };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>

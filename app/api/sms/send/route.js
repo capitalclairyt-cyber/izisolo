@@ -21,8 +21,9 @@
 
 import { createServerClient } from '@/lib/supabase-server';
 
-// Plans autorisés à envoyer des SMS
-const SMS_PLANS = ['pro', 'studio', 'premium'];
+// Plans autorisés à envoyer des SMS. `free` inclus pour comptes internes
+// (Colin, Maude — exemptés full access). `studio` retiré (obsolète).
+const SMS_PLANS = ['pro', 'premium', 'free'];
 
 // Normalise un numéro FR vers le format E.164 (+33XXXXXXXXX)
 function normalizePhone(telephone) {

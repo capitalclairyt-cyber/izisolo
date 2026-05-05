@@ -261,16 +261,74 @@ function NotifsElevesSection({ profile, setProfile, setDirty }) {
 }
 
 // ════════════════════════════════════════════════════════════════════════════
-// Section "Abonnement" — Stripe SaaS Mélutek
-// 2 plans payants (Solo 9€ / Pro 19€) en mensuel ou annuel (-20%)
+// Section "Abonnement IziSolo" — Stripe SaaS
+// 3 plans publics (Solo 12€ / Pro 24€ / Premium 49€) — mensuel ou annuel (-20%)
+// Trial 14 jours sur tous. Plan `free` (interne, exempté) jamais affiché ici.
 // ════════════════════════════════════════════════════════════════════════════
 function AbonnementCheckout({ currentPlan }) {
-  const [annuel, setAnnuel] = useState(false);
-  const [loading, setLoading] = useState(null); // 'solo' | 'pro' | null
+  const [annuel, setAnnuel] = useState(true); // par défaut sur annuel (-20%)
+  const [loading, setLoading] = useState(null); // 'solo' | 'pro' | 'premium'
 
   const PLANS_PUB = [
-    { id: 'solo', nom: 'Solo', prix: { mensuel: '9 €', annuel: '7,20 €' }, sub: { mensuel: '/mois', annuel: '/mois (86 €/an)' }, desc: 'Élèves illimités, mailing automatisé.', features: ['Élèves illimités', 'Email auto', 'Notifications', 'Support email'] },
-    { id: 'pro',  nom: 'Pro',  prix: { mensuel: '19 €', annuel: '15,20 €' }, sub: { mensuel: '/mois', annuel: '/mois (182 €/an)' }, desc: 'Multi-prof + Stripe Payment Link + vidéos.', features: ['Tout Solo', 'Stripe Payment Link', 'Multi-utilisateurs', 'Vidéos cours', 'Support prioritaire'] },
+    {
+      id: 'solo',
+      nom: 'Solo',
+      prixMensuel: 12,
+      prixAnnuelTotal: 115,
+      tagline: 'Pour démarrer en autonomie',
+      pitch: 'Tout l\'essentiel pour gérer ton studio à la main.',
+      features: [
+        'Jusqu\'à 40 élèves',
+        '1 lieu',
+        'Cours, agenda, pointage présences',
+        'Carnets / abonnements / paiements manuels',
+        'Page publique studio (basique)',
+        'Réservation en ligne pour élèves',
+        'Messagerie chat élèves',
+      ],
+      limits: 'Pas d\'encaissement Stripe, pas de mailing, pas d\'automatisations.',
+    },
+    {
+      id: 'pro',
+      nom: 'Pro',
+      recommended: true,
+      prixMensuel: 24,
+      prixAnnuelTotal: 230,
+      tagline: 'Ton studio devient une machine',
+      pitch: 'Encaissement en ligne + automatisations + outils marketing.',
+      features: [
+        'Élèves illimités',
+        'Jusqu\'à 3 lieux',
+        'Tout Solo +',
+        'Stripe Payment Link (1% IziSolo)',
+        'Mailing campagnes + SMS (0,07€/SMS)',
+        'Notifications auto élèves (rappels, carnets)',
+        'Sondages planning',
+        'Cours d\'essai pour visiteurs',
+        'Templates communication + anniversaires auto',
+        'Page publique enrichie + page brouillon',
+        'Annulation par l\'élève',
+        'Export comptabilité',
+        'Liste d\'attente + dette annulation tardive',
+        'Support prioritaire',
+      ],
+    },
+    {
+      id: 'premium',
+      nom: 'Premium',
+      prixMensuel: 49,
+      prixAnnuelTotal: 470,
+      tagline: 'Pour les studios matures',
+      pitch: 'Zéro frais Stripe IziSolo, white-label, support sous 24h.',
+      features: [
+        'Tout Pro +',
+        'Lieux illimités',
+        '0% de frais Stripe IziSolo',
+        'Logo studio dans tous les emails (white-label)',
+        'Support prioritaire — réponse < 24h',
+      ],
+      bonus: 'Les souscripteurs Premium bénéficieront automatiquement des futures features (vidéos de cours, assistant IA, multi-prof) à leur sortie.',
+    },
   ];
 
   const subscribe = async (plan) => {
@@ -290,42 +348,78 @@ function AbonnementCheckout({ currentPlan }) {
     }
   };
 
+  // Affichage prix selon période choisie
+  const fmtPrix = (p) => annuel
+    ? `${(p.prixAnnuelTotal / 12).toFixed(2).replace('.', ',')} €`
+    : `${p.prixMensuel} €`;
+  const fmtSub = (p) => annuel
+    ? `/mois · facturé ${p.prixAnnuelTotal} €/an`
+    : '/mois';
+
   return (
     <div className="section izi-card">
-      <h2 style={{ fontSize: '1.0625rem', fontWeight: 700, marginBottom: 4 }}>Passer à la vitesse supérieure</h2>
-      <p className="section-desc">Débloque toutes les fonctionnalités pour développer ton activité.</p>
+      <h2 style={{ fontSize: '1.125rem', fontWeight: 700, marginBottom: 4 }}>Mon abonnement IziSolo</h2>
+      <p className="section-desc">
+        14 jours d'essai gratuit sur tous les plans. Tu peux changer ou annuler à tout moment.
+      </p>
 
-      <div style={{ display: 'inline-flex', background: 'var(--bg-soft, #faf8f5)', border: '1px solid var(--border)', borderRadius: 999, padding: 4, gap: 2, marginBottom: 16 }}>
+      {/* Toggle mensuel/annuel */}
+      <div style={{ display: 'inline-flex', background: 'var(--bg-soft, #faf8f5)', border: '1px solid var(--border)', borderRadius: 999, padding: 4, gap: 2, marginBottom: 18 }}>
         <button onClick={() => setAnnuel(false)} style={pillStyle(!annuel)}>Mensuel</button>
-        <button onClick={() => setAnnuel(true)} style={pillStyle(annuel)}>Annuel <span style={{ background: '#10b981', color: 'white', fontSize: '0.65rem', fontWeight: 700, padding: '2px 6px', borderRadius: 99, marginLeft: 4 }}>−20%</span></button>
+        <button onClick={() => setAnnuel(true)} style={pillStyle(annuel)}>
+          Annuel
+          <span style={{ background: 'var(--success, #6B9A6B)', color: 'white', fontSize: '0.65rem', fontWeight: 700, padding: '2px 6px', borderRadius: 99, marginLeft: 4 }}>−20%</span>
+        </button>
       </div>
 
-      <div className="plans-grid">
+      <div className="plans-grid plans-grid-3">
         {PLANS_PUB.map(p => {
           const isCurrent = currentPlan === p.id;
           return (
-            <div key={p.id} className={`plan-card ${p.id === 'pro' ? 'recommended' : ''}`}>
-              {p.id === 'pro' && <div className="plan-badge">Recommandé</div>}
+            <div key={p.id} className={`plan-card ${p.recommended ? 'recommended' : ''}`}>
+              {p.recommended && <div className="plan-badge">Recommandé</div>}
               <div className="plan-name">{p.nom}</div>
+              <div className="plan-tagline">{p.tagline}</div>
               <div className="plan-price">
-                <span className="plan-amount">{annuel ? p.prix.annuel : p.prix.mensuel}</span>
-                <span className="plan-period">{annuel ? p.sub.annuel : p.sub.mensuel}</span>
+                <span className="plan-amount">{fmtPrix(p)}</span>
+                <span className="plan-period">{fmtSub(p)}</span>
               </div>
-              <p className="plan-desc">{p.desc}</p>
-              <ul style={{ listStyle: 'none', padding: 0, margin: '12px 0', fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>
-                {p.features.map(f => <li key={f} style={{ padding: '3px 0' }}>✓ {f}</li>)}
+              <p className="plan-desc">{p.pitch}</p>
+              <ul className="plan-features">
+                {p.features.map(f => (
+                  <li key={f}>
+                    <Check size={13} style={{ color: 'var(--success, #6B9A6B)', flexShrink: 0, marginTop: 2 }} />
+                    <span>{f}</span>
+                  </li>
+                ))}
               </ul>
+              {p.limits && (
+                <p className="plan-limits">{p.limits}</p>
+              )}
+              {p.bonus && (
+                <p className="plan-bonus">✦ {p.bonus}</p>
+              )}
               <button
                 onClick={() => subscribe(p.id)}
                 disabled={isCurrent || loading === p.id}
-                className={`izi-btn ${p.id === 'pro' ? 'izi-btn-primary' : 'izi-btn-secondary'} plan-cta`}
+                className={`izi-btn ${p.recommended ? 'izi-btn-primary' : 'izi-btn-secondary'} plan-cta`}
               >
-                {isCurrent ? 'Plan actuel' : loading === p.id ? 'Redirection…' : `Passer à ${p.nom}`}
+                {isCurrent
+                  ? 'Plan actuel'
+                  : loading === p.id
+                    ? 'Redirection…'
+                    : (currentPlan && currentPlan !== 'free' ? `Passer à ${p.nom}` : `Démarrer mes 14 jours gratuits`)
+                }
               </button>
             </div>
           );
         })}
       </div>
+
+      <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 14, textAlign: 'center' }}>
+        Frais Stripe natifs (1,4% + 0,25 €) toujours dus à Stripe. Les frais
+        IziSolo (1% sur Pro, 0% sur Premium) viennent en plus.
+      </p>
     </div>
   );
 

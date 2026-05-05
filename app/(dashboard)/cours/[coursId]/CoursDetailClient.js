@@ -209,7 +209,8 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
   };
 
   // ---- SMS : accès plan + participants joignables ----
-  const SMS_PLANS = ['pro', 'studio', 'premium'];
+  // `free` inclus pour comptes internes/exemptés (Colin, Maude). `studio` retiré.
+  const SMS_PLANS = ['pro', 'premium', 'free'];
   const canUseSms = SMS_PLANS.includes(profile?.plan);
   const participantsWithPhone = presences.filter(p => p.clients?.telephone);
 

@@ -4,8 +4,12 @@ import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { Search, Filter, ChevronDown, Check, X, Pencil } from 'lucide-react';
 
-const PLANS = ['free', 'solo', 'pro', 'studio', 'premium'];
-const PLAN_COLORS = { free: 'free', solo: 'solo', pro: 'pro', studio: 'studio', premium: 'premium' };
+// `studio` retiré de l'admin (plan obsolète, jamais finalisé). Si des
+// utilisateurs ont encore plan='studio' en BDD historique, l'UI les affichera
+// quand même (l'enum ne filtre que les options du dropdown), et l'admin
+// pourra les migrer en cliquant pour changer.
+const PLANS = ['free', 'solo', 'pro', 'premium'];
+const PLAN_COLORS = { free: 'free', solo: 'solo', pro: 'pro', premium: 'premium' };
 
 export default function AdminUsersClient({ initialUsers }) {
   const [users, setUsers] = useState(initialUsers);
