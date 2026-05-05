@@ -25,6 +25,21 @@ export default async function CoursDetailPage({ params, searchParams }) {
     .eq('cours_id', coursId)
     .eq('profile_id', user.id);
 
+  // Charger la liste d'attente (table v16, RLS profile_id = auth.uid())
+  // Try/catch silencieux : si la table n'existe pas (compte legacy avant v16),
+  // on retombe sur [].
+  let listeAttente = [];
+  try {
+    const { data: la } = await supabase
+      .from('liste_attente')
+      .select('id, email, nom, telephone, position, notified_at, created_at')
+      .eq('cours_id', coursId)
+      .eq('profile_id', user.id)
+      .order('position', { ascending: true })
+      .order('created_at', { ascending: true });
+    listeAttente = la || [];
+  } catch {}
+
   // Charger les lieux
   const { data: lieux } = await supabase
     .from('lieux')
@@ -60,6 +75,7 @@ export default async function CoursDetailPage({ params, searchParams }) {
       profile={profile}
       nbOccurrences={nbOccurrences}
       autoEdit={edit === '1'}
+      listeAttente={listeAttente}
     />
   );
 }

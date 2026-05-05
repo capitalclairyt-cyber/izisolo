@@ -46,8 +46,21 @@ export default async function DashboardLayout({ children }) {
     startedAt: trialRaw.startedAt ? trialRaw.startedAt.toISOString() : null,
   };
 
+  // Compteur de cas non résolus (badge sidebar "À traiter")
+  // Try/catch silencieux : si la table cas_a_traiter n'existe pas encore
+  // (migration v34 pas appliquée), on retombe sur 0 sans casser la page.
+  let nbCasATraiter = 0;
+  try {
+    const { count } = await supabase
+      .from('cas_a_traiter')
+      .select('id', { count: 'exact', head: true })
+      .eq('profile_id', user.id)
+      .is('resolu_at', null);
+    nbCasATraiter = count || 0;
+  } catch {}
+
   return (
-    <DashboardLayoutClient profile={profile} trial={trial}>
+    <DashboardLayoutClient profile={profile} trial={trial} nbCasATraiter={nbCasATraiter}>
       {children}
     </DashboardLayoutClient>
   );

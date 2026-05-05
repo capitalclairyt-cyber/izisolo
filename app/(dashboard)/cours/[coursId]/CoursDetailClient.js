@@ -14,7 +14,7 @@ import { createClient } from '@/lib/supabase';
 import { useToast } from '@/components/ui/ToastProvider';
 import { SMS_ENABLED } from '@/lib/constantes';
 
-export default function CoursDetailClient({ cours, presences, lieux, profile, nbOccurrences, autoEdit }) {
+export default function CoursDetailClient({ cours, presences, lieux, profile, nbOccurrences, autoEdit, listeAttente = [] }) {
   const router = useRouter();
   const { toast } = useToast();
   const [editing, setEditing] = useState(autoEdit || false);
@@ -508,6 +508,66 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
           </div>
         )}
       </div>
+
+      {/* ================================================
+          LISTE D'ATTENTE
+          Visible si le cours a au moins une personne en attente.
+          La promotion auto du 1er est gérée côté serveur (route /annuler)
+          quand un inscrit annule (cf. v16 + route portail).
+          Styles inline pour éviter conflit styled-jsx imbriqué.
+          ================================================ */}
+      {listeAttente.length > 0 && (
+        <div className="izi-card" style={{ padding: '16px 18px', marginTop: 12 }}>
+          <h2 style={{ display: 'flex', alignItems: 'center', gap: 8, margin: 0, fontSize: '1rem' }}>
+            <Clock size={18} /> Liste d'attente ({listeAttente.length})
+          </h2>
+          <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', margin: '6px 0 12px' }}>
+            Personnes notifiées automatiquement (par email) si une place se libère, dans l'ordre.
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {listeAttente.map((entry, idx) => (
+              <div key={entry.id} style={{
+                display: 'flex', alignItems: 'center', gap: 12,
+                padding: '10px 12px',
+                background: 'var(--bg-soft, #F8F4ED)',
+                borderRadius: 'var(--radius-sm)',
+              }}>
+                <div style={{
+                  width: 24, height: 24, borderRadius: '50%',
+                  background: 'var(--brand-light)', color: 'var(--brand-700)',
+                  fontSize: '0.75rem', fontWeight: 700,
+                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                  flexShrink: 0,
+                }}>{idx + 1}</div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--text-primary)' }}>
+                    {entry.nom || '(sans nom)'}
+                  </div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                    <a href={`mailto:${entry.email}`} style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}>{entry.email}</a>
+                    {entry.telephone && <> · <a href={`tel:${entry.telephone}`} style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}>{entry.telephone}</a></>}
+                  </div>
+                </div>
+                <div>
+                  {entry.notified_at ? (
+                    <span style={{
+                      padding: '3px 9px', borderRadius: 99,
+                      fontSize: '0.6875rem', fontWeight: 600,
+                      background: 'var(--success-light)', color: 'var(--success)',
+                    }}>Notifié·e</span>
+                  ) : (
+                    <span style={{
+                      padding: '3px 9px', borderRadius: 99,
+                      fontSize: '0.6875rem', fontWeight: 600,
+                      background: 'var(--cream-dark)', color: 'var(--text-secondary)',
+                    }}>En attente</span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* ================================================
           MODIFIER LA SÉRIE (récurrence uniquement)

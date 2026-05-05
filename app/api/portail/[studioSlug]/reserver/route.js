@@ -3,6 +3,7 @@ import { createClient as createAdminSupabase } from '@supabase/supabase-js';
 import { parseJsonBody, reservationSchema } from '@/lib/validation';
 import { checkAntiBot, ipFromRequest } from '@/lib/antibot';
 import { getRegle } from '@/lib/regles-metier';
+import { sendNotifElevePourRegle } from '@/lib/notif-eleve-regle';
 
 export async function POST(request, { params }) {
   const { studioSlug } = await params;
@@ -130,8 +131,8 @@ export async function POST(request, { params }) {
     .eq('statut', 'actif');
 
   const todayStr = new Date().toISOString().slice(0, 10);
+  // Abonnement valide AUJOURD'HUI (séances restantes + non expiré aujourd'hui)
   const aboValide = (abosActifs || []).some(a => {
-    // Carnet : seances restantes > 0 et pas expiré
     if (a.seances_total != null) {
       const reste = (a.seances_total || 0) - (a.seances_utilisees || 0);
       if (reste <= 0) return false;
@@ -140,7 +141,21 @@ export async function POST(request, { params }) {
     return true;
   });
 
+  // Abonnement valide à la DATE DU COURS (pour la règle carnet_expire_avant_cours)
+  // Si l'élève a un abo valide aujourd'hui mais qui expire AVANT le cours,
+  // on déclenche la règle carnet_expire_avant_cours.
+  const aboValideADate = (abosActifs || []).some(a => {
+    if (a.seances_total != null) {
+      const reste = (a.seances_total || 0) - (a.seances_utilisees || 0);
+      if (reste <= 0) return false;
+    }
+    if (a.date_fin && a.date_fin < cours.date) return false;
+    return true;
+  });
+  const carnetExpireraAvant = aboValide && !aboValideADate;
+
   const regleSansCarnet = getRegle({ regles_metier: profile.regles_metier }, 'eleve_sans_carnet');
+  const regleExpireAvant = getRegle({ regles_metier: profile.regles_metier }, 'carnet_expire_avant_cours');
   let casATraiterAttendu = null; // si on doit logger un cas après création presence
 
   if (!aboValide) {
@@ -185,6 +200,54 @@ export async function POST(request, { params }) {
         context: { mode: 'manuel' },
       };
     }
+  } else if (carnetExpireraAvant) {
+    // Carnet valide aujourd'hui MAIS expirera avant la date du cours
+    // → applique la règle carnet_expire_avant_cours
+    if (regleExpireAvant.mode === 'auto') {
+      switch (regleExpireAvant.choix) {
+        case 'bloquer':
+          return Response.json({
+            error: 'Ton carnet expirera avant la date de ce cours. Renouvelle-le ou contacte ton studio.',
+            code: 'CARNET_EXPIRE_AVANT',
+          }, { status: 403 });
+
+        case 'prolonger': {
+          // Prolonger l'abo le plus pertinent jusqu'à la date du cours.
+          // On choisit l'abo dont date_fin est la plus tardive parmi ceux valides aujourd'hui.
+          const aboToExtend = (abosActifs || [])
+            .filter(a => !a.date_fin || a.date_fin >= todayStr)
+            .sort((a, b) => (b.date_fin || '').localeCompare(a.date_fin || ''))[0];
+          if (aboToExtend) {
+            try {
+              await supabaseAdmin
+                .from('abonnements')
+                .update({ date_fin: cours.date })
+                .eq('id', aboToExtend.id);
+            } catch (e) { console.warn('prolongement abo non-bloquant:', e); }
+          }
+          casATraiterAttendu = {
+            case_type: 'carnet_expire_avant_cours',
+            context: { choix_applique: 'prolonger', nouvelle_date_fin: cours.date },
+          };
+          break;
+        }
+
+        case 'autoriser_avertir':
+        default:
+          // On laisse passer la résa, on log un cas pour avertir l'élève (email)
+          casATraiterAttendu = {
+            case_type: 'carnet_expire_avant_cours',
+            context: { choix_applique: 'autoriser_avertir' },
+          };
+          break;
+      }
+    } else {
+      // Mode manuel
+      casATraiterAttendu = {
+        case_type: 'carnet_expire_avant_cours',
+        context: { mode: 'manuel' },
+      };
+    }
   }
 
   // Créer la présence (inscrit, pas encore pointé)
@@ -205,11 +268,16 @@ export async function POST(request, { params }) {
     return Response.json({ error: 'Erreur lors de la réservation : ' + presenceErr.message }, { status: 500 });
   }
 
-  // Si la règle "eleve_sans_carnet" a remonté un cas → log dans cas_a_traiter
-  // (sauf si la prof a explicitement désactivé l'alerte dashboard et qu'on est en
-  // mode auto — auquel cas on n'encombre pas l'inbox).
+  // Si une règle a remonté un cas → log dans cas_a_traiter (sauf si la prof a
+  // désactivé l'alerte dashboard ET qu'on est en mode auto = pas d'encombrement
+  // de l'inbox pour les cas où l'app a déjà tout géré silencieusement).
+  // En parallèle, envoyer un email à l'élève si la règle l'a configuré.
   if (casATraiterAttendu) {
-    const shouldLog = regleSansCarnet.mode === 'manuel' || regleSansCarnet.notifProf;
+    // Sélectionne la bonne règle selon le case_type
+    const regleAct = casATraiterAttendu.case_type === 'carnet_expire_avant_cours'
+      ? regleExpireAvant
+      : regleSansCarnet;
+    const shouldLog = regleAct.mode === 'manuel' || regleAct.notifProf;
     if (shouldLog) {
       try {
         await supabaseAdmin
@@ -231,6 +299,22 @@ export async function POST(request, { params }) {
       } catch (logErr) {
         console.warn('[reserver] cas_a_traiter insert non-bloquant:', logErr?.message);
       }
+    }
+
+    // Email auto à l'élève si la règle est configurée pour
+    if (regleAct.notifEleveEmail) {
+      try {
+        const dateStr = cours.date
+          ? new Date(cours.date + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })
+          : '';
+        await sendNotifElevePourRegle({
+          caseType: casATraiterAttendu.case_type,
+          regle: regleAct,
+          profile: { id: profile.id, studio_nom: profile.studio_nom },
+          client: { prenom, nom, email },
+          contexte: { cours: cours.nom, date: dateStr, heure: cours.heure?.slice(0, 5).replace(':', 'h') || '' },
+        });
+      } catch (e) { console.warn('[reserver] notif élève non-bloquant:', e?.message); }
     }
   }
 

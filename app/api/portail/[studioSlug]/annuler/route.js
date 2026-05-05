@@ -3,6 +3,8 @@ import { createClient as createAdminSupabase } from '@supabase/supabase-js';
 import { parseJsonBody, annulationSchema } from '@/lib/validation';
 import { evaluerAnnulation } from '@/lib/regles-annulation';
 import { sendNotifEleve } from '@/lib/notifs-eleves';
+import { getRegle } from '@/lib/regles-metier';
+import { sendNotifElevePourRegle } from '@/lib/notif-eleve-regle';
 
 export async function POST(request, { params }) {
   const { studioSlug } = await params;
@@ -26,7 +28,7 @@ export async function POST(request, { params }) {
   // Vérifier que le studio existe + récupérer ses règles + config notifs
   const { data: profile } = await supabaseAdmin
     .from('profiles')
-    .select('id, studio_nom, regles_annulation, notifs_eleves, twilio_account_sid, twilio_auth_token, twilio_phone_number')
+    .select('id, studio_nom, regles_annulation, regles_metier, notifs_eleves, twilio_account_sid, twilio_auth_token, twilio_phone_number')
     .eq('studio_slug', studioSlug)
     .single();
 
@@ -97,9 +99,72 @@ export async function POST(request, { params }) {
     return Response.json({ ok: true, tardive: false });
   }
 
-  // ── Cas 2 : Annulation tardive (au-delà du délai libre) → la séance est due
-  // On NE supprime PAS la presence : on la garde marquée comme "annulation tardive"
-  // ET on incrémente seances_utilisees du carnet/abonnement (si lié) — la séance compte.
+  // ── Cas 2 : Annulation tardive (au-delà du délai libre) ──────────────────
+  // Le comportement dépend désormais de la règle métier annulation_hors_delai
+  // configurée par la prof (cf. /parametres → Règles → Cas particuliers) :
+  //
+  //   • mode='auto' + choix='excuser'             → on traite comme libre
+  //                                                  (delete presence, pas de décompte)
+  //   • mode='auto' + choix='decompter'           → comportement historique
+  //                                                  (presence=tardive, +1 séance utilisée)
+  //   • mode='auto' + choix='decompter_ou_dette'  → décompte si carnet, sinon
+  //                                                  log dans cas_a_traiter (dette)
+  //   • mode='manuel'                             → presence reste, log dans
+  //                                                  cas_a_traiter pour décision prof
+  const regleAnnul = getRegle({ regles_metier: profile.regles_metier }, 'annulation_hors_delai');
+
+  // Si la prof a explicitement excusé toutes les annulations tardives → free pass
+  if (regleAnnul.mode === 'auto' && regleAnnul.choix === 'excuser') {
+    const { error: deleteErr } = await supabaseAdmin
+      .from('presences')
+      .delete()
+      .eq('id', presenceId);
+    if (deleteErr) {
+      console.error('annulation tardive (excusee) — delete error:', deleteErr);
+      return Response.json({ error: 'Erreur lors de l\'annulation' }, { status: 500 });
+    }
+    // Promotion liste d'attente comme pour annulation libre
+    try {
+      await promouvoirListeAttente(supabaseAdmin, profile.id, presence.cours);
+    } catch (e) { console.error('promotion (excuse): non-blocking:', e); }
+    return Response.json({ ok: true, tardive: true, action: 'excusee' });
+  }
+
+  // Si mode manuel → on accepte l'annulation côté élève (delete presence) mais
+  // on log le cas pour que la prof décide en aval (décompter / excuser / dette)
+  if (regleAnnul.mode === 'manuel') {
+    const { error: deleteErr } = await supabaseAdmin
+      .from('presences')
+      .delete()
+      .eq('id', presenceId);
+    if (deleteErr) {
+      console.error('annulation tardive (manuel) — delete error:', deleteErr);
+      return Response.json({ error: 'Erreur lors de l\'annulation' }, { status: 500 });
+    }
+    try {
+      await supabaseAdmin.from('cas_a_traiter').insert({
+        profile_id: profile.id,
+        case_type: 'annulation_hors_delai',
+        client_id: client.id,
+        cours_id: presence.cours?.id || null,
+        presence_id: null, // presence supprimée
+        context: {
+          mode: 'manuel',
+          delai_h: evaluation.delaiHeures,
+          client_nom: `${client.prenom || ''} ${client.nom || ''}`.trim(),
+          client_email: client.email,
+          cours_date: presence.cours?.date,
+          cours_heure: presence.cours?.heure,
+          presence_id: presenceId, // pour ref historique même si supprimée
+        },
+      });
+    } catch (e) { console.error('annulation (manuel): cas_a_traiter non-bloquant:', e); }
+    try { await promouvoirListeAttente(supabaseAdmin, profile.id, presence.cours); } catch {}
+    return Response.json({ ok: true, tardive: true, action: 'manuel' });
+  }
+
+  // mode='auto' + choix='decompter' OU 'decompter_ou_dette' (= comportement historique)
+  const choixDecompte = regleAnnul.choix || 'decompter';
   const motif = `Annulation tardive (moins de ${evaluation.delaiHeures}h avant le cours)`;
 
   const { error: updateErr } = await supabaseAdmin
@@ -129,6 +194,25 @@ export async function POST(request, { params }) {
         .update({ seances_utilisees: (abo.seances_utilisees || 0) + 1 })
         .eq('id', presence.abonnement_id);
     }
+  } else if (choixDecompte === 'decompter_ou_dette') {
+    // Pas de carnet lié → log une dette dans cas_a_traiter
+    try {
+      await supabaseAdmin.from('cas_a_traiter').insert({
+        profile_id: profile.id,
+        case_type: 'annulation_hors_delai',
+        client_id: client.id,
+        cours_id: presence.cours?.id || null,
+        presence_id: presenceId,
+        context: {
+          choix_applique: 'creer_dette',
+          dette_a_regler: true,
+          delai_h: evaluation.delaiHeures,
+          client_nom: `${client.prenom || ''} ${client.nom || ''}`.trim(),
+          client_email: client.email,
+          cours_date: presence.cours?.date,
+        },
+      });
+    } catch (e) { console.error('annul dette: cas_a_traiter non-bloquant:', e); }
   }
 
   // Notification : "Pour rappel, ta séance a été comptée"

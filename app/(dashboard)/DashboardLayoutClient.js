@@ -6,7 +6,7 @@ import TrialBanner from '@/components/trial/TrialBanner';
 import { getVocabulaire } from '@/lib/vocabulaire';
 import { ToastProvider } from '@/components/ui/ToastProvider';
 
-export default function DashboardLayoutClient({ children, profile, trial }) {
+export default function DashboardLayoutClient({ children, profile, trial, nbCasATraiter = 0 }) {
   const pathname = usePathname();
 
   const vocabulaire = getVocabulaire(
@@ -23,6 +23,7 @@ export default function DashboardLayoutClient({ children, profile, trial }) {
       <Sidebar
         studioNom={profile?.studio_nom || 'Mon Studio'}
         vocabulaire={vocabulaire}
+        nbCasATraiter={nbCasATraiter}
       />
 
       <main className="dashboard-content">

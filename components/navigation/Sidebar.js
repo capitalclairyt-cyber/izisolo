@@ -41,7 +41,7 @@ const NAV_SECTIONS = [
   },
 ];
 
-export default function Sidebar({ studioNom = 'Mon Studio', vocabulaire = {}, illustration = 'lotus' }) {
+export default function Sidebar({ studioNom = 'Mon Studio', vocabulaire = {}, illustration = 'lotus', nbCasATraiter = 0 }) {
   const pathname = usePathname();
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -119,6 +119,8 @@ export default function Sidebar({ studioNom = 'Mon Studio', vocabulaire = {}, il
             )}
             {section.items.map(({ href, label, icon: Icon, badge }) => {
               const isActive = pathname === href || pathname.startsWith(href + '/');
+              // Badge compteur "À traiter"
+              const showCasBadge = href === '/cas-a-traiter' && nbCasATraiter > 0;
               return (
                 <Link
                   key={href}
@@ -129,6 +131,11 @@ export default function Sidebar({ studioNom = 'Mon Studio', vocabulaire = {}, il
                   <span className="sidebar-icon-wrap" style={{ position: 'relative' }}>
                     <Icon size={20} strokeWidth={isActive ? 2.2 : 1.8} />
                     {badge && <MessagesBadge />}
+                    {showCasBadge && (
+                      <span className="sidebar-count-badge" aria-label={`${nbCasATraiter} cas à traiter`}>
+                        {nbCasATraiter > 9 ? '9+' : nbCasATraiter}
+                      </span>
+                    )}
                   </span>
                   <span className="sidebar-label">{label}</span>
                   {isActive && <ChevronRight size={14} className="sidebar-chevron" />}
@@ -347,6 +354,23 @@ export default function Sidebar({ studioNom = 'Mon Studio', vocabulaire = {}, il
           margin-left: auto;
           opacity: 0.4;
           flex-shrink: 0;
+        }
+        /* Badge compteur "À traiter" — pastille persimmon en haut à droite de l'icône */
+        .sidebar-count-badge {
+          position: absolute;
+          top: -4px;
+          right: -8px;
+          min-width: 16px;
+          height: 16px;
+          padding: 0 4px;
+          background: var(--hot, #E8722A);
+          color: white;
+          border-radius: 99px;
+          font-size: 0.625rem;
+          font-weight: 700;
+          line-height: 16px;
+          text-align: center;
+          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
         }
 
         /* === ILLUSTRATION === */
