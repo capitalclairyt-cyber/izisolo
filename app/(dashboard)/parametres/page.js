@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase';
 import { useToast } from '@/components/ui/ToastProvider';
-import { METIERS, PLANS } from '@/lib/constantes';
+import { METIERS, PLANS, SMS_ENABLED } from '@/lib/constantes';
 import { getTrialStatus, effectivePlan as effectivePlanFromTrial } from '@/lib/trial';
 import { slugify } from '@/lib/utils';
 // import BackgroundDecor — retiré, plus utilisé (apparences supprimées)
@@ -132,26 +132,42 @@ function NotifsElevesSection({ profile, setProfile, setDirty }) {
         <h2>Notifications élèves automatiques</h2>
       </div>
       <p className="section-desc">
-        L'app envoie ces emails (et SMS) <strong>directement à tes élèves</strong>, en ton nom.
+        L'app envoie ces emails {SMS_ENABLED && <>(et SMS) </>}<strong>directement à tes élèves</strong>, en ton nom.
         Tu n'as plus rien à faire à la main.
       </p>
 
-      {/* Master kill-switch SMS */}
-      <div className={`sms-master ${smsGlobalOff ? 'off' : ''}`}>
-        <div className="sms-master-left">
-          <div style={{ fontSize: '0.875rem', fontWeight: 700 }}>
-            {smsGlobalOff ? '🔇 Tous les SMS sont coupés' : '📱 SMS activés'}
-          </div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 2 }}>
-            {smsGlobalOff
-              ? 'Aucun SMS ne sera envoyé, même si tu coches une case ci-dessous.'
-              : 'Master switch — coupe tout d\'un coup en cas de doute sur la facture.'}
+      {/* Bandeau global : SMS désactivés (en attendant validation OctoPush) */}
+      {!SMS_ENABLED && (
+        <div className="sms-globally-disabled">
+          <div className="sms-globally-disabled-icon">📱</div>
+          <div>
+            <div className="sms-globally-disabled-title">SMS bientôt disponibles</div>
+            <div className="sms-globally-disabled-desc">
+              L'envoi SMS est temporairement désactivé. Seul le canal email est actif.
+              Active-le quand on aura validé l'intégration en prod.
+            </div>
           </div>
         </div>
-        <button type="button" onClick={toggleSmsGlobalOff} className="toggle-btn-mini" aria-label={smsGlobalOff ? 'Réactiver les SMS' : 'Couper tous les SMS'}>
-          {smsGlobalOff ? <ToggleLeft size={32} style={{ color: '#dc2626' }} /> : <ToggleRight size={32} style={{ color: 'var(--brand)' }} />}
-        </button>
-      </div>
+      )}
+
+      {/* Master kill-switch SMS — caché si SMS_ENABLED=false */}
+      {SMS_ENABLED && (
+        <div className={`sms-master ${smsGlobalOff ? 'off' : ''}`}>
+          <div className="sms-master-left">
+            <div style={{ fontSize: '0.875rem', fontWeight: 700 }}>
+              {smsGlobalOff ? '🔇 Tous les SMS sont coupés' : '📱 SMS activés'}
+            </div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 2 }}>
+              {smsGlobalOff
+                ? 'Aucun SMS ne sera envoyé, même si tu coches une case ci-dessous.'
+                : 'Master switch — coupe tout d\'un coup en cas de doute sur la facture.'}
+            </div>
+          </div>
+          <button type="button" onClick={toggleSmsGlobalOff} className="toggle-btn-mini" aria-label={smsGlobalOff ? 'Réactiver les SMS' : 'Couper tous les SMS'}>
+            {smsGlobalOff ? <ToggleLeft size={32} style={{ color: '#dc2626' }} /> : <ToggleRight size={32} style={{ color: 'var(--brand)' }} />}
+          </button>
+        </div>
+      )}
 
       <table className="notifs-table">
         <thead>
@@ -180,10 +196,11 @@ function NotifsElevesSection({ profile, setProfile, setDirty }) {
                     type="button"
                     onClick={toggle(t.key, 'sms')}
                     className="toggle-btn-mini"
-                    disabled={smsGlobalOff}
-                    style={{ opacity: smsGlobalOff ? 0.3 : 1 }}
+                    disabled={smsGlobalOff || !SMS_ENABLED}
+                    style={{ opacity: (smsGlobalOff || !SMS_ENABLED) ? 0.3 : 1 }}
+                    title={!SMS_ENABLED ? 'SMS bientôt disponibles' : undefined}
                   >
-                    {pref.sms ? <ToggleRight size={26} style={{ color: 'var(--brand)' }} /> : <ToggleLeft size={26} style={{ color: 'var(--text-muted)' }} />}
+                    {pref.sms && SMS_ENABLED ? <ToggleRight size={26} style={{ color: 'var(--brand)' }} /> : <ToggleLeft size={26} style={{ color: 'var(--text-muted)' }} />}
                   </button>
                 </td>
               </tr>
@@ -308,7 +325,6 @@ function AbonnementCheckout({ currentPlan }) {
         'Annulation par l\'élève',
         'Export comptabilité',
         'Liste d\'attente + dette annulation tardive',
-        'Support prioritaire',
       ],
     },
     {
@@ -317,14 +333,12 @@ function AbonnementCheckout({ currentPlan }) {
       prixMensuel: 49,
       comingSoon: true, // 🚧 carte grisée + bouton désactivé tant que pas prêt
       tagline: 'Pour les studios matures',
-      pitch: 'Vidéos de cours + cours payants à l\'unité + white-label.',
+      pitch: 'Vidéos de cours vendables à l\'unité ou en abonnement + white-label.',
       features: [
         'Tout Pro +',
         'Lieux illimités',
-        'Vidéos de cours (uploader + diffuser)',
-        'Cours monétisables (payants à l\'unité)',
+        'Vidéos de cours : uploader, diffuser, vendre à l\'unité ou en abonnement',
         'Logo studio dans tous les emails (white-label)',
-        'Support prioritaire — réponse < 24h',
       ],
       bonus: 'En cours de finalisation — disponible bientôt. Inscris-toi en Pro maintenant, tu pourras upgrader d\'un clic.',
     },
@@ -369,7 +383,7 @@ function AbonnementCheckout({ currentPlan }) {
               <div className="plan-tagline">{p.tagline}</div>
               <div className="plan-price">
                 <span className="plan-amount">{p.prixMensuel} €</span>
-                <span className="plan-period">/mois</span>
+                <span className="plan-period">/mois TTC</span>
               </div>
               <p className="plan-desc">{p.pitch}</p>
               <ul className="plan-features">
@@ -407,8 +421,8 @@ function AbonnementCheckout({ currentPlan }) {
       </div>
 
       <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 14, textAlign: 'center' }}>
-        Frais Stripe natifs (1,4% + 0,25 €) toujours dus à Stripe. Les frais
-        IziSolo (1 % sur Pro et Premium) viennent en plus.
+        Tarifs TTC. Frais Stripe natifs (1,4% + 0,25 €) toujours dus à Stripe.
+        Les frais IziSolo (1 % sur Pro et Premium) viennent en plus.
       </p>
     </div>
   );
@@ -542,9 +556,16 @@ function ReglesAnnulationSection({ profile, setProfile, setDirty }) {
 // ════════════════════════════════════════════════════════════════════════════
 // Section "Page publique" — enrichit ce que voient les visiteurs sur /p/[slug]
 // Bio, photo, formations, horaires, FAQ, réseaux sociaux. Tous champs optionnels.
+// ⚠️ La page publique ENRICHIE est une feature Pro+ : pendant le trial, un
+// user en plan Solo a accès, mais à J14, s'il choisit Solo plutôt que Pro, ses
+// modifs (bio, FAQ, philosophie...) ne seront plus rendues sur le portail.
+// On l'avertit via un bandeau en haut de la section.
 // ════════════════════════════════════════════════════════════════════════════
 function PagePubliqueSection({ profile, setProfile, setDirty }) {
   const studioSlug = profile?.studio_slug;
+  const trial = getTrialStatus(profile);
+  // Avertir si trial actif ET plan réel = solo (= ce qui sera effectif après J14)
+  const showTrialWarning = trial.active && (profile?.plan === 'solo' || !profile?.plan);
   const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://izisolo.fr';
   const publicUrl = studioSlug ? `${baseUrl}/p/${studioSlug}` : null;
   const previewUrl = publicUrl ? `${publicUrl}?preview=1` : null;
@@ -624,6 +645,20 @@ function PagePubliqueSection({ profile, setProfile, setDirty }) {
       <p className="section-desc">
         Tout ce que tes futur·e·s élèves voient sur <strong>{publicUrl || 'ta page'}</strong>. Tous les champs sont optionnels — laisse vide ce que tu ne veux pas montrer.
       </p>
+
+      {/* Avertissement trial : la page publique enrichie est Pro+ */}
+      {showTrialWarning && (
+        <div className="page-pub-trial-warning">
+          <AlertCircle size={16} />
+          <div>
+            <strong>Ces enrichissements sont une feature Pro.</strong> Tu y as
+            accès pendant ton essai 14 jours. Si tu choisis Solo à la fin,
+            les champs avancés (bio, philosophie, formations, FAQ, photos
+            additionnelles) ne seront plus affichés sur ta page publique.
+            Pour les conserver, passe en Pro.
+          </div>
+        </div>
+      )}
 
       {/* Workflow brouillon → aperçu → publication */}
       {studioSlug && (
@@ -819,6 +854,22 @@ function PagePubliqueSection({ profile, setProfile, setDirty }) {
           border: 1px solid var(--brand-200, #f0d0d0);
         }
         .page-public-preview:hover { background: var(--brand); color: white; }
+        .page-pub-trial-warning {
+          display: flex; align-items: flex-start; gap: 10px;
+          padding: 12px 14px; margin: 4px 0 12px;
+          background: var(--hot-light, #FCE8DA);
+          border: 1px solid var(--hot, #E8722A);
+          border-radius: 12px;
+          font-size: 0.8125rem;
+          color: var(--text-primary);
+          line-height: 1.5;
+        }
+        .page-pub-trial-warning > svg {
+          flex-shrink: 0;
+          color: var(--hot, #E8722A);
+          margin-top: 2px;
+        }
+        .page-pub-trial-warning strong { color: var(--hot, #E8722A); font-weight: 700; }
         .page-pub-workflow {
           display: flex; align-items: center; justify-content: space-between;
           gap: 12px; flex-wrap: wrap;
@@ -1803,47 +1854,22 @@ export default function Parametres() {
             </div>
           )}
 
-          {/* Règles d'annulation */}
-          <ReglesAnnulationSection
-            profile={profile}
-            setProfile={setProfile}
-            setDirty={setDirty}
-          />
-
-          {/* Notifications élèves automatiques */}
-          <NotifsElevesSection
-            profile={profile}
-            setProfile={setProfile}
-            setDirty={setDirty}
-          />
-
-          {/* Page publique enrichie */}
+          {/* Page publique enrichie — reste dans Profil (logique : c'est la
+              "vitrine" qui dépend du profil prof/studio) */}
           <PagePubliqueSection
             profile={profile}
             setProfile={setProfile}
             setDirty={setDirty}
           />
 
-          {/* Paiement en ligne (Stripe Payment Link) */}
-          <StripePaiementSection
-            profile={profile}
-            setProfile={setProfile}
-            setDirty={setDirty}
-          />
-
-          {/* Visibilité par défaut des cours */}
-          <VisibiliteSection
-            profile={profile}
-            setProfile={setProfile}
-            setDirty={setDirty}
-          />
-
-          {/* Cours d'essai pour visiteurs */}
-          <CoursEssaiSection
-            profile={profile}
-            setProfile={setProfile}
-            setDirty={setDirty}
-          />
+          {/* Note : les sections suivantes ont été déplacées vers l'onglet
+              Réglages (2026-05-05) car elles relèvent plus du paramétrage
+              opérationnel que de l'identité du profil/studio :
+              - ReglesAnnulationSection
+              - NotifsElevesSection
+              - StripePaiementSection (paiement en ligne)
+              - VisibiliteSection (visibilité par défaut des cours)
+              - CoursEssaiSection */}
 
           <button onClick={handleSave} className="izi-btn izi-btn-primary save-btn" disabled={saving}>
             <Save size={18} /> {saving ? 'Enregistrement...' : 'Enregistrer'}
@@ -1881,13 +1907,15 @@ export default function Parametres() {
               ui_couleur / ui_illustration / ui_grille_active / ui_animation_active
               restent en DB mais ne sont plus exposées. */}
 
-          {/* === SOUS-ONGLET : GÉNÉRAL === */}
+          {/* === SOUS-ONGLET : GÉNÉRAL ===
+              Sections déplacées depuis l'onglet Profil (2026-05-05) car elles
+              relèvent plus du paramétrage opérationnel que de l'identité. */}
           {reglagesSubTab === 'general' && (
             <div className="subtab-content animate-fade-in">
 
               {/* Alertes & Notifications */}
               <div className="section izi-card">
-                <div className="section-top"><div className="section-icon"><Bell size={20} /></div><h2>Alertes</h2></div>
+                <div className="section-top"><div className="section-icon"><Bell size={20} /></div><h2>Seuils d'alertes</h2></div>
                 <p className="section-desc">Configure les seuils de notification pour tes élèves.</p>
                 <div className="form-row">
                   <div className="form-group">
@@ -1900,6 +1928,41 @@ export default function Parametres() {
                   </div>
                 </div>
               </div>
+
+              {/* Règles d'annulation */}
+              <ReglesAnnulationSection
+                profile={profile}
+                setProfile={setProfile}
+                setDirty={setDirty}
+              />
+
+              {/* Notifications élèves automatiques */}
+              <NotifsElevesSection
+                profile={profile}
+                setProfile={setProfile}
+                setDirty={setDirty}
+              />
+
+              {/* Visibilité par défaut des cours */}
+              <VisibiliteSection
+                profile={profile}
+                setProfile={setProfile}
+                setDirty={setDirty}
+              />
+
+              {/* Cours d'essai pour visiteurs */}
+              <CoursEssaiSection
+                profile={profile}
+                setProfile={setProfile}
+                setDirty={setDirty}
+              />
+
+              {/* Paiement en ligne (Stripe Payment Link) */}
+              <StripePaiementSection
+                profile={profile}
+                setProfile={setProfile}
+                setDirty={setDirty}
+              />
 
               <button onClick={handleSave} className="izi-btn izi-btn-primary save-btn" disabled={saving}>
                 <Save size={18} /> {saving ? 'Enregistrement...' : 'Enregistrer'}
@@ -2204,8 +2267,7 @@ export default function Parametres() {
               { label: 'Page publique enrichie (bio, FAQ, philosophie)', included: currentPlan.portailEnrichi },
               { label: 'Annulation par l\'élève + dette tardive', included: currentPlan.annulationParEleve },
               { label: 'Export comptabilité', included: currentPlan.exportCompta },
-              { label: 'Vidéos de cours (Premium)', included: currentPlan.videos === true },
-              { label: 'Cours monétisables à l\'unité (Premium)', included: currentPlan.coursMonetisables === true },
+              { label: 'Vidéos de cours vendables à l\'unité ou en abonnement (Premium)', included: currentPlan.videos === true },
               { label: 'Logo studio dans emails / white-label (Premium)', included: currentPlan.brandingEmail },
             ];
             return (
@@ -2234,7 +2296,7 @@ export default function Parametres() {
                     ) : (
                       <>
                         Tu utilises actuellement le plan <strong>{currentPlan.nom}</strong>
-                        {currentPlan.prix > 0 && ` à ${currentPlan.prix} €/mois`}.
+                        {currentPlan.prix > 0 && ` à ${currentPlan.prix} €/mois TTC`}.
                       </>
                     )}
                   </p>

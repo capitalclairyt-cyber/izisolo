@@ -20,6 +20,7 @@
  */
 
 import { createServerClient } from '@/lib/supabase-server';
+import { SMS_ENABLED } from '@/lib/constantes';
 
 // Plans autorisés à envoyer des SMS. `free` inclus pour comptes internes
 // (Colin, Maude — exemptés full access). `studio` retiré (obsolète).
@@ -36,6 +37,14 @@ function normalizePhone(telephone) {
 }
 
 export async function POST(request) {
+  // 0. Kill-switch global : SMS désactivés temporairement (cf. constantes.js)
+  if (!SMS_ENABLED) {
+    return Response.json(
+      { error: 'L\'envoi SMS est temporairement désactivé. Active-toi prochainement.' },
+      { status: 503 }
+    );
+  }
+
   // 1. Authentification
   const supabase = await createServerClient();
   const { data: { user } } = await supabase.auth.getUser();

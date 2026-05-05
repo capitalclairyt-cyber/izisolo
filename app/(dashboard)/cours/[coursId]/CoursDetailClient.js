@@ -12,6 +12,7 @@ import { formatHeure, getAllTypesFromCategories } from '@/lib/utils';
 import { parseDate } from '@/lib/dates';
 import { createClient } from '@/lib/supabase';
 import { useToast } from '@/components/ui/ToastProvider';
+import { SMS_ENABLED } from '@/lib/constantes';
 
 export default function CoursDetailClient({ cours, presences, lieux, profile, nbOccurrences, autoEdit }) {
   const router = useRouter();
@@ -209,9 +210,11 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
   };
 
   // ---- SMS : accès plan + participants joignables ----
-  // `free` inclus pour comptes internes/exemptés (Colin, Maude). `studio` retiré.
-  const SMS_PLANS = ['pro', 'premium', 'free'];
-  const canUseSms = SMS_PLANS.includes(profile?.plan);
+  // Kill-switch global SMS_ENABLED dans lib/constantes.js (false pour le
+  // moment, en attendant validation OctoPush en prod). `free` inclus pour
+  // comptes internes/exemptés (Colin, Maude).
+  const SMS_PLANS_LOCAL = ['pro', 'premium', 'free'];
+  const canUseSms = SMS_ENABLED && SMS_PLANS_LOCAL.includes(profile?.plan);
   const participantsWithPhone = presences.filter(p => p.clients?.telephone);
 
   const handleSendSms = async () => {
