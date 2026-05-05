@@ -361,8 +361,8 @@ function AbonnementCheckout({ currentPlan }) {
               <div className="plan-name">{p.nom}</div>
               <div className="plan-tagline">{p.tagline}</div>
               <div className="plan-price">
-                <span className="plan-amount">{fmtPrix(p)}</span>
-                <span className="plan-period">{fmtSub(p)}</span>
+                <span className="plan-amount">{p.prixMensuel} €</span>
+                <span className="plan-period">/mois</span>
               </div>
               <p className="plan-desc">{p.pitch}</p>
               <ul className="plan-features">
