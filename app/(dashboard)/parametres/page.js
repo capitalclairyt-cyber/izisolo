@@ -12,6 +12,7 @@ import {
 import { createClient } from '@/lib/supabase';
 import { useToast } from '@/components/ui/ToastProvider';
 import { METIERS, PLANS } from '@/lib/constantes';
+import { getTrialStatus, effectivePlan as effectivePlanFromTrial } from '@/lib/trial';
 import { slugify } from '@/lib/utils';
 // import BackgroundDecor — retiré, plus utilisé (apparences supprimées)
 
@@ -2166,12 +2167,15 @@ export default function Parametres() {
       {activeTab === 'abonnement' && (
         <div className="tab-content animate-fade-in">
 
-          {/* Plan actuel — dynamique selon profile.plan + objet PLANS */}
+          {/* Plan actuel — dynamique selon le plan EFFECTIF (incluant trial) */}
           {(() => {
-            const currentPlanKey = profile?.plan || 'solo';
+            const trial = getTrialStatus(profile);
+            const realPlanKey = profile?.plan || 'solo';
+            const currentPlanKey = effectivePlanFromTrial(profile);
             const currentPlan = PLANS[currentPlanKey] || PLANS.solo;
             const isFree = currentPlanKey === 'free';
             const isPremium = currentPlanKey === 'premium';
+            const isTrialActive = trial.active;
             // Liste des features à afficher avec leur statut selon le plan
             // (label visible + clé dans l'objet PLANS pour vérif inclusion)
             const featuresList = [
@@ -2209,10 +2213,25 @@ export default function Parametres() {
                 <div className="abo-current">
                   <div className="abo-badge">{currentPlan.nom}</div>
                   <p className="abo-status">
-                    Tu utilises actuellement le plan <strong>{currentPlan.nom}</strong>
-                    {isFree && ' (compte interne — full access)'}
-                    {!isFree && currentPlan.prix > 0 && ` à ${currentPlan.prix} €/mois`}
-                    .
+                    {isTrialActive ? (
+                      <>
+                        Tu profites d'un essai <strong>Pro</strong> — il te reste{' '}
+                        <strong>{trial.daysLeft} {trial.daysLeft > 1 ? 'jours' : 'jour'}</strong>.
+                        Choisis ton abonnement ci-dessous quand tu es prêt·e.
+                      </>
+                    ) : isFree ? (
+                      <>Tu utilises actuellement le plan <strong>{currentPlan.nom}</strong> (compte interne — full access).</>
+                    ) : trial.expired ? (
+                      <>
+                        Ton essai est terminé. Choisis ton plan ci-dessous pour continuer
+                        à utiliser IziSolo.
+                      </>
+                    ) : (
+                      <>
+                        Tu utilises actuellement le plan <strong>{currentPlan.nom}</strong>
+                        {currentPlan.prix > 0 && ` à ${currentPlan.prix} €/mois`}.
+                      </>
+                    )}
                   </p>
                 </div>
 

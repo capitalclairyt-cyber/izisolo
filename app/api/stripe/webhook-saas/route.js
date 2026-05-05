@@ -67,8 +67,14 @@ export async function POST(request) {
       case 'customer.subscription.updated': {
         const sub = event.data.object;
         const profileId = sub.metadata?.profile_id;
-        const plan = sub.metadata?.plan; // 'solo' | 'pro'
+        const plan = sub.metadata?.plan; // 'solo' | 'pro' | 'premium'
         if (!profileId || !plan) break;
+        // À la souscription, le trial in-app devient irrelevant (Stripe gère
+        // sa propre logique trial). On ne nullify PAS trial_started_at pour
+        // garder l'historique, mais le helper effectivePlan() retournera le
+        // plan Stripe (sub active) au lieu de 'pro' trial. Aussi on remet à
+        // false les flags reminder pour permettre un futur trial sur un
+        // autre cycle si jamais (edge case).
         await supabase
           .from('profiles')
           .update({

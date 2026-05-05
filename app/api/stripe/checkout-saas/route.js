@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { createServerClient } from '@/lib/supabase-server';
 import { TRIAL_DAYS } from '@/lib/constantes';
+import { getTrialStatus } from '@/lib/trial';
 import Stripe from 'stripe';
 
 export const runtime = 'nodejs';
@@ -72,10 +73,10 @@ export async function POST(request) {
     }, { status: 503 });
   }
 
-  // Récupérer le profile (pour stripe_customer_id existant)
+  // Récupérer le profile (pour stripe_customer_id existant + état du trial)
   const { data: profile } = await supabase
     .from('profiles')
-    .select('id, stripe_customer_id, email_contact')
+    .select('id, stripe_customer_id, email_contact, plan, trial_started_at, stripe_subscription_status')
     .eq('id', user.id)
     .single();
 
@@ -84,6 +85,21 @@ export async function POST(request) {
   });
 
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://izisolo.fr';
+
+  // Calcul du trial restant : si l'user souscrit AVANT la fin de son
+  // trial in-app (14j à partir de signup), Stripe doit respecter le temps
+  // restant (pas le re-démarrer à 14j). On utilise `trial_end` (timestamp
+  // Unix de la fin) au lieu de `trial_period_days`.
+  // Si le trial est déjà expiré → pas de trial Stripe (paiement immédiat).
+  // Si trial actif → trial Stripe = même endsAt que celui in-app.
+  const trialStatus = getTrialStatus(profile);
+  const subscriptionData = {
+    metadata: { profile_id: user.id, plan, periode },
+  };
+  if (trialStatus.active && trialStatus.endsAt) {
+    subscriptionData.trial_end = Math.floor(trialStatus.endsAt.getTime() / 1000);
+  }
+  // Si trialStatus.expired ou ineligible → pas de trial Stripe, paiement immédiat
 
   try {
     const session = await stripe.checkout.sessions.create({
@@ -98,15 +114,7 @@ export async function POST(request) {
         plan,
         periode,
       },
-      subscription_data: {
-        metadata: { profile_id: user.id, plan, periode },
-        // Trial 14 jours offert sur tous les plans publics, mais UNIQUEMENT
-        // si le user n'a jamais eu de subscription antérieure (sinon Stripe
-        // empêche l'abus de re-souscrire pour reprendre un trial).
-        // On envoie le param systématiquement — Stripe gère la dédup via
-        // le customer existant (même customer = pas de nouveau trial).
-        trial_period_days: TRIAL_DAYS,
-      },
+      subscription_data: subscriptionData,
       success_url: `${baseUrl}/parametres?abo=success`,
       cancel_url: `${baseUrl}/parametres?abo=cancel`,
       allow_promotion_codes: true,

@@ -2,10 +2,11 @@
 
 import { usePathname } from 'next/navigation';
 import Sidebar from '@/components/navigation/Sidebar';
+import TrialBanner from '@/components/trial/TrialBanner';
 import { getVocabulaire } from '@/lib/vocabulaire';
 import { ToastProvider } from '@/components/ui/ToastProvider';
 
-export default function DashboardLayoutClient({ children, profile }) {
+export default function DashboardLayoutClient({ children, profile, trial }) {
   const pathname = usePathname();
 
   const vocabulaire = getVocabulaire(
@@ -16,9 +17,8 @@ export default function DashboardLayoutClient({ children, profile }) {
   return (
     <ToastProvider>
     <div className="dashboard-wrapper">
-      {/* Palette d'identité visuelle imposée (rose tonal Claude Design),
-          plus de personnalisation côté pro — cohérence brand pour tout le monde.
-          Plus de BackgroundDecor non plus (n'apportait pas grand chose). */}
+      {/* Palette d'identité visuelle imposée (Sauge & Cuivre), pas de
+          personnalisation côté pro — cohérence brand pour tout le monde. */}
 
       <Sidebar
         studioNom={profile?.studio_nom || 'Mon Studio'}
@@ -27,6 +27,8 @@ export default function DashboardLayoutClient({ children, profile }) {
 
       <main className="dashboard-content">
         <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '16px' }}>
+          {/* Banner trial 14j (active ou expired) — null sinon */}
+          <TrialBanner trial={trial} />
           {children}
         </div>
       </main>

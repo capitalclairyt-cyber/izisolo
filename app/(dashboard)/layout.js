@@ -1,6 +1,7 @@
 import { createServerClient } from '@/lib/supabase-server';
 import { redirect } from 'next/navigation';
 import DashboardLayoutClient from './DashboardLayoutClient';
+import { getTrialStatus } from '@/lib/trial';
 
 export default async function DashboardLayout({ children }) {
   const supabase = await createServerClient();
@@ -10,7 +11,8 @@ export default async function DashboardLayout({ children }) {
     redirect('/login');
   }
 
-  // Charger le profil
+  // Charger le profil (incluant trial_started_at + stripe_subscription_status
+  // pour calculer le statut du trial 14j côté serveur, à passer au client)
   const { data: profile } = await supabase
     .from('profiles')
     .select('*')
@@ -35,8 +37,17 @@ export default async function DashboardLayout({ children }) {
     redirect('/onboarding');
   }
 
+  // Statut du trial 14j (calculé côté serveur). Sérialisable, on convertit
+  // les Date en string pour passer à un Client Component.
+  const trialRaw = getTrialStatus(profile);
+  const trial = {
+    ...trialRaw,
+    endsAt: trialRaw.endsAt ? trialRaw.endsAt.toISOString() : null,
+    startedAt: trialRaw.startedAt ? trialRaw.startedAt.toISOString() : null,
+  };
+
   return (
-    <DashboardLayoutClient profile={profile}>
+    <DashboardLayoutClient profile={profile} trial={trial}>
       {children}
     </DashboardLayoutClient>
   );
