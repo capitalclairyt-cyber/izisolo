@@ -316,16 +316,18 @@ function AbonnementCheckout({ currentPlan }) {
       id: 'premium',
       nom: 'Premium',
       prixMensuel: 49,
+      comingSoon: true, // 🚧 carte grisée + bouton désactivé tant que pas prêt
       tagline: 'Pour les studios matures',
-      pitch: 'Zéro frais Stripe IziSolo, white-label, support sous 24h.',
+      pitch: 'Vidéos de cours + cours payants à l\'unité + white-label.',
       features: [
         'Tout Pro +',
         'Lieux illimités',
-        '0% de frais Stripe IziSolo',
+        'Vidéos de cours (uploader + diffuser)',
+        'Cours monétisables (payants à l\'unité)',
         'Logo studio dans tous les emails (white-label)',
         'Support prioritaire — réponse < 24h',
       ],
-      bonus: 'Les souscripteurs Premium bénéficieront automatiquement des futures features (vidéos de cours, assistant IA, multi-prof) à leur sortie.',
+      bonus: 'En cours de finalisation — disponible bientôt. Inscris-toi en Pro maintenant, tu pourras upgrader d\'un clic.',
     },
   ];
 
@@ -356,9 +358,14 @@ function AbonnementCheckout({ currentPlan }) {
       <div className="plans-grid plans-grid-3">
         {PLANS_PUB.map(p => {
           const isCurrent = currentPlan === p.id;
+          const isDisabled = p.comingSoon === true;
           return (
-            <div key={p.id} className={`plan-card ${p.recommended ? 'recommended' : ''}`}>
-              {p.recommended && <div className="plan-badge">Recommandé</div>}
+            <div
+              key={p.id}
+              className={`plan-card ${p.recommended ? 'recommended' : ''} ${isDisabled ? 'plan-card-disabled' : ''}`}
+            >
+              {p.recommended && !isDisabled && <div className="plan-badge">Recommandé</div>}
+              {isDisabled && <div className="plan-badge plan-badge-soon">Bientôt</div>}
               <div className="plan-name">{p.nom}</div>
               <div className="plan-tagline">{p.tagline}</div>
               <div className="plan-price">
@@ -381,15 +388,18 @@ function AbonnementCheckout({ currentPlan }) {
                 <p className="plan-bonus">✦ {p.bonus}</p>
               )}
               <button
-                onClick={() => subscribe(p.id)}
-                disabled={isCurrent || loading === p.id}
+                onClick={() => !isDisabled && subscribe(p.id)}
+                disabled={isCurrent || loading === p.id || isDisabled}
                 className={`izi-btn ${p.recommended ? 'izi-btn-primary' : 'izi-btn-secondary'} plan-cta`}
+                title={isDisabled ? 'Plan bientôt disponible' : ''}
               >
-                {isCurrent
-                  ? 'Plan actuel'
-                  : loading === p.id
-                    ? 'Redirection…'
-                    : (currentPlan && currentPlan !== 'free' ? `Passer à ${p.nom}` : `Démarrer mes 14 jours gratuits`)
+                {isDisabled
+                  ? 'Bientôt disponible'
+                  : isCurrent
+                    ? 'Plan actuel'
+                    : loading === p.id
+                      ? 'Redirection…'
+                      : (currentPlan && currentPlan !== 'free' ? `Passer à ${p.nom}` : `Démarrer mes 14 jours gratuits`)
                 }
               </button>
             </div>
@@ -399,7 +409,7 @@ function AbonnementCheckout({ currentPlan }) {
 
       <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 14, textAlign: 'center' }}>
         Frais Stripe natifs (1,4% + 0,25 €) toujours dus à Stripe. Les frais
-        IziSolo (1% sur Pro, 0% sur Premium) viennent en plus.
+        IziSolo (1 % sur Pro et Premium) viennent en plus.
       </p>
     </div>
   );
@@ -2200,8 +2210,9 @@ export default function Parametres() {
               { label: 'Page publique enrichie (bio, FAQ, philosophie)', included: currentPlan.portailEnrichi },
               { label: 'Annulation par l\'élève + dette tardive', included: currentPlan.annulationParEleve },
               { label: 'Export comptabilité', included: currentPlan.exportCompta },
-              { label: 'Logo studio dans emails (white-label)', included: currentPlan.brandingEmail },
-              { label: '0% frais Stripe IziSolo', included: currentPlan.fraisStripeIziSolo === 0 && !isFree },
+              { label: 'Vidéos de cours (Premium)', included: currentPlan.videos === true },
+              { label: 'Cours monétisables à l\'unité (Premium)', included: currentPlan.coursMonetisables === true },
+              { label: 'Logo studio dans emails / white-label (Premium)', included: currentPlan.brandingEmail },
             ];
             return (
               <div className="section izi-card">
@@ -2510,6 +2521,7 @@ export default function Parametres() {
 
         /* Plans */
         .plans-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 4px; }
+        .plans-grid-3 { grid-template-columns: 1fr 1fr 1fr; }
         .plan-card {
           display: flex; flex-direction: column; gap: 8px;
           padding: 20px; border-radius: var(--radius-md);
@@ -2520,6 +2532,18 @@ export default function Parametres() {
           border-color: var(--brand);
           background: var(--brand-light);
         }
+        /* Premium "bientôt" : carte grisée, bouton désactivé */
+        .plan-card.plan-card-disabled {
+          opacity: 0.6;
+          background: var(--bg-soft, #F8F4ED);
+          border-color: var(--border);
+        }
+        .plan-card.plan-card-disabled .plan-cta {
+          background: var(--text-muted) !important;
+          color: white;
+          cursor: not-allowed;
+          opacity: 0.7;
+        }
         .plan-badge {
           position: absolute; top: -10px; right: 12px;
           padding: 2px 10px; border-radius: var(--radius-full);
@@ -2527,13 +2551,42 @@ export default function Parametres() {
           font-size: 0.6875rem; font-weight: 700; text-transform: uppercase;
           letter-spacing: 0.3px;
         }
+        .plan-badge.plan-badge-soon {
+          background: var(--text-muted);
+          color: white;
+        }
+        .plan-tagline {
+          font-size: 0.75rem; color: var(--brand-700);
+          text-transform: uppercase; letter-spacing: 0.04em;
+          font-weight: 600;
+        }
+        .plan-card.plan-card-disabled .plan-tagline { color: var(--text-muted); }
         .plan-name { font-size: 1.125rem; font-weight: 700; color: var(--text-primary); }
         .plan-price { display: flex; align-items: baseline; gap: 2px; }
-        .plan-amount { font-size: 1.75rem; font-weight: 800; color: var(--text-primary); }
+        .plan-amount {
+          font-family: var(--font-fraunces), Georgia, serif;
+          font-variation-settings: 'opsz' 144;
+          font-size: 2rem; font-weight: 600; color: var(--text-primary);
+        }
         .plan-period { font-size: 0.8125rem; color: var(--text-muted); }
-        .plan-desc { font-size: 0.8125rem; color: var(--text-muted); margin: 0; flex: 1; }
-        .plan-cta { margin-top: 8px; }
+        .plan-desc { font-size: 0.8125rem; color: var(--text-muted); margin: 0; }
+        .plan-features { list-style: none; padding: 0; margin: 8px 0; display: flex; flex-direction: column; gap: 6px; flex: 1; }
+        .plan-features li { display: flex; gap: 6px; align-items: flex-start; font-size: 0.8125rem; color: var(--text-secondary); line-height: 1.4; }
+        .plan-limits {
+          font-size: 0.75rem; color: var(--text-muted);
+          font-style: italic; margin: 4px 0 0;
+        }
+        .plan-bonus {
+          font-size: 0.75rem; color: var(--brand-700);
+          background: var(--brand-50); padding: 8px 10px;
+          border-radius: var(--radius-sm); margin: 4px 0 0;
+          line-height: 1.4;
+        }
+        .plan-cta { margin-top: 8px; width: 100%; justify-content: center; }
 
+        @media (max-width: 768px) {
+          .plans-grid-3 { grid-template-columns: 1fr; }
+        }
         @media (max-width: 480px) {
           .plans-grid { grid-template-columns: 1fr; }
           .form-row { grid-template-columns: 1fr; }

@@ -31,10 +31,10 @@ const PLANS_CONFIG = [
   },
   {
     id: 'premium',
-    label: 'Premium',
+    label: 'Premium (bientôt)',
     price: '49€/mois',
-    description: 'Studios matures — 0% Stripe + white-label + support 24h',
-    features: ['Tout Pro', 'Lieux illimités', '0% frais Stripe IziSolo', 'Logo studio dans emails', 'Support < 24h', 'Early access aux futures features'],
+    description: 'Studios matures — vidéos + cours monétisables + white-label. Pas encore disponible à la souscription.',
+    features: ['Tout Pro', 'Lieux illimités', 'Vidéos de cours', 'Cours monétisables à l\'unité', 'Logo studio dans emails', 'Support < 24h'],
     color: '#fb923c',
     bg: '#3f2d1f',
   },
