@@ -12,6 +12,7 @@ import { parseDate } from '@/lib/dates';
 import { getVocabulaire } from '@/lib/vocabulaire';
 import { createClient } from '@/lib/supabase';
 import { evaluerRegles } from '@/lib/regles';
+import { getRegle } from '@/lib/regles-metier';
 import { useToast } from '@/components/ui/ToastProvider';
 
 
@@ -428,7 +429,16 @@ export default function PointageClient({ cours, presences: initialPresences, tou
     setActionLoading(presence.id);
     const oldStatut  = getStatut(presence);
     const isPresent  = newStatut === 'present';
+    const isAbsent   = newStatut === 'absent';
     const wasPresent = oldStatut === 'present';
+
+    // Règle métier no_show :
+    //   • mode auto + decompter_auto → l'absence DÉCOMPTE la séance (politique stricte)
+    //   • mode auto + crédit_reporté → l'absence ne décompte pas (politique souple, comportement historique)
+    //   • mode manuel               → log dans cas_a_traiter pour décision prof
+    const regleNoShow = getRegle({ regles_metier: profile?.regles_metier }, 'no_show');
+    const decompteSiAbsent = isAbsent && regleNoShow.mode === 'auto' && regleNoShow.choix === 'decompter_auto';
+    const logCasManuel = isAbsent && (regleNoShow.mode === 'manuel' || regleNoShow.notifProf);
 
     const supabase = createClient();
     const { error } = await supabase
@@ -441,9 +451,16 @@ export default function PointageClient({ cours, presences: initialPresences, tou
       .eq('id', presence.id);
 
     if (!error) {
-      // Maj compteur séances
+      // Maj compteur séances :
+      //   present : +1 (l'élève était là)
+      //   absent + decompteSiAbsent : +1 (politique stricte, séance décomptée)
+      //   absent + crédit_reporté : -1 si on revient d'un état "present" (annule le décompte précédent)
+      //   absent + crédit_reporté + non précédemment présent : 0
       if (presence.abonnement_id && presence.abonnements) {
-        const delta = isPresent ? 1 : wasPresent ? -1 : 0;
+        let delta = 0;
+        if (isPresent && !wasPresent) delta = 1;
+        else if (!isPresent && wasPresent) delta = -1;
+        else if (isAbsent && !wasPresent && decompteSiAbsent) delta = 1;
         if (delta !== 0) {
           const current = presence.abonnements.seances_utilisees || 0;
           await supabase
@@ -452,6 +469,27 @@ export default function PointageClient({ cours, presences: initialPresences, tou
             .eq('id', presence.abonnement_id);
         }
       }
+
+      // Log dans cas_a_traiter si mode manuel ou notifProf actif
+      if (logCasManuel) {
+        try {
+          await supabase.from('cas_a_traiter').insert({
+            profile_id: cours.profile_id,
+            case_type: 'no_show',
+            client_id: presence.client_id,
+            cours_id: cours.id,
+            presence_id: presence.id,
+            context: {
+              mode: regleNoShow.mode,
+              choix: regleNoShow.choix,
+              client_nom: `${presence.clients?.prenom || ''} ${presence.clients?.nom || ''}`.trim(),
+              cours_nom: cours.nom,
+              cours_date: cours.date,
+            },
+          });
+        } catch (e) { /* non-bloquant */ }
+      }
+
       setPresences(prev => prev.map(p =>
         p.id !== presence.id ? p : {
           ...p,
@@ -464,6 +502,7 @@ export default function PointageClient({ cours, presences: initialPresences, tou
               const c = p.abonnements.seances_utilisees || 0;
               if (isPresent && !wasPresent) return c + 1;
               if (!isPresent && wasPresent) return Math.max(0, c - 1);
+              if (isAbsent && !wasPresent && decompteSiAbsent) return c + 1;
               return c;
             })(),
           } : null,
@@ -471,7 +510,7 @@ export default function PointageClient({ cours, presences: initialPresences, tou
       ));
     }
     setActionLoading(null);
-  }, [locked]);
+  }, [locked, profile, cours]);
 
   // ── Tout marquer présent ──────────────────────────────
   const toutPresent = async () => {

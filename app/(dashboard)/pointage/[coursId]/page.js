@@ -32,10 +32,10 @@ export default async function PointagePage({ params }) {
     .in('statut', ['prospect', 'actif', 'fidele'])
     .order('prenom');
 
-  // Charger le profil (vocabulaire + règles d'annulation)
+  // Charger le profil (vocabulaire + règles d'annulation + règles métier)
   const { data: profile } = await supabase
     .from('profiles')
-    .select('metier, vocabulaire, regles_annulation, essais_par_defaut')
+    .select('metier, vocabulaire, regles_annulation, regles_metier, essais_par_defaut')
     .eq('id', user.id)
     .single();
 

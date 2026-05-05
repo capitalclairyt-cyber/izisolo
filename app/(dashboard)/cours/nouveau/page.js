@@ -178,6 +178,9 @@ function NouveauCoursInner() {
     client_pro_id: '',
     notes: '',
     visibilite: '', // sera renseigné depuis profile.visibilite_default au load
+    // Workshop / évènement payant à l'unité (v35)
+    tarif_unitaire: '',           // ex: 30 (€) — NULL/vide = cours régulier
+    stripe_payment_link_unit: '', // URL Stripe Payment Link pour ce cours
     // Récurrence
     frequence: preFreq,
     jours_semaine: [],
@@ -356,6 +359,9 @@ function NouveauCoursInner() {
           capacite_max: form.capacite_max ? parseInt(form.capacite_max) : null,
           notes: form.notes || null,
           visibilite: form.visibilite || 'public',
+          // v35 : workshop / cours payant à l'unité
+          tarif_unitaire: form.tarif_unitaire ? parseFloat(form.tarif_unitaire) : null,
+          stripe_payment_link_unit: form.stripe_payment_link_unit?.trim() || null,
         });
         if (error) throw error;
       } else {
@@ -751,6 +757,49 @@ function NouveauCoursInner() {
         <div className="form-group">
           <label className="form-label">Notes</label>
           <textarea className="izi-input" value={form.notes} onChange={handleChange('notes')} placeholder="Infos complémentaires..." rows={2} style={{ resize: 'vertical' }} />
+        </div>
+
+        {/* === Évènement payant à l'unité (workshop / stage) ===
+            v35 : cours.tarif_unitaire + cours.stripe_payment_link_unit.
+            Si rempli, l'app traite ce cours comme un évènement payant
+            séparé (pas de décompte du carnet, paiement Stripe direct
+            via le Payment Link préconfiguré par la prof). */}
+        <div className="form-group" style={{ background: 'var(--bg-soft, #F8F4ED)', padding: 14, borderRadius: 12, border: '1px solid var(--border)' }}>
+          <label className="form-label">💰 Évènement payant à l'unité (optionnel)</label>
+          <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '0 0 10px', lineHeight: 1.5 }}>
+            Workshop, stage, masterclass : remplis si ce cours se paie séparément
+            (ne décompte pas le carnet régulier de l'élève). Laisse vide pour un
+            cours classique.
+          </p>
+          <div className="form-row">
+            <div className="form-group" style={{ background: 'transparent', padding: 0, border: 'none' }}>
+              <label className="form-label" style={{ fontSize: '0.75rem' }}>Prix à l'unité (€)</label>
+              <input
+                className="izi-input"
+                type="number"
+                step="0.01"
+                min="0"
+                value={form.tarif_unitaire}
+                onChange={handleChange('tarif_unitaire')}
+                placeholder="ex : 30.00"
+              />
+            </div>
+            <div className="form-group" style={{ background: 'transparent', padding: 0, border: 'none' }}>
+              <label className="form-label" style={{ fontSize: '0.75rem' }}>Lien Stripe Payment (optionnel)</label>
+              <input
+                className="izi-input"
+                type="url"
+                value={form.stripe_payment_link_unit}
+                onChange={handleChange('stripe_payment_link_unit')}
+                placeholder="https://buy.stripe.com/..."
+              />
+            </div>
+          </div>
+          <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', margin: '8px 0 0', lineHeight: 1.5 }}>
+            Pour le lien Stripe : crée un Payment Link dédié à ce cours dans ton
+            dashboard Stripe (montant = prix ci-dessus). Si tu le laisses vide,
+            l'élève sera invité à régler sur place.
+          </p>
         </div>
 
         {/* Visibilité publique */}

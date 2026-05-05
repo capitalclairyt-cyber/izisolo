@@ -52,7 +52,7 @@ export async function POST(request, { params }) {
 
   const { data: cours } = await supabaseAdmin
     .from('cours')
-    .select('id, nom, date, heure, lieu, capacite_max, est_annule, profile_id')
+    .select('id, nom, date, heure, lieu, capacite_max, est_annule, profile_id, tarif_unitaire, stripe_payment_link_unit')
     .eq('id', coursId)
     .eq('profile_id', profile.id)
     .single();
@@ -121,6 +121,43 @@ export async function POST(request, { params }) {
     return Response.json({ error: 'Tu es déjà inscrit·e à ce cours' }, { status: 409 });
   }
 
+  // Variable partagée : cas à logger après création presence
+  let casATraiterAttendu = null;
+
+  // ─── Cas particulier : workshop / cours payant à l'unité ─────────────────
+  // Si le cours a tarif_unitaire défini, c'est un évènement séparé du
+  // carnet/abo régulier (cf. règle workshop_vs_cours).
+  // - Si stripe_payment_link_unit défini → on retourne l'URL pour paiement
+  //   immédiat. La résa ne se finalise PAS automatiquement après paiement
+  //   (manque webhook par cours), c'est à la prof de créer la presence
+  //   manuellement OU à l'élève de revenir confirmer.
+  // - Si pas de lien Stripe → on crée la presence + log un cas "à régler sur place".
+  if (cours.tarif_unitaire) {
+    const regleWorkshop = getRegle({ regles_metier: profile.regles_metier }, 'workshop_vs_cours');
+    // Pour MVP : on traite tous les cours avec tarif_unitaire comme 'separe'
+    // (= paiement Stripe à l'unité, indépendant du carnet). Les autres
+    // choix (decompte_n_seances, une_seance, au_cas_par_cas) seront branchés
+    // dans une vague future avec la logique fine de décompte.
+    if (cours.stripe_payment_link_unit) {
+      return Response.json({
+        ok: false,
+        requirePayment: true,
+        paymentUrl: cours.stripe_payment_link_unit,
+        message: `Ce cours est un évènement payant à l'unité (${cours.tarif_unitaire} €). Règle ton inscription via Stripe pour confirmer ta place. Tu peux ensuite revenir vérifier ta réservation depuis ton espace.`,
+        amount: cours.tarif_unitaire,
+      }, { status: 402 });
+    }
+    // Pas de lien Stripe configuré → on accepte la résa et log un cas
+    casATraiterAttendu = casATraiterAttendu || {
+      case_type: 'workshop_vs_cours',
+      context: {
+        choix_applique: 'paiement_sur_place',
+        tarif_unitaire: cours.tarif_unitaire,
+        raison: 'Pas de Stripe Payment Link configuré pour ce cours',
+      },
+    };
+  }
+
   // ─── Règle métier : élève sans carnet ni abonnement actif ────────────────
   // Vérifier si le client a un abonnement / carnet actif avec séances restantes
   // (et non expiré). Si non, appliquer la règle eleve_sans_carnet de la prof.
@@ -156,7 +193,6 @@ export async function POST(request, { params }) {
 
   const regleSansCarnet = getRegle({ regles_metier: profile.regles_metier }, 'eleve_sans_carnet');
   const regleExpireAvant = getRegle({ regles_metier: profile.regles_metier }, 'carnet_expire_avant_cours');
-  let casATraiterAttendu = null; // si on doit logger un cas après création presence
 
   if (!aboValide) {
     // Mode AUTO : appliquer le choix
@@ -274,9 +310,14 @@ export async function POST(request, { params }) {
   // En parallèle, envoyer un email à l'élève si la règle l'a configuré.
   if (casATraiterAttendu) {
     // Sélectionne la bonne règle selon le case_type
-    const regleAct = casATraiterAttendu.case_type === 'carnet_expire_avant_cours'
-      ? regleExpireAvant
-      : regleSansCarnet;
+    let regleAct;
+    if (casATraiterAttendu.case_type === 'carnet_expire_avant_cours') {
+      regleAct = regleExpireAvant;
+    } else if (casATraiterAttendu.case_type === 'workshop_vs_cours') {
+      regleAct = getRegle({ regles_metier: profile.regles_metier }, 'workshop_vs_cours');
+    } else {
+      regleAct = regleSansCarnet;
+    }
     const shouldLog = regleAct.mode === 'manuel' || regleAct.notifProf;
     if (shouldLog) {
       try {

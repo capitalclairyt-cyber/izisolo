@@ -27,7 +27,8 @@ function normalizeUrl(value) {
   if (/^https?:\/\//i.test(trimmed)) return trimmed;
   return 'https://' + trimmed;
 }
-import ReglesTab from './ReglesTab';
+// ReglesTab (constructeur SI/ALORS avancé) retiré de l'UI le 2026-05-05.
+// Le composant reste sur disque (./ReglesTab) pour réintégration future.
 import ReglesMetierTab from './ReglesMetierTab';
 import PhotoUploader from '@/components/ui/PhotoUploader';
 import UnsavedChangesGuard from '@/components/ui/UnsavedChangesGuard';
@@ -1339,8 +1340,6 @@ export default function Parametres() {
   const [reglagesSubTab, setReglagesSubTab] = useState('general');
   // Sous-onglet notifications
   const [notifSubTab, setNotifSubTab] = useState('general');
-  // Sous-onglet Règles (cas particuliers default, avancees pour SI/ALORS)
-  const [reglesSubTab, setReglesSubTab] = useState('cas');
   // Notifications générales
   const [notifNouveauClient, setNotifNouveauClient]       = useState(true);
   const [notifPaiementRetard, setNotifPaiementRetard]     = useState(true);
@@ -2291,33 +2290,14 @@ export default function Parametres() {
       )}
 
       {/* ============================================ */}
-      {/* ONGLET 3 — RÈGLES                           */}
-      {/* Sous-onglets : 'Cas particuliers' (les 7 questions phares,         */}
-      {/* default) + 'Avancées' (constructeur SI/ALORS existant)             */}
+      {/* ONGLET 3 — RÈGLES (Cas particuliers)         */}
+      {/* L'ancien ReglesTab (constructeur SI/ALORS)   */}
+      {/* a été retiré le 2026-05-05 (pas encore mûr   */}
+      {/* — on le réintègrera plus tard).              */}
       {/* ============================================ */}
       {activeTab === 'regles' && (
         <div className="tab-content animate-fade-in">
-          <div className="subtabs-bar">
-            <button
-              className={`subtab-btn ${reglesSubTab === 'cas' ? 'active' : ''}`}
-              onClick={() => setReglesSubTab('cas')}
-            >
-              Cas particuliers
-            </button>
-            <button
-              className={`subtab-btn ${reglesSubTab === 'avancees' ? 'active' : ''}`}
-              onClick={() => setReglesSubTab('avancees')}
-            >
-              Avancées (SI/ALORS)
-            </button>
-          </div>
-
-          {reglesSubTab === 'cas' && (
-            <ReglesMetierTab profileId={profile.id} />
-          )}
-          {reglesSubTab === 'avancees' && (
-            <ReglesTab profileId={profile.id} />
-          )}
+          <ReglesMetierTab profileId={profile.id} />
         </div>
       )}
 
