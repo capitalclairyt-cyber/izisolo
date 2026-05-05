@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase';
 import { useToast } from '@/components/ui/ToastProvider';
-import { METIERS } from '@/lib/constantes';
+import { METIERS, PLANS } from '@/lib/constantes';
 import { slugify } from '@/lib/utils';
 // import BackgroundDecor — retiré, plus utilisé (apparences supprimées)
 
@@ -2166,49 +2166,78 @@ export default function Parametres() {
       {activeTab === 'abonnement' && (
         <div className="tab-content animate-fade-in">
 
-          {/* Plan actuel */}
-          <div className="section izi-card">
-            <div className="section-top"><div className="section-icon abo-icon"><Crown size={20} /></div><h2>Mon abonnement</h2></div>
+          {/* Plan actuel — dynamique selon profile.plan + objet PLANS */}
+          {(() => {
+            const currentPlanKey = profile?.plan || 'solo';
+            const currentPlan = PLANS[currentPlanKey] || PLANS.solo;
+            const isFree = currentPlanKey === 'free';
+            const isPremium = currentPlanKey === 'premium';
+            // Liste des features à afficher avec leur statut selon le plan
+            // (label visible + clé dans l'objet PLANS pour vérif inclusion)
+            const featuresList = [
+              {
+                label: currentPlan.limiteClients == null
+                  ? 'Élèves illimités'
+                  : `Jusqu'à ${currentPlan.limiteClients} élèves`,
+                included: true,
+              },
+              {
+                label: currentPlan.limiteLieux == null
+                  ? 'Lieux illimités'
+                  : currentPlan.limiteLieux === 1 ? '1 lieu' : `Jusqu'à ${currentPlan.limiteLieux} lieux`,
+                included: true,
+              },
+              { label: 'Cours, agenda, pointage présences', included: true },
+              { label: 'Carnets / abonnements / paiements manuels', included: true },
+              { label: 'Stripe Payment Link (encaissement en ligne)', included: currentPlan.stripePaymentLink },
+              { label: 'Mailing campagnes + SMS à l\'usage', included: currentPlan.mailing },
+              { label: 'Notifications auto élèves (rappels, expirations)', included: currentPlan.notifsElevesAuto },
+              { label: 'Sondages planning + cours d\'essai', included: currentPlan.sondages },
+              { label: 'Page publique enrichie (bio, FAQ, philosophie)', included: currentPlan.portailEnrichi },
+              { label: 'Annulation par l\'élève + dette tardive', included: currentPlan.annulationParEleve },
+              { label: 'Export comptabilité', included: currentPlan.exportCompta },
+              { label: 'Logo studio dans emails (white-label)', included: currentPlan.brandingEmail },
+              { label: '0% frais Stripe IziSolo', included: currentPlan.fraisStripeIziSolo === 0 && !isFree },
+            ];
+            return (
+              <div className="section izi-card">
+                <div className="section-top">
+                  <div className="section-icon abo-icon"><Crown size={20} /></div>
+                  <h2>Mon abonnement</h2>
+                </div>
 
-            <div className="abo-current">
-              <div className="abo-badge">Gratuit</div>
-              <p className="abo-status">Tu utilises actuellement le plan <strong>Découverte</strong>.</p>
-            </div>
+                <div className="abo-current">
+                  <div className="abo-badge">{currentPlan.nom}</div>
+                  <p className="abo-status">
+                    Tu utilises actuellement le plan <strong>{currentPlan.nom}</strong>
+                    {isFree && ' (compte interne — full access)'}
+                    {!isFree && currentPlan.prix > 0 && ` à ${currentPlan.prix} €/mois`}
+                    .
+                  </p>
+                </div>
 
-            <div className="abo-features">
-              <div className="abo-feature included">
-                <span className="abo-check">✓</span>
-                <span>Gestion de 15 élèves</span>
+                <div className="abo-features">
+                  {featuresList.map((f, i) => (
+                    <div key={i} className={`abo-feature ${f.included ? 'included' : 'locked'}`}>
+                      <span className={f.included ? 'abo-check' : 'abo-lock'}>
+                        {f.included ? '✓' : '🔒'}
+                      </span>
+                      <span>{f.label}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {!isPremium && !isFree && (
+                  <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', marginTop: 12 }}>
+                    Tu peux upgrader ton plan ci-dessous pour débloquer plus de fonctionnalités.
+                  </p>
+                )}
               </div>
-              <div className="abo-feature included">
-                <span className="abo-check">✓</span>
-                <span>Planning des cours</span>
-              </div>
-              <div className="abo-feature included">
-                <span className="abo-check">✓</span>
-                <span>Suivi des présences</span>
-              </div>
-              <div className="abo-feature locked">
-                <span className="abo-lock">🔒</span>
-                <span>Élèves illimités</span>
-              </div>
-              <div className="abo-feature locked">
-                <span className="abo-lock">🔒</span>
-                <span>Facturation & paiements</span>
-              </div>
-              <div className="abo-feature locked">
-                <span className="abo-lock">🔒</span>
-                <span>Statistiques avancées</span>
-              </div>
-              <div className="abo-feature locked">
-                <span className="abo-lock">🔒</span>
-                <span>Page de réservation publique</span>
-              </div>
-            </div>
-          </div>
+            );
+          })()}
 
           {/* Plans */}
-          <AbonnementCheckout currentPlan={profile?.plan || 'free'} />
+          <AbonnementCheckout currentPlan={profile?.plan || 'solo'} />
 
           <div className="section izi-card" style={{ background: 'var(--bg-soft, #faf8f5)', border: '1px dashed var(--border)' }}>
             <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.5 }}>
