@@ -1,23 +1,30 @@
 import { z } from 'zod';
 import { createServerClient } from '@/lib/supabase-server';
+import { TRIAL_DAYS } from '@/lib/constantes';
 import Stripe from 'stripe';
 
 export const runtime = 'nodejs';
 
 /**
- * Crée une Checkout Session Stripe pour que le pro souscrive à Solo ou Pro.
+ * Crée une Checkout Session Stripe pour que le pro souscrive à Solo / Pro / Premium.
+ *
+ * Trial 14 jours appliqué automatiquement (cf. TRIAL_DAYS dans constantes.js).
  *
  * Env vars requises (côté Mélutek) :
  *   - STRIPE_SECRET_KEY (clé secrète Mélutek)
- *   - STRIPE_PRICE_ID_SOLO_MENSUEL / _ANNUEL
- *   - STRIPE_PRICE_ID_PRO_MENSUEL / _ANNUEL
- *   - NEXT_PUBLIC_APP_URL (pour les success/cancel URLs)
+ *   - STRIPE_PRICE_ID_SOLO_MENSUEL    (12€/mois)
+ *   - STRIPE_PRICE_ID_SOLO_ANNUEL     (115€/an, soit 9,58€/mois)
+ *   - STRIPE_PRICE_ID_PRO_MENSUEL     (24€/mois)
+ *   - STRIPE_PRICE_ID_PRO_ANNUEL      (230€/an, soit 19,17€/mois)
+ *   - STRIPE_PRICE_ID_PREMIUM_MENSUEL (49€/mois)
+ *   - STRIPE_PRICE_ID_PREMIUM_ANNUEL  (470€/an, soit 39,17€/mois)
+ *   - NEXT_PUBLIC_APP_URL
  *
- * Body : { plan: 'solo'|'pro', periode: 'mensuel'|'annuel' }
+ * Body : { plan: 'solo'|'pro'|'premium', periode: 'mensuel'|'annuel' }
  */
 
 const schema = z.object({
-  plan: z.enum(['solo', 'pro']),
+  plan: z.enum(['solo', 'pro', 'premium']),
   periode: z.enum(['mensuel', 'annuel']),
 });
 
@@ -29,6 +36,10 @@ const PRICE_IDS = {
   pro: {
     mensuel: process.env.STRIPE_PRICE_ID_PRO_MENSUEL,
     annuel:  process.env.STRIPE_PRICE_ID_PRO_ANNUEL,
+  },
+  premium: {
+    mensuel: process.env.STRIPE_PRICE_ID_PREMIUM_MENSUEL,
+    annuel:  process.env.STRIPE_PRICE_ID_PREMIUM_ANNUEL,
   },
 };
 
@@ -92,6 +103,12 @@ export async function POST(request) {
       },
       subscription_data: {
         metadata: { profile_id: user.id, plan, periode },
+        // Trial 14 jours offert sur tous les plans publics, mais UNIQUEMENT
+        // si le user n'a jamais eu de subscription antérieure (sinon Stripe
+        // empêche l'abus de re-souscrire pour reprendre un trial).
+        // On envoie le param systématiquement — Stripe gère la dédup via
+        // le customer existant (même customer = pas de nouveau trial).
+        trial_period_days: TRIAL_DAYS,
       },
       success_url: `${baseUrl}/parametres?abo=success`,
       cancel_url: `${baseUrl}/parametres?abo=cancel`,

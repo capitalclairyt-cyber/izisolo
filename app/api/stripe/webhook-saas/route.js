@@ -86,11 +86,25 @@ export async function POST(request) {
         const sub = event.data.object;
         const profileId = sub.metadata?.profile_id;
         if (!profileId) break;
-        // Downgrade vers free
+
+        // ⚠️ NE PAS downgrade vers 'free' — `free` est désormais le plan
+        // INTERNE EXEMPTÉ FULL-ACCESS (réservé Colin/Maude/démos), pas un
+        // plan gratuit-restreint comme avant la refonte 2026-05-05.
+        //
+        // Au lieu de ça, on bascule vers 'solo' (plan d'entrée payant).
+        // L'abo étant marqué 'canceled', l'utilisateur sera invité à
+        // re-souscrire via la page /parametres. Tant qu'il ne paie pas,
+        // les triggers DB v32 lui appliqueront les limites Solo (40 élèves,
+        // 1 lieu) — il pourra continuer à voir ses données mais pas en
+        // ajouter au-delà des limites Solo.
+        //
+        // À implémenter plus tard : un état "subscription_expired" qui
+        // affiche un bandeau "ton abo a expiré, re-souscris" + bloque
+        // certaines features critiques (mailing, SMS, Stripe Payment Link).
         await supabase
           .from('profiles')
           .update({
-            plan: 'free',
+            plan: 'solo',
             stripe_subscription_status: 'canceled',
             stripe_subscription_id: null,
           })
