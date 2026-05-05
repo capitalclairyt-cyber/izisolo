@@ -10,36 +10,33 @@ export const runtime = 'nodejs';
  *
  * Trial 14 jours appliqué automatiquement (cf. TRIAL_DAYS dans constantes.js).
  *
+ * MENSUEL UNIQUEMENT pour l'instant (l'annuel sera réintroduit plus tard
+ * avec -20%, mais on garde la signature `periode` pour ne pas casser l'API).
+ *
  * Env vars requises (côté Mélutek) :
  *   - STRIPE_SECRET_KEY (clé secrète Mélutek)
  *   - STRIPE_PRICE_ID_SOLO_MENSUEL    (12€/mois)
- *   - STRIPE_PRICE_ID_SOLO_ANNUEL     (115€/an, soit 9,58€/mois)
  *   - STRIPE_PRICE_ID_PRO_MENSUEL     (24€/mois)
- *   - STRIPE_PRICE_ID_PRO_ANNUEL      (230€/an, soit 19,17€/mois)
  *   - STRIPE_PRICE_ID_PREMIUM_MENSUEL (49€/mois)
- *   - STRIPE_PRICE_ID_PREMIUM_ANNUEL  (470€/an, soit 39,17€/mois)
  *   - NEXT_PUBLIC_APP_URL
  *
- * Body : { plan: 'solo'|'pro'|'premium', periode: 'mensuel'|'annuel' }
+ * Body : { plan: 'solo'|'pro'|'premium', periode: 'mensuel' }
  */
 
 const schema = z.object({
   plan: z.enum(['solo', 'pro', 'premium']),
-  periode: z.enum(['mensuel', 'annuel']),
+  periode: z.enum(['mensuel']), // 'annuel' désactivé temporairement
 });
 
 const PRICE_IDS = {
   solo: {
     mensuel: process.env.STRIPE_PRICE_ID_SOLO_MENSUEL,
-    annuel:  process.env.STRIPE_PRICE_ID_SOLO_ANNUEL,
   },
   pro: {
     mensuel: process.env.STRIPE_PRICE_ID_PRO_MENSUEL,
-    annuel:  process.env.STRIPE_PRICE_ID_PRO_ANNUEL,
   },
   premium: {
     mensuel: process.env.STRIPE_PRICE_ID_PREMIUM_MENSUEL,
-    annuel:  process.env.STRIPE_PRICE_ID_PREMIUM_ANNUEL,
   },
 };
 

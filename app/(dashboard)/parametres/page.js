@@ -262,11 +262,11 @@ function NotifsElevesSection({ profile, setProfile, setDirty }) {
 
 // ════════════════════════════════════════════════════════════════════════════
 // Section "Abonnement IziSolo" — Stripe SaaS
-// 3 plans publics (Solo 12€ / Pro 24€ / Premium 49€) — mensuel ou annuel (-20%)
+// 3 plans publics (Solo 12€ / Pro 24€ / Premium 49€) — MENSUEL UNIQUEMENT
+// (l'annuel est désactivé pour l'instant ; sera ajouté plus tard avec -20%)
 // Trial 14 jours sur tous. Plan `free` (interne, exempté) jamais affiché ici.
 // ════════════════════════════════════════════════════════════════════════════
 function AbonnementCheckout({ currentPlan }) {
-  const [annuel, setAnnuel] = useState(true); // par défaut sur annuel (-20%)
   const [loading, setLoading] = useState(null); // 'solo' | 'pro' | 'premium'
 
   const PLANS_PUB = [
@@ -274,7 +274,6 @@ function AbonnementCheckout({ currentPlan }) {
       id: 'solo',
       nom: 'Solo',
       prixMensuel: 12,
-      prixAnnuelTotal: 115,
       tagline: 'Pour démarrer en autonomie',
       pitch: 'Tout l\'essentiel pour gérer ton studio à la main.',
       features: [
@@ -293,7 +292,6 @@ function AbonnementCheckout({ currentPlan }) {
       nom: 'Pro',
       recommended: true,
       prixMensuel: 24,
-      prixAnnuelTotal: 230,
       tagline: 'Ton studio devient une machine',
       pitch: 'Encaissement en ligne + automatisations + outils marketing.',
       features: [
@@ -317,7 +315,6 @@ function AbonnementCheckout({ currentPlan }) {
       id: 'premium',
       nom: 'Premium',
       prixMensuel: 49,
-      prixAnnuelTotal: 470,
       tagline: 'Pour les studios matures',
       pitch: 'Zéro frais Stripe IziSolo, white-label, support sous 24h.',
       features: [
@@ -337,7 +334,7 @@ function AbonnementCheckout({ currentPlan }) {
       const res = await fetch('/api/stripe/checkout-saas', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plan, periode: annuel ? 'annuel' : 'mensuel' }),
+        body: JSON.stringify({ plan, periode: 'mensuel' }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Erreur');
@@ -348,29 +345,12 @@ function AbonnementCheckout({ currentPlan }) {
     }
   };
 
-  // Affichage prix selon période choisie
-  const fmtPrix = (p) => annuel
-    ? `${(p.prixAnnuelTotal / 12).toFixed(2).replace('.', ',')} €`
-    : `${p.prixMensuel} €`;
-  const fmtSub = (p) => annuel
-    ? `/mois · facturé ${p.prixAnnuelTotal} €/an`
-    : '/mois';
-
   return (
     <div className="section izi-card">
       <h2 style={{ fontSize: '1.125rem', fontWeight: 700, marginBottom: 4 }}>Mon abonnement IziSolo</h2>
       <p className="section-desc">
         14 jours d'essai gratuit sur tous les plans. Tu peux changer ou annuler à tout moment.
       </p>
-
-      {/* Toggle mensuel/annuel */}
-      <div style={{ display: 'inline-flex', background: 'var(--bg-soft, #faf8f5)', border: '1px solid var(--border)', borderRadius: 999, padding: 4, gap: 2, marginBottom: 18 }}>
-        <button onClick={() => setAnnuel(false)} style={pillStyle(!annuel)}>Mensuel</button>
-        <button onClick={() => setAnnuel(true)} style={pillStyle(annuel)}>
-          Annuel
-          <span style={{ background: 'var(--success, #6B9A6B)', color: 'white', fontSize: '0.65rem', fontWeight: 700, padding: '2px 6px', borderRadius: 99, marginLeft: 4 }}>−20%</span>
-        </button>
-      </div>
 
       <div className="plans-grid plans-grid-3">
         {PLANS_PUB.map(p => {
