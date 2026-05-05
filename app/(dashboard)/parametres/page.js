@@ -28,6 +28,7 @@ function normalizeUrl(value) {
   return 'https://' + trimmed;
 }
 import ReglesTab from './ReglesTab';
+import ReglesMetierTab from './ReglesMetierTab';
 import PhotoUploader from '@/components/ui/PhotoUploader';
 import UnsavedChangesGuard from '@/components/ui/UnsavedChangesGuard';
 
@@ -1338,6 +1339,8 @@ export default function Parametres() {
   const [reglagesSubTab, setReglagesSubTab] = useState('general');
   // Sous-onglet notifications
   const [notifSubTab, setNotifSubTab] = useState('general');
+  // Sous-onglet Règles (cas particuliers default, avancees pour SI/ALORS)
+  const [reglesSubTab, setReglesSubTab] = useState('cas');
   // Notifications générales
   const [notifNouveauClient, setNotifNouveauClient]       = useState(true);
   const [notifPaiementRetard, setNotifPaiementRetard]     = useState(true);
@@ -2289,10 +2292,32 @@ export default function Parametres() {
 
       {/* ============================================ */}
       {/* ONGLET 3 — RÈGLES                           */}
+      {/* Sous-onglets : 'Cas particuliers' (les 7 questions phares,         */}
+      {/* default) + 'Avancées' (constructeur SI/ALORS existant)             */}
       {/* ============================================ */}
       {activeTab === 'regles' && (
         <div className="tab-content animate-fade-in">
-          <ReglesTab profileId={profile.id} />
+          <div className="subtabs-bar">
+            <button
+              className={`subtab-btn ${reglesSubTab === 'cas' ? 'active' : ''}`}
+              onClick={() => setReglesSubTab('cas')}
+            >
+              Cas particuliers
+            </button>
+            <button
+              className={`subtab-btn ${reglesSubTab === 'avancees' ? 'active' : ''}`}
+              onClick={() => setReglesSubTab('avancees')}
+            >
+              Avancées (SI/ALORS)
+            </button>
+          </div>
+
+          {reglesSubTab === 'cas' && (
+            <ReglesMetierTab profileId={profile.id} />
+          )}
+          {reglesSubTab === 'avancees' && (
+            <ReglesTab profileId={profile.id} />
+          )}
         </div>
       )}
 

@@ -7,7 +7,7 @@ import {
   Home, CalendarDays, Users, Settings,
   BookOpen, Mail, ChevronRight, Sparkles,
   Package, BarChart3, LogOut, Menu, X, GraduationCap, LifeBuoy, ClipboardList,
-  MessageSquare
+  MessageSquare, Inbox
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase';
 import NotificationBell from '@/components/notifications/NotificationBell';
@@ -16,10 +16,11 @@ import MessagesBadge from '@/components/messagerie/MessagesBadge';
 const NAV_SECTIONS = [
   {
     items: [
-      { href: '/dashboard',  label: 'Accueil',           icon: Home },
-      { href: '/agenda',     label: 'Agenda',             icon: CalendarDays },
-      { href: '/cours',      label: 'Cours & Évènements', icon: GraduationCap },
-      { href: '/clients',    label: 'Élèves',             icon: Users },
+      { href: '/dashboard',     label: 'Accueil',           icon: Home },
+      { href: '/agenda',        label: 'Agenda',             icon: CalendarDays },
+      { href: '/cours',         label: 'Cours & Évènements', icon: GraduationCap },
+      { href: '/clients',       label: 'Élèves',             icon: Users },
+      { href: '/cas-a-traiter', label: 'À traiter',          icon: Inbox },
     ],
   },
   {

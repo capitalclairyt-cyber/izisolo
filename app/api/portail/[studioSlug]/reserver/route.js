@@ -2,6 +2,7 @@ import { createServerClient } from '@/lib/supabase-server';
 import { createClient as createAdminSupabase } from '@supabase/supabase-js';
 import { parseJsonBody, reservationSchema } from '@/lib/validation';
 import { checkAntiBot, ipFromRequest } from '@/lib/antibot';
+import { getRegle } from '@/lib/regles-metier';
 
 export async function POST(request, { params }) {
   const { studioSlug } = await params;
@@ -38,10 +39,11 @@ export async function POST(request, { params }) {
     process.env.SUPABASE_SERVICE_ROLE_KEY
   );
 
-  // Vérifier que le studio existe et que le cours lui appartient
+  // Vérifier que le studio existe et que le cours lui appartient.
+  // Charge aussi regles_metier pour appliquer la règle "élève sans carnet".
   const { data: profile } = await supabaseAdmin
     .from('profiles')
-    .select('id, studio_nom')
+    .select('id, studio_nom, regles_metier')
     .eq('studio_slug', studioSlug)
     .single();
 
@@ -118,22 +120,118 @@ export async function POST(request, { params }) {
     return Response.json({ error: 'Tu es déjà inscrit·e à ce cours' }, { status: 409 });
   }
 
+  // ─── Règle métier : élève sans carnet ni abonnement actif ────────────────
+  // Vérifier si le client a un abonnement / carnet actif avec séances restantes
+  // (et non expiré). Si non, appliquer la règle eleve_sans_carnet de la prof.
+  const { data: abosActifs } = await supabaseAdmin
+    .from('abonnements')
+    .select('id, statut, seances_total, seances_utilisees, date_fin')
+    .eq('client_id', clientId)
+    .eq('statut', 'actif');
+
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const aboValide = (abosActifs || []).some(a => {
+    // Carnet : seances restantes > 0 et pas expiré
+    if (a.seances_total != null) {
+      const reste = (a.seances_total || 0) - (a.seances_utilisees || 0);
+      if (reste <= 0) return false;
+    }
+    if (a.date_fin && a.date_fin < todayStr) return false;
+    return true;
+  });
+
+  const regleSansCarnet = getRegle({ regles_metier: profile.regles_metier }, 'eleve_sans_carnet');
+  let casATraiterAttendu = null; // si on doit logger un cas après création presence
+
+  if (!aboValide) {
+    // Mode AUTO : appliquer le choix
+    if (regleSansCarnet.mode === 'auto') {
+      switch (regleSansCarnet.choix) {
+        case 'bloquer':
+          return Response.json({
+            error: 'Tu dois avoir un carnet ou un abonnement actif pour réserver. Contacte ton studio pour acheter un carnet.',
+            code: 'NO_PACKAGE',
+          }, { status: 403 });
+
+        case 'forcer_stripe':
+          // TODO vague suivante : créer une Checkout Session Stripe Payment Link
+          // pour le cours unique, puis créer la presence après paiement réussi.
+          // Pour l'instant : fallback vers paiement_sur_place (créer presence + log)
+          casATraiterAttendu = {
+            case_type: 'eleve_sans_carnet',
+            context: { choix_applique: 'paiement_sur_place', raison: 'forcer_stripe pas encore implémenté' },
+          };
+          break;
+
+        case 'creer_dette':
+          casATraiterAttendu = {
+            case_type: 'eleve_sans_carnet',
+            context: { choix_applique: 'creer_dette', dette_a_regler: true },
+          };
+          break;
+
+        case 'paiement_sur_place':
+        default:
+          casATraiterAttendu = {
+            case_type: 'eleve_sans_carnet',
+            context: { choix_applique: 'paiement_sur_place' },
+          };
+          break;
+      }
+    } else {
+      // Mode MANUEL : on accepte la résa mais on remonte le cas à la prof
+      casATraiterAttendu = {
+        case_type: 'eleve_sans_carnet',
+        context: { mode: 'manuel' },
+      };
+    }
+  }
+
   // Créer la présence (inscrit, pas encore pointé)
   // Schéma : pointee BOOLEAN (default false), statut_pointage TEXT (default 'inscrit')
-  // Les colonnes `present` et `source` n'existent pas — bug pré-existant qui faisait
-  // échouer silencieusement TOUTE réservation portail.
-  const { error: presenceErr } = await supabaseAdmin
+  const { data: newPresence, error: presenceErr } = await supabaseAdmin
     .from('presences')
     .insert({
       cours_id: coursId,
       client_id: clientId,
       profile_id: profile.id,
       // pointee + statut_pointage prennent leurs defaults ('false' + 'inscrit')
-    });
+    })
+    .select('id')
+    .single();
 
   if (presenceErr) {
     console.error('create presence error:', presenceErr);
     return Response.json({ error: 'Erreur lors de la réservation : ' + presenceErr.message }, { status: 500 });
+  }
+
+  // Si la règle "eleve_sans_carnet" a remonté un cas → log dans cas_a_traiter
+  // (sauf si la prof a explicitement désactivé l'alerte dashboard et qu'on est en
+  // mode auto — auquel cas on n'encombre pas l'inbox).
+  if (casATraiterAttendu) {
+    const shouldLog = regleSansCarnet.mode === 'manuel' || regleSansCarnet.notifProf;
+    if (shouldLog) {
+      try {
+        await supabaseAdmin
+          .from('cas_a_traiter')
+          .insert({
+            profile_id: profile.id,
+            case_type: casATraiterAttendu.case_type,
+            client_id: clientId,
+            cours_id: coursId,
+            presence_id: newPresence?.id || null,
+            context: {
+              ...casATraiterAttendu.context,
+              client_nom: nom,
+              client_email: email,
+              cours_nom: cours.nom,
+              cours_date: cours.date,
+            },
+          });
+      } catch (logErr) {
+        console.warn('[reserver] cas_a_traiter insert non-bloquant:', logErr?.message);
+      }
+    }
   }
 
   // Si l'utilisateur n'est pas authentifié, générer un magic link pour qu'il accède

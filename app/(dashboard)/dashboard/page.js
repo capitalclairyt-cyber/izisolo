@@ -19,6 +19,7 @@ export default async function DashboardPage() {
     { data: alertesAbos },
     { data: derniersPaiements },
     { count: smsMois },
+    { count: nbCasOuverts },
   ] = await Promise.all([
     supabase.from('profiles').select('*').eq('id', user.id).single(),
     supabase.from('cours').select('*, presences(count)').eq('profile_id', user.id).eq('date', today).order('heure'),
@@ -28,6 +29,9 @@ export default async function DashboardPage() {
     supabase.from('paiements').select('montant, commission_montant').eq('profile_id', user.id).gte('date', debutMois),
     supabase.from('notifications_eleves').select('id', { count: 'exact', head: true })
       .eq('profile_id', user.id).eq('channel', 'sms').eq('statut', 'sent').gte('sent_at', debutMoisISO),
+    // Compteur de cas non résolus pour le widget dashboard
+    supabase.from('cas_a_traiter').select('id', { count: 'exact', head: true })
+      .eq('profile_id', user.id).is('resolu_at', null),
   ]);
 
   // A-t-il déjà créé un sondage ? (pour décider d'afficher le CTA)
@@ -78,6 +82,7 @@ export default async function DashboardPage() {
         total: totalACoutsMois,
       }}
       hasSondage={(nbSondages || 0) > 0}
+      nbCasATraiter={nbCasOuverts || 0}
     />
   );
 }

@@ -13,7 +13,7 @@ import { getVocabulaire } from '@/lib/vocabulaire';
 import { useToast } from '@/components/ui/ToastProvider';
 import { toneForCours } from '@/lib/tones';
 
-export default function DashboardClient({ profile, coursDuJour, nbClients, nbCoursTotal, revenusMois, alertes, coutsMois, hasSondage = false }) {
+export default function DashboardClient({ profile, coursDuJour, nbClients, nbCoursTotal, revenusMois, alertes, coutsMois, hasSondage = false, nbCasATraiter = 0 }) {
   const vocab = getVocabulaire(profile?.metier || 'yoga', profile?.vocabulaire);
   const prenom = profile?.prenom || 'toi';
   const studioSlug = profile?.studio_slug;
@@ -204,6 +204,22 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
               {alertes.length > 1 && (
                 <div className="bento-alerte-desc">+{alertes.length - 1} autre{alertes.length > 2 ? 's' : ''} alerte{alertes.length > 2 ? 's' : ''}</div>
               )}
+            </div>
+            <ChevronRight size={16} />
+          </Link>
+        )}
+
+        {/* Bandeau "Cas à traiter" — si au moins un cas non résolu */}
+        {nbCasATraiter > 0 && (
+          <Link href="/cas-a-traiter" className="bento-cell bento-cell--alerte">
+            <div className="bento-icon"><AlertTriangle size={20} /></div>
+            <div className="bento-alerte-msg">
+              <div className="bento-alerte-title">
+                {nbCasATraiter} cas à traiter
+              </div>
+              <div className="bento-alerte-desc">
+                Élève sans carnet, annulation tardive, etc. — clique pour voir et résoudre.
+              </div>
             </div>
             <ChevronRight size={16} />
           </Link>
