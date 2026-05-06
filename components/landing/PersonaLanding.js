@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { Nav, Footer, FAQ, FinalCta, Pricing } from './Sections';
 import { IziSoloLogo, YogaLotusIllu, YogaTreeIllu, SunCurveIllu } from './Brand';
 import Link from 'next/link';
+import Image from 'next/image';
 
 const ILLUS = { lotus: YogaLotusIllu, tree: YogaTreeIllu, sun: SunCurveIllu };
 
@@ -51,8 +52,19 @@ export default function PersonaLanding({ persona }) {
                 <Link href="/" className="btn btn-ghost btn-lg">En savoir plus sur IziSolo</Link>
               </div>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'center' }}>
-              <Illu size={280} />
+            <div className="persona-hero-photo">
+              <Image
+                src="/icons/hero-portrait.png"
+                alt={`Professeur·e ${cfg.qui} consultant l'application IziSolo sur son téléphone`}
+                width={1122}
+                height={1402}
+                priority
+                sizes="(max-width: 768px) 100vw, 480px"
+                style={{ width: '100%', height: 'auto', display: 'block', borderRadius: 'var(--r-lg)' }}
+              />
+              <div className="persona-hero-illu" aria-hidden="true">
+                <Illu size={140} />
+              </div>
             </div>
           </div>
         </section>

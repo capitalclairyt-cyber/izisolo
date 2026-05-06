@@ -137,6 +137,52 @@
 
   --c-success: oklch(0.62 0.08 150);
   --c-warn: oklch(0.72 0.10 75);
+
+  /* PALETTE POLYCHROMIQUE — inspirée des tabs du dashboard de l'app
+     (Sondage : ambre/vert/rouge, Brand : rose terre, Cas à traiter : corail,
+     Mobile/Portail : bleu ciel). On les utilise en VARIATION DOUCE par
+     section pour casser la monotonie du sable, jamais en saturé. */
+  --c-sage:        oklch(0.62 0.08 150);    /* vert salvia (Benefits, Cas: succès) */
+  --c-sage-soft:   oklch(0.94 0.03 150);
+  --c-sage-tint:   oklch(0.97 0.015 150);
+  --c-sage-ink:    oklch(0.36 0.06 150);
+
+  --c-amber:       oklch(0.74 0.12 75);     /* ambre doré (Sondage winner, Premium) */
+  --c-amber-soft:  oklch(0.94 0.05 75);
+  --c-amber-tint:  oklch(0.97 0.025 75);
+  --c-amber-ink:   oklch(0.42 0.10 70);
+
+  --c-blush:       oklch(0.65 0.10 25);     /* rose terre brand (Features, Pricing) */
+  --c-blush-soft:  oklch(0.93 0.04 25);
+  --c-blush-tint:  oklch(0.97 0.02 25);
+  --c-blush-ink:   oklch(0.42 0.09 25);
+
+  --c-sky:         oklch(0.7 0.07 230);     /* bleu ciel calme (Mobile, Portail) */
+  --c-sky-soft:    oklch(0.94 0.04 230);
+  --c-sky-tint:    oklch(0.97 0.02 230);
+  --c-sky-ink:     oklch(0.4 0.08 230);
+
+  --c-coral:       oklch(0.7 0.13 35);      /* corail vif (Cas à traiter) */
+  --c-coral-soft:  oklch(0.93 0.05 35);
+  --c-coral-tint:  oklch(0.97 0.025 35);
+  --c-coral-ink:   oklch(0.46 0.11 35);
+
+  --c-violet:      oklch(0.62 0.10 290);    /* violet (Messagerie) */
+  --c-violet-soft: oklch(0.93 0.05 290);
+  --c-violet-tint: oklch(0.97 0.025 290);
+  --c-violet-ink:  oklch(0.4 0.09 290);
+
+  /* Backgrounds de SECTION ENTIÈRE (plus saturés que les -tint, moins
+     que les -soft) — pour casser franchement l'uniformité du sable.
+     ~95% lightness, chroma 0.025-0.04 = perceptiblement teinté sans
+     fatiguer la lecture. */
+  --c-bg-sage:    oklch(0.955 0.028 150);
+  --c-bg-amber:   oklch(0.96  0.038 75);
+  --c-bg-blush:   oklch(0.955 0.030 25);
+  --c-bg-sky:     oklch(0.96  0.022 230);
+  --c-bg-coral:   oklch(0.955 0.035 35);
+  --c-bg-violet:  oklch(0.955 0.025 295);   /* "lavande de section" */
+  --c-bg-rose:    oklch(0.96  0.025 15);    /* rose poudré (ForWhom) */
 }
 
 /* LAVANDE — violet doux apaisé ------------------------------------ */
@@ -170,6 +216,17 @@
 
 *, *::before, *::after { box-sizing: border-box; }
 
+/* Scroll fluide pour les ancres (#fonctionnalites, #pour-qui, …).
+   Désactivé pour les utilisateurs qui ont activé prefers-reduced-motion. */
+html {
+  scroll-behavior: smooth;
+  /* Décale le scroll d'ancre sous la nav fixe (h ≈ 64-72px) */
+  scroll-padding-top: 88px;
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+}
+
 html, body {
   margin: 0;
   padding: 0;
@@ -180,6 +237,14 @@ html, body {
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+}
+
+/* Focus accessible global : ring 2px accent-deep + offset 3px.
+   Les composants qui veulent leur propre style overrident `:focus-visible`. */
+:focus-visible {
+  outline: 2px solid var(--c-accent-deep);
+  outline-offset: 3px;
+  border-radius: 4px;
 }
 
 img, svg { display: block; max-width: 100%; }
@@ -335,6 +400,19 @@ section.tight { padding-block: clamp(48px, 6vw, 80px); }
 }
 .app-mockup.floating {
   animation: float-soft 8s ease-in-out infinite;
+}
+
+/* Frame qui contient la VRAIE capture d'écran (remplace le faux dashboard).
+   Léger fond papier kraft pour faire respirer la capture si elle a un fond
+   blanc cassé / cream et éviter l'effet "rectangle blanc" plat. */
+.app-screenshot-frame {
+  background: var(--c-bg-warm);
+  display: block;
+}
+.app-screenshot-frame img {
+  width: 100%;
+  height: auto;
+  display: block;
 }
 
 /* Chrome ----------------------------------------------------- */
@@ -807,6 +885,76 @@ section.tight { padding-block: clamp(48px, 6vw, 80px); }
   padding-bottom: 100px;
   overflow: hidden;
 }
+
+/* ── HERO CINÉMATOGRAPHIQUE (image full-width, texte overlay à gauche) ── */
+.hero.hero-cinema {
+  padding-top: 0;
+  padding-bottom: 0;
+  min-height: 100vh;
+  min-height: 100svh;          /* iOS / Safari mobile */
+  max-height: 900px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+.hero-cinema .hero-cinema-photo {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+.hero-cinema .hero-cinema-photo img {
+  /* géré aussi par next/image style={{ objectFit: 'cover' }} en JS,
+     mais on force aussi en CSS pour les UA qui ignoreraient. */
+  object-fit: cover;
+}
+/* Voile dégradé : opaque crème à gauche → transparent à droite (où la prof est).
+   Permet au titre noir/sombre de rester lisible sur la zone gauche claire. */
+.hero-cinema .hero-cinema-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to right,
+    oklch(0.985 0.012 80 / 0.92) 0%,        /* crème opaque */
+    oklch(0.985 0.012 80 / 0.78) 25%,
+    oklch(0.985 0.012 80 / 0.45) 45%,
+    oklch(0.985 0.012 80 / 0.10) 60%,       /* presque transparent */
+    transparent 75%
+  );
+  z-index: 1;
+}
+.hero-cinema .hero-cinema-content {
+  position: relative;
+  z-index: 2;
+  max-width: 580px;
+  padding-top: 120px;          /* sous la nav */
+  padding-bottom: 60px;
+}
+/* Mobile : voile plus opaque pour éviter d'écraser le texte sur la photo.
+   La photo reste en background (placée plus bas via object-position) ;
+   le texte passe au-dessus avec un voile quasi opaque. */
+@media (max-width: 768px) {
+  .hero.hero-cinema {
+    min-height: auto;
+    max-height: none;
+    padding-bottom: 32px;
+  }
+  .hero-cinema .hero-cinema-photo img {
+    object-position: center 30% !important;
+  }
+  .hero-cinema .hero-cinema-overlay {
+    background: linear-gradient(
+      to bottom,
+      oklch(0.985 0.012 80 / 0.96) 0%,
+      oklch(0.985 0.012 80 / 0.92) 50%,
+      oklch(0.985 0.012 80 / 0.55) 100%
+    );
+  }
+  .hero-cinema .hero-cinema-content {
+    padding-top: 100px;
+    max-width: 100%;
+  }
+}
+
 .hero-bg {
   position: absolute; inset: 0;
   pointer-events: none;
@@ -951,16 +1099,38 @@ section.tight { padding-block: clamp(48px, 6vw, 80px); }
   margin: 8px 0 0;
 }
 
+/* ════════════════════════════════════════════════════════════════
+   BACKGROUNDS DE SECTION (alternance polychromique forte)
+   ────────────────────────────────────────────────────────────────
+   On utilise les --c-bg-{couleur} (lightness ~0.955, chroma 0.025-0.038)
+   pour donner à chaque section sa propre identité chromatique sans
+   fatiguer la lecture. Les cards à l'intérieur restent en --c-surface
+   (blanc cassé) et "flottent" sur ces fonds teintés.
+   ════════════════════════════════════════════════════════════════ */
+.benefits      { background: var(--c-bg-warm);   }   /* sable */
+.for-whom      { background: var(--c-bg-rose);   }   /* rose poudré */
+.features      { background: var(--c-bg-warm);   }   /* sable neutre */
+.more-features { background: var(--c-bg-amber);  }   /* ambre doré */
+.comparison    { background: var(--c-bg-coral);  }   /* corail (avant/après) */
+.mobile-showcase { background: var(--c-bg-sky); }    /* bleu ciel */
+.testimonials  { background: var(--c-bg-blush); }    /* rose terre */
+.pricing       { background: var(--c-bg-sage);  }    /* sage écho */
+.faq           { background: var(--c-bg);       }    /* bg neutre pour lecture */
+.final-cta     { background: var(--c-bg-violet); }   /* lavande, écho de ForWhom */
+
 /* BENEFITS ------------------------------------------------------ */
 .benefits-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
+  /* grid-auto-rows: 1fr — toutes les rangées font la même hauteur,
+     donc les 4 cards ont des dimensions strictement uniformes. */
+  grid-auto-rows: 1fr;
   gap: 20px;
 }
 @media (max-width: 720px) { .benefits-grid { grid-template-columns: 1fr; } }
 .benefit-card {
-  background: var(--c-surface);
-  border: 1px solid var(--c-line);
+  /* Card en FULL COLOR : couleur définie par nth-child plus bas.
+     Plus de border : la couleur fait le travail visuel. */
   border-radius: var(--r-lg);
   padding: 32px;
   display: flex; flex-direction: column;
@@ -968,29 +1138,62 @@ section.tight { padding-block: clamp(48px, 6vw, 80px); }
   transition: transform var(--t-med) var(--ease), box-shadow var(--t-med) var(--ease);
   position: relative;
   overflow: hidden;
+  height: 100%;            /* Étire la card sur toute la rangée 1fr */
 }
 .benefit-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
 .benefit-num {
   position: absolute; top: 24px; right: 28px;
   font-size: 0.85rem;
-  color: var(--c-accent);
   opacity: 0.5;
 }
-.benefit-kw { color: var(--c-accent-deep); }
 .benefit-card h3 {
   font-size: var(--fs-h4);
   margin: 0;
   letter-spacing: -0.015em;
 }
 .benefit-card p {
-  color: var(--c-ink-soft);
   margin: 0;
   line-height: 1.6;
 }
 
+/* Variations chromatiques par carte — bg full color, texte assorti (ink) :
+   01 blush · 02 sage · 03 amber · 04 sky. Chaque card devient un bloc de
+   couleur entier, pas juste un accent. */
+.benefit-card:nth-child(1) {
+  background: var(--c-blush-soft);
+  color: var(--c-blush-ink);
+}
+.benefit-card:nth-child(1) p { color: oklch(from var(--c-blush-ink) calc(l + 0.1) c h); }
+.benefit-card:nth-child(1) .benefit-num,
+.benefit-card:nth-child(1) .benefit-kw { color: var(--c-blush-ink); }
+
+.benefit-card:nth-child(2) {
+  background: var(--c-sage-soft);
+  color: var(--c-sage-ink);
+}
+.benefit-card:nth-child(2) p { color: oklch(from var(--c-sage-ink) calc(l + 0.1) c h); }
+.benefit-card:nth-child(2) .benefit-num,
+.benefit-card:nth-child(2) .benefit-kw { color: var(--c-sage-ink); }
+
+.benefit-card:nth-child(3) {
+  background: var(--c-amber-soft);
+  color: var(--c-amber-ink);
+}
+.benefit-card:nth-child(3) p { color: oklch(from var(--c-amber-ink) calc(l + 0.1) c h); }
+.benefit-card:nth-child(3) .benefit-num,
+.benefit-card:nth-child(3) .benefit-kw { color: var(--c-amber-ink); }
+
+.benefit-card:nth-child(4) {
+  background: var(--c-sky-soft);
+  color: var(--c-sky-ink);
+}
+.benefit-card:nth-child(4) p { color: oklch(from var(--c-sky-ink) calc(l + 0.1) c h); }
+.benefit-card:nth-child(4) .benefit-num,
+.benefit-card:nth-child(4) .benefit-kw { color: var(--c-sky-ink); }
+
 /* FOR WHOM ------------------------------------------------------ */
 .for-whom {
-  background: var(--c-bg-warm);
+  /* background appliqué plus haut (--c-bg-violet / lavande) */
   position: relative;
   overflow: hidden;
 }
@@ -1005,28 +1208,77 @@ section.tight { padding-block: clamp(48px, 6vw, 80px); }
   background: var(--c-surface);
   border: 1px solid var(--c-line);
   border-radius: var(--r-lg);
-  padding: 28px;
-  text-align: center;
+  /* On retire le padding global → la photo prend toute la largeur,
+     le texte est dans .persona-card-body avec son propre padding. */
+  padding: 0;
+  text-align: left;
   display: flex; flex-direction: column;
-  align-items: center;
-  transition: border-color var(--t-fast) var(--ease), transform var(--t-med) var(--ease);
+  overflow: hidden;
+  transition: border-color var(--t-fast) var(--ease),
+              transform var(--t-med) var(--ease),
+              box-shadow var(--t-med) var(--ease);
 }
-.persona-card:hover { border-color: var(--c-accent); transform: translateY(-2px); }
-.persona-illu {
-  height: 120px;
-  display: flex; align-items: center; justify-content: center;
-  margin-bottom: 12px;
+.persona-card:hover {
+  border-color: var(--c-line-strong);
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
+}
+
+/* Photo full-bleed en haut de card, ratio paysage 4:3 */
+.persona-photo {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  background: var(--c-bg-warm);  /* fallback pendant le chargement */
+}
+.persona-photo img {
+  /* Léger zoom au hover du parent — invitation à la découverte */
+  transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.persona-card:hover .persona-photo img {
+  transform: scale(1.06);
+}
+
+/* Voile crème en bas de la photo pour adoucir la jonction avec le texte */
+.persona-photo::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 35%;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    oklch(from var(--c-surface) l c h / 0.4) 60%,
+    var(--c-surface) 100%
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+.persona-card-body {
+  padding: 22px 24px 26px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
 }
 .persona-card h3 {
   font-size: var(--fs-h5);
-  margin: 0 0 8px;
+  margin: 0 0 4px;
   letter-spacing: -0.01em;
+  color: var(--c-ink);
 }
 .persona-card p {
-  font-size: 0.94rem;
+  font-size: 0.96rem;
   color: var(--c-ink-soft);
   margin: 0;
   line-height: 1.55;
+}
+
+@media (max-width: 560px) {
+  .persona-photo { aspect-ratio: 16 / 10; }    /* un poil plus plat sur petits écrans */
+  .persona-card-body { padding: 18px 20px 22px; }
 }
 
 /* FEATURES ------------------------------------------------------ */
@@ -1078,9 +1330,239 @@ section.tight { padding-block: clamp(48px, 6vw, 80px); }
   box-sizing: border-box;
 }
 
+/* Couleur d'eyebrow par ligne — cycle chromatique inspiré du dashboard.
+   Ordre des FeatureRows : 1.agenda 2.revenus 3.messagerie 4.pointage
+   5.sondages 6.règles métier. Le check des bullets prend la même teinte. */
+.feature-row:nth-of-type(1) .feature-copy .eyebrow,
+.feature-row:nth-of-type(1) .feature-bullets li svg { color: var(--c-sage-ink); }
+.feature-row:nth-of-type(1) .feature-bullets li svg { background: var(--c-sage-soft); }
+
+.feature-row:nth-of-type(2) .feature-copy .eyebrow,
+.feature-row:nth-of-type(2) .feature-bullets li svg { color: var(--c-amber-ink); }
+.feature-row:nth-of-type(2) .feature-bullets li svg { background: var(--c-amber-soft); }
+
+.feature-row:nth-of-type(3) .feature-copy .eyebrow,
+.feature-row:nth-of-type(3) .feature-bullets li svg { color: var(--c-violet-ink); }
+.feature-row:nth-of-type(3) .feature-bullets li svg { background: var(--c-violet-soft); }
+
+.feature-row:nth-of-type(4) .feature-copy .eyebrow,
+.feature-row:nth-of-type(4) .feature-bullets li svg { color: var(--c-sky-ink); }
+.feature-row:nth-of-type(4) .feature-bullets li svg { background: var(--c-sky-soft); }
+
+.feature-row:nth-of-type(5) .feature-copy .eyebrow,
+.feature-row:nth-of-type(5) .feature-bullets li svg { color: var(--c-coral-ink); }
+.feature-row:nth-of-type(5) .feature-bullets li svg { background: var(--c-coral-soft); }
+
+.feature-row:nth-of-type(6) .feature-copy .eyebrow,
+.feature-row:nth-of-type(6) .feature-bullets li svg { color: var(--c-blush-ink); }
+.feature-row:nth-of-type(6) .feature-bullets li svg { background: var(--c-blush-soft); }
+
+/* ── BARRE DE PROGRESSION DISCRÈTE en haut de la section Features ──
+   Une simple ligne 2px collée au sommet de la section, qui se remplit
+   en scrubbing au fil du scroll des 6 FeatureRows. Plus de sticky-head
+   (mangeait trop de place et faisait baver le backdrop-filter en mobile). */
+.features {
+  position: relative;
+  /* Nomme la timeline pour la barre */
+  view-timeline-name: --features-track;
+  view-timeline-axis: block;
+}
+.features-progress-track {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: oklch(from var(--c-line) l c h / 0.45);
+  z-index: 2;
+  pointer-events: none;
+}
+.features-progress-fill {
+  display: block;
+  height: 100%;
+  width: 100%;
+  background: var(--c-accent);
+  transform-origin: left center;
+  transform: scaleX(0);
+}
+
+@keyframes featuresProgressFill {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+
+@supports (animation-timeline: view()) {
+  .features-progress-fill {
+    animation: featuresProgressFill linear both;
+    animation-timeline: --features-track;
+    animation-range: cover 0% cover 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .features-progress-fill { animation: none !important; transform: scaleX(0); }
+}
+
+/* MORE FEATURES (mini-cards profondeur fonctionnelle) ----------- */
+.more-features {
+  padding-block: clamp(80px, 10vw, 140px);
+  /* background appliqué plus haut (--c-bg-amber / ambre doré) */
+  position: relative;
+}
+.more-features-lead {
+  max-width: 56ch;
+  margin: 16px auto 0;
+  font-size: 1.06rem;
+  line-height: 1.6;
+  color: var(--c-ink-soft);
+  text-align: center;
+}
+.more-features-grid {
+  margin-top: 56px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+@media (max-width: 1100px) {
+  .more-features-grid { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 800px) {
+  .more-features-grid { grid-template-columns: repeat(2, 1fr); gap: 16px; }
+}
+@media (max-width: 520px) {
+  .more-features-grid { grid-template-columns: 1fr; }
+}
+
+.more-feature-card {
+  /* Background par défaut blanc — surchargé en couleur full pour
+     5 cards sur 8 via les nth-child plus bas. Les 3 cards qui
+     restent en blanc créent un rythme visuel et aèrent la grille. */
+  background: var(--c-surface);
+  border: 1px solid var(--c-line);
+  border-radius: var(--r-lg);
+  padding: 24px 22px 26px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  position: relative;
+  overflow: hidden;
+  transition: transform var(--t-med) var(--ease),
+              border-color var(--t-med) var(--ease),
+              box-shadow var(--t-med) var(--ease);
+}
+.more-feature-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--c-line-strong);
+  box-shadow: var(--shadow-md);
+}
+
+/* CARDS EN FULL COLOR — 1, 3, 5, 6, 8 (mosaïque alternée).
+   2, 4, 7 restent blanches pour la respiration. */
+.more-feature-card:nth-child(1) {                   /* Cours d'essai */
+  background: var(--c-amber-soft);
+  border-color: oklch(from var(--c-amber) l c h / 0.3);
+}
+.more-feature-card:nth-child(3) {                   /* Carnets */
+  background: var(--c-blush-soft);
+  border-color: oklch(from var(--c-blush) l c h / 0.3);
+}
+.more-feature-card:nth-child(5) {                   /* Mode équipe */
+  background: var(--c-coral-soft);
+  border-color: oklch(from var(--c-coral) l c h / 0.3);
+}
+.more-feature-card:nth-child(6) {                   /* PWA */
+  background: var(--c-violet-soft);
+  border-color: oklch(from var(--c-violet) l c h / 0.3);
+}
+.more-feature-card:nth-child(8) {                   /* Portail public */
+  background: var(--c-sky-soft);
+  border-color: oklch(from var(--c-sky) l c h / 0.3);
+}
+
+/* Quand la card est en full color, son icône passe en BLANC sur le fond
+   de la couleur principale (effet "spot lumineux") pour mieux ressortir. */
+.more-feature-card:nth-child(1) .more-feature-icon { background: oklch(1 0 0 / 0.7); }
+.more-feature-card:nth-child(3) .more-feature-icon { background: oklch(1 0 0 / 0.7); }
+.more-feature-card:nth-child(5) .more-feature-icon { background: oklch(1 0 0 / 0.7); }
+.more-feature-card:nth-child(6) .more-feature-icon { background: oklch(1 0 0 / 0.7); }
+.more-feature-card:nth-child(8) .more-feature-icon { background: oklch(1 0 0 / 0.7); }
+
+/* L'icône en haut, dans une pastille douce avec accent */
+.more-feature-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--c-accent-soft);
+  color: var(--c-accent-deep);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
+  flex-shrink: 0;
+}
+
+/* Couleurs par carte (palette dashboard) — chaque card hérite d'un duo
+   icon-bg / eyebrow color, ce qui rend l'œil heureux et casse l'uniformité.
+   Ordre = celui des items dans Sections.js MoreFeatures :
+   1.cours-d'essai 2.liste-attente 3.carnets 4.multi-lieux 5.équipe
+   6.PWA 7.stats 8.portail */
+.more-feature-card:nth-child(1) .more-feature-icon { background: var(--c-amber-soft);  color: var(--c-amber-ink);  }
+.more-feature-card:nth-child(1) .eyebrow         { color: var(--c-amber-ink); }
+.more-feature-card:nth-child(2) .more-feature-icon { background: var(--c-sky-soft);    color: var(--c-sky-ink);    }
+.more-feature-card:nth-child(2) .eyebrow         { color: var(--c-sky-ink); }
+.more-feature-card:nth-child(3) .more-feature-icon { background: var(--c-blush-soft);  color: var(--c-blush-ink);  }
+.more-feature-card:nth-child(3) .eyebrow         { color: var(--c-blush-ink); }
+.more-feature-card:nth-child(4) .more-feature-icon { background: var(--c-sage-soft);   color: var(--c-sage-ink);   }
+.more-feature-card:nth-child(4) .eyebrow         { color: var(--c-sage-ink); }
+.more-feature-card:nth-child(5) .more-feature-icon { background: var(--c-coral-soft);  color: var(--c-coral-ink);  }
+.more-feature-card:nth-child(5) .eyebrow         { color: var(--c-coral-ink); }
+.more-feature-card:nth-child(6) .more-feature-icon { background: var(--c-violet-soft); color: var(--c-violet-ink); }
+.more-feature-card:nth-child(6) .eyebrow         { color: var(--c-violet-ink); }
+.more-feature-card:nth-child(7) .more-feature-icon { background: var(--c-blush-soft);  color: var(--c-blush-ink);  }
+.more-feature-card:nth-child(7) .eyebrow         { color: var(--c-blush-ink); }
+.more-feature-card:nth-child(8) .more-feature-icon { background: var(--c-sky-soft);    color: var(--c-sky-ink);    }
+.more-feature-card:nth-child(8) .eyebrow         { color: var(--c-sky-ink); }
+
+.more-feature-card .eyebrow {
+  font-size: 0.72rem;
+  margin-bottom: 2px;
+}
+.more-feature-card h3 {
+  font-size: 1.22rem;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  margin: 2px 0 6px;
+  color: var(--c-ink);
+}
+.more-feature-card p {
+  font-size: 0.96rem;
+  color: var(--c-ink-soft);
+  line-height: 1.55;
+  margin: 0;
+}
+
+/* Spotlight cursor sur les cards (cohérent avec benefits/persona) */
+.more-feature-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    240px circle at var(--mx, 50%) var(--my, 50%),
+    oklch(from var(--c-accent) l c h / 0.12),
+    transparent 70%
+  );
+  mix-blend-mode: soft-light;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  z-index: 0;
+}
+.more-feature-card:hover::before { opacity: 1; }
+.more-feature-card > * { position: relative; z-index: 1; }
+
 /* COMPARISON ---------------------------------------------------- */
 .comparison {
-  background: var(--c-bg-warm);
+  /* background appliqué plus haut (--c-bg-coral) */
 }
 .compare-table {
   background: var(--c-surface);
@@ -1109,7 +1591,9 @@ section.tight { padding-block: clamp(48px, 6vw, 80px); }
   text-decoration-color: var(--c-line-strong);
 }
 .compare-col-h.compare-new {
-  background: var(--c-accent-soft);
+  /* Sage = "winner / mieux" — cohérent avec l'ergonomie du dashboard
+     (vert succès) et casse le sable du reste de la table */
+  background: var(--c-sage-soft);
   display: flex; align-items: center;
 }
 .compare-row {
@@ -1129,14 +1613,14 @@ section.tight { padding-block: clamp(48px, 6vw, 80px); }
   color: var(--c-ink-muted);
 }
 .compare-cell.compare-new {
-  color: var(--c-accent-deep);
-  background: oklch(from var(--c-accent-soft) l c h / 0.4);
+  color: var(--c-sage-ink);
+  background: oklch(from var(--c-sage-soft) l c h / 0.4);
   display: flex; align-items: center; gap: 8px;
   font-weight: 500;
 }
 .compare-cell.compare-new svg {
-  background: var(--c-accent);
-  color: var(--c-accent-ink);
+  background: var(--c-sage);
+  color: oklch(1 0 0);
   border-radius: 50%;
   padding: 3px;
   width: 18px; height: 18px;
@@ -1341,6 +1825,623 @@ section.tight { padding-block: clamp(48px, 6vw, 80px); }
   font-size: 0.78rem;
   letter-spacing: 0.04em;
 }
+/* ════════════════════════════════════════════════════════════════
+   EFFETS SIGNATURE WELLNESS (catalogue Mélutek)
+   ────────────────────────────────────────────────────────────────
+   1. Spotlight cursor sur cards (mix-blend-mode soft-light)
+   2. Ken Burns lent sur photo hero
+   3. Boutons squishy (lift + active scale)
+   4. Underline éditorial sur liens nav/footer
+   ════════════════════════════════════════════════════════════════ */
+
+/* 1. Spotlight cursor — radial cuivre subtil sur Benefits + Features cards */
+.benefit-card,
+.persona-card,
+.feature-row {
+  position: relative;
+  overflow: hidden;
+}
+.benefit-card::before,
+.persona-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    280px circle at var(--mx, 50%) var(--my, 50%),
+    oklch(from var(--c-accent) l c h / 0.15),
+    transparent 70%
+  );
+  mix-blend-mode: soft-light;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  z-index: 0;
+}
+.benefit-card:hover::before,
+.persona-card:hover::before {
+  opacity: 1;
+}
+.benefit-card > *,
+.persona-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* 2. Ken Burns lent — TOUJOURS actif sur le CONTAINER photo (div),
+   pendant que la parallax scrubbée s'applique à l'IMG fille (cf. § HERO
+   SCROLL-PIN). Les deux transforms se composent (parent × enfant) :
+     • au repos : photo qui zoome doucement en boucle
+     • pendant scroll : la parallax ajoute son propre zoom + translate */
+@keyframes kenburns {
+  from { transform: scale(1);    }
+  to   { transform: scale(1.06); }
+}
+.hero-cinema .hero-cinema-photo {
+  animation: kenburns 22s ease-in-out infinite alternate;
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-cinema .hero-cinema-photo,
+  .hero-cinema .hero-cinema-photo img { animation: none !important; }
+}
+
+/* 3. Boutons squishy (selon bible UX-UI : feedback haptique ressenti) */
+.btn {
+  transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1),
+              background 0.2s ease,
+              box-shadow 0.2s ease;
+}
+.btn-primary {
+  box-shadow: inset 0 -3px 0 oklch(from var(--c-accent) calc(l - 0.1) c h / 0.4),
+              0 4px 14px oklch(from var(--c-accent) l c h / 0.25);
+}
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: inset 0 -3px 0 oklch(from var(--c-accent) calc(l - 0.1) c h / 0.4),
+              0 6px 20px oklch(from var(--c-accent) l c h / 0.32);
+}
+.btn-primary:active {
+  transform: scale(0.97);
+}
+.btn-primary:focus-visible {
+  outline: 2px solid var(--c-accent-deep);
+  outline-offset: 3px;
+}
+.btn-ghost:focus-visible {
+  outline: 2px solid var(--c-accent);
+  outline-offset: 3px;
+}
+
+/* 4. Underline éditorial pour nav links + footer links */
+.nav-links a,
+.footer-col a {
+  position: relative;
+  transition: color 0.2s ease;
+}
+.nav-links a::after,
+.footer-col a::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: -3px;
+  width: 100%;
+  height: 1px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: right center;
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.nav-links a:hover::after,
+.footer-col a:hover::after {
+  transform: scaleX(1);
+  transform-origin: left center;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   HERO SCROLL-PINNING (split-text dissolve + parallax photo)
+   ────────────────────────────────────────────────────────────────
+   Structure : .hero-pinned → .hero-pin-stage (200vh) → .hero-pin-sticky
+   (sticky 100vh) qui contient photo + content. Pendant que le user
+   scrolle 100vh supplémentaires, le hero reste fixe à l'écran et :
+     • la photo zoome lentement (parallax scrubbée)
+     • les mots du titre apparaissent en cascade (animation-range scrubbé)
+     • le lead + CTAs apparaissent en dernier
+   Sur mobile (< 769px), le pinning est désactivé pour ne pas bloquer
+   l'utilisateur sur de petits écrans.
+   ════════════════════════════════════════════════════════════════ */
+
+/* La section .hero-pinned reste relative et n'a plus de min-height.
+   C'est le stage qui porte la hauteur (200vh) — pour les browsers
+   modernes uniquement. Sur mobile et fallback, on revient au flow normal. */
+.hero.hero-pinned {
+  position: relative;
+  padding: 0;
+  min-height: auto;
+  max-height: none;
+  display: block;
+  /* Évite tout overflow horizontal des animations qui dépassent */
+  overflow: clip;
+}
+
+/* Stage = piste de scroll. Fait 200vh par défaut sur desktop. */
+.hero-pin-stage {
+  position: relative;
+  width: 100%;
+  height: 200vh;
+  /* Nomme la timeline de scroll pour pouvoir l'utiliser dans les enfants */
+  scroll-timeline-name: --hero-stage;
+  scroll-timeline-axis: block;
+}
+
+/* Window sticky 100vh dans laquelle tout le hero "vit" pendant
+   100vh de scroll supplémentaires. */
+.hero-pin-sticky {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  height: 100svh;          /* iOS Safari */
+  width: 100%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+/* Dans le contexte pinné, la photo et l'overlay restent en position
+   absolue à l'intérieur de la sticky window. */
+.hero-pinned .hero-cinema-photo {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+.hero-pinned .hero-cinema-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+.hero-pinned .hero-cinema-content {
+  position: relative;
+  z-index: 2;
+  max-width: 580px;
+  /* On force l'alignement à gauche (override .container { margin-inline: auto }
+     qui centrerait le content sur l'écran et chevaucherait la prof à droite). */
+  margin-inline: 0 auto;
+  padding-top: 32px;       /* sous la nav (~64px) + 32px breathing — réduit */
+  padding-bottom: 0;
+}
+
+/* (Le split-text par mot a été retiré — provoquait du chevauchement
+   horizontal en rendu réel. Le H1 utilise désormais du texte plat avec
+   <br /> pour le retour à la ligne. Le wow visuel reste sur Ken Burns
+   + parallax + reveal pill/lead/CTAs.) */
+
+/* Indicateur scroll discret en bas de la sticky */
+.hero-scroll-hint {
+  position: absolute;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  z-index: 3;
+  opacity: 0.6;
+  pointer-events: none;
+}
+.hero-scroll-line {
+  width: 1px;
+  height: 36px;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    var(--c-ink-soft) 40%,
+    var(--c-ink-soft)
+  );
+  animation: heroScrollPulse 2.4s ease-in-out infinite;
+}
+.hero-scroll-label {
+  font-size: 0.68rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--c-ink-muted);
+}
+@keyframes heroScrollPulse {
+  0%, 100% { transform: scaleY(0.5); transform-origin: top; opacity: 0.4; }
+  50%      { transform: scaleY(1);   transform-origin: top; opacity: 1; }
+}
+
+/* État initial du pill / lead / CTAs : on les cache pour la révélation
+   scrubée, mais on les laisse visibles si l'animation-timeline n'est
+   pas dispo (fallback à la fin de ce bloc). */
+.hero-pinned .hero-pin-pill,
+.hero-pinned .hero-pin-lead,
+.hero-pinned .hero-pin-ctas {
+  opacity: 0;
+  transform: translateY(20px);
+  will-change: opacity, transform;
+}
+
+/* ────────────────────────────────────────────────
+   ANIMATIONS SCRUBBÉES (browsers modernes uniquement)
+   On utilise view() pour que la timeline = progression
+   du stage à travers le viewport. Cover = stage entièrement
+   dans le viewport (= moment où il est pinné).
+   ──────────────────────────────────────────────── */
+@keyframes heroFadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes heroPhotoParallax {
+  /* Subtil zoom + léger panning vertical au fur et à mesure du scroll */
+  from { transform: scale(1.02) translateY(0); }
+  to   { transform: scale(1.14) translateY(-4%); }
+}
+@supports (animation-timeline: view()) {
+  /* Photo : parallax scrubée tout au long du scroll du stage */
+  .hero-pinned .hero-cinema-photo img {
+    animation: heroPhotoParallax linear both;
+    animation-timeline: view();
+    animation-range: cover 0% cover 100%;
+  }
+
+  /* Pill : déjà visible au chargement (pas d'animation scrubée pour
+     ne pas vivre l'effet "élément absent" en haut de page).
+     On laisse une apparition immédiate via fadeUp standard. */
+  .hero-pinned .hero-pin-pill,
+  .hero-pinned .hero-pin-lead,
+  .hero-pinned .hero-pin-ctas {
+    animation: heroFadeUp 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  .hero-pinned .hero-pin-pill { animation-delay: 0.1s; }
+  .hero-pinned .hero-pin-lead { animation-delay: 0.5s; }
+  .hero-pinned .hero-pin-ctas { animation-delay: 0.7s; }
+
+  /* Le scroll hint disparaît en fin (quand on a fini de tout révéler) */
+  .hero-pinned .hero-scroll-hint {
+    animation: heroFadeUp 1s linear reverse both;
+    animation-timeline: view();
+    animation-range: cover 50% cover 70%;
+  }
+}
+
+/* ────────────────────────────────────────────────
+   FALLBACK : navigateurs sans animation-timeline
+   On affiche tout d'emblée (pas de scrub). Le ScrollReveal IO
+   prendra le relais sur le reste de la page.
+   ──────────────────────────────────────────────── */
+@supports not (animation-timeline: view()) {
+  .hero-pinned .hero-pin-pill,
+  .hero-pinned .hero-pin-lead,
+  .hero-pinned .hero-pin-ctas {
+    opacity: 1;
+    transform: none;
+  }
+  /* Sans pin scrubé : on désactive le 200vh stage pour éviter
+     un grand vide au scroll qui ne se passe rien. */
+  .hero-pin-stage { height: auto; }
+  .hero-pin-sticky {
+    position: relative;
+    height: auto;
+    min-height: 100vh;
+    min-height: 100svh;
+  }
+}
+
+/* ────────────────────────────────────────────────
+   MOBILE : on désactive le pinning (trop bloquant sur petit écran),
+   mais on garde l'effet de fade-in initial des mots via reveal IO.
+   ──────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .hero-pin-stage { height: auto; }
+  .hero-pin-sticky {
+    position: relative;
+    height: auto;
+    min-height: 100vh;
+    min-height: 100svh;
+    overflow: visible;
+  }
+  .hero-pinned .hero-cinema-content {
+    padding-top: 24px;       /* sous la nav, marge réduite mobile */
+    padding-bottom: 40px;
+    max-width: 100%;
+  }
+  /* On force l'image à montrer la prof (centre/gauche) au lieu du téléphone seul */
+  .hero-pinned .hero-cinema-photo img {
+    object-position: 30% center !important;
+  }
+  .hero-pinned .hero-pin-pill,
+  .hero-pinned .hero-pin-lead,
+  .hero-pinned .hero-pin-ctas {
+    opacity: 1;
+    transform: none;
+  }
+  .hero-scroll-hint { display: none; }
+}
+
+/* ────────────────────────────────────────────────
+   PRÉFÉRENCES UTILISATEUR : on désactive toute animation scrubée.
+   ──────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .hero-pinned .hero-cinema-photo img,
+  .hero-pinned .hero-cinema-overlay,
+  .hero-pinned .hero-pin-pill,
+  .hero-pinned .hero-pin-lead,
+  .hero-pinned .hero-pin-ctas,
+  .hero-pinned .hero-scroll-hint {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  /* On enlève aussi le pin pour ne pas bloquer */
+  .hero-pin-stage { height: auto; }
+  .hero-pin-sticky {
+    position: relative;
+    height: auto;
+    min-height: 100vh;
+  }
+  .hero-scroll-hint { display: none; }
+}
+
+/* ════════════════════════════════════════════════════════════════
+   REVEAL SYSTEM (scroll-driven + fallback IO)
+   ────────────────────────────────────────────────────────────────
+   .reveal           = fade + translateY de base
+   .reveal.r-down    = vient du haut
+   .reveal.r-left    = vient de la gauche (rare, pour photos)
+   .reveal.r-zoom    = scale up doux (pour photos signature)
+   .reveal.r-stagger > * = enfants en cascade (cards)
+   ════════════════════════════════════════════════════════════════ */
+@keyframes revealUp {
+  from { opacity: 0; transform: translateY(32px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes revealDown {
+  from { opacity: 0; transform: translateY(-24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes revealLeft {
+  from { opacity: 0; transform: translateX(-40px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes revealZoom {
+  from { opacity: 0; transform: scale(0.96); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* État initial : caché, sera révélé via animation-timeline OU JS fallback */
+.reveal {
+  opacity: 0;
+  transform: translateY(32px);
+}
+.reveal.r-down { transform: translateY(-24px); }
+.reveal.r-left { transform: translateX(-40px); }
+.reveal.r-zoom { transform: scale(0.96); }
+
+/* CSS natif moderne : animation déclenchée à l'entrée dans le viewport.
+   Supporté Chrome 115+, Edge 115+, Safari 26+, Firefox 138+ (mai 2026). */
+@supports (animation-timeline: view()) {
+  .reveal {
+    animation: revealUp 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation-timeline: view();
+    animation-range: entry 0% cover 25%;
+  }
+  .reveal.r-down { animation-name: revealDown; }
+  .reveal.r-left { animation-name: revealLeft; }
+  .reveal.r-zoom { animation-name: revealZoom; }
+  /* Stagger : on laisse le retard aux enfants directs */
+  .reveal.r-stagger > * {
+    animation: revealUp 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation-timeline: view();
+    animation-range: entry 0% cover 30%;
+  }
+}
+
+/* Fallback : navigateurs sans animation-timeline, on a le JS qui ajoute
+   .is-revealed quand l'élément entre dans le viewport (cf. ScrollReveal.js) */
+@supports not (animation-timeline: view()) {
+  .reveal.is-revealed {
+    animation: revealUp 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  .reveal.r-down.is-revealed { animation-name: revealDown; }
+  .reveal.r-left.is-revealed { animation-name: revealLeft; }
+  .reveal.r-zoom.is-revealed { animation-name: revealZoom; }
+  .reveal.r-stagger.is-revealed > * {
+    animation: revealUp 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+}
+
+/* Stagger : retard incrémental pour les enfants */
+.reveal.r-stagger > *:nth-child(1) { animation-delay: 0.05s; }
+.reveal.r-stagger > *:nth-child(2) { animation-delay: 0.15s; }
+.reveal.r-stagger > *:nth-child(3) { animation-delay: 0.25s; }
+.reveal.r-stagger > *:nth-child(4) { animation-delay: 0.35s; }
+.reveal.r-stagger > *:nth-child(5) { animation-delay: 0.45s; }
+.reveal.r-stagger > *:nth-child(6) { animation-delay: 0.55s; }
+
+/* Respect des préférences utilisateur — accessibilité critique */
+@media (prefers-reduced-motion: reduce) {
+  .reveal,
+  .reveal.r-down,
+  .reveal.r-left,
+  .reveal.r-zoom,
+  .reveal.r-stagger > * {
+    opacity: 1 !important;
+    transform: none !important;
+    animation: none !important;
+  }
+}
+
+/* ── FINAL CTA grid (avec photo close-up mains) ── */
+.final-cta-grid {
+  display: grid;
+  grid-template-columns: 1.05fr 1fr;
+  gap: var(--sp-10);
+  align-items: center;
+}
+.final-cta-copy h2 {
+  font-size: var(--fs-h2);
+  line-height: 1.05;
+  letter-spacing: -0.025em;
+  margin: 12px 0 24px;
+  color: var(--c-ink);
+}
+.final-cta-copy h2 em {
+  font-style: italic;
+  color: var(--c-accent);
+}
+.final-cta-copy p {
+  font-size: var(--fs-lead);
+  color: var(--c-ink-soft);
+  max-width: 52ch;
+  margin: 0 0 28px;
+  line-height: 1.55;
+}
+.final-cta-photo {
+  box-shadow: var(--shadow-lg);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+}
+@media (max-width: 980px) {
+  .final-cta-grid { grid-template-columns: 1fr; gap: var(--sp-8); }
+  .final-cta-photo { max-width: 540px; margin: 0 auto; }
+}
+
+/* ── Quote featured (avec photo) ── */
+.quote-card.quote-featured {
+  grid-column: 1 / -1;        /* prend toute la largeur du grid */
+  display: grid;
+  grid-template-columns: 1.05fr 1fr;
+  gap: var(--sp-8);
+  padding: 0;
+  overflow: hidden;
+}
+.quote-card.quote-featured .quote-photo {
+  display: block;
+  height: 100%;
+}
+.quote-card.quote-featured .quote-photo img {
+  height: 100%;
+  object-fit: cover;
+  min-height: 320px;
+}
+.quote-card.quote-featured .quote-content {
+  padding: var(--sp-8);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+@media (max-width: 768px) {
+  .quote-card.quote-featured {
+    grid-template-columns: 1fr;
+  }
+  .quote-card.quote-featured .quote-photo img { min-height: 240px; }
+}
+
+/* ── Persona hero photo (pages SEO yoga/pilates/coachs/thérapeutes) ── */
+.persona-hero-photo {
+  position: relative;
+  display: flex;
+  justify-content: center;
+}
+.persona-hero-photo > :global(span) {       /* le span next/image */
+  border-radius: var(--r-lg);
+}
+.persona-hero-illu {
+  position: absolute;
+  bottom: -32px;
+  left: -32px;
+  background: var(--c-bg);
+  border-radius: 50%;
+  padding: 18px;
+  box-shadow: var(--shadow-md);
+  z-index: 2;
+  opacity: 0.92;
+}
+@media (max-width: 768px) {
+  .persona-hero-illu { display: none; }     /* trop encombrant en mobile */
+}
+
+/* ── MOBILE SHOWCASE (preuve visuelle close-up entre Comparison et Testimonials) ── */
+.mobile-showcase {
+  padding: var(--sp-12) 0;
+  /* background appliqué plus haut (--c-bg-sky) */
+  position: relative;
+}
+.mobile-showcase .eyebrow,
+.mobile-showcase-copy .eyebrow { color: var(--c-sky-ink); }
+.mobile-showcase-grid {
+  display: grid;
+  grid-template-columns: 1.05fr 1fr;
+  gap: var(--sp-10);
+  align-items: center;
+}
+.mobile-showcase-copy h2 {
+  font-size: var(--fs-h2);
+  line-height: 1.05;
+  letter-spacing: -0.025em;
+  margin: 12px 0 24px;
+  color: var(--c-ink);
+}
+.mobile-showcase-copy h2 em {
+  font-style: italic;
+  color: var(--c-accent);
+}
+.mobile-showcase-copy p {
+  font-size: var(--fs-lead);
+  color: var(--c-ink-soft);
+  max-width: 52ch;
+  margin: 0 0 24px;
+  line-height: 1.55;
+}
+.mobile-showcase-bullets {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 12px;
+}
+.mobile-showcase-bullets li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--c-ink-soft);
+  font-size: 1rem;
+}
+.mobile-showcase-bullets li svg {
+  color: var(--c-accent);
+  flex-shrink: 0;
+}
+.mobile-showcase-photo {
+  position: relative;
+  box-shadow: var(--shadow-lg);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+}
+@media (max-width: 980px) {
+  .mobile-showcase-grid {
+    grid-template-columns: 1fr;
+    gap: var(--sp-8);
+  }
+  .mobile-showcase-photo {
+    max-width: 480px;
+    margin: 0 auto;
+  }
+}
+
+/* Variante "Bientôt" — neutre, pas accent (évite la confusion avec featured) */
+.price-badge-soon {
+  background: var(--c-ink-muted);
+  color: var(--c-bg);
+}
+/* Carte "Coming soon" — légèrement effacée, mais lisible */
+.price-card.coming-soon {
+  opacity: 0.78;
+  background: oklch(from var(--c-surface) l c h / 0.8);
+}
+.price-card.coming-soon:hover {
+  opacity: 0.92;
+  transform: none;
+}
 .price-name {
   font-size: 1.4rem;
   letter-spacing: -0.01em;
@@ -1508,4 +2609,43 @@ section.tight { padding-block: clamp(48px, 6vw, 80px); }
 .footer-bottom .mono { font-size: 0.8rem; }
 @media (max-width: 600px) {
   .footer-bottom { flex-direction: column; gap: 12px; }
+}
+
+/* ════════════════════════════════════════════════════════════════
+   ACCESSIBILITÉ — UMBRELLA reduced-motion
+   ────────────────────────────────────────────────────────────────
+   Filet de sécurité final : si l'utilisateur a demandé "reduce
+   motion" dans son OS, on désactive toute animation/transition
+   non explicitement maintenue (les effets ponctuels comme un
+   focus ring restent OK). Catch-all qui complète les blocks
+   spécifiques répartis dans le fichier.
+   ════════════════════════════════════════════════════════════════ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════
+   ACCESSIBILITÉ — Lecteurs d'écran
+   ────────────────────────────────────────────────────────────────
+   .sr-only : visible uniquement aux assistive technologies.
+   Utilisé par le titre splitté pour lire la phrase complète sans
+   être découpée en mots (cf. .hero-title-split aria-label).
+   ════════════════════════════════════════════════════════════════ */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }

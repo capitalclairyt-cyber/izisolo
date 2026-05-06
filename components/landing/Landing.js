@@ -2,9 +2,10 @@
 
 import { useEffect } from 'react';
 import {
-  Nav, Hero, Benefits, ForWhom, Features, Comparison,
-  DemoVideo, Testimonials, Pricing, FAQ, FinalCta, Footer,
+  Nav, Hero, Benefits, ForWhom, Features, MoreFeatures, Comparison, MobileShowcase,
+  Testimonials, Pricing, FAQ, FinalCta, Footer,
 } from './Sections';
+import ScrollReveal from './ScrollReveal';
 
 export default function Landing() {
   // Applique la palette "sable" sur <html> uniquement quand la landing est montée.
@@ -16,14 +17,16 @@ export default function Landing() {
 
   return (
     <div className="izi-landing-root" data-palette="sable">
+      <ScrollReveal />
       <Nav />
       <main>
         <Hero />
         <Benefits />
         <ForWhom />
         <Features />
+        <MoreFeatures />
         <Comparison />
-        <DemoVideo />
+        <MobileShowcase />
         <Testimonials />
         <Pricing />
         <FAQ />

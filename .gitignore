@@ -41,3 +41,11 @@ public/sw.js.map
 public/workbox-*.js.map
 ressources/
 .babelrc
+
+# Prospection (PII : ~4000 emails de profs, hors repo)
+prospection/
+
+# Scripts/seeds demo locaux (mots de passe en clair, batch helpers)
+seed-demo-bonjour.sql
+scripts/set-demo-password.sql
+lancer-capture.bat
