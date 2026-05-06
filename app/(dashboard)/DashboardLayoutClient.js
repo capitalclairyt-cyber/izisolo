@@ -2,7 +2,7 @@
 
 import { usePathname } from 'next/navigation';
 import Sidebar from '@/components/navigation/Sidebar';
-import TrialBanner from '@/components/trial/TrialBanner';
+import AccountStatusBanner from '@/components/trial/AccountStatusBanner';
 import { getVocabulaire } from '@/lib/vocabulaire';
 import { ToastProvider } from '@/components/ui/ToastProvider';
 
@@ -45,8 +45,9 @@ export default function DashboardLayoutClient({ children, profile, trial, nbCasA
 
       <main className="dashboard-content">
         <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '16px' }}>
-          {/* Banner trial 14j (active ou expired) — null sinon */}
-          <TrialBanner trial={trial} />
+          {/* Banner unifié — gère trial active/expired, past_due, canceled.
+              Null si subscribed ou plan='free'. */}
+          <AccountStatusBanner profile={profile} />
           {children}
         </div>
       </main>

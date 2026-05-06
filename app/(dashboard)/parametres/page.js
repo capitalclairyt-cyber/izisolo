@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Save, Palette, User, Building2, Bell, MapPin,
   Plus, X, Trash2, Flower2, Sliders, Crown, Mail, Home,
@@ -1410,8 +1410,25 @@ function CoursEssaiSection({ profile, setProfile, setDirty }) {
 
 export default function Parametres() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
+
+  // ── Détection retour Stripe Checkout (?abo=success ou ?abo=cancel) ────
+  // Affiche un toast adapté + nettoie l'URL pour ne pas re-déclencher
+  // si le user refresh la page.
+  useEffect(() => {
+    const abo = searchParams.get('abo');
+    if (abo === 'success') {
+      toast.success('🎉 Abonnement activé ! Bienvenue dans IziSolo Pro.');
+      router.replace('/parametres?tab=abonnement', { scroll: false });
+    } else if (abo === 'cancel') {
+      toast.info('Souscription annulée. Tu peux relancer quand tu veux.');
+      router.replace('/parametres?tab=abonnement', { scroll: false });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [profile, setProfile] = useState(null);
