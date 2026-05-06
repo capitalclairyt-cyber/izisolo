@@ -29,7 +29,7 @@ export default function CGVPage() {
         Siège social : 146 Rue Elsa Triolet, 38260 La Côte-Saint-André<br />
         SIREN : 889 060 901<br />
         Contact :{' '}
-        <a href="mailto:contact@izisolo.fr">contact@izisolo.fr</a>
+        <a href="mailto:bonjour@izisolo.fr">bonjour@izisolo.fr</a>
       </p>
       <p>
         Ci-après désignée « <strong>l'Éditeur</strong> ».
@@ -99,7 +99,7 @@ export default function CGVPage() {
         disposition dans l'espace personnel du Client. Pour les besoins de facturation
         spécifiques (TVA intracommunautaire, mention d'un numéro de commande), le
         Client peut écrire à{' '}
-        <a href="mailto:facturation@izisolo.fr">facturation@izisolo.fr</a>.
+        <a href="mailto:bonjour@izisolo.fr">bonjour@izisolo.fr</a>.
       </p>
 
       <h2>6. Période d'essai gratuite</h2>
@@ -127,7 +127,7 @@ export default function CGVPage() {
       <p>
         Le Client peut résilier son abonnement à tout moment depuis les paramètres de
         son compte ou en adressant une demande écrite à{' '}
-        <a href="mailto:support@izisolo.fr">support@izisolo.fr</a>. La résiliation
+        <a href="mailto:bonjour@izisolo.fr">bonjour@izisolo.fr</a>. La résiliation
         prend effet à la fin de la période mensuelle en cours.
       </p>
       <div className="legal-box">
@@ -175,7 +175,7 @@ export default function CGVPage() {
         <strong>imputable directement à l'Éditeur</strong>, prouvée par le Client et
         excédant <strong>quarante-huit (48) heures consécutives</strong> sur une
         période mensuelle, et sur demande écrite expresse du Client adressée à{' '}
-        <a href="mailto:support@izisolo.fr">support@izisolo.fr</a> dans les trente (30)
+        <a href="mailto:bonjour@izisolo.fr">bonjour@izisolo.fr</a> dans les trente (30)
         jours suivant l'incident, l'Éditeur pourra accorder un{' '}
         <strong>avoir au prorata du nombre de jours d'indisponibilité</strong>,
         applicable sur la facture du mois suivant. Cet avoir constitue la seule et
@@ -326,14 +326,9 @@ export default function CGVPage() {
 
       <h2>21. Contact</h2>
       <p>
-        Pour toute question relative aux présentes CGV :{' '}
-        <a href="mailto:contact@izisolo.fr">contact@izisolo.fr</a>
-        <br />
-        Pour les demandes de facturation :{' '}
-        <a href="mailto:facturation@izisolo.fr">facturation@izisolo.fr</a>
-        <br />
-        Pour le support :{' '}
-        <a href="mailto:support@izisolo.fr">support@izisolo.fr</a>
+        Pour toute question relative aux présentes CGV, demande de facturation ou
+        support :{' '}
+        <a href="mailto:bonjour@izisolo.fr">bonjour@izisolo.fr</a>
       </p>
     </div>
   );

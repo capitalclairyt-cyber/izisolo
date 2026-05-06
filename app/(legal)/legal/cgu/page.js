@@ -50,7 +50,7 @@ export default function CGUPage() {
       <p>
         En cas de suspicion d'utilisation non autorisée, il appartient à
         l'utilisateur d'en informer immédiatement l'Éditeur à{' '}
-        <a href="mailto:support@izisolo.fr">support@izisolo.fr</a>.
+        <a href="mailto:bonjour@izisolo.fr">bonjour@izisolo.fr</a>.
       </p>
       <div className="legal-box">
         <strong>Capacité.</strong> L'utilisateur certifie avoir au moins dix-huit
@@ -136,7 +136,7 @@ export default function CGUPage() {
       <h2>8. Suspension et résiliation</h2>
       <p>
         L'utilisateur peut clôturer son compte à tout moment depuis ses paramètres ou
-        en écrivant à <a href="mailto:support@izisolo.fr">support@izisolo.fr</a>. Les
+        en écrivant à <a href="mailto:bonjour@izisolo.fr">bonjour@izisolo.fr</a>. Les
         modalités financières sont régies par les{' '}
         <a href="/legal/cgv">CGV</a>.
       </p>
@@ -186,7 +186,7 @@ export default function CGUPage() {
       <h2>12. Contact</h2>
       <p>
         Pour toute question relative aux présentes CGU :{' '}
-        <a href="mailto:legal@izisolo.fr">legal@izisolo.fr</a>
+        <a href="mailto:bonjour@izisolo.fr">bonjour@izisolo.fr</a>
       </p>
     </div>
   );

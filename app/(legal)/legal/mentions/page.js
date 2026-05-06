@@ -21,12 +21,10 @@ export default function MentionsLegalesPage() {
         <strong>Atelier Mélusine</strong> — SASU au capital de 1 000 €<br />
         Siège social : 146 Rue Elsa Triolet, 38260 La Côte-Saint-André, France<br />
         Numéro SIREN : 889 060 901<br />
+        Numéro de TVA intracommunautaire : FR02 889 060 901<br />
         Représentée par son Président<br />
         Adresse électronique :{' '}
-        <a href="mailto:contact@izisolo.fr">contact@izisolo.fr</a>
-      </p>
-      <p className="legal-note">
-        TVA non applicable, article 293 B du Code général des impôts (le cas échéant).
+        <a href="mailto:bonjour@izisolo.fr">bonjour@izisolo.fr</a>
       </p>
 
       <h2>2. Directeur de la publication</h2>
@@ -103,7 +101,7 @@ export default function MentionsLegalesPage() {
         <a href="/legal/rgpd">Politique de confidentialité</a>. Le responsable du
         traitement est Atelier Mélusine. Conformément au RGPD et à la loi Informatique
         et Libertés, vous disposez de droits sur vos données personnelles, exercés via{' '}
-        <a href="mailto:dpo@izisolo.fr">dpo@izisolo.fr</a>.
+        <a href="mailto:bonjour@izisolo.fr">bonjour@izisolo.fr</a>.
       </p>
 
       <h2>8. Cookies</h2>
@@ -128,7 +126,7 @@ export default function MentionsLegalesPage() {
       <p>
         Pour toute question, signalement ou notification (y compris au titre de l'article
         6 I 5° de la LCEN) :{' '}
-        <a href="mailto:contact@izisolo.fr">contact@izisolo.fr</a>
+        <a href="mailto:bonjour@izisolo.fr">bonjour@izisolo.fr</a>
       </p>
     </div>
   );

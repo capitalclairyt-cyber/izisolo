@@ -186,7 +186,7 @@ export default function RGPDPage() {
       </p>
       <p>
         Vous pouvez exercer ces droits en écrivant à{' '}
-        <a href="mailto:dpo@izisolo.fr">dpo@izisolo.fr</a>. Nous nous engageons à
+        <a href="mailto:bonjour@izisolo.fr">bonjour@izisolo.fr</a>. Nous nous engageons à
         répondre dans un délai d'un (1) mois maximum, prorogeable de deux (2) mois en
         cas de demande complexe.
       </p>
@@ -274,7 +274,7 @@ export default function RGPDPage() {
         droits :
       </p>
       <ul>
-        <li>par email : <a href="mailto:dpo@izisolo.fr">dpo@izisolo.fr</a></li>
+        <li>par email : <a href="mailto:bonjour@izisolo.fr">bonjour@izisolo.fr</a></li>
         <li>par courrier : Atelier Mélusine — DPO, 146 Rue Elsa Triolet, 38260 La Côte-Saint-André</li>
       </ul>
     </div>

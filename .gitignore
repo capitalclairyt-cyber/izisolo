@@ -50,3 +50,4 @@ seed-demo-bonjour.sql
 scripts/set-demo-password.sql
 lancer-capture.bat
 .claude/ 
+test-results/

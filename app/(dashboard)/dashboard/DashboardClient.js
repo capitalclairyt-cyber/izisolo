@@ -36,14 +36,18 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
   const allCoreDone = checklistItems[0].done && checklistItems[1].done;
   const showChecklist = !checklistDismissed && !allCoreDone;
 
-  const portalUrl = studioSlug
-    ? `${typeof window !== 'undefined' ? window.location.origin : ''}/p/${studioSlug}`
-    : null;
+  // Path relatif uniquement pour l'affichage (= cohérent SSR + client,
+  // évite hydration mismatch). L'origin est ajouté à la volée dans le
+  // copy handler qui ne tourne que côté client.
+  const portalPath = studioSlug ? `/p/${studioSlug}` : null;
 
   const copyPortalUrl = async () => {
-    if (!portalUrl) return;
+    if (!portalPath) return;
+    const fullUrl = typeof window !== 'undefined'
+      ? `${window.location.origin}${portalPath}`
+      : portalPath;
     try {
-      await navigator.clipboard.writeText(portalUrl);
+      await navigator.clipboard.writeText(fullUrl);
       toast.success('Lien copié — partage-le à tes élèves !');
     } catch {
       toast.error('Impossible de copier — copie manuellement le lien');
@@ -104,7 +108,7 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
                     {item.done && <CheckCircle2 size={14} />}
                   </span>
                   <span className={`dash-checklist-label${item.done ? ' done' : ''}`}>{item.label}</span>
-                  {!item.done && item.action === 'share' && portalUrl ? (
+                  {!item.done && item.action === 'share' && portalPath ? (
                     <button onClick={copyPortalUrl} className="dash-checklist-cta">
                       <Copy size={12} /> Copier le lien
                     </button>
@@ -185,12 +189,12 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
         </Link>
 
         {/* Portail public */}
-        {studioSlug && portalUrl && (
+        {studioSlug && portalPath && (
           <button onClick={copyPortalUrl} className="bento-cell bento-cell--portal" type="button">
             <div className="bento-icon"><Share2 size={20} /></div>
             <div>
               <div className="bento-value bento-value--small">Portail</div>
-              <div className="bento-label bento-portal-url">{portalUrl.replace(/^https?:\/\//, '')}</div>
+              <div className="bento-label bento-portal-url">{portalPath}</div>
             </div>
           </button>
         )}
