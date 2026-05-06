@@ -19,7 +19,7 @@ export default function LegalLayout({ children }) {
       </main>
 
       <footer className="legal-footer">
-        <p>© {new Date().getFullYear()} Mélutek — IziSolo. Tous droits réservés.</p>
+        <p>© {new Date().getFullYear()} Atelier Mélusine — IziSolo. Tous droits réservés.</p>
         <Link href="/dashboard">Retour à l'app</Link>
       </footer>
 
@@ -60,6 +60,29 @@ export default function LegalLayout({ children }) {
           background: #fef3c7; border-left: 4px solid #f59e0b;
           padding: 14px 18px; border-radius: 0 8px 8px 0; margin: 20px 0;
           font-size: 0.9rem;
+        }
+        .legal-content .legal-box-warning {
+          background: #fee2e2; border-left-color: #dc2626;
+          color: #7f1d1d;
+        }
+        .legal-content .legal-note {
+          font-size: 0.85rem; color: #888; font-style: italic;
+          margin-top: -4px; margin-bottom: 16px;
+        }
+        .legal-content .legal-table {
+          width: 100%; border-collapse: collapse; font-size: 0.86rem;
+          margin: 14px 0 22px;
+        }
+        .legal-content .legal-table th,
+        .legal-content .legal-table td {
+          border: 1px solid #e5e0d8; padding: 8px 10px;
+          text-align: left; vertical-align: top;
+        }
+        .legal-content .legal-table th {
+          background: #faf6f0; font-weight: 600; color: #1a1a2e;
+        }
+        .legal-content .legal-table tr:nth-child(even) td {
+          background: #fafaf7;
         }
       `}</style>
     </div>
