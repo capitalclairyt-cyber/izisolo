@@ -2,16 +2,26 @@
 
 /**
  * Page "Cas à traiter" — inbox des situations remontées par l'app que la
- * prof doit résoudre manuellement (mode 'manuel' choisi dans Règles métier,
- * ou auto + notifProf=true).
+ * prof doit résoudre manuellement.
+ *
+ * Refonte 2026-05-06 :
+ *   • Plus de clic = résolution figée. Chaque action ouvre une <ResolveCasModal>
+ *     qui demande "Déjà fait" / "À faire" + note + confirmation explicite.
+ *   • L'API /api/cas-a-traiter/[id]/resolve orchestre l'effet métier
+ *     (création de paiement, abonnement, MAJ présence, etc.).
+ *   • Bouton "↩️ Annuler" dans l'historique des cas résolus < 7 jours.
+ *   • Au retour des formulaires (/revenus/nouveau ou /abonnements/nouveau)
+ *     avec ?cas_resolu=ID, on affiche un toast et on rafraîchit la liste.
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { CheckCircle2, Clock, AlertCircle, Loader2, Inbox } from 'lucide-react';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { CheckCircle2, Clock, AlertCircle, Loader2, Inbox, RotateCcw } from 'lucide-react';
 import { createClient } from '@/lib/supabase';
 import { useToast } from '@/components/ui/ToastProvider';
-import { CASES, getChoixLabel } from '@/lib/regles-metier';
+import { CASES } from '@/lib/regles-metier';
+import ResolveCasModal from '@/components/cas-a-traiter/ResolveCasModal';
 
 const ACTIONS_PAR_CAS = {
   eleve_sans_carnet: [
@@ -36,10 +46,10 @@ const ACTIONS_PAR_CAS = {
     { value: 'ignore',       label: 'Pas d\'action requise',       desc: 'Élève prévenue, rien à faire de plus.' },
   ],
   carnet_expire_avant_cours: [
-    { value: 'prolonge',     label: 'Carnet prolongé',             desc: 'Date de fin étendue jusqu\'à ce cours.' },
+    { value: 'prolonge',       label: 'Carnet prolongé',           desc: 'Date de fin étendue jusqu\'à ce cours.' },
     { value: 'nouveau_carnet', label: 'Nouveau carnet vendu',      desc: 'L\'élève a renouvelé son carnet.' },
-    { value: 'unitaire',     label: 'Cours payé à l\'unité',       desc: 'L\'élève a payé ce cours en one-shot.' },
-    { value: 'annule',       label: 'Réservation annulée',         desc: 'On retire l\'inscription.' },
+    { value: 'unitaire',       label: 'Cours payé à l\'unité',     desc: 'L\'élève a payé ce cours en one-shot.' },
+    { value: 'annule',         label: 'Réservation annulée',       desc: 'On retire l\'inscription.' },
   ],
   liste_attente: [
     { value: 'place_donnee', label: 'Place attribuée',             desc: 'L\'élève a confirmé son inscription.' },
@@ -52,36 +62,77 @@ const ACTIONS_PAR_CAS = {
   ],
 };
 
+const UNDO_WINDOW_DAYS = 7;
+
 export default function CasATraiterClient({ casOuverts, casResolus }) {
   const { toast } = useToast();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
   const [items, setItems] = useState(casOuverts);
   const [history, setHistory] = useState(casResolus);
   const [activeTab, setActiveTab] = useState('ouverts');
-  const [loadingId, setLoadingId] = useState(null);
+  const [undoLoadingId, setUndoLoadingId] = useState(null);
 
-  const resolve = async (item, action, notes = null) => {
-    setLoadingId(item.id);
-    try {
-      const supabase = createClient();
-      const { data, error } = await supabase
-        .from('cas_a_traiter')
-        .update({
-          resolu_at: new Date().toISOString(),
-          resolu_action: action,
-          resolu_notes: notes,
-        })
-        .eq('id', item.id)
-        .select('*, clients(prenom, nom), cours(nom, date)')
-        .single();
-      if (error) throw error;
-      setItems(prev => prev.filter(c => c.id !== item.id));
-      setHistory(prev => [data, ...prev].slice(0, 20));
-      toast.success('Cas résolu');
-    } catch (err) {
-      toast.error('Erreur : ' + err.message);
-    } finally {
-      setLoadingId(null);
+  // Modal state
+  const [modalItem, setModalItem] = useState(null);
+  const [modalAction, setModalAction] = useState(null);
+  const [modalActionLabel, setModalActionLabel] = useState('');
+
+  // Détection du retour depuis un formulaire (?cas_resolu=ID)
+  useEffect(() => {
+    const casResoluId = searchParams.get('cas_resolu');
+    if (casResoluId) {
+      toast.success('Cas résolu après création de la ressource ✓');
+      // Refresh : on retire le cas des items (s'il y était) et on l'ajoute en historique
+      setItems(prev => prev.filter(c => c.id !== casResoluId));
+      // Soft refresh côté serveur — on ne refetch pas, le user_will reload pour voir
+      // Nettoyer l'URL
+      router.replace('/cas-a-traiter', { scroll: false });
     }
+  }, [searchParams, toast, router]);
+
+  const openModal = (item, action) => {
+    const actionDef = (ACTIONS_PAR_CAS[item.case_type] || []).find(a => a.value === action);
+    setModalItem(item);
+    setModalAction(action);
+    setModalActionLabel(actionDef?.label || action);
+  };
+
+  const closeModal = () => {
+    setModalItem(null);
+    setModalAction(null);
+  };
+
+  const handleResolved = (resolvedCas) => {
+    setItems(prev => prev.filter(c => c.id !== resolvedCas.id));
+    setHistory(prev => [resolvedCas, ...prev].slice(0, 30));
+    toast.success('Cas résolu ✓');
+  };
+
+  // Annulation d'un cas résolu (limite 7j)
+  const undoResolve = async (item) => {
+    if (!confirm('Annuler la résolution de ce cas ? Il repassera en "Ouverts".')) return;
+    setUndoLoadingId(item.id);
+    try {
+      const res = await fetch(`/api/cas-a-traiter/${item.id}/undo`, { method: 'POST' });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Erreur');
+
+      setHistory(prev => prev.filter(c => c.id !== item.id));
+      setItems(prev => [json.cas, ...prev]);
+      toast.success(json.ressource_warning || 'Cas réouvert ✓');
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setUndoLoadingId(null);
+    }
+  };
+
+  const isUndoable = (item) => {
+    if (!item.resolu_at) return false;
+    const ageDays = (Date.now() - new Date(item.resolu_at).getTime()) / (1000 * 60 * 60 * 24);
+    return ageDays <= UNDO_WINDOW_DAYS;
   };
 
   const caseLabel = (caseType) => {
@@ -119,7 +170,8 @@ export default function CasATraiterClient({ casOuverts, casResolus }) {
       </div>
 
       <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginBottom: 16, maxWidth: 720 }}>
-        Situations détectées par l'app qui demandent ton attention. Le paramétrage
+        Situations détectées par l'app qui demandent ton attention. Chaque action te demande
+        confirmation et te précise ce qui sera fait — pas de clic-piège. Le paramétrage
         des cas se fait dans <Link href="/parametres" style={{ color: 'var(--brand-700)', fontWeight: 600 }}>Paramètres → Règles → Cas particuliers</Link>.
       </p>
 
@@ -191,11 +243,10 @@ export default function CasATraiterClient({ casOuverts, casResolus }) {
                         <button
                           key={action.value}
                           className="cas-action-btn"
-                          onClick={() => resolve(item, action.value)}
-                          disabled={loadingId === item.id}
+                          onClick={() => openModal(item, action.value)}
                           title={action.desc}
                         >
-                          {loadingId === item.id ? <Loader2 size={14} className="spin" /> : <CheckCircle2 size={14} />}
+                          <CheckCircle2 size={14} />
                           {action.label}
                         </button>
                       ))}
@@ -224,6 +275,7 @@ export default function CasATraiterClient({ casOuverts, casResolus }) {
                 const clientName = item.clients
                   ? [item.clients.prenom, item.clients.nom].filter(Boolean).join(' ')
                   : ctx.client_nom || 'Élève';
+                const undoable = isUndoable(item);
                 return (
                   <div key={item.id} className="cas-card cas-card-resolved">
                     <CheckCircle2 size={18} className="cas-card-icon" style={{ color: 'var(--success)' }} />
@@ -235,14 +287,43 @@ export default function CasATraiterClient({ casOuverts, casResolus }) {
                         <strong>{clientName}</strong> · {item.cours?.nom || ctx.cours_nom} ·
                         Résolu : <strong>{item.resolu_action}</strong>
                       </div>
+                      {item.resolu_notes && (
+                        <div className="cas-card-context" style={{ fontStyle: 'italic' }}>
+                          📝 {item.resolu_notes}
+                        </div>
+                      )}
                     </div>
-                    <div className="cas-card-time">{fmtRelativeTime(item.resolu_at)}</div>
+                    <div className="cas-card-resolved-right">
+                      <div className="cas-card-time">{fmtRelativeTime(item.resolu_at)}</div>
+                      {undoable && (
+                        <button
+                          className="cas-undo-btn"
+                          onClick={() => undoResolve(item)}
+                          disabled={undoLoadingId === item.id}
+                          title="Annuler la résolution (sous 7 jours)"
+                        >
+                          {undoLoadingId === item.id ? <Loader2 size={12} className="spin" /> : <RotateCcw size={12} />}
+                          <span>Annuler</span>
+                        </button>
+                      )}
+                    </div>
                   </div>
                 );
               })}
             </div>
           )}
         </>
+      )}
+
+      {/* Modal de résolution */}
+      {modalItem && modalAction && (
+        <ResolveCasModal
+          item={modalItem}
+          action={modalAction}
+          actionLabel={modalActionLabel}
+          onClose={closeModal}
+          onResolved={handleResolved}
+        />
       )}
 
       <style jsx global>{`
@@ -290,7 +371,7 @@ export default function CasATraiterClient({ casOuverts, casResolus }) {
         }
         .cas-card-resolved {
           border-left-color: var(--success);
-          opacity: 0.85;
+          opacity: 0.92;
           display: flex; align-items: flex-start; gap: 12px;
         }
         .cas-card-header {
@@ -326,6 +407,29 @@ export default function CasATraiterClient({ casOuverts, casResolus }) {
           margin-left: 6px;
         }
 
+        .cas-card-resolved-right {
+          display: flex; flex-direction: column; align-items: flex-end; gap: 6px;
+          flex-shrink: 0;
+        }
+        .cas-undo-btn {
+          display: inline-flex; align-items: center; gap: 4px;
+          padding: 4px 8px;
+          background: white;
+          border: 1px solid var(--border);
+          border-radius: 99px;
+          font-size: 0.75rem;
+          color: var(--text-muted);
+          cursor: pointer;
+          font-family: inherit;
+          transition: all 0.15s ease;
+        }
+        .cas-undo-btn:hover:not(:disabled) {
+          border-color: var(--brand);
+          color: var(--brand-700);
+          background: var(--brand-light);
+        }
+        .cas-undo-btn:disabled { opacity: 0.6; cursor: wait; }
+
         .cas-actions {
           display: flex; flex-wrap: wrap; gap: 6px;
           margin-top: 12px;
@@ -340,13 +444,15 @@ export default function CasATraiterClient({ casOuverts, casResolus }) {
           color: var(--text-primary);
           cursor: pointer;
           transition: all var(--transition-fast);
+          font-family: inherit;
         }
-        .cas-action-btn:hover:not(:disabled) {
+        .cas-action-btn:hover {
           background: var(--brand-light);
           border-color: var(--brand);
           color: var(--brand-700);
         }
-        .cas-action-btn:disabled { opacity: 0.6; cursor: wait; }
+        .spin { animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
       `}</style>
     </div>
   );

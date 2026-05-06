@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
   ArrowLeft, Save, Banknote, CreditCard, Landmark, FileText,
@@ -36,8 +36,15 @@ function displayName(c) {
 // ─── Composant principal ──────────────────────────────────────────────────────
 export default function NouveauPaiement() {
   const router      = useRouter();
+  const searchParams = useSearchParams();
   const { toast }   = useToast();
   const searchRef   = useRef(null);
+
+  // Si on arrive depuis un cas à traiter (?cas_id=...), on finalisera le cas
+  // après création du paiement. Cf. submitForm() qui appelle l'API resolve.
+  const casId       = searchParams.get('cas_id');
+  const casAction   = searchParams.get('cas_action');
+  const prefillClientId = searchParams.get('client_id');
 
   // Data
   const [clients, setClients]   = useState([]);
@@ -78,9 +85,15 @@ export default function NouveauPaiement() {
       setClients(cls || []);
       setOffres(ofs || []);
       setDataReady(true);
+
+      // Pré-sélection du client si on vient d'un cas à traiter
+      if (prefillClientId) {
+        const matched = (cls || []).find(c => c.id === prefillClientId);
+        if (matched) setSelectedClient(matched);
+      }
     };
     load();
-  }, []);
+  }, [prefillClientId]);
 
   // Quand on sélectionne une offre : pré-remplir intitulé + montant
   const handleSelectOffre = (offre) => {
@@ -143,7 +156,9 @@ export default function NouveauPaiement() {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
 
-      const { error } = await supabase.from('paiements').insert({
+      // .select('id').single() pour récupérer l'ID — utile pour résoudre le
+      // cas à traiter avec ressource_id si on vient d'un cas (?cas_id=...).
+      const { data: paiement, error } = await supabase.from('paiements').insert({
         profile_id: user.id,
         client_id:  (selectedClient !== 'inconnu' && selectedClient?.id) ? selectedClient.id : null,
         offre_id:   (selectedOffre?.id && selectedOffre.id !== '__libre__') ? selectedOffre.id : null,
@@ -154,9 +169,35 @@ export default function NouveauPaiement() {
         date,
         statut:     'paid',
         notes:      notes.trim() || null,
-      });
+      }).select('id').single();
 
       if (error) throw error;
+
+      // Si on vient d'un cas à traiter → résoudre le cas avec le paiement créé
+      if (casId && casAction && paiement?.id) {
+        try {
+          const resolveRes = await fetch(`/api/cas-a-traiter/${casId}/resolve`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: casAction,
+              mode: 'deja_fait',
+              ressource_id: paiement.id,
+              ressource_type: 'paiement',
+              notes: `Paiement créé via ce flow : ${intitule.trim()}`,
+            }),
+          });
+          if (!resolveRes.ok) {
+            const j = await resolveRes.json().catch(() => ({}));
+            toast.warning('Paiement OK, mais cas non résolu : ' + (j.error || 'erreur inconnue'));
+          }
+        } catch {
+          toast.warning('Paiement OK, mais cas non résolu (réseau).');
+        }
+        toast.success('Paiement enregistré et cas résolu ✓');
+        router.push(`/cas-a-traiter?cas_resolu=${casId}`);
+        return;
+      }
 
       toast.success('Paiement enregistré !');
       router.push('/revenus');
@@ -175,8 +216,14 @@ export default function NouveauPaiement() {
 
   return (
     <div className="np-page">
+      {casId && (
+        <div className="np-cas-banner" role="status">
+          <span>🔗 Tu finalises un <strong>cas à traiter</strong>. Le paiement sera lié et le cas résolu automatiquement.</span>
+          <Link href="/cas-a-traiter" className="np-cas-banner-back">← Retour aux cas</Link>
+        </div>
+      )}
       <div className="np-header animate-fade-in">
-        <Link href="/revenus" className="back-btn"><ArrowLeft size={20} /></Link>
+        <Link href={casId ? '/cas-a-traiter' : '/revenus'} className="back-btn"><ArrowLeft size={20} /></Link>
         <h1>Nouveau paiement</h1>
       </div>
 
@@ -436,6 +483,24 @@ export default function NouveauPaiement() {
 
       <style jsx global>{`
         .np-page  { display: flex; flex-direction: column; gap: 16px; padding-bottom: 48px; }
+        .np-cas-banner {
+          display: flex; align-items: center; justify-content: space-between;
+          gap: 12px; flex-wrap: wrap;
+          background: var(--brand-light, #faf2eb);
+          border: 1px solid var(--brand, #b87333);
+          border-left: 4px solid var(--brand, #b87333);
+          padding: 10px 14px;
+          border-radius: 8px;
+          font-size: 0.875rem;
+          color: var(--brand-700, #8c5826);
+        }
+        .np-cas-banner-back {
+          color: var(--brand-700, #8c5826);
+          text-decoration: none;
+          font-weight: 600;
+          font-size: 0.8125rem;
+        }
+        .np-cas-banner-back:hover { text-decoration: underline; }
         .np-header { display: flex; align-items: center; gap: 12px; }
         .np-header h1 { font-size: 1.25rem; font-weight: 700; }
         .back-btn {
