@@ -285,8 +285,27 @@ function NotifsElevesSection({ profile, setProfile, setDirty }) {
 // (l'annuel est désactivé pour l'instant ; sera ajouté plus tard avec -20%)
 // Trial 14 jours sur tous. Plan `free` (interne, exempté) jamais affiché ici.
 // ════════════════════════════════════════════════════════════════════════════
-function AbonnementCheckout({ currentPlan }) {
+function AbonnementCheckout({ currentPlan, profile }) {
   const [loading, setLoading] = useState(null); // 'solo' | 'pro' | 'premium'
+  const [portalLoading, setPortalLoading] = useState(false);
+
+  // ── Statut subscription Stripe (pour le bandeau du haut + bouton portail) ──
+  const subStatus = profile?.stripe_subscription_status;
+  const hasCustomerId = !!profile?.stripe_customer_id;
+  const periodEnd = profile?.stripe_current_period_end;
+
+  const openPortal = async () => {
+    setPortalLoading(true);
+    try {
+      const res = await fetch('/api/stripe/customer-portal', { method: 'POST' });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Erreur');
+      if (json.url) window.location.href = json.url;
+    } catch (err) {
+      alert('Erreur : ' + err.message);
+      setPortalLoading(false);
+    }
+  };
 
   const PLANS_PUB = [
     {
@@ -369,6 +388,73 @@ function AbonnementCheckout({ currentPlan }) {
       <p className="section-desc">
         14 jours d'essai gratuit sur tous les plans. Tu peux changer ou annuler à tout moment.
       </p>
+
+      {/* ── Bandeau d'état subscription ───────────────────────────────────── */}
+      {subStatus === 'past_due' && (
+        <div className="abo-banner abo-banner-warning">
+          <strong>⚠️ Paiement échoué.</strong> Mets à jour ta carte pour ne pas perdre l'accès.
+          {hasCustomerId && (
+            <button onClick={openPortal} disabled={portalLoading} className="abo-banner-cta">
+              {portalLoading ? 'Redirection…' : 'Mettre à jour'}
+            </button>
+          )}
+        </div>
+      )}
+      {subStatus === 'canceled' && (
+        <div className="abo-banner abo-banner-warning">
+          <strong>Abonnement annulé.</strong> Tu accèdes à tes données existantes mais
+          tu es ramenée aux limites Solo (40 élèves, 1 lieu). Re-souscris quand tu veux.
+        </div>
+      )}
+      {(subStatus === 'active' || subStatus === 'trialing') && hasCustomerId && (
+        <div className="abo-banner abo-banner-active">
+          <span>
+            <strong>Abonnement {subStatus === 'trialing' ? 'en période d\'essai' : 'actif'}</strong>
+            {periodEnd && (
+              <> · prochain renouvellement le {new Date(periodEnd).toLocaleDateString('fr-FR')}</>
+            )}
+          </span>
+          <button onClick={openPortal} disabled={portalLoading} className="abo-banner-cta">
+            {portalLoading ? 'Redirection…' : 'Gérer mon abonnement (carte · factures · annuler)'}
+          </button>
+        </div>
+      )}
+
+      <style jsx>{`
+        .abo-banner {
+          display: flex; flex-wrap: wrap; gap: 10px;
+          align-items: center; justify-content: space-between;
+          padding: 12px 14px;
+          border-radius: 8px;
+          margin: 10px 0 16px;
+          font-size: 0.875rem;
+        }
+        .abo-banner-warning {
+          background: #fef3c7;
+          border: 1px solid #fbbf24;
+          color: #92400e;
+        }
+        .abo-banner-active {
+          background: var(--brand-light, #faf2eb);
+          border: 1px solid var(--brand, #b87333);
+          color: var(--brand-700, #8c5826);
+        }
+        .abo-banner-cta {
+          background: white;
+          border: 1px solid currentColor;
+          padding: 6px 12px;
+          border-radius: 6px;
+          font-size: 0.8125rem; font-weight: 600;
+          cursor: pointer;
+          color: inherit;
+          transition: all 0.15s ease;
+        }
+        .abo-banner-cta:hover:not(:disabled) {
+          background: currentColor;
+          color: white;
+        }
+        .abo-banner-cta:disabled { opacity: 0.6; cursor: wait; }
+      `}</style>
 
       <div className="plans-grid plans-grid-3">
         {PLANS_PUB.map(p => {
@@ -2396,7 +2482,7 @@ export default function Parametres() {
           })()}
 
           {/* Plans */}
-          <AbonnementCheckout currentPlan={profile?.plan || 'solo'} />
+          <AbonnementCheckout currentPlan={profile?.plan || 'solo'} profile={profile} />
 
           <div className="section izi-card" style={{ background: 'var(--bg-soft, #faf8f5)', border: '1px dashed var(--border)' }}>
             <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.5 }}>
