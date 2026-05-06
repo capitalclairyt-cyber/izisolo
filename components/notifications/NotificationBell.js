@@ -84,20 +84,76 @@ export default function NotificationBell() {
     });
   };
 
-  // ── Actions par type ─────────────────────────────────────────────────────
+  // ── Actions par type — chaque notif renvoie au CONTEXTE PRÉCIS ─────────
+  // Règle : pas d'arrivée sur une page d'index/accueil. Toujours sur :
+  //   • la fiche élève précise (carnet, paiement, abo expiré, nouveau client)
+  //   • la conversation 1-to-1 ouverte avec l'élève (anniversaire = "envoyer
+  //     un mot doux")
+  // Si data.client_id est absent (notif legacy ou cron ancien), on tombe sur
+  // une page filtrée la plus proche du contexte (jamais l'index global).
   const handleAction = async (notif, action) => {
     await markRead(notif.id);
     setOpen(false);
 
-    if (notif.type === 'anniversaire' && action === 'message') {
-      router.push(`/communication?client_id=${notif.data.client_id}&preset=anniversaire`);
-    } else if (notif.type === 'paiement_retard' && action === 'voir') {
-      router.push(`/revenus`);
-    } else if (notif.type === 'nouveau_client' && action === 'voir') {
-      router.push(`/clients/${notif.data.client_id}`);
-    } else if ((notif.type === 'carnet_epuise' || notif.type === 'abonnement_expire') && action === 'voir') {
-      router.push(`/clients/${notif.data.client_id}`);
+    const data = notif.data || {};
+    const clientId = data.client_id;
+
+    // Anniversaire — ouvre directement la conversation avec l'élève pour
+    // qu'on puisse écrire un mot doux personnalisé.
+    if (notif.type === 'anniversaire') {
+      if (clientId) {
+        router.push(`/messagerie?with=${clientId}`);
+      } else {
+        router.push('/messagerie');
+      }
+      return;
     }
+
+    // Paiement en retard — on va sur la fiche élève (où sont visibles ses
+    // paiements + bouton encaisser). Sinon, vue revenus filtrée "en attente".
+    if (notif.type === 'paiement_retard') {
+      if (clientId) {
+        router.push(`/clients/${clientId}#paiements`);
+      } else {
+        router.push('/revenus?statut=en-attente');
+      }
+      return;
+    }
+
+    // Carnet bientôt épuisé — fiche élève (où on voit son abo + bouton
+    // "renouveler le carnet"). Sinon, liste élèves filtrée par carnet faible.
+    if (notif.type === 'carnet_epuise') {
+      if (clientId) {
+        router.push(`/clients/${clientId}#abonnement`);
+      } else {
+        router.push('/clients');
+      }
+      return;
+    }
+
+    // Abonnement expiré — fiche élève. Sinon, vue abonnements filtrée
+    // "expirés" pour traiter en lot.
+    if (notif.type === 'abonnement_expire') {
+      if (clientId) {
+        router.push(`/clients/${clientId}#abonnement`);
+      } else {
+        router.push('/abonnements?statut=expire');
+      }
+      return;
+    }
+
+    // Nouveau client (inscription via portail public) — fiche élève direct.
+    if (notif.type === 'nouveau_client') {
+      if (clientId) {
+        router.push(`/clients/${clientId}`);
+      } else {
+        router.push('/clients');
+      }
+      return;
+    }
+
+    // Fallback — au moins on quitte le panneau
+    router.push('/dashboard');
   };
 
   const NotifCard = ({ notif }) => {
