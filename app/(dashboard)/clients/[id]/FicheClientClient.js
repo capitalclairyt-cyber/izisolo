@@ -38,16 +38,29 @@ function calcDateFin(dureeJours) {
 // ═══════════════════════════════════════════════════════════════════════════
 // Modal tunnel de vente — appelé depuis FicheClient (client déjà connu)
 // ═══════════════════════════════════════════════════════════════════════════
+// Sentinel pour le cas "Paiement libre" (pas d'abonnement créé, juste
+// un paiement avec intitulé + montant libres — utile pour les cours
+// spéciaux à tarif unique, frais ponctuels, etc.)
+const OFFRE_LIBRE = {
+  id: '__libre__',
+  nom: 'Autre prestation',
+  type: '__libre__',
+  prix: 0,
+};
+
 function AssignerOffreModal({ client, onClose, onSuccess }) {
-  const [step, setStep] = useState('offre'); // 'offre' | 'paiement' | 'confirming'
+  const [step, setStep] = useState('offre'); // 'offre' | 'paiement'
   const [offres, setOffres] = useState([]);
   const [loadingOffres, setLoadingOffres] = useState(true);
   const [selectedOffre, setSelectedOffre] = useState(null);
+  const [intituleLibre, setIntituleLibre] = useState('');  // mode libre uniquement
   const [montant, setMontant] = useState('');
   const [modePaiement, setModePaiement] = useState('especes');
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+
+  const isLibre = selectedOffre?.id === '__libre__';
 
   // Charge les offres actives
   // CRITIQUE : filtrer par profile_id côté client. La RLS v25 expose les
@@ -72,12 +85,22 @@ function AssignerOffreModal({ client, onClose, onSuccess }) {
 
   const selectOffre = (offre) => {
     setSelectedOffre(offre);
-    setMontant(String(offre.prix));
+    if (offre.id === '__libre__') {
+      // Mode libre : on laisse l'intitulé et le montant à saisir
+      setIntituleLibre('');
+      setMontant('');
+    } else {
+      setMontant(String(offre.prix));
+    }
     setStep('paiement');
   };
 
   const handleConfirm = async () => {
-    if (!selectedOffre || !montant) return;
+    if (!selectedOffre || !montant || parseFloat(montant) < 0) return;
+    if (isLibre && !intituleLibre.trim()) {
+      setError('Saisis un intitulé pour la prestation libre.');
+      return;
+    }
     setSubmitting(true);
     setError('');
     try {
@@ -85,30 +108,35 @@ function AssignerOffreModal({ client, onClose, onSuccess }) {
       const { data: { user } } = await supabase.auth.getUser();
       const today = new Date().toISOString().split('T')[0];
 
-      // 1. Créer l'abonnement
-      const { data: abo, error: aboErr } = await supabase.from('abonnements').insert({
-        profile_id: user.id,
-        client_id: client.id,
-        offre_id: selectedOffre.id,
-        offre_nom: selectedOffre.nom,
-        type: selectedOffre.type,
-        date_debut: today,
-        date_fin: calcDateFin(selectedOffre.duree_jours),
-        seances_total: selectedOffre.seances || null,
-        seances_utilisees: 0,
-        statut: 'actif',
-      }).select().single();
+      let aboId = null;
 
-      if (aboErr) throw aboErr;
+      // Mode libre : pas d'abonnement à créer (juste un paiement one-shot)
+      // Mode offre : on crée un abonnement lié à l'offre + le paiement
+      if (!isLibre) {
+        const { data: abo, error: aboErr } = await supabase.from('abonnements').insert({
+          profile_id: user.id,
+          client_id: client.id,
+          offre_id: selectedOffre.id,
+          offre_nom: selectedOffre.nom,
+          type: selectedOffre.type,
+          date_debut: today,
+          date_fin: calcDateFin(selectedOffre.duree_jours),
+          seances_total: selectedOffre.seances || null,
+          seances_utilisees: 0,
+          statut: 'actif',
+        }).select().single();
+        if (aboErr) throw aboErr;
+        aboId = abo.id;
+      }
 
-      // 2. Enregistrer le paiement
+      // Enregistrer le paiement (toujours, lié à l'abonnement si non-libre)
       const { error: payErr } = await supabase.from('paiements').insert({
         profile_id: user.id,
         client_id: client.id,
-        offre_id: selectedOffre.id,
-        abonnement_id: abo.id,
-        intitule: selectedOffre.nom,
-        type: selectedOffre.type,
+        offre_id: isLibre ? null : selectedOffre.id,
+        abonnement_id: aboId,
+        intitule: isLibre ? intituleLibre.trim() : selectedOffre.nom,
+        type: isLibre ? null : selectedOffre.type,
         montant: parseFloat(montant),
         statut: 'paid',
         mode: modePaiement,
@@ -177,6 +205,24 @@ function AssignerOffreModal({ client, onClose, onSuccess }) {
                     </button>
                   );
                 })}
+
+                {/* Option "Autre prestation" — paiement libre sans abo lié.
+                    Utile pour : cours spécial à tarif spécial, frais ponctuel,
+                    paiement d'une commande extérieure au catalogue, etc. */}
+                <button
+                  className="offre-choice-btn offre-choice-libre"
+                  onClick={() => selectOffre(OFFRE_LIBRE)}
+                  type="button"
+                >
+                  <div className="offre-choice-icon"><Package size={20} /></div>
+                  <div className="offre-choice-info">
+                    <span className="offre-choice-nom">Autre prestation</span>
+                    <span className="offre-choice-detail">
+                      Saisie libre (intitulé + montant) — pas de carnet créé
+                    </span>
+                  </div>
+                  <ChevronRight size={16} style={{ color: 'var(--text-muted)' }} />
+                </button>
               </div>
             )}
           </div>
@@ -187,9 +233,26 @@ function AssignerOffreModal({ client, onClose, onSuccess }) {
           <div className="modal-body">
             {/* Récap offre */}
             <div className="paiement-recap">
-              <span className="paiement-recap-nom">{selectedOffre.nom}</span>
+              <span className="paiement-recap-nom">
+                {isLibre ? 'Paiement libre' : selectedOffre.nom}
+              </span>
               <span className="paiement-recap-client">pour {[client.prenom, client.nom_structure || client.nom].filter(Boolean).join(' ')}</span>
             </div>
+
+            {/* Mode libre uniquement : saisie de l'intitulé */}
+            {isLibre && (
+              <>
+                <div className="paiement-section-label">Intitulé de la prestation</div>
+                <input
+                  className="izi-input"
+                  type="text"
+                  value={intituleLibre}
+                  onChange={e => setIntituleLibre(e.target.value)}
+                  placeholder="Ex : Cours particulier, atelier découverte, frais matériel..."
+                  autoFocus
+                />
+              </>
+            )}
 
             {/* Mode de paiement */}
             <div className="paiement-section-label">Mode de règlement</div>
@@ -227,7 +290,7 @@ function AssignerOffreModal({ client, onClose, onSuccess }) {
               />
               <span className="montant-currency">€</span>
             </div>
-            {parseFloat(montant) !== selectedOffre.prix && montant && (
+            {!isLibre && parseFloat(montant) !== selectedOffre.prix && montant && (
               <p className="montant-hint">
                 Prix catalogue : {formatMontant(selectedOffre.prix)}
               </p>
@@ -320,14 +383,26 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
   const proLabels = { association: 'Association', studio: 'Studio', entreprise: 'Entreprise', autre_pro: 'Autre pro' };
 
   const handleOffreAdded = async () => {
-    // Recharge les abonnements du client
+    // Recharge abonnements ET paiements après création (la modale crée
+    // les 2 ressources, il faut donc rafraîchir les 2 tabs).
+    // Bug fixé 2026-05-06 : avant on ne rechargeait que les abonnements,
+    // donc le paiement créé n'apparaissait pas dans l'onglet Paiements
+    // tant que la prof ne refreshait pas la page.
     const supabase = createClient();
-    const { data } = await supabase
-      .from('abonnements')
-      .select('*, offre:offres(nom, type)')
-      .eq('client_id', client.id)
-      .order('created_at', { ascending: false });
-    setAbonnements(data || []);
+    const [{ data: abos }, { data: pays }] = await Promise.all([
+      supabase
+        .from('abonnements')
+        .select('*, offre:offres(nom, type)')
+        .eq('client_id', client.id)
+        .order('created_at', { ascending: false }),
+      supabase
+        .from('paiements')
+        .select('*')
+        .eq('client_id', client.id)
+        .order('date', { ascending: false }),
+    ]);
+    setAbonnements(abos || []);
+    setPaiements(pays || []);
     setShowAssignerModal(false);
   };
 
@@ -500,13 +575,20 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
             )}
           </div>
 
+          {/* Le bouton "Saisir un paiement" ouvre la MÊME modale que celle
+              de l'onglet Offres (AssignerOffreModal) au lieu d'envoyer la
+              prof sur la page /revenus/nouveau où elle devait re-chercher
+              son client. La modale propose maintenant l'option "Autre
+              prestation" pour les paiements libres (cours spécial, frais
+              ponctuels, etc.). */}
           <div className="tab-actions">
-            <Link
-              href={`/revenus/nouveau?client_id=${client.id}`}
+            <button
+              onClick={() => setShowAssignerModal(true)}
               className="izi-btn izi-btn-primary add-offre-btn"
+              type="button"
             >
               <Plus size={18} /> Saisir un paiement
-            </Link>
+            </button>
           </div>
 
           {paiements.length === 0 ? (
