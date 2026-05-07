@@ -199,14 +199,48 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
   };
 
   // ---- Envoyer un message aux participants ----
-  const handleSendMessage = () => {
-    const emails = presences
-      .map(p => p.clients?.email)
-      .filter(Boolean);
-    if (emails.length === 0) { toast.warning('Aucun participant avec adresse e-mail'); return; }
-    const mailto = `mailto:${emails[0]}?bcc=${emails.slice(1).join(',')}&subject=${encodeURIComponent(messageForm.sujet)}&body=${encodeURIComponent(messageForm.message)}`;
-    window.open(mailto, '_blank');
-    setShowMessageModal(false);
+  // Passe par la messagerie interne IziSolo (table conversations + emails
+  // sortants via Resend) au lieu d'un mailto: qui ouvrait le client mail
+  // externe et perdait toute traçabilité côté app.
+  // Cf. POST /api/messagerie/announce avec scope='cours', mode='individuel'
+  // → crée ou réutilise une conv 1-to-1 par participant et y envoie le
+  // message. Visible ensuite dans /messagerie pour la prof et les élèves.
+  const [sendingMessage, setSendingMessage] = useState(false);
+  const handleSendMessage = async () => {
+    const message = (messageForm.message || '').trim();
+    if (!message) { toast.warning('Saisis un message avant d\'envoyer.'); return; }
+    if (presences.length === 0) { toast.warning('Aucun participant inscrit à ce cours.'); return; }
+
+    // On préfixe le message par le sujet (s'il y en a un) — la messagerie
+    // interne n'a pas de notion de "sujet" séparé, c'est juste du contenu.
+    const sujet = (messageForm.sujet || '').trim();
+    const content = sujet ? `**${sujet}**\n\n${message}` : message;
+
+    setSendingMessage(true);
+    try {
+      const res = await fetch('/api/messagerie/announce', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content,
+          scope: 'cours',
+          cours_id: cours.id,
+          mode: 'individuel',  // 1 conv 1-to-1 par participant (plus respectueux que groupe)
+          shared_ref_type: 'cours',
+          shared_ref_id: cours.id,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Erreur envoi');
+
+      toast.success(`Message envoyé à ${json.count || presences.length} participant${(json.count || presences.length) > 1 ? 's' : ''} ✓`);
+      setShowMessageModal(false);
+      setMessageForm({ sujet: '', message: '' });
+    } catch (err) {
+      toast.error('Erreur : ' + err.message);
+    } finally {
+      setSendingMessage(false);
+    }
   };
 
   // ---- SMS : accès plan + participants joignables ----
@@ -721,16 +755,23 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
             </div>
 
             <div className="modal-actions" style={{ padding: '0 20px 20px' }}>
-              <button className="izi-btn izi-btn-ghost" onClick={() => setShowMessageModal(false)}>
+              <button className="izi-btn izi-btn-ghost"
+                onClick={() => setShowMessageModal(false)}
+                disabled={sendingMessage}>
                 Annuler
               </button>
               <button className="izi-btn izi-btn-primary"
                 onClick={handleSendMessage}
-                disabled={!messageForm.sujet.trim() || !messageForm.message.trim()}>
+                disabled={!messageForm.message.trim() || sendingMessage}>
                 <Send size={16} />
-                Ouvrir dans mon client e-mail
+                {sendingMessage ? 'Envoi…' : `Envoyer via la messagerie IziSolo`}
               </button>
             </div>
+            <p style={{ padding: '0 20px 20px', fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.5 }}>
+              ✉️ Le message est envoyé via la <strong>messagerie interne IziSolo</strong> :
+              chaque participant le retrouve dans son espace élève + reçoit un email de notification.
+              Les réponses arrivent dans <a href="/messagerie" style={{ color: 'var(--brand-700)' }}>ta messagerie</a>.
+            </p>
           </div>
         </div>
       )}
