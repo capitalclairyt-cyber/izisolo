@@ -164,7 +164,10 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
       {/* === BENTO GRID — Phase 3 charte 2026 ===
           Remplace les anciennes 3 stat-tiles par une grille bento qui
           consolide : revenus (main), agenda, élèves, sondage, portail,
-          + bandeau alerte large (si alertes.length > 0).
+          + bandeau "Cas à traiter" si nbCasATraiter > 0.
+          Les alertes élève (carnet faible, etc.) sont affichées dans
+          .dash-alertes ABOVE cette grille avec liens vers fiches élèves
+          individuelles, pour ne pas dupliquer l'info.
           Couleurs = catégorie métier (cf. uxui-bible §02 Bento Grid). */}
       <div className="dash-bento animate-slide-up">
         {/* Grosse tuile : Revenus du mois (KPI principal — la boussole prof) */}
@@ -234,20 +237,6 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
               <Copy size={14} />
             </button>
           </a>
-        )}
-
-        {/* Bandeau alerte (full width bottom) — si au moins une alerte */}
-        {alertes.length > 0 && (
-          <Link href="/clients" className="bento-cell bento-cell--alerte">
-            <div className="bento-icon"><AlertTriangle size={20} /></div>
-            <div className="bento-alerte-msg">
-              <div className="bento-alerte-title">{alertes[0].message}</div>
-              {alertes.length > 1 && (
-                <div className="bento-alerte-desc">+{alertes.length - 1} autre{alertes.length > 2 ? 's' : ''} alerte{alertes.length > 2 ? 's' : ''}</div>
-              )}
-            </div>
-            <ChevronRight size={16} />
-          </Link>
         )}
 
         {/* Bandeau "Cas à traiter" — si au moins un cas non résolu */}
