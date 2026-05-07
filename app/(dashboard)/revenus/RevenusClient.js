@@ -9,6 +9,7 @@ import {
 import { formatMontant, formatDate } from '@/lib/utils';
 import { STATUTS_PAIEMENT } from '@/lib/constantes';
 import { useToast } from '@/components/ui/ToastProvider';
+import Pagination, { usePagination } from '@/components/ui/Pagination';
 
 const MODES = [
   { value: 'especes',  label: 'Espèces',  Icon: Banknote },
@@ -69,8 +70,6 @@ export default function RevenusClient({ paiements: initialPaiements }) {
   const [encaisserMode, setEncaisserMode] = useState('especes');
   const [encaisserDate, setEncaisserDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [encaisserSubmitting, setEncaisserSubmitting] = useState(false);
-  const [page, setPage] = useState(1);
-  const PAGE_SIZE_PAY = 50;
 
   // ── Filtres ────────────────────────────────────────────
   const periodeFilt = useMemo(
@@ -86,15 +85,13 @@ export default function RevenusClient({ paiements: initialPaiements }) {
     });
   }, [periodeFilt, filterMode, filterStatut]);
 
-  // Pagination — 50 paiements par page
-  const totalPagesPay = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE_PAY));
-  const currentPagePay = Math.min(page, totalPagesPay);
-  const paginatedPay = useMemo(
-    () => filtered.slice((currentPagePay - 1) * PAGE_SIZE_PAY, currentPagePay * PAGE_SIZE_PAY),
-    [filtered, currentPagePay]
-  );
-  // Reset à la page 1 quand les filtres changent
-  useMemo(() => { setPage(1); }, [periode, filterMode, filterStatut]);
+  // Pagination 8/page (cf. components/ui/Pagination.js)
+  const {
+    paginated: paginatedPay,
+    currentPage: currentPagePay,
+    totalPages: totalPagesPay,
+    setPage,
+  } = usePagination(filtered, 8);
 
   // ── Stats ──────────────────────────────────────────────
   const stats = useMemo(() => {
@@ -347,30 +344,12 @@ export default function RevenusClient({ paiements: initialPaiements }) {
           </div>
         )}
 
-        {/* Pagination — visible si > 50 paiements */}
-        {totalPagesPay > 1 && (
-          <div className="pay-pagination">
-            <button
-              type="button"
-              className="pay-pagination-btn"
-              onClick={() => setPage(p => Math.max(1, p - 1))}
-              disabled={currentPagePay === 1}
-            >
-              ← Précédent
-            </button>
-            <span className="pay-pagination-info">
-              Page {currentPagePay} / {totalPagesPay}
-            </span>
-            <button
-              type="button"
-              className="pay-pagination-btn"
-              onClick={() => setPage(p => Math.min(totalPagesPay, p + 1))}
-              disabled={currentPagePay === totalPagesPay}
-            >
-              Suivant →
-            </button>
-          </div>
-        )}
+        <Pagination
+          currentPage={currentPagePay}
+          totalPages={totalPagesPay}
+          onChange={setPage}
+          label="paiements"
+        />
       </div>
 
       {/* Modal encaisser */}

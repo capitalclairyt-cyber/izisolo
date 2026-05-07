@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Pagination, { usePagination } from '@/components/ui/Pagination';
 import {
   ArrowLeft, Phone, Mail, Edit3, Ticket, Calendar,
   CheckCircle2, XCircle, Plus, X, Building2, MapPin,
@@ -336,6 +337,14 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
   const [paiements, setPaiements] = useState(paiementsInit);
   const [encaisserLoading, setEncaisserLoading] = useState(null); // id du paiement en cours
 
+  // Pagination 8/page sur les 3 onglets (présences, paiements, abonnements).
+  // Cas concret du bug remonté 2026-05-07 : un élève avec 16 présences
+  // affichait 16 lignes d'affilée. Avec 8/page, on a 2 pages max sur la
+  // plupart des cas, et la fiche reste lisible même à 50+ items.
+  const presencesPag    = usePagination(presences, 8);
+  const paiementsPag    = usePagination(paiements, 8);
+  const abonnementsPag  = usePagination(abonnements, 8);
+
   // Totaux paiements
   const totaux = (() => {
     const acc = { paid: 0, pending: 0, unpaid: 0 };
@@ -553,7 +562,7 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
           {abonnements.length === 0 ? (
             <div className="empty-mini">Aucune offre souscrite</div>
           ) : (
-            abonnements.map(abo => {
+            abonnementsPag.paginated.map(abo => {
               const sInfo = STATUTS_ABONNEMENT[abo.statut] || {};
               const restantes = abo.seances_total != null ? (abo.seances_total - (abo.seances_utilisees || 0)) : null;
               return (
@@ -579,6 +588,12 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
               );
             })
           )}
+          <Pagination
+            currentPage={abonnementsPag.currentPage}
+            totalPages={abonnementsPag.totalPages}
+            onChange={abonnementsPag.setPage}
+            label="abonnements"
+          />
         </div>
       )}
 
@@ -624,7 +639,7 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
             <div className="empty-mini">Aucun paiement enregistré pour {vocab.client || 'cet élève'}</div>
           ) : (
             <div className="paiements-list-fiche">
-              {paiements.map(p => {
+              {paiementsPag.paginated.map(p => {
                 const sInfo = STATUTS_PAIEMENT[p.statut] || {};
                 const canEncaisser = p.statut === 'pending' || p.statut === 'unpaid' || p.statut === 'cb';
                 const isLoading = encaisserLoading === p.id;
@@ -662,6 +677,12 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
               })}
             </div>
           )}
+          <Pagination
+            currentPage={paiementsPag.currentPage}
+            totalPages={paiementsPag.totalPages}
+            onChange={paiementsPag.setPage}
+            label="paiements"
+          />
         </div>
       )}
 
@@ -670,7 +691,7 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
           {presences.length === 0 ? (
             <div className="empty-mini">Aucune présence enregistrée</div>
           ) : (
-            presences.map(p => (
+            presencesPag.paginated.map(p => (
               <div key={p.id} className="presence-item">
                 <div className={`presence-icon ${p.pointee ? 'done' : 'absent'}`}>
                   {p.pointee ? <CheckCircle2 size={16} /> : <XCircle size={16} />}
@@ -684,6 +705,12 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
               </div>
             ))
           )}
+          <Pagination
+            currentPage={presencesPag.currentPage}
+            totalPages={presencesPag.totalPages}
+            onChange={presencesPag.setPage}
+            label="présences"
+          />
         </div>
       )}
 

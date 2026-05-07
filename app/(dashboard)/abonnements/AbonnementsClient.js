@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { formatDate, formatMontant } from '@/lib/utils';
 import { toneForAbonnement } from '@/lib/tones';
+import Pagination, { usePagination } from '@/components/ui/Pagination';
 
 // ─── Types d'offre ───────────────────────────────────────────────────────────
 const TYPE_CONFIG = {
@@ -137,6 +138,9 @@ export default function AbonnementsClient({ abonnements: initAbo, paiementsParAb
     return list;
   }, [abonnements, filtre, search, sort]);
 
+  // Pagination 8/page
+  const { paginated: abosPaginated, currentPage, totalPages, setPage } = usePagination(filtered, 8);
+
   // Comptes par statut pour les badges de filtre
   const counts = useMemo(() => {
     const c = { tous: abonnements.length };
@@ -257,9 +261,17 @@ export default function AbonnementsClient({ abonnements: initAbo, paiementsParAb
           )}
         </div>
       ) : (
-        <div className="abo-list animate-slide-up">
-          {filtered.map(abo => <AboCard key={abo.id} abo={abo} paiements={paiementsParAbo[abo.id] || []} />)}
-        </div>
+        <>
+          <div className="abo-list animate-slide-up">
+            {abosPaginated.map(abo => <AboCard key={abo.id} abo={abo} paiements={paiementsParAbo[abo.id] || []} />)}
+          </div>
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onChange={setPage}
+            label="abonnements"
+          />
+        </>
       )}
 
       <style jsx global>{`

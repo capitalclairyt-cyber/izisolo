@@ -2,13 +2,14 @@
 
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
-import { Search, Plus, User, Building2, Phone, Mail, ChevronRight, Filter, Send, ChevronLeft, SlidersHorizontal } from 'lucide-react';
+import { Search, Plus, User, Building2, Phone, Mail, ChevronRight, Filter, Send, SlidersHorizontal } from 'lucide-react';
 import { getVocabulaire } from '@/lib/vocabulaire';
 import { STATUTS_CLIENT } from '@/lib/constantes';
 import { toneForClient } from '@/lib/tones';
 import InviteModal from './InviteModal';
+import Pagination, { usePagination, DEFAULT_PAGE_SIZE } from '@/components/ui/Pagination';
 
-const PAGE_SIZE = 50;
+const PAGE_SIZE = DEFAULT_PAGE_SIZE;
 const INACTIF_DAYS_THRESHOLD = 30;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
@@ -34,7 +35,6 @@ export default function ClientsClient({ clients, profile }) {
   const [filtreType, setFiltreType]     = useState('tous'); // tous | particulier | pro
   const [filtreAbo, setFiltreAbo]       = useState('tous'); // nom d'offre exact
 
-  const [page, setPage] = useState(1);
 
   // Liste des noms d'offres distincts (pour le filtre "type d'abonnement")
   const offresDistinct = useMemo(() => {
@@ -86,13 +86,8 @@ export default function ClientsClient({ clients, profile }) {
     return list;
   }, [clients, search, filtrePrimaire, filtreStatut, filtreType, filtreAbo]);
 
-  // Pagination — recalcul à chaque changement de filtres
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const currentPage = Math.min(page, totalPages);
-  const paginated = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
-
-  // Reset page si filtres changent
-  useMemo(() => { setPage(1); }, [search, filtrePrimaire, filtreStatut, filtreType, filtreAbo]);
+  // Pagination 8/page (cf. components/ui/Pagination.js)
+  const { paginated, currentPage, totalPages, setPage } = usePagination(filtered, PAGE_SIZE);
 
   const isPro = (c) => c.type_client && c.type_client !== 'particulier';
 
@@ -283,28 +278,12 @@ export default function ClientsClient({ clients, profile }) {
             })}
           </div>
 
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="clients-pagination animate-slide-up">
-              <button
-                className="pagination-btn"
-                onClick={() => setPage(p => Math.max(1, p - 1))}
-                disabled={currentPage === 1}
-              >
-                <ChevronLeft size={14} /> Précédent
-              </button>
-              <span className="pagination-info">
-                Page {currentPage} / {totalPages}
-              </span>
-              <button
-                className="pagination-btn"
-                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                disabled={currentPage === totalPages}
-              >
-                Suivant <ChevronRight size={14} />
-              </button>
-            </div>
-          )}
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onChange={setPage}
+            label="élèves"
+          />
         </>
       )}
 

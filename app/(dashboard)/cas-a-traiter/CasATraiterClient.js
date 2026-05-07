@@ -22,6 +22,7 @@ import { createClient } from '@/lib/supabase';
 import { useToast } from '@/components/ui/ToastProvider';
 import { CASES } from '@/lib/regles-metier';
 import ResolveCasModal from '@/components/cas-a-traiter/ResolveCasModal';
+import Pagination, { usePagination } from '@/components/ui/Pagination';
 
 const ACTIONS_PAR_CAS = {
   eleve_sans_carnet: [
@@ -73,6 +74,10 @@ export default function CasATraiterClient({ casOuverts, casResolus }) {
   const [history, setHistory] = useState(casResolus);
   const [activeTab, setActiveTab] = useState('ouverts');
   const [undoLoadingId, setUndoLoadingId] = useState(null);
+
+  // Pagination 8/page sur les 2 onglets
+  const itemsPag   = usePagination(items, 8);
+  const historyPag = usePagination(history, 8);
 
   // Modal state
   const [modalItem, setModalItem] = useState(null);
@@ -201,7 +206,7 @@ export default function CasATraiterClient({ casOuverts, casResolus }) {
             </div>
           ) : (
             <div className="cas-list">
-              {items.map(item => {
+              {itemsPag.paginated.map(item => {
                 const actions = ACTIONS_PAR_CAS[item.case_type] || [
                   { value: 'ignore', label: 'Marquer comme traité', desc: 'Action enregistrée.' },
                 ];
@@ -256,6 +261,12 @@ export default function CasATraiterClient({ casOuverts, casResolus }) {
               })}
             </div>
           )}
+          <Pagination
+            currentPage={itemsPag.currentPage}
+            totalPages={itemsPag.totalPages}
+            onChange={itemsPag.setPage}
+            label="cas"
+          />
         </>
       )}
 
@@ -270,7 +281,7 @@ export default function CasATraiterClient({ casOuverts, casResolus }) {
             </div>
           ) : (
             <div className="cas-list">
-              {history.map(item => {
+              {historyPag.paginated.map(item => {
                 const ctx = item.context || {};
                 const clientName = item.clients
                   ? [item.clients.prenom, item.clients.nom].filter(Boolean).join(' ')
@@ -312,6 +323,12 @@ export default function CasATraiterClient({ casOuverts, casResolus }) {
               })}
             </div>
           )}
+          <Pagination
+            currentPage={historyPag.currentPage}
+            totalPages={historyPag.totalPages}
+            onChange={historyPag.setPage}
+            label="cas résolus"
+          />
         </>
       )}
 
