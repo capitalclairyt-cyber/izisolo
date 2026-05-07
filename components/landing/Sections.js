@@ -95,7 +95,7 @@ export function Hero() {
               pratique, tes cours, tes élèves.
             </p>
             <div className="hero-ctas hero-pin-ctas">
-              <Link href="/register" className="btn btn-primary btn-lg">Démarrer en 14 jours →</Link>
+              <Link href="/register" className="btn btn-primary btn-lg">Essayer 14 jours · sans CB →</Link>
               <Link href="/login" className="btn btn-ghost btn-lg">Se connecter</Link>
             </div>
           </div>
@@ -583,7 +583,7 @@ export function Pricing() {
         'Pointage des présences',
         'Cas à traiter (no-show, paiement en attente…)',
       ],
-      cta: 'Démarrer en 14 jours',
+      cta: 'Essayer 14 jours · sans CB',
       ctaHref: '/register',
       featured: false,
     },
@@ -602,27 +602,9 @@ export function Pricing() {
         'Cours d\'essai · règles d\'annulation avancées',
         'Export comptable CSV',
       ],
-      cta: 'Démarrer en 14 jours',
+      cta: 'Essayer 14 jours · sans CB',
       ctaHref: '/register',
       featured: true,
-    },
-    {
-      name: 'Premium',
-      price: '49 €',
-      sub: '/mois · bientôt disponible',
-      desc: 'Le maximum. Vidéos, white-label, lieux illimités. Pour les studios qui scalent.',
-      features: [
-        'Tout Pro · sans limites',
-        'Lieux illimités',
-        'Vidéos de cours (visio + replay)',
-        'Vente de vidéos à l\'unité ou abonnement',
-        'White-label (logo dans tes emails)',
-        'Support prioritaire',
-      ],
-      cta: 'Bientôt',
-      ctaHref: '/register',
-      featured: false,
-      comingSoon: true,
     },
   ];
 
@@ -637,9 +619,8 @@ export function Pricing() {
 
         <div className="pricing-grid reveal r-stagger">
           {plans.map((p, i) => (
-            <div key={i} className={`price-card ${p.featured ? 'featured' : ''} ${p.comingSoon ? 'coming-soon' : ''}`}>
+            <div key={i} className={`price-card ${p.featured ? 'featured' : ''}`}>
               {p.featured && <div className="price-badge">Le plus choisi</div>}
-              {p.comingSoon && <div className="price-badge price-badge-soon">Bientôt</div>}
               <div className="price-name serif">{p.name}</div>
               <div className="price-amt">
                 <span className="price-num serif">{p.price}</span>
@@ -651,26 +632,18 @@ export function Pricing() {
                   <li key={f}><CheckIcon /> {f}</li>
                 ))}
               </ul>
-              {p.comingSoon ? (
-                <button
-                  disabled
-                  className="btn btn-ghost btn-lg"
-                  style={{ width: '100%', justifyContent: 'center', opacity: 0.55, cursor: 'not-allowed' }}
-                >
-                  {p.cta}
-                </button>
-              ) : (
-                <Link href={p.ctaHref} className={`btn ${p.featured ? 'btn-primary' : 'btn-ghost'} btn-lg`} style={{ width: '100%', justifyContent: 'center' }}>
-                  {p.cta}
-                </Link>
-              )}
+              <Link href={p.ctaHref} className={`btn ${p.featured ? 'btn-primary' : 'btn-ghost'} btn-lg`} style={{ width: '100%', justifyContent: 'center' }}>
+                {p.cta}
+              </Link>
             </div>
           ))}
         </div>
 
         <p className="pricing-fees">
-          Paiements en ligne (Pro) : <strong>tu encaisses sur ton propre compte Stripe</strong> · IziSolo facture
-          1 % du volume sur ta facture mensuelle (jamais prélevé sur tes paiements).
+          Paiements en ligne (Pro) : <strong>tu encaisses sur ton propre compte Stripe</strong>.
+          Frais transparents : 1 % IziSolo (sur ta facture mensuelle, jamais prélevé sur tes paiements)
+          + frais Stripe standard (1,5 % + 0,25 € par transaction).
+          Exemple : un paiement de 25 € → tu reçois 24,12 € net, IziSolo te facture 0,25 €/mois.
         </p>
       </div>
     </section>
@@ -690,7 +663,7 @@ export function FAQ() {
     { q: 'Quels sont les frais sur les paiements en ligne ?', a: "Frais de fonctionnement IziSolo : 1 % du volume payé en ligne via Stripe (ajoutés à ta facture mensuelle, jamais prélevés sur les paiements de tes élèves). À cela s'ajoutent les frais Stripe standard (1.5 % + 0,25 €) qui vont à Stripe directement." },
     { q: 'Comment IziSolo gère un no-show ou un cours annulé ?', a: "Tu paramètres tes propres règles métier dans ton tableau de bord : recrédit du carnet, débit, contact prioritaire à l'élève, etc. IziSolo applique automatiquement, et te remonte les cas ambigus dans une inbox « À traiter » dédiée. Aucun cas ne passe à la trappe." },
     { q: 'Plusieurs lieux, plusieurs studios, équipe : c\'est possible ?', a: "Oui à tout. Plusieurs lieux de pratique sur un seul compte (studio + salle paroissiale + visio), plusieurs studios pour les profs nomades, et plusieurs profs sur le même studio avec leurs propres droits. Les présences et les paiements restent attribués à la bonne personne." },
-    { q: 'Application mobile ?', a: "IziSolo est conçu en web responsive : ouvre-le sur n'importe quel téléphone, tablette ou ordi. Le portail élève s'installe comme une app (PWA) sur l'écran d'accueil — comme une vraie app native, sans passer par les stores." },
+    { q: 'Pourquoi pas une app sur l\'App Store ?', a: "Par choix. IziSolo est une PWA (Progressive Web App) : ton studio et le portail élève s'installent sur l'écran d'accueil en un tap, sans téléchargement, sans mise à jour manuelle, sans attendre la validation Apple ou Google. Tu as toujours la dernière version. Tes élèves n'ont rien à installer — ils ouvrent un lien et c'est prêt. Et côté toi, ça marche sur téléphone, tablette et ordi sans rien changer." },
   ];
   const [open, setOpen] = useState(0);
   return (

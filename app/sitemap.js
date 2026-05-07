@@ -8,6 +8,7 @@ const STATIC_PATHS = [
   { path: '/profs-de-pilates',     changeFrequency: 'monthly',  priority: 0.9 },
   { path: '/coachs-bien-etre',     changeFrequency: 'monthly',  priority: 0.9 },
   { path: '/therapeutes',          changeFrequency: 'monthly',  priority: 0.9 },
+  { path: '/calculateur',             changeFrequency: 'monthly',  priority: 0.8 },
   { path: '/login',                changeFrequency: 'yearly',   priority: 0.5 },
   { path: '/register',             changeFrequency: 'yearly',   priority: 0.7 },
   { path: '/legal/cgu',            changeFrequency: 'yearly',   priority: 0.3 },

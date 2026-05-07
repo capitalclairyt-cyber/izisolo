@@ -14,6 +14,7 @@ const PUBLIC_ROUTES = [
   '/p/',                    // portails publics studio (sondages, cours, espace, etc.)
   '/legal/',                // CGU/CGV/Mentions/RGPD
   '/profs-de-yoga', '/profs-de-pilates', '/coachs-bien-etre', '/therapeutes',
+  '/calculateur',                // calculateur de frais (lead magnet)
   '/sitemap.xml', '/robots.txt',
 ];
 
