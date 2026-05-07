@@ -44,14 +44,18 @@ export default function AccountStatusBanner({ profile }) {
     }
   };
 
-  // ─── trial_active : chip slim, discret ─────────────────────────────
+  // ─── trial_active : on n'affiche le bandeau que dans la dernière
+  //     ligne droite (≤ 5 jours restants) pour ne pas marteler la prof
+  //     pendant les 9 premiers jours où elle découvre l'app sereinement.
   if (status === 'trial_active') {
     const trial = getTrialStatus(profile);
+    if (trial.daysLeft > 5) return null; // discret : on attend J-5
+
     const daysWord = trial.daysLeft > 1 ? 'jours' : 'jour';
     return (
       <div className="acc-banner acc-banner--trial-active">
         <Sparkles size={14} className="acc-icon" />
-        <span>
+        <span className="acc-trial-text">
           Essai <strong>Pro</strong> — {trial.daysLeft} {daysWord} restant{trial.daysLeft > 1 ? 's' : ''}
         </span>
         <Link href="/parametres?tab=abonnement" className="acc-cta">
@@ -134,10 +138,15 @@ function BannerStyle() {
         background: var(--brand-light, #faf2eb);
         border: 1px solid var(--brand-200, #e8c8a8);
         color: var(--brand-700, #8c5826);
-        padding: 6px 12px;
+        padding: 6px 14px;
         font-size: 0.8125rem;
         border-radius: 99px;
         display: inline-flex;
+        gap: 12px;          /* espace explicite entre icône, texte et CTA */
+      }
+      .acc-trial-text {
+        white-space: nowrap;
+        margin-right: 4px;  /* espace clair avant le bouton "Choisir mon abo" */
       }
       .acc-banner--expired {
         background: #fff7ed;

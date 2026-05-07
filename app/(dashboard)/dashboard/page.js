@@ -25,7 +25,7 @@ export default async function DashboardPage() {
     supabase.from('cours').select('*, presences(count)').eq('profile_id', user.id).eq('date', today).order('heure'),
     supabase.from('clients').select('*', { count: 'exact', head: true }).eq('profile_id', user.id).in('statut', ['prospect', 'actif', 'fidele']),
     supabase.from('cours').select('*', { count: 'exact', head: true }).eq('profile_id', user.id),
-    supabase.from('abonnements').select('*, clients(nom, prenom)').eq('profile_id', user.id).eq('statut', 'actif'),
+    supabase.from('abonnements').select('*, clients(id, nom, prenom)').eq('profile_id', user.id).eq('statut', 'actif'),
     supabase.from('paiements').select('montant, commission_montant').eq('profile_id', user.id).gte('date', debutMois),
     supabase.from('notifications_eleves').select('id', { count: 'exact', head: true })
       .eq('profile_id', user.id).eq('channel', 'sms').eq('statut', 'sent').gte('sent_at', debutMoisISO),
@@ -56,12 +56,14 @@ export default async function DashboardPage() {
           alertes.push({
             type: 'warning',
             message: `${abo.clients?.prenom || ''} ${abo.clients?.nom || ''} — ${reste} séance${reste > 1 ? 's' : ''} restante${reste > 1 ? 's' : ''}`,
+            client_id: abo.clients?.id || null,
           });
         }
         if (reste <= 0) {
           alertes.push({
             type: 'danger',
             message: `${abo.clients?.prenom || ''} ${abo.clients?.nom || ''} — crédit épuisé`,
+            client_id: abo.clients?.id || null,
           });
         }
       }

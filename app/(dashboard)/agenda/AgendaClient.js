@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import {
   ChevronLeft, ChevronRight, Clock, Plus, CheckCircle2,
   Users, Calendar, List, LayoutGrid, Filter, X, Eye
@@ -27,7 +28,13 @@ const VUES = [
 // Composant principal
 // ============================================
 export default function AgendaClient({ cours: initialCours, profile, initialDate }) {
-  const [vue, setVue]               = useState('semaine');
+  const searchParams = useSearchParams();
+  // Permet aux liens externes (ex: dashboard "Séances aujourd'hui") de
+  // forcer la vue jour via /agenda?vue=jour. Default = semaine.
+  const initialVue = (searchParams.get('vue') === 'jour' || searchParams.get('vue') === 'mois')
+    ? searchParams.get('vue')
+    : 'semaine';
+  const [vue, setVue]               = useState(initialVue);
   const [dateRef, setDateRef]       = useState(() => parseDate(initialDate));
   const [cours, setCours]           = useState(initialCours);
   const [loading, setLoading]       = useState(false);

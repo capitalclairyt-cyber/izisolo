@@ -1,28 +1,37 @@
 'use client';
 
 /**
- * Modal "Inviter mes élèves"
+ * Modal "Inviter une élève / un prospect"
  *
- * Donne au prof 3 façons de partager son portail avec ses élèves :
+ * Donne au prof 2 façons de partager son portail (le SMS arrivera en V2,
+ * pour l'instant grisé) :
  *   1) 📋 Copier le lien   — pour coller dans n'importe quel canal
- *   2) 💬 SMS              — ouvre l'app SMS du téléphone (sms:?body=)
- *   3) ✉️ Email            — ouvre le client mail (mailto:?subject&body=)
+ *   2) ✉️ Email            — ouvre le client mail (mailto:?subject&body=)
  *
- * Les templates intègrent automatiquement le nom du studio + prénom de
- * la prof + lien complet vers /p/{slug}/connexion.
- *
- * Optionnel : sélectionner une élève existante pour pré-remplir
- * son prénom + son email / téléphone dans le template.
+ * 2 modes pour le destinataire :
+ *   - "Nouveau contact" (par défaut) : saisie libre prénom + email d'un
+ *     prospect qui n'est pas encore en CRM. C'est l'usage principal de la
+ *     fonctionnalité.
+ *   - "Élève déjà enregistré" : recherche dans les élèves existants pour
+ *     pré-remplir prénom + email (utile si on veut renvoyer le lien à
+ *     quelqu'un qui n'a pas encore créé son espace).
  */
 
 import { useState, useMemo, useEffect } from 'react';
-import { X, Copy, Check, MessageSquare, Mail, Link as LinkIcon, User, Search } from 'lucide-react';
+import { X, Copy, Check, Mail, Link as LinkIcon, User, Search, UserPlus } from 'lucide-react';
 
 export default function InviteModal({ open, onClose, profile, clients = [] }) {
-  const [tab, setTab] = useState('lien'); // 'lien' | 'sms' | 'email'
+  const [tab, setTab] = useState('lien'); // 'lien' | 'email' (sms désactivé V2)
   const [copied, setCopied] = useState(false);
+
+  // Mode du destinataire : 'new' (saisie libre) | 'existing' (sélection CRM)
+  const [recipientMode, setRecipientMode] = useState('new');
   const [search, setSearch] = useState('');
   const [selectedClient, setSelectedClient] = useState(null);
+
+  // Saisie libre (mode 'new')
+  const [newPrenom, setNewPrenom] = useState('');
+  const [newEmail, setNewEmail] = useState('');
 
   const studioSlug = profile?.studio_slug;
   const studioNom = profile?.studio_nom || 'mon studio';
@@ -33,11 +42,12 @@ export default function InviteModal({ open, onClose, profile, clients = [] }) {
     ? `${window.location.origin}/p/${studioSlug}/connexion`
     : `https://izisolo.fr/p/${studioSlug || 'mon-studio'}/connexion`;
 
-  // Templates — utilisent prenom de l'élève si sélectionnée, sinon générique
-  const prenomCible = selectedClient?.prenom || '';
-  const salutation = prenomCible ? `Salut ${prenomCible}` : 'Coucou';
+  // Prenom + email cibles selon le mode (saisie libre OU élève sélectionnée)
+  const prenomCible = (recipientMode === 'new' ? newPrenom : selectedClient?.prenom) || '';
+  const emailCible  = (recipientMode === 'new' ? newEmail : selectedClient?.email) || '';
 
-  const messageSMS = `${salutation}, j'utilise ${studioNom} sur IziSolo pour gérer les inscriptions et te tenir au courant des cours. Crée ton espace en 30 sec ici : ${portailUrl} (utilise bien cet email pour qu'on soit reliées). Belle journée ${profPrenom ? '— ' + profPrenom : ''}`;
+  // Templates — utilisent prenom du destinataire si saisi, sinon générique
+  const salutation = prenomCible ? `Salut ${prenomCible}` : 'Coucou';
 
   const sujetEmail = `Ton espace ${studioNom}`;
   const corpsEmail = `${salutation},
@@ -72,6 +82,9 @@ Pas de mot de passe à retenir, c'est juste ton email à chaque fois.
       setCopied(false);
       setSearch('');
       setSelectedClient(null);
+      setNewPrenom('');
+      setNewEmail('');
+      setRecipientMode('new');
       setTab('lien');
     }
   }, [open]);
@@ -99,20 +112,8 @@ Pas de mot de passe à retenir, c'est juste ton email à chaque fois.
     }
   };
 
-  // Téléphone valide pour sms: ? on retire les espaces et +33 → 0
-  const formatTelForSms = (tel) => {
-    if (!tel) return '';
-    return tel.replace(/[\s.-]/g, '').replace(/^\+33/, '0');
-  };
-
-  const smsHref = (() => {
-    const tel = formatTelForSms(selectedClient?.telephone);
-    return `sms:${tel}?body=${encodeURIComponent(messageSMS)}`;
-  })();
-
   const mailtoHref = (() => {
-    const to = selectedClient?.email || '';
-    return `mailto:${to}?subject=${encodeURIComponent(sujetEmail)}&body=${encodeURIComponent(corpsEmail)}`;
+    return `mailto:${emailCible}?subject=${encodeURIComponent(sujetEmail)}&body=${encodeURIComponent(corpsEmail)}`;
   })();
 
   return (
@@ -126,72 +127,117 @@ Pas de mot de passe à retenir, c'est juste ton email à chaque fois.
         </div>
 
         <div className="invite-body">
-          {/* === Sélection élève (optionnel) === */}
+          {/* === Choix du destinataire === */}
           <div className="invite-section">
-            <div className="invite-section-title">
-              Élève (optionnel — pré-remplit le message)
+            <div className="invite-section-title">Destinataire</div>
+
+            {/* Toggle Nouveau / Existant */}
+            <div className="invite-recipient-modes">
+              <button
+                type="button"
+                className={`invite-mode-btn ${recipientMode === 'new' ? 'active' : ''}`}
+                onClick={() => { setRecipientMode('new'); setSelectedClient(null); }}
+              >
+                <UserPlus size={14} /> Nouveau contact
+              </button>
+              <button
+                type="button"
+                className={`invite-mode-btn ${recipientMode === 'existing' ? 'active' : ''}`}
+                onClick={() => { setRecipientMode('existing'); setNewPrenom(''); setNewEmail(''); }}
+              >
+                <User size={14} /> Élève existant
+              </button>
             </div>
-            {selectedClient ? (
-              <div className="selected-client">
-                <div className="selected-client-avatar">
-                  {((selectedClient.prenom?.[0] || '') + (selectedClient.nom?.[0] || '')).toUpperCase() || '?'}
-                </div>
-                <div className="selected-client-info">
-                  <div className="selected-client-name">
-                    {[selectedClient.prenom, selectedClient.nom].filter(Boolean).join(' ')}
-                  </div>
-                  <div className="selected-client-meta">
-                    {selectedClient.email || selectedClient.telephone || 'pas de coordonnées'}
-                  </div>
-                </div>
-                <button
-                  className="izi-btn izi-btn-ghost"
-                  onClick={() => setSelectedClient(null)}
-                  type="button"
-                >
-                  Changer
-                </button>
+
+            {/* Mode "Nouveau contact" : saisie libre prénom + email */}
+            {recipientMode === 'new' && (
+              <div className="invite-new-form">
+                <input
+                  className="izi-input"
+                  placeholder="Prénom (optionnel)"
+                  value={newPrenom}
+                  onChange={e => setNewPrenom(e.target.value)}
+                />
+                <input
+                  className="izi-input"
+                  type="email"
+                  placeholder="email@exemple.fr"
+                  value={newEmail}
+                  onChange={e => setNewEmail(e.target.value)}
+                />
+                <p className="invite-help-small">
+                  Cet email sera utilisé comme identifiant côté élève. Pas besoin
+                  qu'iel soit déjà en CRM — l'invitation crée juste le contact.
+                </p>
               </div>
-            ) : (
+            )}
+
+            {/* Mode "Élève existant" : recherche dans le CRM */}
+            {recipientMode === 'existing' && (
               <>
-                <div className="invite-search-wrap">
-                  <Search size={16} className="invite-search-icon" />
-                  <input
-                    className="izi-input invite-search-input"
-                    placeholder="Chercher une élève par nom..."
-                    value={search}
-                    onChange={e => setSearch(e.target.value)}
-                  />
-                </div>
-                {clientsFiltres.length > 0 && (
-                  <div className="invite-clients-list">
-                    {clientsFiltres.map(c => (
-                      <button
-                        key={c.id}
-                        className="invite-client-item"
-                        onClick={() => setSelectedClient(c)}
-                        type="button"
-                      >
-                        <span className="invite-client-name">
-                          {[c.prenom, c.nom].filter(Boolean).join(' ') || c.nom_structure || '?'}
-                        </span>
-                        <span className="invite-client-meta">
-                          {c.email ? c.email : (c.telephone || 'pas de coordonnées')}
-                        </span>
-                      </button>
-                    ))}
+                {selectedClient ? (
+                  <div className="selected-client">
+                    <div className="selected-client-avatar">
+                      {((selectedClient.prenom?.[0] || '') + (selectedClient.nom?.[0] || '')).toUpperCase() || '?'}
+                    </div>
+                    <div className="selected-client-info">
+                      <div className="selected-client-name">
+                        {[selectedClient.prenom, selectedClient.nom].filter(Boolean).join(' ')}
+                      </div>
+                      <div className="selected-client-meta">
+                        {selectedClient.email || selectedClient.telephone || 'pas de coordonnées'}
+                      </div>
+                    </div>
+                    <button
+                      className="izi-btn izi-btn-ghost"
+                      onClick={() => setSelectedClient(null)}
+                      type="button"
+                    >
+                      Changer
+                    </button>
                   </div>
-                )}
-                {!search && clients.length === 0 && (
-                  <p className="invite-empty">
-                    <User size={14} /> Pas encore d'élève dans ton CRM. Tu peux quand même copier le lien et le partager.
-                  </p>
+                ) : (
+                  <>
+                    <div className="invite-search-wrap">
+                      <Search size={16} className="invite-search-icon" />
+                      <input
+                        className="izi-input invite-search-input"
+                        placeholder="Chercher une élève par nom..."
+                        value={search}
+                        onChange={e => setSearch(e.target.value)}
+                      />
+                    </div>
+                    {clientsFiltres.length > 0 && (
+                      <div className="invite-clients-list">
+                        {clientsFiltres.map(c => (
+                          <button
+                            key={c.id}
+                            className="invite-client-item"
+                            onClick={() => setSelectedClient(c)}
+                            type="button"
+                          >
+                            <span className="invite-client-name">
+                              {[c.prenom, c.nom].filter(Boolean).join(' ') || c.nom_structure || '?'}
+                            </span>
+                            <span className="invite-client-meta">
+                              {c.email ? c.email : (c.telephone || 'pas de coordonnées')}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    {!search && clients.length === 0 && (
+                      <p className="invite-empty">
+                        <User size={14} /> Pas encore d'élève dans ton CRM. Bascule sur "Nouveau contact".
+                      </p>
+                    )}
+                  </>
                 )}
               </>
             )}
           </div>
 
-          {/* === Tabs === */}
+          {/* === Tabs === SMS désactivé V2 (grisé avec badge "Bientôt") */}
           <div className="invite-tabs">
             <button
               className={`invite-tab ${tab === 'lien' ? 'active' : ''}`}
@@ -201,18 +247,19 @@ Pas de mot de passe à retenir, c'est juste ton email à chaque fois.
               <LinkIcon size={14} /> Lien
             </button>
             <button
-              className={`invite-tab ${tab === 'sms' ? 'active' : ''}`}
-              onClick={() => setTab('sms')}
-              type="button"
-            >
-              <MessageSquare size={14} /> SMS
-            </button>
-            <button
               className={`invite-tab ${tab === 'email' ? 'active' : ''}`}
               onClick={() => setTab('email')}
               type="button"
             >
               <Mail size={14} /> Email
+            </button>
+            <button
+              className="invite-tab invite-tab-disabled"
+              disabled
+              type="button"
+              title="SMS arrivera dans une prochaine version"
+            >
+              SMS <span className="invite-soon-badge">Bientôt</span>
             </button>
           </div>
 
@@ -235,36 +282,11 @@ Pas de mot de passe à retenir, c'est juste ton email à chaque fois.
             </div>
           )}
 
-          {tab === 'sms' && (
-            <div className="invite-tab-content">
-              <p className="invite-help">
-                Ouvre l'application SMS de ton téléphone avec le message déjà rédigé.
-                {!selectedClient?.telephone && ' Choisis une élève au-dessus pour pré-remplir son numéro.'}
-              </p>
-              <div className="invite-preview">{messageSMS}</div>
-              <div className="invite-actions-row">
-                <button
-                  className="izi-btn izi-btn-secondary"
-                  onClick={() => handleCopy(messageSMS)}
-                  type="button"
-                >
-                  {copied ? <><Check size={16} /> Copié</> : <><Copy size={16} /> Copier</>}
-                </button>
-                <a
-                  href={smsHref}
-                  className="izi-btn izi-btn-primary"
-                >
-                  <MessageSquare size={16} /> Envoyer SMS
-                </a>
-              </div>
-            </div>
-          )}
-
           {tab === 'email' && (
             <div className="invite-tab-content">
               <p className="invite-help">
                 Ouvre ton client email avec le message déjà rédigé.
-                {!selectedClient?.email && ' Choisis une élève au-dessus pour pré-remplir son adresse.'}
+                {!emailCible && ' Saisis un email au-dessus pour pré-remplir le destinataire.'}
               </p>
               <div className="invite-email-subject">
                 <strong>Objet :</strong> {sujetEmail}
@@ -468,6 +490,57 @@ Pas de mot de passe à retenir, c'est juste ton email à chaque fois.
           justify-content: center;
         }
         .invite-action-btn.copied { background: #4ade80; }
+
+        /* Toggle modes destinataire */
+        .invite-recipient-modes {
+          display: flex; gap: 6px;
+          background: var(--cream, #faf8f5);
+          padding: 3px; border-radius: 99px;
+          border: 1px solid var(--border, #e5e0d8);
+        }
+        .invite-mode-btn {
+          flex: 1;
+          display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+          padding: 8px 14px;
+          background: none; border: none;
+          font-size: 0.8125rem; font-weight: 500;
+          color: var(--text-muted, #888);
+          cursor: pointer;
+          border-radius: 99px;
+          transition: all var(--transition-fast);
+          font-family: inherit;
+        }
+        .invite-mode-btn.active {
+          background: white;
+          color: var(--brand-700, #8c5826);
+          box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+          font-weight: 600;
+        }
+        .invite-new-form {
+          display: flex; flex-direction: column; gap: 8px;
+        }
+        .invite-help-small {
+          font-size: 0.75rem; color: var(--text-muted, #888);
+          margin: 4px 0 0; line-height: 1.5;
+        }
+
+        /* Tab désactivé V2 (SMS) */
+        .invite-tab-disabled {
+          opacity: 0.45;
+          cursor: not-allowed !important;
+        }
+        .invite-tab-disabled:hover { color: var(--text-muted) !important; }
+        .invite-soon-badge {
+          margin-left: 6px;
+          padding: 1px 6px;
+          background: var(--brand, #b87333);
+          color: white;
+          border-radius: 99px;
+          font-size: 0.6rem;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.04em;
+        }
       `}</style>
     </div>
   );

@@ -127,15 +127,32 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
         </div>
       )}
 
-      {/* Bandeau alertes */}
+      {/* Bandeau alertes — chaque alerte est un Link vers la fiche élève
+          si client_id est présent (ouvert directement la fiche, pas la
+          liste — fix demandé 2026-05-06). */}
       {alertes.length > 0 && (
         <div className="dash-alertes animate-slide-up">
-          {alertes.slice(0, 3).map((a, i) => (
-            <div key={i} className={`alerte-item alerte-${a.type}`}>
-              <AlertTriangle size={16} />
-              <span>{a.message}</span>
-            </div>
-          ))}
+          {alertes.slice(0, 3).map((a, i) => {
+            const inner = (
+              <>
+                <AlertTriangle size={16} />
+                <span>{a.message}</span>
+              </>
+            );
+            return a.client_id ? (
+              <Link
+                key={i}
+                href={`/clients/${a.client_id}`}
+                className={`alerte-item alerte-${a.type} alerte-link`}
+              >
+                {inner}
+              </Link>
+            ) : (
+              <div key={i} className={`alerte-item alerte-${a.type}`}>
+                {inner}
+              </div>
+            );
+          })}
           {alertes.length > 3 && (
             <Link href="/clients" className="alerte-more">
               +{alertes.length - 3} autres alertes
@@ -161,8 +178,8 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
           </div>
         </Link>
 
-        {/* Agenda — séances aujourd'hui */}
-        <Link href="/agenda" className="bento-cell bento-cell--agenda">
+        {/* Agenda — séances aujourd'hui → ouvre directement la VUE JOUR */}
+        <Link href="/agenda?vue=jour" className="bento-cell bento-cell--agenda">
           <div className="bento-icon"><CalendarDays size={20} /></div>
           <div>
             <div className="bento-value">{coursDuJour.length}</div>
@@ -170,12 +187,16 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
           </div>
         </Link>
 
-        {/* Élèves actifs */}
+        {/* Élèves — compteur fiable. On affiche TOUJOURS le total des
+            élèves actifs (nbClients) pour ne pas confondre avec le compte
+            potentiellement bug du select count(*) sur presences (cf.
+            audit 2026-05-06 : "4 inscrits aujourd'hui" était en fait le
+            count total des présences, pas du jour). */}
         <Link href="/clients" className="bento-cell bento-cell--eleves">
           <div className="bento-icon"><Users size={20} /></div>
           <div>
-            <div className="bento-value">{inscritsAujourdhui || nbClients}</div>
-            <div className="bento-label">{coursDuJour.length > 0 ? 'Inscrits aujourd\'hui' : (vocab.Clients || 'Élèves')}</div>
+            <div className="bento-value">{nbClients}</div>
+            <div className="bento-label">{vocab.Clients || 'Élèves'}</div>
           </div>
         </Link>
 
@@ -188,15 +209,31 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
           </div>
         </Link>
 
-        {/* Portail public */}
+        {/* Portail public — clic = ouvre le portail dans un nouvel onglet
+            (action principale, ce qu'on attend intuitivement). Bouton
+            "Copier le lien" en secondaire (icône en haut à droite). */}
         {studioSlug && portalPath && (
-          <button onClick={copyPortalUrl} className="bento-cell bento-cell--portal" type="button">
+          <a
+            href={portalPath}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bento-cell bento-cell--portal"
+          >
             <div className="bento-icon"><Share2 size={20} /></div>
             <div>
               <div className="bento-value bento-value--small">Portail</div>
               <div className="bento-label bento-portal-url">{portalPath}</div>
             </div>
-          </button>
+            <button
+              type="button"
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); copyPortalUrl(); }}
+              className="bento-portal-copy"
+              title="Copier le lien"
+              aria-label="Copier le lien du portail"
+            >
+              <Copy size={14} />
+            </button>
+          </a>
         )}
 
         {/* Bandeau alerte (full width bottom) — si au moins une alerte */}
@@ -420,6 +457,15 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
           color: #1e40af;
           border: 1px solid #dbeafe;
         }
+        .alerte-link {
+          text-decoration: none;
+          cursor: pointer;
+          transition: transform 0.12s ease, box-shadow 0.12s ease;
+        }
+        .alerte-link:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
         .alerte-more {
           font-size: 0.75rem;
           color: var(--brand);
@@ -494,6 +540,21 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
           font-size: 0.6875rem;
           overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
           max-width: 100%;
+        }
+        .bento-cell--portal { position: relative; }
+        .bento-portal-copy {
+          position: absolute; top: 8px; right: 8px;
+          background: oklch(1 0 0 / 0.7);
+          border: 1px solid oklch(from var(--brand) l c h / 0.25);
+          color: var(--brand-700);
+          width: 26px; height: 26px;
+          border-radius: 50%;
+          display: flex; align-items: center; justify-content: center;
+          cursor: pointer;
+          transition: background 0.15s ease;
+        }
+        .bento-portal-copy:hover {
+          background: white;
         }
 
         /* Alerte : pleine largeur bas, persimmon hot (signal action) */
