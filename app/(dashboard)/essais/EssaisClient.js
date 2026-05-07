@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Sparkles, Calendar, Clock, MapPin, Mail, Phone, Check, X, Loader, AlertCircle, Settings as SettingsIcon, MessageSquare } from 'lucide-react';
 import { useToast } from '@/components/ui/ToastProvider';
 import { toneForCours } from '@/lib/tones';
+import Pagination, { usePagination } from '@/components/ui/Pagination';
 
 const STATUT_CONFIG = {
   en_attente:  { label: 'En attente',  tone: 'sand'     },
@@ -66,6 +67,9 @@ export default function EssaisClient({ profile, demandes: initialDemandes }) {
   const filtered = filterStatut === 'all'
     ? demandes
     : demandes.filter(d => d.statut === filterStatut);
+
+  // Pagination 8/page
+  const { paginated, currentPage, totalPages, setPage } = usePagination(filtered, 8);
 
   const counts = {
     en_attente: demandes.filter(d => d.statut === 'en_attente').length,
@@ -141,7 +145,7 @@ export default function EssaisClient({ profile, demandes: initialDemandes }) {
         </div>
       ) : (
         <div className="essais-list">
-          {filtered.map(d => {
+          {paginated.map(d => {
             const cfg = STATUT_CONFIG[d.statut] || STATUT_CONFIG.en_attente;
             const tone = d.cours ? toneForCours(d.cours.type_cours) : 'sand';
             const isPending = pendingId === d.id;
@@ -251,6 +255,13 @@ export default function EssaisClient({ profile, demandes: initialDemandes }) {
           })}
         </div>
       )}
+
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onChange={setPage}
+        label="demandes d'essai"
+      />
 
       <style jsx>{`
         .essais-page { padding-bottom: 40px; }

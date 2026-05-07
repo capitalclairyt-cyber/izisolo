@@ -1,7 +1,8 @@
 import { createServerClient } from '@/lib/supabase-server';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { Plus, BarChart3, Calendar, ChevronRight, ExternalLink } from 'lucide-react';
+import { Plus, BarChart3 } from 'lucide-react';
+import SondagesList from './SondagesList';
 
 export const metadata = { title: 'Sondage planning — sondages élèves' };
 
@@ -48,36 +49,7 @@ export default async function SondagesPage() {
           </Link>
         </div>
       ) : (
-        <div className="sp-list">
-          {sondagesAvecStats.map(s => {
-            const closed = !s.actif || (s.date_fin && s.date_fin < new Date().toISOString().slice(0, 10));
-            return (
-              <Link key={s.id} href={`/sondages/${s.id}`} className={`sp-card izi-card izi-card-interactive ${closed ? 'closed' : ''}`}>
-                <div className="sp-card-main">
-                  <div className="sp-card-title">{s.titre}</div>
-                  <div className="sp-card-meta">
-                    <Calendar size={12} />
-                    {s.date_fin
-                      ? `Jusqu'au ${new Date(s.date_fin).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}`
-                      : 'Sans date limite'}
-                    {' · '}
-                    {s.nbCreneaux} créneau{s.nbCreneaux > 1 ? 'x' : ''}
-                  </div>
-                </div>
-                <div className="sp-card-stats">
-                  <div className="sp-stat">
-                    <strong>{s.nbReponses}</strong>
-                    <span>réponse{s.nbReponses > 1 ? 's' : ''}</span>
-                  </div>
-                  {closed
-                    ? <span className="sp-badge closed">Clos</span>
-                    : <span className="sp-badge active">Actif</span>}
-                  <ChevronRight size={16} style={{ color: 'var(--text-muted)' }} />
-                </div>
-              </Link>
-            );
-          })}
-        </div>
+        <SondagesList sondages={sondagesAvecStats} />
       )}
 
       <style>{`

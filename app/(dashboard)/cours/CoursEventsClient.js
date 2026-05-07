@@ -13,6 +13,7 @@ import { normalizeTypesCours } from '@/lib/utils';
 import { parseDate } from '@/lib/dates';
 import { useToast } from '@/components/ui/ToastProvider';
 import { toneForCours } from '@/lib/tones';
+import Pagination, { usePagination } from '@/components/ui/Pagination';
 
 // ── Libellés fréquence ──────────────────────────────
 const FREQ_LABELS = {
@@ -224,13 +225,7 @@ export default function CoursEventsClient({
                 href="/cours/nouveau"
               />
             ) : (
-              ponctuels.map(cours => (
-                <PonctuelCard
-                  key={cours.id}
-                  cours={cours}
-                  lieuxMap={lieuxMap}
-                />
-              ))
+              <PonctuelsList ponctuels={ponctuels} lieuxMap={lieuxMap} />
             )}
           </div>
         )}
@@ -239,6 +234,26 @@ export default function CoursEventsClient({
 
       <CeStyles />
     </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════
+// Liste paginée des événements ponctuels (8/page)
+// ═══════════════════════════════════════════════════
+function PonctuelsList({ ponctuels, lieuxMap }) {
+  const { paginated, currentPage, totalPages, setPage } = usePagination(ponctuels, 8);
+  return (
+    <>
+      {paginated.map(cours => (
+        <PonctuelCard key={cours.id} cours={cours} lieuxMap={lieuxMap} />
+      ))}
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onChange={setPage}
+        label="événements"
+      />
+    </>
   );
 }
 

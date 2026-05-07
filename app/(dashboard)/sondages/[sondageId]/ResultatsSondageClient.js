@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase';
 import { useToast } from '@/components/ui/ToastProvider';
+import Pagination, { usePagination } from '@/components/ui/Pagination';
 
 const JOURS_LABEL = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
 const JOURS_LONG = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
@@ -71,6 +72,13 @@ export default function ResultatsSondageClient({ sondage: initialSondage, crenea
     });
     return out;
   }, [creneaux]);
+
+  const {
+    paginated: commentairesPagines,
+    currentPage: commentairesPage,
+    totalPages: commentairesTotalPages,
+    setPage: setCommentairesPage,
+  } = usePagination(commentaires, 8);
 
   const copyLink = async () => {
     try {
@@ -223,15 +231,23 @@ export default function ResultatsSondageClient({ sondage: initialSondage, crenea
             </span>
           </button>
           {showCommentaires && (
-            <div className="rs-comments-list">
-              {commentaires.map((c, i) => (
-                <div key={i} className="rs-comment">
-                  <div className="rs-comment-author">{c.prenom || c.email || 'Anonyme'}</div>
-                  <div className="rs-comment-creneau">{c.creneauLabel}</div>
-                  <div className="rs-comment-text">« {c.commentaire} »</div>
-                </div>
-              ))}
-            </div>
+            <>
+              <div className="rs-comments-list">
+                {commentairesPagines.map((c, i) => (
+                  <div key={i} className="rs-comment">
+                    <div className="rs-comment-author">{c.prenom || c.email || 'Anonyme'}</div>
+                    <div className="rs-comment-creneau">{c.creneauLabel}</div>
+                    <div className="rs-comment-text">« {c.commentaire} »</div>
+                  </div>
+                ))}
+              </div>
+              <Pagination
+                currentPage={commentairesPage}
+                totalPages={commentairesTotalPages}
+                onChange={setCommentairesPage}
+                label="commentaires"
+              />
+            </>
           )}
         </div>
       )}

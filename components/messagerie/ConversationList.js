@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Loader2, Users, User, Megaphone, ChevronDown, ChevronRight, Eye } from 'lucide-react';
+import Pagination, { usePagination } from '@/components/ui/Pagination';
 
 /**
  * ConversationList — liste des conversations du viewer (pro ou élève).
@@ -84,6 +85,8 @@ export default function ConversationList({ onSelect, selectedId, onCounts }) {
     return list.sort((a, b) => (b.ts || '').localeCompare(a.ts || ''));
   }, [conversations, viewer]);
 
+  const { paginated, currentPage, totalPages, setPage } = usePagination(items, 8);
+
   if (loading) {
     return (
       <div className="cl-loading">
@@ -128,7 +131,7 @@ export default function ConversationList({ onSelect, selectedId, onCounts }) {
 
   return (
     <div className="conv-list">
-      {items.map(item => {
+      {paginated.map(item => {
         if (item.kind === 'group') {
           const g = item.data;
           const expanded = expandedGroups.has(g.batch_id);
@@ -223,6 +226,13 @@ export default function ConversationList({ onSelect, selectedId, onCounts }) {
           </button>
         );
       })}
+
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onChange={setPage}
+        label="conversations"
+      />
 
       <style>{`
         .conv-list { display: flex; flex-direction: column; }
