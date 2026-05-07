@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Save, User, Building2, MapPin, Plus, Trash2, Sparkles } from 'lucide-react';
 import Link from 'next/link';
@@ -43,6 +43,32 @@ export default function EditClientClient({ client, lieux: lieuxInitiaux }) {
 
   // Décompose l'adresse pro
   const adresseDecomposee = splitAdresse(client.adresse);
+
+  // Config des champs perso configurables (cf. /parametres)
+  const [fieldsConfig, setFieldsConfig] = useState({
+    predefined: { date_naissance: true, adresse: false, niveau: true, source: true, notes: true },
+    custom: [],
+  });
+  const [customValues, setCustomValues] = useState(client.custom_fields || {});
+  const [adressePostale, setAdressePostale] = useState(client.adresse_postale || '');
+
+  // Charge la config au mount
+  useEffect(() => {
+    (async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await supabase
+        .from('profiles')
+        .select('client_fields_config')
+        .eq('id', user.id)
+        .single();
+      if (data?.client_fields_config) setFieldsConfig({
+        predefined: { date_naissance: true, adresse: false, niveau: true, source: true, notes: true, ...(data.client_fields_config.predefined || {}) },
+        custom: Array.isArray(data.client_fields_config.custom) ? data.client_fields_config.custom : [],
+      });
+    })();
+  }, []);
 
   const [form, setForm] = useState({
     prenom: client.prenom || '',
@@ -152,6 +178,10 @@ export default function EditClientClient({ client, lieux: lieuxInitiaux }) {
         payload.niveau = form.niveau || null;
         payload.source = form.source || null;
         payload.date_naissance = form.date_naissance || null;
+        payload.adresse_postale = adressePostale.trim() || null;
+        payload.custom_fields = customValues && Object.keys(customValues).length > 0
+          ? customValues
+          : null;
         payload.nom_structure = null;
         payload.siret = null;
       }
@@ -378,23 +408,40 @@ export default function EditClientClient({ client, lieux: lieuxInitiaux }) {
               placeholder="06 12 34 56 78"
             />
 
-            <div className="form-group">
-              <label className="form-label">
-                Date de naissance{' '}
-                <span style={{ fontWeight: 400, color: 'var(--text-muted)', fontSize: '0.8125rem' }}>
-                  — pour envoyer un mot doux le jour J 🎂
-                </span>
-              </label>
-              <input
-                className="izi-input"
-                type="date"
-                value={form.date_naissance}
-                onChange={handleChange('date_naissance')}
-                max={new Date().toISOString().split('T')[0]}
-              />
-            </div>
+            {fieldsConfig.predefined.date_naissance && (
+              <div className="form-group">
+                <label className="form-label">
+                  Date de naissance{' '}
+                  <span style={{ fontWeight: 400, color: 'var(--text-muted)', fontSize: '0.8125rem' }}>
+                    — pour envoyer un mot doux le jour J 🎂
+                  </span>
+                </label>
+                <input
+                  className="izi-input"
+                  type="date"
+                  value={form.date_naissance}
+                  onChange={handleChange('date_naissance')}
+                  max={new Date().toISOString().split('T')[0]}
+                />
+              </div>
+            )}
 
+            {fieldsConfig.predefined.adresse && (
+              <div className="form-group">
+                <label className="form-label">Adresse postale</label>
+                <textarea
+                  className="izi-input"
+                  rows={2}
+                  value={adressePostale}
+                  onChange={e => setAdressePostale(e.target.value)}
+                  placeholder="Rue, code postal, ville"
+                />
+              </div>
+            )}
+
+            {(fieldsConfig.predefined.niveau || fieldsConfig.predefined.source) && (
             <div className="form-row">
+              {fieldsConfig.predefined.niveau && (
               <div className="form-group">
                 <label className="form-label">Niveau</label>
                 <select className="izi-input" value={form.niveau} onChange={handleChange('niveau')}>
@@ -404,6 +451,8 @@ export default function EditClientClient({ client, lieux: lieuxInitiaux }) {
                   <option value="Avancé">Avancé</option>
                 </select>
               </div>
+              )}
+              {fieldsConfig.predefined.source && (
               <div className="form-group">
                 <label className="form-label">Source</label>
                 <select className="izi-input" value={form.source} onChange={handleChange('source')}>
@@ -415,7 +464,45 @@ export default function EditClientClient({ client, lieux: lieuxInitiaux }) {
                   <option value="Autre">Autre</option>
                 </select>
               </div>
+              )}
             </div>
+            )}
+
+            {/* Champs perso configurés par la prof */}
+            {fieldsConfig.custom.length > 0 && (
+              <>
+                <div className="section-label" style={{ marginTop: 8 }}>Infos perso</div>
+                {fieldsConfig.custom.map(cf => (
+                  <div key={cf.id} className="form-group">
+                    <label className="form-label">{cf.label || '(sans nom)'}</label>
+                    {cf.type === 'textarea' ? (
+                      <textarea
+                        className="izi-input"
+                        rows={2}
+                        value={customValues[cf.id] || ''}
+                        onChange={e => setCustomValues(prev => ({ ...prev, [cf.id]: e.target.value }))}
+                      />
+                    ) : cf.type === 'select' ? (
+                      <select
+                        className="izi-input"
+                        value={customValues[cf.id] || ''}
+                        onChange={e => setCustomValues(prev => ({ ...prev, [cf.id]: e.target.value }))}
+                      >
+                        <option value="">-- Choisir --</option>
+                        {(cf.options || []).map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                      </select>
+                    ) : (
+                      <input
+                        className="izi-input"
+                        type={cf.type === 'number' ? 'number' : cf.type === 'date' ? 'date' : 'text'}
+                        value={customValues[cf.id] || ''}
+                        onChange={e => setCustomValues(prev => ({ ...prev, [cf.id]: e.target.value }))}
+                      />
+                    )}
+                  </div>
+                ))}
+              </>
+            )}
           </>
         )}
 

@@ -463,6 +463,35 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
 
         {client.notes && <p className="profile-notes">{client.notes}</p>}
 
+        {/* Infos personnelles enrichies (v40 — date naissance + adresse + champs perso) */}
+        {!isPro && (client.date_naissance || client.adresse_postale || (client.custom_fields && Object.keys(client.custom_fields).length > 0)) && (
+          <div className="profile-extras">
+            {client.date_naissance && (
+              <div className="extra-item">
+                <span className="extra-label">🎂 Anniversaire</span>
+                <span className="extra-value">{formatDate(client.date_naissance)}</span>
+              </div>
+            )}
+            {client.adresse_postale && (
+              <div className="extra-item">
+                <span className="extra-label">📍 Adresse</span>
+                <span className="extra-value">{client.adresse_postale}</span>
+              </div>
+            )}
+            {/* Champs perso : on lit les labels depuis profile.client_fields_config */}
+            {client.custom_fields && Array.isArray(profile?.client_fields_config?.custom) &&
+              profile.client_fields_config.custom
+                .filter(cf => client.custom_fields[cf.id] !== undefined && client.custom_fields[cf.id] !== '')
+                .map(cf => (
+                  <div key={cf.id} className="extra-item">
+                    <span className="extra-label">{cf.label || '(champ)'}</span>
+                    <span className="extra-value">{client.custom_fields[cf.id]}</span>
+                  </div>
+                ))
+            }
+          </div>
+        )}
+
         <div className="profile-meta">
           {!isPro && client.niveau && <span className="meta-item">Niveau : {client.niveau}</span>}
           {!isPro && client.source && <span className="meta-item">Via : {client.source}</span>}
@@ -752,6 +781,28 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
         .contact-btn-mail { background: #eff6ff; color: #1d4ed8; }
         .profile-notes { font-size: 0.875rem; color: var(--text-secondary); font-style: italic; padding: 8px 12px; background: var(--cream-dark); border-radius: var(--radius-sm); max-width: 100%; }
         .profile-meta { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; font-size: 0.75rem; color: var(--text-muted); }
+
+        /* Infos enrichies : date naissance + adresse + champs perso (v40) */
+        .profile-extras {
+          display: flex; flex-direction: column; gap: 6px;
+          width: 100%; max-width: 480px;
+          margin-top: 8px;
+          padding: 10px 14px;
+          background: var(--cream, #faf8f5);
+          border-radius: var(--radius-sm);
+          font-size: 0.8125rem;
+        }
+        .extra-item {
+          display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline;
+        }
+        .extra-label {
+          font-weight: 600; color: var(--text-secondary);
+          flex-shrink: 0;
+        }
+        .extra-value {
+          color: var(--text-primary);
+          word-break: break-word;
+        }
 
         /* tabs-bar / tab-btn → globals.css */
 

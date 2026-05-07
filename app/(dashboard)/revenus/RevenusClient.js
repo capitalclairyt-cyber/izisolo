@@ -69,6 +69,8 @@ export default function RevenusClient({ paiements: initialPaiements }) {
   const [encaisserMode, setEncaisserMode] = useState('especes');
   const [encaisserDate, setEncaisserDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [encaisserSubmitting, setEncaisserSubmitting] = useState(false);
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE_PAY = 50;
 
   // ── Filtres ────────────────────────────────────────────
   const periodeFilt = useMemo(
@@ -83,6 +85,16 @@ export default function RevenusClient({ paiements: initialPaiements }) {
       return true;
     });
   }, [periodeFilt, filterMode, filterStatut]);
+
+  // Pagination — 50 paiements par page
+  const totalPagesPay = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE_PAY));
+  const currentPagePay = Math.min(page, totalPagesPay);
+  const paginatedPay = useMemo(
+    () => filtered.slice((currentPagePay - 1) * PAGE_SIZE_PAY, currentPagePay * PAGE_SIZE_PAY),
+    [filtered, currentPagePay]
+  );
+  // Reset à la page 1 quand les filtres changent
+  useMemo(() => { setPage(1); }, [periode, filterMode, filterStatut]);
 
   // ── Stats ──────────────────────────────────────────────
   const stats = useMemo(() => {
@@ -297,7 +309,7 @@ export default function RevenusClient({ paiements: initialPaiements }) {
           </div>
         ) : (
           <div className="paiements-list">
-            {filtered.map(p => {
+            {paginatedPay.map(p => {
               const sInfo = STATUTS_PAIEMENT[p.statut] || {};
               const canEncaisser = p.statut === 'pending' || p.statut === 'unpaid' || p.statut === 'cb';
               return (
@@ -332,6 +344,31 @@ export default function RevenusClient({ paiements: initialPaiements }) {
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {/* Pagination — visible si > 50 paiements */}
+        {totalPagesPay > 1 && (
+          <div className="pay-pagination">
+            <button
+              type="button"
+              className="pay-pagination-btn"
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={currentPagePay === 1}
+            >
+              ← Précédent
+            </button>
+            <span className="pay-pagination-info">
+              Page {currentPagePay} / {totalPagesPay}
+            </span>
+            <button
+              type="button"
+              className="pay-pagination-btn"
+              onClick={() => setPage(p => Math.min(totalPagesPay, p + 1))}
+              disabled={currentPagePay === totalPagesPay}
+            >
+              Suivant →
+            </button>
           </div>
         )}
       </div>
@@ -482,6 +519,34 @@ export default function RevenusClient({ paiements: initialPaiements }) {
           flex-shrink: 0; min-width: 90px;     /* assure qu'on a la place pour 999,99 € */
         }
         .paiement-montant { font-weight: 700; font-size: 1rem; white-space: nowrap; }
+
+        .pay-pagination {
+          display: flex; align-items: center; justify-content: space-between;
+          gap: 12px; margin-top: 16px; padding: 12px 0;
+        }
+        .pay-pagination-btn {
+          padding: 8px 14px;
+          background: white;
+          border: 1px solid var(--border);
+          border-radius: 8px;
+          font-size: 0.875rem; font-weight: 500;
+          color: var(--text-primary);
+          cursor: pointer;
+          transition: all 0.15s ease;
+          font-family: inherit;
+        }
+        .pay-pagination-btn:hover:not(:disabled) {
+          border-color: var(--brand);
+          color: var(--brand-700);
+        }
+        .pay-pagination-btn:disabled {
+          opacity: 0.4; cursor: not-allowed;
+        }
+        .pay-pagination-info {
+          font-size: 0.8125rem;
+          color: var(--text-muted);
+          font-family: var(--font-geist-mono), ui-monospace, monospace;
+        }
 
         .encaisser-btn {
           display: inline-flex; align-items: center; gap: 4px;
