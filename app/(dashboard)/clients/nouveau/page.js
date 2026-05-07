@@ -29,6 +29,7 @@ export default function NouveauClient() {
 
   const [form, setForm] = useState({
     prenom: '', nom: '', email: '', telephone: '',
+    date_naissance: '',  // pour les rappels d'anniversaire (notif J-1)
     niveau: '', source: '', notes: '',
     // Pro
     type_client: 'association',
@@ -152,6 +153,9 @@ export default function NouveauClient() {
         payload.prenom = form.prenom.trim();
         payload.niveau = form.niveau || null;
         payload.source = form.source || null;
+        // Date de naissance : pour permettre les notifications anniversaire J-1
+        // (cron quotidien qui génère les notifs anniversaire)
+        payload.date_naissance = form.date_naissance || null;
       }
 
       const { data: client, error } = await supabase
@@ -377,6 +381,22 @@ export default function NouveauClient() {
               inputMode="tel"
               placeholder="06 12 34 56 78"
             />
+
+            <div className="form-group">
+              <label className="form-label">
+                Date de naissance{' '}
+                <span style={{ fontWeight: 400, color: 'var(--text-muted)', fontSize: '0.8125rem' }}>
+                  — pour envoyer un mot doux le jour J 🎂
+                </span>
+              </label>
+              <input
+                className="izi-input"
+                type="date"
+                value={form.date_naissance}
+                onChange={handleChange('date_naissance')}
+                max={new Date().toISOString().split('T')[0]}
+              />
+            </div>
 
             <div className="form-row">
               <div className="form-group">

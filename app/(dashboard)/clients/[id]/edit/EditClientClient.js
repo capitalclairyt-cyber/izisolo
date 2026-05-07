@@ -49,6 +49,7 @@ export default function EditClientClient({ client, lieux: lieuxInitiaux }) {
     nom: client.nom || '',
     email: client.email || '',
     telephone: client.telephone || '',
+    date_naissance: client.date_naissance || '',
     niveau: client.niveau || '',
     source: client.source || '',
     notes: client.notes || '',
@@ -150,6 +151,7 @@ export default function EditClientClient({ client, lieux: lieuxInitiaux }) {
         payload.prenom = form.prenom.trim();
         payload.niveau = form.niveau || null;
         payload.source = form.source || null;
+        payload.date_naissance = form.date_naissance || null;
         payload.nom_structure = null;
         payload.siret = null;
       }
@@ -375,6 +377,22 @@ export default function EditClientClient({ client, lieux: lieuxInitiaux }) {
               inputMode="tel"
               placeholder="06 12 34 56 78"
             />
+
+            <div className="form-group">
+              <label className="form-label">
+                Date de naissance{' '}
+                <span style={{ fontWeight: 400, color: 'var(--text-muted)', fontSize: '0.8125rem' }}>
+                  — pour envoyer un mot doux le jour J 🎂
+                </span>
+              </label>
+              <input
+                className="izi-input"
+                type="date"
+                value={form.date_naissance}
+                onChange={handleChange('date_naissance')}
+                max={new Date().toISOString().split('T')[0]}
+              />
+            </div>
 
             <div className="form-row">
               <div className="form-group">

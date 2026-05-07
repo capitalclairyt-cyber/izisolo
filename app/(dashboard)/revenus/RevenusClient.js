@@ -477,8 +477,11 @@ export default function RevenusClient({ paiements: initialPaiements }) {
         .paiement-info { flex: 1; min-width: 0; }
         .paiement-nom { font-weight: 600; font-size: 0.9375rem; }
         .paiement-meta { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
-        .paiement-right { text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
-        .paiement-montant { font-weight: 700; font-size: 1rem; }
+        .paiement-right {
+          text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 4px;
+          flex-shrink: 0; min-width: 90px;     /* assure qu'on a la place pour 999,99 € */
+        }
+        .paiement-montant { font-weight: 700; font-size: 1rem; white-space: nowrap; }
 
         .encaisser-btn {
           display: inline-flex; align-items: center; gap: 4px;
