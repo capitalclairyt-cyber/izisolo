@@ -268,6 +268,52 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
   const [encaisserNotes, setEncaisserNotes] = useState('');
   const [encaisserLoading, setEncaisserLoading] = useState(false);
 
+  const [editPayModal, setEditPayModal] = useState(null);
+  const [editPayForm, setEditPayForm] = useState({});
+  const [editPaySubmitting, setEditPaySubmitting] = useState(false);
+
+  const openEditPay = (p) => {
+    setEditPayModal(p);
+    setEditPayForm({
+      montant: String(p.montant),
+      mode: p.mode || 'especes',
+      date: p.date || '',
+      notes: p.notes || '',
+      statut: p.statut || 'pending',
+    });
+  };
+
+  const submitEditPay = async () => {
+    if (!editPayModal || editPaySubmitting) return;
+    setEditPaySubmitting(true);
+    try {
+      const res = await fetch(`/api/paiements/${editPayModal.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          montant: parseFloat(editPayForm.montant),
+          mode: editPayForm.mode,
+          date: editPayForm.date,
+          notes: editPayForm.notes || null,
+          statut: editPayForm.statut,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Erreur');
+      setPaiements(prev => prev.map(p =>
+        p.id === editPayModal.id
+          ? { ...p, montant: parseFloat(editPayForm.montant), mode: editPayForm.mode, date: editPayForm.date, notes: editPayForm.notes, statut: editPayForm.statut }
+          : p
+      ));
+      toast.success('Paiement modifié');
+      setEditPayModal(null);
+    } catch (e) {
+      toast.error(e.message);
+    } finally {
+      setEditPaySubmitting(false);
+    }
+  };
+
   // Pagination 8/page sur les 3 onglets (présences, paiements, abonnements).
   // Cas concret du bug remonté 2026-05-07 : un élève avec 16 présences
   // affichait 16 lignes d'affilée. Avec 8/page, on a 2 pages max sur la
@@ -779,6 +825,13 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
                         </button>
                       )}
                       <button
+                        onClick={() => openEditPay(p)}
+                        className="delete-pay-btn-fiche"
+                        title="Modifier"
+                      >
+                        <Edit3 size={12} />
+                      </button>
+                      <button
                         onClick={() => deletePaiement(p)}
                         className="delete-pay-btn-fiche"
                         title="Supprimer"
@@ -1015,6 +1068,95 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
                 disabled={encaisserLoading}
               >
                 {encaisserLoading ? <><Loader2 size={16} className="spin" /> Enregistrement...</> : <><CheckCircle2 size={16} /> Encaisser</>}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal modifier un paiement */}
+      {editPayModal && (
+        <div className="modal-backdrop" onClick={e => { if (e.target === e.currentTarget) setEditPayModal(null); }}>
+          <div className="modal-sheet versement-sheet animate-slide-up" role="dialog" aria-modal="true">
+            <div className="modal-header">
+              <div style={{ width: 36 }} />
+              <span className="modal-title">Modifier le paiement</span>
+              <button className="modal-close" onClick={() => setEditPayModal(null)} type="button" aria-label="Fermer"><X size={20} /></button>
+            </div>
+            <div className="modal-body">
+              <div className="paiement-recap">
+                <span className="paiement-recap-nom">{editPayModal.intitule || 'Paiement'}</span>
+                <span className="paiement-recap-client">pour {displayName}</span>
+              </div>
+
+              <div className="paiement-section-label">Montant</div>
+              <div className="montant-row">
+                <input
+                  className="izi-input montant-input"
+                  type="number" step="0.01" min="0"
+                  value={editPayForm.montant}
+                  onChange={e => setEditPayForm(f => ({ ...f, montant: e.target.value }))}
+                />
+                <span className="montant-currency">€</span>
+              </div>
+
+              <div className="paiement-section-label">Mode de règlement</div>
+              <div className="mode-grid">
+                {MODES_PAIEMENT.map(({ value, label, Icon }) => (
+                  <button
+                    key={value}
+                    type="button"
+                    className={`mode-btn ${editPayForm.mode === value ? 'active' : ''}`}
+                    onClick={() => setEditPayForm(f => ({ ...f, mode: value }))}
+                  >
+                    <Icon size={18} />
+                    <span>{label}</span>
+                  </button>
+                ))}
+              </div>
+
+              <div className="paiement-section-label">Date</div>
+              <input
+                className="izi-input"
+                type="date"
+                value={editPayForm.date}
+                onChange={e => setEditPayForm(f => ({ ...f, date: e.target.value }))}
+              />
+
+              <div className="paiement-section-label">Notes</div>
+              <input
+                className="izi-input"
+                type="text"
+                value={editPayForm.notes}
+                onChange={e => setEditPayForm(f => ({ ...f, notes: e.target.value }))}
+                placeholder="N° chèque, référence virement..."
+              />
+
+              <div className="paiement-section-label">Statut</div>
+              <div className="edit-abo-statut-chips">
+                {[
+                  { value: 'paid', label: 'Payé' },
+                  { value: 'pending', label: 'En attente' },
+                  { value: 'overdue', label: 'En retard' },
+                ].map(s => (
+                  <button
+                    key={s.value}
+                    type="button"
+                    className={`multi-nb-chip ${editPayForm.statut === s.value ? 'active' : ''}`}
+                    onClick={() => setEditPayForm(f => ({ ...f, statut: s.value }))}
+                  >
+                    {s.label}
+                  </button>
+                ))}
+              </div>
+
+              <button
+                type="button"
+                className="izi-btn izi-btn-primary confirm-btn"
+                onClick={submitEditPay}
+                disabled={editPaySubmitting}
+              >
+                {editPaySubmitting ? <><Loader2 size={16} className="spin" /> Enregistrement...</> : <>Enregistrer</>}
               </button>
             </div>
           </div>
