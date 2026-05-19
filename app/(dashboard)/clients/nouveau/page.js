@@ -50,7 +50,7 @@ export default function NouveauClient() {
   // Détermine quels champs prédéfinis afficher + les champs perso à rendre.
   // Cf. lib/client-fields.js + section "Infos collectées" dans /parametres.
   const [fieldsConfig, setFieldsConfig] = useState({
-    predefined: { date_naissance: true, adresse: false, niveau: true, source: true, notes: true },
+    predefined: { date_naissance: true, adresse: true, niveau: true, source: true, notes: true },
     custom: [],
   });
   const [customValues, setCustomValues] = useState({}); // { custom_field_id: value }

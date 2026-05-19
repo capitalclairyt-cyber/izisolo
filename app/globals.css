@@ -601,6 +601,30 @@ body:has(.izi-bg-decor) {
 }
 
 /* --- Onglets principaux --- */
+.tabs-bar-wrap {
+  position: relative;
+}
+.tabs-bar-wrap.has-more::after {
+  content: '›';
+  position: absolute;
+  right: 0; top: 0; bottom: 0;
+  width: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(90deg, transparent, var(--brand-100) 40%);
+  color: var(--brand-600);
+  font-size: 1.25rem;
+  font-weight: 700;
+  pointer-events: none;
+  z-index: 5;
+  border-radius: 0 var(--radius-lg) 0 0;
+  animation: pulse-hint 1.5s ease-in-out 3;
+}
+@keyframes pulse-hint {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
 .tabs-bar {
   display: flex;
   gap: 0;

@@ -78,7 +78,8 @@ export default function ClientsClient({ clients, profile }) {
     }
 
     // 3. Filtres avancés (cumulatifs avec le primaire)
-    if (filtreStatut !== 'tous') list = list.filter(c => c.statut === filtreStatut);
+    if (filtreStatut === 'tous') list = list.filter(c => c.statut !== 'archive');
+    else list = list.filter(c => c.statut === filtreStatut);
     if (filtreType === 'particulier') list = list.filter(c => !c.type_client || c.type_client === 'particulier');
     else if (filtreType === 'pro')    list = list.filter(c =>  c.type_client && c.type_client !== 'particulier');
     if (filtreAbo !== 'tous')         list = list.filter(c => (c.abonnements || []).some(a => a.statut === 'actif' && a.offre_nom === filtreAbo));
@@ -187,7 +188,7 @@ export default function ClientsClient({ clients, profile }) {
           </div>
           <div className="filter-group">
             <span className="filter-group-label">Statut</span>
-            {['tous', 'actif', 'fidele', 'prospect', 'inactif'].map(s => (
+            {['tous', 'actif', 'fidele', 'prospect', 'inactif', 'archive'].map(s => (
               <button
                 key={s}
                 className={`filter-chip ${filtreStatut === s ? 'active' : ''}`}

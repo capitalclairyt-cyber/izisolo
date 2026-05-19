@@ -13,7 +13,7 @@ export default async function SondagesPage() {
 
   const { data: sondages } = await supabase
     .from('sondages_planning')
-    .select('id, slug, titre, message, date_fin, visibilite, actif, created_at, sondages_creneaux(id), sondages_creneaux:sondages_creneaux(id, sondages_reponses(id))')
+    .select('id, slug, titre, message, date_fin, visibilite, actif, created_at, sondages_creneaux(id, sondages_reponses(id))')
     .eq('profile_id', user.id)
     .order('created_at', { ascending: false });
 

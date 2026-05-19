@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Pagination, { usePagination } from '@/components/ui/Pagination';
@@ -35,6 +35,26 @@ function calcDateFin(dureeJours) {
   const d = new Date();
   d.setDate(d.getDate() + dureeJours);
   return d.toISOString().split('T')[0];
+}
+
+function calcProRata(offre) {
+  if (!offre.pro_rata_actif || !offre.date_debut || !offre.date_fin || !offre.prix) return null;
+  const today = new Date();
+  const debut = new Date(offre.date_debut);
+  const fin = new Date(offre.date_fin);
+  if (today <= debut) return null;
+  const limite = offre.pro_rata_date_limite ? new Date(offre.pro_rata_date_limite) : fin;
+  if (today > limite) return null;
+  const totalSemaines = Math.max(1, Math.round((fin - debut) / (7 * 86400000)));
+  const resteSemaines = Math.max(0, Math.round((fin - today) / (7 * 86400000)));
+  if (resteSemaines <= 0) return null;
+  return Math.round((parseFloat(offre.prix) / totalSemaines) * resteSemaines * 2) / 2;
+}
+
+function formatPeriode(d1, d2) {
+  if (!d1 || !d2) return null;
+  const fmt = (s) => { const [y, m, d] = s.split('-'); const mois = ['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc']; return `${parseInt(d)} ${mois[parseInt(m)-1]} ${y}`; };
+  return `${fmt(d1)} → ${fmt(d2)}`;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -108,8 +128,8 @@ function AssignerOffreModal({ client, onClose, onSuccess }) {
           offre_id: selectedOffre.id,
           offre_nom: selectedOffre.nom,
           type: selectedOffre.type,
-          date_debut: today,
-          date_fin: calcDateFin(selectedOffre.duree_jours),
+          date_debut: selectedOffre.date_debut || today,
+          date_fin: selectedOffre.date_fin || calcDateFin(selectedOffre.duree_jours),
           seances_total: selectedOffre.seances || null,
           seances_utilisees: 0,
           statut: 'actif',
@@ -195,6 +215,8 @@ function AssignerOffreModal({ client, onClose, onSuccess }) {
               <div className="offre-list">
                 {offres.map(offre => {
                   const TypeIcon = TYPE_ICONS[offre.type] || Package;
+                  const prorata = offre.type === 'abonnement' ? calcProRata(offre) : null;
+                  const periode = offre.type === 'abonnement' ? formatPeriode(offre.date_debut, offre.date_fin) : null;
                   return (
                     <button key={offre.id} className="offre-choice-btn" onClick={() => selectOffre(offre)} type="button">
                       <div className="offre-choice-icon"><TypeIcon size={20} /></div>
@@ -202,11 +224,15 @@ function AssignerOffreModal({ client, onClose, onSuccess }) {
                         <span className="offre-choice-nom">{offre.nom}</span>
                         <span className="offre-choice-detail">
                           {offre.type === 'carnet' && `${offre.seances} séances`}
-                          {offre.type === 'abonnement' && `${offre.duree_jours}j`}
+                          {offre.type === 'abonnement' && (periode || `${offre.duree_jours}j`)}
                           {offre.type === 'cours_unique' && 'Séance unique'}
                         </span>
+                        {prorata && <span className="offre-choice-prorata">Pro-rata : {formatMontant(prorata)}</span>}
                       </div>
-                      <span className="offre-choice-prix">{formatMontant(offre.prix)}</span>
+                      <div className="offre-choice-prix-col">
+                        <span className={`offre-choice-prix ${prorata ? 'offre-prix-barre' : ''}`}>{formatMontant(offre.prix)}</span>
+                        {prorata && <span className="offre-choice-prix offre-prix-prorata">{formatMontant(prorata)}</span>}
+                      </div>
                       <ChevronRight size={16} style={{ color: 'var(--text-muted)' }} />
                     </button>
                   );
@@ -235,18 +261,21 @@ function AssignerOffreModal({ client, onClose, onSuccess }) {
         )}
 
         {/* Step 2 — Paiement (composant partagé) */}
-        {step === 'paiement' && selectedOffre && (
-          <PaiementStep
-            offreNom={selectedOffre.nom}
-            clientNom={[client.prenom, client.nom_structure || client.nom].filter(Boolean).join(' ')}
-            offrePrix={selectedOffre.prix}
-            isLibre={isLibre}
-            intituleLibre={intituleLibre}
-            onIntituleLibreChange={setIntituleLibre}
-            onConfirm={handleConfirm}
-            submitting={submitting}
-          />
-        )}
+        {step === 'paiement' && selectedOffre && (() => {
+          const prorata = !isLibre && selectedOffre.type === 'abonnement' ? calcProRata(selectedOffre) : null;
+          return (
+            <PaiementStep
+              offreNom={selectedOffre.nom}
+              clientNom={[client.prenom, client.nom_structure || client.nom].filter(Boolean).join(' ')}
+              offrePrix={prorata || selectedOffre.prix}
+              isLibre={isLibre}
+              intituleLibre={intituleLibre}
+              onIntituleLibreChange={setIntituleLibre}
+              onConfirm={handleConfirm}
+              submitting={submitting}
+            />
+          );
+        })()}
       </div>
     </div>
   );
@@ -271,6 +300,38 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
   const [editPayModal, setEditPayModal] = useState(null);
   const [editPayForm, setEditPayForm] = useState({});
   const [editPaySubmitting, setEditPaySubmitting] = useState(false);
+
+  const [statutOpen, setStatutOpen] = useState(false);
+  const [clientStatut, setClientStatut] = useState(client.statut || 'prospect');
+  const statutRef = useRef(null);
+
+  useEffect(() => {
+    if (!statutOpen) return;
+    const handleClick = (e) => {
+      if (statutRef.current && !statutRef.current.contains(e.target)) setStatutOpen(false);
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [statutOpen]);
+
+  const changeStatut = async (newStatut) => {
+    if (newStatut === clientStatut) { setStatutOpen(false); return; }
+    const prev = clientStatut;
+    setClientStatut(newStatut);
+    setStatutOpen(false);
+    try {
+      const supabase = createClient();
+      const { error } = await supabase
+        .from('clients')
+        .update({ statut: newStatut })
+        .eq('id', client.id);
+      if (error) throw error;
+      toast.success(`Statut → ${STATUTS_CLIENT[newStatut]?.label || newStatut}`);
+    } catch (e) {
+      setClientStatut(prev);
+      toast.error('Erreur : ' + e.message);
+    }
+  };
 
   const openEditPay = (p) => {
     setEditPayModal(p);
@@ -358,6 +419,9 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
       ));
       toast.success('Paiement encaissé !');
       setEncaisserModal(null);
+      if (clientStatut === 'prospect') {
+        changeStatut('actif');
+      }
     } catch (e) {
       toast.error(e.message);
     } finally {
@@ -365,7 +429,7 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
     }
   };
 
-  const statutInfo = STATUTS_CLIENT[client.statut] || STATUTS_CLIENT.prospect;
+  const statutInfo = STATUTS_CLIENT[clientStatut] || STATUTS_CLIENT.prospect;
   const isPro = client.type_client && client.type_client !== 'particulier';
   const initials = isPro
     ? (client.nom_structure || client.nom || '?').substring(0, 2).toUpperCase()
@@ -391,13 +455,16 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
         .order('created_at', { ascending: false }),
       supabase
         .from('paiements')
-        .select('*')
+        .select('id, intitule, type, montant, statut, mode, date, date_encaissement, notes, abonnement_id, echeancier_id, offre_id, abonnement:abonnements(id, offre:offres(nom))')
         .eq('client_id', client.id)
         .order('date', { ascending: false }),
     ]);
     setAbonnements(abos || []);
     setPaiements(pays || []);
     setShowAssignerModal(false);
+    if (clientStatut === 'prospect' && (pays || []).some(p => p.statut === 'paid')) {
+      setClientStatut('actif');
+    }
   };
 
   const deletePaiement = async (paiement) => {
@@ -540,7 +607,28 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
         <h2 className="profile-name">{displayName}</h2>
         <div className="profile-badges">
           {isPro && <span className="izi-badge izi-badge-brand">{proLabels[client.type_client] || 'Pro'}</span>}
-          <span className={`izi-badge izi-badge-${statutInfo.color}`}>{statutInfo.label}</span>
+          <div className="statut-picker" ref={statutRef}>
+            <button
+              className={`izi-badge izi-badge-${statutInfo.color} statut-badge-btn`}
+              onClick={() => setStatutOpen(o => !o)}
+              title="Changer le statut"
+            >
+              {statutInfo.label} ▾
+            </button>
+            {statutOpen && (
+              <div className="statut-dropdown">
+                {Object.entries(STATUTS_CLIENT).map(([key, info]) => (
+                  <button
+                    key={key}
+                    className={`statut-dropdown-item ${key === clientStatut ? 'active' : ''}`}
+                    onClick={() => changeStatut(key)}
+                  >
+                    <span className={`izi-badge izi-badge-${info.color}`} style={{ fontSize: '0.7rem', padding: '2px 8px' }}>{info.label}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="profile-contacts">
@@ -724,8 +812,14 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
                       )}
                     </div>
                   ) : null}
-                  {abo.date_fin && <div className="abo-meta">Expire le {formatDate(abo.date_fin)}</div>}
-                  {abo.date_debut && <div className="abo-meta">Depuis le {formatDate(abo.date_debut)}</div>}
+                  {(abo.date_debut || abo.date_fin) && (
+                    <div className="abo-meta">
+                      {abo.date_debut && abo.date_fin
+                        ? `Période : ${formatDate(abo.date_debut)} → ${formatDate(abo.date_fin)}`
+                        : abo.date_fin ? `Expire le ${formatDate(abo.date_fin)}` : `Début le ${formatDate(abo.date_debut)}`}
+                    </div>
+                  )}
+                  {abo.created_at && <div className="abo-meta">Souscrit le {formatDate(abo.created_at.split('T')[0])}</div>}
                   {abo.statut === 'actif' && !fullyPaid && (
                     <button
                       className="abo-add-versement"
@@ -798,10 +892,33 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
               {paiementsPag.paginated.map(p => {
                 const sInfo = STATUTS_PAIEMENT[p.statut] || {};
                 const canEncaisser = p.statut === 'pending' || p.statut === 'overdue';
+                const offreName = p.abonnement?.offre?.nom;
+                const echId = p.echeancier_id;
+                const echSiblings = echId ? paiements.filter(x => x.echeancier_id === echId).sort((a, b) => (a.date || '').localeCompare(b.date || '')) : [];
+                const echIndex = echId ? echSiblings.findIndex(x => x.id === p.id) + 1 : 0;
+                const echTotal = echSiblings.length;
+                const hasAbo = !!p.abonnement_id;
                 return (
-                  <div key={p.id} className="paiement-fiche-item">
+                  <div
+                    key={p.id}
+                    className={`paiement-fiche-item ${hasAbo ? 'paiement-fiche-clickable' : ''}`}
+                    onClick={hasAbo ? () => setActiveTab('abonnements') : undefined}
+                    role={hasAbo ? 'button' : undefined}
+                    tabIndex={hasAbo ? 0 : undefined}
+                  >
                     <div className="paiement-fiche-info">
-                      <div className="paiement-fiche-nom">{p.intitule || 'Paiement'}</div>
+                      <div className="paiement-fiche-nom">
+                        {p.intitule || offreName || 'Paiement'}
+                        {echTotal > 1 && (
+                          <span className="paiement-fiche-ech"> — versement {echIndex}/{echTotal}</span>
+                        )}
+                      </div>
+                      {offreName && offreName !== p.intitule && (
+                        <div className="paiement-fiche-offre">
+                          <Package size={11} /> {offreName}
+                          {hasAbo && <ChevronRight size={11} />}
+                        </div>
+                      )}
                       <div className="paiement-fiche-meta">
                         {formatDate(p.date)} · {p.mode || '—'}
                         {p.date_encaissement && p.date_encaissement !== p.date && (
@@ -812,7 +929,7 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
                         <div className="paiement-fiche-notes">{p.notes}</div>
                       )}
                     </div>
-                    <div className="paiement-fiche-right">
+                    <div className="paiement-fiche-right" onClick={e => e.stopPropagation()}>
                       <div className="paiement-fiche-montant">{formatMontant(p.montant)}</div>
                       <span className={`izi-badge izi-badge-${sInfo.color || 'neutral'}`}>{sInfo.label || p.statut}</span>
                       {canEncaisser && (
@@ -859,7 +976,7 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
             <div className="empty-mini">Aucune présence enregistrée</div>
           ) : (
             presencesPag.paginated.map(p => (
-              <div key={p.id} className="presence-item">
+              <Link key={p.id} href={`/cours/${p.cours_id}`} className="presence-item presence-item-link">
                 <div className={`presence-icon ${p.pointee ? 'done' : 'absent'}`}>
                   {p.pointee ? <CheckCircle2 size={16} /> : <XCircle size={16} />}
                 </div>
@@ -869,7 +986,8 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
                     {p.cours?.date && formatDate(p.cours.date)}{p.cours?.heure && ` à ${p.cours.heure.substring(0, 5)}`}
                   </span>
                 </div>
-              </div>
+                <ChevronRight size={16} className="presence-chevron" />
+              </Link>
             ))
           )}
           <Pagination
@@ -1195,8 +1313,15 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
           background: var(--bg-card); border: 1px solid var(--border);
           border-radius: var(--radius-md); padding: 12px 14px;
         }
+        .paiement-fiche-clickable { cursor: pointer; transition: border-color 0.15s, background 0.15s; }
+        .paiement-fiche-clickable:hover { border-color: var(--brand); background: var(--brand-light); }
         .paiement-fiche-info { flex: 1; min-width: 0; }
         .paiement-fiche-nom { font-weight: 600; font-size: 0.9375rem; color: var(--text-primary); }
+        .paiement-fiche-ech { font-weight: 500; font-size: 0.8125rem; color: var(--text-muted); }
+        .paiement-fiche-offre {
+          display: inline-flex; align-items: center; gap: 4px;
+          font-size: 0.75rem; color: var(--brand-700); font-weight: 500; margin-top: 2px;
+        }
         .paiement-fiche-meta { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
         .paiement-fiche-notes {
           font-size: 0.75rem; color: var(--text-secondary); margin-top: 4px;
@@ -1234,7 +1359,27 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
         .profile-card { display: flex; flex-direction: column; align-items: center; padding: 24px 16px; gap: 8px; text-align: center; }
         .profile-avatar { width: 80px; height: 80px; border-radius: 50%; background: var(--brand); color: white; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 700; }
         .profile-avatar.pro { border-radius: var(--radius-md); }
-        .profile-badges { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+        .profile-badges { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; align-items: center; }
+        .statut-picker { position: relative; }
+        .statut-badge-btn { cursor: pointer; border: none; transition: all 0.15s; }
+        .statut-badge-btn:hover { filter: brightness(0.92); }
+        .statut-dropdown {
+          position: absolute; top: calc(100% + 6px); left: 50%; transform: translateX(-50%);
+          background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-md);
+          box-shadow: 0 8px 24px rgba(0,0,0,0.12); z-index: 50;
+          display: flex; flex-direction: column; gap: 2px; padding: 6px;
+          min-width: 140px;
+          animation: dropIn 0.12s ease;
+        }
+        @keyframes dropIn { from { opacity: 0; transform: translateX(-50%) translateY(-4px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+        .statut-dropdown-item {
+          display: flex; align-items: center; gap: 8px;
+          padding: 6px 8px; border-radius: var(--radius-sm);
+          border: none; background: none; cursor: pointer; width: 100%;
+          transition: background 0.1s;
+        }
+        .statut-dropdown-item:hover { background: var(--cream-dark, #f0ede8); }
+        .statut-dropdown-item.active { background: var(--brand-light); }
         .profile-name { font-size: 1.25rem; font-weight: 700; }
         .pro-details { display: flex; flex-direction: column; gap: 4px; align-items: center; font-size: 0.8125rem; color: var(--text-secondary); }
         .pro-detail { display: flex; align-items: center; gap: 4px; }
@@ -1303,7 +1448,10 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
         .abo-pay-bar { width: 100%; height: 4px; background: var(--cream-dark, #eee); border-radius: 2px; overflow: hidden; margin-top: 2px; }
         .abo-pay-fill { height: 100%; background: #16a34a; border-radius: 2px; transition: width 0.3s ease; }
 
-        .presence-item { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+        .presence-item { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); text-decoration: none; color: inherit; }
+        .presence-item-link { cursor: pointer; border-radius: var(--radius-sm); padding: 10px 8px; margin: 0 -8px; transition: background 0.15s; }
+        .presence-item-link:hover { background: var(--cream-dark, #f0ede8); }
+        .presence-chevron { color: var(--text-muted); flex-shrink: 0; margin-left: auto; }
         .presence-icon { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
         .presence-icon.done { background: #d4e8d4; color: #3d703d; }
         .presence-icon.absent { background: #f2d4d4; color: #8c2a2a; }
@@ -1343,7 +1491,11 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
         .offre-choice-info { flex: 1; display: flex; flex-direction: column; gap: 2px; }
         .offre-choice-nom { font-weight: 600; font-size: 0.9375rem; color: var(--text-primary); }
         .offre-choice-detail { font-size: 0.75rem; color: var(--text-muted); }
+        .offre-choice-prix-col { display: flex; flex-direction: column; align-items: flex-end; gap: 1px; flex-shrink: 0; }
         .offre-choice-prix { font-weight: 700; font-size: 1rem; color: var(--brand); }
+        .offre-prix-barre { font-size: 0.75rem; text-decoration: line-through; color: var(--text-muted); font-weight: 500; }
+        .offre-prix-prorata { font-size: 1rem; color: var(--success, #15803d); }
+        .offre-choice-prorata { font-size: 0.6875rem; color: var(--success, #15803d); font-weight: 600; }
 
         /* Paiement step */
         .paiement-recap { padding: 12px 14px; background: var(--brand-light); border-radius: var(--radius-md); border: 1px solid var(--brand); display: flex; flex-direction: column; gap: 2px; }

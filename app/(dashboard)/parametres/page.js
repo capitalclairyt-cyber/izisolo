@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Save, Palette, User, Building2, Bell, MapPin,
@@ -1881,6 +1881,8 @@ export default function Parametres() {
   const [lieuEdit, setLieuEdit] = useState(null);
   const [lieuSaving, setLieuSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('profil');
+  const tabsRef = useRef(null);
+  const [canScrollRight, setCanScrollRight] = useState(false);
   const [reglagesSubTab, setReglagesSubTab] = useState('general');
   // Sous-onglet notifications
   const [notifSubTab, setNotifSubTab] = useState('general');
@@ -1930,6 +1932,16 @@ export default function Parametres() {
     };
     load();
   }, []);
+
+  useEffect(() => {
+    const el = tabsRef.current;
+    if (!el) return;
+    const check = () => setCanScrollRight(el.scrollWidth - el.scrollLeft - el.clientWidth > 2);
+    check();
+    el.addEventListener('scroll', check, { passive: true });
+    window.addEventListener('resize', check);
+    return () => { el.removeEventListener('scroll', check); window.removeEventListener('resize', check); };
+  }, [loading]);
 
   const handleChange = (field) => (e) => {
     setProfile(prev => ({ ...prev, [field]: e.target.value }));
@@ -2175,20 +2187,22 @@ export default function Parametres() {
       </div>
 
       {/* === ONGLETS PRINCIPAUX === */}
-      <div className="tabs-bar animate-fade-in">
-        {TABS.map(tab => {
-          const Icon = tab.icon;
-          return (
-            <button
-              key={tab.id}
-              className={`tab-btn ${activeTab === tab.id ? 'active' : ''}`}
-              onClick={() => setActiveTab(tab.id)}
-            >
-              <Icon size={16} />
-              <span>{tab.label}</span>
-            </button>
-          );
-        })}
+      <div className={`tabs-bar-wrap animate-fade-in ${canScrollRight ? 'has-more' : ''}`}>
+        <div className="tabs-bar" ref={tabsRef}>
+          {TABS.map(tab => {
+            const Icon = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                className={`tab-btn ${activeTab === tab.id ? 'active' : ''}`}
+                onClick={() => setActiveTab(tab.id)}
+              >
+                <Icon size={16} />
+                <span>{tab.label}</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* ============================================ */}
