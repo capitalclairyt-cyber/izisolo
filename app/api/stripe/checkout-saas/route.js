@@ -17,7 +17,7 @@ export const runtime = 'nodejs';
  * Env vars requises (côté Mélutek) :
  *   - STRIPE_SECRET_KEY (clé secrète Mélutek)
  *   - STRIPE_PRICE_ID_SOLO_MENSUEL    (17€/mois)
- *   - STRIPE_PRICE_ID_PRO_MENSUEL     (34€/mois)
+ *   - STRIPE_PRICE_ID_PRO_MENSUEL     (22€/mois)
  *   - STRIPE_PRICE_ID_PREMIUM_MENSUEL (79€/mois — plan Studio)
  *   - NEXT_PUBLIC_APP_URL
  *

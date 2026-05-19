@@ -718,7 +718,7 @@ function NotifsElevesSection({ profile, setProfile, setDirty }) {
 
 // ════════════════════════════════════════════════════════════════════════════
 // Section "Abonnement IziSolo" — Stripe SaaS
-// 3 plans publics (Solo 17€ / Pro 34€ / Studio 79€) — MENSUEL UNIQUEMENT
+// 3 plans publics (Solo 17€ / Pro 22€ / Studio 79€) — MENSUEL UNIQUEMENT
 // (l'annuel est désactivé pour l'instant ; sera ajouté plus tard avec -20%)
 // Trial 14 jours sur tous. Plan `free` (interne, exempté) jamais affiché ici.
 // ════════════════════════════════════════════════════════════════════════════
@@ -766,7 +766,7 @@ function AbonnementCheckout({ currentPlan, profile }) {
       id: 'pro',
       nom: 'Pro',
       recommended: true,
-      prixMensuel: 34,
+      prixMensuel: 22,
       tagline: 'Ton studio devient une machine',
       pitch: 'Encaissement en ligne + automatisations + outils marketing.',
       features: [

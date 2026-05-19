@@ -567,8 +567,8 @@ export function Testimonials() {
   );
 }
 
-/* ---- TARIFS — Solo 17€ / Pro 34€ / Studio 79€ (mensuel)
-   Founding 100 : Solo 9€ / Pro 19€ / Studio 49€ (à vie) ---- */
+/* ---- TARIFS — Solo 17€ / Pro 22€ / Studio 79€ (mensuel)
+   Founding 100 : Solo 12€ / Pro 19€ / Studio 49€ (à vie) ---- */
 export function Pricing() {
   const plans = [
     {
@@ -593,7 +593,7 @@ export function Pricing() {
     {
       name: 'Pro',
       price: '19',
-      publicPrice: '34',
+      publicPrice: '22',
       sub: '/mois · à vie',
       desc: 'Le plan complet. Auto-pilote ton studio, encaisse en ligne, accueille une équipe.',
       features: [

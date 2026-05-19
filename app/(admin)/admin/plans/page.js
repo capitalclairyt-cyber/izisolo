@@ -23,7 +23,7 @@ const PLANS_CONFIG = [
   {
     id: 'pro',
     label: 'Pro',
-    price: '34 €/mois TTC',
+    price: '22 €/mois TTC',
     description: 'Le studio devient une machine — automatisations + Stripe + marketing',
     features: ['Élèves illimités', '3 lieux', 'Stripe Payment Link (1%)', 'Mailing + SMS', 'Notifs auto élèves', 'Sondages + cours d\'essai', 'Page publique enrichie', 'Annulation par l\'élève', 'Export compta'],
     color: '#4ade80',
