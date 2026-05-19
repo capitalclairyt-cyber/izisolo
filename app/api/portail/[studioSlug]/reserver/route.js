@@ -52,7 +52,7 @@ export async function POST(request, { params }) {
 
   const { data: cours } = await supabaseAdmin
     .from('cours')
-    .select('id, nom, date, heure, lieu, capacite_max, est_annule, profile_id, tarif_unitaire, stripe_payment_link_unit')
+    .select('id, nom, date, heure, lieu, capacite_max, est_annule, profile_id, tarif_unitaire, stripe_payment_link_unit, type_cours')
     .eq('id', coursId)
     .eq('profile_id', profile.id)
     .single();
@@ -163,18 +163,32 @@ export async function POST(request, { params }) {
   // (et non expiré). Si non, appliquer la règle eleve_sans_carnet de la prof.
   const { data: abosActifs } = await supabaseAdmin
     .from('abonnements')
-    .select('id, statut, seances_total, seances_utilisees, date_fin')
+    .select('id, statut, seances_total, seances_utilisees, date_fin, date_pause_debut, date_pause_fin, types_cours_autorises, offre:offres(seances_par_semaine, types_cours_autorises)')
     .eq('client_id', clientId)
     .eq('statut', 'actif');
 
   const todayStr = new Date().toISOString().slice(0, 10);
-  // Abonnement valide AUJOURD'HUI (séances restantes + non expiré aujourd'hui)
+  // Helper : un abo est-il applicable à CE cours (en tenant compte du type de cours)
+  const aboApplicableACeCours = (a) => {
+    const typesAutorises = a.types_cours_autorises?.length
+      ? a.types_cours_autorises
+      : a.offre?.types_cours_autorises;
+    if (typesAutorises?.length && cours.type_cours && !typesAutorises.includes(cours.type_cours)) {
+      return false;
+    }
+    return true;
+  };
+  // Abonnement valide AUJOURD'HUI pour CE cours (séances restantes + non expiré + pas en pause + bon type)
   const aboValide = (abosActifs || []).some(a => {
     if (a.seances_total != null) {
       const reste = (a.seances_total || 0) - (a.seances_utilisees || 0);
       if (reste <= 0) return false;
     }
     if (a.date_fin && a.date_fin < todayStr) return false;
+    // Pause en cours : l'abo n'est pas utilisable aujourd'hui
+    if (a.date_pause_debut && a.date_pause_fin
+        && a.date_pause_debut <= todayStr && a.date_pause_fin >= todayStr) return false;
+    if (!aboApplicableACeCours(a)) return false;
     return true;
   });
 
@@ -187,12 +201,49 @@ export async function POST(request, { params }) {
       if (reste <= 0) return false;
     }
     if (a.date_fin && a.date_fin < cours.date) return false;
+    if (!aboApplicableACeCours(a)) return false;
     return true;
   });
   const carnetExpireraAvant = aboValide && !aboValideADate;
 
   const regleSansCarnet = getRegle({ regles_metier: profile.regles_metier }, 'eleve_sans_carnet');
   const regleExpireAvant = getRegle({ regles_metier: profile.regles_metier }, 'carnet_expire_avant_cours');
+
+  // ─── Limite de fréquence (seances_par_semaine) ───────────────────────────
+  // Si l'élève a un abonnement valide avec un cap de séances/semaine, on
+  // compte ses présences déjà existantes sur la même semaine ISO que le cours
+  // et on bloque si on dépasse le cap.
+  if (aboValide) {
+    const aboCap = Math.max(0, ...(abosActifs || []).map(a => a.offre?.seances_par_semaine || 0));
+    if (aboCap > 0) {
+      // Lundi de la semaine du cours
+      const dCours = new Date(cours.date + 'T00:00:00');
+      const day = dCours.getDay() || 7; // 0=dim → 7
+      const lundi = new Date(dCours);
+      lundi.setDate(dCours.getDate() - (day - 1));
+      const dimanche = new Date(lundi);
+      dimanche.setDate(lundi.getDate() + 6);
+      const debSemaine = lundi.toISOString().slice(0, 10);
+      const finSemaine = dimanche.toISOString().slice(0, 10);
+
+      const { data: presencesSemaine } = await supabaseAdmin
+        .from('presences')
+        .select('id, cours:cours_id(date)')
+        .eq('client_id', clientId)
+        .eq('profile_id', profile.id);
+
+      const nbDansSemaine = (presencesSemaine || []).filter(p =>
+        p.cours?.date >= debSemaine && p.cours?.date <= finSemaine
+      ).length;
+
+      if (nbDansSemaine >= aboCap) {
+        return Response.json({
+          error: `Ton abonnement inclut ${aboCap} séance${aboCap > 1 ? 's' : ''} par semaine. Tu as déjà ${nbDansSemaine} cours réservé${nbDansSemaine > 1 ? 's' : ''} cette semaine-là.`,
+          code: 'WEEKLY_LIMIT',
+        }, { status: 403 });
+      }
+    }
+  }
 
   if (!aboValide) {
     // Mode AUTO : appliquer le choix
@@ -302,6 +353,33 @@ export async function POST(request, { params }) {
   if (presenceErr) {
     console.error('create presence error:', presenceErr);
     return Response.json({ error: 'Erreur lors de la réservation : ' + presenceErr.message }, { status: 500 });
+  }
+
+  // Re-vérification atomique de la capacité après insertion (anti race-condition).
+  // Si on dépasse la capacité, on supprime la presence qu'on vient de créer.
+  if (cours.capacite_max) {
+    const { count: nbApres } = await supabaseAdmin
+      .from('presences')
+      .select('id', { count: 'exact', head: true })
+      .eq('cours_id', coursId);
+    if ((nbApres || 0) > cours.capacite_max) {
+      // Rollback : on supprime notre presence (la dernière à être passée)
+      await supabaseAdmin.from('presences').delete().eq('id', newPresence.id);
+      return Response.json({ error: 'Ce cours est complet' }, { status: 409 });
+    }
+  }
+
+  // Nettoyer toute entrée liste_attente pour cet élève sur ce cours
+  // (cas où l'élève était inscrit en LA puis trouve une place via résa directe)
+  try {
+    await supabaseAdmin
+      .from('liste_attente')
+      .delete()
+      .eq('cours_id', coursId)
+      .eq('profile_id', profile.id)
+      .or(`client_id.eq.${clientId},email.ilike.${email}`);
+  } catch (e) {
+    console.warn('[reserver] cleanup liste_attente non-bloquant:', e?.message);
   }
 
   // Si une règle a remonté un cas → log dans cas_a_traiter (sauf si la prof a

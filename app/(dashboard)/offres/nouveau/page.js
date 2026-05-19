@@ -24,6 +24,13 @@ const TYPES = [
 // Presets séances carnet
 const PRESETS_SEANCES = [5, 10, 15];
 
+// Presets durée de validité carnet (en jours)
+const PRESETS_DUREE_CARNET = [
+  { value: 90,  label: '3 mois' },
+  { value: 180, label: '6 mois' },
+  { value: 365, label: '1 an' },
+];
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 function joursDiff(d1, d2) {
   // d1, d2 : strings YYYY-MM-DD
@@ -74,6 +81,12 @@ export default function NouvelleOffre() {
   const [seances, setSeances]           = useState('');
   const [seancesCustom, setSeancesCustom] = useState(false); // true si "Autre"
   const [prixUnitaireRef, setPrixUnitaireRef] = useState('');
+  const [carnetDureeJours, setCarnetDureeJours] = useState(''); // '' = pas de limite
+  const [carnetDureeCustom, setCarnetDureeCustom] = useState(false);
+
+  // Restriction par type de cours (commun carnet/abonnement)
+  const [typesCoursDisponibles, setTypesCoursDisponibles] = useState([]); // liste des types existants
+  const [typesCoursAutorises, setTypesCoursAutorises] = useState([]);     // sélection ([] = tous)
 
   // Abonnement
   const [dateDebut, setDateDebut]     = useState('');
@@ -101,11 +114,12 @@ export default function NouvelleOffre() {
 
       const [{ data: unitaires }, { data: profile }, { count }] = await Promise.all([
         supabase.from('offres').select('id, nom, prix').eq('type', 'cours_unique').eq('actif', true).order('prix'),
-        supabase.from('profiles').select('plan, trial_started_at, stripe_subscription_status').eq('id', user.id).single(),
+        supabase.from('profiles').select('plan, trial_started_at, stripe_subscription_status, types_cours').eq('id', user.id).single(),
         supabase.from('offres').select('*', { count: 'exact', head: true }).eq('profile_id', user.id),
       ]);
 
       setOffresUnitaires(unitaires || []);
+      setTypesCoursDisponibles(profile?.types_cours || []);
 
       // Vérifier la limite du plan
       const planKey = effectivePlan(profile);
@@ -137,6 +151,8 @@ export default function NouvelleOffre() {
     setSeances('');
     setSeancesCustom(false);
     setPrixUnitaireRef('');
+    setCarnetDureeJours('');
+    setCarnetDureeCustom(false);
   };
 
   // Séances preset (carnet)
@@ -214,6 +230,12 @@ export default function NouvelleOffre() {
       if (type === 'carnet') {
         payload.seances          = seances ? parseInt(seances) : null;
         payload.prix_unitaire_ref = prixUnitaireRef ? parseFloat(prixUnitaireRef) : null;
+        payload.duree_jours      = carnetDureeJours ? parseInt(carnetDureeJours) : null;
+      }
+
+      // Types de cours autorisés (commun carnet/abonnement)
+      if ((type === 'carnet' || type === 'abonnement') && typesCoursAutorises.length > 0) {
+        payload.types_cours_autorises = typesCoursAutorises;
       }
 
       if (type === 'abonnement') {
@@ -337,6 +359,57 @@ export default function NouvelleOffre() {
                   }}
                   autoFocus
                 />
+              )}
+            </div>
+
+            {/* Durée de validité du carnet */}
+            <div className="no-field">
+              <label className="no-label">
+                Durée de validité
+                <span className="no-label-hint"> — à partir de l'achat (optionnel)</span>
+              </label>
+              <div className="no-presets">
+                <button
+                  type="button"
+                  className={`no-preset-btn ${!carnetDureeJours && !carnetDureeCustom ? 'active' : ''}`}
+                  onClick={() => { setCarnetDureeJours(''); setCarnetDureeCustom(false); }}
+                >
+                  Pas de limite
+                </button>
+                {PRESETS_DUREE_CARNET.map(({ value, label }) => (
+                  <button
+                    key={value}
+                    type="button"
+                    className={`no-preset-btn ${carnetDureeJours === String(value) && !carnetDureeCustom ? 'active' : ''}`}
+                    onClick={() => { setCarnetDureeJours(String(value)); setCarnetDureeCustom(false); }}
+                  >
+                    {label}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  className={`no-preset-btn ${carnetDureeCustom ? 'active' : ''}`}
+                  onClick={() => { setCarnetDureeCustom(true); setCarnetDureeJours(''); }}
+                >
+                  Autre…
+                </button>
+              </div>
+              {carnetDureeCustom && (
+                <input
+                  className="izi-input no-custom-input"
+                  type="number"
+                  min="1"
+                  placeholder="Nombre de jours"
+                  value={carnetDureeJours}
+                  onChange={e => setCarnetDureeJours(e.target.value)}
+                  autoFocus
+                />
+              )}
+              {carnetDureeJours && (
+                <span className="form-hint">
+                  Le carnet expirera <strong>{carnetDureeJours} jours</strong> après l'achat
+                  {parseInt(carnetDureeJours) >= 30 ? ` (~${Math.round(parseInt(carnetDureeJours) / 30)} mois)` : ''}.
+                </span>
               )}
             </div>
 
@@ -563,6 +636,41 @@ export default function NouvelleOffre() {
               )}
             </div>
           </>
+        )}
+
+        {/* ══════════════════ TYPES DE COURS AUTORISÉS ══════════════════ */}
+        {(type === 'carnet' || type === 'abonnement') && typesCoursDisponibles.length > 0 && (
+          <div className="no-field">
+            <label className="no-label">
+              Types de cours autorisés
+              <span className="no-label-hint"> — vide = tous les types</span>
+            </label>
+            <div className="no-presets">
+              {typesCoursDisponibles.map(t => {
+                const selected = typesCoursAutorises.includes(t);
+                return (
+                  <button
+                    key={t}
+                    type="button"
+                    className={`no-preset-btn ${selected ? 'active' : ''}`}
+                    onClick={() => {
+                      setTypesCoursAutorises(prev =>
+                        selected ? prev.filter(x => x !== t) : [...prev, t]
+                      );
+                    }}
+                  >
+                    {t}
+                  </button>
+                );
+              })}
+            </div>
+            {typesCoursAutorises.length > 0 && (
+              <span className="form-hint">
+                Cette offre ne permettra de réserver que les cours de type :
+                <strong> {typesCoursAutorises.join(', ')}</strong>.
+              </span>
+            )}
+          </div>
         )}
 
         {/* ══════════════════ NOM + PRIX (communs) ══════════════════ */}

@@ -9,7 +9,7 @@ import {
   CheckCircle2, XCircle, Plus, X, Building2, MapPin,
   Banknote, CreditCard, Landmark, FileText, ChevronRight,
   Package, Zap, CalendarCheck, Loader2,
-  MessageSquare, Wallet, AlertCircle, Trash2, PlusCircle, Home, Send,
+  MessageSquare, Wallet, AlertCircle, Trash2, PlusCircle, Home, Send, Pause, Play,
 } from 'lucide-react';
 import { formatDate, formatMontant } from '@/lib/utils';
 import { getVocabulaire } from '@/lib/vocabulaire';
@@ -134,6 +134,7 @@ function AssignerOffreModal({ client, onClose, onSuccess }) {
           seances_total: selectedOffre.seances || null,
           seances_utilisees: 0,
           statut: 'actif',
+          types_cours_autorises: selectedOffre.types_cours_autorises || null,
         }).select().single();
         if (aboErr) throw aboErr;
         aboId = abo.id;
@@ -588,6 +589,52 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
   const [versementDate, setVersementDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [versementSubmitting, setVersementSubmitting] = useState(false);
 
+  // ─── Pause d'abonnement ────────────────────────────────────────────────
+  const [pauseModal, setPauseModal] = useState(null); // l'abo à pauser
+  const [pauseDebut, setPauseDebut] = useState(() => new Date().toISOString().split('T')[0]);
+  const [pauseFin, setPauseFin] = useState('');
+  const [pauseNotes, setPauseNotes] = useState('');
+  const [pauseSubmitting, setPauseSubmitting] = useState(false);
+
+  const pauserAbo = async () => {
+    if (!pauseModal || !pauseDebut || !pauseFin) return;
+    setPauseSubmitting(true);
+    try {
+      const res = await fetch(`/api/abonnements/${pauseModal.id}/pause`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'pause', date_debut: pauseDebut, date_fin: pauseFin, notes: pauseNotes || null }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Erreur');
+      toast.success('Abonnement mis en pause');
+      setPauseModal(null);
+      setPauseFin('');
+      setPauseNotes('');
+      router.refresh();
+    } catch (e) {
+      toast.error(e.message);
+    } finally {
+      setPauseSubmitting(false);
+    }
+  };
+
+  const reprendreAbo = async (abo) => {
+    try {
+      const res = await fetch(`/api/abonnements/${abo.id}/pause`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'reprendre' }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Erreur');
+      toast.success('Abonnement réactivé');
+      router.refresh();
+    } catch (e) {
+      toast.error(e.message);
+    }
+  };
+
   const ajouterVersement = async () => {
     if (!versementModal || !versementMontant) return;
     setVersementSubmitting(true);
@@ -853,10 +900,22 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
                     <span className="abo-nom">{abo.offre_nom}</span>
                     <div className="abo-top-right">
                       <span className={`izi-badge izi-badge-${sInfo.color || 'neutral'}`}>{sInfo.label || abo.statut}</span>
+                      {abo.statut === 'actif' && (
+                        <button className="abo-action-btn" onClick={() => { setPauseModal(abo); setPauseDebut(new Date().toISOString().split('T')[0]); setPauseFin(''); setPauseNotes(''); }} title="Mettre en pause"><Pause size={13} /></button>
+                      )}
+                      {abo.statut === 'gele' && (
+                        <button className="abo-action-btn" onClick={() => reprendreAbo(abo)} title="Réactiver"><Play size={13} /></button>
+                      )}
                       <button className="abo-action-btn" onClick={() => openEditAbo(abo)} title="Modifier"><Edit3 size={13} /></button>
                       <button className="abo-action-btn abo-action-delete" onClick={() => deleteAbonnement(abo)} title="Supprimer"><Trash2 size={13} /></button>
                     </div>
                   </div>
+                  {abo.statut === 'gele' && abo.date_pause_fin && (
+                    <div className="abo-meta" style={{ background: '#fef3c7', color: '#92400e', padding: '6px 10px', borderRadius: 6, marginTop: 6 }}>
+                      ⏸ En pause jusqu'au {formatDate(abo.date_pause_fin)}
+                      {abo.notes_pause && <> — {abo.notes_pause}</>}
+                    </div>
+                  )}
                   {restantes !== null && (
                     <div className="abo-progress">
                       <div className="progress-bar">
@@ -1189,6 +1248,63 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
                 disabled={versementSubmitting || !versementMontant}
               >
                 {versementSubmitting ? <><Loader2 size={16} className="spin" /> Enregistrement...</> : <>✓ Ajouter le versement</>}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal pause abonnement */}
+      {pauseModal && (
+        <div className="modal-backdrop" onClick={e => { if (e.target === e.currentTarget) setPauseModal(null); }}>
+          <div className="modal-sheet versement-sheet animate-slide-up" role="dialog" aria-modal="true">
+            <div className="modal-header">
+              <div style={{ width: 36 }} />
+              <span className="modal-title">Mettre en pause</span>
+              <button className="modal-close" onClick={() => setPauseModal(null)} type="button" aria-label="Fermer"><X size={20} /></button>
+            </div>
+            <div className="modal-body">
+              <div className="paiement-recap">
+                <span className="paiement-recap-nom">{pauseModal.offre_nom}</span>
+                <span className="paiement-recap-client">pour {displayName}</span>
+              </div>
+              <p style={{ fontSize: '0.8125rem', color: '#666', margin: '0 0 16px', lineHeight: 1.5 }}>
+                L'abonnement ne sera pas utilisable pour réserver des cours pendant la période de pause.
+              </p>
+
+              <div className="paiement-section-label">Début de la pause</div>
+              <input
+                className="izi-input"
+                type="date"
+                value={pauseDebut}
+                onChange={e => setPauseDebut(e.target.value)}
+              />
+
+              <div className="paiement-section-label">Fin de la pause</div>
+              <input
+                className="izi-input"
+                type="date"
+                value={pauseFin}
+                min={pauseDebut}
+                onChange={e => setPauseFin(e.target.value)}
+              />
+
+              <div className="paiement-section-label">Note (optionnel)</div>
+              <input
+                className="izi-input"
+                type="text"
+                value={pauseNotes}
+                onChange={e => setPauseNotes(e.target.value)}
+                placeholder="Ex : congé maternité, blessure…"
+              />
+
+              <button
+                type="button"
+                className="izi-btn izi-btn-primary confirm-btn"
+                onClick={pauserAbo}
+                disabled={pauseSubmitting || !pauseDebut || !pauseFin}
+              >
+                {pauseSubmitting ? <><Loader2 size={16} className="spin" /> Enregistrement...</> : <><Pause size={16} /> Mettre en pause</>}
               </button>
             </div>
           </div>

@@ -34,6 +34,7 @@ export default function EditOffre({ params }) {
   const [seancesParSemaine, setSeancesParSemaine] = useState('1');
   const [inclutVacances, setInclutVacances] = useState(true);
   const [stripePaymentLink, setStripePaymentLink] = useState('');
+  const [carnetDureeJours, setCarnetDureeJours] = useState('');
 
   useEffect(() => {
     async function load() {
@@ -60,6 +61,7 @@ export default function EditOffre({ params }) {
       setSeancesParSemaine(data.seances_par_semaine ? String(data.seances_par_semaine) : '1');
       setInclutVacances(data.inclut_vacances !== false);
       setStripePaymentLink(data.stripe_payment_link || '');
+      setCarnetDureeJours(data.type === 'carnet' && data.duree_jours ? String(data.duree_jours) : '');
       setLoading(false);
     }
     load();
@@ -92,6 +94,7 @@ export default function EditOffre({ params }) {
 
       if (type === 'carnet') {
         payload.seances = seances ? parseInt(seances) : null;
+        payload.duree_jours = carnetDureeJours ? parseInt(carnetDureeJours) : null;
       } else if (type === 'abonnement') {
         payload.date_debut = dateDebut || null;
         payload.date_fin = dateFin || null;
@@ -164,19 +167,40 @@ export default function EditOffre({ params }) {
           </div>
         </div>
 
-        {/* Carnet: séances */}
+        {/* Carnet: séances + durée de validité */}
         {type === 'carnet' && (
-          <div className="eo-field">
-            <label className="eo-label">Nombre de séances</label>
-            <input
-              className="izi-input"
-              type="number"
-              min="1"
-              value={seances}
-              onChange={e => setSeances(e.target.value)}
-              placeholder="Ex : 10"
-            />
-          </div>
+          <>
+            <div className="eo-field">
+              <label className="eo-label">Nombre de séances</label>
+              <input
+                className="izi-input"
+                type="number"
+                min="1"
+                value={seances}
+                onChange={e => setSeances(e.target.value)}
+                placeholder="Ex : 10"
+              />
+            </div>
+            <div className="eo-field">
+              <label className="eo-label">
+                Durée de validité <span className="eo-optional">(jours, vide = pas de limite)</span>
+              </label>
+              <div className="eo-chips">
+                <button type="button" className={`eo-chip ${!carnetDureeJours ? 'active' : ''}`} onClick={() => setCarnetDureeJours('')}>Pas de limite</button>
+                <button type="button" className={`eo-chip ${carnetDureeJours === '90' ? 'active' : ''}`} onClick={() => setCarnetDureeJours('90')}>3 mois</button>
+                <button type="button" className={`eo-chip ${carnetDureeJours === '180' ? 'active' : ''}`} onClick={() => setCarnetDureeJours('180')}>6 mois</button>
+                <button type="button" className={`eo-chip ${carnetDureeJours === '365' ? 'active' : ''}`} onClick={() => setCarnetDureeJours('365')}>1 an</button>
+              </div>
+              <input
+                className="izi-input"
+                type="number"
+                min="1"
+                placeholder="Ou nombre de jours personnalisé"
+                value={carnetDureeJours}
+                onChange={e => setCarnetDureeJours(e.target.value)}
+              />
+            </div>
+          </>
         )}
 
         {/* Abonnement */}

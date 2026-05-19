@@ -52,6 +52,19 @@ export async function POST(request, { params }) {
     .ilike('email', email)
     .maybeSingle();
 
+  // Bloquer si l'élève est déjà inscrit (presence) à ce cours
+  if (existingClient?.id) {
+    const { data: dejaInscrit } = await supabaseAdmin
+      .from('presences')
+      .select('id')
+      .eq('cours_id', coursId)
+      .eq('client_id', existingClient.id)
+      .maybeSingle();
+    if (dejaInscrit) {
+      return Response.json({ error: 'Tu es déjà inscrit·e à ce cours — pas besoin de la liste d\'attente.' }, { status: 409 });
+    }
+  }
+
   // Calculer position (taille actuelle + 1)
   const { count: tailleListe } = await supabaseAdmin
     .from('liste_attente')

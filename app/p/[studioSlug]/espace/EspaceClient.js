@@ -253,7 +253,7 @@ function CoursCard({ presence, profile, studioSlug, onAnnuler, annulEnCours }) {
   );
 }
 
-export default function EspaceClient({ profile, client, aVenir, passes, paiements = [], offresStripe = [], studioSlug, userEmail }) {
+export default function EspaceClient({ profile, client, aVenir, passes, paiements = [], offresStripe = [], abonnements = [], studioSlug, userEmail }) {
   const router = useRouter();
   const { toast } = useToast();
   const [annulEnCours, setAnnulEnCours] = useState(null);
@@ -427,6 +427,104 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
               annulEnCours={false}
             />
           ))}
+        </div>
+      )}
+
+      {/* Section "Mes carnets & abonnements" — solde séances + expiration */}
+      {abonnements.length > 0 && (
+        <div style={{ marginTop: 28, paddingTop: 20, borderTop: '1px solid #f0ebe8' }}>
+          <h2 className="espace-section-title">
+            <Ticket size={16} style={{ color: '#b87333' }} />
+            Mes carnets &amp; abonnements
+          </h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {abonnements.map(abo => {
+              const reste = abo.seances_total != null
+                ? Math.max(0, abo.seances_total - (abo.seances_utilisees || 0))
+                : null;
+              const today = new Date().toISOString().slice(0, 10);
+              const expire = abo.date_fin && abo.date_fin < today;
+              const epuise = reste === 0;
+              const enPause = abo.statut === 'gele' || (
+                abo.date_pause_debut && abo.date_pause_fin
+                && abo.date_pause_debut <= today && abo.date_pause_fin >= today
+              );
+              const inactif = expire || epuise || enPause || abo.statut !== 'actif';
+              const Icon = STRIPE_TYPE_ICONS[abo.type] || Ticket;
+              const joursRestants = abo.date_fin
+                ? Math.ceil((new Date(abo.date_fin) - new Date(today)) / (1000 * 60 * 60 * 24))
+                : null;
+              return (
+                <div
+                  key={abo.id}
+                  style={{
+                    padding: '14px 16px',
+                    borderRadius: 12,
+                    border: `1.5px solid ${inactif ? '#e5e5e5' : '#fde8d0'}`,
+                    background: inactif ? '#fafafa' : 'linear-gradient(135deg, #fefaf5 0%, #fef3e6 100%)',
+                    opacity: inactif ? 0.65 : 1,
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                    <div style={{
+                      width: 36, height: 36, borderRadius: 10,
+                      background: inactif ? '#eee' : '#fef0dc',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      color: inactif ? '#999' : '#b87333', flexShrink: 0,
+                    }}>
+                      <Icon size={18} />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: 700, fontSize: '0.9375rem', color: '#1a1a2e', marginBottom: 2 }}>
+                        {abo.offre_nom || 'Abonnement'}
+                      </div>
+                      {reste !== null ? (
+                        <div style={{ fontSize: '0.8125rem', color: inactif ? '#888' : '#7c4a03', fontWeight: 600 }}>
+                          {epuise
+                            ? 'Carnet épuisé'
+                            : `${reste} séance${reste > 1 ? 's' : ''} restante${reste > 1 ? 's' : ''}`}
+                          {abo.seances_total != null && <span style={{ fontWeight: 400, color: '#999' }}> / {abo.seances_total}</span>}
+                        </div>
+                      ) : abo.type === 'abonnement' ? (
+                        <div style={{ fontSize: '0.8125rem', color: inactif ? '#888' : '#7c4a03', fontWeight: 600 }}>
+                          Séances illimitées
+                        </div>
+                      ) : null}
+                      {enPause && abo.date_pause_fin && (
+                        <div style={{ fontSize: '0.75rem', color: '#7c4a03', marginTop: 3, fontWeight: 600 }}>
+                          ⏸ En pause jusqu'au {new Date(abo.date_pause_fin).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                        </div>
+                      )}
+                      {!enPause && abo.date_fin && (
+                        <div style={{ fontSize: '0.75rem', color: '#888', marginTop: 3 }}>
+                          {expire
+                            ? <>Expiré le {new Date(abo.date_fin).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</>
+                            : <>Valable jusqu'au {new Date(abo.date_fin).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                              {joursRestants != null && joursRestants <= 30 && joursRestants > 0 && (
+                                <span style={{ color: '#d97706', fontWeight: 600 }}> — plus que {joursRestants} jour{joursRestants > 1 ? 's' : ''}</span>
+                              )}
+                            </>
+                          }
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  {!inactif && abo.seances_total != null && (
+                    <div style={{ marginTop: 10, height: 6, borderRadius: 3, background: '#fef0dc', overflow: 'hidden' }}>
+                      <div
+                        style={{
+                          height: '100%',
+                          width: `${Math.min(100, (reste / abo.seances_total) * 100)}%`,
+                          background: reste <= 2 ? '#d97706' : '#b87333',
+                          transition: 'width 0.3s',
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
 

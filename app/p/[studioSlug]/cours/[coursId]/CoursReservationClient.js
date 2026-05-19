@@ -131,6 +131,17 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
   const [error, setError]   = useState('');
   const isConnected = !!currentUser;
 
+  // Série : inscription à toutes les occurrences récurrentes jusqu'à une date
+  const hasSeries = !!cours.recurrence_id && isConnected;
+  const [serieActive, setSerieActive] = useState(false);
+  const [serieJusquAu, setSerieJusquAu] = useState(() => {
+    // Par défaut : 8 semaines après le cours
+    const d = new Date(cours.date + 'T00:00:00');
+    d.setDate(d.getDate() + 56);
+    return d.toISOString().slice(0, 10);
+  });
+  const [serieResult, setSerieResult] = useState(null); // { totalBooked, totalSkipped, skipped }
+
   const places = cours.capacite_max ? cours.capacite_max - nbInscrits : null;
   const complet = places !== null && places <= 0;
   // "Passé" = date avant aujourd'hui, OU date = aujourd'hui mais heure déjà dépassée
@@ -170,6 +181,25 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Erreur lors de la réservation');
       setMagicLinkSent(!!json.magicLinkSent);
+
+      // Si l'élève a coché "série", on enchaîne avec /reserver-serie
+      if (serieActive && hasSeries) {
+        try {
+          const resSerie = await fetch(`/api/portail/${studioSlug}/reserver-serie`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ coursId: cours.id, jusquAu: serieJusquAu }),
+          });
+          const jsonSerie = await resSerie.json();
+          if (resSerie.ok) {
+            setSerieResult(jsonSerie);
+            toast.success(`${jsonSerie.totalBooked} cours réservés sur la série`);
+          }
+        } catch (serieErr) {
+          console.warn('[serie] non-blocking error:', serieErr);
+        }
+      }
+
       setDone(true);
       toast.success('Réservation confirmée !');
     } catch (e) {
@@ -203,6 +233,20 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
               )}
             </div>
           </div>
+
+          {serieResult && (
+            <div style={{ background: '#fef6ec', border: '1px solid #fde8d0', borderRadius: '10px', padding: '12px 16px', marginBottom: '16px', fontSize: '0.875rem', color: '#7c4a03', textAlign: 'left' }}>
+              <strong>{serieResult.totalBooked} séance{serieResult.totalBooked > 1 ? 's' : ''} suivante{serieResult.totalBooked > 1 ? 's' : ''} réservée{serieResult.totalBooked > 1 ? 's' : ''}</strong>
+              {serieResult.totalSkipped > 0 && (
+                <>
+                  <br />
+                  <span style={{ fontSize: '0.8125rem' }}>
+                    {serieResult.totalSkipped} non disponible{serieResult.totalSkipped > 1 ? 's' : ''} (complet, déjà inscrit ou annulé).
+                  </span>
+                </>
+              )}
+            </div>
+          )}
 
           <div style={{ background: '#fffaf0', border: '1px solid #ffe0b2', borderRadius: '10px', padding: '12px 16px', marginBottom: '20px', fontSize: '0.8125rem', color: '#7c4a03', display: 'flex', alignItems: 'flex-start', gap: '8px', textAlign: 'left' }}>
             <Shield size={15} style={{ flexShrink: 0, marginTop: 2 }} />
@@ -408,6 +452,41 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
                   </div>
                 )}
               </>
+            )}
+
+            {/* Série : inscription à toutes les occurrences récurrentes */}
+            {hasSeries && (
+              <div style={{ background: '#fefaf5', border: '1.5px solid #fde8d0', borderRadius: 12, padding: '12px 14px', marginBottom: '14px' }}>
+                <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={serieActive}
+                    onChange={e => setSerieActive(e.target.checked)}
+                    style={{ marginTop: 3, accentColor: '#b87333' }}
+                  />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 600, fontSize: '0.875rem', color: '#7c4a03' }}>
+                      M'inscrire aussi aux séances suivantes
+                    </div>
+                    <div style={{ fontSize: '0.8125rem', color: '#888', marginTop: 2, lineHeight: 1.4 }}>
+                      Toutes les occurrences récurrentes de ce cours seront réservées d'un coup.
+                    </div>
+                  </div>
+                </label>
+                {serieActive && (
+                  <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid #fde8d0' }}>
+                    <label style={{ display: 'block', fontSize: '0.75rem', color: '#888', marginBottom: 4 }}>Jusqu'au</label>
+                    <input
+                      type="date"
+                      className="portail-input"
+                      value={serieJusquAu}
+                      min={cours.date}
+                      onChange={e => setSerieJusquAu(e.target.value)}
+                      style={{ maxWidth: 200 }}
+                    />
+                  </div>
+                )}
+              </div>
             )}
 
             {error && (
