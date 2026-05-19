@@ -3,26 +3,21 @@
 /**
  * Modal "Inviter une élève / un prospect"
  *
- * Donne au prof 2 façons de partager son portail (le SMS arrivera en V2,
- * pour l'instant grisé) :
- *   1) 📋 Copier le lien   — pour coller dans n'importe quel canal
- *   2) ✉️ Email            — ouvre le client mail (mailto:?subject&body=)
- *
- * 2 modes pour le destinataire :
- *   - "Nouveau contact" (par défaut) : saisie libre prénom + email d'un
- *     prospect qui n'est pas encore en CRM. C'est l'usage principal de la
- *     fonctionnalité.
- *   - "Élève déjà enregistré" : recherche dans les élèves existants pour
- *     pré-remplir prénom + email (utile si on veut renvoyer le lien à
- *     quelqu'un qui n'a pas encore créé son espace).
+ * 2 façons de partager le portail :
+ *   1) 📋 Copier le lien
+ *   2) ✉️ Email — envoi direct via Resend (POST /api/invite)
  */
 
 import { useState, useMemo, useEffect } from 'react';
-import { X, Copy, Check, Mail, Link as LinkIcon, User, Search, UserPlus } from 'lucide-react';
+import { X, Copy, Check, Mail, Link as LinkIcon, User, Search, UserPlus, Send, Loader2 } from 'lucide-react';
+import { useToast } from '@/components/ui/ToastProvider';
 
 export default function InviteModal({ open, onClose, profile, clients = [] }) {
+  const { toast } = useToast();
   const [tab, setTab] = useState('lien'); // 'lien' | 'email' (sms désactivé V2)
   const [copied, setCopied] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
 
   // Mode du destinataire : 'new' (saisie libre) | 'existing' (sélection CRM)
   const [recipientMode, setRecipientMode] = useState('new');
@@ -80,6 +75,8 @@ Pas de mot de passe à retenir, c'est juste ton email à chaque fois.
   useEffect(() => {
     if (!open) {
       setCopied(false);
+      setSent(false);
+      setSending(false);
       setSearch('');
       setSelectedClient(null);
       setNewPrenom('');
@@ -112,9 +109,31 @@ Pas de mot de passe à retenir, c'est juste ton email à chaque fois.
     }
   };
 
-  const mailtoHref = (() => {
-    return `mailto:${emailCible}?subject=${encodeURIComponent(sujetEmail)}&body=${encodeURIComponent(corpsEmail)}`;
-  })();
+  const sendInviteEmail = async () => {
+    if (!emailCible || sending) return;
+    setSending(true);
+    try {
+      const res = await fetch('/api/invite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: emailCible,
+          prenom: prenomCible,
+          studioSlug,
+          studioNom,
+          profPrenom,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Erreur');
+      setSent(true);
+      toast.success(`Invitation envoyée à ${prenomCible || emailCible} ✓`);
+    } catch (err) {
+      toast.error('Erreur : ' + err.message);
+    } finally {
+      setSending(false);
+    }
+  };
 
   return (
     <div className="invite-backdrop" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
@@ -284,29 +303,35 @@ Pas de mot de passe à retenir, c'est juste ton email à chaque fois.
 
           {tab === 'email' && (
             <div className="invite-tab-content">
-              <p className="invite-help">
-                Ouvre ton client email avec le message déjà rédigé.
-                {!emailCible && ' Saisis un email au-dessus pour pré-remplir le destinataire.'}
-              </p>
-              <div className="invite-email-subject">
-                <strong>Objet :</strong> {sujetEmail}
-              </div>
-              <div className="invite-preview">{corpsEmail}</div>
-              <div className="invite-actions-row">
-                <button
-                  className="izi-btn izi-btn-secondary"
-                  onClick={() => handleCopy(`Objet : ${sujetEmail}\n\n${corpsEmail}`)}
-                  type="button"
-                >
-                  {copied ? <><Check size={16} /> Copié</> : <><Copy size={16} /> Copier</>}
-                </button>
-                <a
-                  href={mailtoHref}
-                  className="izi-btn izi-btn-primary"
-                >
-                  <Mail size={16} /> Ouvrir mail
-                </a>
-              </div>
+              {sent ? (
+                <div className="invite-sent-confirm">
+                  <Check size={28} className="invite-sent-icon" />
+                  <div className="invite-sent-title">Invitation envoyée !</div>
+                  <div className="invite-sent-detail">
+                    Un email a été envoyé à <strong>{prenomCible || emailCible}</strong> avec les instructions pour accéder au portail.
+                  </div>
+                  <button className="izi-btn izi-btn-secondary" onClick={onClose} type="button">Fermer</button>
+                </div>
+              ) : (
+                <>
+                  <p className="invite-help">
+                    Envoie un email d'invitation avec les instructions pour accéder au portail.
+                    {!emailCible && " Saisis un email au-dessus d'abord."}
+                  </p>
+                  <div className="invite-email-subject">
+                    <strong>Objet :</strong> {sujetEmail}
+                  </div>
+                  <div className="invite-preview">{corpsEmail}</div>
+                  <button
+                    className="izi-btn izi-btn-primary invite-action-btn"
+                    onClick={sendInviteEmail}
+                    disabled={!emailCible || sending}
+                    type="button"
+                  >
+                    {sending ? <><Loader2 size={16} className="invite-spinner" /> Envoi en cours…</> : <><Send size={16} /> Envoyer l'invitation</>}
+                  </button>
+                </>
+              )}
             </div>
           )}
         </div>
@@ -523,6 +548,17 @@ Pas de mot de passe à retenir, c'est juste ton email à chaque fois.
           font-size: 0.75rem; color: var(--text-muted, #888);
           margin: 4px 0 0; line-height: 1.5;
         }
+
+        /* Confirmation envoi */
+        .invite-sent-confirm {
+          display: flex; flex-direction: column; align-items: center; gap: 10px;
+          padding: 24px 16px; text-align: center;
+        }
+        .invite-sent-icon { color: #16a34a; }
+        .invite-sent-title { font-size: 1.125rem; font-weight: 700; color: var(--text-primary); }
+        .invite-sent-detail { font-size: 0.875rem; color: var(--text-secondary); line-height: 1.5; max-width: 320px; }
+        .invite-spinner { animation: spin-invite 0.8s linear infinite; }
+        @keyframes spin-invite { to { transform: rotate(360deg); } }
 
         /* Tab désactivé V2 (SMS) */
         .invite-tab-disabled {

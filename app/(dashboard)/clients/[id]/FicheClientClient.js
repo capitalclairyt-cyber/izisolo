@@ -9,7 +9,7 @@ import {
   CheckCircle2, XCircle, Plus, X, Building2, MapPin,
   Banknote, CreditCard, Landmark, FileText, ChevronRight,
   Package, Zap, CalendarCheck, Loader2,
-  MessageSquare, Wallet, AlertCircle, Trash2, PlusCircle, Home,
+  MessageSquare, Wallet, AlertCircle, Trash2, PlusCircle, Home, Send,
 } from 'lucide-react';
 import { formatDate, formatMontant } from '@/lib/utils';
 import { getVocabulaire } from '@/lib/vocabulaire';
@@ -308,6 +308,36 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
   const [statutOpen, setStatutOpen] = useState(false);
   const [clientStatut, setClientStatut] = useState(client.statut || 'prospect');
   const statutRef = useRef(null);
+
+  const [inviting, setInviting] = useState(false);
+  const [invited, setInvited] = useState(false);
+
+  const sendPortailInvite = async () => {
+    if (!client.email || inviting) return;
+    setInviting(true);
+    try {
+      const res = await fetch('/api/invite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: client.email,
+          prenom: client.prenom || client.nom,
+          studioSlug: profile?.studio_slug,
+          studioNom: profile?.studio_nom,
+          profPrenom: profile?.prenom,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Erreur');
+      setInvited(true);
+      toast.success(`Invitation envoyée à ${client.prenom || client.email} ✓`);
+      setTimeout(() => setInvited(false), 5000);
+    } catch (err) {
+      toast.error('Erreur : ' + err.message);
+    } finally {
+      setInviting(false);
+    }
+  };
 
   useEffect(() => {
     if (!statutOpen) return;
@@ -612,6 +642,18 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
             <MessageSquare size={16} />
             <span className="header-msg-label">Message</span>
           </Link>
+          {!isPro && client.email && profile?.studio_slug && (
+            <button
+              className={`header-invite-btn ${invited ? 'invited' : ''}`}
+              onClick={sendPortailInvite}
+              disabled={inviting || invited}
+              title="Envoyer une invitation par email pour accéder au portail"
+              type="button"
+            >
+              {inviting ? <Loader2 size={16} className="invite-spin" /> : invited ? <CheckCircle2 size={16} /> : <Send size={16} />}
+              <span className="header-invite-label">{invited ? 'Envoyé !' : 'Inviter'}</span>
+            </button>
+          )}
           <Link href={`/clients/${client.id}/edit`} className="edit-btn"><Edit3 size={18} /></Link>
         </div>
       </div>
@@ -1481,6 +1523,21 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
         .header-msg-btn:hover { background: var(--brand); color: white; }
         .header-msg-label { display: none; }
         @media (min-width: 400px) { .header-msg-label { display: inline; } }
+
+        .header-invite-btn {
+          display: flex; align-items: center; gap: 6px;
+          padding: 8px 14px; height: 40px; border-radius: var(--radius-sm);
+          border: 1px solid #a5d6a7; background: #e8f5e9;
+          color: #2e7d32; font-size: 0.8125rem; font-weight: 600;
+          cursor: pointer; transition: all 0.15s; font-family: inherit;
+        }
+        .header-invite-btn:hover:not(:disabled) { background: #4caf50; color: white; border-color: #4caf50; }
+        .header-invite-btn:disabled { opacity: 0.7; cursor: default; }
+        .header-invite-btn.invited { background: #dcfce7; border-color: #86efac; color: #16a34a; }
+        .header-invite-label { display: none; }
+        @media (min-width: 400px) { .header-invite-label { display: inline; } }
+        .invite-spin { animation: invite-spin-anim 0.8s linear infinite; }
+        @keyframes invite-spin-anim { to { transform: rotate(360deg); } }
 
         .profile-card { display: flex; flex-direction: column; align-items: center; padding: 24px 16px; gap: 8px; text-align: center; }
         .profile-avatar { width: 80px; height: 80px; border-radius: 50%; background: var(--brand); color: white; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 700; }
