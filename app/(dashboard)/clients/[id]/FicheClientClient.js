@@ -508,6 +508,7 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
   const [editAboDateDebut, setEditAboDateDebut] = useState('');
   const [editAboDateFin, setEditAboDateFin] = useState('');
   const [editAboSeances, setEditAboSeances] = useState('');
+  const [editAboUtilisees, setEditAboUtilisees] = useState('');
   const [editAboSubmitting, setEditAboSubmitting] = useState(false);
 
   const openEditAbo = (abo) => {
@@ -516,6 +517,7 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
     setEditAboDateDebut(abo.date_debut || '');
     setEditAboDateFin(abo.date_fin || '');
     setEditAboSeances(abo.seances_total != null ? String(abo.seances_total) : '');
+    setEditAboUtilisees(abo.seances_utilisees != null ? String(abo.seances_utilisees) : '0');
   };
 
   const saveEditAbo = async () => {
@@ -527,6 +529,7 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
       if (editAboDateFin) body.date_fin = editAboDateFin;
       else body.date_fin = null;
       if (editAboSeances !== '') body.seances_total = parseInt(editAboSeances, 10);
+      if (editAboUtilisees !== '') body.seances_utilisees = parseInt(editAboUtilisees, 10);
       const res = await fetch(`/api/abonnements/${editAboModal.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -1133,6 +1136,20 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
                     value={editAboSeances}
                     onChange={e => setEditAboSeances(e.target.value)}
                   />
+                  <div className="paiement-section-label">Séances déjà faites</div>
+                  <input
+                    className="izi-input"
+                    type="number"
+                    min="0"
+                    max={editAboSeances || undefined}
+                    value={editAboUtilisees}
+                    onChange={e => setEditAboUtilisees(e.target.value)}
+                  />
+                  {editAboSeances && editAboUtilisees && (
+                    <p className="montant-hint" style={{ marginTop: 2 }}>
+                      {Math.max(0, parseInt(editAboSeances) - parseInt(editAboUtilisees))} séance{Math.max(0, parseInt(editAboSeances) - parseInt(editAboUtilisees)) > 1 ? 's' : ''} restante{Math.max(0, parseInt(editAboSeances) - parseInt(editAboUtilisees)) > 1 ? 's' : ''}
+                    </p>
+                  )}
                 </>
               )}
 
