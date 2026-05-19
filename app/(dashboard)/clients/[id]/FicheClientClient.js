@@ -589,6 +589,48 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
   const [versementDate, setVersementDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [versementSubmitting, setVersementSubmitting] = useState(false);
 
+  // ─── Libérer une série de réservations futures ─────────────────────────
+  const [libererModal, setLibererModal] = useState(null); // { recurrence_id, presences[], coursNom }
+  const [libererSubmitting, setLibererSubmitting] = useState(false);
+
+  const confirmerLibererSerie = async () => {
+    if (!libererModal) return;
+    setLibererSubmitting(true);
+    try {
+      const res = await fetch('/api/presences/liberer-serie', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          clientId: client.id,
+          recurrenceId: libererModal.recurrence_id,
+          depuisDate: new Date().toISOString().slice(0, 10),
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Erreur');
+      toast.success(`${json.liberees} réservation${json.liberees > 1 ? 's' : ''} libérée${json.liberees > 1 ? 's' : ''}${json.promues > 0 ? ` — ${json.promues} promotion${json.promues > 1 ? 's' : ''} depuis liste d'attente` : ''}`);
+      setLibererModal(null);
+      router.refresh();
+    } catch (e) {
+      toast.error(e.message);
+    } finally {
+      setLibererSubmitting(false);
+    }
+  };
+
+  // Grouper les présences futures par recurrence_id pour proposer la libération en série
+  const presencesFuturesParSerie = (() => {
+    const today = new Date().toISOString().slice(0, 10);
+    const futures = presences.filter(p => p.cours?.date >= today && p.cours?.recurrence_id);
+    const groupes = {};
+    for (const p of futures) {
+      const k = p.cours.recurrence_id;
+      if (!groupes[k]) groupes[k] = { recurrence_id: k, coursNom: p.cours.nom, heure: p.cours.heure, presences: [] };
+      groupes[k].presences.push(p);
+    }
+    return Object.values(groupes).filter(g => g.presences.length >= 2); // au moins 2 occurrences = une série
+  })();
+
   // ─── Pause d'abonnement ────────────────────────────────────────────────
   const [pauseModal, setPauseModal] = useState(null); // l'abo à pauser
   const [pauseDebut, setPauseDebut] = useState(() => new Date().toISOString().split('T')[0]);
@@ -1147,6 +1189,34 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
             );
           })()}
 
+          {/* Réservations récurrentes futures — proposer la libération en série */}
+          {presencesFuturesParSerie.length > 0 && (
+            <div className="presences-series">
+              <div className="presences-series-label">
+                <Calendar size={13} /> Réservations récurrentes à venir
+              </div>
+              {presencesFuturesParSerie.map(g => (
+                <div key={g.recurrence_id} className="presences-serie-card">
+                  <div className="presences-serie-info">
+                    <span className="presences-serie-nom">{g.coursNom}</span>
+                    <span className="presences-serie-count">
+                      {g.presences.length} séance{g.presences.length > 1 ? 's' : ''} à venir
+                      {g.heure ? ` · ${g.heure.substring(0, 5)}` : ''}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    className="presences-serie-liberer"
+                    onClick={() => setLibererModal(g)}
+                    title="Libérer toutes les places futures de cette série"
+                  >
+                    <X size={13} /> Libérer la série
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
           {presences.length === 0 ? (
             <div className="empty-mini">Aucune présence enregistrée</div>
           ) : (
@@ -1305,6 +1375,43 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
                 disabled={pauseSubmitting || !pauseDebut || !pauseFin}
               >
                 {pauseSubmitting ? <><Loader2 size={16} className="spin" /> Enregistrement...</> : <><Pause size={16} /> Mettre en pause</>}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal libérer série */}
+      {libererModal && (
+        <div className="modal-backdrop" onClick={e => { if (e.target === e.currentTarget) setLibererModal(null); }}>
+          <div className="modal-sheet versement-sheet animate-slide-up" role="dialog" aria-modal="true">
+            <div className="modal-header">
+              <div style={{ width: 36 }} />
+              <span className="modal-title">Libérer la série</span>
+              <button className="modal-close" onClick={() => setLibererModal(null)} type="button" aria-label="Fermer"><X size={20} /></button>
+            </div>
+            <div className="modal-body">
+              <div className="paiement-recap">
+                <span className="paiement-recap-nom">{libererModal.coursNom}</span>
+                <span className="paiement-recap-client">de {displayName}</span>
+              </div>
+              <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 10, padding: '12px 14px', marginBottom: 16, fontSize: '0.875rem', color: '#991b1b', lineHeight: 1.5 }}>
+                <strong>{libererModal.presences.length} réservation{libererModal.presences.length > 1 ? 's' : ''} à venir</strong> seront annulées.
+                <br />
+                Les places seront proposées aux personnes en liste d'attente le cas échéant.
+              </div>
+              <p style={{ fontSize: '0.8125rem', color: '#666', margin: '0 0 16px', lineHeight: 1.5 }}>
+                Action irréversible — utile si l'élève ne vient plus et ne donne plus de signe de vie.
+              </p>
+
+              <button
+                type="button"
+                className="izi-btn confirm-btn"
+                style={{ background: '#dc2626', color: 'white' }}
+                onClick={confirmerLibererSerie}
+                disabled={libererSubmitting}
+              >
+                {libererSubmitting ? <><Loader2 size={16} className="spin" /> Libération...</> : <><X size={16} /> Libérer les {libererModal.presences.length} places</>}
               </button>
             </div>
           </div>
@@ -1776,6 +1883,46 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
 
         /* Récap carnets dans onglet Présences */
         .presences-carnets-recap { display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px; }
+        .presences-series {
+          display: flex; flex-direction: column; gap: 6px;
+          margin: 12px 0;
+          padding: 10px 12px;
+          background: #fefaf5;
+          border: 1px solid #fde8d0;
+          border-radius: var(--radius-md);
+        }
+        .presences-series-label {
+          display: flex; align-items: center; gap: 6px;
+          font-size: 0.75rem; font-weight: 700; color: #7c4a03;
+          text-transform: uppercase; letter-spacing: 0.05em;
+          margin-bottom: 2px;
+        }
+        .presences-serie-card {
+          display: flex; align-items: center; justify-content: space-between;
+          gap: 10px;
+          padding: 8px 10px;
+          background: white;
+          border: 1px solid #fde8d0;
+          border-radius: 8px;
+        }
+        .presences-serie-info { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+        .presences-serie-nom { font-size: 0.875rem; font-weight: 600; color: #1a1a2e; }
+        .presences-serie-count { font-size: 0.75rem; color: #888; margin-top: 1px; }
+        .presences-serie-liberer {
+          display: inline-flex; align-items: center; gap: 4px;
+          padding: 6px 10px;
+          background: white;
+          border: 1.5px solid #fecaca;
+          color: #dc2626;
+          border-radius: 8px;
+          font-size: 0.75rem; font-weight: 600;
+          cursor: pointer; flex-shrink: 0;
+          transition: all 0.15s;
+        }
+        .presences-serie-liberer:hover {
+          background: #fef2f2;
+          border-color: #fca5a5;
+        }
         .presences-carnet-card {
           padding: 12px 14px; background: var(--brand-light); border: 1px solid var(--brand);
           border-radius: var(--radius-md); display: flex; flex-direction: column; gap: 4px;
