@@ -335,7 +335,7 @@ async function promouvoirListeAttente(supabaseAdmin, profileId, cours) {
         ? new Date(cours.date + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })
         : 'la date prévue';
       await resend.emails.send({
-        from: process.env.RESEND_FROM_EMAIL || 'IziSolo <no-reply@izisolo.fr>',
+        from: process.env.RESEND_FROM_EMAIL || 'IziSolo <bonjour@izisolo.fr>',
         to: nextRow.email,
         subject: `🎉 Une place s'est libérée !`,
         html: `

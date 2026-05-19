@@ -94,7 +94,7 @@ export async function POST(request, { params }) {
     try {
       const resend = new Resend(process.env.RESEND_API_KEY);
       await resend.emails.send({
-        from: process.env.RESEND_FROM_EMAIL || 'IziSolo <no-reply@izisolo.fr>',
+        from: process.env.RESEND_FROM_EMAIL || 'IziSolo <bonjour@izisolo.fr>',
         to: demande.email,
         subject: `Demande de cours d'essai chez ${profile.studio_nom}`,
         html: `

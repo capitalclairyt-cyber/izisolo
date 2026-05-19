@@ -396,7 +396,7 @@ export async function POST(request, { params }) {
       magicLinkSent = !!magicLink;
 
       await resend.emails.send({
-        from: process.env.RESEND_FROM_EMAIL || 'IziSolo <no-reply@izisolo.fr>',
+        from: process.env.RESEND_FROM_EMAIL || 'IziSolo <bonjour@izisolo.fr>',
         to: email,
         subject: `Réservation confirmée — ${cours.nom}`,
         html: `

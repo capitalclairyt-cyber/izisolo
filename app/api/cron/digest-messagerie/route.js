@@ -157,7 +157,7 @@ async function envoyerDigest({ to, prenom, nbRecus, url, contexte, studioNom }) 
       : `Bonjour ${prenom},\n\n${studioNom} t'a envoyé ${nbRecus} message${nbRecus > 1 ? 's' : ''}. Voici le lien pour le${nbRecus > 1 ? 's' : ''} consulter :`;
 
     await resend.emails.send({
-      from: process.env.RESEND_FROM_EMAIL || 'IziSolo <no-reply@izisolo.fr>',
+      from: process.env.RESEND_FROM_EMAIL || 'IziSolo <bonjour@izisolo.fr>',
       to,
       subject: sujet,
       html: `

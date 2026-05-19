@@ -34,7 +34,7 @@ const FAQ = [
   },
   {
     q: "Comment exporter mes données ?",
-    a: "Dans Paramètres → depuis le bas de la page, tu peux exporter tes données en CSV. Pour un export complet, contacte support@izisolo.fr."
+    a: "Dans Paramètres → depuis le bas de la page, tu peux exporter tes données en CSV. Pour un export complet, contacte bonjour@izisolo.fr."
   },
   {
     q: "Comment changer de formule d'abonnement ?",
@@ -100,7 +100,7 @@ export default function SupportPage() {
     } catch {
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: "Désolé, je rencontre un problème technique. Contacte-nous à support@izisolo.fr 🙏"
+        content: "Désolé, je rencontre un problème technique. Contacte-nous à bonjour@izisolo.fr 🙏"
       }]);
     } finally {
       setLoading(false);
@@ -127,7 +127,7 @@ export default function SupportPage() {
       setTicketSubject('');
       setTicketMessage('');
     } catch (e) {
-      alert('Erreur : impossible d\'envoyer le ticket. Contacte directement support@izisolo.fr.');
+      alert('Erreur : impossible d\'envoyer le ticket. Contacte directement bonjour@izisolo.fr.');
     } finally {
       setTicketSending(false);
     }
@@ -142,9 +142,9 @@ export default function SupportPage() {
 
       {/* Contact rapide */}
       <div className="support-contact-bar">
-        <a href="mailto:support@izisolo.fr" className="support-contact-btn">
+        <a href="mailto:bonjour@izisolo.fr" className="support-contact-btn">
           <Mail size={16} />
-          support@izisolo.fr
+          bonjour@izisolo.fr
         </a>
         <Link href="/legal/cgu" className="support-contact-btn ghost" target="_blank">
           <ExternalLink size={14} />

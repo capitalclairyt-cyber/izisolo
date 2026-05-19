@@ -744,7 +744,7 @@ export function FinalCta() {
           </p>
           <div className="hero-ctas">
             <Link href="/register" className="btn btn-primary btn-lg">Créer mon studio →</Link>
-            <a href="mailto:contact@izisolo.fr" className="btn btn-ghost btn-lg">Parler à l'équipe</a>
+            <a href="mailto:bonjour@izisolo.fr" className="btn btn-ghost btn-lg">Parler à l'équipe</a>
           </div>
         </div>
         <div className="final-cta-photo reveal r-zoom">
@@ -801,7 +801,7 @@ export function Footer() {
       </div>
       <div className="footer-bottom container">
         <span>© 2026 IziSolo · Mélutek · fait avec ☼ en France</span>
-        <span className="mono">contact@izisolo.fr</span>
+        <span className="mono">bonjour@izisolo.fr</span>
       </div>
     </footer>
   );
