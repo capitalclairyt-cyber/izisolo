@@ -356,6 +356,62 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
     }
   };
 
+  const deleteAbonnement = async (abo) => {
+    const aboPays = paiements.filter(p => p.abonnement_id === abo.id);
+    const msg = aboPays.length > 0
+      ? `Supprimer "${abo.offre_nom}" et ses ${aboPays.length} paiement(s) associé(s) ?`
+      : `Supprimer "${abo.offre_nom}" ?`;
+    if (!confirm(msg)) return;
+    try {
+      const res = await fetch(`/api/abonnements/${abo.id}`, { method: 'DELETE' });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Erreur');
+      setAbonnements(prev => prev.filter(a => a.id !== abo.id));
+      setPaiements(prev => prev.filter(p => p.abonnement_id !== abo.id));
+      toast.success('Offre supprimée');
+    } catch (e) {
+      toast.error(e.message);
+    }
+  };
+
+  const [editAboModal, setEditAboModal] = useState(null);
+  const [editAboStatut, setEditAboStatut] = useState('actif');
+  const [editAboDateFin, setEditAboDateFin] = useState('');
+  const [editAboSeances, setEditAboSeances] = useState('');
+  const [editAboSubmitting, setEditAboSubmitting] = useState(false);
+
+  const openEditAbo = (abo) => {
+    setEditAboModal(abo);
+    setEditAboStatut(abo.statut || 'actif');
+    setEditAboDateFin(abo.date_fin || '');
+    setEditAboSeances(abo.seances_total != null ? String(abo.seances_total) : '');
+  };
+
+  const saveEditAbo = async () => {
+    if (!editAboModal) return;
+    setEditAboSubmitting(true);
+    try {
+      const body = { statut: editAboStatut };
+      if (editAboDateFin) body.date_fin = editAboDateFin;
+      else body.date_fin = null;
+      if (editAboSeances !== '') body.seances_total = parseInt(editAboSeances, 10);
+      const res = await fetch(`/api/abonnements/${editAboModal.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Erreur');
+      setAbonnements(prev => prev.map(a => a.id === editAboModal.id ? { ...a, ...body } : a));
+      setEditAboModal(null);
+      toast.success('Offre modifiée');
+    } catch (e) {
+      toast.error(e.message);
+    } finally {
+      setEditAboSubmitting(false);
+    }
+  };
+
   const [versementModal, setVersementModal] = useState(null);
   const [versementMontant, setVersementMontant] = useState('');
   const [versementMode, setVersementMode] = useState('especes');
@@ -575,7 +631,11 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
                 <div key={abo.id} className="abo-card izi-card">
                   <div className="abo-top">
                     <span className="abo-nom">{abo.offre_nom}</span>
-                    <span className={`izi-badge izi-badge-${sInfo.color || 'neutral'}`}>{sInfo.label || abo.statut}</span>
+                    <div className="abo-top-right">
+                      <span className={`izi-badge izi-badge-${sInfo.color || 'neutral'}`}>{sInfo.label || abo.statut}</span>
+                      <button className="abo-action-btn" onClick={() => openEditAbo(abo)} title="Modifier"><Edit3 size={13} /></button>
+                      <button className="abo-action-btn abo-action-delete" onClick={() => deleteAbonnement(abo)} title="Supprimer"><Trash2 size={13} /></button>
+                    </div>
                   </div>
                   {restantes !== null && (
                     <div className="abo-progress">
@@ -825,6 +885,74 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
         </div>
       )}
 
+      {/* Modal modifier abonnement */}
+      {editAboModal && (
+        <div className="modal-backdrop" onClick={e => { if (e.target === e.currentTarget) setEditAboModal(null); }}>
+          <div className="modal-sheet versement-sheet animate-slide-up" role="dialog" aria-modal="true">
+            <div className="modal-header">
+              <div style={{ width: 36 }} />
+              <span className="modal-title">Modifier l'offre</span>
+              <button className="modal-close" onClick={() => setEditAboModal(null)} type="button" aria-label="Fermer"><X size={20} /></button>
+            </div>
+            <div className="modal-body">
+              <div className="paiement-recap">
+                <span className="paiement-recap-nom">{editAboModal.offre_nom}</span>
+                <span className="paiement-recap-client">pour {displayName}</span>
+              </div>
+
+              <div className="paiement-section-label">Statut</div>
+              <div className="edit-abo-statut-chips">
+                {[
+                  { value: 'actif', label: 'Actif' },
+                  { value: 'suspendu', label: 'Suspendu' },
+                  { value: 'expire', label: 'Expiré' },
+                  { value: 'resilie', label: 'Résilié' },
+                ].map(s => (
+                  <button
+                    key={s.value}
+                    type="button"
+                    className={`multi-nb-chip ${editAboStatut === s.value ? 'active' : ''}`}
+                    onClick={() => setEditAboStatut(s.value)}
+                  >
+                    {s.label}
+                  </button>
+                ))}
+              </div>
+
+              {editAboModal.seances_total != null && (
+                <>
+                  <div className="paiement-section-label">Séances totales</div>
+                  <input
+                    className="izi-input"
+                    type="number"
+                    min="0"
+                    value={editAboSeances}
+                    onChange={e => setEditAboSeances(e.target.value)}
+                  />
+                </>
+              )}
+
+              <div className="paiement-section-label">Date de fin</div>
+              <input
+                className="izi-input"
+                type="date"
+                value={editAboDateFin}
+                onChange={e => setEditAboDateFin(e.target.value)}
+              />
+
+              <button
+                type="button"
+                className="izi-btn izi-btn-primary confirm-btn"
+                onClick={saveEditAbo}
+                disabled={editAboSubmitting}
+              >
+                {editAboSubmitting ? <><Loader2 size={16} className="spin" /> Enregistrement...</> : <>Enregistrer</>}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <style jsx global>{`
         .fiche-client { display: flex; flex-direction: column; gap: 16px; padding-bottom: 40px; }
 
@@ -942,7 +1070,17 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
 
         .abo-card { padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; }
         .abo-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+        .abo-top-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
         .abo-nom { font-weight: 600; font-size: 0.9375rem; flex: 1; }
+        .abo-action-btn {
+          display: inline-flex; align-items: center; justify-content: center;
+          width: 28px; height: 28px; border-radius: var(--radius-sm, 6px);
+          border: none; background: none; color: var(--text-muted);
+          cursor: pointer; transition: all 0.15s;
+        }
+        .abo-action-btn:hover { background: var(--cream-dark, #f0ede8); color: var(--text-primary); }
+        .abo-action-delete:hover { background: #fef2f2; color: #dc2626; }
+        .edit-abo-statut-chips { display: flex; gap: 6px; flex-wrap: wrap; }
         .abo-progress { display: flex; align-items: center; gap: 8px; }
         .progress-bar { flex: 1; height: 6px; background: var(--cream-dark); border-radius: 3px; overflow: hidden; }
         .progress-fill { height: 100%; background: var(--brand); border-radius: 3px; transition: width 0.3s ease; }
