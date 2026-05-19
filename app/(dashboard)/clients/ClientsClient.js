@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { Search, Plus, User, Building2, Phone, Mail, ChevronRight, Filter, Send, SlidersHorizontal } from 'lucide-react';
+import { createClient } from '@/lib/supabase';
 import { getVocabulaire } from '@/lib/vocabulaire';
 import { STATUTS_CLIENT } from '@/lib/constantes';
 import { toneForClient } from '@/lib/tones';
@@ -23,10 +24,28 @@ const FILTRES_PRIMAIRES = [
   { key: 'inactifs_30j', label: 'Pas de nouvelles >30j' },
 ];
 
-export default function ClientsClient({ clients, profile }) {
+export default function ClientsClient({ clients: clientsInit, profile }) {
   const vocab = getVocabulaire(profile?.metier || 'yoga', profile?.vocabulaire);
   const [search, setSearch] = useState('');
   const [inviteOpen, setInviteOpen] = useState(false);
+  const [clientsList, setClientsList] = useState(clientsInit);
+  const [statutDropdown, setStatutDropdown] = useState(null);
+  const statutDropRef = useRef(null);
+
+  useEffect(() => {
+    const handler = (e) => { if (statutDropRef.current && !statutDropRef.current.contains(e.target)) setStatutDropdown(null); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const changeClientStatut = async (clientId, newStatut) => {
+    setStatutDropdown(null);
+    const prev = clientsList.find(c => c.id === clientId)?.statut;
+    setClientsList(list => list.map(c => c.id === clientId ? { ...c, statut: newStatut } : c));
+    const supabase = createClient();
+    const { error } = await supabase.from('clients').update({ statut: newStatut }).eq('id', clientId);
+    if (error) setClientsList(list => list.map(c => c.id === clientId ? { ...c, statut: prev } : c));
+  };
 
   // Filtres : 1 principal visible toujours + un panel "avancé" repliable
   const [filtrePrimaire, setFiltrePrimaire] = useState('tous');
@@ -39,18 +58,18 @@ export default function ClientsClient({ clients, profile }) {
   // Liste des noms d'offres distincts (pour le filtre "type d'abonnement")
   const offresDistinct = useMemo(() => {
     const set = new Set();
-    for (const c of clients) {
+    for (const c of clientsList) {
       for (const a of (c.abonnements || [])) {
         if (a.statut === 'actif' && a.offre_nom) set.add(a.offre_nom);
       }
     }
     return Array.from(set).sort();
-  }, [clients]);
+  }, [clientsList]);
 
   const hasActiveAbo = (c) => (c.abonnements || []).some(a => a.statut === 'actif');
 
   const filtered = useMemo(() => {
-    let list = clients;
+    let list = clientsList;
 
     // 1. Recherche texte
     if (search) {
@@ -85,7 +104,7 @@ export default function ClientsClient({ clients, profile }) {
     if (filtreAbo !== 'tous')         list = list.filter(c => (c.abonnements || []).some(a => a.statut === 'actif' && a.offre_nom === filtreAbo));
 
     return list;
-  }, [clients, search, filtrePrimaire, filtreStatut, filtreType, filtreAbo]);
+  }, [clientsList, search, filtrePrimaire, filtreStatut, filtreType, filtreAbo]);
 
   // Pagination 8/page (cf. components/ui/Pagination.js)
   const { paginated, currentPage, totalPages, setPage } = usePagination(filtered, PAGE_SIZE);
@@ -118,7 +137,7 @@ export default function ClientsClient({ clients, profile }) {
       {/* Header */}
       <div className="page-header animate-fade-in">
         <h1>{vocab.Clients || 'Élèves'}</h1>
-        <span className="count-badge">{clients.length}</span>
+        <span className="count-badge">{clientsList.length}</span>
         <button
           className="izi-btn izi-btn-secondary invite-btn"
           onClick={() => setInviteOpen(true)}
@@ -133,7 +152,7 @@ export default function ClientsClient({ clients, profile }) {
         open={inviteOpen}
         onClose={() => setInviteOpen(false)}
         profile={profile}
-        clients={clients}
+        clients={clientsList}
       />
 
       {/* Recherche sticky */}
@@ -263,9 +282,26 @@ export default function ClientsClient({ clients, profile }) {
                       {isPro(client) && (
                         <span className="izi-badge izi-badge-brand">{getProLabel(client.type_client)}</span>
                       )}
-                      <span className={`izi-badge izi-badge-${statutInfo.color}`}>
+                      <span
+                        className={`izi-badge izi-badge-${statutInfo.color} izi-badge-clickable`}
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); setStatutDropdown(statutDropdown === client.id ? null : client.id); }}
+                        role="button"
+                      >
                         {statutInfo.label}
                       </span>
+                      {statutDropdown === client.id && (
+                        <div className="statut-dropdown" ref={statutDropRef} onClick={e => { e.preventDefault(); e.stopPropagation(); }}>
+                          {Object.entries(STATUTS_CLIENT).map(([key, info]) => (
+                            <button
+                              key={key}
+                              className={`statut-dropdown-item ${client.statut === key ? 'active' : ''}`}
+                              onClick={() => changeClientStatut(client.id, key)}
+                            >
+                              <span className={`izi-badge izi-badge-${info.color}`} style={{ fontSize: '0.6875rem' }}>{info.label}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
                       {seancesRestantes !== null && (
                         <span className={`izi-badge ${seancesRestantes <= 2 ? 'izi-badge-danger' : 'izi-badge-success'}`}>
                           {seancesRestantes} séance{seancesRestantes > 1 ? 's' : ''}
@@ -532,7 +568,42 @@ export default function ClientsClient({ clients, profile }) {
           gap: 6px;
           margin-top: 4px;
           flex-wrap: wrap;
+          position: relative;
         }
+        .izi-badge-clickable {
+          cursor: pointer;
+          transition: opacity 0.15s ease;
+        }
+        .izi-badge-clickable:hover { opacity: 0.8; }
+        .statut-dropdown {
+          position: absolute;
+          top: 100%;
+          left: 0;
+          z-index: 50;
+          background: white;
+          border: 1px solid var(--border);
+          border-radius: var(--radius-sm);
+          box-shadow: var(--shadow-md, 0 4px 12px rgba(0,0,0,0.1));
+          padding: 4px;
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+          min-width: 120px;
+          margin-top: 4px;
+        }
+        .statut-dropdown-item {
+          display: flex;
+          align-items: center;
+          padding: 6px 8px;
+          border: none;
+          background: transparent;
+          cursor: pointer;
+          border-radius: 4px;
+          font-family: inherit;
+          transition: background 0.12s ease;
+        }
+        .statut-dropdown-item:hover { background: var(--brand-light, #f5f0eb); }
+        .statut-dropdown-item.active { background: var(--brand-light, #f5f0eb); }
         .client-chevron {
           color: var(--text-muted);
           flex-shrink: 0;

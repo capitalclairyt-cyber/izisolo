@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase';
 import { validerEmail, validerTelephone, formaterTelephone, validerSiret, formaterSiret } from '@/lib/validation';
 import { useToast } from '@/components/ui/ToastProvider';
+import { STATUTS_CLIENT } from '@/lib/constantes';
 import AutocompleteEntreprise from '@/components/forms/AutocompleteEntreprise';
 import AutocompleteCommune from '@/components/forms/AutocompleteCommune';
 import ValidatedInput from '@/components/forms/ValidatedInput';
@@ -24,6 +25,7 @@ export default function NouveauClient() {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [mode, setMode] = useState('particulier');
+  const [statut, setStatut] = useState('prospect');
   const [prefilled, setPrefilled] = useState(false); // animation quand prérempli
   const [doublonsSuggeres, setDoublonsSuggeres] = useState([]); // clients similaires détectés
   const debounceRef = useRef(null);
@@ -162,7 +164,7 @@ export default function NouveauClient() {
 
       const payload = {
         profile_id: user.id,
-        statut: 'prospect',
+        statut,
         notes: form.notes.trim() || null,
         email: form.email.trim() || null,
         telephone: form.telephone.trim() || null,
@@ -539,6 +541,23 @@ export default function NouveauClient() {
           </div>
         )}
 
+        {/* Statut */}
+        <div className="form-group">
+          <label className="form-label">Statut</label>
+          <div className="statut-chips">
+            {Object.entries(STATUTS_CLIENT).filter(([k]) => k !== 'archive').map(([key, info]) => (
+              <button
+                key={key}
+                type="button"
+                className={`izi-badge izi-badge-${info.color} statut-chip ${statut === key ? 'statut-chip-active' : 'statut-chip-inactive'}`}
+                onClick={() => setStatut(key)}
+              >
+                {info.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Notes */}
         <div className="form-group">
           <label className="form-label" htmlFor="nc-notes">Notes</label>
@@ -634,6 +653,11 @@ export default function NouveauClient() {
         .doublon-alert-link:hover { color: #92400e; }
         .doublon-alert-email { font-weight: 400; color: #b45309; }
         .doublon-alert-hint { font-size: 0.75rem; color: #b45309; opacity: 0.8; }
+
+        .statut-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+        .statut-chip { cursor: pointer; border: none; font-size: 0.75rem; padding: 4px 12px; transition: all 0.15s ease; }
+        .statut-chip-inactive { opacity: 0.4; filter: grayscale(0.5); }
+        .statut-chip-active { opacity: 1; filter: none; box-shadow: 0 0 0 2px var(--brand); }
       `}</style>
     </div>
   );
