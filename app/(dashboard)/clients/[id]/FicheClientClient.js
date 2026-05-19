@@ -509,6 +509,7 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
   const [editAboDateFin, setEditAboDateFin] = useState('');
   const [editAboSeances, setEditAboSeances] = useState('');
   const [editAboUtilisees, setEditAboUtilisees] = useState('');
+  const [editAboNotes, setEditAboNotes] = useState('');
   const [editAboSubmitting, setEditAboSubmitting] = useState(false);
 
   const openEditAbo = (abo) => {
@@ -518,6 +519,7 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
     setEditAboDateFin(abo.date_fin || '');
     setEditAboSeances(abo.seances_total != null ? String(abo.seances_total) : '');
     setEditAboUtilisees(abo.seances_utilisees != null ? String(abo.seances_utilisees) : '0');
+    setEditAboNotes(abo.notes || '');
   };
 
   const saveEditAbo = async () => {
@@ -530,6 +532,7 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
       else body.date_fin = null;
       if (editAboSeances !== '') body.seances_total = parseInt(editAboSeances, 10);
       if (editAboUtilisees !== '') body.seances_utilisees = parseInt(editAboUtilisees, 10);
+      body.notes = editAboNotes.trim() || null;
       const res = await fetch(`/api/abonnements/${editAboModal.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -833,6 +836,7 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
                     </div>
                   )}
                   {abo.created_at && <div className="abo-meta">Souscrit le {formatDate(abo.created_at.split('T')[0])}</div>}
+                  {abo.notes && <div className="abo-notes"><AlertCircle size={12} /> {abo.notes}</div>}
                   {abo.statut === 'actif' && !fullyPaid && (
                     <button
                       className="abo-add-versement"
@@ -1210,6 +1214,15 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
                 onChange={e => setEditAboDateFin(e.target.value)}
               />
 
+              <div className="paiement-section-label">Observations / notes</div>
+              <textarea
+                className="izi-input abo-notes-textarea"
+                value={editAboNotes}
+                onChange={e => setEditAboNotes(e.target.value)}
+                placeholder="Ex : 16 séances saisies à la création mais pas sûre du décompte…"
+                rows={3}
+              />
+
               <button
                 type="button"
                 className="izi-btn izi-btn-primary confirm-btn"
@@ -1538,6 +1551,15 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
         .progress-fill { height: 100%; background: var(--brand); border-radius: 3px; transition: width 0.3s ease; }
         .progress-text { font-size: 0.75rem; color: var(--text-muted); white-space: nowrap; }
         .abo-meta { font-size: 0.75rem; color: var(--text-muted); }
+        .abo-notes {
+          display: flex; align-items: flex-start; gap: 6px;
+          font-size: 0.8125rem; color: var(--text-secondary); font-style: italic;
+          padding: 8px 10px; background: var(--cream, #faf8f5);
+          border-radius: var(--radius-sm); border-left: 3px solid var(--brand);
+          line-height: 1.45;
+        }
+        .abo-notes svg { flex-shrink: 0; margin-top: 2px; color: var(--brand); }
+        .abo-notes-textarea { resize: vertical; min-height: 60px; font-size: 0.875rem; line-height: 1.5; }
         .abo-paiements-resume { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 0.8125rem; }
         .abo-recu { font-weight: 600; color: #16a34a; }
         .abo-regle { display: inline-flex; align-items: center; gap: 5px; font-weight: 600; color: #16a34a; font-size: 0.8125rem; }

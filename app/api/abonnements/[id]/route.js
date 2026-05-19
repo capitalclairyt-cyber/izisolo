@@ -8,6 +8,7 @@ const updateSchema = z.object({
   date_fin: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Format YYYY-MM-DD attendu').nullable().optional(),
   seances_total: z.number().int().min(0).nullable().optional(),
   seances_utilisees: z.number().int().min(0).optional(),
+  notes: z.string().max(1000).nullable().optional(),
 });
 
 export async function PATCH(request, { params }) {
@@ -39,6 +40,7 @@ export async function PATCH(request, { params }) {
   if (data.date_fin !== undefined) update.date_fin = data.date_fin;
   if (data.seances_total !== undefined) update.seances_total = data.seances_total;
   if (data.seances_utilisees !== undefined) update.seances_utilisees = data.seances_utilisees;
+  if (data.notes !== undefined) update.notes = data.notes;
 
   if (Object.keys(update).length === 0) {
     return Response.json({ error: 'Rien à modifier' }, { status: 400 });
