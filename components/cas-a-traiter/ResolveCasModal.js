@@ -70,6 +70,9 @@ export default function ResolveCasModal({ item, action, actionLabel, onClose, on
   const isDirect       = DIRECT_ACTIONS.has(action);
   const directPreview  = DIRECT_ACTION_PREVIEW[action];
 
+  const NEEDS_PRESENCE = new Set(['decompte', 'excuse', 'annule', 'place_donnee', 'declinee', 'reporte']);
+  const missingPresence = NEEDS_PRESENCE.has(action) && !item.presence_id;
+
   // Mode initial selon le type d'action
   useEffect(() => {
     if (isDirect) setMode('direct');
@@ -244,6 +247,12 @@ export default function ResolveCasModal({ item, action, actionLabel, onClose, on
           </div>
         )}
 
+        {missingPresence && (
+          <div className="resolve-error">
+            <AlertCircle size={14} /> Pas de présence liée à ce cas — l'action "{actionLabel}" est impossible. Le cas a peut-être été créé avant la refonte du pointage.
+          </div>
+        )}
+
         {/* Note libre — toujours dispo */}
         <div className="resolve-note">
           <label htmlFor="resolve-notes">Note (optionnel)</label>
@@ -270,7 +279,7 @@ export default function ResolveCasModal({ item, action, actionLabel, onClose, on
           <button
             className="resolve-btn-confirm"
             onClick={submit}
-            disabled={submitting || !mode || (mode === 'deja_fait' && resourceConfig && !ressourceId && ressources.length > 0)}
+            disabled={submitting || !mode || missingPresence || (mode === 'deja_fait' && resourceConfig && !ressourceId && ressources.length > 0)}
           >
             {submitting ? <><Loader2 size={14} className="spin" /> Confirmation…</> : 'Confirmer'}
           </button>
