@@ -28,7 +28,18 @@ const JOURS = [
 const SLOT_MINUTES = 30;
 const HEURE_DEBUT = 6;   // 6h00
 const HEURE_FIN   = 23;  // 23h00 (exclu)
-const SLOT_HEIGHT = 22;  // px par slot 30min
+const SLOT_HEIGHT = 32;  // px par slot 30min
+
+const TYPE_COLORS = [
+  { bg: '#e8f5e9', border: '#4caf50', text: '#1b5e20' },
+  { bg: '#e3f2fd', border: '#2196f3', text: '#0d47a1' },
+  { bg: '#fce4ec', border: '#e91e63', text: '#880e4f' },
+  { bg: '#fff3e0', border: '#ff9800', text: '#e65100' },
+  { bg: '#f3e5f5', border: '#9c27b0', text: '#4a148c' },
+  { bg: '#e0f2f1', border: '#009688', text: '#004d40' },
+  { bg: '#fff8e1', border: '#ffc107', text: '#ff6f00' },
+  { bg: '#fbe9e7', border: '#ff5722', text: '#bf360c' },
+];
 
 function timeToMinutes(timeStr) {
   if (!timeStr) return 0;
@@ -66,6 +77,14 @@ export default function CalendarBuilder({
   typesCoursList = [],                    // datalist de suggestions
 }) {
   const [editingId, setEditingId] = useState(null);
+
+  // Palette de couleurs par type de cours
+  const typeColorMap = useMemo(() => {
+    const map = {};
+    const types = [...new Set(creneaux.map(c => c.type_cours).filter(Boolean))];
+    types.forEach((t, i) => { map[t] = TYPE_COLORS[i % TYPE_COLORS.length]; });
+    return map;
+  }, [creneaux]);
 
   // Index : pour chaque (jour, slotIndex), liste des créneaux qui démarrent ici
   const indexByJourSlot = useMemo(() => {
@@ -116,28 +135,24 @@ export default function CalendarBuilder({
     onVote(creneauId, next);
   };
 
-  // Couleur de fond du créneau selon mode
   const getCreneauStyle = (c) => {
+    const tc = typeColorMap[c.type_cours] || TYPE_COLORS[0];
     if (mode === 'vote') {
       const v = votes[c.id];
-      if (v === 'oui')      return { background: '#16a34a', color: 'white', borderColor: '#15803d' };
+      if (v === 'oui')       return { background: '#16a34a', color: 'white', borderColor: '#15803d' };
       if (v === 'peut_etre') return { background: '#f59e0b', color: 'white', borderColor: '#d97706' };
       if (v === 'non')       return { background: '#dc2626', color: 'white', borderColor: '#b91c1c' };
-      return { background: 'var(--brand-light)', color: 'var(--brand-700)', borderColor: 'var(--brand-200, #f0d0d0)' };
+      return { background: tc.bg, color: tc.text, borderColor: tc.border };
     }
     if (mode === 'results') {
       const r = resultsByCreneau[c.id];
       const intensity = r?.score || 0;
       const max = Math.max(1, ...Object.values(resultsByCreneau).map(x => x?.score || 0));
-      const opacity = 0.25 + (intensity / max) * 0.7;
-      return {
-        background: `rgba(212, 160, 160, ${opacity})`,
-        color: opacity > 0.6 ? 'white' : 'var(--brand-700)',
-        borderColor: 'var(--brand)',
-      };
+      const ratio = intensity / max;
+      if (ratio > 0.6) return { background: tc.border, color: 'white', borderColor: tc.border };
+      return { background: tc.bg, color: tc.text, borderColor: tc.border };
     }
-    // edit
-    return { background: 'var(--brand)', color: 'white', borderColor: 'var(--brand-dark, var(--brand))' };
+    return { background: tc.bg, color: tc.text, borderColor: tc.border };
   };
 
   return (
@@ -209,18 +224,12 @@ export default function CalendarBuilder({
                         />
                       ) : (
                         <>
-                          <div className="cb-cr-titre">
-                            {c.heure?.slice(0, 5)} · {c.type_cours}
-                          </div>
-                          {height >= 40 && (
-                            <div className="cb-cr-meta">
-                              {c.duree_minutes}min
-                            </div>
-                          )}
+                          <div className="cb-cr-type">{c.type_cours}</div>
+                          <div className="cb-cr-heure">{c.heure?.slice(0, 5)}{height >= 50 ? ` · ${c.duree_minutes}min` : ''}</div>
                           {mode === 'results' && result && (
                             <div className="cb-cr-stats">
                               <strong>{result.score} pts</strong>
-                              <span>{result.oui}/{result.peutEtre}/{result.non}</span>
+                              <span>{result.oui}✓ {result.peutEtre}? {result.non}✕</span>
                             </div>
                           )}
                           {mode === 'vote' && votes[c.id] && (
@@ -261,6 +270,18 @@ export default function CalendarBuilder({
         </div>
       </div>
 
+      {/* Légende des types de cours */}
+      {Object.keys(typeColorMap).length > 1 && (
+        <div className="cb-legend">
+          {Object.entries(typeColorMap).map(([type, col]) => (
+            <div key={type} className="cb-legend-item">
+              <span className="cb-legend-dot" style={{ background: col.border }} />
+              <span className="cb-legend-label">{type}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
       {mode === 'edit' && (
         <p className="cb-hint">
           <Plus size={11} /> Clique sur une case vide pour ajouter un créneau (durée par défaut 1h).
@@ -285,8 +306,8 @@ export default function CalendarBuilder({
         }
         .cb-grid {
           display: grid;
-          grid-template-columns: 60px repeat(7, minmax(80px, 1fr));
-          min-width: 600px;
+          grid-template-columns: 52px repeat(7, minmax(90px, 1fr));
+          min-width: 680px;
         }
         .cb-hours { display: flex; flex-direction: column; }
         .cb-corner { height: 36px; border-bottom: 1px solid var(--border); border-right: 1px solid var(--border); background: var(--bg-soft, #faf8f5); }
@@ -340,9 +361,10 @@ export default function CalendarBuilder({
           position: absolute;
           left: 2px; right: 2px;
           border: 1.5px solid;
+          border-left: 4px solid;
           border-radius: 6px;
-          padding: 3px 5px;
-          font-size: 0.6875rem;
+          padding: 4px 6px;
+          font-size: 0.75rem;
           font-weight: 600;
           overflow: hidden;
           z-index: 2;
@@ -352,20 +374,20 @@ export default function CalendarBuilder({
         .cb-creneau.cb-mode-vote:hover { transform: scale(1.02); box-shadow: 0 2px 8px rgba(0,0,0,0.12); }
         .cb-creneau.cb-mode-edit { padding-right: 36px; }
 
-        .cb-cr-titre {
-          font-weight: 700; line-height: 1.15;
+        .cb-cr-type {
+          font-weight: 700; font-size: 0.75rem; line-height: 1.2;
           white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
-        .cb-cr-meta {
-          font-size: 0.625rem; opacity: 0.85; margin-top: 1px;
+        .cb-cr-heure {
+          font-size: 0.6875rem; font-weight: 500; opacity: 0.8; line-height: 1.2;
         }
         .cb-cr-stats {
           display: flex; align-items: center; gap: 4px;
-          font-size: 0.625rem; margin-top: 2px;
+          font-size: 0.6875rem; margin-top: 2px;
         }
-        .cb-cr-stats strong { font-size: 0.75rem; }
+        .cb-cr-stats strong { font-size: 0.8125rem; }
         .cb-cr-vote-badge {
-          font-size: 0.625rem; opacity: 0.95; margin-top: 1px;
+          font-size: 0.6875rem; font-weight: 600; opacity: 0.95; margin-top: 1px;
         }
         .cb-cr-actions {
           position: absolute; top: 2px; right: 2px;
@@ -381,6 +403,17 @@ export default function CalendarBuilder({
         .cb-cr-btn:hover { background: white; color: var(--text-primary); }
         .cb-cr-btn.danger:hover { color: #dc2626; }
 
+        /* Légende */
+        .cb-legend {
+          display: flex; flex-wrap: wrap; gap: 8px 14px;
+          padding: 6px 0;
+        }
+        .cb-legend-item { display: flex; align-items: center; gap: 5px; }
+        .cb-legend-dot {
+          width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0;
+        }
+        .cb-legend-label { font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); }
+
         .cb-hint {
           font-size: 0.7rem; color: var(--text-muted);
           display: flex; align-items: center; gap: 4px;
@@ -388,7 +421,8 @@ export default function CalendarBuilder({
         }
 
         @media (max-width: 600px) {
-          .cb-cr-titre { font-size: 0.625rem; }
+          .cb-cr-type { font-size: 0.6875rem; }
+          .cb-cr-heure { font-size: 0.625rem; }
         }
       `}</style>
     </div>
