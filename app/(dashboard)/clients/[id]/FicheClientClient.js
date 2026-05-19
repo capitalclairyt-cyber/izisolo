@@ -17,6 +17,7 @@ import { STATUTS_CLIENT, STATUTS_ABONNEMENT, STATUTS_PAIEMENT } from '@/lib/cons
 import { createClient } from '@/lib/supabase';
 import { useToast } from '@/components/ui/ToastProvider';
 import PaiementStep from '@/components/paiements/PaiementStep';
+import { AdresseDisplay } from '@/components/forms/AdresseInput';
 
 // ─── Icônes par type d'offre ────────────────────────────────────────────────
 const TYPE_ICONS = { carnet: Ticket, abonnement: CalendarCheck, cours_unique: Zap };
@@ -684,9 +685,9 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
               </div>
             )}
             {client.adresse_postale && (
-              <div className="extra-item">
+              <div className="extra-item extra-item-adresse">
                 <span className="extra-label">📍 Adresse</span>
-                <span className="extra-value">{client.adresse_postale}</span>
+                <AdresseDisplay value={client.adresse_postale} />
               </div>
             )}
             {/* Champs perso : on lit les labels depuis profile.client_fields_config */}
@@ -1516,6 +1517,9 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
         }
         .extra-item {
           display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline;
+        }
+        .extra-item-adresse {
+          flex-direction: column; gap: 4px;
         }
         .extra-label {
           font-weight: 600; color: var(--text-secondary);

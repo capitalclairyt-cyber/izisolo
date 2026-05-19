@@ -12,6 +12,7 @@ import AutocompleteEntreprise from '@/components/forms/AutocompleteEntreprise';
 import AutocompleteCommune from '@/components/forms/AutocompleteCommune';
 import ValidatedInput from '@/components/forms/ValidatedInput';
 import DateNaissanceInput from '@/components/forms/DateNaissanceInput';
+import AdresseInput from '@/components/forms/AdresseInput';
 
 const TYPES_PRO = [
   { value: 'association', label: 'Association' },
@@ -444,13 +445,10 @@ export default function NouveauClient() {
             {fieldsConfig.predefined.adresse && (
               <div className="form-group">
                 <label className="form-label" htmlFor="nc-adresse-postale">Adresse postale</label>
-                <textarea
+                <AdresseInput
                   id="nc-adresse-postale"
-                  className="izi-input"
-                  rows={2}
                   value={adressePostale}
-                  onChange={e => setAdressePostale(e.target.value)}
-                  placeholder="Rue, code postal, ville"
+                  onChange={setAdressePostale}
                 />
               </div>
             )}
