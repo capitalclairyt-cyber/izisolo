@@ -10,6 +10,7 @@ import { useToast } from '@/components/ui/ToastProvider';
 import AutocompleteEntreprise from '@/components/forms/AutocompleteEntreprise';
 import AutocompleteCommune from '@/components/forms/AutocompleteCommune';
 import ValidatedInput from '@/components/forms/ValidatedInput';
+import DateNaissanceInput from '@/components/forms/DateNaissanceInput';
 
 const TYPES_PRO = [
   { value: 'association', label: 'Association' },
@@ -424,13 +425,11 @@ export default function EditClientClient({ client, lieux: lieuxInitiaux }) {
                     — pour envoyer un mot doux le jour J 🎂
                   </span>
                 </label>
-                <input
+                <DateNaissanceInput
                   id="ec-date-naissance"
                   className="izi-input"
-                  type="date"
                   value={form.date_naissance}
                   onChange={handleChange('date_naissance')}
-                  max={new Date().toISOString().split('T')[0]}
                 />
               </div>
             )}
