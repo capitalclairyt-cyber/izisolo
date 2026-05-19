@@ -9,7 +9,7 @@ import {
   CheckCircle2, XCircle, Plus, X, Building2, MapPin,
   Banknote, CreditCard, Landmark, FileText, ChevronRight,
   Package, Zap, CalendarCheck, Loader2,
-  MessageSquare, Wallet, AlertCircle, Trash2, PlusCircle,
+  MessageSquare, Wallet, AlertCircle, Trash2, PlusCircle, Home,
 } from 'lucide-react';
 import { formatDate, formatMontant } from '@/lib/utils';
 import { getVocabulaire } from '@/lib/vocabulaire';
@@ -710,6 +710,21 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
           <span className="meta-item">Inscrit le {formatDate(client.created_at)}</span>
         </div>
       </div>
+
+      {/* Bouton cours à domicile (si l'élève a une adresse) */}
+      {!isPro && client.adresse_postale && (
+        <Link
+          href={`/cours/nouveau?domicile=${client.id}`}
+          className="domicile-btn animate-slide-up"
+        >
+          <Home size={18} />
+          <div className="domicile-btn-text">
+            <span className="domicile-btn-title">Planifier un cours à domicile</span>
+            <span className="domicile-btn-sub">{client.prenom} — {client.adresse_postale.split('\n')[0]}</span>
+          </div>
+          <ChevronRight size={16} className="domicile-btn-arrow" />
+        </Link>
+      )}
 
       {/* Lieux associés (client pro) */}
       {isPro && lieux && lieux.length > 0 && (
@@ -1521,6 +1536,21 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
         .extra-item-adresse {
           flex-direction: column; gap: 4px;
         }
+        .domicile-btn {
+          display: flex; align-items: center; gap: 12px;
+          padding: 14px 16px; border-radius: var(--radius-md, 12px);
+          background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%);
+          border: 1.5px solid #a5d6a7;
+          text-decoration: none; color: var(--text-primary);
+          transition: all 0.15s;
+        }
+        .domicile-btn:hover { border-color: #4caf50; box-shadow: 0 2px 8px rgba(76,175,80,0.15); transform: translateY(-1px); }
+        .domicile-btn:active { transform: translateY(0); }
+        .domicile-btn > :first-child { color: #2e7d32; flex-shrink: 0; }
+        .domicile-btn-text { flex: 1; min-width: 0; }
+        .domicile-btn-title { display: block; font-weight: 700; font-size: 0.875rem; color: #1b5e20; }
+        .domicile-btn-sub { display: block; font-size: 0.75rem; color: #558b2f; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .domicile-btn-arrow { color: #66bb6a; flex-shrink: 0; }
         .extra-label {
           font-weight: 600; color: var(--text-secondary);
           flex-shrink: 0;

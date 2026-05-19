@@ -6,7 +6,8 @@ import Link from 'next/link';
 import {
   ArrowLeft, Save, Calendar, Clock, MapPin, Users, Repeat,
   Trash2, AlertTriangle, CheckCircle2, Edit3, X, Copy,
-  ChevronDown, ChevronUp, Mail, Send, ShieldAlert, Smartphone, CheckCheck, Lock
+  ChevronDown, ChevronUp, Mail, Send, ShieldAlert, Smartphone, CheckCheck, Lock,
+  Home, Navigation,
 } from 'lucide-react';
 import { formatHeure, getAllTypesFromCategories } from '@/lib/utils';
 import { parseDate } from '@/lib/dates';
@@ -350,6 +351,28 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
         </div>
       )}
 
+      {/* Bandeau domicile */}
+      {cours.domicile && (
+        <div className="domicile-detail-banner">
+          <Home size={18} className="domicile-detail-icon" />
+          <div className="domicile-detail-info">
+            <strong>Cours à domicile</strong>
+            {cours.lieu && <span className="domicile-detail-addr"><MapPin size={11} /> {cours.lieu}</span>}
+            {cours.frais_deplacement > 0 && <span className="domicile-detail-frais">+{cours.frais_deplacement} € frais de déplacement</span>}
+          </div>
+          {cours.lieu && (
+            <a
+              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(cours.lieu)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="domicile-detail-maps"
+            >
+              <Navigation size={13} /> Maps
+            </a>
+          )}
+        </div>
+      )}
+
       {/* Détail ou formulaire de modification */}
       <div className="cours-content izi-card">
         {!editing ? (
@@ -378,7 +401,7 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
                 <MapPin size={16} />
                 <div>
                   <div className="detail-label">Lieu</div>
-                  <div className="detail-value">{cours.lieu}</div>
+                  <div className="detail-value">{cours.lieu}{cours.domicile && ' (domicile)'}</div>
                 </div>
               </div>
             )}
@@ -960,6 +983,30 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
           gap: 16px;
           padding-bottom: 40px;
         }
+
+        /* Domicile banner */
+        .domicile-detail-banner {
+          display: flex; align-items: center; gap: 12px;
+          padding: 12px 16px; border-radius: 12px;
+          background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%);
+          border: 1.5px solid #a5d6a7;
+        }
+        .domicile-detail-icon { color: #2e7d32; flex-shrink: 0; }
+        .domicile-detail-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+        .domicile-detail-info strong { font-size: 0.875rem; color: #1b5e20; }
+        .domicile-detail-addr {
+          display: flex; align-items: center; gap: 4px;
+          font-size: 0.75rem; color: #558b2f;
+        }
+        .domicile-detail-frais { font-size: 0.75rem; color: #558b2f; font-weight: 600; }
+        .domicile-detail-maps {
+          display: inline-flex; align-items: center; gap: 4px; flex-shrink: 0;
+          padding: 6px 12px; border-radius: 99px;
+          background: #4caf50; color: white;
+          font-size: 0.75rem; font-weight: 600;
+          text-decoration: none; transition: background 0.15s;
+        }
+        .domicile-detail-maps:hover { background: #388e3c; }
 
         /* ── Layout 2 colonnes (desktop) ── */
         .cours-layout {

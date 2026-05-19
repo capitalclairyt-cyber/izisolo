@@ -8,7 +8,8 @@ import { estPendantVacances, estJourFerie, getPeriodeVacances, ZONES_VACANCES } 
 import Link from 'next/link';
 import {
   ArrowLeft, Save, Calendar, Clock, MapPin, Users, Repeat,
-  Building2, Plus, ChevronDown, X, AlertTriangle, ExternalLink, Sparkles, Sun
+  Building2, Plus, ChevronDown, X, AlertTriangle, ExternalLink, Sparkles, Sun,
+  Home, Navigation, Phone,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase';
 import { useToast } from '@/components/ui/ToastProvider';
@@ -160,6 +161,10 @@ function NouveauCoursInner() {
   const [showNewLieu, setShowNewLieu] = useState(false);
   const [newLieuNom, setNewLieuNom] = useState('');
 
+  // Mode domicile : ?domicile=CLIENT_ID
+  const domicileClientId = searchParams.get('domicile') || null;
+  const [domicileClient, setDomicileClient] = useState(null);
+
   // Lecture pré-remplissage depuis query (utilisé par "Convertir un sondage en série")
   const preNom       = searchParams.get('nom')       || '';
   const preType      = searchParams.get('type')      || '';
@@ -191,6 +196,8 @@ function NouveauCoursInner() {
     exclure_vacances: false,
     exclure_feries: false,
     zone_vacances: '',          // 'A' | 'B' | 'C' | 'Corse'
+    // Domicile (v44)
+    frais_deplacement: '',
   });
 
   // Charger les données
@@ -224,6 +231,24 @@ function NouveauCoursInner() {
       }
       setLieux(lieuxData || []);
       setClientsPro(prosData || []);
+
+      // Domicile : si ?domicile=CLIENT_ID, charger le client et pré-remplir
+      if (domicileClientId) {
+        const { data: cli } = await supabase
+          .from('clients')
+          .select('id, prenom, nom, adresse_postale, telephone, email')
+          .eq('id', domicileClientId)
+          .eq('profile_id', user.id)
+          .maybeSingle();
+        if (cli) {
+          setDomicileClient(cli);
+          setForm(prev => ({
+            ...prev,
+            nom: prev.nom || `Cours à domicile — ${cli.prenom || cli.nom}`,
+            capacite_max: prev.capacite_max || '1',
+          }));
+        }
+      }
 
       // Duplication : si ?from=COURS_ID, on pré-remplit le formulaire avec les détails du cours source
       const fromId = searchParams.get('from');
@@ -345,8 +370,16 @@ function NouveauCoursInner() {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
 
+      const isDomicile = !!domicileClientId && !!domicileClient;
+      const domicileFields = isDomicile ? {
+        domicile: true,
+        client_id: domicileClient.id,
+        frais_deplacement: form.frais_deplacement ? parseFloat(form.frais_deplacement) : null,
+        lieu: domicileClient.adresse_postale?.split('\n')[0] || 'Domicile',
+      } : {};
+
       if (form.frequence === 'unique') {
-        const { error } = await supabase.from('cours').insert({
+        const { data: newCours, error } = await supabase.from('cours').insert({
           profile_id: user.id,
           nom: form.nom.trim(),
           type_cours: form.type_cours || null,
@@ -359,11 +392,19 @@ function NouveauCoursInner() {
           capacite_max: form.capacite_max ? parseInt(form.capacite_max) : null,
           notes: form.notes || null,
           visibilite: form.visibilite || 'public',
-          // v35 : workshop / cours payant à l'unité
           tarif_unitaire: form.tarif_unitaire ? parseFloat(form.tarif_unitaire) : null,
           stripe_payment_link_unit: form.stripe_payment_link_unit?.trim() || null,
-        });
+          ...domicileFields,
+        }).select('id').single();
         if (error) throw error;
+
+        if (isDomicile && newCours) {
+          await supabase.from('presences').insert({
+            profile_id: user.id,
+            cours_id: newCours.id,
+            client_id: domicileClient.id,
+          });
+        }
       } else {
         const { incluses } = calculerDates(form);
         // Bornes effectives pour la table recurrences (info, pas utilisée pour la génération)
@@ -389,6 +430,7 @@ function NouveauCoursInner() {
           exclure_vacances: !!form.exclure_vacances,
           exclure_feries:   !!form.exclure_feries,
           zone_vacances:    form.exclure_vacances && form.zone_vacances ? form.zone_vacances : null,
+          ...(isDomicile ? { domicile: true, client_id: domicileClient.id, frais_deplacement: form.frais_deplacement ? parseFloat(form.frais_deplacement) : null } : {}),
         }).select().single();
         if (recErr) throw recErr;
 
@@ -406,9 +448,20 @@ function NouveauCoursInner() {
             capacite_max: form.capacite_max ? parseInt(form.capacite_max) : null,
             recurrence_parent_id: recurrence.id,
             visibilite: form.visibilite || 'public',
+            ...domicileFields,
           }));
-          const { error: coursErr } = await supabase.from('cours').insert(coursACreer);
+          const { data: createdCours, error: coursErr } = await supabase.from('cours').insert(coursACreer).select('id');
           if (coursErr) throw coursErr;
+
+          if (isDomicile && createdCours?.length > 0) {
+            await supabase.from('presences').insert(
+              createdCours.map(c => ({
+                profile_id: user.id,
+                cours_id: c.id,
+                client_id: domicileClient.id,
+              }))
+            );
+          }
         }
 
         // Mémoriser la zone choisie comme défaut sur le profil pour la prochaine fois
@@ -472,16 +525,46 @@ function NouveauCoursInner() {
   return (
     <div className="nouveau-cours">
       <div className="page-header animate-fade-in">
-        <Link href="/agenda" className="back-btn"><ArrowLeft size={20} /></Link>
+        <Link href={domicileClient ? `/clients/${domicileClient.id}` : '/agenda'} className="back-btn"><ArrowLeft size={20} /></Link>
         <div>
-          <h1>Nouveau cours</h1>
-          {searchParams.get('date') && (
+          <h1>{domicileClient ? 'Cours à domicile' : 'Nouveau cours'}</h1>
+          {searchParams.get('date') && !domicileClient && (
             <p className="header-date-hint">
               <Calendar size={12} /> {parseDate(dateInitiale).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
             </p>
           )}
         </div>
       </div>
+
+      {/* Bandeau domicile */}
+      {domicileClient && (
+        <div className="domicile-banner animate-slide-up">
+          <div className="domicile-banner-icon"><Home size={20} /></div>
+          <div className="domicile-banner-info">
+            <div className="domicile-banner-name">{domicileClient.prenom} {domicileClient.nom}</div>
+            {domicileClient.adresse_postale && (
+              <div className="domicile-banner-addr">
+                <MapPin size={11} />
+                {domicileClient.adresse_postale.replace(/\n/g, ', ')}
+              </div>
+            )}
+            {domicileClient.telephone && (
+              <div className="domicile-banner-tel"><Phone size={11} /> {domicileClient.telephone}</div>
+            )}
+          </div>
+          {domicileClient.adresse_postale && (
+            <a
+              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(domicileClient.adresse_postale.replace(/\n/g, ', '))}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="domicile-banner-maps"
+              title="Itinéraire"
+            >
+              <Navigation size={14} /> Maps
+            </a>
+          )}
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="form animate-slide-up">
 
@@ -753,6 +836,26 @@ function NouveauCoursInner() {
           <RecurrencePreview form={form} />
         )}
 
+        {/* Frais de déplacement (domicile uniquement) */}
+        {domicileClient && (
+          <div className="form-group domicile-frais-group">
+            <label className="form-label"><Home size={14} /> Frais de déplacement</label>
+            <div className="frais-row">
+              <input
+                className="izi-input frais-input"
+                type="number"
+                step="0.50"
+                min="0"
+                value={form.frais_deplacement}
+                onChange={handleChange('frais_deplacement')}
+                placeholder="0.00"
+              />
+              <span className="frais-suffix">€ / séance</span>
+            </div>
+            <span className="form-hint">Laisse vide si pas de frais. Ce montant sera affiché sur chaque séance.</span>
+          </div>
+        )}
+
         {/* Notes */}
         <div className="form-group">
           <label className="form-label">Notes</label>
@@ -825,6 +928,39 @@ function NouveauCoursInner() {
 
       <style jsx global>{`
         .nouveau-cours { display: flex; flex-direction: column; gap: 20px; padding-bottom: 40px; }
+
+        /* Bandeau domicile */
+        .domicile-banner {
+          display: flex; align-items: center; gap: 12px;
+          padding: 14px 16px; border-radius: 12px;
+          background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%);
+          border: 1.5px solid #a5d6a7;
+        }
+        .domicile-banner-icon { color: #2e7d32; flex-shrink: 0; }
+        .domicile-banner-info { flex: 1; min-width: 0; }
+        .domicile-banner-name { font-weight: 700; font-size: 0.9375rem; color: #1b5e20; }
+        .domicile-banner-addr {
+          display: flex; align-items: center; gap: 4px;
+          font-size: 0.75rem; color: #558b2f; margin-top: 2px;
+          white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .domicile-banner-tel { display: flex; align-items: center; gap: 4px; font-size: 0.75rem; color: #558b2f; margin-top: 1px; }
+        .domicile-banner-maps {
+          display: inline-flex; align-items: center; gap: 4px; flex-shrink: 0;
+          padding: 6px 12px; border-radius: 99px;
+          background: #4caf50; color: white;
+          font-size: 0.75rem; font-weight: 600;
+          text-decoration: none; transition: background 0.15s;
+        }
+        .domicile-banner-maps:hover { background: #388e3c; }
+
+        /* Frais de déplacement */
+        .domicile-frais-group {
+          background: #f1f8e9; padding: 14px; border-radius: 12px; border: 1px solid #c5e1a5;
+        }
+        .frais-row { display: flex; align-items: center; gap: 8px; }
+        .frais-input { width: 120px; text-align: right; }
+        .frais-suffix { font-size: 0.8125rem; color: var(--text-muted); font-weight: 500; }
 
         /* Preview récurrence */
         .rec-preview {

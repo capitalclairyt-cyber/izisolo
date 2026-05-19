@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import {
   ChevronLeft, ChevronRight, Clock, Plus, CheckCircle2,
-  Users, Calendar, List, LayoutGrid, Filter, X, Eye
+  Users, Calendar, List, LayoutGrid, Filter, X, Eye, Home
 } from 'lucide-react';
 import { formatHeure, getAllTypesFromCategories } from '@/lib/utils';
 import {
@@ -478,6 +478,7 @@ function VueMois({ dateRef, cours, activeCell, setActiveCell, onSelectDay, today
                   title={`${formatHeure(c.heure)} — ${c.nom}`}
                   onClick={e => e.stopPropagation()}>
                   <span className="mois-chip-heure">{formatHeure(c.heure)}</span>
+                  {c.domicile && <Home size={8} className="chip-domicile-icon" />}
                   <span className="mois-chip-nom">{c.nom}</span>
                 </Link>
                 );
@@ -515,6 +516,7 @@ function CoursChip({ cours: c, todayStr }) {
       onClick={e => e.stopPropagation()}
     >
       <span className="chip-heure">{formatHeure(c.heure)}</span>
+      {c.domicile && <Home size={10} className="chip-domicile-icon" />}
       <span className="chip-nom">{c.nom}</span>
       {isPointe && <CheckCircle2 size={10} className="chip-pointe-icon" />}
       {c.recurrence_parent_id && <span className="chip-recur">↻</span>}
@@ -558,6 +560,7 @@ function CoursCard({ cours: c, todayStr, onCoursMaj }) {
         <div className="card-top">
           <div>
             <div className="card-nom">
+              {c.domicile && <Home size={13} className="card-domicile-icon" />}
               {c.nom}
               {c.recurrence_parent_id && <span className="card-recur">↻</span>}
               {c.est_annule && <span className="card-annule-badge">Annulé</span>}
@@ -567,6 +570,7 @@ function CoursCard({ cours: c, todayStr, onCoursMaj }) {
               {formatHeure(c.heure)}
               {c.duree_minutes && ` · ${c.duree_minutes} min`}
               {c.lieu && ` · ${c.lieu}`}
+              {c.domicile && c.frais_deplacement > 0 && ` · +${c.frais_deplacement}€ dépl.`}
             </div>
           </div>
           {c.type_cours && (
@@ -982,6 +986,8 @@ function AgendaStyles() {
         color: var(--text-primary);
       }
       .chip-recur { font-size: 0.625rem; margin-left: auto; opacity: 0.5; flex-shrink: 0; }
+      .chip-domicile-icon { color: #2e7d32; flex-shrink: 0; }
+      .card-domicile-icon { color: #2e7d32; flex-shrink: 0; margin-right: 4px; vertical-align: -1px; }
 
       /* ---- VUE JOUR ---- */
       .vue-jour { display: flex; flex-direction: column; gap: 12px; }
