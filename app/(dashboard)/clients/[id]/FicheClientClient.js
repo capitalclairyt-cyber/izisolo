@@ -9,7 +9,7 @@ import {
   CheckCircle2, XCircle, Plus, X, Building2, MapPin,
   Banknote, CreditCard, Landmark, FileText, ChevronRight,
   Package, Zap, CalendarCheck, Loader2, CreditCard as CardIcon,
-  MessageSquare, Wallet, AlertCircle,
+  MessageSquare, Wallet, AlertCircle, Trash2, PlusCircle,
 } from 'lucide-react';
 import { formatDate, formatMontant } from '@/lib/utils';
 import { getVocabulaire } from '@/lib/vocabulaire';
@@ -49,6 +49,20 @@ const OFFRE_LIBRE = {
   prix: 0,
 };
 
+function generateVersements(total, nb) {
+  const base = Math.floor((total / nb) * 100) / 100;
+  const reste = Math.round((total - base * nb) * 100) / 100;
+  const today = new Date();
+  return Array.from({ length: nb }, (_, i) => {
+    const d = new Date(today);
+    d.setMonth(d.getMonth() + i);
+    return {
+      montant: i === 0 ? +(base + reste).toFixed(2) : base,
+      date: d.toISOString().split('T')[0],
+    };
+  });
+}
+
 function AssignerOffreModal({ client, onClose, onSuccess }) {
   const [step, setStep] = useState('offre'); // 'offre' | 'paiement'
   const [offres, setOffres] = useState([]);
@@ -60,6 +74,9 @@ function AssignerOffreModal({ client, onClose, onSuccess }) {
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [multiVersement, setMultiVersement] = useState(false);
+  const [nbVersements, setNbVersements] = useState(3);
+  const [versements, setVersements] = useState([]);
 
   const isLibre = selectedOffre?.id === '__libre__';
 
@@ -96,6 +113,18 @@ function AssignerOffreModal({ client, onClose, onSuccess }) {
     setStep('paiement');
   };
 
+  const toggleMulti = (on) => {
+    setMultiVersement(on);
+    if (on && montant) {
+      setVersements(generateVersements(parseFloat(montant), nbVersements));
+    }
+  };
+
+  const changeNbVersements = (n) => {
+    setNbVersements(n);
+    if (montant) setVersements(generateVersements(parseFloat(montant), n));
+  };
+
   const handleConfirm = async () => {
     if (!selectedOffre || !montant || parseFloat(montant) < 0) return;
     if (isLibre && !intituleLibre.trim()) {
@@ -130,22 +159,38 @@ function AssignerOffreModal({ client, onClose, onSuccess }) {
         aboId = abo.id;
       }
 
-      // Enregistrer le paiement (toujours, lié à l'abonnement si non-libre)
-      const { error: payErr } = await supabase.from('paiements').insert({
-        profile_id: user.id,
-        client_id: client.id,
-        offre_id: isLibre ? null : selectedOffre.id,
-        abonnement_id: aboId,
-        intitule: isLibre ? intituleLibre.trim() : selectedOffre.nom,
-        type: isLibre ? null : selectedOffre.type,
-        montant: parseFloat(montant),
-        statut: 'paid',
-        mode: modePaiement,
-        date: today,
-        notes: notes.trim() || null,
-      });
-
-      if (payErr) throw payErr;
+      if (multiVersement && versements.length > 1) {
+        const rows = versements.map((v, i) => ({
+          profile_id: user.id,
+          client_id: client.id,
+          offre_id: isLibre ? null : selectedOffre.id,
+          abonnement_id: aboId,
+          intitule: `${isLibre ? intituleLibre.trim() : selectedOffre.nom} (${i + 1}/${versements.length})`,
+          type: isLibre ? null : selectedOffre.type,
+          montant: v.montant,
+          statut: i === 0 ? 'paid' : 'pending',
+          mode: i === 0 ? modePaiement : null,
+          date: v.date,
+          notes: i === 0 ? (notes.trim() || null) : null,
+        }));
+        const { error: payErr } = await supabase.from('paiements').insert(rows);
+        if (payErr) throw payErr;
+      } else {
+        const { error: payErr } = await supabase.from('paiements').insert({
+          profile_id: user.id,
+          client_id: client.id,
+          offre_id: isLibre ? null : selectedOffre.id,
+          abonnement_id: aboId,
+          intitule: isLibre ? intituleLibre.trim() : selectedOffre.nom,
+          type: isLibre ? null : selectedOffre.type,
+          montant: parseFloat(montant),
+          statut: 'paid',
+          mode: modePaiement,
+          date: today,
+          notes: notes.trim() || null,
+        });
+        if (payErr) throw payErr;
+      }
 
       onSuccess();
     } catch (err) {
@@ -297,6 +342,44 @@ function AssignerOffreModal({ client, onClose, onSuccess }) {
               </p>
             )}
 
+            {/* Multi-versement */}
+            {!isLibre && (
+              <>
+                <div className="paiement-section-label">Paiement en plusieurs fois</div>
+                <div className="multi-toggle-row">
+                  <button type="button" className={`multi-toggle-btn ${!multiVersement ? 'active' : ''}`} onClick={() => toggleMulti(false)}>En 1 fois</button>
+                  <button type="button" className={`multi-toggle-btn ${multiVersement ? 'active' : ''}`} onClick={() => toggleMulti(true)}>Plusieurs fois</button>
+                </div>
+                {multiVersement && (
+                  <>
+                    <div className="multi-nb-chips">
+                      {[2, 3, 4, 5, 6].map(n => (
+                        <button key={n} type="button" className={`multi-nb-chip ${nbVersements === n ? 'active' : ''}`} onClick={() => changeNbVersements(n)}>
+                          {n}x
+                        </button>
+                      ))}
+                    </div>
+                    <div className="multi-v-list">
+                      {versements.map((v, i) => (
+                        <div key={i} className="multi-v-row">
+                          <span className="multi-v-label">{i === 0 ? 'Aujourd\'hui' : `Éch. ${i + 1}`}</span>
+                          <span className="multi-v-date">{v.date}</span>
+                          <span className="multi-v-montant">{formatMontant(v.montant)}</span>
+                          <span className={`multi-v-statut ${i === 0 ? 'paid' : 'pending'}`}>{i === 0 ? 'Payé' : 'À venir'}</span>
+                        </div>
+                      ))}
+                    </div>
+                    {(() => {
+                      const sum = versements.reduce((s, v) => s + v.montant, 0);
+                      const total = parseFloat(montant) || 0;
+                      const ok = Math.abs(sum - total) < 0.02;
+                      return <div className={`multi-total ${ok ? 'ok' : 'warn'}`}>Total : {formatMontant(sum)} / {formatMontant(total)}</div>;
+                    })()}
+                  </>
+                )}
+              </>
+            )}
+
             {/* Notes optionnelles */}
             <div className="paiement-section-label">Notes (optionnel)</div>
             <input
@@ -415,6 +498,61 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
     setShowAssignerModal(false);
   };
 
+  const deletePaiement = async (paiement) => {
+    if (!confirm(`Supprimer le paiement "${paiement.intitule || 'Paiement'}" de ${formatMontant(paiement.montant)} ?`)) return;
+    try {
+      const res = await fetch(`/api/paiements/${paiement.id}`, { method: 'DELETE' });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Erreur');
+      setPaiements(prev => prev.filter(p => p.id !== paiement.id));
+      toast.success('Paiement supprimé');
+    } catch (e) {
+      toast.error(e.message);
+    }
+  };
+
+  const [versementModal, setVersementModal] = useState(null);
+  const [versementMontant, setVersementMontant] = useState('');
+  const [versementMode, setVersementMode] = useState('especes');
+  const [versementDate, setVersementDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [versementSubmitting, setVersementSubmitting] = useState(false);
+
+  const ajouterVersement = async () => {
+    if (!versementModal || !versementMontant) return;
+    setVersementSubmitting(true);
+    try {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      const { error: payErr } = await supabase.from('paiements').insert({
+        profile_id: user.id,
+        client_id: client.id,
+        offre_id: versementModal.offre_id || null,
+        abonnement_id: versementModal.id,
+        intitule: `${versementModal.offre_nom} (versement)`,
+        type: versementModal.type,
+        montant: parseFloat(versementMontant),
+        statut: 'pending',
+        mode: versementMode,
+        date: versementDate,
+      });
+      if (payErr) throw payErr;
+      const { data: pays } = await supabase
+        .from('paiements')
+        .select('*')
+        .eq('client_id', client.id)
+        .order('date', { ascending: false });
+      setPaiements(pays || []);
+      setVersementModal(null);
+      toast.success('Versement ajouté');
+    } catch (e) {
+      toast.error(e.message);
+    } finally {
+      setVersementSubmitting(false);
+    }
+  };
+
+  const hasNoActivity = abonnements.length === 0 && paiements.length === 0;
+
   return (
     <div className="fiche-client">
       {/* Header */}
@@ -523,6 +661,23 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
         </div>
       )}
 
+      {/* Onboarding — visible si aucune offre ET aucun paiement */}
+      {hasNoActivity && (
+        <div className="onboarding-card izi-card animate-slide-up">
+          <div className="onboarding-icon"><Ticket size={28} /></div>
+          <div className="onboarding-text">
+            <strong>Première étape</strong>
+            <p>Associe une offre à {displayName} pour commencer le suivi des paiements et présences.</p>
+          </div>
+          <button
+            className="izi-btn izi-btn-primary"
+            onClick={() => setShowAssignerModal(true)}
+          >
+            <Plus size={18} /> Ajouter une offre
+          </button>
+        </div>
+      )}
+
       {/* Tabs */}
       <div className="tabs-bar animate-slide-up">
         <button
@@ -584,6 +739,20 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
                   )}
                   {abo.date_fin && <div className="abo-meta">Expire le {formatDate(abo.date_fin)}</div>}
                   {abo.date_debut && <div className="abo-meta">Depuis le {formatDate(abo.date_debut)}</div>}
+                  {abo.statut === 'actif' && (
+                    <button
+                      className="abo-add-versement"
+                      onClick={() => {
+                        setVersementModal(abo);
+                        setVersementMontant('');
+                        setVersementMode('especes');
+                        setVersementDate(new Date().toISOString().split('T')[0]);
+                      }}
+                      type="button"
+                    >
+                      <PlusCircle size={14} /> Ajouter un versement
+                    </button>
+                  )}
                 </div>
               );
             })
@@ -671,6 +840,13 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
                           Encaissé
                         </button>
                       )}
+                      <button
+                        onClick={() => deletePaiement(p)}
+                        className="delete-pay-btn-fiche"
+                        title="Supprimer"
+                      >
+                        <Trash2 size={12} />
+                      </button>
                     </div>
                   </div>
                 );
@@ -721,6 +897,70 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
           onClose={() => setShowAssignerModal(false)}
           onSuccess={handleOffreAdded}
         />
+      )}
+
+      {/* Modal ajouter versement */}
+      {versementModal && (
+        <div className="modal-backdrop" onClick={e => { if (e.target === e.currentTarget) setVersementModal(null); }}>
+          <div className="modal-sheet versement-sheet animate-slide-up" role="dialog" aria-modal="true">
+            <div className="modal-header">
+              <div style={{ width: 36 }} />
+              <span className="modal-title">Ajouter un versement</span>
+              <button className="modal-close" onClick={() => setVersementModal(null)} type="button" aria-label="Fermer"><X size={20} /></button>
+            </div>
+            <div className="modal-body">
+              <div className="paiement-recap">
+                <span className="paiement-recap-nom">{versementModal.offre_nom}</span>
+                <span className="paiement-recap-client">pour {displayName}</span>
+              </div>
+
+              <div className="paiement-section-label">Mode de règlement</div>
+              <div className="mode-grid">
+                {MODES_PAIEMENT.map(({ value, label, Icon }) => (
+                  <button
+                    key={value}
+                    type="button"
+                    className={`mode-btn ${versementMode === value ? 'active' : ''}`}
+                    onClick={() => setVersementMode(value)}
+                  >
+                    <Icon size={18} />
+                    <span>{label}</span>
+                  </button>
+                ))}
+              </div>
+
+              <div className="paiement-section-label">Montant</div>
+              <div className="montant-row">
+                <input
+                  className="izi-input montant-input"
+                  type="number" step="0.01" min="0"
+                  value={versementMontant}
+                  onChange={e => setVersementMontant(e.target.value)}
+                  placeholder="0.00"
+                  autoFocus
+                />
+                <span className="montant-currency">€</span>
+              </div>
+
+              <div className="paiement-section-label">Date d'échéance</div>
+              <input
+                className="izi-input"
+                type="date"
+                value={versementDate}
+                onChange={e => setVersementDate(e.target.value)}
+              />
+
+              <button
+                type="button"
+                className="izi-btn izi-btn-primary confirm-btn"
+                onClick={ajouterVersement}
+                disabled={versementSubmitting || !versementMontant}
+              >
+                {versementSubmitting ? <><Loader2 size={16} className="spin" /> Enregistrement...</> : <>✓ Ajouter le versement</>}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       <style jsx global>{`
@@ -913,6 +1153,75 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
 
         @keyframes spin { to { transform: rotate(360deg); } }
         .spin { animation: spin 0.8s linear infinite; }
+
+        /* Onboarding card */
+        .onboarding-card {
+          display: flex; flex-direction: column; align-items: center; gap: 12px;
+          padding: 28px 20px; text-align: center;
+          border: 2px dashed var(--brand); background: var(--brand-light);
+        }
+        .onboarding-icon {
+          width: 56px; height: 56px; border-radius: 50%;
+          background: var(--brand); color: white;
+          display: flex; align-items: center; justify-content: center;
+        }
+        .onboarding-text strong { display: block; font-size: 1rem; margin-bottom: 4px; }
+        .onboarding-text p { font-size: 0.8125rem; color: var(--text-secondary); margin: 0; }
+
+        /* Abo +Versement */
+        .abo-add-versement {
+          display: inline-flex; align-items: center; gap: 5px;
+          padding: 5px 10px; border-radius: var(--radius-full);
+          border: 1px solid var(--brand); background: var(--brand-light);
+          font-size: 0.7rem; font-weight: 600; color: var(--brand-700);
+          cursor: pointer; transition: all 0.15s; align-self: flex-start;
+        }
+        .abo-add-versement:hover { background: var(--brand); color: white; }
+
+        /* Delete paiement btn */
+        .delete-pay-btn-fiche {
+          display: inline-flex; align-items: center;
+          padding: 4px 6px; border-radius: var(--radius-sm, 6px);
+          border: none; background: none;
+          color: var(--text-muted); cursor: pointer; transition: all 0.15s;
+        }
+        .delete-pay-btn-fiche:hover { background: #fef2f2; color: #dc2626; }
+
+        /* Multi-versement */
+        .multi-toggle-row { display: flex; gap: 8px; }
+        .multi-toggle-btn {
+          flex: 1; padding: 8px 12px; border-radius: var(--radius-full);
+          border: 1.5px solid var(--border); background: var(--bg-card);
+          font-size: 0.8125rem; font-weight: 600; color: var(--text-secondary);
+          cursor: pointer; transition: all 0.15s;
+        }
+        .multi-toggle-btn.active { border-color: var(--brand); background: var(--brand-light); color: var(--brand-700); }
+        .multi-nb-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+        .multi-nb-chip {
+          padding: 6px 14px; border-radius: var(--radius-full);
+          border: 1.5px solid var(--border); background: var(--bg-card);
+          font-size: 0.8125rem; font-weight: 600; color: var(--text-secondary);
+          cursor: pointer; transition: all 0.15s;
+        }
+        .multi-nb-chip.active { border-color: var(--brand); background: var(--brand-light); color: var(--brand-700); }
+        .multi-v-list { display: flex; flex-direction: column; gap: 6px; }
+        .multi-v-row {
+          display: flex; align-items: center; gap: 8px; padding: 8px 10px;
+          background: var(--cream, #faf8f5); border-radius: var(--radius-sm);
+          font-size: 0.8125rem;
+        }
+        .multi-v-label { font-weight: 600; flex-shrink: 0; min-width: 80px; }
+        .multi-v-date { color: var(--text-muted); flex: 1; }
+        .multi-v-montant { font-weight: 700; }
+        .multi-v-statut { font-size: 0.6875rem; font-weight: 600; padding: 2px 8px; border-radius: var(--radius-full); }
+        .multi-v-statut.paid { background: #dcfce7; color: #166534; }
+        .multi-v-statut.pending { background: #fef3c7; color: #92400e; }
+        .multi-total { font-size: 0.8125rem; font-weight: 600; text-align: right; }
+        .multi-total.ok { color: #16a34a; }
+        .multi-total.warn { color: #dc2626; }
+
+        /* Versement sheet */
+        .versement-sheet { max-width: 440px; }
       `}</style>
     </div>
   );

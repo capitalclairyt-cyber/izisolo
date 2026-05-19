@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import {
   TrendingUp, TrendingDown, Clock, Plus, Download, X, CheckCircle2,
-  Banknote, FileText, Landmark, CreditCard, Loader2, Pencil, Save,
+  Banknote, FileText, Landmark, CreditCard, Loader2, Pencil, Save, Trash2,
 } from 'lucide-react';
 import { formatMontant, formatDate } from '@/lib/utils';
 import { STATUTS_PAIEMENT } from '@/lib/constantes';
@@ -177,6 +177,19 @@ export default function RevenusClient({ paiements: initialPaiements }) {
       toast.error(e.message);
     } finally {
       setEditSubmitting(false);
+    }
+  };
+
+  const deletePaiement = async (paiement) => {
+    if (!confirm(`Supprimer le paiement "${paiement.intitule || 'Paiement'}" de ${formatMontant(paiement.montant)} ?`)) return;
+    try {
+      const res = await fetch(`/api/paiements/${paiement.id}`, { method: 'DELETE' });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Erreur');
+      setPaiements(prev => prev.filter(p => p.id !== paiement.id));
+      toast.success('Paiement supprimé');
+    } catch (e) {
+      toast.error(e.message);
     }
   };
 
@@ -378,6 +391,9 @@ export default function RevenusClient({ paiements: initialPaiements }) {
                       <span className={`izi-badge izi-badge-${sInfo.color || 'neutral'}`}>{sInfo.label || p.statut}</span>
                       <button onClick={() => openEdit(p)} className="edit-pay-btn" title="Modifier">
                         <Pencil size={13} />
+                      </button>
+                      <button onClick={() => deletePaiement(p)} className="delete-pay-btn" title="Supprimer">
+                        <Trash2 size={13} />
                       </button>
                       {canEncaisser && (
                         <button
@@ -696,6 +712,13 @@ export default function RevenusClient({ paiements: initialPaiements }) {
           color: var(--text-muted); cursor: pointer; transition: all 0.15s;
         }
         .edit-pay-btn:hover { background: var(--cream-dark, #f0ebe4); color: var(--brand); }
+        .delete-pay-btn {
+          display: inline-flex; align-items: center;
+          padding: 4px 6px; border-radius: var(--radius-sm, 6px);
+          border: none; background: none;
+          color: var(--text-muted); cursor: pointer; transition: all 0.15s;
+        }
+        .delete-pay-btn:hover { background: #fef2f2; color: #dc2626; }
         .edit-modal { max-width: 460px; }
 
         .empty-state { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 40px 20px; text-align: center; }

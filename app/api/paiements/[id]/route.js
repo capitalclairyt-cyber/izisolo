@@ -58,3 +58,37 @@ export async function PATCH(request, { params }) {
 
   return Response.json({ ok: true });
 }
+
+export async function DELETE(request, { params }) {
+  let user, supabase;
+  try {
+    ({ user, supabase } = await requireAuth());
+  } catch (res) {
+    return res;
+  }
+
+  const { id } = await params;
+
+  const { data: paiement, error: fetchErr } = await supabase
+    .from('paiements')
+    .select('id')
+    .eq('id', id)
+    .eq('profile_id', user.id)
+    .single();
+
+  if (fetchErr || !paiement) {
+    return Response.json({ error: 'Paiement introuvable' }, { status: 404 });
+  }
+
+  const { error: deleteErr } = await supabase
+    .from('paiements')
+    .delete()
+    .eq('id', id)
+    .eq('profile_id', user.id);
+
+  if (deleteErr) {
+    return Response.json({ error: "Erreur lors de la suppression" }, { status: 500 });
+  }
+
+  return Response.json({ ok: true });
+}
