@@ -136,11 +136,13 @@ function AssignerClientModal({ offre, onClose, onSuccess }) {
       if (aboErr) throw aboErr;
 
       if (multiVersement && versements.length > 0) {
+        const echId = crypto.randomUUID();
         const rows = versements.map((v, i) => ({
           profile_id: user.id,
           client_id: selectedClient.id,
           offre_id: offre.id,
           abonnement_id: abo.id,
+          echeancier_id: echId,
           intitule: `${offre.nom} — versement ${i + 1}/${versements.length}`,
           type: offre.type,
           montant: parseFloat(v.montant),

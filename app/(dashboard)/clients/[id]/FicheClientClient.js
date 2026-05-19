@@ -8,7 +8,7 @@ import {
   ArrowLeft, Phone, Mail, Edit3, Ticket, Calendar,
   CheckCircle2, XCircle, Plus, X, Building2, MapPin,
   Banknote, CreditCard, Landmark, FileText, ChevronRight,
-  Package, Zap, CalendarCheck, Loader2, CreditCard as CardIcon,
+  Package, Zap, CalendarCheck, Loader2,
   MessageSquare, Wallet, AlertCircle, Trash2, PlusCircle,
 } from 'lucide-react';
 import { formatDate, formatMontant } from '@/lib/utils';
@@ -16,6 +16,7 @@ import { getVocabulaire } from '@/lib/vocabulaire';
 import { STATUTS_CLIENT, STATUTS_ABONNEMENT, STATUTS_PAIEMENT } from '@/lib/constantes';
 import { createClient } from '@/lib/supabase';
 import { useToast } from '@/components/ui/ToastProvider';
+import PaiementStep from '@/components/paiements/PaiementStep';
 
 // ─── Icônes par type d'offre ────────────────────────────────────────────────
 const TYPE_ICONS = { carnet: Ticket, abonnement: CalendarCheck, cours_unique: Zap };
@@ -49,34 +50,13 @@ const OFFRE_LIBRE = {
   prix: 0,
 };
 
-function generateVersements(total, nb) {
-  const base = Math.floor((total / nb) * 100) / 100;
-  const reste = Math.round((total - base * nb) * 100) / 100;
-  const today = new Date();
-  return Array.from({ length: nb }, (_, i) => {
-    const d = new Date(today);
-    d.setMonth(d.getMonth() + i);
-    return {
-      montant: i === 0 ? +(base + reste).toFixed(2) : base,
-      date: d.toISOString().split('T')[0],
-    };
-  });
-}
-
 function AssignerOffreModal({ client, onClose, onSuccess }) {
   const [step, setStep] = useState('offre'); // 'offre' | 'paiement'
   const [offres, setOffres] = useState([]);
   const [loadingOffres, setLoadingOffres] = useState(true);
   const [selectedOffre, setSelectedOffre] = useState(null);
-  const [intituleLibre, setIntituleLibre] = useState('');  // mode libre uniquement
-  const [montant, setMontant] = useState('');
-  const [modePaiement, setModePaiement] = useState('especes');
-  const [notes, setNotes] = useState('');
+  const [intituleLibre, setIntituleLibre] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState('');
-  const [multiVersement, setMultiVersement] = useState(false);
-  const [nbVersements, setNbVersements] = useState(3);
-  const [versements, setVersements] = useState([]);
 
   const isLibre = selectedOffre?.id === '__libre__';
 
@@ -113,26 +93,9 @@ function AssignerOffreModal({ client, onClose, onSuccess }) {
     setStep('paiement');
   };
 
-  const toggleMulti = (on) => {
-    setMultiVersement(on);
-    if (on && montant) {
-      setVersements(generateVersements(parseFloat(montant), nbVersements));
-    }
-  };
-
-  const changeNbVersements = (n) => {
-    setNbVersements(n);
-    if (montant) setVersements(generateVersements(parseFloat(montant), n));
-  };
-
-  const handleConfirm = async () => {
-    if (!selectedOffre || !montant || parseFloat(montant) < 0) return;
-    if (isLibre && !intituleLibre.trim()) {
-      setError('Saisis un intitulé pour la prestation libre.');
-      return;
-    }
+  const handleConfirm = async ({ montant, modePaiement, notes, multiVersement, versements }) => {
+    if (!selectedOffre) return;
     setSubmitting(true);
-    setError('');
     try {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
@@ -160,11 +123,13 @@ function AssignerOffreModal({ client, onClose, onSuccess }) {
       }
 
       if (multiVersement && versements.length > 1) {
+        const echId = crypto.randomUUID();
         const rows = versements.map((v, i) => ({
           profile_id: user.id,
           client_id: client.id,
           offre_id: isLibre ? null : selectedOffre.id,
           abonnement_id: aboId,
+          echeancier_id: echId,
           intitule: `${isLibre ? intituleLibre.trim() : selectedOffre.nom} (${i + 1}/${versements.length})`,
           type: isLibre ? null : selectedOffre.type,
           montant: v.montant,
@@ -194,7 +159,6 @@ function AssignerOffreModal({ client, onClose, onSuccess }) {
 
       onSuccess();
     } catch (err) {
-      setError(err.message);
       setSubmitting(false);
     }
   };
@@ -274,133 +238,18 @@ function AssignerOffreModal({ client, onClose, onSuccess }) {
           </div>
         )}
 
-        {/* Step 2 — Paiement */}
+        {/* Step 2 — Paiement (composant partagé) */}
         {step === 'paiement' && selectedOffre && (
-          <div className="modal-body">
-            {/* Récap offre */}
-            <div className="paiement-recap">
-              <span className="paiement-recap-nom">
-                {isLibre ? 'Paiement libre' : selectedOffre.nom}
-              </span>
-              <span className="paiement-recap-client">pour {[client.prenom, client.nom_structure || client.nom].filter(Boolean).join(' ')}</span>
-            </div>
-
-            {/* Mode libre uniquement : saisie de l'intitulé */}
-            {isLibre && (
-              <>
-                <div className="paiement-section-label">Intitulé de la prestation</div>
-                <input
-                  className="izi-input"
-                  type="text"
-                  value={intituleLibre}
-                  onChange={e => setIntituleLibre(e.target.value)}
-                  placeholder="Ex : Cours particulier, atelier découverte, frais matériel..."
-                  autoFocus
-                />
-              </>
-            )}
-
-            {/* Mode de paiement */}
-            <div className="paiement-section-label">Mode de règlement</div>
-            <div className="mode-grid">
-              {MODES_PAIEMENT.map(({ value, label, Icon }) => (
-                <button
-                  key={value}
-                  type="button"
-                  className={`mode-btn ${modePaiement === value ? 'active' : ''}`}
-                  onClick={() => setModePaiement(value)}
-                >
-                  <Icon size={18} />
-                  <span>{label}</span>
-                </button>
-              ))}
-              {/* Stripe — bientôt */}
-              <button type="button" className="mode-btn mode-btn-soon" disabled title="Paiement en ligne — bientôt disponible">
-                <CardIcon size={18} />
-                <span>Lien CB</span>
-                <span className="soon-badge">Bientôt</span>
-              </button>
-            </div>
-
-            {/* Montant */}
-            <div className="paiement-section-label">Montant encaissé</div>
-            <div className="montant-row">
-              <input
-                className="izi-input montant-input"
-                type="number"
-                step="0.01"
-                min="0"
-                value={montant}
-                onChange={e => setMontant(e.target.value)}
-                placeholder="0.00"
-              />
-              <span className="montant-currency">€</span>
-            </div>
-            {!isLibre && parseFloat(montant) !== selectedOffre.prix && montant && (
-              <p className="montant-hint">
-                Prix catalogue : {formatMontant(selectedOffre.prix)}
-              </p>
-            )}
-
-            {/* Multi-versement */}
-            {!isLibre && (
-              <>
-                <div className="paiement-section-label">Paiement en plusieurs fois</div>
-                <div className="multi-toggle-row">
-                  <button type="button" className={`multi-toggle-btn ${!multiVersement ? 'active' : ''}`} onClick={() => toggleMulti(false)}>En 1 fois</button>
-                  <button type="button" className={`multi-toggle-btn ${multiVersement ? 'active' : ''}`} onClick={() => toggleMulti(true)}>Plusieurs fois</button>
-                </div>
-                {multiVersement && (
-                  <>
-                    <div className="multi-nb-chips">
-                      {[2, 3, 4, 5, 6].map(n => (
-                        <button key={n} type="button" className={`multi-nb-chip ${nbVersements === n ? 'active' : ''}`} onClick={() => changeNbVersements(n)}>
-                          {n}x
-                        </button>
-                      ))}
-                    </div>
-                    <div className="multi-v-list">
-                      {versements.map((v, i) => (
-                        <div key={i} className="multi-v-row">
-                          <span className="multi-v-label">{i === 0 ? 'Aujourd\'hui' : `Éch. ${i + 1}`}</span>
-                          <span className="multi-v-date">{v.date}</span>
-                          <span className="multi-v-montant">{formatMontant(v.montant)}</span>
-                          <span className={`multi-v-statut ${i === 0 ? 'paid' : 'pending'}`}>{i === 0 ? 'Payé' : 'À venir'}</span>
-                        </div>
-                      ))}
-                    </div>
-                    {(() => {
-                      const sum = versements.reduce((s, v) => s + v.montant, 0);
-                      const total = parseFloat(montant) || 0;
-                      const ok = Math.abs(sum - total) < 0.02;
-                      return <div className={`multi-total ${ok ? 'ok' : 'warn'}`}>Total : {formatMontant(sum)} / {formatMontant(total)}</div>;
-                    })()}
-                  </>
-                )}
-              </>
-            )}
-
-            {/* Notes optionnelles */}
-            <div className="paiement-section-label">Notes (optionnel)</div>
-            <input
-              className="izi-input"
-              type="text"
-              value={notes}
-              onChange={e => setNotes(e.target.value)}
-              placeholder="N° chèque, référence virement..."
-            />
-
-            {error && <p className="error-msg">{error}</p>}
-
-            <button
-              type="button"
-              className="izi-btn izi-btn-primary confirm-btn"
-              onClick={handleConfirm}
-              disabled={submitting || !montant}
-            >
-              {submitting ? <><Loader2 size={16} className="spin" /> Enregistrement...</> : <>✓ Valider le paiement</>}
-            </button>
-          </div>
+          <PaiementStep
+            offreNom={selectedOffre.nom}
+            clientNom={[client.prenom, client.nom_structure || client.nom].filter(Boolean).join(' ')}
+            offrePrix={selectedOffre.prix}
+            isLibre={isLibre}
+            intituleLibre={intituleLibre}
+            onIntituleLibreChange={setIntituleLibre}
+            onConfirm={handleConfirm}
+            submitting={submitting}
+          />
         )}
       </div>
     </div>
@@ -430,16 +279,16 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
 
   // Totaux paiements
   const totaux = (() => {
-    const acc = { paid: 0, pending: 0, unpaid: 0 };
+    const acc = { paid: 0, pending: 0, overdue: 0 };
     for (const p of paiements) {
       const m = parseFloat(p.montant || 0);
       if (p.statut === 'paid') acc.paid += m;
-      else if (p.statut === 'pending' || p.statut === 'cb') acc.pending += m;
-      else if (p.statut === 'unpaid') acc.unpaid += m;
+      else if (p.statut === 'pending') acc.pending += m;
+      else if (p.statut === 'overdue') acc.overdue += m;
     }
     return acc;
   })();
-  const nbImpayes = paiements.filter(p => p.statut === 'pending' || p.statut === 'unpaid' || p.statut === 'cb').length;
+  const nbImpayes = paiements.filter(p => p.statut === 'pending' || p.statut === 'overdue').length;
 
   const handleEncaisser = async (paiementId, mode) => {
     setEncaisserLoading(paiementId);
@@ -523,11 +372,13 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
     try {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
+      const existingEch = paiements.find(p => p.abonnement_id === versementModal.id && p.echeancier_id);
       const { error: payErr } = await supabase.from('paiements').insert({
         profile_id: user.id,
         client_id: client.id,
         offre_id: versementModal.offre_id || null,
         abonnement_id: versementModal.id,
+        echeancier_id: existingEch?.echeancier_id || null,
         intitule: `${versementModal.offre_nom} (versement)`,
         type: versementModal.type,
         montant: parseFloat(versementMontant),
@@ -720,6 +571,10 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
             abonnementsPag.paginated.map(abo => {
               const sInfo = STATUTS_ABONNEMENT[abo.statut] || {};
               const restantes = abo.seances_total != null ? (abo.seances_total - (abo.seances_utilisees || 0)) : null;
+              const aboPaiements = paiements.filter(p => p.abonnement_id === abo.id);
+              const aboRecu = aboPaiements.filter(p => p.statut === 'paid').reduce((s, p) => s + parseFloat(p.montant || 0), 0);
+              const aboTotal = aboPaiements.reduce((s, p) => s + parseFloat(p.montant || 0), 0);
+              const aboReste = aboTotal - aboRecu;
               return (
                 <div key={abo.id} className="abo-card izi-card">
                   <div className="abo-top">
@@ -735,6 +590,17 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
                         />
                       </div>
                       <span className="progress-text">{restantes}/{abo.seances_total} séances</span>
+                    </div>
+                  )}
+                  {aboPaiements.length > 0 && (
+                    <div className="abo-paiements-resume">
+                      <span className="abo-recu">{formatMontant(aboRecu)} reçu</span>
+                      {aboReste > 0 && <span className="abo-reste">· {formatMontant(aboReste)} restant</span>}
+                      {aboTotal > 0 && (
+                        <div className="abo-pay-bar">
+                          <div className="abo-pay-fill" style={{ width: `${Math.min(100, (aboRecu / aboTotal) * 100)}%` }} />
+                        </div>
+                      )}
                     </div>
                   )}
                   {abo.date_fin && <div className="abo-meta">Expire le {formatDate(abo.date_fin)}</div>}
@@ -780,10 +646,10 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
                 <span className="totaux-value" style={{ color: '#ca8a04' }}>{formatMontant(totaux.pending)}</span>
               </div>
             )}
-            {totaux.unpaid > 0 && (
+            {totaux.overdue > 0 && (
               <div className="totaux-item">
-                <span className="totaux-label">Impayés</span>
-                <span className="totaux-value" style={{ color: '#dc2626' }}>{formatMontant(totaux.unpaid)}</span>
+                <span className="totaux-label">En retard</span>
+                <span className="totaux-value" style={{ color: '#dc2626' }}>{formatMontant(totaux.overdue)}</span>
               </div>
             )}
           </div>
@@ -810,7 +676,7 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
             <div className="paiements-list-fiche">
               {paiementsPag.paginated.map(p => {
                 const sInfo = STATUTS_PAIEMENT[p.statut] || {};
-                const canEncaisser = p.statut === 'pending' || p.statut === 'unpaid' || p.statut === 'cb';
+                const canEncaisser = p.statut === 'pending' || p.statut === 'overdue';
                 const isLoading = encaisserLoading === p.id;
                 return (
                   <div key={p.id} className="paiement-fiche-item">
@@ -1086,6 +952,11 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
         .progress-fill { height: 100%; background: var(--brand); border-radius: 3px; transition: width 0.3s ease; }
         .progress-text { font-size: 0.75rem; color: var(--text-muted); white-space: nowrap; }
         .abo-meta { font-size: 0.75rem; color: var(--text-muted); }
+        .abo-paiements-resume { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 0.8125rem; }
+        .abo-recu { font-weight: 600; color: #16a34a; }
+        .abo-reste { color: #ca8a04; font-weight: 500; }
+        .abo-pay-bar { width: 100%; height: 4px; background: var(--cream-dark, #eee); border-radius: 2px; overflow: hidden; margin-top: 2px; }
+        .abo-pay-fill { height: 100%; background: #16a34a; border-radius: 2px; transition: width 0.3s ease; }
 
         .presence-item { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
         .presence-icon { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }

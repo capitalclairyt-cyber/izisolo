@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import {
   TrendingUp, TrendingDown, Clock, Plus, Download, X, CheckCircle2,
-  Banknote, FileText, Landmark, CreditCard, Loader2, Pencil, Save, Trash2,
+  Banknote, FileText, Landmark, CreditCard, Loader2, Pencil, Save, Trash2, AlertTriangle,
 } from 'lucide-react';
 import { formatMontant, formatDate } from '@/lib/utils';
 import { STATUTS_PAIEMENT } from '@/lib/constantes';
@@ -21,8 +21,7 @@ const MODES = [
 const STATUTS = [
   { value: 'paid',    label: 'Payé' },
   { value: 'pending', label: 'En attente' },
-  { value: 'unpaid',  label: 'Impayé' },
-  { value: 'cb',      label: 'CB en cours' },
+  { value: 'overdue', label: 'En retard' },
 ];
 
 const PERIODES = [
@@ -101,8 +100,8 @@ export default function RevenusClient({ paiements: initialPaiements }) {
   // ── Stats ──────────────────────────────────────────────
   const stats = useMemo(() => {
     const paid = periodeFilt.filter(p => p.statut === 'paid');
-    const pending = periodeFilt.filter(p => p.statut === 'pending' || p.statut === 'cb');
-    const unpaid = periodeFilt.filter(p => p.statut === 'unpaid');
+    const pending = periodeFilt.filter(p => p.statut === 'pending');
+    const overdue = periodeFilt.filter(p => p.statut === 'overdue');
     const sum = arr => arr.reduce((s, p) => s + parseFloat(p.montant || 0), 0);
     const sumCommission = arr => arr.reduce((s, p) => s + parseFloat(p.commission_montant || 0), 0);
 
@@ -118,9 +117,11 @@ export default function RevenusClient({ paiements: initialPaiements }) {
     return {
       total: sum(paid),
       pending: sum(pending),
-      unpaid: sum(unpaid),
+      overdue: sum(overdue),
+      aPercevoir: sum(pending) + sum(overdue),
       parMode,
       countPaid: paid.length,
+      countAPercevoir: pending.length + overdue.length,
       stripeCount,
       commission,
     };
@@ -283,12 +284,12 @@ export default function RevenusClient({ paiements: initialPaiements }) {
             </div>
           </div>
         )}
-        {stats.unpaid > 0 && (
+        {stats.overdue > 0 && (
           <div className="small-stat izi-card" style={{ borderColor: '#fca5a5' }}>
             <Clock size={18} style={{ color: '#dc2626' }} />
             <div>
-              <div className="small-stat-value" style={{ color: '#dc2626' }}>{formatMontant(stats.unpaid)}</div>
-              <div className="small-stat-label">impayés</div>
+              <div className="small-stat-value" style={{ color: '#dc2626' }}>{formatMontant(stats.overdue)}</div>
+              <div className="small-stat-label">en retard</div>
             </div>
           </div>
         )}
@@ -323,6 +324,65 @@ export default function RevenusClient({ paiements: initialPaiements }) {
           <div className="commission-amount">{formatMontant(stats.commission)}</div>
         </div>
       )}
+
+      {/* Bloc "À percevoir" — paiements pending + overdue toutes périodes confondues */}
+      {(() => {
+        const aPercevoir = paiements.filter(p => p.statut === 'pending' || p.statut === 'overdue');
+        if (aPercevoir.length === 0) return null;
+        const today = new Date().toISOString().split('T')[0];
+        const overdueList = aPercevoir.filter(p => p.statut === 'overdue' || (p.statut === 'pending' && p.date < today));
+        const upcomingList = aPercevoir.filter(p => p.statut === 'pending' && p.date >= today);
+        const totalDu = aPercevoir.reduce((s, p) => s + parseFloat(p.montant || 0), 0);
+        return (
+          <div className="a-percevoir-section izi-card animate-slide-up">
+            <div className="a-percevoir-header">
+              <AlertTriangle size={18} style={{ color: '#ca8a04' }} />
+              <span className="a-percevoir-title">À percevoir</span>
+              <span className="a-percevoir-total">{formatMontant(totalDu)}</span>
+            </div>
+            {overdueList.length > 0 && (
+              <div className="a-percevoir-group">
+                <div className="a-percevoir-group-label overdue">En retard ({overdueList.length})</div>
+                {overdueList.slice(0, 5).map(p => (
+                  <div key={p.id} className="a-percevoir-row overdue">
+                    <span className="a-percevoir-who">{clientName(p.clients) || p.intitule || 'Paiement'}</span>
+                    <span className="a-percevoir-date">{formatDate(p.date)}</span>
+                    <span className="a-percevoir-montant">{formatMontant(p.montant)}</span>
+                    <button
+                      className="a-percevoir-action"
+                      onClick={() => openEncaisser(p)}
+                      title="Marquer comme encaissé"
+                    >
+                      <CheckCircle2 size={13} /> Encaissé
+                    </button>
+                  </div>
+                ))}
+                {overdueList.length > 5 && <div className="a-percevoir-more">+ {overdueList.length - 5} autre{overdueList.length - 5 > 1 ? 's' : ''}</div>}
+              </div>
+            )}
+            {upcomingList.length > 0 && (
+              <div className="a-percevoir-group">
+                <div className="a-percevoir-group-label upcoming">À venir ({upcomingList.length})</div>
+                {upcomingList.slice(0, 5).map(p => (
+                  <div key={p.id} className="a-percevoir-row">
+                    <span className="a-percevoir-who">{clientName(p.clients) || p.intitule || 'Paiement'}</span>
+                    <span className="a-percevoir-date">{formatDate(p.date)}</span>
+                    <span className="a-percevoir-montant">{formatMontant(p.montant)}</span>
+                    <button
+                      className="a-percevoir-action"
+                      onClick={() => openEncaisser(p)}
+                      title="Marquer comme encaissé"
+                    >
+                      <CheckCircle2 size={13} /> Encaissé
+                    </button>
+                  </div>
+                ))}
+                {upcomingList.length > 5 && <div className="a-percevoir-more">+ {upcomingList.length - 5} autre{upcomingList.length - 5 > 1 ? 's' : ''}</div>}
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* Filtres mode + statut */}
       <div className="revenus-filters">
@@ -370,7 +430,7 @@ export default function RevenusClient({ paiements: initialPaiements }) {
           <div className="paiements-list">
             {paginatedPay.map(p => {
               const sInfo = STATUTS_PAIEMENT[p.statut] || {};
-              const canEncaisser = p.statut === 'pending' || p.statut === 'unpaid' || p.statut === 'cb';
+              const canEncaisser = p.statut === 'pending' || p.statut === 'overdue';
               return (
                 <div key={p.id} className="paiement-item izi-card">
                   <div className="paiement-info">
@@ -769,6 +829,33 @@ export default function RevenusClient({ paiements: initialPaiements }) {
         @keyframes enc-pop-in { from { opacity: 0; transform: scale(0.94); } to { opacity: 1; transform: scale(1); } }
         @keyframes spin { to { transform: rotate(360deg); } }
         .spin { animation: spin 0.8s linear infinite; }
+
+        /* À percevoir */
+        .a-percevoir-section { padding: 16px; display: flex; flex-direction: column; gap: 12px; border-left: 3px solid #ca8a04; }
+        .a-percevoir-header { display: flex; align-items: center; gap: 8px; }
+        .a-percevoir-title { font-weight: 700; font-size: 0.9375rem; flex: 1; }
+        .a-percevoir-total { font-weight: 700; font-size: 1.0625rem; color: #ca8a04; }
+        .a-percevoir-group { display: flex; flex-direction: column; gap: 4px; }
+        .a-percevoir-group-label { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; padding: 2px 0; }
+        .a-percevoir-group-label.overdue { color: #dc2626; }
+        .a-percevoir-group-label.upcoming { color: #ca8a04; }
+        .a-percevoir-row {
+          display: flex; align-items: center; gap: 8px; padding: 8px 10px;
+          background: var(--cream, #faf8f5); border-radius: var(--radius-sm); font-size: 0.8125rem;
+        }
+        .a-percevoir-row.overdue { background: #fef2f2; }
+        .a-percevoir-who { font-weight: 600; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .a-percevoir-date { color: var(--text-muted); font-size: 0.75rem; flex-shrink: 0; }
+        .a-percevoir-montant { font-weight: 700; flex-shrink: 0; }
+        .a-percevoir-action {
+          display: inline-flex; align-items: center; gap: 3px;
+          padding: 3px 8px; border-radius: var(--radius-full);
+          border: 1px solid #6ee7b7; background: #ecfdf5;
+          font-size: 0.6875rem; font-weight: 600; color: #065f46;
+          cursor: pointer; flex-shrink: 0; transition: all 0.15s;
+        }
+        .a-percevoir-action:hover { background: #6ee7b7; color: #064e3b; }
+        .a-percevoir-more { font-size: 0.75rem; color: var(--text-muted); padding-left: 10px; }
       `}</style>
     </div>
   );

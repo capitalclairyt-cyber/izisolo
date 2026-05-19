@@ -181,7 +181,7 @@ async function handleChargeRefunded(supabase, profileId, charge) {
   const { error } = await supabase
     .from('paiements')
     .update({
-      statut: 'unpaid',
+      statut: 'overdue',
       notes: `[REMBOURSÉ ${new Date().toISOString().slice(0, 10)}] Stripe charge: ${charge.id}`,
     })
     .eq('profile_id', profileId)

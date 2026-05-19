@@ -8,7 +8,7 @@ const updateSchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Format YYYY-MM-DD attendu').optional(),
   date_encaissement: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Format YYYY-MM-DD attendu').nullable().optional(),
   notes: z.string().trim().max(500).nullable().optional(),
-  statut: z.enum(['paid', 'pending', 'unpaid', 'cb']).optional(),
+  statut: z.enum(['paid', 'pending', 'overdue']).optional(),
 });
 
 export async function PATCH(request, { params }) {

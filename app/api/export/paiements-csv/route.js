@@ -38,8 +38,7 @@ const PERIODE_TO_RANGE = (periode) => {
 const STATUT_FR = {
   paid:    'Payé',
   pending: 'En attente',
-  cb:      'CB en cours',
-  unpaid:  'Impayé',
+  overdue: 'En retard',
 };
 
 const MODE_FR = {
