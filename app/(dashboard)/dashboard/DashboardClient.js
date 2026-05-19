@@ -364,10 +364,7 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
           il est désormais intégré dans la grille bento en haut, qui
           affiche déjà l'URL + clic pour copier. Évite le doublon. */}
 
-      {/* FAB : nouveau cours */}
-      <Link href="/cours/nouveau" className="izi-fab" aria-label="Nouvelle séance">
-        <Plus size={24} />
-      </Link>
+      {/* FAB retiré — le widget feedback occupe désormais cette position */}
 
       <style jsx global>{`
         .dashboard {

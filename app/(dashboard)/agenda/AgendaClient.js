@@ -281,10 +281,6 @@ export default function AgendaClient({ cours: initialCours, profile, initialDate
         )}
       </div>
 
-      <Link href="/cours/nouveau" className="izi-fab" aria-label="Nouvelle séance">
-        <Plus size={24} />
-      </Link>
-
       <AgendaStyles />
     </div>
   );
