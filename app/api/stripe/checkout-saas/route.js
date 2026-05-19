@@ -96,10 +96,11 @@ export async function POST(request) {
   const subscriptionData = {
     metadata: { profile_id: user.id, plan, periode },
   };
-  if (trialStatus.active && trialStatus.endsAt) {
+  if (trialStatus.active && trialStatus.endsAt && trialStatus.daysLeft >= 2) {
     subscriptionData.trial_end = Math.floor(trialStatus.endsAt.getTime() / 1000);
   }
-  // Si trialStatus.expired ou ineligible → pas de trial Stripe, paiement immédiat
+  // Si trial < 2 jours, expiré, ou ineligible → pas de trial Stripe, paiement immédiat
+  // (Stripe exige trial_end >= now + 48h)
 
   try {
     const session = await stripe.checkout.sessions.create({
