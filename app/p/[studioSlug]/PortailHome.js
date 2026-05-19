@@ -806,60 +806,6 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
             rgba(0,0,0,0.78) 100%);
           pointer-events: none;
         }
-        .portail-hero-content {
-          position: absolute;
-          left: 24px; right: 24px; bottom: 22px;
-          color: white;
-          text-shadow: 0 2px 18px rgba(0,0,0,0.35);
-          display: flex; flex-direction: column;
-          gap: 4px;
-        }
-        .portail-hero-avatar {
-          width: 56px; height: 56px;
-          border-radius: 50%;
-          overflow: hidden;
-          border: 3px solid rgba(255,255,255,0.9);
-          margin-bottom: 8px;
-          box-shadow: 0 4px 14px rgba(0,0,0,0.3);
-        }
-        .portail-hero-avatar img {
-          display: block;
-          width: 100%; height: 100%;
-          object-fit: cover;
-        }
-        .portail-hero-name {
-          font-family: 'Instrument Serif', Georgia, serif;
-          font-size: clamp(1.65rem, 6vw, 2.5rem);
-          font-weight: 400;
-          line-height: 1.05;
-          letter-spacing: -0.015em;
-          margin: 0;
-          color: white;
-        }
-        .portail-hero-meta {
-          display: flex; flex-wrap: wrap;
-          align-items: center; gap: 8px 12px;
-          margin-top: 4px;
-          font-size: 0.875rem;
-          opacity: 0.95;
-        }
-        .portail-hero-metier {
-          text-transform: uppercase;
-          letter-spacing: 0.12em;
-          font-size: 0.75rem;
-          font-weight: 600;
-        }
-        .portail-hero-ville {
-          display: inline-flex; align-items: center; gap: 4px;
-          font-size: 0.8125rem;
-          opacity: 0.9;
-        }
-        @media (min-width: 640px) {
-          .portail-hero { margin: -16px 0 32px; border-radius: 24px; }
-          .portail-hero-photo { aspect-ratio: 16 / 7; }
-          .portail-hero-content { left: 32px; right: 32px; bottom: 28px; }
-        }
-
         .portail-studio-header {
           display: flex; align-items: center; gap: 16px;
           margin-bottom: 24px; padding-bottom: 20px;
