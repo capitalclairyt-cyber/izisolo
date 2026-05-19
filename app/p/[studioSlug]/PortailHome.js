@@ -1180,9 +1180,12 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
           margin: 6px 8px 0 0;
           color: #b87333;
         }
-        /* Philosophie en versets numérotés (magazine éditorial Mélutek) */
+        /* Philosophie en versets numérotés (ton lavender — spirituel/calme) */
         .portail-philo {
-          margin: 28px 0;
+          margin: 32px -16px;
+          padding: 44px 24px;
+          background: var(--tone-lavender-bg-soft, #f7f4fa);
+          border-radius: 24px;
         }
         .portail-philo-eyebrow {
           font-family: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
@@ -1190,9 +1193,10 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
           font-weight: 500;
           text-transform: uppercase;
           letter-spacing: 0.22em;
-          color: #b87333;
-          margin-bottom: 24px;
+          color: var(--tone-lavender-ink, #5a4d75);
+          margin-bottom: 28px;
           text-align: center;
+          opacity: 0.85;
         }
         .portail-philo-list {
           display: flex; flex-direction: column;
@@ -1206,13 +1210,13 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
         }
         .portail-philo-num {
           position: absolute;
-          left: 0; top: -8px;
+          left: 0; top: -10px;
           font-family: 'Instrument Serif', Georgia, serif;
           font-style: italic;
           font-size: 2.75rem;
           font-weight: 400;
-          color: #b87333;
-          opacity: 0.7;
+          color: var(--tone-lavender-accent, #8a7caa);
+          opacity: 0.85;
           line-height: 1;
           letter-spacing: -0.02em;
         }
@@ -1220,8 +1224,8 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
           font-family: 'Instrument Serif', Georgia, serif;
           font-style: italic;
           font-size: 1.35rem;
-          line-height: 1.45;
-          color: #3a3024;
+          line-height: 1.5;
+          color: var(--tone-lavender-ink, #5a4d75);
           margin: 0;
           letter-spacing: -0.005em;
         }
@@ -1258,17 +1262,19 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
           background: white; border-radius: 16px; padding: 20px 22px;
           box-shadow: 0 1px 6px rgba(0,0,0,0.05);
           overflow: hidden;
-          transition: transform 0.2s ease, box-shadow 0.2s ease;
+          transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+          border: 1px solid var(--tone-sage-bg, #e2f0e0);
         }
         .portail-price-card:hover {
           transform: translateY(-2px);
-          box-shadow: 0 12px 32px rgba(184, 115, 51, 0.10);
+          box-shadow: 0 12px 32px rgba(122, 154, 114, 0.18);
+          border-color: var(--tone-sage-accent, #7a9a72);
         }
         .portail-price-spotlight {
           position: absolute; inset: 0;
           z-index: 0;
           pointer-events: none;
-          background: radial-gradient(circle 180px at var(--mx, 50%) var(--my, 50%), rgba(184, 115, 51, 0.12), transparent 60%);
+          background: radial-gradient(circle 200px at var(--mx, 50%) var(--my, 50%), rgba(122, 154, 114, 0.18), transparent 60%);
           opacity: 0;
           transition: opacity 0.25s ease;
           mix-blend-mode: multiply;
@@ -1278,36 +1284,43 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
           position: relative;
           z-index: 1;
         }
-        }
         .portail-price-icon {
-          width: 36px; height: 36px; border-radius: 10px;
-          background: #fce8e8; color: #d4a0a0;
+          width: 38px; height: 38px; border-radius: 10px;
+          background: var(--tone-sage-bg, #e2f0e0); color: var(--tone-sage-ink, #4d6b48);
           display: flex; align-items: center; justify-content: center;
           flex-shrink: 0;
         }
         .portail-price-info { flex: 1; min-width: 0; }
         .portail-price-nom { font-weight: 600; font-size: 0.9375rem; color: #1a1a2e; }
         .portail-price-sub { font-size: 0.75rem; color: #888; margin-top: 2px; }
-        .portail-price-prix { font-weight: 700; font-size: 1.125rem; color: #d4a0a0; }
+        .portail-price-prix {
+          font-family: 'Instrument Serif', Georgia, serif;
+          font-weight: 400;
+          font-size: 1.6rem;
+          color: var(--tone-sage-ink, #4d6b48);
+          letter-spacing: -0.02em;
+        }
 
-        /* Venue */
+        /* Venue — ton lavender (calme, posé) */
         .portail-venue-card {
-          background: white; border-radius: 16px; padding: 24px 24px;
-          box-shadow: 0 1px 6px rgba(0,0,0,0.05);
+          background: var(--tone-lavender-bg-soft, #f7f4fa);
+          border-radius: 16px; padding: 24px 24px;
+          box-shadow: 0 1px 6px rgba(90, 77, 117, 0.05);
+          border: 1px solid var(--tone-lavender-bg, #ece6f3);
           display: flex; flex-direction: column; gap: 16px;
         }
         .portail-venue-row {
           display: flex; align-items: flex-start; gap: 10px;
           font-size: 0.9375rem; color: #1a1a2e;
         }
-        .portail-venue-row svg { color: #d4a0a0; flex-shrink: 0; margin-top: 2px; }
+        .portail-venue-row svg { color: var(--tone-lavender-accent, #8a7caa); flex-shrink: 0; margin-top: 2px; }
         .portail-venue-addr { font-weight: 600; line-height: 1.4; }
         .portail-venue-hours { white-space: pre-wrap; line-height: 1.5; color: #555; font-size: 0.875rem; }
         /* Underline animé éditorial Mélutek (background-image left-to-right) */
         .portail-venue-link,
         .portail-link-editorial {
           display: inline;
-          color: #b87333; text-decoration: none; font-weight: 600;
+          color: var(--tone-lavender-ink, #5a4d75); text-decoration: none; font-weight: 600;
           background-image: linear-gradient(currentColor, currentColor);
           background-size: 0% 1.5px;
           background-repeat: no-repeat;
@@ -1324,20 +1337,21 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
           font-size: 0.8125rem;
         }
 
-        /* FAQ — pattern Mélutek : chevron SVG, padding généreux, ombre douce */
+        /* FAQ — ton rose (chaleureux, accessible) */
         .portail-faq-list { display: flex; flex-direction: column; gap: 10px; }
         .portail-faq-item {
           background: white; border-radius: 16px; padding: 22px 26px;
-          box-shadow: 0 1px 8px rgba(70, 35, 25, 0.04);
-          border: 1px solid #f4ede5;
-          transition: box-shadow 0.2s ease, transform 0.2s ease;
+          box-shadow: 0 1px 8px rgba(139, 56, 56, 0.04);
+          border: 1px solid var(--tone-rose-bg, #fce8e2);
+          transition: box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
         }
         .portail-faq-item:hover {
-          box-shadow: 0 8px 28px rgba(70, 35, 25, 0.08);
+          box-shadow: 0 8px 28px rgba(139, 56, 56, 0.08);
+          border-color: var(--tone-rose-accent, #c47070);
         }
         .portail-faq-item[open] {
-          background: #fefaf5;
-          border-color: #fde8d0;
+          background: var(--tone-rose-bg-soft, #fdf6f4);
+          border-color: var(--tone-rose-accent, #c47070);
         }
         .portail-faq-q {
           display: flex; align-items: center; justify-content: space-between;
@@ -1350,15 +1364,16 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
         .portail-faq-q-text { flex: 1; }
         .portail-faq-chevron {
           flex-shrink: 0;
-          color: #b87333;
+          color: var(--tone-rose-accent, #c47070);
           transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
         }
         .portail-faq-item[open] .portail-faq-chevron {
           transform: rotate(180deg);
+          color: var(--tone-rose-ink, #8b3838);
         }
         .portail-faq-a {
           margin: 14px 0 0; color: #555; font-size: 0.9375rem; line-height: 1.65;
-          padding-top: 14px; border-top: 1px solid #f0ebe8;
+          padding-top: 14px; border-top: 1px solid var(--tone-rose-bg, #fce8e2);
         }
 
         /* Social */
