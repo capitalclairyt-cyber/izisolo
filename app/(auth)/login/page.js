@@ -30,12 +30,17 @@ function LoginContent() {
     setError('');
 
     const { error: authError } = await supabase.auth.signInWithPassword({
-      email,
+      email: email.trim().toLowerCase(),
       password,
     });
 
     if (authError) {
-      setError('Email ou mot de passe incorrect');
+      console.error('[login] error:', authError);
+      if (authError.message?.includes('rate') || authError.status === 429) {
+        setError('Trop de tentatives. Attends quelques minutes.');
+      } else {
+        setError('Email ou mot de passe incorrect');
+      }
       setLoading(false);
       return;
     }
@@ -53,12 +58,17 @@ function LoginContent() {
     setError('');
 
     const { error: authError } = await supabase.auth.signInWithOtp({
-      email,
+      email: email.trim().toLowerCase(),
       options: { emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirect)}` },
     });
 
     if (authError) {
-      setError('Erreur lors de l\'envoi du lien. Réessaie dans quelques instants.');
+      console.error('[login] magic link error:', authError);
+      if (authError.message?.includes('rate') || authError.status === 429) {
+        setError('Trop de tentatives. Attends quelques minutes avant de réessayer.');
+      } else {
+        setError(authError.message || 'Erreur lors de l\'envoi du lien. Réessaie dans quelques instants.');
+      }
       setLoading(false);
       return;
     }

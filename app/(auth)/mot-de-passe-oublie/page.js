@@ -18,13 +18,18 @@ export default function MotDePasseOubliePage() {
     setError('');
     try {
       const supabase = createClient();
-      const { error: err } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      const { error: err } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
         redirectTo: `${window.location.origin}/auth/callback?type=recovery`,
       });
       if (err) throw err;
       setSent(true);
     } catch (err) {
-      setError('Impossible d\'envoyer l\'email. Vérifie l\'adresse saisie.');
+      console.error('[reset-password] error:', err);
+      if (err?.message?.includes('rate') || err?.status === 429) {
+        setError('Trop de tentatives. Attends quelques minutes avant de réessayer.');
+      } else {
+        setError(err?.message || 'Impossible d\'envoyer l\'email. Vérifie l\'adresse saisie.');
+      }
     } finally {
       setLoading(false);
     }
