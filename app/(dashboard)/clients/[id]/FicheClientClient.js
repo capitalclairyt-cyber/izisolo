@@ -985,6 +985,47 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
 
       {activeTab === 'presences' && (
         <div className="tab-content">
+          {/* Récap carnets actifs avec séances */}
+          {(() => {
+            const carnetsActifs = abonnements.filter(a => a.statut === 'actif' && a.seances_total != null);
+            if (carnetsActifs.length === 0) return null;
+            return (
+              <div className="presences-carnets-recap">
+                {carnetsActifs.map(abo => {
+                  const restantes = (abo.seances_total || 0) - (abo.seances_utilisees || 0);
+                  const presPointees = presences.filter(p => p.pointee).length;
+                  const saisiesAvant = Math.max(0, (abo.seances_utilisees || 0) - presPointees);
+                  return (
+                    <div key={abo.id} className="presences-carnet-card">
+                      <div className="presences-carnet-top">
+                        <Ticket size={14} />
+                        <span className="presences-carnet-nom">{abo.offre_nom}</span>
+                        <span className="presences-carnet-count">{restantes}/{abo.seances_total}</span>
+                      </div>
+                      <div className="abo-progress" style={{ marginTop: 4 }}>
+                        <div className="progress-bar">
+                          <div className="progress-fill" style={{ width: `${Math.max(0, (restantes / abo.seances_total) * 100)}%` }} />
+                        </div>
+                      </div>
+                      {saisiesAvant > 0 && (
+                        <div className="presences-carnet-hint">
+                          {saisiesAvant} séance{saisiesAvant > 1 ? 's' : ''} renseignée{saisiesAvant > 1 ? 's' : ''} avant l'app
+                        </div>
+                      )}
+                      <button
+                        className="presences-carnet-edit"
+                        onClick={() => openEditAbo(abo)}
+                        type="button"
+                      >
+                        <Edit3 size={12} /> Modifier les séances déjà faites
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
+
           {presences.length === 0 ? (
             <div className="empty-mini">Aucune présence enregistrée</div>
           ) : (
@@ -1503,6 +1544,25 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
         .abo-reste { color: #ca8a04; font-weight: 500; }
         .abo-pay-bar { width: 100%; height: 4px; background: var(--cream-dark, #eee); border-radius: 2px; overflow: hidden; margin-top: 2px; }
         .abo-pay-fill { height: 100%; background: #16a34a; border-radius: 2px; transition: width 0.3s ease; }
+
+        /* Récap carnets dans onglet Présences */
+        .presences-carnets-recap { display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px; }
+        .presences-carnet-card {
+          padding: 12px 14px; background: var(--brand-light); border: 1px solid var(--brand);
+          border-radius: var(--radius-md); display: flex; flex-direction: column; gap: 4px;
+        }
+        .presences-carnet-top { display: flex; align-items: center; gap: 6px; }
+        .presences-carnet-nom { font-weight: 600; font-size: 0.875rem; flex: 1; color: var(--brand-700); }
+        .presences-carnet-count { font-weight: 700; font-size: 0.875rem; color: var(--brand-700); font-family: var(--font-geist-mono), ui-monospace, monospace; }
+        .presences-carnet-hint { font-size: 0.75rem; color: var(--text-muted); font-style: italic; }
+        .presences-carnet-edit {
+          display: inline-flex; align-items: center; gap: 5px; align-self: flex-start;
+          padding: 4px 10px; border-radius: var(--radius-full);
+          border: 1px solid var(--brand); background: white;
+          font-size: 0.7rem; font-weight: 600; color: var(--brand-700);
+          cursor: pointer; transition: all 0.15s; margin-top: 2px;
+        }
+        .presences-carnet-edit:hover { background: var(--brand); color: white; }
 
         .presence-item { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); text-decoration: none; color: inherit; }
         .presence-item-link { cursor: pointer; border-radius: var(--radius-sm); padding: 10px 8px; margin: 0 -8px; transition: background 0.15s; }
