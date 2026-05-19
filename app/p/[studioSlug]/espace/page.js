@@ -203,19 +203,22 @@ export default async function EspacePage({ params, searchParams }) {
     redirect(`/p/${studioSlug}/connexion`);
   }
 
-  // Mode démo : si ?demo=1 ET l'user connecté est le prof du studio, on
-  // injecte des données fake pour qu'il/elle voie l'espace comme une élève.
-  if (isDemoRequest) {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('id, studio_nom, studio_slug, regles_annulation')
-      .eq('studio_slug', studioSlug)
-      .single();
+  // Récupérer le profil du studio pour détecter si l'user est le prof
+  const { data: ownerProfile } = await supabase
+    .from('profiles')
+    .select('id, studio_nom, studio_slug, regles_annulation')
+    .eq('studio_slug', studioSlug)
+    .single();
 
-    if (!profile) notFound();
+  if (!ownerProfile) notFound();
 
-    if (profile.id === user.id) {
-      const demoData = buildDemoData(profile);
+  // Si l'user est le prof du studio : on bascule automatiquement en mode démo
+  // (le prof n'est pas client de son propre studio, donc sans ce bypass il
+  // tomberait sur la page 'tu n'as pas de réservation').
+  const isOwner = ownerProfile.id === user.id;
+  if (isOwner || isDemoRequest) {
+    if (isOwner) {
+      const demoData = buildDemoData(ownerProfile);
       return (
         <EspaceClient
           profile={demoData.profile}
@@ -231,7 +234,7 @@ export default async function EspacePage({ params, searchParams }) {
         />
       );
     }
-    // Si demo=1 mais user n'est PAS le prof → on ignore le flag, vraie data
+    // demo=1 mais user n'est PAS le prof → on ignore le flag, vraie data
   }
 
   const data = await getData(studioSlug, user.email);
