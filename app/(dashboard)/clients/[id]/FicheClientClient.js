@@ -521,7 +521,7 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
         <span className="header-title">{isPro ? 'Fiche client pro' : `Fiche ${vocab.client || 'élève'}`}</span>
         <div className="header-actions">
           <Link
-            href={`/communication?client_id=${client.id}`}
+            href={`/messagerie?with=${client.id}`}
             className="header-msg-btn"
             title="Envoyer un message"
           >
@@ -552,7 +552,7 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
           )}
           {client.email && (
             <Link
-              href={`/communication?client_id=${client.id}`}
+              href={`/messagerie?with=${client.id}`}
               className="contact-btn contact-btn-mail"
               title="Envoyer un e-mail via Communication"
             >
