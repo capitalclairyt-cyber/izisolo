@@ -5,6 +5,7 @@ import Sidebar from '@/components/navigation/Sidebar';
 import AccountStatusBanner from '@/components/trial/AccountStatusBanner';
 import { getVocabulaire } from '@/lib/vocabulaire';
 import { ToastProvider } from '@/components/ui/ToastProvider';
+import FeedbackWidget from '@/components/feedback/FeedbackWidget';
 
 // Petite touche d'identité : illustration sidebar choisie selon le métier
 // du pro. Améliore le sentiment d'appartenance / personnalisation visuelle.
@@ -51,6 +52,8 @@ export default function DashboardLayoutClient({ children, profile, trial, nbCasA
           {children}
         </div>
       </main>
+
+      <FeedbackWidget />
 
       {/* Bouton flottant Assistant IA — désactivé temporairement (UX pas au point).
           Pour réactiver, déscommenter le bloc ci-dessous. */}
