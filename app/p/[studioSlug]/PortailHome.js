@@ -141,21 +141,24 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
     <div>
       <ScrollReveal />
 
-      {/* Studio header — hero photo moderne si photo de couverture, sinon header compact */}
+      {/* Studio header — hero photo moderne (pattern Lumorae : photo pure
+          plein écran centré, dégradé doux, contenu sous la photo) */}
       {profile.photo_couverture ? (
-        <header className="portail-hero">
-          <div className="portail-hero-photo">
-            <img
-              className="portail-hero-img"
-              src={profile.photo_couverture}
-              alt=""
-              style={{
-                objectPosition: `50% ${profile.photo_couverture_focal_y ?? 50}%`,
-              }}
-            />
-            <div className="portail-hero-gradient" aria-hidden="true" />
+        <>
+          <div className="portail-hero-cover">
+            <div className="portail-hero-cover-inner">
+              <img
+                className="portail-hero-img"
+                src={profile.photo_couverture}
+                alt=""
+                style={{
+                  objectPosition: `50% ${profile.photo_couverture_focal_y ?? 50}%`,
+                }}
+              />
+              <div className="portail-hero-cover-fade" aria-hidden="true" />
+            </div>
           </div>
-          <div className="portail-hero-content">
+          <header className="portail-hero-header">
             {profile.photo_url && (
               <div className="portail-hero-avatar">
                 <img src={profile.photo_url} alt={profile.studio_nom} />
@@ -178,8 +181,8 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
                 </span>
               )}
             </div>
-          </div>
-        </header>
+          </header>
+        </>
       ) : (
         <div className="portail-studio-header">
           <div className="portail-studio-avatar">
@@ -646,54 +649,116 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
       )}
 
       <style jsx global>{`
-        /* ─── Hero photo : version moderne quand photo_couverture est définie ─ */
-        .portail-hero {
+        /* ─── Hero pattern Lumorae : photo pure cinématographique + contenu dessous ─ */
+        .portail-hero-cover {
+          /* Casser le padding du container pour aller plein écran */
+          margin: -24px calc(50% - 50vw) 0;
           position: relative;
-          margin: -16px -16px 28px;
-          border-radius: 0 0 24px 24px;
-          overflow: hidden;
-          isolation: isolate;
         }
-        .portail-hero-photo {
+        .portail-hero-cover-inner {
           position: relative;
           width: 100%;
+          max-width: 1440px;
+          margin: 0 auto;
           aspect-ratio: 16 / 9;
-          background: #1a1a2e;
           overflow: hidden;
+          background: #1a1612;
         }
-        .portail-hero-photo img {
+        .portail-hero-img {
           display: block;
           width: 100%; height: 100%;
-        }
-        /* Ken Burns lent : la photo zoome doucement + drift léger */
-        .portail-hero-img {
           object-fit: cover;
           will-change: transform;
           animation: portail-hero-kenburns 22s ease-out forwards;
           transform-origin: center;
         }
         @keyframes portail-hero-kenburns {
-          from { transform: scale(1.08) translate3d(0, 0, 0); }
-          to   { transform: scale(1.00) translate3d(0, -1%, 0); }
+          from { transform: scale(1.08); }
+          to   { transform: scale(1.00); }
         }
-        /* Parallax léger sur scroll (CSS scroll-driven, Chrome 115+) */
+        /* Parallax léger sur scroll (Chrome 115+) */
         @supports (animation-timeline: scroll()) {
           .portail-hero-img {
             animation:
               portail-hero-kenburns 22s ease-out forwards,
               portail-hero-parallax linear both;
             animation-timeline: auto, scroll(root);
-            animation-range: auto, 0 60vh;
+            animation-range: auto, 0 70vh;
           }
           @keyframes portail-hero-parallax {
-            to { transform: scale(1.05) translate3d(0, 8%, 0); }
+            to { transform: scale(1.05) translate3d(0, 6%, 0); }
           }
         }
-        @media (prefers-reduced-motion: reduce) {
-          .portail-hero-img { animation: none; }
+        /* Dégradé doux vers la couleur de fond (style Lumorae, pas sombre) */
+        .portail-hero-cover-fade {
+          position: absolute;
+          left: 0; right: 0; bottom: 0;
+          height: 25%;
+          background: linear-gradient(to bottom, transparent, var(--bg-page, #faf8f5));
+          pointer-events: none;
+        }
+        @media (max-width: 640px) {
+          .portail-hero-cover-inner { aspect-ratio: 4 / 5; }
+        }
+        @media (min-width: 1024px) {
+          .portail-hero-cover-inner { aspect-ratio: 21 / 9; }
         }
 
-        /* Text reveal mot-par-mot sur le nom du studio */
+        /* En-tête sous la photo : avatar + nom + métier + ville */
+        .portail-hero-header {
+          position: relative;
+          z-index: 2;
+          margin: -64px auto 32px;
+          max-width: 720px;
+          padding: 0 16px;
+          text-align: center;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+        }
+        .portail-hero-avatar {
+          width: 96px; height: 96px;
+          border-radius: 50%;
+          overflow: hidden;
+          border: 4px solid var(--bg-page, #faf8f5);
+          box-shadow: 0 6px 24px rgba(0,0,0,0.18);
+          background: var(--bg-page, #faf8f5);
+          margin-bottom: 18px;
+        }
+        .portail-hero-avatar img { display: block; width: 100%; height: 100%; object-fit: cover; }
+        .portail-hero-name {
+          font-family: 'Instrument Serif', Georgia, serif;
+          font-size: clamp(2rem, 6.5vw, 3.5rem);
+          font-weight: 400;
+          line-height: 1;
+          letter-spacing: -0.015em;
+          margin: 0 0 14px;
+          color: #1a1a2e;
+        }
+        .portail-hero-meta {
+          display: flex; flex-wrap: wrap; justify-content: center;
+          align-items: center; gap: 8px 14px;
+          font-size: 0.875rem;
+          color: #555;
+        }
+        .portail-hero-metier {
+          text-transform: uppercase;
+          letter-spacing: 0.14em;
+          font-size: 0.75rem;
+          font-weight: 600;
+          color: #b87333;
+        }
+        .portail-hero-meta-sep { color: #ccc; }
+        .portail-hero-ville {
+          display: inline-flex; align-items: center; gap: 4px;
+          color: #888;
+        }
+        @media (max-width: 640px) {
+          .portail-hero-header { margin-top: -56px; }
+          .portail-hero-avatar { width: 80px; height: 80px; margin-bottom: 14px; }
+        }
+
+        /* Animations : text reveal mot-par-mot + fade-up */
         .portail-hero-name { display: block; }
         .portail-hero-word {
           display: inline-block;
@@ -705,7 +770,7 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
           transform: translateY(110%);
           opacity: 0;
           animation: portail-hero-word-up 0.95s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-          animation-delay: calc(120ms + var(--word-index, 0) * 90ms);
+          animation-delay: calc(180ms + var(--word-index, 0) * 90ms);
         }
         @keyframes portail-hero-word-up {
           to { transform: translateY(0); opacity: 1; }
@@ -715,13 +780,14 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
           opacity: 0;
           animation: portail-hero-fade-up 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards;
         }
-        .portail-hero-avatar { animation-delay: 0ms; }
-        .portail-hero-meta   { animation-delay: 600ms; }
+        .portail-hero-avatar { animation-delay: 60ms; }
+        .portail-hero-meta   { animation-delay: 520ms; }
         @keyframes portail-hero-fade-up {
           from { opacity: 0; transform: translateY(12px); }
           to   { opacity: 1; transform: translateY(0); }
         }
         @media (prefers-reduced-motion: reduce) {
+          .portail-hero-img,
           .portail-hero-word-inner,
           .portail-hero-avatar,
           .portail-hero-meta {
