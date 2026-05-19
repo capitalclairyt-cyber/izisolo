@@ -16,11 +16,11 @@ const TYPES = [
 ];
 
 const PLACEHOLDERS = {
-  bug:    'Qu'est-ce qui plante ? Étapes pour reproduire si possible.',
-  manque: 'Qu'est-ce qu'il faudrait ajouter ?',
-  confus: 'Sur quoi tu butes, qu'est-ce qui n'est pas clair ?',
-  kiff:   'Qu'est-ce qui t'a fait dire "ça je kiffe" ?',
-  autre:  'Vas-y, dis-nous tout.',
+  bug:    "Qu'est-ce qui plante ? Étapes pour reproduire si possible.",
+  manque: "Qu'est-ce qu'il faudrait ajouter ?",
+  confus: "Sur quoi tu butes, qu'est-ce qui n'est pas clair ?",
+  kiff:   "Qu'est-ce qui t'a fait dire « ça je kiffe » ?",
+  autre:  "Vas-y, dis-nous tout.",
 };
 
 const MAX_LEN = 4000;
