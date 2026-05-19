@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { MapPin, Calendar, Clock, Users, ChevronRight, ChevronLeft, Search, CreditCard, Ticket, CalendarCheck, Zap, Instagram, Facebook, Globe, Award, BookOpen, LayoutGrid, List } from 'lucide-react';
 import { toneForCours } from '@/lib/tones';
+import ScrollReveal from '@/components/landing/ScrollReveal';
 
 // Helpers semaine
 function getWeekStart(date) {
@@ -183,16 +184,17 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
         </Link>
       )}
 
+      <ScrollReveal />
+
       {/* Studio header — hero photo moderne si photo de couverture, sinon header compact */}
       {profile.photo_couverture ? (
         <header className="portail-hero">
           <div className="portail-hero-photo">
             <img
+              className="portail-hero-img"
               src={profile.photo_couverture}
               alt=""
               style={{
-                width: '100%', height: '100%',
-                objectFit: 'cover',
                 objectPosition: `50% ${profile.photo_couverture_focal_y ?? 50}%`,
               }}
             />
@@ -204,7 +206,14 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
                 <img src={profile.photo_url} alt={profile.studio_nom} />
               </div>
             )}
-            <h1 className="portail-hero-name">{profile.studio_nom}</h1>
+            <h1 className="portail-hero-name">
+              {(profile.studio_nom || '').split(' ').map((word, i) => (
+                <span key={i} className="portail-hero-word" style={{ '--word-index': i }}>
+                  <span className="portail-hero-word-inner">{word}</span>
+                  {i < profile.studio_nom.split(' ').length - 1 && ' '}
+                </span>
+              ))}
+            </h1>
             <div className="portail-hero-meta">
               {profile.metier && <span className="portail-hero-metier">{profile.metier}</span>}
               {(profile.ville || profile.code_postal) && (
@@ -474,7 +483,7 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
 
       {/* === ONGLET À PROPOS === */}
       {tab === 'propos' && hasAbout && (
-        <section className="portail-about">
+        <section className="portail-about reveal">
           <div className="portail-about-card">
             {profile.bio && <p className="portail-about-bio">{profile.bio}</p>}
             {profile.philosophie && (
@@ -498,7 +507,7 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
 
       {/* === ONGLET TARIFS === */}
       {tab === 'tarifs' && hasTarifs && (
-        <section className="portail-prices">
+        <section className="portail-prices reveal">
           <div className="portail-prices-grid">
             {offresPubliques.map(o => {
               const Icon = TYPE_ICONS[o.type] || Ticket;
@@ -524,7 +533,7 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
       {/* === ONGLET INFOS === */}
       {tab === 'infos' && hasInfos && <>
         {(adresseComplete || profile.horaires_studio) && (
-          <section className="portail-venue">
+          <section className="portail-venue reveal">
             <h2 className="portail-section-title">Où nous trouver</h2>
             <div className="portail-venue-card">
               {adresseComplete && (
@@ -556,7 +565,7 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
         )}
 
         {faq.length > 0 && (
-          <section className="portail-faq">
+          <section className="portail-faq reveal">
             <h2 className="portail-section-title">Questions fréquentes</h2>
             <div className="portail-faq-list">
               {faq.map((item, i) => (
@@ -570,7 +579,7 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
         )}
 
         {hasSocial && (
-          <section className="portail-social">
+          <section className="portail-social reveal">
             <h2 className="portail-section-title">Suivre le studio</h2>
             <div className="portail-social-row">
               {profile.instagram_url && (
@@ -650,10 +659,76 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
           width: 100%;
           aspect-ratio: 16 / 9;
           background: #1a1a2e;
+          overflow: hidden;
         }
         .portail-hero-photo img {
           display: block;
           width: 100%; height: 100%;
+        }
+        /* Ken Burns lent : la photo zoome doucement + drift léger */
+        .portail-hero-img {
+          object-fit: cover;
+          will-change: transform;
+          animation: portail-hero-kenburns 22s ease-out forwards;
+          transform-origin: center;
+        }
+        @keyframes portail-hero-kenburns {
+          from { transform: scale(1.08) translate3d(0, 0, 0); }
+          to   { transform: scale(1.00) translate3d(0, -1%, 0); }
+        }
+        /* Parallax léger sur scroll (CSS scroll-driven, Chrome 115+) */
+        @supports (animation-timeline: scroll()) {
+          .portail-hero-img {
+            animation:
+              portail-hero-kenburns 22s ease-out forwards,
+              portail-hero-parallax linear both;
+            animation-timeline: auto, scroll(root);
+            animation-range: auto, 0 60vh;
+          }
+          @keyframes portail-hero-parallax {
+            to { transform: scale(1.05) translate3d(0, 8%, 0); }
+          }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .portail-hero-img { animation: none; }
+        }
+
+        /* Text reveal mot-par-mot sur le nom du studio */
+        .portail-hero-name { display: block; }
+        .portail-hero-word {
+          display: inline-block;
+          overflow: hidden;
+          vertical-align: top;
+        }
+        .portail-hero-word-inner {
+          display: inline-block;
+          transform: translateY(110%);
+          opacity: 0;
+          animation: portail-hero-word-up 0.95s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+          animation-delay: calc(120ms + var(--word-index, 0) * 90ms);
+        }
+        @keyframes portail-hero-word-up {
+          to { transform: translateY(0); opacity: 1; }
+        }
+        .portail-hero-avatar,
+        .portail-hero-meta {
+          opacity: 0;
+          animation: portail-hero-fade-up 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        }
+        .portail-hero-avatar { animation-delay: 0ms; }
+        .portail-hero-meta   { animation-delay: 600ms; }
+        @keyframes portail-hero-fade-up {
+          from { opacity: 0; transform: translateY(12px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .portail-hero-word-inner,
+          .portail-hero-avatar,
+          .portail-hero-meta {
+            animation: none;
+            transform: none;
+            opacity: 1;
+          }
         }
         .portail-hero-gradient {
           position: absolute; left: 0; right: 0; bottom: 0;
@@ -1071,6 +1146,39 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
           transition: all 0.15s;
         }
         .portail-social-link:hover { color: #d4a0a0; border-color: #d4a0a0; transform: translateY(-2px); }
+
+        /* ─── Scroll reveal — fade + translate doux ─────────────────────── */
+        .reveal {
+          opacity: 0;
+          transform: translateY(28px);
+          transition:
+            opacity 0.8s cubic-bezier(0.22, 1, 0.36, 1),
+            transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        .reveal.is-revealed,
+        .reveal[data-revealed="true"] {
+          opacity: 1;
+          transform: translateY(0);
+        }
+        /* CSS scroll-driven natif (Chrome 115+) : prend la main si supporté */
+        @supports (animation-timeline: view()) {
+          .reveal {
+            opacity: 0;
+            transform: translateY(28px);
+            animation: portail-reveal-up 1s cubic-bezier(0.22, 1, 0.36, 1) both;
+            animation-timeline: view();
+            animation-range: entry 5% cover 25%;
+          }
+          @keyframes portail-reveal-up {
+            to { opacity: 1; transform: translateY(0); }
+          }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .reveal {
+            opacity: 1; transform: none;
+            animation: none; transition: none;
+          }
+        }
       `}</style>
     </div>
   );
