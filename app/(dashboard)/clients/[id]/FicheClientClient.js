@@ -263,7 +263,10 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
   const [showAssignerModal, setShowAssignerModal] = useState(false);
   const [abonnements, setAbonnements] = useState(abosInit);
   const [paiements, setPaiements] = useState(paiementsInit);
-  const [encaisserLoading, setEncaisserLoading] = useState(null); // id du paiement en cours
+  const [encaisserModal, setEncaisserModal] = useState(null);
+  const [encaisserMode, setEncaisserMode] = useState('especes');
+  const [encaisserNotes, setEncaisserNotes] = useState('');
+  const [encaisserLoading, setEncaisserLoading] = useState(false);
 
   // Pagination 8/page sur les 3 onglets (présences, paiements, abonnements).
   // Cas concret du bug remonté 2026-05-07 : un élève avec 16 présences
@@ -286,25 +289,33 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
   })();
   const nbImpayes = paiements.filter(p => p.statut === 'pending' || p.statut === 'overdue').length;
 
-  const handleEncaisser = async (paiementId, mode) => {
-    setEncaisserLoading(paiementId);
+  const openEncaisser = (paiement) => {
+    setEncaisserModal(paiement);
+    setEncaisserMode(paiement.mode || 'especes');
+    setEncaisserNotes('');
+  };
+
+  const submitEncaisser = async () => {
+    if (!encaisserModal) return;
+    setEncaisserLoading(true);
     try {
-      const res = await fetch(`/api/paiements/${paiementId}/encaisser`, {
+      const res = await fetch(`/api/paiements/${encaisserModal.id}/encaisser`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mode }),
+        body: JSON.stringify({ mode: encaisserMode, ...(encaisserNotes.trim() ? { notes: encaisserNotes.trim() } : {}) }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Erreur');
       const today = new Date().toISOString().slice(0, 10);
       setPaiements(prev => prev.map(p =>
-        p.id === paiementId ? { ...p, statut: 'paid', mode, date_encaissement: today } : p
+        p.id === encaisserModal.id ? { ...p, statut: 'paid', mode: encaisserMode, date_encaissement: today } : p
       ));
       toast.success('Paiement encaissé !');
+      setEncaisserModal(null);
     } catch (e) {
       toast.error(e.message);
     } finally {
-      setEncaisserLoading(null);
+      setEncaisserLoading(false);
     }
   };
 
@@ -741,7 +752,6 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
               {paiementsPag.paginated.map(p => {
                 const sInfo = STATUTS_PAIEMENT[p.statut] || {};
                 const canEncaisser = p.statut === 'pending' || p.statut === 'overdue';
-                const isLoading = encaisserLoading === p.id;
                 return (
                   <div key={p.id} className="paiement-fiche-item">
                     <div className="paiement-fiche-info">
@@ -761,13 +771,11 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
                       <span className={`izi-badge izi-badge-${sInfo.color || 'neutral'}`}>{sInfo.label || p.statut}</span>
                       {canEncaisser && (
                         <button
-                          onClick={() => handleEncaisser(p.id, p.mode || 'especes')}
+                          onClick={() => openEncaisser(p)}
                           className="encaisser-btn-fiche"
-                          disabled={isLoading}
-                          title={`Marquer comme encaissé en ${p.mode || 'espèces'}`}
+                          title="Encaisser ce paiement"
                         >
-                          {isLoading ? <Loader2 size={12} className="spin" /> : <CheckCircle2 size={12} />}
-                          Encaissé
+                          <CheckCircle2 size={12} /> Encaisser
                         </button>
                       )}
                       <button
@@ -955,6 +963,58 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
                 disabled={editAboSubmitting}
               >
                 {editAboSubmitting ? <><Loader2 size={16} className="spin" /> Enregistrement...</> : <>Enregistrer</>}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal encaisser un paiement */}
+      {encaisserModal && (
+        <div className="modal-backdrop" onClick={e => { if (e.target === e.currentTarget) setEncaisserModal(null); }}>
+          <div className="modal-sheet versement-sheet animate-slide-up" role="dialog" aria-modal="true">
+            <div className="modal-header">
+              <div style={{ width: 36 }} />
+              <span className="modal-title">Encaisser</span>
+              <button className="modal-close" onClick={() => setEncaisserModal(null)} type="button" aria-label="Fermer"><X size={20} /></button>
+            </div>
+            <div className="modal-body">
+              <div className="paiement-recap">
+                <span className="paiement-recap-nom">{encaisserModal.intitule || 'Paiement'}</span>
+                <span className="paiement-recap-client">{formatMontant(encaisserModal.montant)} · pour {displayName}</span>
+              </div>
+
+              <div className="paiement-section-label">Mode de règlement</div>
+              <div className="mode-grid">
+                {MODES_PAIEMENT.map(({ value, label, Icon }) => (
+                  <button
+                    key={value}
+                    type="button"
+                    className={`mode-btn ${encaisserMode === value ? 'active' : ''}`}
+                    onClick={() => setEncaisserMode(value)}
+                  >
+                    <Icon size={18} />
+                    <span>{label}</span>
+                  </button>
+                ))}
+              </div>
+
+              <div className="paiement-section-label">Notes (optionnel)</div>
+              <input
+                className="izi-input"
+                type="text"
+                value={encaisserNotes}
+                onChange={e => setEncaisserNotes(e.target.value)}
+                placeholder="N° chèque, référence virement..."
+              />
+
+              <button
+                type="button"
+                className="izi-btn izi-btn-primary confirm-btn"
+                onClick={submitEncaisser}
+                disabled={encaisserLoading}
+              >
+                {encaisserLoading ? <><Loader2 size={16} className="spin" /> Enregistrement...</> : <><CheckCircle2 size={16} /> Encaisser</>}
               </button>
             </div>
           </div>

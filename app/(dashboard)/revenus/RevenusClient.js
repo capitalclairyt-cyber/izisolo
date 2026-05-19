@@ -68,6 +68,7 @@ export default function RevenusClient({ paiements: initialPaiements }) {
   const [encaisserModal, setEncaisserModal] = useState(null); // { id, intitule, montant, ... }
   const [encaisserMode, setEncaisserMode] = useState('especes');
   const [encaisserDate, setEncaisserDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [encaisserNotes, setEncaisserNotes] = useState('');
   const [encaisserSubmitting, setEncaisserSubmitting] = useState(false);
 
   // Édition paiement
@@ -198,6 +199,7 @@ export default function RevenusClient({ paiements: initialPaiements }) {
     setEncaisserModal(paiement);
     setEncaisserMode(paiement.mode || 'especes');
     setEncaisserDate(new Date().toISOString().slice(0, 10));
+    setEncaisserNotes('');
   };
 
   const submitEncaisser = async () => {
@@ -207,7 +209,7 @@ export default function RevenusClient({ paiements: initialPaiements }) {
       const res = await fetch(`/api/paiements/${encaisserModal.id}/encaisser`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mode: encaisserMode, date_encaissement: encaisserDate }),
+        body: JSON.stringify({ mode: encaisserMode, date_encaissement: encaisserDate, ...(encaisserNotes.trim() ? { notes: encaisserNotes.trim() } : {}) }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Erreur');
@@ -353,7 +355,7 @@ export default function RevenusClient({ paiements: initialPaiements }) {
                       onClick={() => openEncaisser(p)}
                       title="Marquer comme encaissé"
                     >
-                      <CheckCircle2 size={13} /> Encaissé
+                      <CheckCircle2 size={13} /> Encaisser
                     </button>
                   </div>
                 ))}
@@ -373,7 +375,7 @@ export default function RevenusClient({ paiements: initialPaiements }) {
                       onClick={() => openEncaisser(p)}
                       title="Marquer comme encaissé"
                     >
-                      <CheckCircle2 size={13} /> Encaissé
+                      <CheckCircle2 size={13} /> Encaisser
                     </button>
                   </div>
                 ))}
@@ -461,7 +463,7 @@ export default function RevenusClient({ paiements: initialPaiements }) {
                           className="encaisser-btn"
                           title="Marquer comme encaissé"
                         >
-                          <CheckCircle2 size={13} /> Encaissé
+                          <CheckCircle2 size={13} /> Encaisser
                         </button>
                       )}
                     </div>
@@ -517,6 +519,16 @@ export default function RevenusClient({ paiements: initialPaiements }) {
                 value={encaisserDate}
                 onChange={e => setEncaisserDate(e.target.value)}
                 className="izi-input"
+              />
+            </div>
+            <div className="enc-field">
+              <label>Notes (optionnel)</label>
+              <input
+                type="text"
+                value={encaisserNotes}
+                onChange={e => setEncaisserNotes(e.target.value)}
+                className="izi-input"
+                placeholder="N° chèque, référence virement..."
               />
             </div>
             <div className="enc-actions">
