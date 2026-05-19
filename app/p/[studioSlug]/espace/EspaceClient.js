@@ -253,7 +253,7 @@ function CoursCard({ presence, profile, studioSlug, onAnnuler, annulEnCours }) {
   );
 }
 
-export default function EspaceClient({ profile, client, aVenir, passes, paiements = [], offresStripe = [], abonnements = [], studioSlug, userEmail }) {
+export default function EspaceClient({ profile, client, aVenir, passes, paiements = [], offresStripe = [], abonnements = [], studioSlug, userEmail, isDemo = false }) {
   const router = useRouter();
   const { toast } = useToast();
   const [annulEnCours, setAnnulEnCours] = useState(null);
@@ -328,7 +328,25 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
 
   return (
     <div>
-      <Link href={`/p/${studioSlug}`} className="portail-back-link">
+      {isDemo && (
+        <div style={{
+          background: 'linear-gradient(135deg, #fefaf5, #fef0dc)',
+          border: '1.5px solid #f0c897',
+          borderRadius: 12,
+          padding: '12px 16px',
+          marginBottom: 16,
+          display: 'flex', alignItems: 'center', gap: 10,
+          fontSize: '0.875rem', color: '#7c4a03', lineHeight: 1.4,
+        }}>
+          <span style={{ fontSize: '1.25rem' }}>👁️</span>
+          <div style={{ flex: 1 }}>
+            <strong>Mode démo</strong> — tu vois ton espace élève avec des données fictives.
+            <span style={{ fontWeight: 400, opacity: 0.85 }}> Camille, une élève imaginaire, a un carnet 10 séances et 2 cours réservés.</span>
+          </div>
+        </div>
+      )}
+
+      <Link href={`/p/${studioSlug}${isDemo ? '?demo=1' : ''}`} className="portail-back-link">
         <ArrowLeft size={15} /> Retour aux cours
       </Link>
 

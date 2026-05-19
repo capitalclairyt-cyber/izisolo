@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import {
   CalendarDays, Users, BarChart3, AlertTriangle, ChevronRight,
   Clock, Plus, CheckCircle2, XCircle, Share2, Copy, ExternalLink, X, Sparkles,
-  Receipt, MessageSquare, Settings as SettingsIcon, ClipboardList
+  Receipt, MessageSquare, Settings as SettingsIcon, ClipboardList, Eye
 } from 'lucide-react';
 import { formatHeure, formatMontant } from '@/lib/utils';
 import { getVocabulaire } from '@/lib/vocabulaire';
@@ -203,14 +203,22 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
           </div>
         </Link>
 
-        {/* Sondage : si pas encore créé → CTA, sinon → résumé */}
-        <Link href="/sondages" className="bento-cell bento-cell--info">
-          <div className="bento-icon"><ClipboardList size={20} /></div>
-          <div>
-            <div className="bento-value bento-value--small">{hasSondage ? 'Sondage' : 'Lancer'}</div>
-            <div className="bento-label">{hasSondage ? 'Voir résultats' : 'Découvre tes créneaux'}</div>
-          </div>
-        </Link>
+        {/* Voir en tant qu'élève — ouvre le portail en mode démo (espace élève
+            simulé avec données fake). Utile pour tester l'expérience UX. */}
+        {studioSlug && (
+          <a
+            href={`/p/${studioSlug}/espace?demo=1`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bento-cell bento-cell--info"
+          >
+            <div className="bento-icon"><Eye size={20} /></div>
+            <div>
+              <div className="bento-value bento-value--small">Voir en tant qu'</div>
+              <div className="bento-label">élève (espace démo)</div>
+            </div>
+          </a>
+        )}
 
         {/* Portail public — clic = ouvre le portail dans un nouvel onglet
             (action principale, ce qu'on attend intuitivement). Bouton

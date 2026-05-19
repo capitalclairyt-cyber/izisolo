@@ -5,6 +5,111 @@ import EspaceClient from './EspaceClient';
 
 export const metadata = { title: 'Mon espace — IziSolo' };
 
+// ─── Mode démo : données fake pour que le prof voie son portail comme une
+// élève fictive. Active uniquement si ?demo=1 ET viewer = prof du studio. ──
+function buildDemoData(profile) {
+  const today = new Date();
+  const fmt = (d) => d.toISOString().slice(0, 10);
+  const addDays = (n) => { const d = new Date(today); d.setDate(d.getDate() + n); return d; };
+
+  const demoClient = {
+    id: 'demo-client',
+    prenom: 'Camille',
+    nom: '(démo)',
+    email: 'demo@izisolo.fr',
+    telephone: null,
+  };
+
+  const demoAVenir = [
+    {
+      id: 'demo-pres-1',
+      statut_pointage: 'inscrit',
+      created_at: new Date().toISOString(),
+      cours: {
+        id: 'demo-cours-1',
+        nom: 'Pilates matinal',
+        date: fmt(addDays(2)),
+        heure: '09:30',
+        duree_minutes: 60,
+        lieu: profile.studio_nom || 'Studio',
+        type_cours: 'Pilates',
+        est_annule: false,
+      },
+    },
+    {
+      id: 'demo-pres-2',
+      statut_pointage: 'inscrit',
+      created_at: new Date().toISOString(),
+      cours: {
+        id: 'demo-cours-2',
+        nom: 'Pilates barre',
+        date: fmt(addDays(5)),
+        heure: '18:00',
+        duree_minutes: 75,
+        lieu: profile.studio_nom || 'Studio',
+        type_cours: 'Pilates',
+        est_annule: false,
+      },
+    },
+  ];
+
+  const demoPasses = [
+    {
+      id: 'demo-pres-p1',
+      statut_pointage: 'present',
+      pointee: true,
+      created_at: new Date().toISOString(),
+      cours: {
+        id: 'demo-cours-p1',
+        nom: 'Pilates matinal',
+        date: fmt(addDays(-3)),
+        heure: '09:30',
+        duree_minutes: 60,
+        lieu: profile.studio_nom || 'Studio',
+        type_cours: 'Pilates',
+        est_annule: false,
+      },
+    },
+  ];
+
+  const demoAbonnements = [
+    {
+      id: 'demo-abo-1',
+      offre_nom: 'Carnet 10 séances',
+      type: 'carnet',
+      date_debut: fmt(addDays(-30)),
+      date_fin: fmt(addDays(150)),
+      seances_total: 10,
+      seances_utilisees: 4,
+      statut: 'actif',
+      date_pause_debut: null,
+      date_pause_fin: null,
+    },
+  ];
+
+  const demoPaiements = [
+    {
+      id: 'demo-pay-1',
+      intitule: 'Carnet 10 séances',
+      montant: 180,
+      mode: 'cb',
+      date: fmt(addDays(-30)),
+      date_encaissement: fmt(addDays(-30)),
+      statut: 'paid',
+    },
+  ];
+
+  return {
+    profile,
+    client: demoClient,
+    aVenir: demoAVenir,
+    passes: demoPasses,
+    paiements: demoPaiements,
+    offresStripe: [],
+    abonnements: demoAbonnements,
+  };
+}
+
 async function getData(studioSlug, userEmail) {
   const supabase = await createServerClient();
 
@@ -86,13 +191,47 @@ async function getData(studioSlug, userEmail) {
   return { profile, client, aVenir, passes, paiements: paiements || [], offresStripe: offresStripe || [], abonnements: abonnements || [] };
 }
 
-export default async function EspacePage({ params }) {
+export default async function EspacePage({ params, searchParams }) {
   const { studioSlug } = await params;
+  const sp = (await searchParams) || {};
+  const isDemoRequest = sp.demo === '1';
+
   const supabase = await createServerClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
     redirect(`/p/${studioSlug}/connexion`);
+  }
+
+  // Mode démo : si ?demo=1 ET l'user connecté est le prof du studio, on
+  // injecte des données fake pour qu'il/elle voie l'espace comme une élève.
+  if (isDemoRequest) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('id, studio_nom, studio_slug, regles_annulation')
+      .eq('studio_slug', studioSlug)
+      .single();
+
+    if (!profile) notFound();
+
+    if (profile.id === user.id) {
+      const demoData = buildDemoData(profile);
+      return (
+        <EspaceClient
+          profile={demoData.profile}
+          client={demoData.client}
+          aVenir={demoData.aVenir}
+          passes={demoData.passes}
+          paiements={demoData.paiements}
+          offresStripe={demoData.offresStripe}
+          abonnements={demoData.abonnements}
+          studioSlug={studioSlug}
+          userEmail={user.email}
+          isDemo={true}
+        />
+      );
+    }
+    // Si demo=1 mais user n'est PAS le prof → on ignore le flag, vraie data
   }
 
   const data = await getData(studioSlug, user.email);
