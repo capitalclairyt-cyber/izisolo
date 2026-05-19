@@ -65,7 +65,7 @@ function RegleBuilderModal({ onClose, onSave, editingRegle }) {
 
   return (
     <div className="modal-backdrop" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="modal-sheet animate-slide-up">
+      <div className="modal-sheet animate-slide-up" role="dialog" aria-modal="true">
 
         {/* Header */}
         <div className="modal-header">
@@ -73,7 +73,7 @@ function RegleBuilderModal({ onClose, onSave, editingRegle }) {
           <span className="modal-title">
             {editingRegle ? 'Modifier la règle' : 'Nouvelle règle'}
           </span>
-          <button className="modal-close" onClick={onClose} type="button">
+          <button className="modal-close" onClick={onClose} type="button" aria-label="Fermer">
             <X size={20} />
           </button>
         </div>
@@ -339,7 +339,7 @@ export default function ReglesTab({ profileId }) {
                 key={regle.id}
                 className={`regle-card izi-card ${!regle.actif ? 'regle-inactive' : ''} ${bientot ? 'regle-bientot-mode' : ''}`}
               >
-                <div className="regle-body" onClick={() => openEdit(regle)} style={{ cursor: 'pointer' }}>
+                <div className="regle-body" onClick={() => openEdit(regle)} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openEdit(regle); } }} role="button" tabIndex={0} style={{ cursor: 'pointer' }}>
                   {/* Condition */}
                   <div className="regle-sentence">
                     <span className="regle-chip regle-chip-if">SI</span>
@@ -361,6 +361,7 @@ export default function ReglesTab({ profileId }) {
                     className="regle-toggle"
                     onClick={() => toggleActif(regle)}
                     title={regle.actif ? 'Désactiver' : 'Activer'}
+                    aria-label={regle.actif ? 'Désactiver la règle' : 'Activer la règle'}
                     type="button"
                   >
                     {regle.actif
@@ -372,6 +373,7 @@ export default function ReglesTab({ profileId }) {
                     className="regle-delete"
                     onClick={() => deleteRegle(regle.id)}
                     title="Supprimer"
+                    aria-label="Supprimer la règle"
                     type="button"
                   >
                     <Trash2 size={15} />

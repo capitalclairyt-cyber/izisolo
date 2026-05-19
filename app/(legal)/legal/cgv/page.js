@@ -54,7 +54,7 @@ export default function CGVPage() {
       <h2>3. Offres et tarifs</h2>
       <p>
         Les caractéristiques essentielles, limitations et tarifs de chaque offre
-        d'abonnement (Solo, Pro, Premium et toute offre future) sont décrits sur la
+        d'abonnement (Solo, Pro, Studio et toute offre future) sont décrits sur la
         page de tarification accessible sur le site et au moment de la souscription.
         Les prix sont exprimés en euros, hors TVA le cas échéant.
       </p>

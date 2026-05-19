@@ -11,6 +11,8 @@ import {
 import { createClient } from '@/lib/supabase';
 import { useToast } from '@/components/ui/ToastProvider';
 import { formatMontant } from '@/lib/utils';
+import { PLANS } from '@/lib/constantes';
+import { effectivePlan } from '@/lib/trial';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 const TYPES = [
@@ -60,6 +62,7 @@ export default function NouvelleOffre() {
   const { toast }   = useToast();
   const [loading, setLoading]     = useState(false);
   const [offresUnitaires, setOffresUnitaires] = useState([]); // pour ref prix carnet
+  const [planLimitReached, setPlanLimitReached] = useState(false);
 
   // État principal
   const [type, setType]           = useState('carnet');
@@ -90,17 +93,26 @@ export default function NouvelleOffre() {
   const stripeLinkValid = !stripePaymentLink.trim() ||
     /^https?:\/\/(buy\.)?stripe\.com\//i.test(stripePaymentLink.trim());
 
-  // Charger les offres cours_unique pour la référence prix
+  // Charger les offres cours_unique pour la référence prix + vérifier limite plan
   useEffect(() => {
     const load = async () => {
       const supabase = createClient();
-      const { data } = await supabase
-        .from('offres')
-        .select('id, nom, prix')
-        .eq('type', 'cours_unique')
-        .eq('actif', true)
-        .order('prix');
-      setOffresUnitaires(data || []);
+      const { data: { user } } = await supabase.auth.getUser();
+
+      const [{ data: unitaires }, { data: profile }, { count }] = await Promise.all([
+        supabase.from('offres').select('id, nom, prix').eq('type', 'cours_unique').eq('actif', true).order('prix'),
+        supabase.from('profiles').select('plan, trial_started_at, stripe_subscription_status').eq('id', user.id).single(),
+        supabase.from('offres').select('*', { count: 'exact', head: true }).eq('profile_id', user.id),
+      ]);
+
+      setOffresUnitaires(unitaires || []);
+
+      // Vérifier la limite du plan
+      const planKey = effectivePlan(profile);
+      const limite = PLANS[planKey]?.limiteOffres;
+      if (limite != null && (count || 0) >= limite) {
+        setPlanLimitReached(true);
+      }
     };
     load();
   }, []);
@@ -165,6 +177,11 @@ export default function NouvelleOffre() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!nom.trim() || !prix) return;
+
+    if (planLimitReached) {
+      toast.warning('Tu as atteint la limite de formules de ton plan. Passe en Pro pour en créer davantage.');
+      return;
+    }
 
     if (type === 'abonnement') {
       if (!dateDebut || !dateFin) {
@@ -236,7 +253,7 @@ export default function NouvelleOffre() {
     }
   };
 
-  const canSubmit = nom.trim() && prix && (
+  const canSubmit = nom.trim() && prix && !planLimitReached && (
     type !== 'abonnement' || (dateDebut && dateFin && joursValidite > 0)
   );
 
@@ -246,6 +263,19 @@ export default function NouvelleOffre() {
         <Link href="/offres" className="back-btn"><ArrowLeft size={20} /></Link>
         <h1>Nouvelle offre</h1>
       </div>
+
+      {planLimitReached && (
+        <div className="no-plan-limit-banner animate-slide-up">
+          <div className="no-plan-limit-icon">&#x1F451;</div>
+          <div className="no-plan-limit-text">
+            <strong>Limite atteinte</strong> — Tu as atteint la limite de formules du plan Solo.
+            Passe en Pro pour cr{'é'}er des formules illimit{'é'}es.
+          </div>
+          <Link href="/parametres?tab=abonnement" className="izi-btn izi-btn-primary" style={{ whiteSpace: 'nowrap', fontSize: '0.8125rem', padding: '8px 14px' }}>
+            D{'é'}couvrir Pro
+          </Link>
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="no-form animate-slide-up">
 
@@ -829,6 +859,16 @@ export default function NouvelleOffre() {
         @keyframes spin { to { transform: rotate(360deg); } }
         .spin { animation: spin 0.8s linear infinite; }
         .form-hint { font-size: 0.75rem; color: var(--text-muted); }
+
+        /* ── Plan limit banner ── */
+        .no-plan-limit-banner {
+          display: flex; align-items: center; gap: 12px; padding: 14px 16px;
+          background: linear-gradient(135deg, #fef3c7, #fde68a); border: 1.5px solid #f59e0b;
+          border-radius: var(--radius-md); flex-wrap: wrap;
+        }
+        .no-plan-limit-icon { font-size: 1.5rem; flex-shrink: 0; }
+        .no-plan-limit-text { flex: 1; min-width: 200px; font-size: 0.875rem; color: #92400e; line-height: 1.45; }
+        .no-plan-limit-text strong { font-weight: 700; }
       `}</style>
     </div>
   );

@@ -718,7 +718,7 @@ function NotifsElevesSection({ profile, setProfile, setDirty }) {
 
 // ════════════════════════════════════════════════════════════════════════════
 // Section "Abonnement IziSolo" — Stripe SaaS
-// 3 plans publics (Solo 12€ / Pro 24€ / Premium 49€) — MENSUEL UNIQUEMENT
+// 3 plans publics (Solo 17€ / Pro 34€ / Studio 79€) — MENSUEL UNIQUEMENT
 // (l'annuel est désactivé pour l'instant ; sera ajouté plus tard avec -20%)
 // Trial 14 jours sur tous. Plan `free` (interne, exempté) jamais affiché ici.
 // ════════════════════════════════════════════════════════════════════════════
@@ -748,7 +748,7 @@ function AbonnementCheckout({ currentPlan, profile }) {
     {
       id: 'solo',
       nom: 'Solo',
-      prixMensuel: 12,
+      prixMensuel: 17,
       tagline: 'Pour démarrer en autonomie',
       pitch: 'Tout l\'essentiel pour gérer ton studio à la main.',
       features: [
@@ -766,7 +766,7 @@ function AbonnementCheckout({ currentPlan, profile }) {
       id: 'pro',
       nom: 'Pro',
       recommended: true,
-      prixMensuel: 24,
+      prixMensuel: 34,
       tagline: 'Ton studio devient une machine',
       pitch: 'Encaissement en ligne + automatisations + outils marketing.',
       features: [
@@ -787,9 +787,9 @@ function AbonnementCheckout({ currentPlan, profile }) {
     },
     {
       id: 'premium',
-      nom: 'Premium',
-      prixMensuel: 49,
-      comingSoon: true, // 🚧 carte grisée + bouton désactivé tant que pas prêt
+      nom: 'Studio',
+      prixMensuel: 79,
+      comingSoon: true,
       tagline: 'Pour les studios matures',
       pitch: 'Vidéos de cours vendables à l\'unité ou en abonnement + white-label.',
       features: [
@@ -947,7 +947,7 @@ function AbonnementCheckout({ currentPlan, profile }) {
 
       <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 14, textAlign: 'center' }}>
         Tarifs TTC. Frais Stripe natifs (1,4% + 0,25 €) toujours dus à Stripe.
-        Les frais IziSolo (1 % sur Pro et Premium) viennent en plus.
+        Les frais IziSolo (1 % sur Pro et Studio) viennent en plus.
       </p>
     </div>
   );
@@ -2893,8 +2893,8 @@ export default function Parametres() {
               { label: 'Page publique enrichie (bio, FAQ, philosophie)', included: currentPlan.portailEnrichi },
               { label: 'Annulation par l\'élève + dette tardive', included: currentPlan.annulationParEleve },
               { label: 'Export comptabilité', included: currentPlan.exportCompta },
-              { label: 'Vidéos de cours vendables à l\'unité ou en abonnement (Premium)', included: currentPlan.videos === true },
-              { label: 'Logo studio dans emails / white-label (Premium)', included: currentPlan.brandingEmail },
+              { label: 'Vidéos de cours vendables à l\'unité ou en abonnement (Studio)', included: currentPlan.videos === true },
+              { label: 'Logo studio dans emails / white-label (Studio)', included: currentPlan.brandingEmail },
             ];
             return (
               <div className="section izi-card">
@@ -3214,7 +3214,7 @@ export default function Parametres() {
           border-color: var(--brand);
           background: var(--brand-light);
         }
-        /* Premium "bientôt" : carte grisée, bouton désactivé */
+        /* Studio "bientôt" : carte grisée, bouton désactivé */
         .plan-card.plan-card-disabled {
           opacity: 0.6;
           background: var(--bg-soft, #F8F4ED);

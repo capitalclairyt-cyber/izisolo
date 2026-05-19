@@ -278,18 +278,21 @@ export default function NouveauClient() {
             </div>
 
             <div className="form-group">
-              <label className="form-label">Nom de la structure *</label>
+              <label className="form-label" htmlFor="nc-nom-structure">Nom de la structure *</label>
               <input
+                id="nc-nom-structure"
                 className={`izi-input ${prefilled ? 'izi-input-prefilled' : ''}`}
                 type="text"
                 value={form.nom_structure}
                 onChange={handleChange('nom_structure')}
                 placeholder="YogaFacile, Studio Zen..."
                 required
+                aria-required="true"
               />
             </div>
 
             <ValidatedInput
+              id="nc-siret"
               label="SIRET"
               value={form.siret}
               onChange={v => updateField('siret', v)}
@@ -302,8 +305,9 @@ export default function NouveauClient() {
             />
 
             <div className="form-group">
-              <label className="form-label">Adresse</label>
+              <label className="form-label" htmlFor="nc-adresse">Adresse</label>
               <input
+                id="nc-adresse"
                 className={`izi-input ${prefilled ? 'izi-input-prefilled' : ''}`}
                 type="text"
                 value={form.adresse}
@@ -322,6 +326,7 @@ export default function NouveauClient() {
             <div className="section-label">Contact</div>
 
             <ValidatedInput
+              id="nc-email-pro"
               label="Email"
               value={form.email}
               onChange={v => updateField('email', v)}
@@ -331,6 +336,7 @@ export default function NouveauClient() {
             />
 
             <ValidatedInput
+              id="nc-tel-pro"
               label="Téléphone"
               value={form.telephone}
               onChange={v => updateField('telephone', v)}
@@ -352,7 +358,7 @@ export default function NouveauClient() {
                       <span className="lieu-nom">{l.nom}</span>
                       {l.adresse && <span className="lieu-adresse">{l.adresse}</span>}
                     </div>
-                    <button type="button" className="lieu-delete" onClick={() => removeLieu(idx)}>
+                    <button type="button" className="lieu-delete" onClick={() => removeLieu(idx)} aria-label="Supprimer le lieu">
                       <Trash2 size={16} />
                     </button>
                   </div>
@@ -375,7 +381,7 @@ export default function NouveauClient() {
                 placeholder="Adresse (optionnel)"
                 onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addLieu(); } }}
               />
-              <button type="button" className="izi-btn izi-btn-secondary add-btn" onClick={addLieu} disabled={!newLieuNom.trim()}>
+              <button type="button" className="izi-btn izi-btn-secondary add-btn" onClick={addLieu} disabled={!newLieuNom.trim()} aria-label="Ajouter un lieu">
                 <Plus size={18} />
               </button>
             </div>
@@ -385,16 +391,17 @@ export default function NouveauClient() {
             {/* Mode Particulier */}
             <div className="form-row">
               <div className="form-group">
-                <label className="form-label">Prénom</label>
-                <input className="izi-input" type="text" value={form.prenom} onChange={handleChange('prenom')} placeholder="Marie" />
+                <label className="form-label" htmlFor="nc-prenom">Prénom</label>
+                <input id="nc-prenom" className="izi-input" type="text" value={form.prenom} onChange={handleChange('prenom')} placeholder="Marie" />
               </div>
               <div className="form-group">
-                <label className="form-label">Nom *</label>
-                <input className="izi-input" type="text" value={form.nom} onChange={handleChange('nom')} placeholder="Dupont" required />
+                <label className="form-label" htmlFor="nc-nom">Nom *</label>
+                <input id="nc-nom" className="izi-input" type="text" value={form.nom} onChange={handleChange('nom')} placeholder="Dupont" required aria-required="true" />
               </div>
             </div>
 
             <ValidatedInput
+              id="nc-email"
               label="Email"
               value={form.email}
               onChange={v => updateField('email', v)}
@@ -404,6 +411,7 @@ export default function NouveauClient() {
             />
 
             <ValidatedInput
+              id="nc-telephone"
               label="Téléphone"
               value={form.telephone}
               onChange={v => updateField('telephone', v)}
@@ -415,13 +423,14 @@ export default function NouveauClient() {
 
             {fieldsConfig.predefined.date_naissance && (
               <div className="form-group">
-                <label className="form-label">
+                <label className="form-label" htmlFor="nc-date-naissance">
                   Date de naissance{' '}
                   <span style={{ fontWeight: 400, color: 'var(--text-muted)', fontSize: '0.8125rem' }}>
                     — pour envoyer un mot doux le jour J 🎂
                   </span>
                 </label>
                 <input
+                  id="nc-date-naissance"
                   className="izi-input"
                   type="date"
                   value={form.date_naissance}
@@ -433,8 +442,9 @@ export default function NouveauClient() {
 
             {fieldsConfig.predefined.adresse && (
               <div className="form-group">
-                <label className="form-label">Adresse postale</label>
+                <label className="form-label" htmlFor="nc-adresse-postale">Adresse postale</label>
                 <textarea
+                  id="nc-adresse-postale"
                   className="izi-input"
                   rows={2}
                   value={adressePostale}
@@ -448,8 +458,8 @@ export default function NouveauClient() {
               <div className="form-row">
                 {fieldsConfig.predefined.niveau && (
                   <div className="form-group">
-                    <label className="form-label">Niveau</label>
-                    <select className="izi-input" value={form.niveau} onChange={handleChange('niveau')}>
+                    <label className="form-label" htmlFor="nc-niveau">Niveau</label>
+                    <select id="nc-niveau" className="izi-input" value={form.niveau} onChange={handleChange('niveau')}>
                       <option value="">-- Choisir --</option>
                       <option value="Débutant">Débutant</option>
                       <option value="Intermédiaire">Intermédiaire</option>
@@ -459,8 +469,8 @@ export default function NouveauClient() {
                 )}
                 {fieldsConfig.predefined.source && (
                   <div className="form-group">
-                    <label className="form-label">Source</label>
-                    <select className="izi-input" value={form.source} onChange={handleChange('source')}>
+                    <label className="form-label" htmlFor="nc-source">Source</label>
+                    <select id="nc-source" className="izi-input" value={form.source} onChange={handleChange('source')}>
                       <option value="">-- Choisir --</option>
                       <option value="Bouche à oreille">Bouche à oreille</option>
                       <option value="Instagram">Instagram</option>
@@ -532,8 +542,9 @@ export default function NouveauClient() {
 
         {/* Notes */}
         <div className="form-group">
-          <label className="form-label">Notes</label>
+          <label className="form-label" htmlFor="nc-notes">Notes</label>
           <textarea
+            id="nc-notes"
             className="izi-input"
             value={form.notes}
             onChange={handleChange('notes')}

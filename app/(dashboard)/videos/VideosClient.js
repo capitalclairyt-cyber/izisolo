@@ -133,7 +133,7 @@ export default function VideosClient({ videosInit }) {
             <h2 style={{ fontSize: '1.0625rem', fontWeight: 700 }}>
               {editing === 'new' ? 'Nouvelle vidéo' : 'Modifier la vidéo'}
             </h2>
-            <button type="button" onClick={cancel} className="izi-btn izi-btn-ghost" style={{ padding: 6 }}><X size={16} /></button>
+            <button type="button" onClick={cancel} className="izi-btn izi-btn-ghost" style={{ padding: 6 }} aria-label="Fermer"><X size={16} /></button>
           </div>
 
           <div>
@@ -231,12 +231,12 @@ export default function VideosClient({ videosInit }) {
                 </div>
               </div>
               <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
-                <button onClick={() => togglePublie(v)} className="izi-btn izi-btn-ghost" style={{ padding: 6 }} title={v.publie ? 'Visible publiquement' : 'Caché'}>
+                <button type="button" onClick={() => togglePublie(v)} className="izi-btn izi-btn-ghost" style={{ padding: 6 }} title={v.publie ? 'Visible publiquement' : 'Caché'} aria-label={v.publie ? 'Masquer la vidéo' : 'Rendre visible'}>
                   {v.publie ? <Eye size={14} /> : <EyeOff size={14} />}
                 </button>
-                <a href={v.url_video} target="_blank" rel="noopener noreferrer" className="izi-btn izi-btn-ghost" style={{ padding: 6 }} title="Voir la vidéo"><Play size={14} /></a>
-                <button onClick={() => startEdit(v)} className="izi-btn izi-btn-ghost" style={{ padding: 6 }} title="Modifier"><Edit3 size={14} /></button>
-                <button onClick={() => handleDelete(v)} className="izi-btn izi-btn-ghost" style={{ padding: 6, color: '#dc2626' }} title="Supprimer"><Trash2 size={14} /></button>
+                <a href={v.url_video} target="_blank" rel="noopener noreferrer" className="izi-btn izi-btn-ghost" style={{ padding: 6 }} title="Voir la vidéo" aria-label="Voir la vidéo"><Play size={14} /></a>
+                <button type="button" onClick={() => startEdit(v)} className="izi-btn izi-btn-ghost" style={{ padding: 6 }} title="Modifier" aria-label="Modifier la vidéo"><Edit3 size={14} /></button>
+                <button type="button" onClick={() => handleDelete(v)} className="izi-btn izi-btn-ghost" style={{ padding: 6, color: '#dc2626' }} title="Supprimer" aria-label="Supprimer la vidéo"><Trash2 size={14} /></button>
               </div>
             </div>
           ))}

@@ -7,7 +7,7 @@ import {
   Plus, Package, Ticket, CalendarCheck, Zap, Trash2,
   ToggleLeft, ToggleRight, UserPlus, X, ChevronRight,
   Banknote, CreditCard, Landmark, FileText, Loader2,
-  Search, CreditCard as CardIcon
+  Search, CreditCard as CardIcon, Crown, ArrowRight
 } from 'lucide-react';
 import { formatMontant } from '@/lib/utils';
 import { toneForOffre } from '@/lib/tones';
@@ -130,12 +130,12 @@ function AssignerClientModal({ offre, onClose, onSuccess }) {
 
   return (
     <div className="modal-backdrop" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="modal-sheet animate-slide-up">
+      <div className="modal-sheet animate-slide-up" role="dialog" aria-modal="true">
 
         {/* Header */}
         <div className="modal-header">
           {step === 'paiement' ? (
-            <button className="modal-back" onClick={() => setStep('client')} type="button">
+            <button className="modal-back" onClick={() => setStep('client')} type="button" aria-label="Retour">
               <ChevronRight size={18} style={{ transform: 'rotate(180deg)' }} />
             </button>
           ) : (
@@ -144,7 +144,7 @@ function AssignerClientModal({ offre, onClose, onSuccess }) {
           <span className="modal-title">
             {step === 'client' ? 'Choisir un élève' : 'Paiement'}
           </span>
-          <button className="modal-close" onClick={onClose} type="button"><X size={20} /></button>
+          <button className="modal-close" onClick={onClose} type="button" aria-label="Fermer"><X size={20} /></button>
         </div>
 
         {/* Step 1 — Choisir un client */}
@@ -275,10 +275,13 @@ function AssignerClientModal({ offre, onClose, onSuccess }) {
 // ═══════════════════════════════════════════════════════════════════════════
 // Composant principal
 // ═══════════════════════════════════════════════════════════════════════════
-export default function OffresClient({ offres, profile }) {
+export default function OffresClient({ offres, profile, planKey, limiteOffres }) {
   const router = useRouter();
   const [deleting, setDeleting] = useState(null);
   const [assignModalOffre, setAssignModalOffre] = useState(null); // offre sélectionnée pour le modal
+  const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
+
+  const limitReached = limiteOffres != null && offres.length >= limiteOffres;
 
   const toggleActif = async (offre) => {
     const supabase = createClient();
@@ -320,6 +323,8 @@ export default function OffresClient({ offres, profile }) {
               onClick={() => setAssignModalOffre(offre)}
               className="action-btn assign-btn"
               title="Assigner à un élève"
+              aria-label="Assigner à un élève"
+              type="button"
             >
               <UserPlus size={16} />
             </button>
@@ -328,6 +333,8 @@ export default function OffresClient({ offres, profile }) {
             onClick={() => toggleActif(offre)}
             className="action-btn"
             title={active ? 'Désactiver' : 'Réactiver'}
+            aria-label={active ? 'Désactiver l\'offre' : 'Réactiver l\'offre'}
+            type="button"
           >
             {active
               ? <ToggleRight size={20} style={{ color: 'var(--success)' }} />
@@ -338,6 +345,8 @@ export default function OffresClient({ offres, profile }) {
             onClick={() => deleteOffre(offre.id)}
             className="action-btn"
             title="Supprimer"
+            aria-label="Supprimer l'offre"
+            type="button"
             disabled={deleting === offre.id}
           >
             <Trash2 size={16} style={{ color: 'var(--danger)' }} />
@@ -352,11 +361,25 @@ export default function OffresClient({ offres, profile }) {
       <div className="page-header animate-fade-in">
         <div className="page-header-left">
           <h1>Tes offres</h1>
-          {offres.length > 0 && <span className="count-badge">{offres.length}</span>}
+          {offres.length > 0 && (
+            <span className="count-badge">
+              {offres.length}{limiteOffres != null ? `/${limiteOffres}` : ''}
+            </span>
+          )}
         </div>
-        <Link href="/offres/nouveau" className="izi-btn izi-btn-primary header-cta-btn">
-          <Plus size={16} /> Nouvelle offre
-        </Link>
+        {limitReached ? (
+          <button
+            type="button"
+            className="izi-btn izi-btn-primary header-cta-btn"
+            onClick={() => setShowUpgradePrompt(true)}
+          >
+            <Plus size={16} /> Nouvelle offre
+          </button>
+        ) : (
+          <Link href="/offres/nouveau" className="izi-btn izi-btn-primary header-cta-btn">
+            <Plus size={16} /> Nouvelle offre
+          </Link>
+        )}
       </div>
 
       {offres.length === 0 ? (
@@ -386,9 +409,58 @@ export default function OffresClient({ offres, profile }) {
         </>
       )}
 
-      <Link href="/offres/nouveau" className="izi-fab" aria-label="Nouvelle offre">
-        <Plus size={24} />
-      </Link>
+      {limitReached ? (
+        <button
+          type="button"
+          className="izi-fab"
+          aria-label="Nouvelle offre"
+          onClick={() => setShowUpgradePrompt(true)}
+        >
+          <Plus size={24} />
+        </button>
+      ) : (
+        <Link href="/offres/nouveau" className="izi-fab" aria-label="Nouvelle offre">
+          <Plus size={24} />
+        </Link>
+      )}
+
+      {/* Modal upgrade plan */}
+      {showUpgradePrompt && (
+        <div className="modal-backdrop" onClick={e => { if (e.target === e.currentTarget) setShowUpgradePrompt(false); }}>
+          <div className="modal-sheet animate-slide-up" style={{ maxWidth: 420 }}>
+            <div className="modal-header">
+              <div style={{ width: 36 }} />
+              <span className="modal-title">Limite atteinte</span>
+              <button className="modal-close" onClick={() => setShowUpgradePrompt(false)} type="button"><X size={20} /></button>
+            </div>
+            <div className="modal-body" style={{ alignItems: 'center', textAlign: 'center', padding: '28px 24px' }}>
+              <div className="upgrade-icon">
+                <Crown size={28} />
+              </div>
+              <p className="upgrade-title">
+                Tu as atteint la limite de {limiteOffres} formules sur le plan Solo
+              </p>
+              <p className="upgrade-desc">
+                Passe en Pro pour cr{'é'}er des formules illimit{'é'}es et d{'é'}bloquer toutes les fonctionnalit{'é'}s avanc{'é'}es.
+              </p>
+              <Link
+                href="/parametres?tab=abonnement"
+                className="izi-btn izi-btn-primary upgrade-cta-btn"
+                onClick={() => setShowUpgradePrompt(false)}
+              >
+                <Crown size={16} /> D{'é'}couvrir le plan Pro <ArrowRight size={16} />
+              </Link>
+              <button
+                type="button"
+                className="upgrade-dismiss"
+                onClick={() => setShowUpgradePrompt(false)}
+              >
+                Plus tard
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal tunnel de vente */}
       {assignModalOffre && (
@@ -490,6 +562,14 @@ export default function OffresClient({ offres, profile }) {
 
         .confirm-btn { width: 100%; margin-top: 4px; display: flex; align-items: center; justify-content: center; gap: 8px; }
         .error-msg { color: var(--danger); font-size: 0.8125rem; text-align: center; }
+
+        /* ── Upgrade prompt ── */
+        .upgrade-icon { width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, var(--brand-light), #fef3c7); color: var(--brand-700); display: flex; align-items: center; justify-content: center; margin-bottom: 4px; }
+        .upgrade-title { font-weight: 700; font-size: 1.0625rem; color: var(--text-primary); margin: 0; line-height: 1.35; }
+        .upgrade-desc { font-size: 0.875rem; color: var(--text-secondary); margin: 0; line-height: 1.5; }
+        .upgrade-cta-btn { width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 4px; }
+        .upgrade-dismiss { background: none; border: none; cursor: pointer; padding: 8px; font-size: 0.8125rem; color: var(--text-muted); font-weight: 500; }
+        .upgrade-dismiss:hover { color: var(--text-secondary); text-decoration: underline; }
 
         @keyframes spin { to { transform: rotate(360deg); } }
         .spin { animation: spin 0.8s linear infinite; }

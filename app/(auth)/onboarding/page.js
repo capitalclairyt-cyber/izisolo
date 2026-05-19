@@ -185,6 +185,7 @@ export default function OnboardingPage() {
               ))}
             </div>
             <button
+              type="button"
               className="izi-btn izi-btn-primary onboarding-next"
               disabled={!metier}
               onClick={() => setEtape(1)}
@@ -206,52 +207,61 @@ export default function OnboardingPage() {
             </div>
             <div className="step-fields">
               <div className="auth-field">
-                <label>Nom du studio *</label>
+                <label htmlFor="onb-studio-nom">Nom du studio *</label>
                 <input
+                  id="onb-studio-nom"
                   type="text"
                   className="izi-input"
                   placeholder="Yoga avec Marie"
                   value={studioNom}
                   onChange={e => setStudioNom(e.target.value)}
                   autoFocus
+                  aria-required="true"
                 />
               </div>
               <div className="step-row">
                 <div className="auth-field" style={{ flex: 1 }}>
-                  <label>Prénom *</label>
+                  <label htmlFor="onb-prenom">Prénom *</label>
                   <input
+                    id="onb-prenom"
                     type="text"
                     className="izi-input"
                     placeholder="Marie"
                     value={prenom}
                     onChange={e => setPrenom(e.target.value)}
+                    aria-required="true"
                   />
                 </div>
                 <div className="auth-field" style={{ flex: 1 }}>
-                  <label>Nom *</label>
+                  <label htmlFor="onb-nom">Nom *</label>
                   <input
+                    id="onb-nom"
                     type="text"
                     className="izi-input"
                     placeholder="Dupont"
                     value={nom}
                     onChange={e => setNom(e.target.value)}
+                    aria-required="true"
                   />
                 </div>
               </div>
               <div className="step-row">
                 <div className="auth-field" style={{ flex: 1 }}>
-                  <label>Ville *</label>
+                  <label htmlFor="onb-ville">Ville *</label>
                   <input
+                    id="onb-ville"
                     type="text"
                     className="izi-input"
                     placeholder="Lyon"
                     value={ville}
                     onChange={e => setVille(e.target.value)}
+                    aria-required="true"
                   />
                 </div>
                 <div className="auth-field" style={{ flex: 1 }}>
-                  <label>Téléphone</label>
+                  <label htmlFor="onb-telephone">Téléphone</label>
                   <input
+                    id="onb-telephone"
                     type="tel"
                     className="izi-input"
                     placeholder="06 12 34 56 78"
@@ -261,8 +271,9 @@ export default function OnboardingPage() {
                 </div>
               </div>
               <div className="auth-field">
-                <label>Adresse <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>(optionnel)</span></label>
+                <label htmlFor="onb-adresse">Adresse <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>(optionnel)</span></label>
                 <input
+                  id="onb-adresse"
                   type="text"
                   className="izi-input"
                   placeholder="12 rue des Lilas"
@@ -276,10 +287,11 @@ export default function OnboardingPage() {
               </div>
             </div>
             <div className="step-nav">
-              <button className="izi-btn izi-btn-ghost" onClick={() => setEtape(0)}>
+              <button type="button" className="izi-btn izi-btn-ghost" onClick={() => setEtape(0)}>
                 <ArrowLeft size={18} /> Retour
               </button>
               <button
+                type="button"
                 className="izi-btn izi-btn-primary"
                 disabled={!studioNom.trim() || !prenom.trim() || !nom.trim() || !ville.trim()}
                 onClick={() => setEtape(2)}
@@ -299,8 +311,9 @@ export default function OnboardingPage() {
             </div>
             <div className="step-fields">
               <div className="auth-field">
-                <label>Nom de l'offre</label>
+                <label htmlFor="onb-offre-nom">Nom de l'offre</label>
                 <input
+                  id="onb-offre-nom"
                   type="text"
                   className="izi-input"
                   placeholder="Carnet 10 séances"
@@ -310,8 +323,9 @@ export default function OnboardingPage() {
               </div>
               <div className="step-row">
                 <div className="auth-field" style={{ flex: 1 }}>
-                  <label>Nombre de séances</label>
+                  <label htmlFor="onb-offre-seances">Nombre de séances</label>
                   <input
+                    id="onb-offre-seances"
                     type="number"
                     className="izi-input"
                     placeholder="10"
@@ -321,8 +335,9 @@ export default function OnboardingPage() {
                   />
                 </div>
                 <div className="auth-field" style={{ flex: 1 }}>
-                  <label>Prix (€)</label>
+                  <label htmlFor="onb-offre-prix">Prix (€)</label>
                   <input
+                    id="onb-offre-prix"
                     type="number"
                     className="izi-input"
                     placeholder="150"
@@ -335,7 +350,7 @@ export default function OnboardingPage() {
               </div>
             </div>
             <div className="step-nav">
-              <button className="izi-btn izi-btn-ghost" onClick={() => setEtape(1)}>
+              <button type="button" className="izi-btn izi-btn-ghost" onClick={() => setEtape(1)}>
                 <ArrowLeft size={18} /> Retour
               </button>
               <button
@@ -347,6 +362,7 @@ export default function OnboardingPage() {
               </button>
             </div>
             <button
+              type="button"
               className="izi-btn izi-btn-ghost skip-btn"
               onClick={handleFinish}
               disabled={loading}
@@ -375,7 +391,7 @@ export default function OnboardingPage() {
               <div className="welcome-portal-url">
                 {typeof window !== 'undefined' ? window.location.host : 'izisolo.fr'}/p/{createdSlug}
               </div>
-              <button onClick={copyPortalUrl} className={`welcome-copy-btn${copied ? ' copied' : ''}`}>
+              <button type="button" onClick={copyPortalUrl} className={`welcome-copy-btn${copied ? ' copied' : ''}`}>
                 {copied ? <><Check size={14} /> Copié !</> : <><Copy size={14} /> Copier le lien</>}
               </button>
             </div>
@@ -389,7 +405,7 @@ export default function OnboardingPage() {
               >
                 <ExternalLink size={16} /> Voir comme un élève
               </a>
-              <button onClick={goToDashboard} className="izi-btn izi-btn-primary">
+              <button type="button" onClick={goToDashboard} className="izi-btn izi-btn-primary">
                 Aller au tableau de bord <ArrowRight size={16} />
               </button>
             </div>

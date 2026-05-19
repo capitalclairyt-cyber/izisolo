@@ -491,7 +491,7 @@ function CategoryManager({ categories, saving, profileId, todayStr, onAddCategor
       {/* ── Dialogue déplacement de type ── */}
       {moveDialog && (
         <div className="modal-overlay" onClick={() => setMoveDialog(null)}>
-          <div className="modal-box move-dialog" onClick={e => e.stopPropagation()}>
+          <div className="modal-box move-dialog" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>
             <div className="move-dialog-header">
               <ArrowRightLeft size={16} />
               <span>Déplacer <strong>"{moveDialog.item}"</strong> vers…</span>
@@ -525,7 +525,7 @@ function CategoryManager({ categories, saving, profileId, todayStr, onAddCategor
       {/* ── Modale confirmation suppression type ── */}
       {deleteConfirm && (
         <div className="modal-overlay" onClick={() => setDeleteConfirm(null)}>
-          <div className={`modal-box del-type-modal ${deleteConfirm.aVenirCount > 0 ? 'del-type-danger' : 'del-type-warn'}`} onClick={e => e.stopPropagation()}>
+          <div className={`modal-box del-type-modal ${deleteConfirm.aVenirCount > 0 ? 'del-type-danger' : 'del-type-warn'}`} role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>
 
             {/* Icône + titre */}
             <div className="del-type-header">

@@ -118,7 +118,7 @@ Pas de mot de passe à retenir, c'est juste ton email à chaque fois.
 
   return (
     <div className="invite-backdrop" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="invite-sheet animate-slide-up">
+      <div className="invite-sheet animate-slide-up" role="dialog" aria-modal="true">
         <div className="invite-header">
           <span className="invite-title">📨 Inviter une élève</span>
           <button className="invite-close" onClick={onClose} aria-label="Fermer">

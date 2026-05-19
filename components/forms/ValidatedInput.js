@@ -9,7 +9,7 @@ import { useState, useCallback } from 'react';
 export default function ValidatedInput({
   label, value, onChange, validate, format,
   type = 'text', placeholder = '', required = false,
-  inputMode, maxLength, className = '',
+  inputMode, maxLength, className = '', id,
 }) {
   const [touched, setTouched] = useState(false);
   const [error, setError] = useState('');
@@ -46,11 +46,12 @@ export default function ValidatedInput({
   return (
     <div className={`vi-wrapper ${className}`}>
       {label && (
-        <label className="form-label">
+        <label className="form-label" htmlFor={id}>
           {label} {required && '*'}
         </label>
       )}
       <input
+        id={id}
         className={`izi-input ${isInvalid ? 'izi-input-error' : ''} ${touched && !error && value ? 'izi-input-valid' : ''}`}
         type={type}
         inputMode={inputMode}
@@ -60,6 +61,7 @@ export default function ValidatedInput({
         onBlur={handleBlur}
         placeholder={placeholder}
         required={required}
+        aria-required={required || undefined}
       />
       {isInvalid && <span className="vi-error">{error}</span>}
 

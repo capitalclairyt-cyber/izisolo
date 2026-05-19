@@ -6,7 +6,7 @@ import Link from 'next/link';
 import {
   Home, CalendarDays, Users, Menu, X,
   Package, BarChart3, BookOpen, Mail, Sparkles,
-  Settings, LogOut, ClipboardList, MessageSquare
+  Settings, LogOut, ClipboardList, MessageSquare, LifeBuoy
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase';
 import MessagesBadge from '@/components/messagerie/MessagesBadge';
@@ -140,8 +140,16 @@ export default function BottomNav({ vocabulaire = {}, illustration = 'lotus', st
             </div>
           ))}
 
-          {/* Paramètres */}
+          {/* Support + Paramètres */}
           <div className="drawer-divider" />
+          <Link
+            href="/support"
+            className={`drawer-item ${pathname === '/support' ? 'active' : ''}`}
+            onClick={() => setDrawerOpen(false)}
+          >
+            <LifeBuoy size={20} strokeWidth={pathname === '/support' ? 2.2 : 1.8} />
+            <span>Support</span>
+          </Link>
           <Link
             href="/parametres"
             className={`drawer-item ${pathname === '/parametres' ? 'active' : ''}`}
@@ -327,8 +335,8 @@ export default function BottomNav({ vocabulaire = {}, illustration = 'lotus', st
           border: none;
           color: var(--text-muted);
           cursor: pointer;
-          padding: 4px;
-          border-radius: 8px;
+          padding: 12px;
+          border-radius: 12px;
           transition: all 0.15s;
         }
         .drawer-close:hover {

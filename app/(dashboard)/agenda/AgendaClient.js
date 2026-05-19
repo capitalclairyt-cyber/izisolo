@@ -192,6 +192,7 @@ export default function AgendaClient({ cours: initialCours, profile, initialDate
         {VUES.map(v => (
           <button
             key={v.id}
+            type="button"
             className={`vue-btn ${vue === v.id ? 'active' : ''}`}
             onClick={() => { setVue(v.id); setActiveCell(null); }}
           >
@@ -203,26 +204,28 @@ export default function AgendaClient({ cours: initialCours, profile, initialDate
 
       {/* Barre navigation + filtres */}
       <div className="agenda-topbar animate-fade-in">
-        <button onClick={() => naviguer(-1)} className="nav-btn" aria-label="Précédent">
+        <button type="button" onClick={() => naviguer(-1)} className="nav-btn" aria-label="Précédent">
           <ChevronLeft size={20} />
         </button>
 
         <div className="header-center">
           <h1 className="nav-title">{titreNav}</h1>
           {!isAujourdhui(dateRef) && (
-            <button className="today-btn" onClick={allerAujourdhui}>Aujourd'hui</button>
+            <button type="button" className="today-btn" onClick={allerAujourdhui}>Aujourd'hui</button>
           )}
         </div>
 
-        <button onClick={() => naviguer(1)} className="nav-btn" aria-label="Suivant">
+        <button type="button" onClick={() => naviguer(1)} className="nav-btn" aria-label="Suivant">
           <ChevronRight size={20} />
         </button>
 
         {typesCours.length > 0 && (
           <div className="filtres-wrap" ref={filtreRef}>
             <button
+              type="button"
               className={`filtre-btn ${filtre ? 'has-filtre' : ''} ${showFiltres ? 'open' : ''}`}
               onClick={() => setShowFiltres(s => !s)}
+              aria-label="Filtrer par type de cours"
             >
               <Filter size={15} />
               {filtre && <span className="filtre-label">{filtre}</span>}
@@ -235,12 +238,12 @@ export default function AgendaClient({ cours: initialCours, profile, initialDate
             </button>
             {showFiltres && (
               <div className="filtres-dropdown">
-                <button className={`filtre-option ${!filtre ? 'active' : ''}`}
+                <button type="button" className={`filtre-option ${!filtre ? 'active' : ''}`}
                   onClick={() => { setFiltre(null); setShowFiltres(false); }}>
                   Tous les cours
                 </button>
                 {typesCours.map(t => (
-                  <button key={t} className={`filtre-option ${filtre === t ? 'active' : ''}`}
+                  <button key={t} type="button" className={`filtre-option ${filtre === t ? 'active' : ''}`}
                     onClick={() => { setFiltre(t); setShowFiltres(false); }}>
                     {t}
                   </button>

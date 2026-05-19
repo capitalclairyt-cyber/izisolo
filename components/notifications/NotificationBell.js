@@ -242,11 +242,11 @@ export default function NotificationBell() {
             </span>
             <div className="nb-panel-actions">
               {unreadCount > 0 && (
-                <button className="nb-mark-all" onClick={markAllRead} title="Tout marquer comme lu">
+                <button className="nb-mark-all" onClick={markAllRead} title="Tout marquer comme lu" type="button" aria-label="Tout marquer comme lu">
                   <CheckCheck size={14} />
                 </button>
               )}
-              <button className="nb-close-btn" onClick={() => setOpen(false)}>
+              <button className="nb-close-btn" onClick={() => setOpen(false)} type="button" aria-label="Fermer les notifications">
                 <X size={16} />
               </button>
             </div>

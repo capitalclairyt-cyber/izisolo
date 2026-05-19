@@ -464,8 +464,8 @@ export default function Sidebar({ studioNom = 'Mon Studio', vocabulaire = {}, il
           top: 12px;
           left: 12px;
           z-index: 40;
-          width: 42px;
-          height: 42px;
+          width: 44px;
+          height: 44px;
           border-radius: 12px;
           border: none;
           background: rgba(255, 255, 255, 0.8);

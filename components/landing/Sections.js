@@ -567,16 +567,19 @@ export function Testimonials() {
   );
 }
 
-/* ---- TARIFS — Solo 12€ / Pro 24€ / Premium 49€ (mensuel uniquement) ---- */
+/* ---- TARIFS — Solo 17€ / Pro 34€ / Studio 79€ (mensuel)
+   Founding 100 : Solo 9€ / Pro 19€ / Studio 49€ (à vie) ---- */
 export function Pricing() {
   const plans = [
     {
       name: 'Solo',
-      price: '12 €',
-      sub: '/mois · 14 jours d\'essai',
+      price: '9',
+      publicPrice: '17',
+      sub: '/mois · à vie',
       desc: 'Pour démarrer simplement. Tout l\'essentiel pour gérer ta pratique solo.',
       features: [
         'Jusqu\'à 40 élèves · 1 lieu',
+        'Jusqu\'à 5 formules d\'abonnement',
         'Agenda complet · cours illimités',
         'Portail élève + PWA',
         'Mini-compta (espèces, chèque, virement, CB)',
@@ -589,11 +592,13 @@ export function Pricing() {
     },
     {
       name: 'Pro',
-      price: '24 €',
-      sub: '/mois · 14 jours d\'essai',
+      price: '19',
+      publicPrice: '34',
+      sub: '/mois · à vie',
       desc: 'Le plan complet. Auto-pilote ton studio, encaisse en ligne, accueille une équipe.',
       features: [
         'Élèves illimités · jusqu\'à 3 lieux',
+        'Formules d\'abonnement illimitées',
         'Tout du plan Solo',
         'Stripe Payment Link (CB par les élèves)',
         'Multi-utilisateurs (équipe)',
@@ -606,6 +611,23 @@ export function Pricing() {
       ctaHref: '/register',
       featured: true,
     },
+    {
+      name: 'Studio',
+      price: '49',
+      publicPrice: '79',
+      sub: '/mois · à vie',
+      desc: 'Pour les studios matures. Vidéos, white-label, lieux illimités.',
+      features: [
+        'Tout du plan Pro',
+        'Lieux illimités',
+        'Vidéos de cours vendables à l\'unité ou en abonnement',
+        'Logo studio dans tous les emails (white-label)',
+      ],
+      cta: 'Bientôt disponible',
+      ctaHref: '/register',
+      featured: false,
+      comingSoon: true,
+    },
   ];
 
   return (
@@ -614,36 +636,50 @@ export function Pricing() {
         <div className="section-head reveal">
           <span className="eyebrow">Tarifs</span>
           <h2 className="serif">Simple,<br /><em>comme tout le reste.</em></h2>
-          <p className="section-sub">14 jours d'essai gratuit sur Solo et Pro · sans carte bancaire · annulable en 1 clic.</p>
+          <p className="section-sub">14 jours d'essai gratuit · sans carte bancaire · annulable en 1 clic.</p>
         </div>
 
-        <div className="pricing-grid reveal r-stagger">
+        <div className="pricing-founding reveal">
+          <span className="founding-badge">Founding 100</span>
+          <span className="founding-text">Les 100 premiers inscrits bénéficient du tarif fondateur — <strong>à vie</strong>.</span>
+        </div>
+
+        <div className="pricing-grid pricing-grid-3 reveal r-stagger">
           {plans.map((p, i) => (
-            <div key={i} className={`price-card ${p.featured ? 'featured' : ''}`}>
+            <div key={i} className={`price-card ${p.featured ? 'featured' : ''} ${p.comingSoon ? 'coming-soon' : ''}`}>
               {p.featured && <div className="price-badge">Le plus choisi</div>}
+              {p.comingSoon && <div className="price-badge price-badge-soon">Bientôt</div>}
               <div className="price-name serif">{p.name}</div>
               <div className="price-amt">
-                <span className="price-num serif">{p.price}</span>
+                <span className="price-num serif">{p.price} <small>€</small></span>
                 <span className="price-sub">{p.sub}</span>
               </div>
+              {p.publicPrice && (
+                <div className="price-public">au lieu de <s>{p.publicPrice} €/mois</s></div>
+              )}
               <p className="price-desc">{p.desc}</p>
               <ul className="price-features">
                 {p.features.map(f => (
                   <li key={f}><CheckIcon /> {f}</li>
                 ))}
               </ul>
-              <Link href={p.ctaHref} className={`btn ${p.featured ? 'btn-primary' : 'btn-ghost'} btn-lg`} style={{ width: '100%', justifyContent: 'center' }}>
-                {p.cta}
-              </Link>
+              {p.comingSoon ? (
+                <span className="btn btn-ghost btn-lg" style={{ width: '100%', justifyContent: 'center', opacity: 0.5, pointerEvents: 'none' }}>
+                  {p.cta}
+                </span>
+              ) : (
+                <Link href={p.ctaHref} className={`btn ${p.featured ? 'btn-primary' : 'btn-ghost'} btn-lg`} style={{ width: '100%', justifyContent: 'center' }}>
+                  {p.cta}
+                </Link>
+              )}
             </div>
           ))}
         </div>
 
         <p className="pricing-fees">
-          Paiements en ligne (Pro) : <strong>tu encaisses sur ton propre compte Stripe</strong>.
+          Paiements en ligne (Pro / Studio) : <strong>tu encaisses sur ton propre compte Stripe</strong>.
           Frais transparents : 1 % IziSolo (sur ta facture mensuelle, jamais prélevé sur tes paiements)
           + frais Stripe standard (1,5 % + 0,25 € par transaction).
-          Exemple : un paiement de 25 € → tu reçois 24,12 € net, IziSolo te facture 0,25 €/mois.
         </p>
       </div>
     </section>

@@ -156,12 +156,12 @@ function AssignerOffreModal({ client, onClose, onSuccess }) {
 
   return (
     <div className="modal-backdrop" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="modal-sheet animate-slide-up">
+      <div className="modal-sheet animate-slide-up" role="dialog" aria-modal="true">
 
         {/* Header */}
         <div className="modal-header">
           {step === 'paiement' ? (
-            <button className="modal-back" onClick={() => setStep('offre')} type="button">
+            <button className="modal-back" onClick={() => setStep('offre')} type="button" aria-label="Retour">
               <ChevronRight size={18} style={{ transform: 'rotate(180deg)' }} />
             </button>
           ) : (
@@ -170,7 +170,7 @@ function AssignerOffreModal({ client, onClose, onSuccess }) {
           <span className="modal-title">
             {step === 'offre' ? 'Choisir une offre' : 'Paiement'}
           </span>
-          <button className="modal-close" onClick={onClose} type="button"><X size={20} /></button>
+          <button className="modal-close" onClick={onClose} type="button" aria-label="Fermer"><X size={20} /></button>
         </div>
 
         {/* Step 1 — Choix offre */}

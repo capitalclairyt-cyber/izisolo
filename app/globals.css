@@ -363,10 +363,15 @@ body:has(.izi-bg-decor) {
   color: var(--taupe);
 }
 
+/* === Modal overlay safe-area (notched iPhones) === */
+.modal-overlay {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
 /* === Bouton flottant (FAB) === */
 .izi-fab {
   position: fixed;
-  bottom: calc(var(--bottom-nav-height) + 20px);
+  bottom: calc(var(--bottom-nav-height) + 20px + env(safe-area-inset-bottom, 0px));
   right: 20px;
   width: 56px;
   height: 56px;

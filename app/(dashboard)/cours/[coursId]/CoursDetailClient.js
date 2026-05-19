@@ -304,10 +304,12 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
               className="edit-btn"
               onClick={() => router.push(`/cours/nouveau?from=${cours.id}`)}
               title="Dupliquer ce cours"
+              type="button"
+              aria-label="Dupliquer ce cours"
             >
               <Copy size={18} />
             </button>
-            <button className="edit-btn" onClick={() => setEditing(true)} title="Modifier">
+            <button className="edit-btn" onClick={() => setEditing(true)} title="Modifier" type="button" aria-label="Modifier">
               <Edit3 size={18} />
             </button>
           </div>
@@ -719,10 +721,10 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
 
       {showMessageModal && (
         <div className="modal-overlay" onClick={() => setShowMessageModal(false)}>
-          <div className="modal msg-modal" onClick={e => e.stopPropagation()}>
+          <div className="modal msg-modal" onClick={e => e.stopPropagation()} role="dialog" aria-modal="true">
             <div className="msg-modal-header">
               <h3><Mail size={18} /> Message aux participants</h3>
-              <button className="modal-close-btn" onClick={() => setShowMessageModal(false)}>
+              <button className="modal-close-btn" onClick={() => setShowMessageModal(false)} type="button" aria-label="Fermer">
                 <X size={18} />
               </button>
             </div>
@@ -803,10 +805,10 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
       {/* Modal SMS */}
       {showSmsModal && (
         <div className="modal-overlay" onClick={() => setShowSmsModal(false)}>
-          <div className="modal sms-modal" onClick={e => e.stopPropagation()}>
+          <div className="modal sms-modal" onClick={e => e.stopPropagation()} role="dialog" aria-modal="true">
             <div className="sms-modal-header">
               <h3><Smartphone size={18} /> SMS aux participants</h3>
-              <button className="modal-close-btn" onClick={() => setShowSmsModal(false)}><X size={18} /></button>
+              <button className="modal-close-btn" onClick={() => setShowSmsModal(false)} type="button" aria-label="Fermer"><X size={18} /></button>
             </div>
 
             {/* Bouton annulation rapide */}
@@ -906,7 +908,7 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
       {/* Modal de suppression */}
       {showDeleteModal && (
         <div className="modal-overlay" onClick={() => setShowDeleteModal(false)}>
-          <div className="modal" onClick={e => e.stopPropagation()}>
+          <div className="modal" onClick={e => e.stopPropagation()} role="dialog" aria-modal="true">
             <h3><AlertTriangle size={20} /> Supprimer ce cours</h3>
 
             {isRecurrent ? (

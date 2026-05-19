@@ -16,7 +16,7 @@ export default function Calculateur() {
   const [plan, setPlan] = useState('pro');
 
   const volume = nbPayments * avgAmount;
-  const iziPlanCost = plan === 'solo' ? 12 : 24;
+  const iziPlanCost = plan === 'solo' ? 17 : 34;
   const iziFee = volume * 0.01;
   const stripeFee = nbPayments * 0.25 + volume * 0.015;
   const iziTotal = iziPlanCost + iziFee;
@@ -70,8 +70,8 @@ export default function Calculateur() {
               <div className="calc-input-group">
                 <label htmlFor="plan-select">Ton plan</label>
                 <select id="plan-select" value={plan} onChange={(e) => setPlan(e.target.value)}>
-                  <option value="solo">Solo — 12 €/mois</option>
-                  <option value="pro">Pro — 24 €/mois</option>
+                  <option value="solo">Solo — 17 €/mois</option>
+                  <option value="pro">Pro — 34 €/mois</option>
                 </select>
               </div>
             </div>
@@ -127,7 +127,7 @@ export default function Calculateur() {
             <h2 className="serif">Ce qui est inclus dans ton abonnement</h2>
             <div className="calc-plans-compare">
               <div className="calc-plan-col">
-                <h3>Solo · 12 €/mois</h3>
+                <h3>Solo · 17 €/mois</h3>
                 <ul className="calc-feat-list">
                   <li>Agenda complet · cours illimités</li>
                   <li>Jusqu'à 40 élèves · 1 lieu</li>
@@ -138,7 +138,7 @@ export default function Calculateur() {
                 </ul>
               </div>
               <div className="calc-plan-col calc-plan-featured">
-                <h3>Pro · 24 €/mois</h3>
+                <h3>Pro · 34 €/mois</h3>
                 <ul className="calc-feat-list">
                   <li>Tout du plan Solo</li>
                   <li>Élèves illimités · jusqu'à 3 lieux</li>
