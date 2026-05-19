@@ -604,27 +604,55 @@ body:has(.izi-bg-decor) {
 .tabs-bar-wrap {
   position: relative;
 }
-.tabs-bar-wrap.has-more::after {
-  content: '›';
+/* Boutons flèches cliquables (mobile-friendly + accessible) */
+.tabs-arrow {
   position: absolute;
-  right: 0; top: 0; bottom: 0;
-  width: 36px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1.5px solid var(--brand-200);
+  background: white;
+  color: var(--brand-700);
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(90deg, transparent, var(--brand-100) 40%);
-  color: var(--brand-600);
-  font-size: 1.25rem;
-  font-weight: 700;
+  cursor: pointer;
+  z-index: 6;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: background 0.15s, transform 0.1s;
+}
+.tabs-arrow:hover { background: var(--brand-light); }
+.tabs-arrow:active { transform: translateY(-50%) scale(0.95); }
+.tabs-arrow-left  { left: -8px; padding-right: 2px; }
+.tabs-arrow-right { right: -8px; padding-left: 2px; }
+
+/* Gradient de masque sur les bords pour signaler le contenu hors viewport */
+.tabs-bar-wrap.has-more-right::after {
+  content: '';
+  position: absolute;
+  right: 0; top: 0; bottom: 0;
+  width: 40px;
+  background: linear-gradient(90deg, transparent, var(--brand-100) 80%);
   pointer-events: none;
-  z-index: 5;
+  z-index: 4;
   border-radius: 0 var(--radius-lg) 0 0;
-  animation: pulse-hint 1.5s ease-in-out 3;
 }
-@keyframes pulse-hint {
-  0%, 100% { opacity: 0.6; }
-  50% { opacity: 1; }
+.tabs-bar-wrap.has-more-left::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 40px;
+  background: linear-gradient(-90deg, transparent, var(--brand-100) 80%);
+  pointer-events: none;
+  z-index: 4;
+  border-radius: var(--radius-lg) 0 0 0;
 }
+
 .tabs-bar {
   display: flex;
   gap: 0;
@@ -639,7 +667,10 @@ body:has(.izi-bg-decor) {
   scrollbar-width: none;
   box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
   position: relative;
+  scroll-snap-type: x proximity;
+  scroll-behavior: smooth;
 }
+.tab-btn { scroll-snap-align: center; }
 .tabs-bar::-webkit-scrollbar { display: none; }
 .tabs-bar::after {
   content: '';

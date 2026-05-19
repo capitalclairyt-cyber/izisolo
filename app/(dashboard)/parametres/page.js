@@ -1883,6 +1883,7 @@ export default function Parametres() {
   const [activeTab, setActiveTab] = useState('profil');
   const tabsRef = useRef(null);
   const [canScrollRight, setCanScrollRight] = useState(false);
+  const [canScrollLeft, setCanScrollLeft]   = useState(false);
   const [reglagesSubTab, setReglagesSubTab] = useState('general');
   // Sous-onglet notifications
   const [notifSubTab, setNotifSubTab] = useState('general');
@@ -1936,12 +1937,35 @@ export default function Parametres() {
   useEffect(() => {
     const el = tabsRef.current;
     if (!el) return;
-    const check = () => setCanScrollRight(el.scrollWidth - el.scrollLeft - el.clientWidth > 2);
+    const check = () => {
+      setCanScrollRight(el.scrollWidth - el.scrollLeft - el.clientWidth > 2);
+      setCanScrollLeft(el.scrollLeft > 2);
+    };
     check();
     el.addEventListener('scroll', check, { passive: true });
     window.addEventListener('resize', check);
     return () => { el.removeEventListener('scroll', check); window.removeEventListener('resize', check); };
   }, [loading]);
+
+  // Auto-scroll vers l'onglet actif (mount + clic) — sur mobile c'est crucial
+  // sinon on ne voit pas qu'on est sur un onglet hors viewport.
+  useEffect(() => {
+    const el = tabsRef.current;
+    if (!el || loading) return;
+    const activeBtn = el.querySelector('.tab-btn.active');
+    if (!activeBtn) return;
+    // Center the active tab in the scrollable container
+    const btnRect = activeBtn.getBoundingClientRect();
+    const elRect  = el.getBoundingClientRect();
+    const offset  = btnRect.left - elRect.left - (elRect.width / 2) + (btnRect.width / 2);
+    el.scrollBy({ left: offset, behavior: 'smooth' });
+  }, [activeTab, loading]);
+
+  const scrollTabs = (dir) => {
+    const el = tabsRef.current;
+    if (!el) return;
+    el.scrollBy({ left: dir * Math.max(180, el.clientWidth * 0.6), behavior: 'smooth' });
+  };
 
   const handleChange = (field) => (e) => {
     setProfile(prev => ({ ...prev, [field]: e.target.value }));
@@ -2187,7 +2211,17 @@ export default function Parametres() {
       </div>
 
       {/* === ONGLETS PRINCIPAUX === */}
-      <div className={`tabs-bar-wrap animate-fade-in ${canScrollRight ? 'has-more' : ''}`}>
+      <div className={`tabs-bar-wrap animate-fade-in ${canScrollRight ? 'has-more-right' : ''} ${canScrollLeft ? 'has-more-left' : ''}`}>
+        {canScrollLeft && (
+          <button
+            type="button"
+            className="tabs-arrow tabs-arrow-left"
+            onClick={() => scrollTabs(-1)}
+            aria-label="Onglets précédents"
+          >
+            ‹
+          </button>
+        )}
         <div className="tabs-bar" ref={tabsRef}>
           {TABS.map(tab => {
             const Icon = tab.icon;
@@ -2203,6 +2237,16 @@ export default function Parametres() {
             );
           })}
         </div>
+        {canScrollRight && (
+          <button
+            type="button"
+            className="tabs-arrow tabs-arrow-right"
+            onClick={() => scrollTabs(1)}
+            aria-label="Onglets suivants"
+          >
+            ›
+          </button>
+        )}
       </div>
 
       {/* ============================================ */}
