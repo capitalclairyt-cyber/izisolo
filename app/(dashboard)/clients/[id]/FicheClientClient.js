@@ -84,11 +84,7 @@ function AssignerOffreModal({ client, onClose, onSuccess }) {
   const selectOffre = (offre) => {
     setSelectedOffre(offre);
     if (offre.id === '__libre__') {
-      // Mode libre : on laisse l'intitulé et le montant à saisir
       setIntituleLibre('');
-      setMontant('');
-    } else {
-      setMontant(String(offre.prix));
     }
     setStep('paiement');
   };
@@ -136,7 +132,7 @@ function AssignerOffreModal({ client, onClose, onSuccess }) {
           statut: i === 0 ? 'paid' : 'pending',
           mode: i === 0 ? modePaiement : null,
           date: v.date,
-          notes: i === 0 ? (notes.trim() || null) : null,
+          notes: i === 0 ? (notes || null) : null,
         }));
         const { error: payErr } = await supabase.from('paiements').insert(rows);
         if (payErr) throw payErr;
@@ -148,11 +144,11 @@ function AssignerOffreModal({ client, onClose, onSuccess }) {
           abonnement_id: aboId,
           intitule: isLibre ? intituleLibre.trim() : selectedOffre.nom,
           type: isLibre ? null : selectedOffre.type,
-          montant: parseFloat(montant),
+          montant: montant,
           statut: 'paid',
           mode: modePaiement,
           date: today,
-          notes: notes.trim() || null,
+          notes: notes || null,
         });
         if (payErr) throw payErr;
       }
