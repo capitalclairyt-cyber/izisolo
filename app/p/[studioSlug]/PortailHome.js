@@ -137,6 +137,21 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
     return days;
   }, [viewMode, weekStart, filteredForView]);
 
+  // Prochain cours (le plus tôt, hors annulés, capacité dispo non requise)
+  // Sert au CTA conversion "réserve maintenant" sous le hero.
+  const prochainCours = useMemo(() => {
+    const todayIso = fmtIsoDate(new Date());
+    const now = new Date();
+    const nowHH = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+    const futurs = cours.filter(c => {
+      if (c.est_annule) return false;
+      if (c.date > todayIso) return true;
+      if (c.date === todayIso && c.heure && c.heure > nowHH) return true;
+      return false;
+    });
+    return futurs[0] || null;
+  }, [cours]);
+
   return (
     <div>
       <ScrollReveal />
@@ -164,6 +179,11 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
                 <img src={profile.photo_url} alt={profile.studio_nom} />
               </div>
             )}
+            {(profile.metier || profile.ville) && (
+              <div className="portail-hero-eyebrow">
+                {[profile.metier, profile.ville, profile.code_postal].filter(Boolean).join(' · ')}
+              </div>
+            )}
             <h1 className="portail-hero-name">
               {(profile.studio_nom || '').split(' ').map((word, i) => (
                 <span key={i} className="portail-hero-word" style={{ '--word-index': i }}>
@@ -172,15 +192,6 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
                 </span>
               ))}
             </h1>
-            <div className="portail-hero-meta">
-              {profile.metier && <span className="portail-hero-metier">{profile.metier}</span>}
-              {(profile.ville || profile.code_postal) && (
-                <span className="portail-hero-ville">
-                  <MapPin size={13} />
-                  {[profile.ville, profile.code_postal].filter(Boolean).join(' · ')}
-                </span>
-              )}
-            </div>
           </header>
         </>
       ) : (
@@ -248,6 +259,39 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
             fontSize: '0.75rem', fontWeight: 700,
             flexShrink: 0,
           }}>Répondre →</span>
+        </Link>
+      )}
+
+      {/* Bloc "Prochain cours" — conversion immédiate, calculé live */}
+      {prochainCours && (
+        <Link href={`/p/${studioSlug}/cours/${prochainCours.id}`} className="portail-next-cours reveal">
+          <div className="portail-next-cours-eyebrow">Prochain cours</div>
+          <div className="portail-next-cours-body">
+            <div className="portail-next-cours-main">
+              <div className="portail-next-cours-nom">{prochainCours.nom}</div>
+              <div className="portail-next-cours-meta">
+                <Calendar size={13} />
+                <span>{formatDateCourt(prochainCours.date)}</span>
+                {prochainCours.heure && (
+                  <>
+                    <span className="portail-next-cours-sep">·</span>
+                    <Clock size={13} />
+                    <span>{formatHeure(prochainCours.heure)}</span>
+                  </>
+                )}
+                {prochainCours.lieu && (
+                  <>
+                    <span className="portail-next-cours-sep">·</span>
+                    <MapPin size={13} />
+                    <span>{prochainCours.lieu}</span>
+                  </>
+                )}
+              </div>
+            </div>
+            <span className="portail-next-cours-cta">
+              Réserver <ChevronRight size={14} />
+            </span>
+          </div>
         </Link>
       )}
 
@@ -486,26 +530,53 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
 
       {/* === ONGLET À PROPOS === */}
       {tab === 'propos' && hasAbout && (
-        <section className="portail-about reveal">
-          <div className="portail-about-card">
-            {profile.bio && <p className="portail-about-bio">{profile.bio}</p>}
-            {profile.philosophie && (
-              <p className="portail-about-philo"><em>{profile.philosophie}</em></p>
-            )}
-            <div className="portail-about-meta">
-              {profile.annees_experience && (
-                <span className="portail-about-pill">
-                  <Award size={13} /> {profile.annees_experience} an{profile.annees_experience > 1 ? 's' : ''} d'expérience
-                </span>
-              )}
-              {profile.formations && (
-                <span className="portail-about-pill">
-                  <BookOpen size={13} /> {profile.formations}
-                </span>
-              )}
-            </div>
-          </div>
-        </section>
+        <>
+          {profile.bio && (
+            <section className="portail-about reveal">
+              <div className="portail-about-card">
+                <p className="portail-about-bio">{profile.bio}</p>
+                <div className="portail-about-meta">
+                  {profile.annees_experience && (
+                    <span className="portail-about-pill">
+                      <Award size={13} /> {profile.annees_experience} an{profile.annees_experience > 1 ? 's' : ''} d'expérience
+                    </span>
+                  )}
+                  {profile.formations && (
+                    <span className="portail-about-pill">
+                      <BookOpen size={13} /> {profile.formations}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </section>
+          )}
+
+          {/* Philosophie en versets numérotés (style magazine éditorial) */}
+          {profile.philosophie && (() => {
+            // On split sur les sauts de ligne doubles, OU sur les points si une
+            // seule grosse phrase (max 3 versets affichés)
+            let versets = profile.philosophie.split(/\n{2,}/).map(v => v.trim()).filter(Boolean);
+            if (versets.length === 1) {
+              // Pas de séparateur explicite → on split en phrases (max 3)
+              versets = profile.philosophie.split(/(?<=[.!?])\s+/).map(v => v.trim()).filter(Boolean).slice(0, 3);
+            } else {
+              versets = versets.slice(0, 3);
+            }
+            return (
+              <section className="portail-philo reveal">
+                <div className="portail-philo-eyebrow">Ma philosophie</div>
+                <div className="portail-philo-list">
+                  {versets.map((v, i) => (
+                    <div key={i} className="portail-philo-verset">
+                      <span className="portail-philo-num">{String(i + 1).padStart(2, '0')}</span>
+                      <p className="portail-philo-text">{v}</p>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            );
+          })()}
+        </>
       )}
 
       {/* === ONGLET TARIFS === */}
@@ -518,8 +589,14 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
                 o.type === 'carnet'      ? `Carnet de ${o.seances} séances` :
                 o.type === 'abonnement'  ? (o.duree_jours ? `Abonnement ${o.duree_jours} jours` : 'Abonnement') :
                                             'Cours à l\'unité';
+              const handleSpotlight = (e) => {
+                const r = e.currentTarget.getBoundingClientRect();
+                e.currentTarget.style.setProperty('--mx', `${e.clientX - r.left}px`);
+                e.currentTarget.style.setProperty('--my', `${e.clientY - r.top}px`);
+              };
               return (
-                <div key={o.id} className="portail-price-card">
+                <div key={o.id} className="portail-price-card" onMouseMove={handleSpotlight}>
+                  <div className="portail-price-spotlight" aria-hidden="true" />
                   <div className="portail-price-icon"><Icon size={18} /></div>
                   <div className="portail-price-info">
                     <div className="portail-price-nom">{o.nom}</div>
@@ -573,7 +650,12 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
             <div className="portail-faq-list">
               {faq.map((item, i) => (
                 <details key={i} className="portail-faq-item">
-                  <summary className="portail-faq-q">{item.q}</summary>
+                  <summary className="portail-faq-q">
+                    <span className="portail-faq-q-text">{item.q}</span>
+                    <svg className="portail-faq-chevron" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+                      <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </summary>
                   <p className="portail-faq-a">{item.a}</p>
                 </details>
               ))}
@@ -726,32 +808,26 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
           margin-bottom: 18px;
         }
         .portail-hero-avatar img { display: block; width: 100%; height: 100%; object-fit: cover; }
+        .portail-hero-eyebrow {
+          font-family: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
+          font-size: 0.7rem;
+          font-weight: 500;
+          text-transform: uppercase;
+          letter-spacing: 0.22em;
+          color: #b87333;
+          margin: 0 0 14px;
+          opacity: 0;
+          animation: portail-hero-fade-up 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+          animation-delay: 130ms;
+        }
         .portail-hero-name {
           font-family: 'Instrument Serif', Georgia, serif;
-          font-size: clamp(2rem, 6.5vw, 3.5rem);
+          font-size: clamp(2.25rem, 7vw, 4rem);
           font-weight: 400;
-          line-height: 1;
-          letter-spacing: -0.015em;
-          margin: 0 0 14px;
+          line-height: 0.98;
+          letter-spacing: -0.025em;
+          margin: 0;
           color: #1a1a2e;
-        }
-        .portail-hero-meta {
-          display: flex; flex-wrap: wrap; justify-content: center;
-          align-items: center; gap: 8px 14px;
-          font-size: 0.875rem;
-          color: #555;
-        }
-        .portail-hero-metier {
-          text-transform: uppercase;
-          letter-spacing: 0.14em;
-          font-size: 0.75rem;
-          font-weight: 600;
-          color: #b87333;
-        }
-        .portail-hero-meta-sep { color: #ccc; }
-        .portail-hero-ville {
-          display: inline-flex; align-items: center; gap: 4px;
-          color: #888;
         }
         @media (max-width: 640px) {
           .portail-hero-header { margin-top: -56px; }
@@ -775,13 +851,11 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
         @keyframes portail-hero-word-up {
           to { transform: translateY(0); opacity: 1; }
         }
-        .portail-hero-avatar,
-        .portail-hero-meta {
+        .portail-hero-avatar {
           opacity: 0;
           animation: portail-hero-fade-up 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+          animation-delay: 60ms;
         }
-        .portail-hero-avatar { animation-delay: 60ms; }
-        .portail-hero-meta   { animation-delay: 520ms; }
         @keyframes portail-hero-fade-up {
           from { opacity: 0; transform: translateY(12px); }
           to   { opacity: 1; transform: translateY(0); }
@@ -790,22 +864,80 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
           .portail-hero-img,
           .portail-hero-word-inner,
           .portail-hero-avatar,
-          .portail-hero-meta {
+          .portail-hero-eyebrow {
             animation: none;
             transform: none;
             opacity: 1;
           }
         }
-        .portail-hero-gradient {
-          position: absolute; left: 0; right: 0; bottom: 0;
-          height: 65%;
-          background: linear-gradient(to bottom,
-            transparent 0%,
-            rgba(0,0,0,0.08) 20%,
-            rgba(0,0,0,0.45) 60%,
-            rgba(0,0,0,0.78) 100%);
-          pointer-events: none;
+        /* ─── Bloc "Prochain cours" — conversion immediate ───────────────── */
+        .portail-next-cours {
+          display: block;
+          padding: 22px 26px;
+          border-radius: 18px;
+          background: linear-gradient(135deg, #fefaf5 0%, #fef3e6 100%);
+          border: 1.5px solid #fde8d0;
+          color: inherit;
+          text-decoration: none;
+          margin-bottom: 20px;
+          transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+          box-shadow: 0 1px 8px rgba(184, 115, 51, 0.04);
         }
+        .portail-next-cours:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 12px 40px rgba(184, 115, 51, 0.12);
+          border-color: #f0c897;
+        }
+        .portail-next-cours-eyebrow {
+          font-family: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
+          font-size: 0.68rem;
+          font-weight: 500;
+          text-transform: uppercase;
+          letter-spacing: 0.22em;
+          color: #b87333;
+          margin-bottom: 10px;
+        }
+        .portail-next-cours-body {
+          display: flex; align-items: center; gap: 16px;
+          justify-content: space-between;
+        }
+        .portail-next-cours-main { flex: 1; min-width: 0; }
+        .portail-next-cours-nom {
+          font-family: 'Instrument Serif', Georgia, serif;
+          font-size: 1.6rem;
+          line-height: 1.05;
+          letter-spacing: -0.015em;
+          color: #1a1a2e;
+          margin-bottom: 6px;
+        }
+        .portail-next-cours-meta {
+          display: flex; align-items: center; flex-wrap: wrap;
+          gap: 6px;
+          font-size: 0.875rem;
+          color: #7c4a03;
+        }
+        .portail-next-cours-meta svg { opacity: 0.7; }
+        .portail-next-cours-sep { color: #d4a574; }
+        .portail-next-cours-cta {
+          display: inline-flex; align-items: center; gap: 4px;
+          padding: 10px 18px;
+          background: #b87333;
+          color: white;
+          border-radius: 99px;
+          font-size: 0.875rem;
+          font-weight: 600;
+          flex-shrink: 0;
+          transition: background 0.15s ease;
+        }
+        .portail-next-cours:hover .portail-next-cours-cta {
+          background: #a06228;
+        }
+        @media (max-width: 540px) {
+          .portail-next-cours { padding: 18px 20px; }
+          .portail-next-cours-body { flex-direction: column; align-items: stretch; gap: 12px; }
+          .portail-next-cours-cta { justify-content: center; }
+        }
+
         .portail-studio-header {
           display: flex; align-items: center; gap: 16px;
           margin-bottom: 24px; padding-bottom: 20px;
@@ -822,8 +954,8 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
 
         /* CTA Cours d'essai */
         .portail-essai-cta {
-          display: flex; align-items: center; gap: 14px;
-          padding: 14px 16px; margin-bottom: 18px;
+          display: flex; align-items: center; gap: 16px;
+          padding: 20px 24px; margin-bottom: 20px;
           background: linear-gradient(135deg, var(--tone-rose-bg, #fdf6f4), white);
           border: 1.5px solid var(--tone-rose-accent, #c47070);
           border-radius: 16px;
@@ -1046,28 +1178,56 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
           margin: 6px 8px 0 0;
           color: #b87333;
         }
-        .portail-about-philo {
-          font-family: 'Instrument Serif', Georgia, serif;
-          font-size: 1.25rem;
-          font-style: italic;
-          color: #5a4a3a;
-          line-height: 1.5;
-          margin: 20px 0 18px;
-          padding: 14px 0 14px 18px;
-          border-left: 3px solid #b87333;
-          position: relative;
+        /* Philosophie en versets numérotés (magazine éditorial Mélutek) */
+        .portail-philo {
+          margin: 28px 0;
         }
-        .portail-about-philo::before {
-          content: '“';
-          position: absolute;
-          left: -2px; top: -10px;
-          font-size: 2.5rem;
-          font-family: 'Instrument Serif', Georgia, serif;
+        .portail-philo-eyebrow {
+          font-family: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
+          font-size: 0.7rem;
+          font-weight: 500;
+          text-transform: uppercase;
+          letter-spacing: 0.22em;
           color: #b87333;
-          opacity: 0.4;
-          line-height: 1;
+          margin-bottom: 24px;
+          text-align: center;
         }
-        .portail-about-philo em { font-style: italic; }
+        .portail-philo-list {
+          display: flex; flex-direction: column;
+          gap: 32px;
+          max-width: 640px;
+          margin: 0 auto;
+        }
+        .portail-philo-verset {
+          position: relative;
+          padding: 0 0 0 64px;
+        }
+        .portail-philo-num {
+          position: absolute;
+          left: 0; top: -8px;
+          font-family: 'Instrument Serif', Georgia, serif;
+          font-style: italic;
+          font-size: 2.75rem;
+          font-weight: 400;
+          color: #b87333;
+          opacity: 0.7;
+          line-height: 1;
+          letter-spacing: -0.02em;
+        }
+        .portail-philo-text {
+          font-family: 'Instrument Serif', Georgia, serif;
+          font-style: italic;
+          font-size: 1.35rem;
+          line-height: 1.45;
+          color: #3a3024;
+          margin: 0;
+          letter-spacing: -0.005em;
+        }
+        @media (max-width: 540px) {
+          .portail-philo-verset { padding-left: 50px; }
+          .portail-philo-num { font-size: 2.25rem; }
+          .portail-philo-text { font-size: 1.15rem; }
+        }
         .portail-about-meta {
           display: flex; flex-wrap: wrap; gap: 8px;
           margin-top: 16px;
@@ -1090,9 +1250,32 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
           display: flex; flex-direction: column; gap: 8px;
         }
         .portail-price-card {
-          display: flex; align-items: center; gap: 12px;
-          background: white; border-radius: 14px; padding: 14px 16px;
+          position: relative;
+          isolation: isolate;
+          display: flex; align-items: center; gap: 14px;
+          background: white; border-radius: 16px; padding: 20px 22px;
           box-shadow: 0 1px 6px rgba(0,0,0,0.05);
+          overflow: hidden;
+          transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .portail-price-card:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 12px 32px rgba(184, 115, 51, 0.10);
+        }
+        .portail-price-spotlight {
+          position: absolute; inset: 0;
+          z-index: 0;
+          pointer-events: none;
+          background: radial-gradient(circle 180px at var(--mx, 50%) var(--my, 50%), rgba(184, 115, 51, 0.12), transparent 60%);
+          opacity: 0;
+          transition: opacity 0.25s ease;
+          mix-blend-mode: multiply;
+        }
+        .portail-price-card:hover .portail-price-spotlight { opacity: 1; }
+        .portail-price-card > *:not(.portail-price-spotlight) {
+          position: relative;
+          z-index: 1;
+        }
         }
         .portail-price-icon {
           width: 36px; height: 36px; border-radius: 10px;
@@ -1107,9 +1290,9 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
 
         /* Venue */
         .portail-venue-card {
-          background: white; border-radius: 16px; padding: 18px 20px;
+          background: white; border-radius: 16px; padding: 24px 24px;
           box-shadow: 0 1px 6px rgba(0,0,0,0.05);
-          display: flex; flex-direction: column; gap: 14px;
+          display: flex; flex-direction: column; gap: 16px;
         }
         .portail-venue-row {
           display: flex; align-items: flex-start; gap: 10px;
@@ -1118,32 +1301,62 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
         .portail-venue-row svg { color: #d4a0a0; flex-shrink: 0; margin-top: 2px; }
         .portail-venue-addr { font-weight: 600; line-height: 1.4; }
         .portail-venue-hours { white-space: pre-wrap; line-height: 1.5; color: #555; font-size: 0.875rem; }
+        /* Underline animé éditorial Mélutek (background-image left-to-right) */
+        .portail-venue-link,
+        .portail-link-editorial {
+          display: inline;
+          color: #b87333; text-decoration: none; font-weight: 600;
+          background-image: linear-gradient(currentColor, currentColor);
+          background-size: 0% 1.5px;
+          background-repeat: no-repeat;
+          background-position: 0 100%;
+          transition: background-size 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+          padding-bottom: 2px;
+        }
+        .portail-venue-link:hover,
+        .portail-link-editorial:hover {
+          background-size: 100% 1.5px;
+        }
         .portail-venue-link {
           display: inline-block; margin-top: 4px;
-          font-size: 0.8125rem; color: #d4a0a0; text-decoration: none; font-weight: 600;
+          font-size: 0.8125rem;
         }
-        .portail-venue-link:hover { text-decoration: underline; }
 
-        /* FAQ */
-        .portail-faq-list { display: flex; flex-direction: column; gap: 6px; }
+        /* FAQ — pattern Mélutek : chevron SVG, padding généreux, ombre douce */
+        .portail-faq-list { display: flex; flex-direction: column; gap: 10px; }
         .portail-faq-item {
-          background: white; border-radius: 12px; padding: 14px 18px;
-          box-shadow: 0 1px 6px rgba(0,0,0,0.05);
+          background: white; border-radius: 16px; padding: 22px 26px;
+          box-shadow: 0 1px 8px rgba(70, 35, 25, 0.04);
+          border: 1px solid #f4ede5;
+          transition: box-shadow 0.2s ease, transform 0.2s ease;
         }
-        .portail-faq-item[open] { background: #faf8f5; }
+        .portail-faq-item:hover {
+          box-shadow: 0 8px 28px rgba(70, 35, 25, 0.08);
+        }
+        .portail-faq-item[open] {
+          background: #fefaf5;
+          border-color: #fde8d0;
+        }
         .portail-faq-q {
+          display: flex; align-items: center; justify-content: space-between;
+          gap: 14px;
           font-weight: 600; color: #1a1a2e; cursor: pointer;
-          font-size: 0.9375rem; list-style: none; position: relative; padding-right: 24px;
+          font-size: 0.9375rem; list-style: none;
         }
         .portail-faq-q::-webkit-details-marker { display: none; }
-        .portail-faq-q::after {
-          content: '+'; position: absolute; right: 0; top: 0;
-          font-size: 1.25rem; color: #d4a0a0; line-height: 1; transition: transform 0.2s;
+        .portail-faq-q::marker { display: none; }
+        .portail-faq-q-text { flex: 1; }
+        .portail-faq-chevron {
+          flex-shrink: 0;
+          color: #b87333;
+          transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
         }
-        .portail-faq-item[open] .portail-faq-q::after { content: '−'; }
+        .portail-faq-item[open] .portail-faq-chevron {
+          transform: rotate(180deg);
+        }
         .portail-faq-a {
-          margin: 10px 0 0; color: #555; font-size: 0.875rem; line-height: 1.6;
-          padding-top: 10px; border-top: 1px solid #f0ebe8;
+          margin: 14px 0 0; color: #555; font-size: 0.9375rem; line-height: 1.65;
+          padding-top: 14px; border-top: 1px solid #f0ebe8;
         }
 
         /* Social */
