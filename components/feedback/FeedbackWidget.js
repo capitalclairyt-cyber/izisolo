@@ -170,15 +170,15 @@ export default function FeedbackWidget() {
       <style jsx global>{`
         .feedback-fab-wrapper {
           position: fixed;
-          bottom: 96px;
-          right: 20px;
-          z-index: 40;
+          top: 16px;
+          right: 16px;
+          z-index: 50;
         }
-        @media (min-width: 1024px) { .feedback-fab-wrapper { bottom: 32px; right: 32px; } }
+        @media (min-width: 1024px) { .feedback-fab-wrapper { top: 20px; right: 24px; } }
 
         .feedback-fab {
-          width: 48px;
-          height: 48px;
+          width: 40px;
+          height: 40px;
           border-radius: 50%;
           background: var(--c-accent, #b08968);
           color: white;
@@ -202,7 +202,7 @@ export default function FeedbackWidget() {
 
         .feedback-tooltip {
           position: absolute;
-          bottom: 56px;
+          top: 48px;
           right: 0;
           width: 200px;
           background: white;
@@ -214,13 +214,13 @@ export default function FeedbackWidget() {
         .feedback-tooltip::after {
           content: '';
           position: absolute;
-          bottom: -6px;
-          right: 18px;
+          top: -6px;
+          right: 14px;
           width: 12px;
           height: 12px;
           background: white;
           transform: rotate(45deg);
-          box-shadow: 2px 2px 4px rgba(0,0,0,0.05);
+          box-shadow: -2px -2px 4px rgba(0,0,0,0.03);
         }
         .feedback-tooltip strong {
           display: block;
