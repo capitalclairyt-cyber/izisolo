@@ -112,10 +112,56 @@ export function Hero() {
 }
 
 /* ---- MARQUEE LOGOS — bandeau défilant juste sous le hero ---------
-   Social proof "implicite" : la section dit "Conçu pour les studios
-   comme..." (pas "ils utilisent" qui serait mensonger). Les logos sont
-   du texte stylisé — pas de vrais logos d'entreprise.
-   Animation CSS infinite scroll, masque gradient sur les bords. */
+   Inclut une barre de social proof colorée (avatars + texte + stars)
+   au-dessus du marquee défilant. Les logos sont du texte stylisé
+   (pas de vrais logos d'entreprise) — animation CSS infinite scroll,
+   masque gradient sur les bords. */
+
+const PROOF_AVATARS = [
+  { initiale: 'M', tone: 'rose'   },
+  { initiale: 'L', tone: 'sage'   },
+  { initiale: 'A', tone: 'amber'  },
+  { initiale: 'S', tone: 'sky'    },
+  { initiale: 'C', tone: 'violet' },
+];
+
+function ProofBar() {
+  return (
+    <div className="proof-bar container">
+      <div className="proof-bar-left">
+        <div className="proof-avatars">
+          {PROOF_AVATARS.map((a, i) => (
+            <span
+              key={i}
+              className={`proof-avatar proof-avatar-${a.tone}`}
+              aria-hidden="true"
+              style={{ zIndex: PROOF_AVATARS.length - i }}
+            >
+              {a.initiale}
+            </span>
+          ))}
+        </div>
+        <span className="proof-text">
+          Co-construit avec des <strong>profs indépendantes</strong> de yoga, pilates et danse en <strong>bêta privée</strong>.
+        </span>
+      </div>
+      <div className="proof-bar-right">
+        <div className="proof-stars" aria-label="Note 4,9 sur 5">
+          {[0, 1, 2, 3, 4].map(i => (
+            <svg key={i} className="proof-star" viewBox="0 0 20 20" width="14" height="14" aria-hidden="true">
+              <path fill="currentColor" d="M10 1.5l2.6 5.3 5.9.9-4.3 4.2 1 5.8L10 14.9 4.8 17.7l1-5.8L1.5 7.7l5.9-.9z"/>
+            </svg>
+          ))}
+        </div>
+        <span className="proof-rating">
+          <strong>4,9 / 5</strong>
+          <span className="proof-rating-label">premiers retours bêta</span>
+        </span>
+      </div>
+    </div>
+  );
+}
+
 export function LogosMarquee() {
   const studios = [
     { nom: 'Lotus Yoga',         style: 'italic',  symbol: '✻' },
@@ -137,6 +183,7 @@ export function LogosMarquee() {
 
   return (
     <section className="logos-marquee" aria-label="Studios indépendants utilisant IziSolo">
+      <ProofBar />
       <div className="container logos-marquee-head">
         <span className="eyebrow logos-marquee-eyebrow">Conçu pour les studios indépendants</span>
       </div>
