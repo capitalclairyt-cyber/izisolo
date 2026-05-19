@@ -139,51 +139,6 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
 
   return (
     <div>
-      {isPreview && (
-        <div style={{
-          background: '#fffaf0', border: '1px solid #ffe0b2', color: '#7c4a03',
-          padding: '10px 14px', borderRadius: 10, marginBottom: 16,
-          fontSize: '0.8125rem', display: 'flex', alignItems: 'center', gap: 8,
-        }}>
-          👁 <strong>Mode aperçu</strong> — tu vois ton brouillon, pas encore publié.
-        </div>
-      )}
-
-      {/* Bandeau sondage actif */}
-      {sondageActif && (
-        <Link
-          href={`/p/${studioSlug}/sondage/${sondageActif.slug}`}
-          style={{
-            display: 'flex', alignItems: 'center', gap: 12,
-            padding: '12px 14px', borderRadius: 14, marginBottom: 16,
-            background: 'linear-gradient(135deg, var(--brand-light), white)',
-            border: '1px solid var(--brand-200, #f0d0d0)',
-            textDecoration: 'none', color: 'inherit',
-          }}
-        >
-          <div style={{
-            width: 36, height: 36, borderRadius: '50%', flexShrink: 0,
-            background: 'var(--brand)', color: 'white',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: '1.25rem',
-          }}>✨</div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontWeight: 700, fontSize: '0.875rem', color: 'var(--text-primary)' }}>
-              {sondageActif.titre}
-            </div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 2 }}>
-              Aide {profile.studio_nom} à construire son planning idéal — 30 secondes
-            </div>
-          </div>
-          <span style={{
-            background: 'var(--brand)', color: 'white',
-            padding: '6px 12px', borderRadius: 99,
-            fontSize: '0.75rem', fontWeight: 700,
-            flexShrink: 0,
-          }}>Répondre →</span>
-        </Link>
-      )}
-
       <ScrollReveal />
 
       {/* Studio header — hero photo moderne si photo de couverture, sinon header compact */}
@@ -246,6 +201,51 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
             </div>
           </div>
         </div>
+      )}
+
+      {isPreview && (
+        <div style={{
+          background: '#fffaf0', border: '1px solid #ffe0b2', color: '#7c4a03',
+          padding: '10px 14px', borderRadius: 10, marginBottom: 16,
+          fontSize: '0.8125rem', display: 'flex', alignItems: 'center', gap: 8,
+        }}>
+          👁 <strong>Mode aperçu</strong> — tu vois ton brouillon, pas encore publié.
+        </div>
+      )}
+
+      {/* Bandeau sondage actif */}
+      {sondageActif && (
+        <Link
+          href={`/p/${studioSlug}/sondage/${sondageActif.slug}`}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 12,
+            padding: '12px 14px', borderRadius: 14, marginBottom: 16,
+            background: 'linear-gradient(135deg, var(--brand-light), white)',
+            border: '1px solid var(--brand-200, #f0d0d0)',
+            textDecoration: 'none', color: 'inherit',
+          }}
+        >
+          <div style={{
+            width: 36, height: 36, borderRadius: '50%', flexShrink: 0,
+            background: 'var(--brand)', color: 'white',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: '1.25rem',
+          }}>✨</div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontWeight: 700, fontSize: '0.875rem', color: 'var(--text-primary)' }}>
+              {sondageActif.titre}
+            </div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 2 }}>
+              Aide {profile.studio_nom} à construire son planning idéal — 30 secondes
+            </div>
+          </div>
+          <span style={{
+            background: 'var(--brand)', color: 'white',
+            padding: '6px 12px', borderRadius: 99,
+            fontSize: '0.75rem', fontWeight: 700,
+            flexShrink: 0,
+          }}>Répondre →</span>
+        </Link>
       )}
 
       {/* CTA Cours d'essai (si activé par le pro) */}
