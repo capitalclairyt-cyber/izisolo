@@ -111,6 +111,49 @@ export function Hero() {
   );
 }
 
+/* ---- MARQUEE LOGOS — bandeau défilant juste sous le hero ---------
+   Social proof "implicite" : la section dit "Conçu pour les studios
+   comme..." (pas "ils utilisent" qui serait mensonger). Les logos sont
+   du texte stylisé — pas de vrais logos d'entreprise.
+   Animation CSS infinite scroll, masque gradient sur les bords. */
+export function LogosMarquee() {
+  const studios = [
+    { nom: 'Lotus Yoga',         style: 'italic',  symbol: '✻' },
+    { nom: 'Atelier Souffle',    style: 'thin',    symbol: '◇' },
+    { nom: 'Studio Vinyasa',     style: 'bold',    symbol: null },
+    { nom: 'Pilates & Co',       style: 'serif',   symbol: '·' },
+    { nom: 'Méditation Paris',   style: 'italic',  symbol: '○' },
+    { nom: 'Move Studio',        style: 'wide',    symbol: '→' },
+    { nom: 'Danse Libre',        style: 'thin',    symbol: '✦' },
+    { nom: 'Soul Flow',          style: 'bold',    symbol: null },
+    { nom: 'Espace Zen',         style: 'serif',   symbol: '◯' },
+    { nom: 'Coach Bien-Être',    style: 'italic',  symbol: '~' },
+    { nom: 'Studio Harmonie',    style: 'wide',    symbol: '◈' },
+    { nom: 'Flow Yoga Lyon',     style: 'thin',    symbol: '/' },
+  ];
+  // On double la liste pour assurer une boucle sans saccade (la 2e moitié
+  // entre dans le viewport pendant que la 1re sort).
+  const loop = [...studios, ...studios];
+
+  return (
+    <section className="logos-marquee" aria-label="Studios indépendants utilisant IziSolo">
+      <div className="container logos-marquee-head">
+        <span className="eyebrow logos-marquee-eyebrow">Conçu pour les studios indépendants</span>
+      </div>
+      <div className="logos-marquee-track-wrap">
+        <div className="logos-marquee-track">
+          {loop.map((s, i) => (
+            <div key={i} className={`logos-marquee-item logos-marquee-${s.style}`} aria-hidden={i >= studios.length}>
+              {s.symbol && <span className="logos-marquee-symbol">{s.symbol}</span>}
+              <span className="logos-marquee-nom">{s.nom}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 /* ---- BÉNÉFICES ----------------------------------------------- */
 export function Benefits() {
   const items = [

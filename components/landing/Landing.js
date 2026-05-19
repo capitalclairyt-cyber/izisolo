@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import {
-  Nav, Hero, Benefits, ForWhom, Features, MoreFeatures, Comparison, MobileShowcase,
+  Nav, Hero, LogosMarquee, Benefits, ForWhom, Features, MoreFeatures, Comparison, MobileShowcase,
   Testimonials, Pricing, FAQ, FinalCta, Footer,
 } from './Sections';
 import ScrollReveal from './ScrollReveal';
@@ -21,6 +21,7 @@ export default function Landing() {
       <Nav />
       <main>
         <Hero />
+        <LogosMarquee />
         <Benefits />
         <ForWhom />
         <Features />
