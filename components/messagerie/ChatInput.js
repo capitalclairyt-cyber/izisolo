@@ -1,7 +1,31 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Send, Paperclip, X, Loader2, Image as ImageIcon } from 'lucide-react';
+import { Send, Paperclip, X, Loader2, Image as ImageIcon, Smile } from 'lucide-react';
+
+// Emojis curatés (~80) organisés par catégorie pour un picker léger sans dépendance
+const EMOJI_CATEGORIES = [
+  {
+    label: 'Sourires',
+    items: ['😊', '😄', '😂', '🥰', '😍', '😘', '🤗', '😎', '🤩', '😋', '😉', '🙂', '😅', '😇', '🥹', '🥲'],
+  },
+  {
+    label: 'Cœurs',
+    items: ['❤️', '🧡', '💛', '💚', '💙', '💜', '🤍', '🤎', '🖤', '💖', '💝', '💞', '💕', '💓', '💗', '✨'],
+  },
+  {
+    label: 'Mains',
+    items: ['👍', '👏', '🙏', '🤝', '👌', '✌️', '🤞', '💪', '🙌', '👋', '✋', '🤲', '👇', '👉', '👆', '👈'],
+  },
+  {
+    label: 'Bien-être',
+    items: ['🧘', '🧘‍♀️', '🧘‍♂️', '🌿', '🌱', '🍃', '🌸', '🌺', '🌻', '🌷', '🌹', '☀️', '🌙', '⭐', '🌟', '💫'],
+  },
+  {
+    label: 'Sport',
+    items: ['🤸', '🤸‍♀️', '🤸‍♂️', '🏃', '🏃‍♀️', '🏃‍♂️', '💃', '🕺', '🎉', '🎊', '🎈', '🎁', '🏆', '🥇', '🎯', '🔥'],
+  },
+];
 
 /**
  * ChatInput — barre de saisie d'un message + pièce jointe.
@@ -16,8 +40,40 @@ export default function ChatInput({ onSend, disabled = false, placeholder = "Éc
   const [attachments, setAttachments] = useState([]); // [{ url, kind, name }]
   const [uploading, setUploading] = useState(false);
   const [sending, setSending] = useState(false);
+  const [emojiOpen, setEmojiOpen] = useState(false);
   const fileInputRef = useRef(null);
   const taRef = useRef(null);
+  const emojiRef = useRef(null);
+
+  // Fermer le picker au clic extérieur
+  useEffect(() => {
+    if (!emojiOpen) return;
+    const handler = (e) => {
+      if (emojiRef.current && !emojiRef.current.contains(e.target)) setEmojiOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [emojiOpen]);
+
+  const insertEmoji = (emoji) => {
+    const ta = taRef.current;
+    if (!ta) {
+      setText(t => t + emoji);
+      return;
+    }
+    const start = ta.selectionStart ?? text.length;
+    const end = ta.selectionEnd ?? text.length;
+    const newText = text.slice(0, start) + emoji + text.slice(end);
+    setText(newText);
+    // Replacer le curseur juste après l'emoji après le rendu
+    requestAnimationFrame(() => {
+      ta.focus();
+      const pos = start + emoji.length;
+      ta.setSelectionRange(pos, pos);
+      ta.style.height = 'auto';
+      ta.style.height = Math.min(ta.scrollHeight, 140) + 'px';
+    });
+  };
 
   useEffect(() => {
     if (initialText && !text) {
@@ -131,6 +187,42 @@ export default function ChatInput({ onSend, disabled = false, placeholder = "Éc
           style={{ display: 'none' }}
         />
 
+        {/* Bouton emoji picker */}
+        <div className="ci-emoji-wrap" ref={emojiRef}>
+          <button
+            type="button"
+            className={`ci-btn ${emojiOpen ? 'is-active' : ''}`}
+            onClick={() => setEmojiOpen(o => !o)}
+            disabled={disabled}
+            aria-label="Insérer un emoji"
+            title="Insérer un emoji"
+          >
+            <Smile size={18} />
+          </button>
+          {emojiOpen && (
+            <div className="ci-emoji-picker">
+              {EMOJI_CATEGORIES.map(cat => (
+                <div key={cat.label} className="ci-emoji-cat">
+                  <div className="ci-emoji-cat-label">{cat.label}</div>
+                  <div className="ci-emoji-grid">
+                    {cat.items.map(e => (
+                      <button
+                        key={e}
+                        type="button"
+                        className="ci-emoji-item"
+                        onClick={() => insertEmoji(e)}
+                        aria-label={e}
+                      >
+                        {e}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
         <textarea
           ref={taRef}
           className="ci-textarea"
@@ -216,6 +308,61 @@ export default function ChatInput({ onSend, disabled = false, placeholder = "Éc
         }
         .ci-btn:hover:not(:disabled) { background: var(--bg-soft, #faf8f5); }
         .ci-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .ci-btn.is-active { background: var(--brand-light, #fef0dc); color: var(--brand); }
+
+        /* Emoji picker (sans dépendance) */
+        .ci-emoji-wrap { position: relative; flex-shrink: 0; }
+        .ci-emoji-picker {
+          position: absolute;
+          bottom: calc(100% + 8px);
+          left: 0;
+          width: 320px;
+          max-height: 340px;
+          overflow-y: auto;
+          background: white;
+          border: 1px solid var(--border);
+          border-radius: 14px;
+          box-shadow: 0 12px 40px rgba(0,0,0,0.14);
+          padding: 10px;
+          z-index: 50;
+          animation: ci-emoji-pop 0.16s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        @keyframes ci-emoji-pop {
+          from { opacity: 0; transform: scale(0.95) translateY(6px); }
+          to   { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .ci-emoji-cat { margin-bottom: 8px; }
+        .ci-emoji-cat:last-child { margin-bottom: 0; }
+        .ci-emoji-cat-label {
+          font-size: 0.6875rem;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.1em;
+          color: var(--text-muted);
+          margin-bottom: 6px;
+          padding: 0 4px;
+        }
+        .ci-emoji-grid {
+          display: grid;
+          grid-template-columns: repeat(8, 1fr);
+          gap: 2px;
+        }
+        .ci-emoji-item {
+          width: 34px; height: 34px;
+          border: none; background: transparent;
+          border-radius: 8px;
+          font-size: 1.25rem;
+          cursor: pointer;
+          display: flex; align-items: center; justify-content: center;
+          transition: background 0.12s ease, transform 0.12s ease;
+        }
+        .ci-emoji-item:hover {
+          background: var(--bg-soft, #faf8f5);
+          transform: scale(1.2);
+        }
+        @media (max-width: 480px) {
+          .ci-emoji-picker { width: calc(100vw - 32px); left: -56px; }
+        }
 
         .ci-send {
           background: var(--brand); color: white;

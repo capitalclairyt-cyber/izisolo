@@ -24,6 +24,7 @@ function isSameDay(a, b) {
 
 export default function ChatRoom({ conversationId, viewerKind, onMessageSent, initialText = '' }) {
   const [messages, setMessages] = useState([]);
+  const [reactionsByMsg, setReactionsByMsg] = useState({}); // { msgId: [{ emoji, mine }] }
   const [conv, setConv]         = useState(null); // {peer_label, titre, is_owner_pro}
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState(null);
@@ -77,6 +78,53 @@ export default function ChatRoom({ conversationId, viewerKind, onMessageSent, in
       setLoading(false);
     }
   }, [conversationId]);
+
+  // Fetch les réactions de chaque message en parallèle (best effort, non-bloquant)
+  const fetchReactions = useCallback(async (msgIds) => {
+    if (!msgIds?.length) return;
+    try {
+      const results = await Promise.all(
+        msgIds.map(id =>
+          fetch(`/api/messagerie/messages/${id}/reactions`)
+            .then(r => r.ok ? r.json() : { reactions: [] })
+            .then(j => [id, j.reactions || []])
+            .catch(() => [id, []])
+        )
+      );
+      const map = {};
+      for (const [id, reactions] of results) map[id] = reactions;
+      setReactionsByMsg(prev => ({ ...prev, ...map }));
+    } catch { /* silencieux */ }
+  }, []);
+
+  // Refetch réactions quand la liste de messages change
+  useEffect(() => {
+    const ids = messages.map(m => m.id).filter(Boolean);
+    if (ids.length) fetchReactions(ids);
+  }, [messages, fetchReactions]);
+
+  const handleReact = async (messageId, emoji) => {
+    // Optimistic update : toggle local
+    setReactionsByMsg(prev => {
+      const existing = prev[messageId] || [];
+      const mineIdx = existing.findIndex(r => r.mine && r.emoji === emoji);
+      if (mineIdx >= 0) {
+        const next = [...existing];
+        next.splice(mineIdx, 1);
+        return { ...prev, [messageId]: next };
+      }
+      return { ...prev, [messageId]: [...existing, { emoji, mine: true }] };
+    });
+    try {
+      await fetch(`/api/messagerie/messages/${messageId}/reactions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ emoji }),
+      });
+      // Refetch pour la source de vérité
+      fetchReactions([messageId]);
+    } catch { /* silencieux */ }
+  };
 
   // Initial load + mark as read
   useEffect(() => {
@@ -216,7 +264,12 @@ export default function ChatRoom({ conversationId, viewerKind, onMessageSent, in
               {(i === 0 || !isSameDay(m.created_at, messages[i - 1].created_at)) && (
                 <DateSeparator date={m.created_at} />
               )}
-              <MessageBubble message={m} viewerKind={viewerKind} />
+              <MessageBubble
+                message={m}
+                viewerKind={viewerKind}
+                reactions={reactionsByMsg[m.id] || []}
+                onReact={(emoji) => handleReact(m.id, emoji)}
+              />
             </div>
           ))
         )}
