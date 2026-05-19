@@ -185,10 +185,12 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
               </div>
             )}
             <h1 className="portail-hero-name">
-              {(profile.studio_nom || '').split(' ').map((word, i) => (
-                <span key={i} className="portail-hero-word" style={{ '--word-index': i }}>
-                  <span className="portail-hero-word-inner">{word}</span>
-                  {i < profile.studio_nom.split(' ').length - 1 && ' '}
+              {(profile.studio_nom || '').split(' ').map((word, i, arr) => (
+                <span key={i}>
+                  <span className="portail-hero-word" style={{ '--word-index': i }}>
+                    <span className="portail-hero-word-inner">{word}</span>
+                  </span>
+                  {i < arr.length - 1 && ' '}
                 </span>
               ))}
             </h1>
