@@ -573,7 +573,7 @@ export function Pricing() {
   const plans = [
     {
       name: 'Solo',
-      price: '9',
+      price: '12',
       publicPrice: '17',
       sub: '/mois · à vie',
       desc: 'Pour démarrer simplement. Tout l\'essentiel pour gérer ta pratique solo.',
