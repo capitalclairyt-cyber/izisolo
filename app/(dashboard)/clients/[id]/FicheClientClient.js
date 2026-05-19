@@ -627,6 +627,7 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
               const aboRecu = aboPaiements.filter(p => p.statut === 'paid').reduce((s, p) => s + parseFloat(p.montant || 0), 0);
               const aboTotal = aboPaiements.reduce((s, p) => s + parseFloat(p.montant || 0), 0);
               const aboReste = aboTotal - aboRecu;
+              const fullyPaid = aboPaiements.length > 0 && aboReste < 0.01;
               return (
                 <div key={abo.id} className="abo-card izi-card">
                   <div className="abo-top">
@@ -648,7 +649,14 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
                       <span className="progress-text">{restantes}/{abo.seances_total} séances</span>
                     </div>
                   )}
-                  {aboPaiements.length > 0 && (
+                  {fullyPaid ? (
+                    <div className="abo-paiements-resume">
+                      <span className="abo-regle"><CheckCircle2 size={14} /> Réglé — {formatMontant(aboRecu)}</span>
+                      <div className="abo-pay-bar">
+                        <div className="abo-pay-fill" style={{ width: '100%' }} />
+                      </div>
+                    </div>
+                  ) : aboPaiements.length > 0 ? (
                     <div className="abo-paiements-resume">
                       <span className="abo-recu">{formatMontant(aboRecu)} reçu</span>
                       {aboReste > 0 && <span className="abo-reste">· {formatMontant(aboReste)} restant</span>}
@@ -658,10 +666,10 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
                         </div>
                       )}
                     </div>
-                  )}
+                  ) : null}
                   {abo.date_fin && <div className="abo-meta">Expire le {formatDate(abo.date_fin)}</div>}
                   {abo.date_debut && <div className="abo-meta">Depuis le {formatDate(abo.date_debut)}</div>}
-                  {abo.statut === 'actif' && (
+                  {abo.statut === 'actif' && !fullyPaid && (
                     <button
                       className="abo-add-versement"
                       onClick={() => {
@@ -1088,6 +1096,7 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
         .abo-meta { font-size: 0.75rem; color: var(--text-muted); }
         .abo-paiements-resume { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 0.8125rem; }
         .abo-recu { font-weight: 600; color: #16a34a; }
+        .abo-regle { display: inline-flex; align-items: center; gap: 5px; font-weight: 600; color: #16a34a; font-size: 0.8125rem; }
         .abo-reste { color: #ca8a04; font-weight: 500; }
         .abo-pay-bar { width: 100%; height: 4px; background: var(--cream-dark, #eee); border-radius: 2px; overflow: hidden; margin-top: 2px; }
         .abo-pay-fill { height: 100%; background: #16a34a; border-radius: 2px; transition: width 0.3s ease; }
