@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import {
   TrendingUp, TrendingDown, Clock, Plus, Download, X, CheckCircle2,
-  Banknote, FileText, Landmark, CreditCard, Loader2,
+  Banknote, FileText, Landmark, CreditCard, Loader2, Pencil, Save,
 } from 'lucide-react';
 import { formatMontant, formatDate } from '@/lib/utils';
 import { STATUTS_PAIEMENT } from '@/lib/constantes';
@@ -71,6 +71,11 @@ export default function RevenusClient({ paiements: initialPaiements }) {
   const [encaisserDate, setEncaisserDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [encaisserSubmitting, setEncaisserSubmitting] = useState(false);
 
+  // Édition paiement
+  const [editModal, setEditModal] = useState(null);
+  const [editForm, setEditForm] = useState({});
+  const [editSubmitting, setEditSubmitting] = useState(false);
+
   // ── Filtres ────────────────────────────────────────────
   const periodeFilt = useMemo(
     () => paiements.filter(p => inPeriode(p.date, periode)),
@@ -131,6 +136,50 @@ export default function RevenusClient({ paiements: initialPaiements }) {
   }, [paiements, stats.total, periode]);
 
   // ── Actions ────────────────────────────────────────────
+  const openEdit = (paiement) => {
+    setEditModal(paiement);
+    setEditForm({
+      montant: String(paiement.montant),
+      mode: paiement.mode || 'especes',
+      date: paiement.date || '',
+      date_encaissement: paiement.date_encaissement || '',
+      notes: paiement.notes || '',
+      statut: paiement.statut || 'pending',
+    });
+  };
+
+  const submitEdit = async () => {
+    if (!editModal || editSubmitting) return;
+    setEditSubmitting(true);
+    try {
+      const res = await fetch(`/api/paiements/${editModal.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          montant: parseFloat(editForm.montant),
+          mode: editForm.mode,
+          date: editForm.date,
+          date_encaissement: editForm.date_encaissement || null,
+          notes: editForm.notes || null,
+          statut: editForm.statut,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Erreur');
+      setPaiements(prev => prev.map(p =>
+        p.id === editModal.id
+          ? { ...p, montant: parseFloat(editForm.montant), mode: editForm.mode, date: editForm.date, date_encaissement: editForm.date_encaissement, notes: editForm.notes, statut: editForm.statut }
+          : p
+      ));
+      toast.success('Paiement modifié !');
+      setEditModal(null);
+    } catch (e) {
+      toast.error(e.message);
+    } finally {
+      setEditSubmitting(false);
+    }
+  };
+
   const openEncaisser = (paiement) => {
     setEncaisserModal(paiement);
     setEncaisserMode(paiement.mode || 'especes');
@@ -327,6 +376,9 @@ export default function RevenusClient({ paiements: initialPaiements }) {
                     <div className="paiement-montant">{formatMontant(p.montant)}</div>
                     <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
                       <span className={`izi-badge izi-badge-${sInfo.color || 'neutral'}`}>{sInfo.label || p.statut}</span>
+                      <button onClick={() => openEdit(p)} className="edit-pay-btn" title="Modifier">
+                        <Pencil size={13} />
+                      </button>
                       {canEncaisser && (
                         <button
                           onClick={() => openEncaisser(p)}
@@ -398,6 +450,107 @@ export default function RevenusClient({ paiements: initialPaiements }) {
               <button onClick={submitEncaisser} className="izi-btn izi-btn-primary" disabled={encaisserSubmitting}>
                 {encaisserSubmitting ? <Loader2 size={14} className="spin" /> : <CheckCircle2 size={14} />}
                 Confirmer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal édition paiement */}
+      {editModal && (
+        <div className="enc-overlay" onClick={() => !editSubmitting && setEditModal(null)}>
+          <div className="enc-modal edit-modal" onClick={e => e.stopPropagation()}>
+            <button className="enc-close" onClick={() => setEditModal(null)} aria-label="Fermer">
+              <X size={16} />
+            </button>
+            <h3 className="enc-title">Modifier le paiement</h3>
+            <div className="enc-recap">
+              <strong>{editModal.intitule || 'Paiement'}</strong>
+              {editModal.clients && (
+                <div style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', marginTop: 2 }}>
+                  {clientName(editModal.clients)}
+                </div>
+              )}
+            </div>
+
+            <div className="enc-field">
+              <label>Montant</label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <input
+                  type="number" step="0.01" min="0"
+                  className="izi-input" style={{ flex: 1 }}
+                  value={editForm.montant}
+                  onChange={e => setEditForm(f => ({ ...f, montant: e.target.value }))}
+                />
+                <span style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>€</span>
+              </div>
+            </div>
+
+            <div className="enc-field">
+              <label>Mode de règlement</label>
+              <div className="enc-modes">
+                {MODES.map(({ value, label, Icon }) => (
+                  <button
+                    key={value} type="button"
+                    onClick={() => setEditForm(f => ({ ...f, mode: value }))}
+                    className={`enc-mode-btn ${editForm.mode === value ? 'active' : ''}`}
+                  >
+                    <Icon size={16} /> {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="enc-field">
+              <label>Date</label>
+              <input
+                type="date" className="izi-input"
+                value={editForm.date}
+                onChange={e => setEditForm(f => ({ ...f, date: e.target.value }))}
+              />
+            </div>
+
+            <div className="enc-field">
+              <label>Date d'encaissement</label>
+              <input
+                type="date" className="izi-input"
+                value={editForm.date_encaissement}
+                onChange={e => setEditForm(f => ({ ...f, date_encaissement: e.target.value }))}
+              />
+            </div>
+
+            <div className="enc-field">
+              <label>Notes</label>
+              <input
+                type="text" className="izi-input"
+                value={editForm.notes}
+                onChange={e => setEditForm(f => ({ ...f, notes: e.target.value }))}
+                placeholder="N° chèque, référence..."
+              />
+            </div>
+
+            <div className="enc-field">
+              <label>Statut</label>
+              <div className="enc-modes">
+                {STATUTS.map(({ value, label }) => (
+                  <button
+                    key={value} type="button"
+                    onClick={() => setEditForm(f => ({ ...f, statut: value }))}
+                    className={`enc-mode-btn ${editForm.statut === value ? 'active' : ''}`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="enc-actions">
+              <button onClick={() => setEditModal(null)} className="izi-btn izi-btn-ghost" disabled={editSubmitting}>
+                Annuler
+              </button>
+              <button onClick={submitEdit} className="izi-btn izi-btn-primary" disabled={editSubmitting}>
+                {editSubmitting ? <Loader2 size={14} className="spin" /> : <Save size={14} />}
+                Enregistrer
               </button>
             </div>
           </div>
@@ -535,6 +688,15 @@ export default function RevenusClient({ paiements: initialPaiements }) {
           cursor: pointer; transition: all 0.15s;
         }
         .encaisser-btn:hover { background: #6ee7b7; color: #064e3b; }
+
+        .edit-pay-btn {
+          display: inline-flex; align-items: center;
+          padding: 4px 6px; border-radius: var(--radius-sm, 6px);
+          border: none; background: none;
+          color: var(--text-muted); cursor: pointer; transition: all 0.15s;
+        }
+        .edit-pay-btn:hover { background: var(--cream-dark, #f0ebe4); color: var(--brand); }
+        .edit-modal { max-width: 460px; }
 
         .empty-state { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 40px 20px; text-align: center; }
         .empty-emoji { font-size: 2.5rem; }

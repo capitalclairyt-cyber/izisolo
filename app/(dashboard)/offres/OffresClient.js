@@ -7,7 +7,7 @@ import {
   Plus, Package, Ticket, CalendarCheck, Zap, Trash2,
   ToggleLeft, ToggleRight, UserPlus, X, ChevronRight,
   Banknote, CreditCard, Landmark, FileText, Loader2,
-  Search, CreditCard as CardIcon, Crown, ArrowRight
+  Search, CreditCard as CardIcon, Crown, ArrowRight, Pencil,
 } from 'lucide-react';
 import { formatMontant } from '@/lib/utils';
 import { toneForOffre } from '@/lib/tones';
@@ -33,6 +33,17 @@ function calcDateFin(dureeJours) {
 // ═══════════════════════════════════════════════════════════════════════════
 // Modal tunnel de vente — appelé depuis OffresClient (offre déjà connue)
 // ═══════════════════════════════════════════════════════════════════════════
+function generateVersements(total, nb) {
+  const perV = Math.floor(total / nb * 100) / 100;
+  const reste = Math.round((total - perV * (nb - 1)) * 100) / 100;
+  const today = new Date();
+  return Array.from({ length: nb }, (_, i) => {
+    const d = new Date(today);
+    d.setMonth(d.getMonth() + i);
+    return { montant: String(i === nb - 1 ? reste : perV), date: d.toISOString().split('T')[0] };
+  });
+}
+
 function AssignerClientModal({ offre, onClose, onSuccess }) {
   const [step, setStep] = useState('client'); // 'client' | 'paiement'
   const [clients, setClients] = useState([]);
@@ -44,6 +55,25 @@ function AssignerClientModal({ offre, onClose, onSuccess }) {
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+
+  // Multi-versement
+  const [multiVersement, setMultiVersement] = useState(false);
+  const [nbVersements, setNbVersements] = useState(2);
+  const [versements, setVersements] = useState([]);
+
+  const toggleMulti = () => {
+    if (!multiVersement) {
+      const total = parseFloat(montant) || offre.prix;
+      setVersements(generateVersements(total, nbVersements));
+    }
+    setMultiVersement(!multiVersement);
+  };
+
+  const changeNbVersements = (nb) => {
+    setNbVersements(nb);
+    const total = parseFloat(montant) || offre.prix;
+    setVersements(generateVersements(total, nb));
+  };
 
   useEffect(() => {
     const load = async () => {
@@ -105,21 +135,38 @@ function AssignerClientModal({ offre, onClose, onSuccess }) {
 
       if (aboErr) throw aboErr;
 
-      const { error: payErr } = await supabase.from('paiements').insert({
-        profile_id: user.id,
-        client_id: selectedClient.id,
-        offre_id: offre.id,
-        abonnement_id: abo.id,
-        intitule: offre.nom,
-        type: offre.type,
-        montant: parseFloat(montant),
-        statut: 'paid',
-        mode: modePaiement,
-        date: today,
-        notes: notes.trim() || null,
-      });
-
-      if (payErr) throw payErr;
+      if (multiVersement && versements.length > 0) {
+        const rows = versements.map((v, i) => ({
+          profile_id: user.id,
+          client_id: selectedClient.id,
+          offre_id: offre.id,
+          abonnement_id: abo.id,
+          intitule: `${offre.nom} — versement ${i + 1}/${versements.length}`,
+          type: offre.type,
+          montant: parseFloat(v.montant),
+          statut: i === 0 ? 'paid' : 'pending',
+          mode: modePaiement,
+          date: v.date,
+          notes: i === 0 ? (notes.trim() || null) : null,
+        }));
+        const { error: payErr } = await supabase.from('paiements').insert(rows);
+        if (payErr) throw payErr;
+      } else {
+        const { error: payErr } = await supabase.from('paiements').insert({
+          profile_id: user.id,
+          client_id: selectedClient.id,
+          offre_id: offre.id,
+          abonnement_id: abo.id,
+          intitule: offre.nom,
+          type: offre.type,
+          montant: parseFloat(montant),
+          statut: 'paid',
+          mode: modePaiement,
+          date: today,
+          notes: notes.trim() || null,
+        });
+        if (payErr) throw payErr;
+      }
 
       onSuccess();
     } catch (err) {
@@ -246,6 +293,79 @@ function AssignerClientModal({ offre, onClose, onSuccess }) {
               <p className="montant-hint">Prix catalogue : {formatMontant(offre.prix)}</p>
             )}
 
+            {/* Toggle multi-versement */}
+            <div className="paiement-section-label">Mode de paiement</div>
+            <div className="multi-toggle-row">
+              <button type="button" className={`multi-toggle-btn ${!multiVersement ? 'active' : ''}`} onClick={() => setMultiVersement(false)}>
+                Paiement unique
+              </button>
+              <button type="button" className={`multi-toggle-btn ${multiVersement ? 'active' : ''}`} onClick={toggleMulti}>
+                Plusieurs versements
+              </button>
+            </div>
+
+            {multiVersement && (
+              <div className="multi-zone">
+                <div className="multi-nb-row">
+                  <div className="paiement-section-label">Nombre de versements</div>
+                  <div className="multi-nb-chips">
+                    {[2, 3, 4, 5, 6].map(n => (
+                      <button key={n} type="button" className={`multi-nb-chip ${nbVersements === n ? 'active' : ''}`} onClick={() => changeNbVersements(n)}>
+                        {n}x
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="multi-versements">
+                  {versements.map((v, i) => (
+                    <div key={i} className="multi-v-row">
+                      <div className="multi-v-label">
+                        Versement {i + 1}
+                        {i === 0 && <span className="multi-v-badge">Encaissé</span>}
+                        {i > 0 && <span className="multi-v-badge-pending">En attente</span>}
+                      </div>
+                      <div className="multi-v-fields">
+                        <input
+                          type="number" step="0.01" min="0"
+                          className="izi-input multi-v-input"
+                          value={v.montant}
+                          onChange={e => {
+                            const nv = [...versements];
+                            nv[i] = { ...nv[i], montant: e.target.value };
+                            setVersements(nv);
+                          }}
+                        />
+                        <input
+                          type="date"
+                          className="izi-input multi-v-input"
+                          value={v.date}
+                          onChange={e => {
+                            const nv = [...versements];
+                            nv[i] = { ...nv[i], date: e.target.value };
+                            setVersements(nv);
+                          }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {(() => {
+                  const sum = versements.reduce((s, v) => s + (parseFloat(v.montant) || 0), 0);
+                  const total = parseFloat(montant) || 0;
+                  const diff = Math.round((sum - total) * 100) / 100;
+                  return diff !== 0 ? (
+                    <div className="multi-total-warn">
+                      Total : {sum.toFixed(2)} € {diff > 0 ? `(+${diff.toFixed(2)} €)` : `(${diff.toFixed(2)} €)`}
+                    </div>
+                  ) : (
+                    <div className="multi-total-ok">Total : {sum.toFixed(2)} €</div>
+                  );
+                })()}
+              </div>
+            )}
+
             <div className="paiement-section-label">Notes (optionnel)</div>
             <input
               className="izi-input"
@@ -318,6 +438,14 @@ export default function OffresClient({ offres, profile, planKey, limiteOffres })
         </div>
         <div className="offre-prix">{formatMontant(offre.prix)}</div>
         <div className="offre-actions">
+          <Link
+            href={`/offres/${offre.id}/edit`}
+            className="action-btn"
+            title="Modifier"
+            aria-label="Modifier l'offre"
+          >
+            <Pencil size={16} />
+          </Link>
           {active && (
             <button
               onClick={() => setAssignModalOffre(offre)}
@@ -570,6 +698,45 @@ export default function OffresClient({ offres, profile, planKey, limiteOffres })
         .upgrade-cta-btn { width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 4px; }
         .upgrade-dismiss { background: none; border: none; cursor: pointer; padding: 8px; font-size: 0.8125rem; color: var(--text-muted); font-weight: 500; }
         .upgrade-dismiss:hover { color: var(--text-secondary); text-decoration: underline; }
+
+        /* ── Multi-versement ── */
+        .multi-toggle-row { display: flex; gap: 8px; }
+        .multi-toggle-btn {
+          flex: 1; padding: 8px 12px; border-radius: var(--radius-full);
+          border: 1.5px solid var(--border); background: var(--bg-card);
+          font-size: 0.8125rem; font-weight: 600; color: var(--text-secondary);
+          cursor: pointer; transition: all var(--transition-fast);
+        }
+        .multi-toggle-btn.active { border-color: var(--brand); background: var(--brand-light); color: var(--brand-700); }
+        .multi-zone { display: flex; flex-direction: column; gap: 12px; }
+        .multi-nb-row { display: flex; flex-direction: column; gap: 6px; }
+        .multi-nb-chips { display: flex; gap: 6px; }
+        .multi-nb-chip {
+          padding: 5px 12px; border-radius: var(--radius-full);
+          border: 1.5px solid var(--border); background: var(--bg-card);
+          font-size: 0.8125rem; font-weight: 600; color: var(--text-secondary);
+          cursor: pointer; transition: all var(--transition-fast);
+        }
+        .multi-nb-chip.active { border-color: var(--brand); background: var(--brand-light); color: var(--brand-700); }
+        .multi-versements { display: flex; flex-direction: column; gap: 8px; }
+        .multi-v-row {
+          display: flex; flex-direction: column; gap: 4px;
+          padding: 10px 12px; background: var(--cream, #faf8f5);
+          border: 1px solid var(--border); border-radius: var(--radius-md);
+        }
+        .multi-v-label { font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); display: flex; align-items: center; gap: 6px; }
+        .multi-v-badge { background: #ecfdf5; color: #065f46; padding: 1px 6px; border-radius: var(--radius-full); font-size: 0.625rem; font-weight: 700; }
+        .multi-v-badge-pending { background: #fef3c7; color: #92400e; padding: 1px 6px; border-radius: var(--radius-full); font-size: 0.625rem; font-weight: 700; }
+        .multi-v-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .multi-v-input { font-size: 0.875rem !important; }
+        .multi-total-warn {
+          font-size: 0.75rem; color: #dc2626; font-weight: 600; text-align: center;
+          padding: 6px; background: #fef2f2; border-radius: var(--radius-md);
+        }
+        .multi-total-ok {
+          font-size: 0.75rem; color: #065f46; font-weight: 600; text-align: center;
+          padding: 6px; background: #ecfdf5; border-radius: var(--radius-md);
+        }
 
         @keyframes spin { to { transform: rotate(360deg); } }
         .spin { animation: spin 0.8s linear infinite; }
