@@ -37,10 +37,12 @@ export default function MessagerieClient({ profile, clients, cours, offres }) {
   const [content, setContent]        = useState('');
   const [mode, setMode]              = useState('individuel'); // 'individuel'|'groupe' (pour scope=cours)
   const [sending, setSending]        = useState(false);
+  const [birthdayText, setBirthdayText] = useState('');
 
   // Démarrer une conversation 1-to-1 (depuis fiche élève via ?with=clientId)
   useEffect(() => {
     const withClient = searchParams.get('with');
+    const isBirthday = searchParams.get('birthday') === '1';
     if (withClient) {
       (async () => {
         const res = await fetch('/api/messagerie/conversations', {
@@ -52,6 +54,13 @@ export default function MessagerieClient({ profile, clients, cours, offres }) {
         if (res.ok && json.conversation) {
           setSelectedConvId(json.conversation.id);
           setTab('conversations');
+
+          if (isBirthday) {
+            const client = clients.find(c => c.id === withClient);
+            const template = profile?.anniversaire_message
+              || 'Joyeux anniversaire {{prenom}} ! 🎂 En ce jour spécial, toute l\'équipe du studio te souhaite une magnifique journée. À très bientôt sur le tapis !';
+            setBirthdayText(template.replace(/\{\{prenom\}\}/g, client?.prenom || ''));
+          }
         }
       })();
     }
@@ -153,6 +162,7 @@ export default function MessagerieClient({ profile, clients, cours, offres }) {
             conversationId={selectedConvId}
             viewerKind="pro"
             onMessageSent={() => {}}
+            initialText={birthdayText}
           />
         </div>
       ) : tab === 'conversations' ? (

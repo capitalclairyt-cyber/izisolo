@@ -102,7 +102,7 @@ export default function NotificationBell() {
     // qu'on puisse écrire un mot doux personnalisé.
     if (notif.type === 'anniversaire') {
       if (clientId) {
-        router.push(`/messagerie?with=${clientId}`);
+        router.push(`/messagerie?with=${clientId}&birthday=1`);
       } else {
         router.push('/messagerie');
       }

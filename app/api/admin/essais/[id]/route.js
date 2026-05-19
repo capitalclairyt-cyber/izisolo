@@ -16,9 +16,9 @@ export const dynamic = 'force-dynamic';
  * Réservé au pro propriétaire (RLS).
  */
 export async function POST(request, { params }) {
-  let profile, supabase;
+  let profile, supabase, user;
   try {
-    ({ profile, supabase } = await requireAuth());
+    ({ profile, supabase, user } = await requireAuth());
   } catch (res) { return res; }
 
   if (!profile?.studio_slug) {
@@ -95,6 +95,7 @@ export async function POST(request, { params }) {
       const resend = new Resend(process.env.RESEND_API_KEY);
       await resend.emails.send({
         from: process.env.RESEND_FROM_EMAIL || 'IziSolo <bonjour@izisolo.fr>',
+        ...(user?.email ? { reply_to: user.email } : {}),
         to: demande.email,
         subject: `Demande de cours d'essai chez ${profile.studio_nom}`,
         html: `

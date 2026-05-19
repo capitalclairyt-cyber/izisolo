@@ -22,7 +22,7 @@ function isSameDay(a, b) {
   return new Date(a).toDateString() === new Date(b).toDateString();
 }
 
-export default function ChatRoom({ conversationId, viewerKind, onMessageSent }) {
+export default function ChatRoom({ conversationId, viewerKind, onMessageSent, initialText = '' }) {
   const [messages, setMessages] = useState([]);
   const [conv, setConv]         = useState(null); // {peer_label, titre, is_owner_pro}
   const [loading, setLoading]   = useState(true);
@@ -226,7 +226,7 @@ export default function ChatRoom({ conversationId, viewerKind, onMessageSent }) 
         <div className="cr-error">⚠ {error}</div>
       )}
 
-      <ChatInput onSend={handleSend} />
+      <ChatInput onSend={handleSend} initialText={initialText} />
 
       <style jsx global>{`
         .chat-room {

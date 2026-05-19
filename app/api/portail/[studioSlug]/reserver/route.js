@@ -382,6 +382,13 @@ export async function POST(request, { params }) {
     }
   }
 
+  // Récupérer l'email du pro pour reply_to
+  let proEmail = null;
+  try {
+    const { data: { user: proUser } } = await supabaseAdmin.auth.admin.getUserById(profile.id);
+    proEmail = proUser?.email || null;
+  } catch {}
+
   // Envoyer email de confirmation (si Resend configuré)
   let magicLinkSent = false;
   try {
@@ -397,6 +404,7 @@ export async function POST(request, { params }) {
 
       await resend.emails.send({
         from: process.env.RESEND_FROM_EMAIL || 'IziSolo <bonjour@izisolo.fr>',
+        ...(proEmail ? { reply_to: proEmail } : {}),
         to: email,
         subject: `Réservation confirmée — ${cours.nom}`,
         html: `

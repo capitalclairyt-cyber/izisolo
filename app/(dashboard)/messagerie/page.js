@@ -16,7 +16,7 @@ export default async function MessageriePage() {
     { data: cours },
     { data: offres },
   ] = await Promise.all([
-    supabase.from('profiles').select('id, types_cours, studio_nom').eq('id', user.id).single(),
+    supabase.from('profiles').select('id, types_cours, studio_nom, anniversaire_message, anniversaire_cadeau_actif, anniversaire_cadeau_offre_id, anniversaire_cadeau_type, anniversaire_cadeau_remise_pct').eq('id', user.id).single(),
     supabase.from('clients')
       .select('id, prenom, nom, email')
       .eq('profile_id', user.id)

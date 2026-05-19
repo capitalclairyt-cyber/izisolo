@@ -1,14 +1,16 @@
 'use client';
 
 import { useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Mail, ArrowLeft, CheckCircle, Loader } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
 export default function ConnexionPortailPage() {
   const { studioSlug } = useParams();
-  const [email, setEmail]   = useState('');
+  const searchParams = useSearchParams();
+  const prefillEmail = searchParams.get('email') || '';
+  const [email, setEmail]   = useState(prefillEmail);
   const [loading, setLoading] = useState(false);
   const [sent, setSent]     = useState(false);
   const [error, setError]   = useState('');
@@ -21,7 +23,7 @@ export default function ConnexionPortailPage() {
     try {
       const redirectTo = `${window.location.origin}/auth/callback?next=/p/${studioSlug}/espace`;
       const { error: authError } = await supabase.auth.signInWithOtp({
-        email: email.trim(),
+        email: email.trim().toLowerCase(),
         options: { emailRedirectTo: redirectTo },
       });
       if (authError) throw authError;

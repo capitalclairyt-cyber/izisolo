@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Send, Paperclip, X, Loader2, Image as ImageIcon } from 'lucide-react';
 
 /**
@@ -11,13 +11,23 @@ import { Send, Paperclip, X, Loader2, Image as ImageIcon } from 'lucide-react';
  *   disabled
  *   placeholder
  */
-export default function ChatInput({ onSend, disabled = false, placeholder = "Écrire un message…" }) {
-  const [text, setText] = useState('');
+export default function ChatInput({ onSend, disabled = false, placeholder = "Écrire un message…", initialText = '' }) {
+  const [text, setText] = useState(initialText);
   const [attachments, setAttachments] = useState([]); // [{ url, kind, name }]
   const [uploading, setUploading] = useState(false);
   const [sending, setSending] = useState(false);
   const fileInputRef = useRef(null);
   const taRef = useRef(null);
+
+  useEffect(() => {
+    if (initialText && !text) {
+      setText(initialText);
+      if (taRef.current) {
+        taRef.current.style.height = 'auto';
+        taRef.current.style.height = Math.min(taRef.current.scrollHeight, 140) + 'px';
+      }
+    }
+  }, [initialText]);
 
   const canSend = (!sending && !uploading) && (text.trim().length > 0 || attachments.length > 0);
 

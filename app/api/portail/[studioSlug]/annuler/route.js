@@ -32,6 +32,13 @@ export async function POST(request, { params }) {
     .eq('studio_slug', studioSlug)
     .single();
 
+  // Récupérer l'email du pro pour reply_to sur les emails élèves
+  let proEmail = null;
+  try {
+    const { data: { user: proUser } } = await supabaseAdmin.auth.admin.getUserById(profile?.id);
+    proEmail = proUser?.email || null;
+  } catch {}
+
   if (!profile) {
     return Response.json({ error: 'Studio introuvable' }, { status: 404 });
   }
@@ -91,7 +98,7 @@ export async function POST(request, { params }) {
     // on promeut le 1er (n°1 par created_at), on lui crée une presence et
     // on lui envoie un email de notification.
     try {
-      await promouvoirListeAttente(supabaseAdmin, profile.id, presence.cours);
+      await promouvoirListeAttente(supabaseAdmin, profile.id, presence.cours, proEmail);
     } catch (promErr) {
       console.error('promotion liste attente (non-blocking):', promErr);
     }
@@ -125,7 +132,7 @@ export async function POST(request, { params }) {
     }
     // Promotion liste d'attente comme pour annulation libre
     try {
-      await promouvoirListeAttente(supabaseAdmin, profile.id, presence.cours);
+      await promouvoirListeAttente(supabaseAdmin, profile.id, presence.cours, proEmail);
     } catch (e) { console.error('promotion (excuse): non-blocking:', e); }
     return Response.json({ ok: true, tardive: true, action: 'excusee' });
   }
@@ -159,7 +166,7 @@ export async function POST(request, { params }) {
         },
       });
     } catch (e) { console.error('annulation (manuel): cas_a_traiter non-bloquant:', e); }
-    try { await promouvoirListeAttente(supabaseAdmin, profile.id, presence.cours); } catch {}
+    try { await promouvoirListeAttente(supabaseAdmin, profile.id, presence.cours, proEmail); } catch {}
     return Response.json({ ok: true, tardive: true, action: 'manuel' });
   }
 
@@ -226,6 +233,7 @@ export async function POST(request, { params }) {
       client,
       type: 'annulation_tardive',
       relatedId: presenceId,
+      proEmail,
       contexte: { date: dateStr, heure: heureStr },
       templates: {
         email: {
@@ -257,7 +265,7 @@ Tu peux retrouver le détail dans ton espace personnel.
 }
 
 // ─── Promotion automatique de la liste d'attente ────────────────────────────
-async function promouvoirListeAttente(supabaseAdmin, profileId, cours) {
+async function promouvoirListeAttente(supabaseAdmin, profileId, cours, proEmail = null) {
   if (!cours?.id) return;
 
   // Cherche le 1er de la liste (par position puis created_at)
@@ -336,6 +344,7 @@ async function promouvoirListeAttente(supabaseAdmin, profileId, cours) {
         : 'la date prévue';
       await resend.emails.send({
         from: process.env.RESEND_FROM_EMAIL || 'IziSolo <bonjour@izisolo.fr>',
+        ...(proEmail ? { reply_to: proEmail } : {}),
         to: nextRow.email,
         subject: `🎉 Une place s'est libérée !`,
         html: `

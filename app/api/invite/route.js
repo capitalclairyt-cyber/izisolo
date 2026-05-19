@@ -4,7 +4,7 @@ import { Resend } from 'resend';
 
 export async function POST(req) {
   try {
-    const { profile } = await requireAuth();
+    const { profile, user } = await requireAuth();
     const body = await req.json();
     const { email, prenom, studioSlug, studioNom, profPrenom } = body;
 
@@ -20,12 +20,13 @@ export async function POST(req) {
     const studio = studioNom || profile.studio_nom || 'mon studio';
     const prof = profPrenom || profile.prenom || '';
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://izisolo.fr';
-    const portailUrl = `${appUrl}/p/${slug}/connexion`;
+    const portailUrl = `${appUrl}/p/${slug}/connexion?email=${encodeURIComponent(email)}`;
     const salutation = prenom ? `Salut ${prenom}` : 'Coucou';
 
     const resend = new Resend(process.env.RESEND_API_KEY);
     await resend.emails.send({
       from: process.env.RESEND_FROM_EMAIL || 'IziSolo <bonjour@izisolo.fr>',
+      reply_to: user.email,
       to: email,
       subject: `Ton espace ${studio}`,
       html: `
