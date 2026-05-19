@@ -183,27 +183,61 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
         </Link>
       )}
 
-      {/* Studio header */}
-      <div className="portail-studio-header">
-        <div className="portail-studio-avatar">
-          {profile.photo_url
-            ? <img src={profile.photo_url} alt={profile.studio_nom} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
-            : <span style={{ fontSize: '2rem' }}>🌿</span>
-          }
-        </div>
-        <div>
-          <h1 className="portail-studio-name">{profile.studio_nom}</h1>
-          <div className="portail-studio-meta">
-            {profile.metier && <span>{profile.metier}</span>}
-            {(profile.ville || profile.code_postal) && (
-              <span className="portail-studio-ville">
-                <MapPin size={12} />
-                {[profile.ville, profile.code_postal].filter(Boolean).join(' · ')}
-              </span>
+      {/* Studio header — hero photo moderne si photo de couverture, sinon header compact */}
+      {profile.photo_couverture ? (
+        <header className="portail-hero">
+          <div className="portail-hero-photo">
+            <img
+              src={profile.photo_couverture}
+              alt=""
+              style={{
+                width: '100%', height: '100%',
+                objectFit: 'cover',
+                objectPosition: `50% ${profile.photo_couverture_focal_y ?? 50}%`,
+              }}
+            />
+            <div className="portail-hero-gradient" aria-hidden="true" />
+          </div>
+          <div className="portail-hero-content">
+            {profile.photo_url && (
+              <div className="portail-hero-avatar">
+                <img src={profile.photo_url} alt={profile.studio_nom} />
+              </div>
             )}
+            <h1 className="portail-hero-name">{profile.studio_nom}</h1>
+            <div className="portail-hero-meta">
+              {profile.metier && <span className="portail-hero-metier">{profile.metier}</span>}
+              {(profile.ville || profile.code_postal) && (
+                <span className="portail-hero-ville">
+                  <MapPin size={13} />
+                  {[profile.ville, profile.code_postal].filter(Boolean).join(' · ')}
+                </span>
+              )}
+            </div>
+          </div>
+        </header>
+      ) : (
+        <div className="portail-studio-header">
+          <div className="portail-studio-avatar">
+            {profile.photo_url
+              ? <img src={profile.photo_url} alt={profile.studio_nom} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+              : <span style={{ fontSize: '2rem' }}>🌿</span>
+            }
+          </div>
+          <div>
+            <h1 className="portail-studio-name">{profile.studio_nom}</h1>
+            <div className="portail-studio-meta">
+              {profile.metier && <span>{profile.metier}</span>}
+              {(profile.ville || profile.code_postal) && (
+                <span className="portail-studio-ville">
+                  <MapPin size={12} />
+                  {[profile.ville, profile.code_postal].filter(Boolean).join(' · ')}
+                </span>
+              )}
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* CTA Cours d'essai (si activé par le pro) */}
       {profile.essai_actif && (
@@ -603,6 +637,88 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
       )}
 
       <style jsx global>{`
+        /* ─── Hero photo : version moderne quand photo_couverture est définie ─ */
+        .portail-hero {
+          position: relative;
+          margin: -16px -16px 28px;
+          border-radius: 0 0 24px 24px;
+          overflow: hidden;
+          isolation: isolate;
+        }
+        .portail-hero-photo {
+          position: relative;
+          width: 100%;
+          aspect-ratio: 16 / 9;
+          background: #1a1a2e;
+        }
+        .portail-hero-photo img {
+          display: block;
+          width: 100%; height: 100%;
+        }
+        .portail-hero-gradient {
+          position: absolute; left: 0; right: 0; bottom: 0;
+          height: 65%;
+          background: linear-gradient(to bottom,
+            transparent 0%,
+            rgba(0,0,0,0.08) 20%,
+            rgba(0,0,0,0.45) 60%,
+            rgba(0,0,0,0.78) 100%);
+          pointer-events: none;
+        }
+        .portail-hero-content {
+          position: absolute;
+          left: 24px; right: 24px; bottom: 22px;
+          color: white;
+          text-shadow: 0 2px 18px rgba(0,0,0,0.35);
+          display: flex; flex-direction: column;
+          gap: 4px;
+        }
+        .portail-hero-avatar {
+          width: 56px; height: 56px;
+          border-radius: 50%;
+          overflow: hidden;
+          border: 3px solid rgba(255,255,255,0.9);
+          margin-bottom: 8px;
+          box-shadow: 0 4px 14px rgba(0,0,0,0.3);
+        }
+        .portail-hero-avatar img {
+          display: block;
+          width: 100%; height: 100%;
+          object-fit: cover;
+        }
+        .portail-hero-name {
+          font-family: 'Instrument Serif', Georgia, serif;
+          font-size: clamp(1.65rem, 6vw, 2.5rem);
+          font-weight: 400;
+          line-height: 1.05;
+          letter-spacing: -0.015em;
+          margin: 0;
+          color: white;
+        }
+        .portail-hero-meta {
+          display: flex; flex-wrap: wrap;
+          align-items: center; gap: 8px 12px;
+          margin-top: 4px;
+          font-size: 0.875rem;
+          opacity: 0.95;
+        }
+        .portail-hero-metier {
+          text-transform: uppercase;
+          letter-spacing: 0.12em;
+          font-size: 0.75rem;
+          font-weight: 600;
+        }
+        .portail-hero-ville {
+          display: inline-flex; align-items: center; gap: 4px;
+          font-size: 0.8125rem;
+          opacity: 0.9;
+        }
+        @media (min-width: 640px) {
+          .portail-hero { margin: -16px 0 32px; border-radius: 24px; }
+          .portail-hero-photo { aspect-ratio: 16 / 7; }
+          .portail-hero-content { left: 32px; right: 32px; bottom: 28px; }
+        }
+
         .portail-studio-header {
           display: flex; align-items: center; gap: 16px;
           margin-bottom: 24px; padding-bottom: 20px;
@@ -821,24 +937,66 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
           margin: 32px 0 12px; padding-left: 2px;
         }
 
-        /* À propos */
+        /* À propos — mise en page éditoriale */
         .portail-about-card {
-          background: white; border-radius: 16px; padding: 20px;
-          box-shadow: 0 1px 6px rgba(0,0,0,0.05);
+          background: white; border-radius: 20px; padding: 28px 24px;
+          box-shadow: 0 2px 16px rgba(70, 35, 25, 0.06);
+          border: 1px solid #f4ede5;
         }
-        .portail-about-bio { font-size: 0.9375rem; color: #1a1a2e; line-height: 1.6; margin: 0 0 12px; }
+        .portail-about-bio {
+          font-size: 1.0625rem;
+          color: #1a1a2e;
+          line-height: 1.65;
+          margin: 0 0 18px;
+          font-weight: 400;
+        }
+        .portail-about-bio:first-letter {
+          font-family: 'Instrument Serif', Georgia, serif;
+          font-size: 2.5em;
+          font-weight: 400;
+          float: left;
+          line-height: 0.9;
+          margin: 6px 8px 0 0;
+          color: #b87333;
+        }
         .portail-about-philo {
-          font-size: 0.9rem; color: #555; line-height: 1.6; margin: 0 0 14px;
-          padding-left: 12px; border-left: 3px solid #d4a0a0;
+          font-family: 'Instrument Serif', Georgia, serif;
+          font-size: 1.25rem;
+          font-style: italic;
+          color: #5a4a3a;
+          line-height: 1.5;
+          margin: 20px 0 18px;
+          padding: 14px 0 14px 18px;
+          border-left: 3px solid #b87333;
+          position: relative;
         }
-        .portail-about-meta { display: flex; flex-wrap: wrap; gap: 8px; }
+        .portail-about-philo::before {
+          content: '“';
+          position: absolute;
+          left: -2px; top: -10px;
+          font-size: 2.5rem;
+          font-family: 'Instrument Serif', Georgia, serif;
+          color: #b87333;
+          opacity: 0.4;
+          line-height: 1;
+        }
+        .portail-about-philo em { font-style: italic; }
+        .portail-about-meta {
+          display: flex; flex-wrap: wrap; gap: 8px;
+          margin-top: 16px;
+          padding-top: 16px;
+          border-top: 1px dashed #f0ebe8;
+        }
         .portail-about-pill {
           display: inline-flex; align-items: center; gap: 6px;
-          background: #faf8f5; border: 1px solid #f0ebe8;
-          border-radius: 99px; padding: 5px 12px;
-          font-size: 0.8125rem; color: #555;
+          background: linear-gradient(135deg, #faf8f5, #fef0dc);
+          border: 1px solid #f0e0c8;
+          border-radius: 99px; padding: 6px 14px;
+          font-size: 0.8125rem;
+          color: #7c4a03;
+          font-weight: 500;
         }
-        .portail-about-pill svg { color: #d4a0a0; flex-shrink: 0; }
+        .portail-about-pill svg { color: #b87333; flex-shrink: 0; }
 
         /* Tarifs publics */
         .portail-prices-grid {

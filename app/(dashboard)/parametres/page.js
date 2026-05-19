@@ -7,7 +7,7 @@ import {
   Plus, X, Trash2, Flower2, Sliders, Crown, Mail, Home,
   Eye, Settings, Zap, Gift, ToggleLeft, ToggleRight, Cake,
   CreditCard, Copy, Check, ExternalLink, AlertCircle, Loader2,
-  Pencil,
+  Pencil, Image as ImageIcon,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase';
 import { useToast } from '@/components/ui/ToastProvider';
@@ -31,6 +31,7 @@ function normalizeUrl(value) {
 // Le composant reste sur disque (./ReglesTab) pour réintégration future.
 import ReglesMetierTab from './ReglesMetierTab';
 import PhotoUploader from '@/components/ui/PhotoUploader';
+import CoverPhotoEditor from '@/components/ui/CoverPhotoEditor';
 import UnsavedChangesGuard from '@/components/ui/UnsavedChangesGuard';
 
 const PALETTES = [
@@ -1204,6 +1205,27 @@ function PagePubliqueSection({ profile, setProfile, setDirty }) {
         </div>
       )}
 
+      {/* Photo de couverture — hero du portail public, avec point focal ajustable */}
+      <div className="form-group">
+        <label className="form-label"><ImageIcon size={14} /> Photo de couverture</label>
+        <CoverPhotoEditor
+          currentUrl={profile?.photo_couverture || null}
+          focalY={profile?.photo_couverture_focal_y ?? 50}
+          studioNom={profile?.studio_nom || ''}
+          metier={profile?.metier || ''}
+          onUploaded={(url) => {
+            setProfile(prev => ({ ...prev, photo_couverture: url }));
+          }}
+          onFocalChange={(y) => {
+            setProfile(prev => ({ ...prev, photo_couverture_focal_y: y }));
+            setDirty(true);
+          }}
+        />
+        <p className="form-hint" style={{ marginTop: 6 }}>
+          Format paysage recommandé (1920×840 ou plus large). Glisse la ligne pour choisir la zone à mettre en avant.
+        </p>
+      </div>
+
       {/* Photo de profil — upload direct via Vercel Blob, resize 1024px côté client */}
       <div className="form-group">
         <label className="form-label"><User size={14} /> Photo de profil</label>
@@ -2150,6 +2172,7 @@ export default function Parametres() {
       // Page publique enrichie (v14)
       photo_url:               profile.photo_url || null,
       photo_couverture:        profile.photo_couverture || null,
+      photo_couverture_focal_y: profile.photo_couverture_focal_y != null ? parseInt(profile.photo_couverture_focal_y) : 50,
       bio:                     profile.bio || null,
       philosophie:             profile.philosophie || null,
       formations:              profile.formations || null,

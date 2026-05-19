@@ -29,7 +29,8 @@ async function getStudioData(studioSlug) {
     .from('profiles')
     .select(`
       id, studio_nom, studio_slug, metier, adresse, code_postal, ville, types_cours,
-      photo_url, photo_couverture, bio, philosophie, formations, annees_experience,
+      photo_url, photo_couverture, photo_couverture_focal_y,
+      bio, philosophie, formations, annees_experience,
       horaires_studio, afficher_tarifs, faq_publique,
       instagram_url, facebook_url, website_url,
       page_publique_draft,
