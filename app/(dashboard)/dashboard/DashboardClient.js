@@ -203,11 +203,12 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
           </div>
         </Link>
 
-        {/* Voir en tant qu'élève — ouvre le portail en mode démo (espace élève
-            simulé avec données fake). Utile pour tester l'expérience UX. */}
+        {/* Voir en tant qu'élève — ouvre la page publique en mode démo,
+            avec un bandeau et un accès à l'espace élève fictif. Permet de
+            tester toute l'expérience UX du portail. */}
         {studioSlug && (
           <a
-            href={`/p/${studioSlug}/espace?demo=1`}
+            href={`/p/${studioSlug}?demo=1`}
             target="_blank"
             rel="noopener noreferrer"
             className="bento-cell bento-cell--info"
@@ -215,7 +216,7 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
             <div className="bento-icon"><Eye size={20} /></div>
             <div>
               <div className="bento-value bento-value--small">Voir en tant qu'</div>
-              <div className="bento-label">élève (espace démo)</div>
+              <div className="bento-label">élève (démo)</div>
             </div>
           </a>
         )}

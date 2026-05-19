@@ -142,12 +142,25 @@ export default async function PortailPage({ params, searchParams }) {
   // simuler ce que verrait un visiteur après publication.
   let profile = data.profile;
   let isPreview = false;
+  let isDemo = false;
   if (sp?.preview === '1') {
     const supabase = await createServerClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (user && user.id === profile.id && profile.page_publique_draft) {
       profile = { ...profile, ...profile.page_publique_draft };
       isPreview = true;
+    }
+  }
+
+  // Mode démo : si ?demo=1 ET le visiteur est le pro du studio, on affiche
+  // un bandeau "Mode démo" pour signaler que l'on visite son propre portail
+  // avec un compte fictif. Permet de voir toute l'expérience UX (hero + cours
+  // + tarifs) avant d'aller dans l'espace démo.
+  if (sp?.demo === '1') {
+    const supabase = await createServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user && user.id === profile.id) {
+      isDemo = true;
     }
   }
 
@@ -160,6 +173,7 @@ export default async function PortailPage({ params, searchParams }) {
       sondageActif={data.sondageActif}
       studioSlug={studioSlug}
       isPreview={isPreview}
+      isDemo={isDemo}
     />
   );
 }

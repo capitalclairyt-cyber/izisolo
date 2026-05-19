@@ -68,7 +68,9 @@ function PlacesBadge({ capacite, inscrits }) {
   return <span className="portail-tag portail-tag-green">Places disponibles</span>;
 }
 
-export default function PortailHome({ profile, cours, offresStripe = [], offresPubliques = [], sondageActif = null, studioSlug, isPreview = false }) {
+export default function PortailHome({ profile, cours, offresStripe = [], offresPubliques = [], sondageActif = null, studioSlug, isPreview = false, isDemo = false }) {
+  // Suffixe de query pour préserver le mode demo dans les liens internes
+  const demoQS = isDemo ? '?demo=1' : '';
   const hasAbout = !!(profile.bio || profile.philosophie || profile.formations || profile.annees_experience);
   const hasSocial = !!(profile.instagram_url || profile.facebook_url || profile.website_url);
   const faq = Array.isArray(profile.faq_publique) ? profile.faq_publique.filter(f => f?.q && f?.a) : [];
@@ -229,10 +231,44 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
         </div>
       )}
 
+      {isDemo && (
+        <div style={{
+          background: 'linear-gradient(135deg, #fefaf5, #fef0dc)',
+          border: '1.5px solid #f0c897',
+          borderRadius: 12,
+          padding: '14px 16px',
+          marginBottom: 18,
+          display: 'flex', alignItems: 'center', gap: 14,
+          fontSize: '0.875rem', color: '#7c4a03', lineHeight: 1.4,
+          flexWrap: 'wrap',
+        }}>
+          <span style={{ fontSize: '1.4rem' }}>👁️</span>
+          <div style={{ flex: 1, minWidth: 200 }}>
+            <strong>Mode démo</strong> — tu visites ton portail comme une élève.
+            <span style={{ fontWeight: 400, opacity: 0.85 }}> Réserve un cours pour tester, ou ouvre l'espace élève fictif (Camille, carnet 10 séances).</span>
+          </div>
+          <Link
+            href={`/p/${studioSlug}/espace?demo=1`}
+            style={{
+              padding: '8px 16px',
+              background: '#b87333',
+              color: 'white',
+              borderRadius: 99,
+              fontSize: '0.8125rem',
+              fontWeight: 600,
+              textDecoration: 'none',
+              flexShrink: 0,
+            }}
+          >
+            Voir l'espace démo →
+          </Link>
+        </div>
+      )}
+
       {/* Bandeau sondage actif */}
       {sondageActif && (
         <Link
-          href={`/p/${studioSlug}/sondage/${sondageActif.slug}`}
+          href={`/p/${studioSlug}/sondage/${sondageActif.slug}${demoQS}`}
           style={{
             display: 'flex', alignItems: 'center', gap: 12,
             padding: '12px 14px', borderRadius: 14, marginBottom: 16,
@@ -266,7 +302,7 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
 
       {/* Bloc "Prochain cours" — conversion immédiate, calculé live */}
       {prochainCours && (
-        <Link href={`/p/${studioSlug}/cours/${prochainCours.id}`} className="portail-next-cours reveal">
+        <Link href={`/p/${studioSlug}/cours/${prochainCours.id}${demoQS}`} className="portail-next-cours reveal">
           <div className="portail-next-cours-eyebrow">Prochain cours</div>
           <div className="portail-next-cours-body">
             <div className="portail-next-cours-main">
@@ -299,7 +335,7 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
 
       {/* CTA Cours d'essai (si activé par le pro) */}
       {profile.essai_actif && (
-        <Link href={`/p/${studioSlug}/essai`} className="portail-essai-cta">
+        <Link href={`/p/${studioSlug}/essai${demoQS}`} className="portail-essai-cta">
           <div className="portail-essai-cta-icon">✨</div>
           <div className="portail-essai-cta-body">
             <div className="portail-essai-cta-title">
@@ -456,7 +492,7 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
                 return (
                   <Link
                     key={c.id}
-                    href={`/p/${studioSlug}/cours/${c.id}`}
+                    href={`/p/${studioSlug}/cours/${c.id}${demoQS}`}
                     className={`portail-cours-card portail-cours-card--${tone} ${complet ? 'complet' : ''}`}
                   >
                     <div className="portail-cours-info">
@@ -507,7 +543,7 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
             return (
               <Link
                 key={c.id}
-                href={`/p/${studioSlug}/cours/${c.id}`}
+                href={`/p/${studioSlug}/cours/${c.id}${demoQS}`}
                 className={`portail-cours-card portail-cours-card--${tone} ${complet ? 'complet' : ''}`}
               >
                 <div className="portail-cours-info">
