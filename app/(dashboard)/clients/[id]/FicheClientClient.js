@@ -109,7 +109,7 @@ function AssignerOffreModal({ client, onClose, onSuccess }) {
     setStep('paiement');
   };
 
-  const handleConfirm = async ({ montant, modePaiement, notes, multiVersement, versements }) => {
+  const handleConfirm = async ({ montant, modePaiement, notes, numeroCheque, multiVersement, versements }) => {
     if (!selectedOffre) return;
     setSubmitting(true);
     try {
@@ -153,6 +153,7 @@ function AssignerOffreModal({ client, onClose, onSuccess }) {
           mode: i === 0 ? modePaiement : null,
           date: v.date,
           notes: i === 0 ? (notes || null) : null,
+          ...(i === 0 && numeroCheque ? { numero_cheque: numeroCheque } : {}),
         }));
         const { error: payErr } = await supabase.from('paiements').insert(rows);
         if (payErr) throw payErr;
@@ -169,6 +170,7 @@ function AssignerOffreModal({ client, onClose, onSuccess }) {
           mode: modePaiement,
           date: today,
           notes: notes || null,
+          ...(numeroCheque ? { numero_cheque: numeroCheque } : {}),
         });
         if (payErr) throw payErr;
       }
@@ -295,6 +297,7 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
   const [encaisserModal, setEncaisserModal] = useState(null);
   const [encaisserMode, setEncaisserMode] = useState('especes');
   const [encaisserNotes, setEncaisserNotes] = useState('');
+  const [encaisserCheque, setEncaisserCheque] = useState('');
   const [encaisserLoading, setEncaisserLoading] = useState(false);
 
   const [editPayModal, setEditPayModal] = useState(null);
@@ -340,6 +343,7 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
       mode: p.mode || 'especes',
       date: p.date || '',
       notes: p.notes || '',
+      numero_cheque: p.numero_cheque || '',
       statut: p.statut || 'pending',
     });
   };
@@ -356,6 +360,7 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
           mode: editPayForm.mode,
           date: editPayForm.date,
           notes: editPayForm.notes || null,
+          numero_cheque: editPayForm.numero_cheque || null,
           statut: editPayForm.statut,
         }),
       });
@@ -363,7 +368,7 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
       if (!res.ok) throw new Error(json.error || 'Erreur');
       setPaiements(prev => prev.map(p =>
         p.id === editPayModal.id
-          ? { ...p, montant: parseFloat(editPayForm.montant), mode: editPayForm.mode, date: editPayForm.date, notes: editPayForm.notes, statut: editPayForm.statut }
+          ? { ...p, montant: parseFloat(editPayForm.montant), mode: editPayForm.mode, date: editPayForm.date, notes: editPayForm.notes, numero_cheque: editPayForm.numero_cheque, statut: editPayForm.statut }
           : p
       ));
       toast.success('Paiement modifié');
@@ -409,7 +414,7 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
       const res = await fetch(`/api/paiements/${encaisserModal.id}/encaisser`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mode: encaisserMode, ...(encaisserNotes.trim() ? { notes: encaisserNotes.trim() } : {}) }),
+        body: JSON.stringify({ mode: encaisserMode, ...(encaisserNotes.trim() ? { notes: encaisserNotes.trim() } : {}), ...(encaisserCheque.trim() ? { numero_cheque: encaisserCheque.trim() } : {}) }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Erreur');
@@ -500,6 +505,7 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
 
   const [editAboModal, setEditAboModal] = useState(null);
   const [editAboStatut, setEditAboStatut] = useState('actif');
+  const [editAboDateDebut, setEditAboDateDebut] = useState('');
   const [editAboDateFin, setEditAboDateFin] = useState('');
   const [editAboSeances, setEditAboSeances] = useState('');
   const [editAboSubmitting, setEditAboSubmitting] = useState(false);
@@ -507,6 +513,7 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
   const openEditAbo = (abo) => {
     setEditAboModal(abo);
     setEditAboStatut(abo.statut || 'actif');
+    setEditAboDateDebut(abo.date_debut || '');
     setEditAboDateFin(abo.date_fin || '');
     setEditAboSeances(abo.seances_total != null ? String(abo.seances_total) : '');
   };
@@ -516,6 +523,7 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
     setEditAboSubmitting(true);
     try {
       const body = { statut: editAboStatut };
+      body.date_debut = editAboDateDebut || null;
       if (editAboDateFin) body.date_fin = editAboDateFin;
       else body.date_fin = null;
       if (editAboSeances !== '') body.seances_total = parseInt(editAboSeances, 10);
@@ -539,6 +547,7 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
   const [versementModal, setVersementModal] = useState(null);
   const [versementMontant, setVersementMontant] = useState('');
   const [versementMode, setVersementMode] = useState('especes');
+  const [versementCheque, setVersementCheque] = useState('');
   const [versementDate, setVersementDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [versementSubmitting, setVersementSubmitting] = useState(false);
 
@@ -561,6 +570,7 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
         statut: 'pending',
         mode: versementMode,
         date: versementDate,
+        ...(versementCheque.trim() ? { numero_cheque: versementCheque.trim() } : {}),
       });
       if (payErr) throw payErr;
       const { data: pays } = await supabase
@@ -1038,6 +1048,13 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
                 ))}
               </div>
 
+              {versementMode === 'cheque' && (
+                <>
+                  <div className="paiement-section-label">N° de chèque</div>
+                  <input className="izi-input" type="text" value={versementCheque} onChange={e => setVersementCheque(e.target.value)} placeholder="Ex : 0012345" />
+                </>
+              )}
+
               <div className="paiement-section-label">Montant</div>
               <div className="montant-row">
                 <input
@@ -1119,6 +1136,14 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
                 </>
               )}
 
+              <div className="paiement-section-label">Date de début</div>
+              <input
+                className="izi-input"
+                type="date"
+                value={editAboDateDebut}
+                onChange={e => setEditAboDateDebut(e.target.value)}
+              />
+
               <div className="paiement-section-label">Date de fin</div>
               <input
                 className="izi-input"
@@ -1170,13 +1195,20 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
                 ))}
               </div>
 
+              {encaisserMode === 'cheque' && (
+                <>
+                  <div className="paiement-section-label">N° de chèque</div>
+                  <input className="izi-input" type="text" value={encaisserCheque} onChange={e => setEncaisserCheque(e.target.value)} placeholder="Ex : 0012345" />
+                </>
+              )}
+
               <div className="paiement-section-label">Notes (optionnel)</div>
               <input
                 className="izi-input"
                 type="text"
                 value={encaisserNotes}
                 onChange={e => setEncaisserNotes(e.target.value)}
-                placeholder="N° chèque, référence virement..."
+                placeholder="Référence virement, remarque..."
               />
 
               <button
@@ -1232,6 +1264,13 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
                   </button>
                 ))}
               </div>
+
+              {editPayForm.mode === 'cheque' && (
+                <>
+                  <div className="paiement-section-label">N° de chèque</div>
+                  <input className="izi-input" type="text" value={editPayForm.numero_cheque} onChange={e => setEditPayForm(f => ({ ...f, numero_cheque: e.target.value }))} placeholder="Ex : 0012345" />
+                </>
+              )}
 
               <div className="paiement-section-label">Date</div>
               <input

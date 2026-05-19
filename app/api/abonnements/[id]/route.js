@@ -4,6 +4,7 @@ import { parseJsonBody } from '@/lib/validation';
 
 const updateSchema = z.object({
   statut: z.enum(['actif', 'suspendu', 'expire', 'resilie']).optional(),
+  date_debut: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Format YYYY-MM-DD attendu').nullable().optional(),
   date_fin: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Format YYYY-MM-DD attendu').nullable().optional(),
   seances_total: z.number().int().min(0).nullable().optional(),
   seances_utilisees: z.number().int().min(0).optional(),
@@ -34,6 +35,7 @@ export async function PATCH(request, { params }) {
 
   const update = {};
   if (data.statut !== undefined) update.statut = data.statut;
+  if (data.date_debut !== undefined) update.date_debut = data.date_debut;
   if (data.date_fin !== undefined) update.date_fin = data.date_fin;
   if (data.seances_total !== undefined) update.seances_total = data.seances_total;
   if (data.seances_utilisees !== undefined) update.seances_utilisees = data.seances_utilisees;

@@ -48,6 +48,7 @@ export default function PaiementStep({
 }) {
   const [montant, setMontant] = useState(isLibre ? '' : String(offrePrix || ''));
   const [modePaiement, setModePaiement] = useState('especes');
+  const [numeroCheque, setNumeroCheque] = useState('');
   const [notes, setNotes] = useState('');
   const [multiVersement, setMultiVersement] = useState(false);
   const [nbVersements, setNbVersements] = useState(3);
@@ -89,6 +90,7 @@ export default function PaiementStep({
       montant: parseFloat(montant),
       modePaiement,
       notes: notes.trim() || null,
+      numeroCheque: numeroCheque.trim() || null,
       multiVersement,
       versements,
     });
@@ -134,6 +136,13 @@ export default function PaiementStep({
           <span className="soon-badge">Bientôt</span>
         </button>
       </div>
+
+      {modePaiement === 'cheque' && (
+        <>
+          <div className="paiement-section-label">N° de chèque</div>
+          <input className="izi-input" type="text" value={numeroCheque} onChange={e => setNumeroCheque(e.target.value)} placeholder="Ex : 0012345" />
+        </>
+      )}
 
       <div className="paiement-section-label">Montant total</div>
       <div className="montant-row">

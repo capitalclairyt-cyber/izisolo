@@ -8,6 +8,7 @@ const updateSchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Format YYYY-MM-DD attendu').optional(),
   date_encaissement: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Format YYYY-MM-DD attendu').nullable().optional(),
   notes: z.string().trim().max(500).nullable().optional(),
+  numero_cheque: z.string().trim().max(100).nullable().optional(),
   statut: z.enum(['paid', 'pending', 'overdue']).optional(),
 });
 
@@ -40,6 +41,7 @@ export async function PATCH(request, { params }) {
   if (data.date !== undefined) update.date = data.date;
   if (data.date_encaissement !== undefined) update.date_encaissement = data.date_encaissement;
   if (data.notes !== undefined) update.notes = data.notes;
+  if (data.numero_cheque !== undefined) update.numero_cheque = data.numero_cheque;
   if (data.statut !== undefined) update.statut = data.statut;
 
   if (Object.keys(update).length === 0) {

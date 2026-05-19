@@ -6,6 +6,7 @@ const encaisserSchema = z.object({
   mode: z.enum(['especes', 'cheque', 'virement', 'CB']),
   date_encaissement: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Format YYYY-MM-DD attendu').optional(),
   notes: z.string().trim().max(500).optional(),
+  numero_cheque: z.string().trim().max(100).nullable().optional(),
 });
 
 export async function POST(request, { params }) {
@@ -21,7 +22,7 @@ export async function POST(request, { params }) {
   if (errorResponse) return errorResponse;
 
   const today = new Date().toISOString().slice(0, 10);
-  const { mode, date_encaissement = today, notes } = data;
+  const { mode, date_encaissement = today, notes, numero_cheque } = data;
 
   // Vérifier que le paiement appartient bien au profile
   const { data: paiement, error: fetchErr } = await supabase
@@ -51,6 +52,7 @@ export async function POST(request, { params }) {
       mode,
       date_encaissement,
       notes: mergedNotes,
+      ...(numero_cheque !== undefined && { numero_cheque }),
     })
     .eq('id', id)
     .eq('profile_id', user.id);
