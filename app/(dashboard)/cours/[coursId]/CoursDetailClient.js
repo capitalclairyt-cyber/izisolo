@@ -22,6 +22,43 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
   const [loading, setLoading] = useState(false);
   const [showDeleteModal, setShowDeleteModal]     = useState(false);
   const [deleteScope, setDeleteScope]             = useState('single');
+  const [promotingId, setPromotingId]             = useState(null);
+
+  // Places disponibles pour proposer la promotion depuis la liste d'attente
+  const placesDispos = cours.capacite_max != null
+    ? Math.max(0, cours.capacite_max - presences.length)
+    : null;
+
+  const promouvoirEntree = async (entryId) => {
+    setPromotingId(entryId);
+    try {
+      const res = await fetch(`/api/liste-attente/${entryId}/promouvoir`, { method: 'POST' });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Erreur');
+      toast.success('Personne promue — email envoyé');
+      router.refresh();
+    } catch (e) {
+      toast.error(e.message);
+    } finally {
+      setPromotingId(null);
+    }
+  };
+
+  const retirerEntree = async (entryId, nom) => {
+    if (!confirm(`Retirer ${nom || 'cette personne'} de la liste d'attente ?`)) return;
+    setPromotingId(entryId);
+    try {
+      const res = await fetch(`/api/liste-attente/${entryId}/promouvoir`, { method: 'DELETE' });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Erreur');
+      toast.success('Personne retirée');
+      router.refresh();
+    } catch (e) {
+      toast.error(e.message);
+    } finally {
+      setPromotingId(null);
+    }
+  };
 
   // ---- Modification de la récurrence ----
   const [showRecurrenceEdit, setShowRecurrenceEdit] = useState(false);
@@ -607,13 +644,30 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
                     {entry.telephone && <> · <a href={`tel:${entry.telephone}`} style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}>{entry.telephone}</a></>}
                   </div>
                 </div>
-                <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
                   {entry.notified_at ? (
                     <span style={{
                       padding: '3px 9px', borderRadius: 99,
                       fontSize: '0.6875rem', fontWeight: 600,
                       background: 'var(--success-light)', color: 'var(--success)',
                     }}>Notifié·e</span>
+                  ) : placesDispos > 0 ? (
+                    <button
+                      type="button"
+                      onClick={() => promouvoirEntree(entry.id)}
+                      disabled={promotingId === entry.id}
+                      style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 4,
+                        padding: '5px 10px', borderRadius: 8,
+                        background: 'var(--brand)', color: 'white',
+                        border: '1.5px solid var(--brand)',
+                        fontSize: '0.6875rem', fontWeight: 600,
+                        cursor: 'pointer',
+                      }}
+                      title="Donner la place + envoyer email"
+                    >
+                      {promotingId === entry.id ? '...' : <><Send size={11} /> Promouvoir</>}
+                    </button>
                   ) : (
                     <span style={{
                       padding: '3px 9px', borderRadius: 99,
@@ -621,10 +675,34 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
                       background: 'var(--cream-dark)', color: 'var(--text-secondary)',
                     }}>En attente</span>
                   )}
+                  {!entry.notified_at && (
+                    <button
+                      type="button"
+                      onClick={() => retirerEntree(entry.id, entry.nom)}
+                      disabled={promotingId === entry.id}
+                      style={{
+                        padding: 5,
+                        background: 'transparent',
+                        border: '1.5px solid var(--border)',
+                        borderRadius: 8,
+                        color: 'var(--text-muted)',
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                      }}
+                      title="Retirer de la liste d'attente"
+                    >
+                      <Trash2 size={11} />
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
           </div>
+          {placesDispos > 0 && listeAttente.some(e => !e.notified_at) && (
+            <p style={{ fontSize: '0.75rem', color: '#7c4a03', margin: '10px 0 0', background: '#fef3c7', padding: '6px 10px', borderRadius: 6 }}>
+              💡 {placesDispos} place{placesDispos > 1 ? 's' : ''} libre{placesDispos > 1 ? 's' : ''} — pense à promouvoir les personnes en attente.
+            </p>
+          )}
         </div>
       )}
 

@@ -36,7 +36,7 @@ function formatDateFr(dateStr) {
 // Composant principal
 // ═══════════════════════════════════════════════════
 export default function CoursEventsClient({
-  profile, recurrences, ponctuels, lieux, coursRecurrents, todayStr
+  profile, recurrences, ponctuels, lieux, coursRecurrents, todayStr, listeAttenteByCours = {}
 }) {
   const { toast } = useToast();
   const [onglet, setOnglet] = useState('recurrents');
@@ -225,7 +225,7 @@ export default function CoursEventsClient({
                 href="/cours/nouveau"
               />
             ) : (
-              <PonctuelsList ponctuels={ponctuels} lieuxMap={lieuxMap} />
+              <PonctuelsList ponctuels={ponctuels} lieuxMap={lieuxMap} listeAttenteByCours={listeAttenteByCours} />
             )}
           </div>
         )}
@@ -240,12 +240,12 @@ export default function CoursEventsClient({
 // ═══════════════════════════════════════════════════
 // Liste paginée des événements ponctuels (8/page)
 // ═══════════════════════════════════════════════════
-function PonctuelsList({ ponctuels, lieuxMap }) {
+function PonctuelsList({ ponctuels, lieuxMap, listeAttenteByCours = {} }) {
   const { paginated, currentPage, totalPages, setPage } = usePagination(ponctuels, 8);
   return (
     <>
       {paginated.map(cours => (
-        <PonctuelCard key={cours.id} cours={cours} lieuxMap={lieuxMap} />
+        <PonctuelCard key={cours.id} cours={cours} lieuxMap={lieuxMap} nbEnAttente={listeAttenteByCours[cours.id] || 0} />
       ))}
       <Pagination
         currentPage={currentPage}
@@ -660,7 +660,7 @@ function SerieCard({ serie, stats, lieuxMap }) {
 // ═══════════════════════════════════════════════════
 // Carte cours ponctuel
 // ═══════════════════════════════════════════════════
-function PonctuelCard({ cours: c, lieuxMap }) {
+function PonctuelCard({ cours: c, lieuxMap, nbEnAttente = 0 }) {
   const lieuNom    = c.lieu_id ? lieuxMap[c.lieu_id] : c.lieu;
   const nbInscrits = c.presences?.[0]?.count || 0;
 
@@ -703,6 +703,11 @@ function PonctuelCard({ cours: c, lieuxMap }) {
             )}
             {c.capacite_max && (
               <span className="ce-stat">{nbInscrits}/{c.capacite_max} places</span>
+            )}
+            {nbEnAttente > 0 && (
+              <span className="ce-stat ce-stat-waiting" title="Personnes en liste d'attente">
+                <Clock size={12} /> {nbEnAttente} en attente
+              </span>
             )}
           </div>
           <span className="ce-card-voir">Voir <ChevronRight size={14} /></span>
@@ -995,6 +1000,11 @@ function CeStyles() {
       .ce-card-stats { display: flex; flex-wrap: wrap; gap: 10px; }
       .ce-stat { display: inline-flex; align-items: center; gap: 4px; font-size: 0.8125rem; color: var(--text-muted); }
       .ce-stat strong { color: var(--text-primary); }
+      .ce-stat-waiting {
+        background: #fef3c7; color: #92400e;
+        padding: 2px 8px; border-radius: 99px;
+        font-weight: 600; font-size: 0.75rem;
+      }
       .ce-card-voir { display: flex; align-items: center; gap: 2px; font-size: 0.8125rem; font-weight: 600; color: var(--brand); flex-shrink: 0; white-space: nowrap; }
 
       /* Bouton modifier */

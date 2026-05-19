@@ -14,6 +14,7 @@ export default async function CoursPage() {
     { data: ponctuels },
     { data: lieux },
     { data: coursRecurrents },
+    { data: laEntries },
   ] = await Promise.all([
     supabase.from('profiles').select('types_cours, metier').eq('id', user.id).single(),
 
@@ -48,7 +49,19 @@ export default async function CoursPage() {
       .gte('date', todayStr)
       .eq('est_annule', false)
       .order('date'),
+
+    // Liste d'attente : compter par cours (non notifiées uniquement)
+    supabase.from('liste_attente')
+      .select('cours_id, notified_at')
+      .eq('profile_id', user.id)
+      .is('notified_at', null),
   ]);
+
+  // Compter les entrées liste d'attente par cours_id
+  const laByCours = {};
+  for (const e of (laEntries || [])) {
+    laByCours[e.cours_id] = (laByCours[e.cours_id] || 0) + 1;
+  }
 
   return (
     <CoursEventsClient
@@ -58,6 +71,7 @@ export default async function CoursPage() {
       lieux={lieux || []}
       coursRecurrents={coursRecurrents || []}
       todayStr={todayStr}
+      listeAttenteByCours={laByCours}
     />
   );
 }

@@ -27,7 +27,7 @@ const VUES = [
 // ============================================
 // Composant principal
 // ============================================
-export default function AgendaClient({ cours: initialCours, profile, initialDate }) {
+export default function AgendaClient({ cours: initialCours, profile, initialDate, listeAttenteByCours = {} }) {
   const searchParams = useSearchParams();
   // Permet aux liens externes (ex: dashboard "Séances aujourd'hui") de
   // forcer la vue jour via /agenda?vue=jour. Default = semaine.
@@ -416,7 +416,7 @@ function VueJour({ dateRef, cours, todayStr, onCoursMaj }) {
         </div>
       ) : (
         <div className="cours-list">
-          {coursDuJour.map(c => <CoursCard key={c.id} cours={c} todayStr={todayStr} onCoursMaj={onCoursMaj} />)}
+          {coursDuJour.map(c => <CoursCard key={c.id} cours={c} todayStr={todayStr} onCoursMaj={onCoursMaj} nbEnAttente={listeAttenteByCours[c.id] || 0} />)}
         </div>
       )}
     </div>
@@ -527,7 +527,7 @@ function CoursChip({ cours: c, todayStr }) {
 // ============================================
 // CARTE complète (vue jour)
 // ============================================
-function CoursCard({ cours: c, todayStr, onCoursMaj }) {
+function CoursCard({ cours: c, todayStr, onCoursMaj, nbEnAttente = 0 }) {
   const [confirmAnnul, setConfirmAnnul] = useState(false);
   const [annulant, setAnnulant]         = useState(false);
 
@@ -580,6 +580,11 @@ function CoursCard({ cours: c, todayStr, onCoursMaj }) {
         <div className="card-footer">
           <span className="card-inscrits">
             {nbInscrits > 0 && <><Users size={14} /> {nbInscrits}</>}
+            {nbEnAttente > 0 && (
+              <span className="card-en-attente" title={`${nbEnAttente} personne${nbEnAttente > 1 ? 's' : ''} en liste d'attente`}>
+                <Clock size={11} /> +{nbEnAttente}
+              </span>
+            )}
           </span>
           <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
             {!c.est_annule && (
@@ -1088,9 +1093,20 @@ function AgendaStyles() {
       .card-inscrits {
         display: flex;
         align-items: center;
-        gap: 4px;
+        gap: 8px;
         font-size: 0.8125rem;
         color: var(--text-muted);
+      }
+      .card-en-attente {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        padding: 2px 7px;
+        background: #fef3c7;
+        color: #92400e;
+        border-radius: 99px;
+        font-size: 0.6875rem;
+        font-weight: 700;
       }
       .pointer-btn {
         display: flex;
