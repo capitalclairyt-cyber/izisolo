@@ -311,7 +311,7 @@ function AssignerClientModal({ offre, onClose, onSuccess }) {
                 <div className="multi-nb-row">
                   <div className="paiement-section-label">Nombre de versements</div>
                   <div className="multi-nb-chips">
-                    {[2, 3, 4, 5, 6].map(n => (
+                    {[2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => (
                       <button key={n} type="button" className={`multi-nb-chip ${nbVersements === n ? 'active' : ''}`} onClick={() => changeNbVersements(n)}>
                         {n}x
                       </button>
