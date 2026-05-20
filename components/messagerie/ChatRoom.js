@@ -5,6 +5,7 @@ import MessageBubble, { DateSeparator } from './MessageBubble';
 import ChatInput from './ChatInput';
 import { Loader2, Pencil, Check, X } from 'lucide-react';
 import { createClient } from '@/lib/supabase';
+import { useToast } from '@/components/ui/ToastProvider';
 
 /**
  * ChatRoom — affiche les messages d'une conversation + input.
@@ -23,6 +24,7 @@ function isSameDay(a, b) {
 }
 
 export default function ChatRoom({ conversationId, viewerKind, onMessageSent, initialText = '' }) {
+  const { toast } = useToast();
   const [messages, setMessages] = useState([]);
   const [reactionsByMsg, setReactionsByMsg] = useState({}); // { msgId: [{ emoji, mine }] }
   const [conv, setConv]         = useState(null); // {peer_label, titre, is_owner_pro}
@@ -104,6 +106,9 @@ export default function ChatRoom({ conversationId, viewerKind, onMessageSent, in
   }, [messages, fetchReactions]);
 
   const handleReact = async (messageId, emoji) => {
+    // Snapshot avant pour rollback éventuel
+    const previousState = reactionsByMsg[messageId] || [];
+
     // Optimistic update : toggle local
     setReactionsByMsg(prev => {
       const existing = prev[messageId] || [];
@@ -115,15 +120,34 @@ export default function ChatRoom({ conversationId, viewerKind, onMessageSent, in
       }
       return { ...prev, [messageId]: [...existing, { emoji, mine: true }] };
     });
+
     try {
-      await fetch(`/api/messagerie/messages/${messageId}/reactions`, {
+      const res = await fetch(`/api/messagerie/messages/${messageId}/reactions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ emoji }),
       });
+      if (!res.ok) {
+        // Rollback : restaure l'état précédent + toast d'erreur
+        setReactionsByMsg(prev => ({ ...prev, [messageId]: previousState }));
+        let errMsg = 'Erreur sur la réaction';
+        try {
+          const json = await res.json();
+          if (json?.error) errMsg = json.error;
+          // Détection d'une migration manquante (table absente)
+          if (/relation.*does not exist|messages_reactions/i.test(json?.error || '')) {
+            errMsg = 'Les réactions ne sont pas encore activées (migration v48 à appliquer).';
+          }
+        } catch { /* response non JSON */ }
+        toast.error(errMsg);
+        return;
+      }
       // Refetch pour la source de vérité
       fetchReactions([messageId]);
-    } catch { /* silencieux */ }
+    } catch (err) {
+      setReactionsByMsg(prev => ({ ...prev, [messageId]: previousState }));
+      toast.error('Connexion impossible — réessaie dans un instant.');
+    }
   };
 
   // Initial load + mark as read

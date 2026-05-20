@@ -70,16 +70,35 @@ export async function POST(request, { params }) {
       .from('messages_reactions')
       .delete()
       .eq('id', existing.id);
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) {
+      return NextResponse.json({ error: humanizeReactionError(error) }, { status: 500 });
+    }
     return NextResponse.json({ ok: true, action: 'removed' });
   }
 
   const { error: insertErr } = await supabase
     .from('messages_reactions')
     .insert({ message_id: messageId, user_type: userType, user_id: userId, emoji });
-  if (insertErr) return NextResponse.json({ error: insertErr.message }, { status: 500 });
+  if (insertErr) {
+    return NextResponse.json({ error: humanizeReactionError(insertErr) }, { status: 500 });
+  }
 
   return NextResponse.json({ ok: true, action: 'added' });
+}
+
+// Transforme les erreurs Postgres techniques en messages parlants
+function humanizeReactionError(err) {
+  if (!err) return 'Erreur inconnue';
+  const msg = err.message || String(err);
+  // 42P01 = relation does not exist → migration manquante
+  if (err.code === '42P01' || /relation.*does not exist|messages_reactions.*not.*exist/i.test(msg)) {
+    return 'Les réactions ne sont pas encore activées (migration v48 à appliquer en base).';
+  }
+  // 42501 = permission denied → RLS bloque
+  if (err.code === '42501' || /permission denied|row-level security/i.test(msg)) {
+    return 'Tu n\'as pas le droit de réagir à ce message.';
+  }
+  return msg;
 }
 
 /**
