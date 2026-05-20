@@ -252,7 +252,7 @@ export default function ChatRoom({ conversationId, viewerKind, onMessageSent, in
         </div>
       )}
 
-      <div ref={scrollRef} className="cr-scroll">
+      <div ref={scrollRef} className={`cr-scroll ${messages.length === 0 ? 'is-empty' : ''}`}>
         {messages.length === 0 ? (
           <div className="cr-empty">
             <div>Aucun message pour le moment.</div>
@@ -331,8 +331,15 @@ export default function ChatRoom({ conversationId, viewerKind, onMessageSent, in
           padding: 12px;
           background: var(--bg-card);
         }
+        /* Quand pas de messages : empty state ancré en bas (proche de l'input)
+           au lieu d'être collé en haut. Pattern type WhatsApp/Slack. */
+        .cr-scroll.is-empty {
+          display: flex;
+          flex-direction: column;
+          justify-content: flex-end;
+        }
         .cr-empty {
-          text-align: center; padding: 40px 20px;
+          text-align: center; padding: 16px 20px 8px;
           color: var(--text-muted); font-size: 0.875rem;
         }
         .cr-empty-sub { font-size: 0.75rem; margin-top: 4px; opacity: 0.7; }

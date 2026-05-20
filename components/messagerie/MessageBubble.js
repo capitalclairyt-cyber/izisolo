@@ -11,7 +11,7 @@
  *   showAvatar : bool
  */
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { Calendar, Package, BookOpen, FileText, Check, CheckCheck, Smile, Plus } from 'lucide-react';
 
@@ -60,6 +60,23 @@ export default function MessageBubble({ message, viewerKind, showAvatar = false,
              || (viewerKind === 'eleve' && message.sender_type === 'eleve');
   const isSystem = message.sender_type === 'system';
   const [showPicker, setShowPicker] = useState(false);
+  const reactWrapRef = useRef(null);
+
+  // Fermer le picker au click extérieur OU touch (mobile-friendly)
+  useEffect(() => {
+    if (!showPicker) return;
+    const handler = (e) => {
+      if (reactWrapRef.current && !reactWrapRef.current.contains(e.target)) {
+        setShowPicker(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    document.addEventListener('touchstart', handler, { passive: true });
+    return () => {
+      document.removeEventListener('mousedown', handler);
+      document.removeEventListener('touchstart', handler);
+    };
+  }, [showPicker]);
 
   // Grouper les réactions par emoji avec compteurs
   const groupedReactions = reactions.reduce((acc, r) => {
@@ -131,30 +148,32 @@ export default function MessageBubble({ message, viewerKind, showAvatar = false,
           )}
         </div>
 
-        {/* Bouton + qui ouvre le quick reaction picker (apparaît au hover desktop) */}
+        {/* Bouton + picker quick reactions — wrap pour click-outside */}
         {onReact && (
-          <button
-            type="button"
-            className="msg-react-btn"
-            onClick={() => setShowPicker(s => !s)}
-            aria-label="Réagir"
-            title="Réagir"
-          >
-            <Smile size={13} />
-          </button>
-        )}
-        {showPicker && (
-          <div className="msg-react-picker" onMouseLeave={() => setShowPicker(false)}>
-            {QUICK_REACTIONS.map(e => (
-              <button
-                key={e}
-                type="button"
-                className="msg-react-emoji"
-                onClick={() => { onReact?.(e); setShowPicker(false); }}
-              >
-                {e}
-              </button>
-            ))}
+          <div className="msg-react-wrap" ref={reactWrapRef}>
+            <button
+              type="button"
+              className="msg-react-btn"
+              onClick={() => setShowPicker(s => !s)}
+              aria-label="Réagir"
+              title="Réagir"
+            >
+              <Smile size={13} />
+            </button>
+            {showPicker && (
+              <div className="msg-react-picker">
+                {QUICK_REACTIONS.map(e => (
+                  <button
+                    key={e}
+                    type="button"
+                    className="msg-react-emoji"
+                    onClick={() => { onReact?.(e); setShowPicker(false); }}
+                  >
+                    {e}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -265,6 +284,11 @@ export default function MessageBubble({ message, viewerKind, showAvatar = false,
         .msg-time { line-height: 1; }
         .msg-status { display: inline-flex; align-items: center; }
         .msg-bubble.own .msg-status { color: rgba(255,255,255,0.85); }
+
+        /* Wrap pour gérer le click-outside via ref, mais transparent au layout :
+           display: contents fait disparaître la box du wrap, le bouton et le
+           picker restent positionnés relativement à .msg-bubble comme avant. */
+        .msg-react-wrap { display: contents; }
 
         /* Bouton + réactions : invisible par défaut, visible au hover bubble */
         .msg-react-btn {
