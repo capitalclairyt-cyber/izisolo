@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft, MessageSquare, Megaphone, Plus, Search, X, Send, Loader2, Users } from 'lucide-react';
 import ConversationList from '@/components/messagerie/ConversationList';
@@ -237,39 +237,14 @@ export default function MessagerieClient({ profile, clients, cours, offres }) {
           )}
 
           {scope === 'clients' && (
-            <div className="ann-section">
-              <label className="ann-label">Sélection ({clientIds.size})</label>
-              <div className="ann-search">
-                <Search size={14} />
-                <input
-                  type="text"
-                  placeholder="Rechercher un élève…"
-                  value={searchClient}
-                  onChange={(e) => setSearchClient(e.target.value)}
-                />
-              </div>
-              <div className="ann-clients-list">
-                {clientsFiltres.slice(0, 50).map(c => (
-                  <label key={c.id} className={`ann-client ${clientIds.has(c.id) ? 'selected' : ''}`}>
-                    <input
-                      type="checkbox"
-                      checked={clientIds.has(c.id)}
-                      onChange={() => {
-                        setClientIds(prev => {
-                          const next = new Set(prev);
-                          if (next.has(c.id)) next.delete(c.id); else next.add(c.id);
-                          return next;
-                        });
-                      }}
-                    />
-                    <span>{c.prenom} {c.nom}</span>
-                  </label>
-                ))}
-                {clientsFiltres.length > 50 && (
-                  <p className="ann-more">+ {clientsFiltres.length - 50} autres — affine ta recherche</p>
-                )}
-              </div>
-            </div>
+            <ClientsChipsPicker
+              clients={clients}
+              clientsFiltres={clientsFiltres}
+              clientIds={clientIds}
+              setClientIds={setClientIds}
+              searchClient={searchClient}
+              setSearchClient={setSearchClient}
+            />
           )}
 
           <div className="ann-section">
@@ -411,6 +386,273 @@ export default function MessagerieClient({ profile, clients, cours, offres }) {
 
         @keyframes spin { to { transform: rotate(360deg); } }
         .spin { animation: spin 0.8s linear infinite; }
+      `}</style>
+    </div>
+  );
+}
+
+// ───────────────────────────────────────────────────────────────────────────
+// ClientsChipsPicker — sélection multi-utilisateurs pattern Gmail
+// Chips au-dessus (avec X pour retirer) + input combobox avec dropdown
+// suggestions filtrées. Click un élève → chip ajoutée + clear search + focus
+// retenu. Backspace dans input vide → retire la dernière chip.
+// ───────────────────────────────────────────────────────────────────────────
+function ClientsChipsPicker({ clients, clientsFiltres, clientIds, setClientIds, searchClient, setSearchClient }) {
+  const [open, setOpen] = useState(false);
+  const wrapRef = useRef(null);
+  const inputRef = useRef(null);
+
+  // Map id -> client pour retrouver les chips sélectionnées (clientsFiltres
+  // peut ne pas contenir certains si filtre actif → on cherche dans clients).
+  const clientsById = useMemo(() => {
+    const m = new Map();
+    clients.forEach(c => m.set(c.id, c));
+    return m;
+  }, [clients]);
+
+  const selected = useMemo(
+    () => [...clientIds].map(id => clientsById.get(id)).filter(Boolean),
+    [clientIds, clientsById]
+  );
+
+  // Suggestions = clientsFiltres MOINS ceux déjà sélectionnés
+  const suggestions = useMemo(
+    () => clientsFiltres.filter(c => !clientIds.has(c.id)),
+    [clientsFiltres, clientIds]
+  );
+
+  // Fermer la dropdown au click extérieur
+  useEffect(() => {
+    if (!open) return;
+    const h = (e) => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener('mousedown', h);
+    return () => document.removeEventListener('mousedown', h);
+  }, [open]);
+
+  const addClient = (id) => {
+    setClientIds(prev => {
+      const next = new Set(prev);
+      next.add(id);
+      return next;
+    });
+    setSearchClient('');
+    // Garde focus sur l'input pour enchaîner les sélections
+    requestAnimationFrame(() => inputRef.current?.focus());
+  };
+
+  const removeClient = (id) => {
+    setClientIds(prev => {
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
+  };
+
+  const clearAll = () => {
+    setClientIds(new Set());
+    setSearchClient('');
+    inputRef.current?.focus();
+  };
+
+  const onKeyDown = (e) => {
+    if (e.key === 'Backspace' && !searchClient && selected.length > 0) {
+      // Backspace dans input vide → retire la dernière chip
+      e.preventDefault();
+      removeClient(selected[selected.length - 1].id);
+    } else if (e.key === 'Enter' && suggestions.length > 0) {
+      // Enter ajoute la première suggestion
+      e.preventDefault();
+      addClient(suggestions[0].id);
+    } else if (e.key === 'Escape') {
+      setOpen(false);
+    }
+  };
+
+  return (
+    <div className="ann-section">
+      <div className="chips-picker-label-row">
+        <label className="ann-label">Destinataires ({clientIds.size})</label>
+        {clientIds.size > 0 && (
+          <button type="button" className="chips-picker-clear" onClick={clearAll}>
+            Tout désélectionner
+          </button>
+        )}
+      </div>
+
+      <div ref={wrapRef} className={`chips-picker ${open ? 'is-open' : ''}`}>
+        <div className="chips-picker-field" onClick={() => inputRef.current?.focus()}>
+          {selected.map(c => (
+            <span key={c.id} className="chip">
+              <span className="chip-name">{c.prenom} {c.nom}</span>
+              <button
+                type="button"
+                className="chip-remove"
+                onClick={(e) => { e.stopPropagation(); removeClient(c.id); }}
+                aria-label={`Retirer ${c.prenom} ${c.nom}`}
+              >
+                <X size={11} />
+              </button>
+            </span>
+          ))}
+          <input
+            ref={inputRef}
+            type="text"
+            className="chips-picker-input"
+            value={searchClient}
+            onChange={(e) => { setSearchClient(e.target.value); setOpen(true); }}
+            onFocus={() => setOpen(true)}
+            onKeyDown={onKeyDown}
+            placeholder={selected.length === 0 ? 'Tape un nom ou clique pour voir la liste…' : ''}
+          />
+        </div>
+
+        {open && (
+          <div className="chips-picker-dropdown" role="listbox">
+            {suggestions.length === 0 ? (
+              <div className="chips-picker-empty">
+                {searchClient
+                  ? <>Aucun élève ne correspond à <strong>« {searchClient} »</strong></>
+                  : clientIds.size === clients.length
+                    ? 'Tous les élèves sont sélectionnés.'
+                    : 'Aucun élève à afficher.'}
+              </div>
+            ) : (
+              suggestions.slice(0, 30).map(c => (
+                <button
+                  key={c.id}
+                  type="button"
+                  className="chips-picker-item"
+                  onClick={() => addClient(c.id)}
+                >
+                  <span className="chips-picker-item-avatar">
+                    {(c.prenom?.[0] || '?').toUpperCase()}
+                  </span>
+                  <span className="chips-picker-item-name">{c.prenom} {c.nom}</span>
+                  {c.email && <span className="chips-picker-item-email">{c.email}</span>}
+                </button>
+              ))
+            )}
+            {suggestions.length > 30 && (
+              <div className="chips-picker-more">+ {suggestions.length - 30} autres — affine ta recherche</div>
+            )}
+          </div>
+        )}
+      </div>
+
+      <style jsx global>{`
+        .chips-picker-label-row {
+          display: flex; align-items: center; justify-content: space-between;
+          gap: 12px; margin-bottom: 6px;
+        }
+        .chips-picker-clear {
+          background: none; border: none;
+          color: var(--text-muted); cursor: pointer;
+          font-size: 0.75rem; padding: 2px 6px;
+          border-radius: 6px;
+        }
+        .chips-picker-clear:hover { color: #dc2626; background: rgba(0,0,0,0.04); }
+
+        .chips-picker { position: relative; }
+        .chips-picker-field {
+          display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+          padding: 8px 10px;
+          background: white;
+          border: 1.5px solid var(--border);
+          border-radius: 12px;
+          min-height: 44px;
+          cursor: text;
+          transition: border-color 0.15s ease, box-shadow 0.15s ease;
+        }
+        .chips-picker.is-open .chips-picker-field {
+          border-color: var(--brand);
+          box-shadow: 0 0 0 3px rgba(184, 115, 51, 0.10);
+        }
+        .chips-picker-input {
+          flex: 1; min-width: 140px;
+          border: none; outline: none; background: transparent;
+          font-size: 0.9375rem;
+          padding: 4px 0;
+          color: var(--text-primary);
+          font-family: inherit;
+        }
+        .chips-picker-input::placeholder { color: var(--text-muted); }
+
+        .chip {
+          display: inline-flex; align-items: center; gap: 4px;
+          padding: 4px 6px 4px 10px;
+          background: var(--brand-light, #fef0dc);
+          color: var(--brand-700, #7c4a03);
+          border: 1px solid color-mix(in oklch, var(--brand) 30%, transparent);
+          border-radius: 99px;
+          font-size: 0.8125rem; font-weight: 500;
+          line-height: 1;
+        }
+        .chip-name { white-space: nowrap; }
+        .chip-remove {
+          width: 18px; height: 18px;
+          display: inline-flex; align-items: center; justify-content: center;
+          background: rgba(0,0,0,0.08); border: none; cursor: pointer;
+          border-radius: 50%;
+          color: inherit;
+          padding: 0;
+        }
+        .chip-remove:hover { background: rgba(0,0,0,0.16); }
+
+        .chips-picker-dropdown {
+          position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+          background: white;
+          border: 1px solid var(--border);
+          border-radius: 12px;
+          box-shadow: 0 12px 36px rgba(0,0,0,0.14);
+          max-height: 320px; overflow-y: auto;
+          padding: 4px;
+          z-index: 30;
+        }
+        .chips-picker-item {
+          display: flex; align-items: center; gap: 10px;
+          width: 100%;
+          padding: 8px 10px;
+          background: transparent;
+          border: none; border-radius: 8px;
+          font-size: 0.875rem;
+          text-align: left; cursor: pointer;
+          color: var(--text-primary);
+          transition: background 0.1s ease;
+        }
+        .chips-picker-item:hover,
+        .chips-picker-item:focus-visible {
+          background: var(--bg-soft, #faf8f5);
+          outline: none;
+        }
+        .chips-picker-item-avatar {
+          width: 28px; height: 28px; flex-shrink: 0;
+          border-radius: 50%;
+          background: var(--brand-light, #fef0dc);
+          color: var(--brand-700, #7c4a03);
+          display: inline-flex; align-items: center; justify-content: center;
+          font-size: 0.75rem; font-weight: 700;
+        }
+        .chips-picker-item-name { flex: 1; font-weight: 500; }
+        .chips-picker-item-email {
+          font-size: 0.75rem; color: var(--text-muted);
+          white-space: nowrap;
+          overflow: hidden; text-overflow: ellipsis;
+          max-width: 40%;
+        }
+        .chips-picker-empty {
+          padding: 16px 12px;
+          text-align: center;
+          font-size: 0.8125rem; color: var(--text-muted);
+        }
+        .chips-picker-more {
+          padding: 8px 10px;
+          font-size: 0.75rem; color: var(--text-muted);
+          text-align: center; font-style: italic;
+          border-top: 1px dashed var(--border);
+          margin-top: 4px;
+        }
       `}</style>
     </div>
   );
