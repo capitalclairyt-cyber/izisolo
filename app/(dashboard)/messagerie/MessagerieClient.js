@@ -59,7 +59,14 @@ export default function MessagerieClient({ profile, clients, cours, offres }) {
             const client = clients.find(c => c.id === withClient);
             const template = profile?.anniversaire_message
               || 'Joyeux anniversaire {{prenom}} ! 🎂 En ce jour spécial, toute l\'équipe du studio te souhaite une magnifique journée. À très bientôt sur le tapis !';
-            setBirthdayText(template.replace(/\{\{prenom\}\}/g, client?.prenom || ''));
+            // Accepte les deux formats : {prenom} (simple) et {{prenom}} (double)
+            // selon ce qu'a tapé la prof dans son template.
+            const interpolated = template
+              .replace(/\{\{\s*prenom\s*\}\}/g, client?.prenom || '')
+              .replace(/\{\s*prenom\s*\}/g, client?.prenom || '')
+              .replace(/\{\{\s*nom\s*\}\}/g, client?.nom || '')
+              .replace(/\{\s*nom\s*\}/g, client?.nom || '');
+            setBirthdayText(interpolated);
           }
         }
       })();

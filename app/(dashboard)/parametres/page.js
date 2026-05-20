@@ -1945,7 +1945,7 @@ export default function Parametres() {
       setNotifAbonnementExpire(prof?.notif_abonnement_expire !== false);
       // Anniversaires
       setAnnivMode(prof?.anniversaire_mode || 'semi');
-      setAnnivMessage(prof?.anniversaire_message || 'Joyeux anniversaire {{prenom}} ! 🎂 En ce jour spécial, toute l\'équipe du studio vous souhaite une magnifique journée. À très bientôt sur le tapis !');
+      setAnnivMessage(prof?.anniversaire_message || 'Joyeux anniversaire {prenom} ! 🎂 En ce jour spécial, toute l\'équipe du studio te souhaite une magnifique journée. À très bientôt sur le tapis !');
       setAnnivCadeauActif(prof?.anniversaire_cadeau_actif || false);
       setAnnivCadeauOffreId(prof?.anniversaire_cadeau_offre_id || '');
       setAnnivCadeauType(prof?.anniversaire_cadeau_type || 'gratuit');
@@ -2804,18 +2804,22 @@ export default function Parametres() {
                     <Mail size={16} /> Message d'anniversaire
                   </div>
                   <p className="param-section-desc">
-                    Utilise <code>{'{{prenom}}'}</code> pour personnaliser avec le prénom de l'élève.
+                    Utilise <code>{'{prenom}'}</code> pour personnaliser avec le prénom de l'élève.
                   </p>
                   <textarea
                     className="izi-input anniv-textarea"
                     value={annivMessage}
                     onChange={e => setAnnivMessage(e.target.value)}
                     rows={4}
-                    placeholder="Joyeux anniversaire {{prenom}} ! 🎂"
+                    placeholder="Joyeux anniversaire {prenom} ! 🎂"
                   />
                   <div className="anniv-preview">
                     <span className="anniv-preview-label">Aperçu :</span>
-                    {annivMessage.replace(/\{\{prenom\}\}/g, 'Sophie')}
+                    {annivMessage
+                      .replace(/\{\{\s*prenom\s*\}\}/g, 'Sophie')
+                      .replace(/\{\s*prenom\s*\}/g, 'Sophie')
+                      .replace(/\{\{\s*nom\s*\}\}/g, 'Martin')
+                      .replace(/\{\s*nom\s*\}/g, 'Martin')}
                   </div>
                 </div>
               )}
