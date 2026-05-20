@@ -267,7 +267,7 @@ export default function AgendaClient({ cours: initialCours, profile, initialDate
           />
         )}
         {vue === 'jour' && (
-          <VueJour dateRef={dateRef} cours={coursFiltres} todayStr={todayStr} onCoursMaj={handleCoursMaj} />
+          <VueJour dateRef={dateRef} cours={coursFiltres} todayStr={todayStr} onCoursMaj={handleCoursMaj} listeAttenteByCours={listeAttenteByCours} />
         )}
         {vue === 'mois' && (
           <VueMois
@@ -387,7 +387,7 @@ function VueSemaine({ dateRef, cours, activeCell, setActiveCell, onSelectDay, to
 // ============================================
 // VUE JOUR
 // ============================================
-function VueJour({ dateRef, cours, todayStr, onCoursMaj }) {
+function VueJour({ dateRef, cours, todayStr, onCoursMaj, listeAttenteByCours = {} }) {
   const dateStr     = toDateStr(dateRef);
   const coursDuJour = useMemo(() => cours.filter(c => c.date === dateStr), [cours, dateStr]);
 
