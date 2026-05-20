@@ -33,7 +33,7 @@ export async function POST(request, { params }) {
 
   // Déterminer le user_type + user_id du caller
   // Si profile existe avec id = auth.uid() → pro
-  // Sinon, check clients table avec auth_user_id = auth.uid() → eleve
+  // Sinon, check clients table avec lower(email) = lower(auth.email()) → eleve
   const { data: profile } = await supabase
     .from('profiles')
     .select('id')
@@ -45,10 +45,14 @@ export async function POST(request, { params }) {
     userType = 'pro';
     userId = profile.id;
   } else {
+    // L'élève est identifié via son email (pas via auth_user_id qui n'existe pas
+    // sur la table clients dans IziSolo). On prend le 1er match si plusieurs
+    // studios partagent le même email (cas rare).
     const { data: client } = await supabase
       .from('clients')
       .select('id')
-      .eq('auth_user_id', user.id)
+      .ilike('email', user.email || '')
+      .limit(1)
       .maybeSingle();
     if (!client) return NextResponse.json({ error: 'Compte introuvable' }, { status: 403 });
     userType = 'eleve';
@@ -130,7 +134,8 @@ export async function GET(request, { params }) {
     const { data: client } = await supabase
       .from('clients')
       .select('id')
-      .eq('auth_user_id', user.id)
+      .ilike('email', user.email || '')
+      .limit(1)
       .maybeSingle();
     if (client) { myType = 'eleve'; myId = client.id; }
   }
