@@ -5,7 +5,7 @@ export default function robots() {
     rules: [
       {
         userAgent: '*',
-        allow: ['/', '/login', '/register', '/legal/', '/p/', '/blog', '/blog/', '/profs-de-yoga', '/profs-de-pilates', '/coachs-bien-etre', '/therapeutes', '/calculateur', '/prof-yoga-paris', '/prof-yoga-lyon'],
+        allow: ['/', '/login', '/register', '/legal/', '/p/', '/blog', '/blog/', '/profs-de-yoga', '/profs-de-pilates', '/coachs-bien-etre', '/therapeutes', '/calculateur', '/prof-yoga-paris', '/prof-yoga-lyon', '/prof-yoga-marseille', '/prof-yoga-toulouse', '/prof-yoga-bordeaux', '/prof-yoga-nantes'],
         disallow: [
           '/api/',
           '/admin/',
