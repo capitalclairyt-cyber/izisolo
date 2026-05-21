@@ -5,6 +5,7 @@ date: 2026-05-21
 updated: 2026-05-21
 author: "Colin (IziSolo)"
 tags: ["organisation", "outils", "gestion-temps"]
+image: /blog/hero-excel-vs-logiciel.jpg
 excerpt: "8 h par semaine. C'est le temps moyen qu'une prof indépendante passe à gérer ses élèves sur Excel + Google Calendar + WhatsApp + une appli de paiement. Voici le comparatif honnête entre faire avec Excel et basculer sur un logiciel — y compris les cas où Excel reste un meilleur choix."
 faq:
   - question: "Excel est-il vraiment moins efficace qu'un logiciel pour gérer ses élèves ?"
@@ -22,6 +23,11 @@ faq:
 Et pourtant, presque toutes les profs commencent comme ça. Et beaucoup n'envisagent pas de changer, soit parce qu'elles "ne sont pas tech", soit parce qu'elles ont l'impression que ça leur coûterait trop cher.
 
 Cet article fait le comparatif **honnête** entre gérer ses élèves sur Excel et basculer sur un logiciel dédié — y compris les cas où **Excel reste le meilleur choix**.
+
+<figure class="article-figure">
+  <img src="/blog/hero-excel-vs-logiciel.jpg" alt="Prof de yoga moderne en tenue rose mauve dans un loft industriel" loading="lazy" />
+  <figcaption>6 à 8 heures par semaine perdues à synchroniser Excel, WhatsApp, Stripe et un agenda papier.</figcaption>
+</figure>
 
 ## Les vrais problèmes d'Excel ne sont pas ceux qu'on croit
 

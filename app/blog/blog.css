@@ -380,6 +380,37 @@
   margin: 1.5em 0;
 }
 
+/* Figures éditoriales (hero + mid-article) — style magazine */
+.article-body .article-figure {
+  margin: var(--sp-10) auto;
+  max-width: 540px;
+  text-align: center;
+}
+.article-body .article-figure img {
+  width: 100%;
+  height: auto;
+  border-radius: 16px;
+  margin: 0;
+  display: block;
+  box-shadow: 0 8px 24px -8px color-mix(in oklch, var(--c-ink) 18%, transparent);
+}
+.article-body .article-figure figcaption {
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-style: italic;
+  font-size: 1.02rem;
+  color: var(--c-ink-soft);
+  margin-top: var(--sp-3);
+  line-height: 1.5;
+  padding: 0 var(--sp-2);
+  letter-spacing: 0.005em;
+}
+@media (max-width: 640px) {
+  .article-body .article-figure {
+    margin: var(--sp-8) auto;
+    max-width: 100%;
+  }
+}
+
 /* Drop cap sur le premier paragraphe (magazine touch) */
 .article-body > p:first-child::first-letter {
   font-family: 'Instrument Serif', Georgia, serif;

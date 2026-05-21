@@ -5,6 +5,7 @@ date: 2026-05-22
 updated: 2026-05-22
 author: "Colin (IziSolo)"
 tags: ["juridique", "auto-entrepreneur", "fiscalité"]
+image: /blog/hero-statut-juridique.jpg
 excerpt: "Pour 85 % des profs de yoga qui démarrent, la micro-entreprise (auto-entrepreneur) est le bon choix. Mais pas pour tout le monde, et pas pour toujours. Ce guide détaille les 4 statuts pertinents, leurs seuils, leurs charges, et le moment précis où il devient intéressant de changer."
 faq:
   - question: "Quel est le meilleur statut juridique pour un prof de yoga qui démarre ?"
@@ -22,6 +23,11 @@ faq:
 Tu te demandes quel statut prendre pour devenir prof de yoga indépendant·e ? Ou tu y es déjà depuis 2-3 ans et tu te demandes s'il faut **changer** ? Cet article détaille les 4 statuts pertinents en France en 2026, leurs seuils, charges et avantages — pour décider en connaissance de cause.
 
 > ⚠️ Cet article est une vulgarisation. Pour un choix définitif, particulièrement au-delà du statut micro, **consulte un expert-comptable** (compte 80-150 €/h ; un seul RDV de 1 h te fait économiser 1 000 € sur 2 ans).
+
+<figure class="article-figure">
+  <img src="/blog/hero-statut-juridique.jpg" alt="Prof de yoga en posture du pigeon profond avec backbend, top jaune et leggings blancs, dans un studio" loading="lazy" />
+  <figcaption>Pratiquer pendant 5 ans avant de comprendre que le statut juridique compte autant que la posture.</figcaption>
+</figure>
 
 ## TL;DR — Quel statut pour quel cas
 
@@ -179,6 +185,11 @@ NET ........................................... 35 620 €
 ❌ **Création et fonctionnement plus coûteux** (300-500 € création + 1 500-3 000 €/an compta).
 ❌ **Formalisme** : assemblée annuelle, dépôt des comptes, etc.
 ❌ **Moins de souplesse** pour piocher dans le compte pro (tu te verses un salaire ou dividendes, pas un retrait libre).
+
+<figure class="article-figure">
+  <img src="/blog/mudra-main.jpg" alt="Main en mudra (geste de méditation), photo noir et blanc minimaliste" loading="lazy" />
+  <figcaption>Un statut, c'est un cadre — pas une identité. On en change quand l'activité change.</figcaption>
+</figure>
 
 ## Tableau récapitulatif des 4 statuts
 

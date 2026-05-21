@@ -5,6 +5,7 @@ date: 2026-05-21
 updated: 2026-05-21
 author: "Colin (IziSolo)"
 tags: ["yoga", "tarification", "revenus", "auto-entrepreneur"]
+image: /blog/hero-combien-gagne.jpg
 featured: true
 excerpt: "Le revenu d'un·e prof de yoga indépendant·e en France varie de 800 à 4 500 € net par mois selon l'expérience, la zone géographique et le nombre de cours par semaine. Voici les chiffres réels, les charges cachées et les leviers pour augmenter ton revenu net — sans donner plus de cours."
 faq:
@@ -21,6 +22,11 @@ faq:
 Le revenu d'un·e prof de yoga indépendant·e en France est l'un des chiffres les plus flous du métier. **Très peu d'écoles de formation l'évoquent honnêtement**, et les rares études sectorielles regroupent profs employé·e·s en salle de sport et indépendant·e·s — alors que ce sont deux réalités économiques radicalement différentes.
 
 Cet article s'adresse aux profs indépendant·e·s qui veulent **comprendre concrètement** combien il est possible de gagner, quelles sont les charges réelles, et comment augmenter son revenu net **sans simplement donner plus de cours**.
+
+<figure class="article-figure">
+  <img src="/blog/hero-combien-gagne.jpg" alt="Prof de yoga en équilibre debout au bord d'une rivière de montagne, jambe levée vers le ciel" loading="lazy" />
+  <figcaption>La liberté du métier passe d'abord par la lucidité sur ses chiffres.</figcaption>
+</figure>
 
 ## Le revenu moyen d'un·e prof de yoga indépendant·e en France
 
@@ -83,6 +89,11 @@ Une prof débutante a souvent une seule source de revenu (cours collectifs en sa
 **Marge** : variable. Si tu loues un gîte à la journée et que tu remplis (12-15 participants), tu peux dégager **800 à 2 500 € net** sur un week-end.
 
 **Avantage caché** : les stages génèrent un **bouche-à-oreille énorme** auprès de la communauté locale. Ils fidélisent et amènent de nouveaux élèves vers tes cours réguliers.
+
+<figure class="article-figure">
+  <img src="/blog/bols-tibetains.jpg" alt="Bols tibétains en cuivre disposés sur une terrasse en bois, à côté d'une prof en posture du lotus" loading="lazy" />
+  <figcaption>Stages et sound healing : 800 à 2 500 € de revenu net par week-end pour les profs qui maîtrisent le format.</figcaption>
+</figure>
 
 ### 5. Formation, mentorat, contenu en ligne
 
