@@ -16,7 +16,7 @@
   margin-bottom: var(--sp-12);
 }
 .blog-back {
-  display: inline-block;
+  display: block;
   font-family: var(--font-mono);
   font-size: 0.75rem;
   color: color-mix(in oklch, var(--c-ink) 60%, transparent);
