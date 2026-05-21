@@ -18,7 +18,8 @@ const PUBLIC_ROUTES = [
   '/auth/',                 // /auth/callback Supabase
   '/p/',                    // portails publics studio (sondages, cours, espace, etc.)
   '/legal/',                // CGU/CGV/Mentions/RGPD
-  '/profs-de-yoga', '/profs-de-pilates', '/coachs-bien-etre', '/therapeutes',
+  '/profs-de-yoga', '/profs-de-pilates', '/profs-de-meditation', '/profs-de-danse',
+  '/coachs-bien-etre', '/therapeutes', '/sophrologues',
   '/prof-yoga-',            // /prof-yoga-paris, /prof-yoga-lyon, futures villes
   '/prof-pilates-',         // /prof-pilates-paris, /prof-pilates-lyon, etc.
   '/blog',                  // /blog (liste) + /blog/[slug] (articles)

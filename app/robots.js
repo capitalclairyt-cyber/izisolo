@@ -5,7 +5,7 @@ export default function robots() {
     rules: [
       {
         userAgent: '*',
-        allow: ['/', '/login', '/register', '/legal/', '/p/', '/blog', '/blog/', '/profs-de-yoga', '/profs-de-pilates', '/coachs-bien-etre', '/therapeutes', '/calculateur', '/prof-yoga-paris', '/prof-yoga-lyon', '/prof-yoga-marseille', '/prof-yoga-toulouse', '/prof-yoga-bordeaux', '/prof-yoga-nantes', '/prof-yoga-strasbourg', '/prof-yoga-lille', '/prof-yoga-montpellier', '/prof-yoga-rennes', '/prof-yoga-nice', '/prof-pilates-paris', '/prof-pilates-lyon', '/prof-pilates-marseille', '/prof-pilates-toulouse', '/prof-pilates-bordeaux', '/prof-pilates-nantes', '/prof-pilates-strasbourg', '/prof-pilates-lille', '/prof-pilates-montpellier', '/prof-pilates-rennes', '/prof-pilates-nice'],
+        allow: ['/', '/login', '/register', '/legal/', '/p/', '/blog', '/blog/', '/profs-de-yoga', '/profs-de-pilates', '/profs-de-meditation', '/profs-de-danse', '/coachs-bien-etre', '/therapeutes', '/sophrologues', '/calculateur', '/prof-yoga-paris', '/prof-yoga-lyon', '/prof-yoga-marseille', '/prof-yoga-toulouse', '/prof-yoga-bordeaux', '/prof-yoga-nantes', '/prof-yoga-strasbourg', '/prof-yoga-lille', '/prof-yoga-montpellier', '/prof-yoga-rennes', '/prof-yoga-nice', '/prof-pilates-paris', '/prof-pilates-lyon', '/prof-pilates-marseille', '/prof-pilates-toulouse', '/prof-pilates-bordeaux', '/prof-pilates-nantes', '/prof-pilates-strasbourg', '/prof-pilates-lille', '/prof-pilates-montpellier', '/prof-pilates-rennes', '/prof-pilates-nice'],
         disallow: [
           '/api/',
           '/admin/',
