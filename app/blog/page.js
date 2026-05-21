@@ -1,8 +1,15 @@
 import Link from 'next/link';
 import { getAllArticles, formatDateFR } from '@/lib/blog';
-import { getBreadcrumbSchema } from '@/lib/seo';
+import { getBreadcrumbSchema, ogImageUrl } from '@/lib/seo';
 import '../landing.css';
 import './blog.css';
+
+const OG = ogImageUrl({
+  eyebrow: 'Le journal',
+  title: 'Ressources pour les profs indépendant·e·s.',
+  subtitle: 'Articles, guides et tableaux pour les profs de yoga, pilates, danse, méditation et coachs bien-être.',
+  palette: 'sable',
+});
 
 export const metadata = {
   title: 'Le journal IziSolo — Ressources pour profs indépendant·e·s',
@@ -13,7 +20,9 @@ export const metadata = {
     description: 'Ressources pour les profs indépendant·e·s du mouvement et du bien-être.',
     url: 'https://izisolo.fr/blog',
     type: 'website',
+    images: [{ url: OG, width: 1200, height: 630, alt: 'Le journal IziSolo' }],
   },
+  twitter: { card: 'summary_large_image', images: [OG] },
 };
 
 export default function BlogIndexPage() {

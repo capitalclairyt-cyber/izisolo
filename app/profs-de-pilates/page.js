@@ -1,8 +1,15 @@
 import { redirect } from 'next/navigation';
 import { createServerClient } from '@/lib/supabase-server';
 import PersonaLanding from '@/components/landing/PersonaLanding';
-import { getBreadcrumbSchema } from '@/lib/seo';
+import { getBreadcrumbSchema, ogImageUrl } from '@/lib/seo';
 import '../landing.css';
+
+const OG = ogImageUrl({
+  eyebrow: 'PROFS DE PILATES',
+  title: 'L\'outil pensé pour les profs Pilates indé.',
+  subtitle: 'Mat, Reformer, ateliers — planning, capacités, carnets et abonnements.',
+  palette: 'blush',
+});
 
 export const metadata = {
   title: 'Logiciel de gestion pour profs et studios Pilates',
@@ -13,7 +20,9 @@ export const metadata = {
     description: 'Mat, Reformer, ateliers — IziSolo gère ton planning, tes capacités, tes carnets et abonnements.',
     url: 'https://izisolo.fr/profs-de-pilates',
     type: 'website',
+    images: [{ url: OG, width: 1200, height: 630, alt: 'Logiciel de gestion pour profs Pilates' }],
   },
+  twitter: { card: 'summary_large_image', images: [OG] },
 };
 
 export default async function ProfsDePilatesPage() {

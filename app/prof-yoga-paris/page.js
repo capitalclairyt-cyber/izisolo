@@ -1,11 +1,17 @@
 import { redirect } from 'next/navigation';
 import { createServerClient } from '@/lib/supabase-server';
 import LocalLanding from '@/components/landing/LocalLanding';
-import { getBreadcrumbSchema, BASE_URL } from '@/lib/seo';
+import { getBreadcrumbSchema, ogImageUrl, BASE_URL } from '@/lib/seo';
 import { CITIES } from '@/content/cities';
 import '../landing.css';
 
 const CITY = CITIES.paris;
+const OG = ogImageUrl({
+  eyebrow: 'PARIS · Île-de-France',
+  title: `Logiciel pour profs de yoga à ${CITY.name}.`,
+  subtitle: 'Agenda, élèves, paiements, portail public — tout-en-un.',
+  palette: 'sable',
+});
 
 export const metadata = {
   title: 'Logiciel pour profs de yoga à Paris — IziSolo',
@@ -16,7 +22,9 @@ export const metadata = {
     description: 'Tout-en-un pour les profs yoga indé parisien·ne·s : agenda, élèves, paiements, portail public.',
     url: `${BASE_URL}/prof-yoga-paris`,
     type: 'website',
+    images: [{ url: OG, width: 1200, height: 630, alt: 'Logiciel pour profs de yoga à Paris' }],
   },
+  twitter: { card: 'summary_large_image', images: [OG] },
 };
 
 export default async function ProfYogaParisPage() {

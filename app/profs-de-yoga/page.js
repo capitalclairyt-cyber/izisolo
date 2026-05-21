@@ -1,8 +1,15 @@
 import { redirect } from 'next/navigation';
 import { createServerClient } from '@/lib/supabase-server';
 import PersonaLanding from '@/components/landing/PersonaLanding';
-import { getBreadcrumbSchema } from '@/lib/seo';
+import { getBreadcrumbSchema, ogImageUrl } from '@/lib/seo';
 import '../landing.css';
+
+const OG = ogImageUrl({
+  eyebrow: 'PROFS DE YOGA',
+  title: 'L\'outil calme pour gérer ton studio yoga solo.',
+  subtitle: 'Agenda, élèves, paiements, portail public — tout-en-un.',
+  palette: 'sable',
+});
 
 export const metadata = {
   title: 'Logiciel de gestion pour profs de yoga indépendant·e·s',
@@ -13,7 +20,9 @@ export const metadata = {
     description: "L'outil calme pour gérer ton studio yoga solo. Agenda, élèves, paiements, portail public.",
     url: 'https://izisolo.fr/profs-de-yoga',
     type: 'website',
+    images: [{ url: OG, width: 1200, height: 630, alt: 'Logiciel de gestion pour profs de yoga' }],
   },
+  twitter: { card: 'summary_large_image', images: [OG] },
 };
 
 export default async function ProfsDeYogaPage() {

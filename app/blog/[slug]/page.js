@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { getArticleBySlug, getAllSlugs, formatDateFR, getAllArticles } from '@/lib/blog';
-import { getArticleSchema, getBreadcrumbSchema, getFAQSchema, BASE_URL } from '@/lib/seo';
+import { getArticleSchema, getBreadcrumbSchema, getFAQSchema, ogImageUrl, BASE_URL } from '@/lib/seo';
 import '../../landing.css';
 import '../blog.css';
 
@@ -13,6 +13,17 @@ export async function generateMetadata({ params }) {
   const { slug } = await params;
   const article = getArticleBySlug(slug);
   if (!article) return { title: 'Article introuvable' };
+
+  // OG image dynamique : eyebrow = "Le journal", titre = titre article, sous-titre = excerpt tronqué.
+  // (On préfère cette image générique au hero photo pour les partages sociaux :
+  // les hero photos en portrait s'affichent mal dans les cards landscape 1.91:1).
+  const subtitle = (article.excerpt || article.description || '').slice(0, 140);
+  const ogImg = ogImageUrl({
+    eyebrow: 'Le journal',
+    title: article.title,
+    subtitle,
+    palette: 'sable',
+  });
 
   return {
     title: article.title,
@@ -27,12 +38,13 @@ export async function generateMetadata({ params }) {
       modifiedTime: article.updated || article.date,
       authors: [article.author],
       tags: article.tags,
-      images: article.image ? [{ url: article.image.startsWith('http') ? article.image : `${BASE_URL}${article.image}` }] : undefined,
+      images: [{ url: ogImg, width: 1200, height: 630, alt: article.title }],
     },
     twitter: {
       card: 'summary_large_image',
       title: article.title,
       description: article.description || article.excerpt,
+      images: [ogImg],
     },
   };
 }

@@ -84,11 +84,20 @@ export const metadata = {
     title: 'IziSolo — Moins d\'admin. Plus de présence.',
     description: "L'outil de gestion calme et beau pour les indépendant·e·s du bien-être.",
     url: baseUrl,
+    images: [
+      {
+        url: '/api/og?title=Moins+d%27admin.+Plus+de+pr%C3%A9sence.&subtitle=L%27outil+de+gestion+calme+et+beau+pour+les+ind%C3%A9pendant%C2%B7e%C2%B7s+du+bien-%C3%AAtre.',
+        width: 1200,
+        height: 630,
+        alt: 'IziSolo — Moins d\'admin. Plus de présence.',
+      },
+    ],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'IziSolo — Moins d\'admin. Plus de présence.',
     description: "L'outil de gestion calme et beau pour les indépendant·e·s du bien-être.",
+    images: ['/api/og?title=Moins+d%27admin.+Plus+de+pr%C3%A9sence.&subtitle=L%27outil+de+gestion+calme+et+beau+pour+les+ind%C3%A9pendant%C2%B7e%C2%B7s+du+bien-%C3%AAtre.'],
   },
 };
 
