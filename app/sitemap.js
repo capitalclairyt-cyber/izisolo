@@ -9,6 +9,8 @@ const STATIC_PATHS = [
   { path: '/profs-de-pilates',     changeFrequency: 'monthly',  priority: 0.9 },
   { path: '/coachs-bien-etre',     changeFrequency: 'monthly',  priority: 0.9 },
   { path: '/therapeutes',          changeFrequency: 'monthly',  priority: 0.9 },
+  { path: '/prof-yoga-paris',      changeFrequency: 'monthly',  priority: 0.85 },
+  { path: '/prof-yoga-lyon',       changeFrequency: 'monthly',  priority: 0.85 },
   { path: '/calculateur',          changeFrequency: 'monthly',  priority: 0.8 },
   { path: '/blog',                 changeFrequency: 'weekly',   priority: 0.8 },
   { path: '/login',                changeFrequency: 'yearly',   priority: 0.5 },
