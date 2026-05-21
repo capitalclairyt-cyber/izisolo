@@ -5,7 +5,7 @@ export default function robots() {
     rules: [
       {
         userAgent: '*',
-        allow: ['/', '/login', '/register', '/legal/', '/p/'],
+        allow: ['/', '/login', '/register', '/legal/', '/p/', '/blog', '/blog/', '/profs-de-yoga', '/profs-de-pilates', '/coachs-bien-etre', '/therapeutes', '/calculateur'],
         disallow: [
           '/api/',
           '/admin/',

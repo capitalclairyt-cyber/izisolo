@@ -1,17 +1,38 @@
 import { redirect } from 'next/navigation';
 import { createServerClient } from '@/lib/supabase-server';
 import PersonaLanding from '@/components/landing/PersonaLanding';
+import { getBreadcrumbSchema } from '@/lib/seo';
 import '../landing.css';
 
 export const metadata = {
-  title: 'Logiciel de gestion pour profs et studios Pilates — IziSolo',
-  description: "Mat, Reformer, ateliers — IziSolo gère ton planning, tes capacités par appareil, tes carnets et tes abonnements. Free 25 élèves, Solo dès 9 €/mois.",
+  title: 'Logiciel de gestion pour profs et studios Pilates',
+  description: "Mat, Reformer, ateliers — IziSolo gère ton planning, tes capacités par appareil, tes carnets et abonnements. 14 jours d'essai gratuit, dès 17 €/mois (12 € pour les 100 premières).",
   alternates: { canonical: 'https://izisolo.fr/profs-de-pilates' },
+  openGraph: {
+    title: 'Logiciel de gestion pour profs Pilates — IziSolo',
+    description: 'Mat, Reformer, ateliers — IziSolo gère ton planning, tes capacités, tes carnets et abonnements.',
+    url: 'https://izisolo.fr/profs-de-pilates',
+    type: 'website',
+  },
 };
 
 export default async function ProfsDePilatesPage() {
   const supabase = await createServerClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (user) redirect('/dashboard');
-  return <PersonaLanding persona="pilates" />;
+
+  const breadcrumb = getBreadcrumbSchema([
+    { name: 'Accueil', url: '/' },
+    { name: 'Profs de Pilates', url: '/profs-de-pilates' },
+  ]);
+
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumb) }}
+      />
+      <PersonaLanding persona="pilates" />
+    </>
+  );
 }

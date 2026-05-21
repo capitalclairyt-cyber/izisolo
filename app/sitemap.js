@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { getAllArticles } from '@/lib/blog';
 
 const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://izisolo.fr';
 
@@ -8,7 +9,8 @@ const STATIC_PATHS = [
   { path: '/profs-de-pilates',     changeFrequency: 'monthly',  priority: 0.9 },
   { path: '/coachs-bien-etre',     changeFrequency: 'monthly',  priority: 0.9 },
   { path: '/therapeutes',          changeFrequency: 'monthly',  priority: 0.9 },
-  { path: '/calculateur',             changeFrequency: 'monthly',  priority: 0.8 },
+  { path: '/calculateur',          changeFrequency: 'monthly',  priority: 0.8 },
+  { path: '/blog',                 changeFrequency: 'weekly',   priority: 0.8 },
   { path: '/login',                changeFrequency: 'yearly',   priority: 0.5 },
   { path: '/register',             changeFrequency: 'yearly',   priority: 0.7 },
   { path: '/legal/cgu',            changeFrequency: 'yearly',   priority: 0.3 },
@@ -51,5 +53,14 @@ export default async function sitemap() {
     priority: 0.6,
   }));
 
-  return [...staticEntries, ...studioEntries];
+  // Articles de blog — récupérés via getAllArticles() (lit /content/blog/*.md)
+  const articles = getAllArticles();
+  const articleEntries = articles.map(a => ({
+    url: `${baseUrl}/blog/${a.slug}`,
+    lastModified: a.updated ? new Date(a.updated) : new Date(a.date),
+    changeFrequency: 'monthly',
+    priority: 0.7,
+  }));
+
+  return [...staticEntries, ...studioEntries, ...articleEntries];
 }

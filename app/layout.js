@@ -3,6 +3,7 @@ import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { Instrument_Serif, Fraunces, Inter, JetBrains_Mono, Caveat } from 'next/font/google';
 import AuthFragmentCatcher from '@/components/auth/AuthFragmentCatcher';
+import { getOrganizationSchema, getWebSiteSchema } from '@/lib/seo';
 
 const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://izisolo.fr';
 
@@ -127,6 +128,18 @@ export default function RootLayout({ children }) {
 }catch(e){console.warn('[auth-catcher]',e);}})();
             `.trim(),
           }}
+        />
+
+        {/* ─── Schema.org JSON-LD globaux (Organization + WebSite) ─────────
+            Posés sur le layout root → présents sur toutes les pages publiques.
+            Cf. lib/seo.js pour les helpers. */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(getOrganizationSchema()) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(getWebSiteSchema()) }}
         />
       </head>
       <body>

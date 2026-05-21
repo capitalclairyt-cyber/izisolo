@@ -1,6 +1,8 @@
 import { redirect } from 'next/navigation';
 import { createServerClient } from '@/lib/supabase-server';
 import Landing from '@/components/landing/Landing';
+import { getSoftwareApplicationSchema, getFAQSchema } from '@/lib/seo';
+import { FAQ_ITEMS } from '@/content/faq';
 import './landing.css';
 
 /**
@@ -55,5 +57,21 @@ export default async function Home({ searchParams }) {
     redirect('/dashboard');
   }
 
-  return <Landing />;
+  // Schema.org JSON-LD pour la home : SaaS (prix, features) + FAQ rich snippets.
+  // Cf. lib/seo.js. L'Organization + WebSite sont posés sur le layout root.
+  const faqItems = FAQ_ITEMS.map(it => ({ question: it.q, answer: it.a }));
+
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(getSoftwareApplicationSchema()) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(getFAQSchema(faqItems)) }}
+      />
+      <Landing />
+    </>
+  );
 }
