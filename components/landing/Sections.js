@@ -37,6 +37,7 @@ export function Nav() {
           <a href="#pour-qui">Pour qui</a>
           <a href="#tarifs">Tarifs</a>
           <a href="#faq">FAQ</a>
+          <Link href="/blog">Journal</Link>
         </nav>
         <div className="nav-cta">
           <Link href="/login" className="nav-link-soft">Se connecter</Link>
@@ -860,6 +861,17 @@ export function Footer() {
             { label: 'Tarifs', href: '#tarifs' },
             { label: 'Pour qui', href: '#pour-qui' },
             { label: 'FAQ', href: '#faq' },
+          ]}
+        />
+        <FooterCol
+          title="Ressources"
+          links={[
+            { label: 'Le journal', href: '/blog' },
+            { label: 'Calculateur de frais', href: '/calculateur' },
+            { label: 'Profs de yoga', href: '/profs-de-yoga' },
+            { label: 'Profs de pilates', href: '/profs-de-pilates' },
+            { label: 'Coachs bien-être', href: '/coachs-bien-etre' },
+            { label: 'Thérapeutes', href: '/therapeutes' },
           ]}
         />
         <FooterCol
