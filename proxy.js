@@ -5,8 +5,13 @@ import { createServerClient } from '@supabase/ssr';
 //   - Auth flows : login, register, onboarding, mot de passe
 //   - Portails publics élèves : /p/[studioSlug]/...
 //   - Pages SEO marketing : /profs-de-yoga, /profs-de-pilates, /coachs-bien-etre, /therapeutes
+//   - Pages locales SEO : /prof-yoga-paris, /prof-yoga-lyon, ...
+//   - Blog : /blog, /blog/[slug]
 //   - Pages légales : /legal/...
 //   - Offline, sitemap, robots
+//
+// ⚠️ Si une route publique n'est PAS listée ici, Googlebot sera redirigé vers
+// /login (qui a robots: noindex,nofollow) → la page ne sera JAMAIS indexée.
 const PUBLIC_ROUTES = [
   '/login', '/register', '/onboarding', '/offline',
   '/mot-de-passe-oublie', '/nouveau-mot-de-passe',
@@ -14,6 +19,8 @@ const PUBLIC_ROUTES = [
   '/p/',                    // portails publics studio (sondages, cours, espace, etc.)
   '/legal/',                // CGU/CGV/Mentions/RGPD
   '/profs-de-yoga', '/profs-de-pilates', '/coachs-bien-etre', '/therapeutes',
+  '/prof-yoga-',            // /prof-yoga-paris, /prof-yoga-lyon, futures villes
+  '/blog',                  // /blog (liste) + /blog/[slug] (articles)
   '/calculateur',                // calculateur de frais (lead magnet)
   '/sitemap.xml', '/robots.txt',
 ];
