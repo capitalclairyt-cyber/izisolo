@@ -313,6 +313,31 @@ export const CITIES = {
       text: "Nantes laisse beaucoup de place à l'expérimentation. J'ai pu lancer un format danse-yoga qui aurait été inaudible ailleurs — ici les élèves cherchent justement ce mélange.",
       author: 'Marion · prof de yoga, Nantes Bouffay',
     },
+    pilates: {
+      profDescription: `Nantes a une scène Pilates qui suit le pattern créatif de la ville : on y trouve beaucoup de formats hybrides Pilates + danse, Pilates + théâtre corporel, ateliers de mouvement créatif. Le Pilates Mat traditionnel domine (~80 % de l'offre) avec une croissance progressive du Reformer dans le centre et sur l'Île de Nantes. Forte demande Pilates post-natal en lien avec une population jeunes parents. Beaucoup de profs organisent des retraites sur la côte sud bretonne (Pornic, Pornichet, Noirmoutier) combinant Pilates + marche en bord de mer. Loyers modérés (22-50 €/h).`,
+      lieuxConnus: [
+        'Pilates Nantes Centre',
+        'La Maison du Pilates Nantes',
+        'Pilates Bouffay',
+        'Mat Studio Nantes',
+        'Reformer Nantes',
+        'Pilates Île de Nantes',
+        'Studio Pilates Nantes Sud',
+        'Pilates Hauts-Pavés',
+        'Studio Air Nantes',
+        'Pilates & Vibes',
+      ],
+      stats: [
+        { value: '80+', label: 'Studios/profs Pilates indé à Nantes' },
+        { value: '22-50 €', label: 'Tarif horaire location salle' },
+        { value: '14-19 €', label: 'Tarif cours collectif Mat' },
+        { value: '30-45 €', label: 'Tarif cours collectif Reformer' },
+      ],
+      citation: {
+        text: "Nantes laisse beaucoup de place aux formats hybrides — Pilates + danse, Pilates + théâtre corporel. Ailleurs ce serait perçu comme bizarre, ici c'est attendu et recherché.",
+        author: 'Charlotte · prof Pilates, Nantes Île de Nantes',
+      },
+    },
   },
 
   strasbourg: {
@@ -342,6 +367,31 @@ export const CITIES = {
     citation: {
       text: "À Strasbourg, on a la chance d'avoir un public exigeant et fidèle. La proximité avec l'Allemagne tire toute la scène vers le haut — on apprend vite que la rigueur paye.",
       author: 'Anne-Sophie · prof de yoga, Strasbourg Krutenau',
+    },
+    pilates: {
+      profDescription: `Strasbourg a une scène Pilates discrète mais très qualitative, marquée par l'influence allemande de la pratique. Beaucoup de profs strasbourgeoises se sont formées à la méthode Stott (école canadienne reconnue en Allemagne) ou directement outre-Rhin, ce qui se ressent dans une exigence technique forte. Le Mat domine (~75 %) avec un Reformer en croissance. Plusieurs profs proposent des cours bilingues français/allemand (clientèle fonctionnaires européens et frontaliers). Particularité : retraites Pilates dans les Vosges ou en Forêt-Noire en partenariat avec des hôtels-spa. Loyers modérés (22-50 €/h).`,
+      lieuxConnus: [
+        'Pilates Strasbourg Centre',
+        'Stott Pilates Strasbourg',
+        'Mat Studio Strasbourg',
+        'Pilates Krutenau',
+        'Reformer Studio Strasbourg',
+        'Pilates Petite France',
+        'Studio Pilates Neudorf',
+        'Méthode Pilates Strasbourg',
+        'Pilates Centre Strasbourg',
+        'Body Mind Strasbourg',
+      ],
+      stats: [
+        { value: '70+', label: 'Studios/profs Pilates indé à Strasbourg' },
+        { value: '22-50 €', label: 'Tarif horaire location salle' },
+        { value: '14-18 €', label: 'Tarif cours collectif Mat' },
+        { value: '30-45 €', label: 'Tarif cours collectif Reformer' },
+      ],
+      citation: {
+        text: "À Strasbourg, l'influence allemande nous a donné une exigence technique forte sur le Pilates. Beaucoup de mes collègues ont été formées en Allemagne ou en Suisse — ça change la façon d'enseigner.",
+        author: 'Mathilde · prof Pilates, Strasbourg Krutenau',
+      },
     },
   },
 
@@ -373,6 +423,31 @@ export const CITIES = {
       text: "Lille a cette énergie associative qui change tout. Les profs s'entraident, échangent leurs salles, partagent leurs élèves quand ça déborde — j'ai jamais vu un tel esprit collectif ailleurs.",
       author: 'Pauline · prof de yoga, Lille Wazemmes',
     },
+    pilates: {
+      profDescription: `Lille a une scène Pilates jeune et créative, ancrée dans la culture associative locale et fortement marquée par la tradition danse de la ville (Lille = capitale de la danse contemporaine en France). Cette double influence donne des formats originaux : Pilates + barre au sol, Pilates + travail postural pour danseurs, ateliers de mouvement combinés. Le Mat domine très largement, le Reformer reste émergent. Tarifs accessibles (Mat 13-17 €, Reformer 28-42 € quand il existe). La proximité de la Belgique amène une clientèle binationale. Quartiers actifs : Wazemmes, Vieux-Lille, Vauban.`,
+      lieuxConnus: [
+        'Pilates Lille Centre',
+        'La Maison du Pilates Lille',
+        'Pilates Wazemmes',
+        'Mat Studio Lille',
+        'Reformer Lille',
+        'Pilates Lille Sud',
+        'Studio Pilates Vieux-Lille',
+        'Pilates & Danse Lille',
+        'Atelier Pilates Lille',
+        'Studio Pilates Vauban',
+      ],
+      stats: [
+        { value: '70+', label: 'Studios/profs Pilates indé à Lille' },
+        { value: '20-45 €', label: 'Tarif horaire location salle' },
+        { value: '13-17 €', label: 'Tarif cours collectif Mat' },
+        { value: '28-42 €', label: 'Tarif cours collectif Reformer' },
+      ],
+      citation: {
+        text: "À Lille, la jeunesse étudiante est curieuse mais regarde le tarif. Mes cours Mat à 14 € se remplissent en 24h dès l'annonce, le Reformer à 30 € met un peu plus de temps mais finit par tourner.",
+        author: 'Inès · prof Pilates, Lille Wazemmes',
+      },
+    },
   },
 
   montpellier: {
@@ -402,6 +477,31 @@ export const CITIES = {
     citation: {
       text: "Montpellier a complètement changé en 5 ans. On est passé d'une scène locale tranquille à un vrai pôle yoga du Sud, avec une clientèle qui sait ce qu'elle veut. C'est exigeant mais hyper stimulant.",
       author: 'Margaux · prof de yoga, Montpellier Beaux-Arts',
+    },
+    pilates: {
+      profDescription: `Montpellier a vu sa scène Pilates exploser dans le sillage du boom yoga local. Population jeune, climat méditerranéen, arrivée post-2020 de Parisien·ne·s exigeant·e·s : tous les ingrédients d'un marché Pilates qui se structure rapidement. Plusieurs studios Reformer ont ouvert ces 3 dernières années dans le quartier de l'Écusson et des Beaux-Arts. Particularité montpelliéraine : forte demande pour le Pilates "post-sport intensif" (runners, trailers, cyclistes) qui cherchent un travail postural précis. Tarifs en montée régulière (Mat 15-20 €, Reformer 33-48 €). Quartiers actifs : Écusson, Beaux-Arts, Antigone, Comédie.`,
+      lieuxConnus: [
+        'Pilates Montpellier Écusson',
+        'Pure Pilates Montpellier',
+        'Studio Pilates Beaux-Arts',
+        'Reformer Montpellier',
+        'Mat Studio Montpellier',
+        'Pilates Antigone',
+        'Stott Pilates Montpellier',
+        'Pilates Comédie',
+        'Studio Pilates Méditerranée',
+        'Pilates Mosson',
+      ],
+      stats: [
+        { value: '100+', label: 'Studios/profs Pilates indé à Montpellier' },
+        { value: '25-55 €', label: 'Tarif horaire location salle' },
+        { value: '15-20 €', label: 'Tarif cours collectif Mat' },
+        { value: '33-48 €', label: 'Tarif cours collectif Reformer' },
+      ],
+      citation: {
+        text: "Montpellier a un public Pilates exigeant — beaucoup de personnes qui sortent du sport intense (running, trail, vélo) et qui cherchent le travail postural précis qu'un cours collectif classique ne donne pas.",
+        author: 'Hélène · prof Pilates, Montpellier Beaux-Arts',
+      },
     },
   },
 
@@ -433,6 +533,31 @@ export const CITIES = {
       text: "Ici, l'élève vient autant pour la séance que pour ce qu'il y a autour — la promenade vers le studio, le café après, et l'idée qu'on peut prolonger en week-end sur la côte. C'est tout un art de vivre.",
       author: 'Anaïs · prof de yoga, Rennes Sainte-Anne',
     },
+    pilates: {
+      profDescription: `Rennes a une scène Pilates plus douce et structurée que ses voisines, en cohérence avec la sensibilité wellness bretonne. Le Pilates Mat domine très largement, le Reformer reste rare (3-4 studios sur la métropole). Forte demande pour le Pilates prénatal/postnatal et le Pilates seniors — en lien avec une population universitaire jeune et un vieillissement progressif. Beaucoup de profs organisent des retraites Pilates sur la côte sud bretonne (Quiberon, Belle-Île, presqu'île de Rhuys) combinant Pilates + nature + déconnexion. Tarifs modérés (Mat 13-17 €, Reformer 28-42 €).`,
+      lieuxConnus: [
+        'Pilates Rennes Centre',
+        'La Maison du Pilates Rennes',
+        'Mat Studio Rennes',
+        'Pilates Sainte-Anne',
+        'Reformer Studio Rennes',
+        'Pilates Rennes Sud',
+        'Studio Pilates Atalante',
+        'Pilates & Bien-être Rennes',
+        'Pilates Centre Rennes',
+        'Atelier Pilates Rennes',
+      ],
+      stats: [
+        { value: '60+', label: 'Studios/profs Pilates indé à Rennes' },
+        { value: '22-45 €', label: 'Tarif horaire location salle' },
+        { value: '13-17 €', label: 'Tarif cours collectif Mat' },
+        { value: '28-42 €', label: 'Tarif cours collectif Reformer' },
+      ],
+      citation: {
+        text: "Rennes a cette douceur bretonne qui colle parfaitement au Pilates. Mes élèves cherchent une pratique régulière, sans stress, qui les accompagne sur la durée. Pas de course à la perf — du précis et du juste.",
+        author: 'Soizic · prof Pilates, Rennes Sainte-Anne',
+      },
+    },
   },
 
   nice: {
@@ -462,6 +587,31 @@ export const CITIES = {
     citation: {
       text: "Niçoise et internationale à la fois, c'est ce qui rend la pratique ici particulière. Tu peux enseigner en français le matin et en anglais l'après-midi — et personne ne s'étonne. C'est unique en France.",
       author: 'Elena · prof de yoga, Nice Carré d\'Or',
+    },
+    pilates: {
+      profDescription: `Nice a une scène Pilates haut de gamme, parmi les plus structurées de France après Paris. Plusieurs studios Reformer premium se sont implantés ces 5 dernières années, profitant d'une clientèle mixte (locaux fidèles + résidents internationaux + vacanciers longue durée à fort pouvoir d'achat). Le Pilates Mat et le Reformer cohabitent à parts égales, ce qui est rare en France. Tarifs premium (Mat 18-28 €, Reformer 38-65 €) — parmi les plus élevés du marché national en province. Cours occasionnels sur la Promenade des Anglais aux beaux jours. Quartiers actifs : Vieux Nice, Carré d'Or, Cimiez, Riquier.`,
+      lieuxConnus: [
+        'Pilates Nice Centre',
+        'Reformer Nice',
+        'Stott Pilates Nice',
+        'Pure Pilates Nice',
+        'Mat Studio Nice',
+        'Pilates Vieux Nice',
+        'Pilates Carré d\'Or',
+        'Studio Pilates Cimiez',
+        'Pilates Promenade Nice',
+        'Studio Reformer Nice',
+      ],
+      stats: [
+        { value: '100+', label: 'Studios/profs Pilates indé à Nice' },
+        { value: '32-70 €', label: 'Tarif horaire location salle' },
+        { value: '18-28 €', label: 'Tarif cours collectif Mat' },
+        { value: '38-65 €', label: 'Tarif cours collectif Reformer' },
+      ],
+      citation: {
+        text: "Nice a une demande Pilates premium très solide. Les résidents internationaux et les vacanciers longue durée payent volontiers 40-50 € pour un cours collectif Reformer de qualité — c'est inimaginable ailleurs en province.",
+        author: 'Alexandra · prof Pilates Reformer, Nice Carré d\'Or',
+      },
     },
   },
 };
