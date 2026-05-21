@@ -1,8 +1,8 @@
 ---
 title: "Anti-burnout pour prof de yoga : 7 signaux à surveiller (avant qu'il ne soit trop tard)"
 description: "40 % des profs de yoga indépendant·e·s abandonnent dans les 5 ans qui suivent leur installation. Pas par manque de talent — par burnout silencieux. Voici les 7 signaux qui doivent t'alerter et les 8 leviers concrets pour t'en sortir avant le point de rupture."
-date: 2026-05-21
-updated: 2026-05-21
+date: 2026-04-22
+updated: 2026-04-22
 author: "Colin (IziSolo)"
 tags: ["bien-être", "burnout", "prof yoga", "santé mentale"]
 image: /icons/hero-cocoon.png

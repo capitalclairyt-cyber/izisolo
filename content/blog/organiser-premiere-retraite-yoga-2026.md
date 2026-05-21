@@ -1,7 +1,7 @@
 ---
 title: "Organiser ta première retraite yoga : guide complet pour profs solo (2026)"
 description: "Méthode complète pour organiser ta première retraite yoga en tant que prof indépendant·e : formats, choix du lieu, tarification, marketing, logistique. Tableaux chiffrés, exemple complet, erreurs à éviter."
-date: 2026-05-21
+date: 2026-02-14
 updated: 2026-05-21
 author: "Colin (IziSolo)"
 tags: ["yoga", "retraite", "organisation", "événementiel"]

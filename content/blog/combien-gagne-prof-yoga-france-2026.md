@@ -1,7 +1,7 @@
 ---
 title: "Combien gagne un·e prof de yoga indépendant·e en France en 2026 ?"
 description: "Chiffres réels, charges, marges et fourchettes par profil (débutante, expérimentée, multi-villes). Tableaux et exemples concrets pour estimer ton revenu net mensuel et fixer tes tarifs."
-date: 2026-05-21
+date: 2025-06-15
 updated: 2026-05-21
 author: "Colin (IziSolo)"
 tags: ["yoga", "tarification", "revenus", "auto-entrepreneur"]

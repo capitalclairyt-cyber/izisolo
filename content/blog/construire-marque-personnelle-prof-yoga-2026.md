@@ -1,7 +1,7 @@
 ---
 title: "Construire ta marque personnelle de prof de yoga (sans devenir une influenceuse)"
 description: "Méthode complète pour construire ta marque perso en tant que prof de yoga indépendant·e en 2026 : trouver ton angle distinctif, identité visuelle minimale, ton de voix, 3 plateformes essentielles. Sans dénaturer ta pratique."
-date: 2026-05-21
+date: 2026-03-08
 updated: 2026-05-21
 author: "Colin (IziSolo)"
 tags: ["yoga", "branding", "marque-perso", "communication"]

@@ -1,7 +1,7 @@
 ---
 title: "Comment trouver tes 100 premiers élèves quand on démarre prof de yoga (méthode 2026)"
 description: "Méthode complète pour trouver ses premiers élèves en tant que prof de yoga indépendant·e. 5 canaux d'acquisition hiérarchisés par ROI, tactiques concrètes, erreurs à éviter, roadmap 90 jours."
-date: 2026-05-21
+date: 2025-12-03
 updated: 2026-05-21
 author: "Colin (IziSolo)"
 tags: ["yoga", "acquisition", "marketing", "démarrage"]

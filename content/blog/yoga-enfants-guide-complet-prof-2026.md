@@ -1,8 +1,8 @@
 ---
 title: "Yoga pour enfants : le guide complet pour profs (2026)"
 description: "Méthode complète pour enseigner le yoga aux enfants en tant que prof indépendant·e en 2026. Spécificités par âge, cadres d'intervention, tarifs, structure d'un cours type, démarchage écoles et mairies. Marché en pleine expansion."
-date: 2026-05-21
-updated: 2026-05-21
+date: 2026-05-15
+updated: 2026-05-15
 author: "Colin (IziSolo)"
 tags: ["yoga", "enfants", "pédagogie", "écoles"]
 image: /blog/hero-yoga-enfants.jpg

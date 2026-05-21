@@ -1,7 +1,7 @@
 ---
 title: "Logiciel de gestion studio yoga : 10 critères qu'on oublie tout le temps (2026)"
 description: "Méthode pour choisir le bon logiciel de gestion pour ton studio de yoga, pilates ou bien-être en 2026. 10 critères qui comptent vraiment, 5 red flags à fuir, 7 questions à poser avant de signer. Grille d'évaluation pondérée."
-date: 2026-05-21
+date: 2026-01-18
 updated: 2026-05-21
 author: "Colin (IziSolo)"
 tags: ["outils", "gestion", "logiciel", "studio"]

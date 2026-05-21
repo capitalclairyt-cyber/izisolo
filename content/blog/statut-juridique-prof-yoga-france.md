@@ -1,8 +1,8 @@
 ---
 title: "Quel statut juridique pour prof de yoga en France en 2026 ? (Guide complet)"
 description: "Micro-entreprise, EI au réel, EURL, SASU : comparatif détaillé des statuts pour prof de yoga indépendant·e. Seuils, cotisations, impôts, protection sociale, et quand basculer d'un statut à l'autre."
-date: 2026-05-22
-updated: 2026-05-22
+date: 2025-09-10
+updated: 2026-05-21
 author: "Colin (IziSolo)"
 tags: ["juridique", "auto-entrepreneur", "fiscalité"]
 image: /blog/hero-statut-juridique.jpg

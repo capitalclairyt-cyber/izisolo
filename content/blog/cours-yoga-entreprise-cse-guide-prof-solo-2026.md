@@ -1,8 +1,8 @@
 ---
 title: "Cours yoga en entreprise (CSE) : le guide complet pour profs solo (2026)"
 description: "Méthode complète pour démarcher les entreprises et CSE en tant que prof de yoga indépendant·e. Tarifs 2026, modèles contractuels, scripts de démarchage, adaptation du cours au cadre pro. Le marché B2B est la pépite cachée du métier."
-date: 2026-05-21
-updated: 2026-05-21
+date: 2026-03-28
+updated: 2026-03-28
 author: "Colin (IziSolo)"
 tags: ["yoga", "entreprise", "B2B", "CSE"]
 image: /icons/persona-coach.jpg

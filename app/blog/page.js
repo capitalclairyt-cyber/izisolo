@@ -65,26 +65,51 @@ export default function BlogIndexPage() {
               </div>
             ) : (
               <>
-                {/* Article featured */}
+                {/* Article featured — layout 2 colonnes avec hero photo */}
                 {featured && (
                   <article className="blog-featured">
                     <Link href={`/blog/${featured.slug}`} className="blog-featured-link">
+                      {featured.image && (
+                        <div className="blog-featured-image">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={featured.image}
+                            alt={featured.title}
+                            loading="eager"
+                          />
+                        </div>
+                      )}
                       <div className="blog-featured-content">
                         <span className="eyebrow">À la une · {featured.readingTime} min de lecture</span>
                         <h2 className="serif">{featured.title}</h2>
                         <p className="blog-featured-excerpt">{featured.excerpt}</p>
+                        <div className="blog-featured-meta">
+                          <time dateTime={featured.date}>{formatDateFR(featured.date)}</time>
+                          <span className="blog-card-dot">·</span>
+                          <span>{featured.readingTime} min de lecture</span>
+                        </div>
                         <span className="blog-featured-cta">Lire l'article →</span>
                       </div>
                     </Link>
                   </article>
                 )}
 
-                {/* Grille des autres articles */}
+                {/* Grille des autres articles avec photo en top */}
                 {rest.length > 0 && (
                   <div className="blog-grid">
                     {rest.map(article => (
                       <article key={article.slug} className="blog-card">
                         <Link href={`/blog/${article.slug}`} className="blog-card-link">
+                          {article.image && (
+                            <div className="blog-card-image">
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={article.image}
+                                alt={article.title}
+                                loading="lazy"
+                              />
+                            </div>
+                          )}
                           <div className="blog-card-content">
                             <div className="blog-card-meta">
                               <time dateTime={article.date}>{formatDateFR(article.date)}</time>

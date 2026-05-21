@@ -1,7 +1,7 @@
 ---
 title: "Comment fixer ses tarifs prof de yoga sans se brader (méthode 2026)"
 description: "Méthode complète pour fixer ses tarifs en tant que prof de yoga indépendant·e : coût de revient, marge cible, positionnement, fourchettes par typologie (collectif, particulier, entreprise, stage). Tableaux, calculs et 7 erreurs à éviter."
-date: 2026-05-21
+date: 2025-10-28
 updated: 2026-05-21
 author: "Colin (IziSolo)"
 tags: ["yoga", "tarification", "pricing", "indépendant"]

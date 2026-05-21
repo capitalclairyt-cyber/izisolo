@@ -1,7 +1,7 @@
 ---
 title: "Excel vs logiciel pour gérer ses élèves : le comparatif honnête (2026)"
 description: "Combien d'heures perd-on vraiment à gérer ses élèves sur Excel ? Comparatif détaillé Excel/Google Sheets vs logiciel dédié, coûts réels, et le moment où ça vaut le coup de basculer."
-date: 2026-05-21
+date: 2025-07-22
 updated: 2026-05-21
 author: "Colin (IziSolo)"
 tags: ["organisation", "outils", "gestion-temps"]
