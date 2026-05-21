@@ -38,6 +38,31 @@ export const CITIES = {
       text: "À Paris, le yoga n'est plus un luxe — c'est devenu une infrastructure mentale pour beaucoup de gens qui télétravaillent et qui veulent un ancrage régulier dans leur semaine.",
       author: 'Maude · prof de yoga, Paris 11e',
     },
+    pilates: {
+      profDescription: `Paris a le marché Pilates le plus dense et le plus segmenté de France. Trois sous-segments cohabitent : (1) le Pilates Mat traditionnel issu de la méthode Joseph Pilates, dispensé majoritairement par d'ancien·ne·s danseuses et kinés ; (2) le Pilates Reformer haut de gamme dans des studios spécialisés (10-15 k€ d'investissement matériel par studio) avec une clientèle premium ; (3) le Pilates Clinical (kinés-Pilates) pour la rééducation post-traumatique. Les quartiers concentrant les studios : Marais, Bastille, Trocadéro, 16ᵉ, 7ᵉ. Loyer salle 50-90 €/h pour location standard, 70-130 €/h pour studio équipé Reformer. Cours collectif Mat : 22-30 €, cours collectif Reformer : 35-55 €, 1-à-1 Reformer : 80-150 €.`,
+      lieuxConnus: [
+        'Pilates ProWorks Paris',
+        'Studio Reformer Paris',
+        'Pure Pilates Paris',
+        'Pilates Bastille',
+        'Mat Pilates Marais',
+        'Stott Pilates Paris 16',
+        'Pilates Clinique Paris',
+        'Reformer Studio Trocadéro',
+        'Pilates Loft Paris',
+        'Body Mind Paris',
+      ],
+      stats: [
+        { value: '200+', label: 'Studios Pilates spécialisés à Paris' },
+        { value: '50-130 €', label: 'Tarif horaire location salle (Mat / Reformer)' },
+        { value: '22-55 €', label: 'Tarif cours collectif (Mat / Reformer)' },
+        { value: '10-14', label: 'Cours hebdo médian par prof confirmée' },
+      ],
+      citation: {
+        text: "À Paris, le Reformer a complètement changé la donne. Les élèves comprennent qu'on offre quelque chose qu'un cours collectif classique ne peut pas — un travail précis, sur-mesure, avec une vraie progression mesurable.",
+        author: 'Sophie · prof Pilates Reformer, Paris 11e',
+      },
+    },
   },
 
   lyon: {
@@ -67,6 +92,31 @@ export const CITIES = {
     citation: {
       text: "Lyon a la chance d'avoir une vraie scène locale soudée. Les profs se connaissent, se recommandent, organisent des retraites communes — c'est un écosystème, pas une compétition.",
       author: 'Solène · prof de yoga, Lyon Croix-Rousse',
+    },
+    pilates: {
+      profDescription: `Lyon a vu sa scène Pilates exploser depuis 5 ans, portée notamment par des profs venues du yoga ou de la danse classique. Le Pilates Mat domine encore largement (~75 % de l'offre), mais le Reformer prend du terrain — surtout dans le 6ᵉ arrondissement et la Croix-Rousse où plusieurs studios spécialisés ont ouvert. La clientèle lyonnaise est plus sensible au rapport qualité-prix que la clientèle parisienne : les studios qui marchent sont ceux qui proposent du Reformer à un tarif accessible (35-50 €/cours collectif), pas du premium ultra-cher. Beaucoup de profs lyonnaises combinent Pilates avec une autre discipline (yoga, sophro, danse) pour diversifier leur planning et leurs revenus.`,
+      lieuxConnus: [
+        'Pilates Studio Lyon',
+        'Reformer Lyon',
+        'Pure Pilates Lyon',
+        'Pilates Croix-Rousse',
+        'Mat Studio Lyon',
+        'Méthode Pilates Lyon',
+        'Pilates 6e',
+        'Studio Pilates Confluence',
+        'Pilates Vaise',
+        'Pilates Lyon Centre',
+      ],
+      stats: [
+        { value: '100+', label: 'Studios/profs Pilates indé à Lyon' },
+        { value: '30-70 €', label: 'Tarif horaire location salle (Mat / Reformer)' },
+        { value: '16-25 €', label: 'Tarif cours collectif Mat' },
+        { value: '35-50 €', label: 'Tarif cours collectif Reformer' },
+      ],
+      citation: {
+        text: "À Lyon, l'élève Pilates est plus exigeante qu'en yoga — elle veut sentir un vrai travail technique. Tu peux pas te contenter d'animer, tu dois enseigner précisément. Et le bouche-à-oreille est implacable.",
+        author: 'Manon · prof Pilates, Lyon 6e',
+      },
     },
   },
 
@@ -98,6 +148,31 @@ export const CITIES = {
       text: "À Bordeaux, on a le luxe d'un vrai art de vivre. Mes élèves viennent pour la pratique, mais aussi pour ce qui se passe avant et après — un café, un échange, un week-end dans le Médoc.",
       author: 'Camille · prof de yoga, Bordeaux Chartrons',
     },
+    pilates: {
+      profDescription: `Bordeaux a vu sa scène Pilates suivre l'attraction parisienne post-LGV : plusieurs profs Pilates confirmées sont arrivées de Paris ces 5 dernières années avec une expertise Reformer, ce qui a complètement structuré l'offre locale. Aujourd'hui, Bordeaux est probablement la 3ᵉ ville française pour le Pilates Reformer après Paris et Lyon. Quartiers les plus actifs : Chartrons (zone bobo premium), Saint-Pierre, et la rive droite émergente. Tarifs intermédiaires entre Paris et Toulouse (Mat 16-22 €, Reformer 35-55 €). Particularité bordelaise : plusieurs studios combinent Pilates Reformer avec des modalités SPA (sauna, hammam, soins) pour un positionnement très premium.`,
+      lieuxConnus: [
+        'Pilates Studio Bordeaux',
+        'Reformer Bordeaux',
+        'Pure Pilates Bordeaux',
+        'Pilates Chartrons',
+        'Mat Studio Bordeaux',
+        'Pilates Saint-Pierre',
+        'Stott Pilates Bordeaux',
+        'Pilates Bordeaux Centre',
+        'Pilates La Bastide',
+        'Reformer Studio Caudéran',
+      ],
+      stats: [
+        { value: '100+', label: 'Studios/profs Pilates indé à Bordeaux' },
+        { value: '28-65 €', label: 'Tarif horaire location salle' },
+        { value: '16-22 €', label: 'Tarif cours collectif Mat' },
+        { value: '35-55 €', label: 'Tarif cours collectif Reformer' },
+      ],
+      citation: {
+        text: "Bordeaux est la ville idéale pour démarrer un studio Pilates : assez de demande premium, des tarifs immobiliers tenables, et une clientèle qui prend le temps de comprendre la méthode. Tout l'inverse de Paris.",
+        author: 'Charlotte · prof Pilates Reformer, Bordeaux Chartrons',
+      },
+    },
   },
 
   marseille: {
@@ -128,6 +203,31 @@ export const CITIES = {
       text: "Pratiquer face à la mer change tout. Mes élèves payent pour la séance, mais c'est ce qu'on ressent en sortant de l'eau après le savasana qui les ramène la semaine d'après.",
       author: 'Inès · prof de yoga, Marseille Cinq-Avenues',
     },
+    pilates: {
+      profDescription: `Marseille a une scène Pilates en pleine ascension, portée par la dimension "bien-être méditerranéen" très ancrée localement. Le Pilates Mat domine très largement, avec une croissance plus lente du Reformer qu'à Bordeaux ou Lyon. Le Reformer s'implante doucement dans le 8ᵉ (Pointe-Rouge, Bonneveine), Vauban et le centre. La spécificité marseillaise : forte demande pour le Pilates post-natal, en lien avec une population jeune en plein boom démographique. Beaucoup de profs proposent des formats "Pilates + sortie en mer kayak/SUP" pendant la belle saison. Tarifs très compétitifs (Mat 14-19 €, Reformer 30-45 € quand il existe).`,
+      lieuxConnus: [
+        'Pilates Marseille Centre',
+        'Reformer Studio Marseille',
+        'Pilates Bel-Air',
+        'Mat Pilates Pointe-Rouge',
+        'Studio Pilates Vauban',
+        'Pilates Castellane',
+        'Stott Pilates Marseille',
+        'Pilates Bonneveine',
+        'Reformer Marseille 8e',
+        'Pilates La Plaine',
+      ],
+      stats: [
+        { value: '120+', label: 'Studios/profs Pilates indé à Marseille' },
+        { value: '25-65 €', label: 'Tarif horaire location salle' },
+        { value: '14-19 €', label: 'Tarif cours collectif Mat' },
+        { value: '30-45 €', label: 'Tarif cours collectif Reformer' },
+      ],
+      citation: {
+        text: "Marseille a une vraie demande pour le Pilates post-natal — les jeunes mamans cherchent une remise en forme douce et progressive. C'est devenu mon créneau principal, avec des cours qui se remplissent en 48h dès l'annonce.",
+        author: 'Léa · prof Pilates, Marseille Castellane',
+      },
+    },
   },
 
   toulouse: {
@@ -157,6 +257,31 @@ export const CITIES = {
     citation: {
       text: "Toulouse a cette force d'avoir gardé des tarifs accessibles. Du coup les cours se remplissent vite, et tu peux vraiment vivre du yoga avec 12 cours par semaine — chose impossible à Paris ou Lyon au même prix.",
       author: 'Léa · prof de yoga, Toulouse Saint-Cyprien',
+    },
+    pilates: {
+      profDescription: `Toulouse a une scène Pilates qui suit le pattern toulousain habituel : universitaire, accessible, et qualitative. Les tarifs sont parmi les plus bas de France (Mat 13-17 €, Reformer 28-40 € quand il existe). La majorité de l'offre est en Pilates Mat traditionnel, avec une montée en puissance du Pilates Clinical (kinés-Pilates) en lien avec les nombreux étudiants en kinésithérapie de la fac de médecine — c'est une vraie spécificité toulousaine. Quartiers : Carmes, Saint-Cyprien (rive gauche), Capitole, et Compans-Caffarelli côté nord. Les studios Reformer restent rares (3-4 sur toute la métropole) mais en croissance régulière.`,
+      lieuxConnus: [
+        'Pilates Studio Toulouse',
+        'Reformer Toulouse',
+        'Mat Studio Toulouse',
+        'Pilates Carmes',
+        'Studio Pilates Capitole',
+        'Pilates Saint-Cyprien',
+        'Pilates Clinical Toulouse',
+        'Méthode Pilates Toulouse',
+        'Pilates Compans',
+        'Pilates Toulouse Sud',
+      ],
+      stats: [
+        { value: '80+', label: 'Studios/profs Pilates indé à Toulouse' },
+        { value: '22-55 €', label: 'Tarif horaire location salle' },
+        { value: '13-17 €', label: 'Tarif cours collectif Mat' },
+        { value: '28-40 €', label: 'Tarif cours collectif Reformer' },
+      ],
+      citation: {
+        text: "Toulouse permet de proposer du Pilates accessible sans se brader. Notre clientèle étudiante et jeunes actives compose mes meilleurs cours — ils sont curieux, assidus, et reviennent semaine après semaine.",
+        author: 'Camille · prof Pilates, Toulouse Saint-Cyprien',
+      },
     },
   },
 

@@ -32,6 +32,14 @@ export default function LocalLanding({ city, discipline = 'yoga' }) {
   const d = DISCIPLINE_LABEL[discipline] || 'yoga';
   const D = DISCIPLINE_LABEL_CAPITAL[discipline] || 'Yoga';
 
+  // Si l'objet city contient un sous-objet pour la discipline (ex: city.pilates),
+  // on l'utilise pour surcharger profDescription/lieuxConnus/stats/citation.
+  // Sinon fallback sur les valeurs racine (= yoga par défaut). Garantit la
+  // rétrocompatibilité des 11 pages /prof-yoga-{ville} existantes.
+  const data = (discipline !== 'yoga' && city[discipline])
+    ? { ...city, ...city[discipline] }
+    : city;
+
   return (
     <div className="izi-landing-root" data-palette="sable">
       <main className="local-page">
@@ -80,10 +88,10 @@ export default function LocalLanding({ city, discipline = 'yoga' }) {
                 <h2 className="serif">
                   Une scène <em>{d}</em> en pleine effervescence.
                 </h2>
-                <p>{city.profDescription}</p>
-                {city.stats && (
+                <p>{data.profDescription}</p>
+                {data.stats && (
                   <ul className="local-stats">
-                    {city.stats.map((s, i) => (
+                    {data.stats.map((s, i) => (
                       <li key={i}>
                         <strong>{s.value}</strong>
                         <span>{s.label}</span>
@@ -92,11 +100,11 @@ export default function LocalLanding({ city, discipline = 'yoga' }) {
                   </ul>
                 )}
               </div>
-              {city.citation && (
+              {data.citation && (
                 <aside className="local-citation">
                   <blockquote>
-                    <p>{city.citation.text}</p>
-                    <footer>— {city.citation.author}</footer>
+                    <p>{data.citation.text}</p>
+                    <footer>— {data.citation.author}</footer>
                   </blockquote>
                 </aside>
               )}
@@ -104,7 +112,7 @@ export default function LocalLanding({ city, discipline = 'yoga' }) {
           </section>
 
           {/* Lieux de pratique connus */}
-          {city.lieuxConnus && city.lieuxConnus.length > 0 && (
+          {data.lieuxConnus && data.lieuxConnus.length > 0 && (
             <section className="local-lieux">
               <span className="eyebrow">Quelques lieux de pratique connus à {city.name}</span>
               <h2 className="serif">Tu pratiques peut-être déjà à...</h2>
@@ -113,7 +121,7 @@ export default function LocalLanding({ city, discipline = 'yoga' }) {
                 indépendant·e·s qui louent leur salle ou ont leur studio propre, peu importe l'endroit.
               </p>
               <ul className="local-lieux-list">
-                {city.lieuxConnus.map((lieu, i) => (
+                {data.lieuxConnus.map((lieu, i) => (
                   <li key={i}>{lieu}</li>
                 ))}
               </ul>

@@ -20,6 +20,7 @@ const PUBLIC_ROUTES = [
   '/legal/',                // CGU/CGV/Mentions/RGPD
   '/profs-de-yoga', '/profs-de-pilates', '/coachs-bien-etre', '/therapeutes',
   '/prof-yoga-',            // /prof-yoga-paris, /prof-yoga-lyon, futures villes
+  '/prof-pilates-',         // /prof-pilates-paris, /prof-pilates-lyon, etc.
   '/blog',                  // /blog (liste) + /blog/[slug] (articles)
   '/calculateur',                // calculateur de frais (lead magnet)
   '/sitemap.xml', '/robots.txt',
