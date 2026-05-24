@@ -489,6 +489,84 @@
   }
 }
 
+/* ─── Encart "outil" inline dans les articles ──────────────────────────
+   Pour pointer vers /outils/calculateur-revenu-prof-yoga depuis les
+   articles pertinents (combien gagne, fixer tarifs, statut juridique).
+   Palette sage cohérente avec l'outil. */
+.article-body .article-tool-callout {
+  display: flex;
+  gap: var(--sp-5);
+  align-items: flex-start;
+  margin: var(--sp-8) 0;
+  padding: var(--sp-6) var(--sp-7);
+  background: linear-gradient(135deg, #f0f4ec 0%, #e6ecdc 100%);
+  border-left: 4px solid #6b8e5a;
+  border-radius: 14px;
+}
+.article-body .callout-icon {
+  font-size: 2rem;
+  flex-shrink: 0;
+  line-height: 1;
+  margin-top: 4px;
+}
+.article-body .callout-body {
+  flex: 1;
+}
+.article-body .callout-eyebrow {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: #6b8e5a;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.article-body .callout-body h4 {
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-size: 1.375rem;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  margin: 0 0 var(--sp-3);
+  color: var(--c-ink);
+}
+.article-body .callout-body p {
+  font-size: 0.9375rem;
+  line-height: 1.55;
+  color: var(--c-ink-soft);
+  margin: 0 0 var(--sp-4);
+  max-width: 60ch;
+}
+.article-body .callout-link {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--font-geist);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #6b8e5a;
+  text-decoration: none;
+  padding: 8px 16px;
+  border-radius: 99px;
+  background: white;
+  border: 1.5px solid #6b8e5a;
+  transition: all 0.2s ease;
+}
+.article-body .callout-link:hover {
+  background: #6b8e5a;
+  color: white;
+}
+@media (max-width: 640px) {
+  .article-body .article-tool-callout {
+    flex-direction: column;
+    padding: var(--sp-5);
+    gap: var(--sp-3);
+  }
+  .article-body .callout-icon {
+    font-size: 1.75rem;
+  }
+}
+
 /* Drop cap sur le premier paragraphe (magazine touch) */
 .article-body > p:first-child::first-letter {
   font-family: 'Instrument Serif', Georgia, serif;

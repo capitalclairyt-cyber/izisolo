@@ -95,6 +95,16 @@ Si le taux de remplissage est < 5 élèves/cours **et** que la moyenne du march�
 
 Si le taux de remplissage est > 12 élèves/cours en permanence et que tu refuses du monde → ton tarif est trop bas pour la demande. Augmente de 1-2 €.
 
+<aside class="article-tool-callout">
+  <div class="callout-icon">🧮</div>
+  <div class="callout-body">
+    <span class="callout-eyebrow">Outil gratuit · 2 minutes</span>
+    <h4>Teste l'impact d'un changement de tarif</h4>
+    <p>Notre calculateur t'aide à voir en temps réel ce que +2 € sur ton tarif, ou +3 élèves de remplissage moyen, font sur ton revenu net mensuel.</p>
+    <a href="/outils/calculateur-revenu-prof-yoga" class="callout-link">→ Essayer le calculateur</a>
+  </div>
+</aside>
+
 ## Les fourchettes 2026 par typologie de cours
 
 D'après nos retours croisés avec ~100 profs en bêta IziSolo :

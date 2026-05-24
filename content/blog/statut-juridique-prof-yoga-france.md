@@ -85,6 +85,16 @@ NET DANS LA POCHE ................................ 21 254 €
 
 C'est **59 %** du CA brut. Sans optimisation possible (pas de déduction des charges réelles, donc).
 
+<aside class="article-tool-callout">
+  <div class="callout-icon">🧮</div>
+  <div class="callout-body">
+    <span class="callout-eyebrow">Outil gratuit · 2 minutes</span>
+    <h4>Compare micro-entreprise vs EI au réel sur tes vrais chiffres</h4>
+    <p>Notre calculateur de revenu intègre un switch micro ⇄ réel : tu saisis tes chiffres, tu basules entre les deux, tu vois la différence sur ton net mensuel.</p>
+    <a href="/outils/calculateur-revenu-prof-yoga" class="callout-link">→ Essayer le calculateur</a>
+  </div>
+</aside>
+
 ## 2. L'EI au réel (Entreprise Individuelle)
 
 **À considérer quand : tes charges réelles dépassent 34 % de ton CA OU tu approches le plafond micro.**

@@ -41,6 +41,16 @@ D'après les retours croisés de profs en activité, les enquêtes de la Fédér
 
 > Ces chiffres sont des **médianes** : on trouve des extrêmes dans les deux sens (prof débutante qui démarre fort grâce à un bouche-à-oreille intense, prof expérimentée mal payée à cause d'un manque d'autonomie commerciale).
 
+<aside class="article-tool-callout">
+  <div class="callout-icon">🧮</div>
+  <div class="callout-body">
+    <span class="callout-eyebrow">Outil gratuit · 2 minutes</span>
+    <h4>Calcule ton revenu net réel</h4>
+    <p>Saisis ton tarif, ton nombre de cours et tes charges — on calcule ton net mensuel et on te dit dans quelle zone tu te situes parmi celles décrites au-dessus.</p>
+    <a href="/outils/calculateur-revenu-prof-yoga" class="callout-link">→ Essayer le calculateur</a>
+  </div>
+</aside>
+
 ### Pourquoi un tel écart débutante → confirmée ?
 
 L'écart entre une débutante et une confirmée n'est pas seulement une question de tarifs : c'est surtout **le taux de remplissage**.
