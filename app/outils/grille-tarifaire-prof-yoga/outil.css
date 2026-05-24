@@ -14,11 +14,15 @@
    à toutes les balises <section>. Mes <section className="grille-section">
    et <section className="grille-controls"> en héritaient et recevaient
    ~230px de padding vertical chacune — ce qui créait des gaps énormes
-   entre sections. Override explicite ici.                            */
+   entre sections. Override explicite ici avec !important pour parer
+   à toute spécificité concurrente.                                    */
 .grille-section,
-.grille-controls {
-  padding-block: 0;
+.grille-controls,
+.outil-cta {
+  padding-block: 0 !important;
 }
+/* L'outil-cta a son propre .outil-cta-inner avec padding interne,
+   donc on peut retirer son padding-block hérité sans problème. */
 
 .outil-page {
   padding-top: var(--sp-8);
