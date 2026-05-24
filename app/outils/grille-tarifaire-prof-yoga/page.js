@@ -118,6 +118,11 @@ export default function GrilleTarifairePage() {
                   <h3>Comparateur de statuts juridiques (micro / EI / SASU)</h3>
                   <span className="card-cta">Essayer le comparateur →</span>
                 </Link>
+                <Link href="/outils/checklist-lancement-prof-yoga" className="outil-related-card">
+                  <span className="eyebrow">Outil complémentaire</span>
+                  <h3>Checklist de lancement prof solo (~30 étapes interactives)</h3>
+                  <span className="card-cta">Ouvrir ma checklist →</span>
+                </Link>
               </div>
             </nav>
 

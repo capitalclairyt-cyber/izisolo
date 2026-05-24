@@ -120,6 +120,11 @@ export default function CalculateurRevenuPage() {
                   <h3>Quel statut juridique pour prof de yoga en France ?</h3>
                   <span className="card-cta">Lire l&apos;article →</span>
                 </Link>
+                <Link href="/outils/checklist-lancement-prof-yoga" className="outil-related-card">
+                  <span className="eyebrow">Outil complémentaire</span>
+                  <h3>Checklist de lancement prof solo (~30 étapes interactives)</h3>
+                  <span className="card-cta">Ouvrir ma checklist →</span>
+                </Link>
               </div>
             </nav>
 

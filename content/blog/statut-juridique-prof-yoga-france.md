@@ -253,6 +253,16 @@ Beaucoup l'oublient. Elle te tombe dessus en **fin d'année 2** d'activité, et 
 ### 5. Mélanger compte perso et compte pro
 En micro, ce n'est pas obligatoire d'avoir un compte pro **dédié** (un second compte perso suffit), mais c'est **fortement recommandé** dès 10 000 € de CA annuel. Ça facilite la déclaration et te protège en cas de contrôle URSSAF.
 
+<aside class="article-tool-callout">
+  <div class="callout-icon">✅</div>
+  <div class="callout-body">
+    <span class="callout-eyebrow">Outil gratuit · sauvegarde auto</span>
+    <h4>Suis ta checklist de lancement complète (~30 étapes)</h4>
+    <p>Du statut juridique aux premiers élèves : 7 phases interactives à cocher au fur et à mesure. Ajoute tes notes, imprime quand c'est prêt, reviens quand tu veux.</p>
+    <a href="/outils/checklist-lancement-prof-yoga" class="callout-link">→ Ouvrir ma checklist de lancement</a>
+  </div>
+</aside>
+
 ## Ressources officielles
 
 - [autoentrepreneur.urssaf.fr](https://www.autoentrepreneur.urssaf.fr) — Création + déclarations
