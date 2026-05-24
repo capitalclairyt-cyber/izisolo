@@ -49,31 +49,83 @@
 .outil-breadcrumb a:hover { color: var(--c-accent-deep); }
 .outil-breadcrumb .current { color: var(--c-ink); font-weight: 600; }
 
-/* Header */
-.outil-header {
-  text-align: center;
-  margin-bottom: var(--sp-12);
-  max-width: 720px;
-  margin-left: auto;
-  margin-right: auto;
+/* ─── Hero photo bandeau ─────────────────────────────────────────────
+   Photo plein bandeau (aspect 16:8 desktop, 4:5 mobile) avec overlay
+   texte à gauche. Bord arrondi cohérent avec l'esprit magazine du blog. */
+.outil-hero-photo {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 24px;
+  overflow: hidden;
+  margin-bottom: var(--sp-10);
+  background: color-mix(in oklch, var(--c-ink) 8%, transparent);
+}
+.outil-hero-photo img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover;
+}
+.outil-hero-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: var(--sp-10);
+  background: linear-gradient(
+    to right,
+    rgba(0,0,0,0.55) 0%,
+    rgba(0,0,0,0.35) 40%,
+    rgba(0,0,0,0.05) 70%,
+    transparent 100%
+  );
+  color: white;
+}
+.outil-hero-overlay .eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: rgba(255,255,255,0.85);
+  margin-bottom: var(--sp-3);
+  font-weight: 500;
 }
 .outil-h1 {
   font-size: clamp(2.25rem, 5.5vw, 4rem);
   letter-spacing: -0.02em;
   line-height: 1.05;
-  margin: var(--sp-4) 0 var(--sp-5);
-  color: var(--c-ink);
+  margin: 0 0 var(--sp-4);
+  color: white;
+  max-width: 18ch;
 }
 .outil-h1 em {
   font-style: italic;
-  color: var(--c-accent-deep);
+  color: var(--calc-amber-soft);
 }
 .outil-lead {
   font-size: 1.0625rem;
-  line-height: 1.65;
-  color: var(--c-ink-soft);
-  max-width: 56ch;
-  margin: 0 auto;
+  line-height: 1.55;
+  color: rgba(255,255,255,0.88);
+  max-width: 50ch;
+  margin: 0;
+}
+@media (max-width: 800px) {
+  .outil-hero-photo {
+    aspect-ratio: 4 / 5;
+    border-radius: 18px;
+    margin-bottom: var(--sp-6);
+  }
+  .outil-hero-overlay {
+    padding: var(--sp-5);
+    background: linear-gradient(
+      to top,
+      rgba(0,0,0,0.7) 0%,
+      rgba(0,0,0,0.4) 40%,
+      rgba(0,0,0,0.1) 70%,
+      transparent 100%
+    );
+  }
 }
 
 /* Grid 2 colonnes */
@@ -368,6 +420,55 @@
 /* Mini-valeurs colorées selon la section parent */
 .input-toggle-block.is-revenu .input-value-mini { color: var(--calc-positive); }
 .input-toggle-block.is-cout   .input-value-mini { color: var(--calc-negative); }
+
+/* ─── Stepper compact (+ / − pour mini-inputs) ─────────────────────── */
+.stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: white;
+  border: 1.5px solid color-mix(in oklch, var(--c-ink) 12%, transparent);
+  border-radius: 99px;
+  padding: 2px 4px;
+}
+.stepper.positive { border-color: color-mix(in oklch, var(--calc-positive) 35%, transparent); }
+.stepper.negative { border-color: color-mix(in oklch, var(--calc-negative) 35%, transparent); }
+
+.stepper-btn {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: none;
+  background: color-mix(in oklch, var(--c-ink) 6%, transparent);
+  color: var(--c-ink);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  line-height: 1;
+  transition: background 0.15s ease;
+}
+.stepper.positive .stepper-btn:hover {
+  background: var(--calc-positive);
+  color: white;
+}
+.stepper.negative .stepper-btn:hover {
+  background: var(--calc-negative);
+  color: white;
+}
+.stepper-value {
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-size: 1.125rem;
+  color: var(--c-ink);
+  min-width: 36px;
+  text-align: center;
+  user-select: none;
+}
+.stepper.positive .stepper-value { color: var(--calc-positive); }
+.stepper.negative .stepper-value { color: var(--calc-negative); }
 
 /* Radio pills — radio statut juridique, plus discret côté couleur */
 .radio-group {
