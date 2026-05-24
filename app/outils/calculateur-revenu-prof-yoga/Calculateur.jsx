@@ -40,6 +40,8 @@ export default function Calculateur() {
 
   const [statut, setStatut] = useState('micro');
   const [loyer, setLoyer] = useState(350);
+  const [izisoloActif, setIzisoloActif] = useState(true);
+  const [autresCharges, setAutresCharges] = useState(50);
 
   // ─── Calculs ─────────────────────────────────────────────────
   const c = useMemo(() => {
@@ -49,6 +51,8 @@ export default function Calculateur() {
     const caStages = stagesActif ? stagesTrim / 3 : 0;
     const caBrut = caCollectif + caParticuliers + caEntreprise + caStages;
 
+    const izisolo = izisoloActif ? 17 : 0;
+
     // Micro-entreprise : URSSAF 21,2 % du CA brut
     // EI au réel : approximé à 40 % du bénéfice (CA - charges hors URSSAF)
     let urssaf, ir;
@@ -57,12 +61,11 @@ export default function Calculateur() {
       ir = caBrut * 0.022;
     } else {
       // Approximation simplifiée pour le mockup
-      const beneficeAvantCotis = caBrut - loyer - 150;
+      const beneficeAvantCotis = caBrut - loyer - autresCharges - izisolo;
       urssaf = beneficeAvantCotis * 0.40;
       ir = beneficeAvantCotis * 0.08; // tranche moyenne IR
     }
-    const autresCharges = 150;
-    const totalCharges = urssaf + ir + loyer + autresCharges;
+    const totalCharges = urssaf + ir + loyer + autresCharges + izisolo;
     const revenuNet = Math.max(0, caBrut - totalCharges);
 
     // Zone
@@ -99,12 +102,12 @@ export default function Calculateur() {
 
     return {
       caCollectif, caParticuliers, caEntreprise, caStages, caBrut,
-      urssaf, ir, autresCharges, loyer, totalCharges, revenuNet,
+      urssaf, ir, autresCharges, loyer, izisolo, totalCharges, revenuNet,
       zone, zoneRange, zoneClass,
       pctCol, pctPart, pctEnt, pctStages,
       elevesCible, deltaNet,
     };
-  }, [tarif, coursSemaine, elevesMoyen, partActif, partNbSem, partTarif, entActif, entNbMois, entTarif, stagesActif, stagesTrim, statut, loyer]);
+  }, [tarif, coursSemaine, elevesMoyen, partActif, partNbSem, partTarif, entActif, entNbMois, entTarif, stagesActif, stagesTrim, statut, loyer, izisoloActif, autresCharges]);
 
   // ─── Helpers ────────────────────────────────────────────────
   const fmt = (n) => Math.round(n).toLocaleString('fr-FR').replace(/ /g, ' ') + ' €';
@@ -323,6 +326,39 @@ export default function Calculateur() {
           </div>
         </div>
 
+        <div className="input-block is-cout">
+          <label htmlFor="autres">
+            Autres charges (assurance RC pro, comptable, formation, outils...)
+            <span className="input-value">{autresCharges} €</span>
+          </label>
+          <input
+            id="autres"
+            type="range"
+            min="0"
+            max="500"
+            value={autresCharges}
+            step="10"
+            onChange={(e) => setAutresCharges(Number(e.target.value))}
+            className="input-range"
+            style={{ background: sliderBg(autresCharges, 0, 500, 'var(--calc-negative)') }}
+          />
+          <div className="input-scale">
+            <span>0 €</span>
+            <span>500 €</span>
+          </div>
+        </div>
+
+        <div className={`input-toggle-block is-cout ${izisoloActif ? 'active' : ''}`}>
+          <label className="input-toggle">
+            <input type="checkbox" checked={izisoloActif} onChange={(e) => setIzisoloActif(e.target.checked)} />
+            <span className="toggle-track"><span className="toggle-thumb"></span></span>
+            <span className="toggle-label">
+              Application de gestion IziSolo
+              <span className="toggle-hint">17 €/mois · économise 4-6h/sem d&apos;admin</span>
+            </span>
+          </label>
+        </div>
+
       </section>
 
       {/* ═══ OUTPUT ═══════════════════════════════════════════ */}
@@ -385,9 +421,15 @@ export default function Calculateur() {
             <span className="amount amount-negative">− {fmt(c.loyer)}</span>
           </div>
           <div className="breakdown-row">
-            <span>Autres charges (assurance, outils...)</span>
+            <span>Autres charges (assurance, comptable, formation, outils...)</span>
             <span className="amount amount-negative">− {fmt(c.autresCharges)}</span>
           </div>
+          {c.izisolo > 0 && (
+            <div className="breakdown-row">
+              <span>Application IziSolo</span>
+              <span className="amount amount-negative">− {fmt(c.izisolo)}</span>
+            </div>
+          )}
           <div className="breakdown-row breakdown-total">
             <span>Revenu net réel</span>
             <span className="amount">{fmt(c.revenuNet)}</span>

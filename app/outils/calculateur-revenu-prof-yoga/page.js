@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import Calculateur from './Calculateur';
+import CaptureEmail from '@/components/CaptureEmail';
 import { getBreadcrumbSchema, ogImageUrl, BASE_URL } from '@/lib/seo';
 import '../../landing.css';
 import './outil.css';
@@ -79,6 +80,9 @@ export default function CalculateurRevenuPage() {
 
             {/* Calculateur interactif (client component) */}
             <Calculateur />
+
+            {/* Capture email douce (anti-bot multi-couches) */}
+            <CaptureEmail source="outils.calculateur-revenu" />
 
             {/* CTA discret IziSolo */}
             <section className="outil-cta">

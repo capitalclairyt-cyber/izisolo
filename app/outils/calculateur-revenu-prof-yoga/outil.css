@@ -392,6 +392,15 @@
   font-size: 0.9375rem;
   color: var(--c-ink);
   font-weight: 500;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.toggle-hint {
+  font-size: 0.75rem;
+  color: var(--c-ink-soft);
+  font-weight: 400;
+  font-family: var(--font-geist);
 }
 .toggle-inputs {
   margin-top: var(--sp-3);
@@ -773,6 +782,148 @@
 .output-insight p {
   margin: 0;
   color: var(--c-ink-soft);
+}
+
+/* ─── Capture email (bandeau douce, anti-bot) ─────────────────────── */
+.capture-email {
+  margin: var(--sp-10) 0 var(--sp-8);
+}
+.capture-email-inner {
+  background: linear-gradient(135deg, white 0%, var(--calc-positive-bg) 100%);
+  border: 1px solid var(--calc-positive-soft);
+  border-radius: 20px;
+  padding: var(--sp-8);
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: var(--sp-8);
+  align-items: center;
+}
+@media (max-width: 800px) {
+  .capture-email-inner {
+    grid-template-columns: 1fr;
+    gap: var(--sp-5);
+    padding: var(--sp-6);
+  }
+}
+.capture-email-content .eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--calc-positive);
+  font-weight: 600;
+}
+.capture-email-content h3 {
+  font-size: clamp(1.25rem, 2.5vw, 1.625rem);
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  margin: var(--sp-2) 0 var(--sp-3);
+  color: var(--c-ink);
+}
+.capture-email-content p {
+  font-size: 0.9375rem;
+  line-height: 1.55;
+  color: var(--c-ink-soft);
+  margin: 0;
+}
+
+/* Honeypot caché — NE PAS supprimer ni rendre visible aux humains.
+   Triple sécurité (visibility + opacity + offscreen position) pour
+   contrer les bots qui détectent display:none. */
+.capture-honeypot {
+  position: absolute !important;
+  left: -10000px !important;
+  top: auto !important;
+  width: 1px !important;
+  height: 1px !important;
+  overflow: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+.capture-email-form {
+  position: relative;
+}
+.capture-email-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: var(--sp-3);
+}
+@media (max-width: 480px) {
+  .capture-email-row { flex-direction: column; }
+}
+.capture-email-input {
+  flex: 1;
+  padding: 14px 18px;
+  border-radius: 99px;
+  border: 1.5px solid color-mix(in oklch, var(--c-ink) 15%, transparent);
+  font-size: 0.9375rem;
+  font-family: var(--font-geist);
+  background: white;
+  color: var(--c-ink);
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+.capture-email-input:focus {
+  border-color: var(--calc-positive);
+}
+.capture-email-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.capture-email-btn {
+  white-space: nowrap;
+}
+.capture-email-error {
+  font-size: 0.875rem;
+  color: var(--calc-negative);
+  margin-bottom: var(--sp-2);
+  padding: 8px 14px;
+  background: color-mix(in oklch, var(--calc-negative) 8%, white);
+  border-radius: 8px;
+  border-left: 3px solid var(--calc-negative);
+}
+.capture-email-legal {
+  font-size: 0.75rem;
+  color: color-mix(in oklch, var(--c-ink) 55%, transparent);
+  margin: 0;
+  line-height: 1.5;
+}
+.capture-email-legal a {
+  color: var(--c-accent-deep);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in oklch, var(--c-accent) 40%, transparent);
+}
+
+/* État succès : pleine largeur, ambiance "merci" */
+.capture-email-success .capture-email-inner {
+  grid-template-columns: 1fr;
+  text-align: center;
+  background: linear-gradient(135deg, var(--calc-positive-bg) 0%, #d4dec1 100%);
+  border-color: var(--calc-positive);
+}
+.capture-email-success .capture-email-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-3);
+}
+.capture-email-success .capture-icon {
+  font-size: 2rem;
+}
+.capture-email-success strong {
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-size: 1.75rem;
+  color: var(--calc-positive);
+  font-weight: 400;
+  display: block;
+  margin-bottom: 4px;
+}
+.capture-email-success p {
+  font-size: 0.9375rem;
+  color: var(--c-ink-soft);
+  margin: 0;
+  max-width: 50ch;
 }
 
 /* ─── CTA IziSolo ─────────────────────────────────────────────────── */
