@@ -218,6 +218,12 @@ export default function Grille() {
         ajouter une ligne ou une section, bouton <strong>×</strong> pour supprimer. Tes
         changements sont sauvegardés automatiquement.
       </p>
+      <p className="grille-hint grille-hint-print">
+        🖨️ <strong>Pour imprimer sur 1 page :</strong> dans le dialog d&apos;impression,
+        ouvre <em>« Plus de paramètres »</em>, mets <strong>Marges → Minimum</strong> et
+        <strong> décoche « En-têtes et pieds de page »</strong>. Sinon ton navigateur
+        ajoute ses propres marges et le contenu déborde.
+      </p>
 
       {/* La grille elle-même (visible en print) */}
       <article className="grille-preview" data-palette={palette}>

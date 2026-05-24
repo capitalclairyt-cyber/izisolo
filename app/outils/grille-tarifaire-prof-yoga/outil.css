@@ -182,8 +182,24 @@
   padding: var(--sp-3) var(--sp-4);
   border-radius: 10px;
   border-left: 3px solid #c89841;
-  margin: 0 0 var(--sp-6);
+  margin: 0 0 var(--sp-3);
   font-style: italic;
+}
+.grille-hint:last-of-type {
+  margin-bottom: var(--sp-6);
+}
+.grille-hint-print {
+  background: #eaf3ec;
+  border-left-color: var(--calc-positive);
+  color: var(--c-ink);
+  font-style: normal;
+}
+.grille-hint-print strong {
+  color: var(--calc-positive);
+}
+.grille-hint-print em {
+  font-style: italic;
+  font-weight: 600;
 }
 
 /* ─── GRILLE — palette-aware ─────────────────────────────────────── */
@@ -601,62 +617,90 @@
     width: 100% !important;
     box-shadow: none !important;
     border: none !important;
-    page-break-inside: avoid;
+    page-break-inside: avoid !important;
+    page-break-after: avoid !important;
+    break-inside: avoid !important;
+    break-after: avoid !important;
     border-radius: 0 !important;
     padding: 0 !important;
     background: var(--grille-bg) !important;
   }
 
-  /* Compression verticale agressive */
-  .grille-header {
-    margin-bottom: 6mm !important;
-    padding-top: 2mm !important;
-  }
-  .grille-input-studio {
-    font-size: 18pt !important;
-    line-height: 1.1 !important;
-  }
-  .grille-input-slogan {
-    font-size: 9.5pt !important;
-    margin-top: 0 !important;
-  }
-  .grille-divider {
-    margin: 3mm auto !important;
-    width: 40px !important;
-  }
-  .grille-title-meta {
-    font-size: 7.5pt !important;
-  }
-  .grille-input-date {
-    font-size: 7.5pt !important;
+  /* Empêche les éléments de causer une coupure de page */
+  .grille-header,
+  .grille-section,
+  .grille-row,
+  .grille-footer {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
   }
 
-  /* Sections : marges très serrées */
+  /* Compression verticale agressive — header */
+  .grille-header {
+    margin-bottom: 3mm !important;
+    padding-top: 0 !important;
+  }
+  .grille-input-studio {
+    font-size: 14pt !important;
+    line-height: 1.1 !important;
+    padding: 0 !important;
+  }
+  .grille-input-slogan {
+    font-size: 8.5pt !important;
+    margin-top: 0 !important;
+    padding: 0 !important;
+    line-height: 1.2 !important;
+  }
+  .grille-divider {
+    margin: 1.5mm auto !important;
+    width: 30px !important;
+    height: 1.5px !important;
+  }
+  .grille-title-meta {
+    font-size: 7pt !important;
+    line-height: 1 !important;
+  }
+  .grille-input-date {
+    font-size: 7pt !important;
+    padding: 0 !important;
+  }
+
+  /* Sections : très serrées */
   .grille-section {
-    margin-bottom: 4.5mm !important;
-    page-break-inside: avoid;
+    margin-bottom: 2.5mm !important;
   }
   .grille-section-head {
-    margin-bottom: 1.5mm !important;
-    padding-bottom: 1mm !important;
+    margin-bottom: 0.5mm !important;
+    padding-bottom: 0.5mm !important;
   }
   .grille-input-section-title {
-    font-size: 12pt !important;
+    font-size: 10.5pt !important;
+    line-height: 1.15 !important;
+    padding: 0 !important;
   }
   .grille-row {
-    padding: 1mm 0 !important;
-    font-size: 9.5pt !important;
+    padding: 0.3mm 0 !important;
+    font-size: 8.5pt !important;
+    line-height: 1.25 !important;
+  }
+  .grille-input-label {
+    padding: 0 !important;
+    line-height: 1.25 !important;
   }
   .grille-input-price {
-    font-size: 11pt !important;
+    font-size: 9.5pt !important;
+    line-height: 1.25 !important;
+    padding: 0 !important;
   }
 
   /* Footer collé */
   .grille-footer {
-    margin-top: 4mm !important;
+    margin-top: 2.5mm !important;
   }
   .grille-input-contact {
-    font-size: 8pt !important;
+    font-size: 7.5pt !important;
+    padding: 0 !important;
+    line-height: 1.2 !important;
   }
 
   /* Hide les hovers/focus visuels sur les inputs */
@@ -677,8 +721,11 @@
   }
 }
 
-/* Format @page A4 — marges réduites pour maximiser la zone utile */
+/* Format @page A4 — marges minimales pour maximiser la zone utile.
+   Le navigateur peut imposer ses propres marges (Chrome "Marges par
+   défaut" ~25mm). Recommander à l'utilisateur de choisir "Aucune"
+   ou "Minimum" dans le dialog d'impression. */
 @page {
   size: A4;
-  margin: 10mm 12mm;
+  margin: 8mm;
 }
