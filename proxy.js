@@ -23,6 +23,7 @@ const PUBLIC_ROUTES = [
   '/prof-yoga-',            // /prof-yoga-paris, /prof-yoga-lyon, futures villes
   '/prof-pilates-',         // /prof-pilates-paris, /prof-pilates-lyon, etc.
   '/blog',                  // /blog (liste) + /blog/[slug] (articles)
+  '/outils',                // /outils/calculateur-revenu-prof-yoga, etc. (lead magnets HTML)
   '/calculateur',                // calculateur de frais (lead magnet)
   '/sitemap.xml', '/robots.txt',
 ];

@@ -35,6 +35,7 @@ const STATIC_PATHS = [
   { path: '/prof-pilates-rennes',     changeFrequency: 'monthly',  priority: 0.85 },
   { path: '/prof-pilates-nice',       changeFrequency: 'monthly',  priority: 0.85 },
   { path: '/calculateur',          changeFrequency: 'monthly',  priority: 0.8 },
+  { path: '/outils/calculateur-revenu-prof-yoga', changeFrequency: 'monthly', priority: 0.85 },
   { path: '/blog',                 changeFrequency: 'weekly',   priority: 0.8 },
   { path: '/login',                changeFrequency: 'yearly',   priority: 0.5 },
   { path: '/register',             changeFrequency: 'yearly',   priority: 0.7 },
