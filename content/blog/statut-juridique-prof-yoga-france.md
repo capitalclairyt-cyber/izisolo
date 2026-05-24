@@ -86,12 +86,12 @@ NET DANS LA POCHE ................................ 21 254 €
 C'est **59 %** du CA brut. Sans optimisation possible (pas de déduction des charges réelles, donc).
 
 <aside class="article-tool-callout">
-  <div class="callout-icon">🧮</div>
+  <div class="callout-icon">⚖️</div>
   <div class="callout-body">
     <span class="callout-eyebrow">Outil gratuit · 2 minutes</span>
-    <h4>Compare micro-entreprise vs EI au réel sur tes vrais chiffres</h4>
-    <p>Notre calculateur de revenu intègre un switch micro ⇄ réel : tu saisis tes chiffres, tu basules entre les deux, tu vois la différence sur ton net mensuel.</p>
-    <a href="/outils/calculateur-revenu-prof-yoga" class="callout-link">→ Essayer le calculateur</a>
+    <h4>Compare les 3 statuts sur tes vrais chiffres (micro / EI / SASU)</h4>
+    <p>Notre comparateur calcule ton revenu net annuel pour chaque statut selon ton CA, tes charges et ton objectif (simplicité / optimisation / protection / image). Avec recommandation finale.</p>
+    <a href="/outils/comparateur-statuts-prof-yoga" class="callout-link">→ Essayer le comparateur</a>
   </div>
 </aside>
 
