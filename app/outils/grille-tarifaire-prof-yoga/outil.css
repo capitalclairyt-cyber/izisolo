@@ -9,6 +9,17 @@
   --calc-amber-bg:    #fdf6e3;
 }
 
+/* ───────────────────────────────────────────────────────────────────
+   CRITIQUE : landing.css applique `section { padding-block: clamp(64px, 9vw, 128px) }`
+   à toutes les balises <section>. Mes <section className="grille-section">
+   et <section className="grille-controls"> en héritaient et recevaient
+   ~230px de padding vertical chacune — ce qui créait des gaps énormes
+   entre sections. Override explicite ici.                            */
+.grille-section,
+.grille-controls {
+  padding-block: 0;
+}
+
 .outil-page {
   padding-top: var(--sp-8);
   padding-bottom: var(--sp-16);
