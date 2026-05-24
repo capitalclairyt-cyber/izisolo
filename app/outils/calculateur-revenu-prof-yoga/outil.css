@@ -1,7 +1,29 @@
 /* ─── OUTIL : Calculateur revenu prof yoga ───────────────────────────────
-   Mockup statique : layout 2 colonnes inputs + output, palette sable,
-   typo Instrument Serif + Inter, esprit magazine éditorial cohérent
-   avec le blog. */
+   Mockup statique : layout 2 colonnes inputs + output.
+   Palette polychromique IziSolo 2026 (sage / amber / blush / sky) sur
+   fond sable warm. Esprit "outil pratique" coloré sémantiquement (revenus
+   = sage, coûts = blush) sans tomber dans le mode Excel criard. */
+
+:root {
+  /* Palette sémantique calculateur */
+  --calc-positive:        #6b8e5a;  /* sage saturé : revenus, lignes + */
+  --calc-positive-soft:   #c8d4ba;  /* sage clair : fonds, badges */
+  --calc-positive-bg:     #f0f4ec;  /* sage très clair : sections */
+
+  --calc-negative:        #b5645f;  /* corail terreux : coûts, lignes - */
+  --calc-negative-soft:   #e5c5c0;  /* blush : accents */
+  --calc-negative-bg:     #fbf0ec;  /* blush très clair : sections */
+
+  --calc-amber:           #c89841;  /* ambre : zone confirmée/expérimentée */
+  --calc-amber-soft:      #f1dba5;
+  --calc-amber-bg:        #fdf6e3;
+
+  --calc-sky:             #6a8b9d;  /* sky terreux : zone studio */
+  --calc-sky-soft:        #c5d4dd;
+
+  --calc-blush:           #c19087;  /* blush : zone débutante */
+  --calc-blush-soft:      #e6cfca;
+}
 
 .outil-page {
   padding-top: var(--sp-8);
@@ -92,8 +114,35 @@
   font-size: 0.7rem;
   letter-spacing: 0.15em;
   text-transform: uppercase;
-  color: var(--c-accent-deep);
-  font-weight: 500;
+  font-weight: 600;
+}
+/* Étape 1 (Tes revenus) = vert sage */
+.outil-inputs h2:nth-of-type(1) .eyebrow {
+  color: var(--calc-positive);
+}
+/* Étape 2 (Tes coûts) = blush corail */
+.outil-inputs h2:nth-of-type(2) .eyebrow {
+  color: var(--calc-negative);
+}
+/* Pastille colorée à gauche du titre h2 */
+.outil-inputs h2 {
+  position: relative;
+  padding-left: 16px;
+}
+.outil-inputs h2::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 4px;
+  bottom: 4px;
+  width: 4px;
+  border-radius: 99px;
+}
+.outil-inputs h2:nth-of-type(1)::before {
+  background: var(--calc-positive);
+}
+.outil-inputs h2:nth-of-type(2)::before {
+  background: var(--calc-negative);
 }
 
 /* Input block */
@@ -294,32 +343,62 @@
   gap: var(--sp-5);
 }
 
-/* Hero number */
+/* Hero number — fond sage avec accent vert pour signifier "revenu positif" */
 .output-hero {
-  background: linear-gradient(135deg, #fefaf5 0%, #fef0dc 100%);
-  border: 1.5px solid color-mix(in oklch, var(--c-accent) 30%, transparent);
+  background: linear-gradient(135deg, var(--calc-positive-bg) 0%, #e6ecdc 100%);
+  border: 1.5px solid var(--calc-positive-soft);
   border-radius: 24px;
   padding: var(--sp-8);
   text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.output-hero::before {
+  content: '';
+  position: absolute;
+  top: -40px;
+  right: -40px;
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  background: color-mix(in oklch, var(--calc-positive) 18%, transparent);
+  pointer-events: none;
+}
+.output-hero::after {
+  content: '';
+  position: absolute;
+  bottom: -50px;
+  left: -30px;
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background: color-mix(in oklch, var(--calc-amber) 14%, transparent);
+  pointer-events: none;
+}
+.output-hero > * {
+  position: relative;
+  z-index: 1;
 }
 .output-hero .eyebrow {
   font-family: var(--font-mono);
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.15em;
-  color: var(--c-accent-deep);
+  color: var(--calc-positive);
+  font-weight: 600;
 }
 .output-big-number {
   font-family: 'Instrument Serif', Georgia, serif;
   font-size: clamp(3rem, 8vw, 5.5rem);
   line-height: 1;
-  color: var(--c-ink);
+  color: var(--calc-positive);
   margin: var(--sp-3) 0 4px;
   letter-spacing: -0.02em;
 }
 .output-unit {
   font-size: 0.6em;
-  color: var(--c-accent-deep);
+  color: var(--calc-positive);
+  opacity: 0.7;
 }
 .output-period {
   font-family: var(--font-mono);
@@ -340,12 +419,14 @@
   border-radius: 99px;
   font-size: 0.9375rem;
   color: var(--c-ink);
-  border: 1px solid color-mix(in oklch, var(--c-ink) 10%, transparent);
+  border: 1.5px solid var(--calc-amber);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
 }
 .output-zone em {
   font-family: 'Instrument Serif', Georgia, serif;
   font-style: italic;
-  color: var(--c-accent-deep);
+  color: var(--calc-amber);
+  font-weight: 500;
   font-size: 1.05em;
 }
 .output-zone .zone-range {
@@ -357,12 +438,16 @@
   margin-left: 4px;
 }
 .zone-dot {
-  width: 10px;
-  height: 10px;
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
   display: inline-block;
+  box-shadow: 0 0 0 3px color-mix(in oklch, currentColor 20%, transparent);
 }
-.zone-yellow .zone-dot { background: #d4a843; }
+.zone-yellow .zone-dot { background: var(--calc-amber); color: var(--calc-amber); }
+.zone-blush .zone-dot { background: var(--calc-blush); color: var(--calc-blush); }
+.zone-sage .zone-dot { background: var(--calc-positive); color: var(--calc-positive); }
+.zone-sky .zone-dot { background: var(--calc-sky); color: var(--calc-sky); }
 
 /* Breakdown détaillé */
 .output-breakdown {
@@ -375,6 +460,7 @@
 .breakdown-row {
   display: flex;
   justify-content: space-between;
+  align-items: center;
   padding: 10px 0;
   color: var(--c-ink-soft);
   border-bottom: 1px solid color-mix(in oklch, var(--c-ink) 6%, transparent);
@@ -383,32 +469,58 @@
 .breakdown-row .amount {
   font-family: var(--font-mono);
   color: var(--c-ink);
+  font-weight: 500;
 }
-.breakdown-positive .amount { color: #4f7a3a; }
-.amount-negative { color: #a14a4a; }
+.breakdown-positive {
+  padding-left: 12px;
+  border-left: 3px solid var(--calc-positive-soft);
+  margin-left: -12px;
+  background: linear-gradient(to right, color-mix(in oklch, var(--calc-positive) 4%, transparent), transparent);
+  border-radius: 0 8px 8px 0;
+}
+.breakdown-positive .amount {
+  color: var(--calc-positive);
+  font-weight: 600;
+}
+.breakdown-row:not(.breakdown-positive):not(.breakdown-subtotal):not(.breakdown-total) {
+  padding-left: 12px;
+  border-left: 3px solid var(--calc-negative-soft);
+  margin-left: -12px;
+  background: linear-gradient(to right, color-mix(in oklch, var(--calc-negative) 4%, transparent), transparent);
+  border-radius: 0 8px 8px 0;
+}
+.amount-negative { color: var(--calc-negative); font-weight: 600; }
 .breakdown-subtotal {
   font-weight: 600;
   color: var(--c-ink);
-  background: color-mix(in oklch, var(--c-ink) 3%, transparent);
-  margin: 4px -16px;
-  padding-left: 16px;
-  padding-right: 16px;
-  border-radius: 8px;
+  background: var(--calc-amber-bg);
+  margin: 6px -16px;
+  padding: 12px 16px;
+  border-radius: 10px;
   border-bottom: none;
+  border-left: 4px solid var(--calc-amber);
 }
+.breakdown-subtotal .amount { color: var(--c-ink); font-size: 1.0625rem; }
 .breakdown-total {
   font-family: 'Instrument Serif', Georgia, serif;
   font-size: 1.25rem;
   color: var(--c-ink);
   padding-top: 16px;
   margin-top: 8px;
-  border-top: 2px solid var(--c-accent-deep);
+  border-top: 2px solid var(--calc-positive);
   border-bottom: none;
+  background: linear-gradient(to right, color-mix(in oklch, var(--calc-positive) 8%, transparent), transparent);
+  margin-left: -16px;
+  padding-left: 16px;
+  margin-right: -16px;
+  padding-right: 16px;
+  border-radius: 0 0 12px 12px;
 }
 .breakdown-total .amount {
   font-family: 'Instrument Serif', Georgia, serif;
-  font-size: 1.5rem;
-  color: var(--c-accent-deep);
+  font-size: 1.875rem;
+  color: var(--calc-positive);
+  font-weight: 400;
 }
 
 /* Camembert */
@@ -461,9 +573,10 @@
   border-radius: 3px;
   flex-shrink: 0;
 }
-.dot-deep { background: var(--c-accent-deep); }
-.dot-mid { background: var(--c-accent); }
-.dot-light { background: color-mix(in oklch, var(--c-accent) 50%, transparent); }
+.dot-deep { background: var(--calc-positive); }
+.dot-mid { background: var(--calc-amber); }
+.dot-light { background: var(--calc-blush); }
+.dot-sky { background: var(--calc-sky); }
 .legend-label {
   flex: 1;
   color: var(--c-ink);
@@ -473,9 +586,9 @@
   color: var(--c-ink-soft);
 }
 
-/* Insight pédagogique */
+/* Insight pédagogique — ambré pour évoquer "lumière / découverte" */
 .output-insight {
-  background: color-mix(in oklch, var(--c-accent) 6%, white);
+  background: linear-gradient(135deg, var(--calc-amber-bg) 0%, #faecca 100%);
   border-radius: 16px;
   padding: var(--sp-5);
   display: flex;
@@ -483,6 +596,7 @@
   align-items: flex-start;
   font-size: 0.9375rem;
   line-height: 1.5;
+  border-left: 4px solid var(--calc-amber);
 }
 .insight-icon {
   font-size: 1.75rem;
@@ -492,6 +606,12 @@
   color: var(--c-ink);
   display: block;
   margin-bottom: 6px;
+}
+.output-insight strong + p strong {
+  color: var(--calc-amber);
+  display: inline;
+  font-weight: 700;
+  margin: 0;
 }
 .output-insight p {
   margin: 0;
