@@ -1,7 +1,7 @@
 /* ─── OUTIL : Grille tarifaire personnalisable et imprimable ─────────
-   Édition inline (inputs stylés comme du texte), palette switchable
-   (data-palette), auto-save localStorage, et CSS @media print pour
-   un rendu A4 propre. */
+   Édition inline (inputs stylés comme du texte), sections + items
+   dynamiques (ajout/suppression), palette switchable (data-palette),
+   auto-save localStorage, et CSS @media print compressé pour 1 page A4. */
 
 :root {
   --calc-positive:    #6b8e5a;
@@ -250,6 +250,17 @@
   width: 100%;
   margin-top: 4px;
 }
+.grille-input-date {
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+  letter-spacing: inherit;
+  text-align: center;
+  width: auto;
+  min-width: 100px;
+  max-width: 180px;
+  display: inline-block;
+}
 .grille-divider {
   width: 60px;
   height: 2px;
@@ -270,32 +281,37 @@
 .grille-section {
   margin-bottom: var(--sp-6);
 }
-.grille-section h3 {
-  font-family: 'Instrument Serif', Georgia, serif;
-  font-size: 1.25rem;
-  font-weight: 400;
-  color: var(--grille-accent-deep);
+.grille-section-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
   margin: 0 0 var(--sp-3);
   padding-bottom: 6px;
   border-bottom: 1px solid var(--grille-border);
 }
-.grille-section-conditions h3 {
-  color: var(--c-ink-soft);
-  font-style: italic;
-  font-size: 1.0625rem;
+.grille-input-section-title {
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-size: 1.25rem;
+  font-weight: 400;
+  color: var(--grille-accent-deep);
+  flex: 1;
+  width: auto;
 }
 
 .grille-row {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  gap: var(--sp-3);
-  padding: 6px 0;
+  gap: var(--sp-2);
+  padding: 4px 0;
   font-size: 0.9375rem;
+  position: relative;
 }
-.row-label {
-  color: var(--c-ink);
+.grille-input-label {
   flex: 1;
+  color: var(--c-ink);
+  font-family: inherit;
+  font-size: inherit;
 }
 .grille-input-price {
   font-family: 'Instrument Serif', Georgia, serif;
@@ -303,21 +319,8 @@
   color: var(--grille-accent-deep);
   font-weight: 400;
   text-align: right;
-  min-width: 100px;
+  min-width: 110px;
   max-width: 280px;
-}
-
-/* Section conditions plus discrète */
-.grille-section-conditions .grille-row {
-  font-size: 0.875rem;
-  color: var(--c-ink-soft);
-}
-.grille-section-conditions .grille-input-price {
-  font-family: var(--font-geist);
-  font-size: 0.875rem;
-  color: var(--c-ink);
-  font-style: italic;
-  font-weight: 500;
 }
 
 /* Footer signature */
@@ -352,6 +355,111 @@
 .grille-input:focus {
   background: white;
   box-shadow: 0 0 0 1.5px var(--grille-accent);
+}
+
+/* ─── Boutons d'édition (ajouter / supprimer ligne et section) ─── */
+
+/* Bouton × supprimer ligne — discret, apparait au hover de la row */
+.btn-remove-row {
+  background: transparent;
+  border: 1px solid color-mix(in oklch, var(--c-ink) 15%, transparent);
+  color: var(--c-ink-soft);
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  font-size: 0.875rem;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  opacity: 0;
+  transition: opacity 0.15s ease, background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  flex-shrink: 0;
+}
+.grille-row:hover .btn-remove-row,
+.grille-row:focus-within .btn-remove-row {
+  opacity: 1;
+}
+.btn-remove-row:hover {
+  background: #fde2dd;
+  border-color: #c8665e;
+  color: #9d4a44;
+}
+
+/* Bouton × supprimer section — placé à droite du titre */
+.btn-remove-section {
+  background: transparent;
+  border: 1px solid color-mix(in oklch, var(--c-ink) 15%, transparent);
+  color: var(--c-ink-soft);
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  opacity: 0;
+  transition: opacity 0.15s ease, background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  flex-shrink: 0;
+}
+.grille-section-head:hover .btn-remove-section,
+.grille-section:focus-within .btn-remove-section {
+  opacity: 1;
+}
+.btn-remove-section:hover {
+  background: #fde2dd;
+  border-color: #c8665e;
+  color: #9d4a44;
+}
+
+/* Bouton + ajouter ligne — discret sous chaque section */
+.btn-add-row {
+  background: transparent;
+  border: 1px dashed var(--grille-border);
+  color: var(--grille-accent);
+  padding: 5px 12px;
+  border-radius: 8px;
+  font-size: 0.8125rem;
+  font-family: var(--font-mono);
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  margin-top: 8px;
+  display: inline-block;
+  transition: all 0.15s ease;
+}
+.btn-add-row:hover {
+  background: color-mix(in oklch, var(--grille-accent) 8%, transparent);
+  border-color: var(--grille-accent);
+  color: var(--grille-accent-deep);
+}
+
+/* Bouton + ajouter section — bouton plus visible, en bas de la grille */
+.btn-add-section {
+  background: white;
+  border: 1.5px dashed var(--grille-accent);
+  color: var(--grille-accent-deep);
+  padding: 10px 18px;
+  border-radius: 12px;
+  font-size: 0.875rem;
+  font-family: var(--font-mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-weight: 600;
+  cursor: pointer;
+  display: block;
+  width: 100%;
+  margin: var(--sp-4) 0 0;
+  transition: all 0.15s ease;
+}
+.btn-add-section:hover {
+  background: color-mix(in oklch, var(--grille-accent) 8%, transparent);
+  border-style: solid;
+  transform: translateY(-1px);
 }
 
 /* ─── CTA IziSolo + articles connexes (réutilisé) ──────────────── */
@@ -443,51 +551,112 @@
   font-weight: 600;
 }
 
-/* ─── @media print : optimisation impression A4 ──────────────────── */
+/* ─── @media print : COMPRESSÉ pour tenir sur 1 page A4 ─────────────
+   Cible : 1 grille (header + ~5 sections + footer) sur 1 feuille.
+   Stratégie : padding minimal, marges entre sections réduites,
+   line-heights compactes, footer collé en bas.                       */
 @media print {
-  /* Forcer impression des couleurs (sinon le navigateur les retire pour
-     économiser l'encre, ce qui casse le design coloré) */
+  /* Forcer impression des couleurs (sinon le navigateur les retire) */
   * {
     color-adjust: exact;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
 
-  /* Hide tout sauf la grille */
+  /* Hide TOUT sauf la grille — y compris les boutons d'édition +/× */
   .outil-breadcrumb,
   .outil-hero-photo,
   .grille-controls,
   .grille-hint,
   .outil-cta,
-  .outil-related {
+  .outil-related,
+  .btn-remove-row,
+  .btn-remove-section,
+  .btn-add-row,
+  .btn-add-section {
     display: none !important;
   }
 
   /* Background page blanc */
-  body, .outil-page, .izi-landing-root {
+  html, body, .outil-page, .izi-landing-root {
     background: white !important;
     padding: 0 !important;
     margin: 0 !important;
   }
 
-  /* Centre la grille sur la page A4 */
   .outil-page {
     padding: 0 !important;
+    min-height: 0 !important;
   }
   .container {
     max-width: none !important;
     padding: 0 !important;
+    margin: 0 !important;
   }
 
-  /* La grille elle-même : pleine page A4, marges réduites, borders subtils */
+  /* La grille : occupe toute la page, padding minimal */
   .grille-preview {
-    margin: 0 auto !important;
+    margin: 0 !important;
     max-width: 100% !important;
+    width: 100% !important;
     box-shadow: none !important;
-    border: 1px solid var(--grille-border) !important;
+    border: none !important;
     page-break-inside: avoid;
     border-radius: 0 !important;
-    padding: 30mm 24mm !important;
+    padding: 0 !important;
+    background: var(--grille-bg) !important;
+  }
+
+  /* Compression verticale agressive */
+  .grille-header {
+    margin-bottom: 6mm !important;
+    padding-top: 2mm !important;
+  }
+  .grille-input-studio {
+    font-size: 18pt !important;
+    line-height: 1.1 !important;
+  }
+  .grille-input-slogan {
+    font-size: 9.5pt !important;
+    margin-top: 0 !important;
+  }
+  .grille-divider {
+    margin: 3mm auto !important;
+    width: 40px !important;
+  }
+  .grille-title-meta {
+    font-size: 7.5pt !important;
+  }
+  .grille-input-date {
+    font-size: 7.5pt !important;
+  }
+
+  /* Sections : marges très serrées */
+  .grille-section {
+    margin-bottom: 4.5mm !important;
+    page-break-inside: avoid;
+  }
+  .grille-section-head {
+    margin-bottom: 1.5mm !important;
+    padding-bottom: 1mm !important;
+  }
+  .grille-input-section-title {
+    font-size: 12pt !important;
+  }
+  .grille-row {
+    padding: 1mm 0 !important;
+    font-size: 9.5pt !important;
+  }
+  .grille-input-price {
+    font-size: 11pt !important;
+  }
+
+  /* Footer collé */
+  .grille-footer {
+    margin-top: 4mm !important;
+  }
+  .grille-input-contact {
+    font-size: 8pt !important;
   }
 
   /* Hide les hovers/focus visuels sur les inputs */
@@ -497,23 +666,19 @@
     border: none !important;
     background: transparent !important;
     box-shadow: none !important;
-    padding: 0 !important;
+    padding: 0 1pt !important;
   }
 
-  /* Force les couleurs Instrument Serif visibles */
+  /* Force les couleurs visibles à l'impression */
   .grille-input-studio,
   .grille-input-price,
-  .grille-section h3 {
+  .grille-input-section-title {
     color: var(--grille-accent-deep) !important;
   }
-
-  /* Compact print : un peu moins d'espace */
-  .grille-section { margin-bottom: 14pt; }
-  .grille-row { padding: 3pt 0; }
 }
 
-/* Format @page A4 */
+/* Format @page A4 — marges réduites pour maximiser la zone utile */
 @page {
   size: A4;
-  margin: 12mm;
+  margin: 10mm 12mm;
 }
