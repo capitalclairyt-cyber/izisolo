@@ -37,6 +37,7 @@ export function Nav() {
           <a href="#pour-qui">Pour qui</a>
           <a href="#tarifs">Tarifs</a>
           <a href="#faq">FAQ</a>
+          <Link href="/outils">Outils</Link>
           <Link href="/blog">Journal</Link>
         </nav>
         <div className="nav-cta">
@@ -866,9 +867,11 @@ export function Footer() {
         <FooterCol
           title="Ressources"
           links={[
+            { label: 'Outils gratuits', href: '/outils' },
             { label: 'Le journal', href: '/blog' },
             { label: 'Calculateur de frais', href: '/calculateur' },
             { label: 'Profs de yoga', href: '/profs-de-yoga' },
+            { label: 'Profs de yoga enfants', href: '/profs-de-yoga-enfants' },
             { label: 'Profs de pilates', href: '/profs-de-pilates' },
             { label: 'Coachs bien-être', href: '/coachs-bien-etre' },
             { label: 'Thérapeutes', href: '/therapeutes' },
