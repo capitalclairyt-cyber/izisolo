@@ -3,12 +3,16 @@
    hero + grille 2x2 (4 cartes avec photos) + section "pourquoi" +
    FAQ + CTA IziSolo.                                                  */
 
-/* Override du padding-block global de section (cf. landing.css:286) */
+/* Override du padding-block global de section (cf. landing.css:286) :
+   landing.css force `section { padding-block: clamp(64px, 9vw, 128px) }`.
+   Sur cette page hub, on veut un espacement vertical RAISONNABLE entre
+   sections (pas l'énorme padding global), donc on le remplace par une
+   valeur plus mesurée. */
 .outils-grid,
 .outils-pourquoi,
 .outils-faq,
 .outils-cta {
-  padding-block: 0 !important;
+  padding-block: clamp(40px, 5vw, 72px) !important;
 }
 
 .outils-index-page {
@@ -102,7 +106,6 @@
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: var(--sp-6);
-  margin-bottom: var(--sp-16);
 }
 @media (max-width: 800px) {
   .outils-grid {
@@ -237,7 +240,7 @@
 
 /* ─── Section "Pourquoi" ─────────────────────────────────────────── */
 .outils-pourquoi {
-  margin-bottom: var(--sp-14);
+  /* padding-block géré par l'override en haut du fichier */
 }
 .outils-pourquoi-inner {
   max-width: 720px;
@@ -305,9 +308,9 @@
 
 /* ─── FAQ ─────────────────────────────────────────────────────────── */
 .outils-faq {
-  margin-bottom: var(--sp-14);
   max-width: 760px;
   margin-inline: auto;
+  /* padding-block géré par l'override en haut du fichier */
 }
 .outils-faq h2 {
   font-size: clamp(1.5rem, 3vw, 2.25rem);
@@ -375,7 +378,7 @@
 
 /* ─── CTA IziSolo ────────────────────────────────────────────────── */
 .outils-cta {
-  margin-bottom: var(--sp-8);
+  /* padding-block géré par l'override en haut du fichier */
 }
 .outils-cta-inner {
   background: linear-gradient(135deg, #ecf3ee 0%, #fef0dc 100%);
