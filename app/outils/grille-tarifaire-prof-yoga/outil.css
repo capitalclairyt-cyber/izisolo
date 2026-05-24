@@ -1,0 +1,519 @@
+/* ─── OUTIL : Grille tarifaire personnalisable et imprimable ─────────
+   Édition inline (inputs stylés comme du texte), palette switchable
+   (data-palette), auto-save localStorage, et CSS @media print pour
+   un rendu A4 propre. */
+
+:root {
+  --calc-positive:    #6b8e5a;
+  --calc-positive-bg: #f0f4ec;
+  --calc-amber-bg:    #fdf6e3;
+}
+
+.outil-page {
+  padding-top: var(--sp-8);
+  padding-bottom: var(--sp-16);
+  background: var(--c-bg);
+  min-height: 100vh;
+}
+
+/* Breadcrumb + Hero photo identiques aux autres outils */
+.outil-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: color-mix(in oklch, var(--c-ink) 55%, transparent);
+  margin-bottom: var(--sp-8);
+  flex-wrap: wrap;
+}
+.outil-breadcrumb a { color: inherit; text-decoration: none; }
+.outil-breadcrumb a:hover { color: var(--c-accent-deep); }
+.outil-breadcrumb .current { color: var(--c-ink); font-weight: 600; }
+
+.outil-hero-photo {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 24px;
+  overflow: hidden;
+  margin-bottom: var(--sp-10);
+  background: color-mix(in oklch, var(--c-ink) 8%, transparent);
+}
+.outil-hero-photo img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover;
+}
+.outil-hero-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: var(--sp-10);
+  background: linear-gradient(to right, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.35) 40%, rgba(0,0,0,0.05) 70%, transparent 100%);
+  color: white;
+}
+.outil-hero-overlay .eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: rgba(255,255,255,0.85);
+  margin-bottom: var(--sp-3);
+  font-weight: 500;
+}
+.outil-h1 {
+  font-size: clamp(2.25rem, 5.5vw, 4rem);
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+  margin: 0 0 var(--sp-4);
+  color: white;
+  max-width: 18ch;
+}
+.outil-h1 em {
+  font-style: italic;
+  color: #f1dba5;
+}
+.outil-lead {
+  font-size: 1.0625rem;
+  line-height: 1.55;
+  color: rgba(255,255,255,0.88);
+  max-width: 50ch;
+  margin: 0;
+}
+@media (max-width: 800px) {
+  .outil-hero-photo { aspect-ratio: 4 / 5; border-radius: 18px; margin-bottom: var(--sp-6); }
+  .outil-hero-overlay { padding: var(--sp-5); background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.4) 40%, rgba(0,0,0,0.1) 70%, transparent 100%); }
+}
+
+/* ─── CONTRÔLES (palette + boutons) ──────────────────────────────── */
+.grille-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--sp-4);
+  background: white;
+  border: 1px solid color-mix(in oklch, var(--c-ink) 8%, transparent);
+  border-radius: 16px;
+  padding: var(--sp-4) var(--sp-5);
+  margin-bottom: var(--sp-3);
+}
+.controls-left {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+}
+.controls-right {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.controls-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: color-mix(in oklch, var(--c-ink) 55%, transparent);
+  font-weight: 600;
+}
+.palette-swatches {
+  display: inline-flex;
+  gap: 6px;
+}
+.palette-swatch {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid white;
+  box-shadow: 0 0 0 1.5px color-mix(in oklch, var(--c-ink) 15%, transparent);
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  padding: 0;
+}
+.palette-swatch:hover {
+  transform: scale(1.1);
+}
+.palette-swatch.active {
+  box-shadow: 0 0 0 2.5px var(--c-ink);
+  transform: scale(1.05);
+}
+.btn-print {
+  font-weight: 600;
+}
+.btn-ghost.btn-sm {
+  background: transparent;
+  border: 1.5px solid color-mix(in oklch, var(--c-ink) 15%, transparent);
+  color: var(--c-ink);
+  padding: 8px 14px;
+  border-radius: 99px;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: var(--font-geist);
+}
+.btn-ghost.btn-sm:hover {
+  border-color: var(--c-ink);
+  background: color-mix(in oklch, var(--c-ink) 5%, transparent);
+}
+.btn-primary.btn-sm {
+  background: var(--c-accent-deep);
+  color: white;
+  border: 1.5px solid var(--c-accent-deep);
+  padding: 8px 16px;
+  border-radius: 99px;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: var(--font-geist);
+}
+.btn-primary.btn-sm:hover {
+  filter: brightness(1.08);
+}
+
+.grille-hint {
+  font-size: 0.875rem;
+  color: var(--c-ink-soft);
+  background: var(--calc-amber-bg);
+  padding: var(--sp-3) var(--sp-4);
+  border-radius: 10px;
+  border-left: 3px solid #c89841;
+  margin: 0 0 var(--sp-6);
+  font-style: italic;
+}
+
+/* ─── GRILLE — palette-aware ─────────────────────────────────────── */
+.grille-preview {
+  /* Palette par défaut : sable */
+  --grille-accent: #b9794d;
+  --grille-accent-deep: #7a4a2b;
+  --grille-bg: #fefaf5;
+  --grille-bg-soft: #fef0dc;
+  --grille-border: rgba(122, 74, 43, 0.25);
+
+  background: var(--grille-bg);
+  border: 1.5px solid var(--grille-border);
+  border-radius: 24px;
+  padding: clamp(var(--sp-6), 4vw, var(--sp-10));
+  max-width: 720px;
+  margin: 0 auto var(--sp-10);
+  position: relative;
+  overflow: hidden;
+}
+.grille-preview[data-palette="sage"] {
+  --grille-accent: #6b8e5a;
+  --grille-accent-deep: #4a6a3e;
+  --grille-bg: #f0f4ec;
+  --grille-bg-soft: #d4dec1;
+  --grille-border: rgba(74, 106, 62, 0.25);
+}
+.grille-preview[data-palette="blush"] {
+  --grille-accent: #c8665e;
+  --grille-accent-deep: #9d4a44;
+  --grille-bg: #fbf0ec;
+  --grille-bg-soft: #f3dbd2;
+  --grille-border: rgba(157, 74, 68, 0.25);
+}
+.grille-preview[data-palette="sky"] {
+  --grille-accent: #6a8b9d;
+  --grille-accent-deep: #4a6a7c;
+  --grille-bg: #eef3f8;
+  --grille-bg-soft: #cfdde8;
+  --grille-border: rgba(74, 106, 124, 0.25);
+}
+
+/* Header de la grille */
+.grille-header {
+  text-align: center;
+  margin-bottom: var(--sp-8);
+}
+.grille-input-studio {
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-size: clamp(1.75rem, 4vw, 2.5rem);
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  color: var(--grille-accent-deep);
+  text-align: center;
+  width: 100%;
+  max-width: 100%;
+}
+.grille-input-slogan {
+  font-family: var(--font-geist);
+  font-size: 0.9375rem;
+  color: var(--c-ink-soft);
+  text-align: center;
+  font-style: italic;
+  width: 100%;
+  margin-top: 4px;
+}
+.grille-divider {
+  width: 60px;
+  height: 2px;
+  background: var(--grille-accent);
+  margin: var(--sp-4) auto;
+  border-radius: 99px;
+}
+.grille-title-meta {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--grille-accent);
+  font-weight: 600;
+}
+
+/* Sections */
+.grille-section {
+  margin-bottom: var(--sp-6);
+}
+.grille-section h3 {
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-size: 1.25rem;
+  font-weight: 400;
+  color: var(--grille-accent-deep);
+  margin: 0 0 var(--sp-3);
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--grille-border);
+}
+.grille-section-conditions h3 {
+  color: var(--c-ink-soft);
+  font-style: italic;
+  font-size: 1.0625rem;
+}
+
+.grille-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--sp-3);
+  padding: 6px 0;
+  font-size: 0.9375rem;
+}
+.row-label {
+  color: var(--c-ink);
+  flex: 1;
+}
+.grille-input-price {
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-size: 1.125rem;
+  color: var(--grille-accent-deep);
+  font-weight: 400;
+  text-align: right;
+  min-width: 100px;
+  max-width: 280px;
+}
+
+/* Section conditions plus discrète */
+.grille-section-conditions .grille-row {
+  font-size: 0.875rem;
+  color: var(--c-ink-soft);
+}
+.grille-section-conditions .grille-input-price {
+  font-family: var(--font-geist);
+  font-size: 0.875rem;
+  color: var(--c-ink);
+  font-style: italic;
+  font-weight: 500;
+}
+
+/* Footer signature */
+.grille-footer {
+  text-align: center;
+  margin-top: var(--sp-6);
+}
+.grille-input-contact {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  color: var(--c-ink-soft);
+  text-align: center;
+  width: 100%;
+  letter-spacing: 0.03em;
+}
+
+/* ─── Inputs invisibles (style "texte normal") ──────────────────── */
+.grille-input {
+  border: none;
+  background: transparent;
+  outline: none;
+  padding: 4px 6px;
+  border-radius: 6px;
+  transition: background 0.15s ease, box-shadow 0.15s ease;
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+}
+.grille-input:hover {
+  background: color-mix(in oklch, var(--grille-accent) 8%, transparent);
+}
+.grille-input:focus {
+  background: white;
+  box-shadow: 0 0 0 1.5px var(--grille-accent);
+}
+
+/* ─── CTA IziSolo + articles connexes (réutilisé) ──────────────── */
+.outil-cta {
+  margin: var(--sp-14) 0 var(--sp-12);
+}
+.outil-cta-inner {
+  background: linear-gradient(135deg, #fefaf5 0%, #fef0dc 100%);
+  border: 1.5px solid color-mix(in oklch, var(--c-accent) 30%, transparent);
+  border-radius: 24px;
+  padding: var(--sp-10) var(--sp-8);
+  text-align: center;
+}
+.outil-cta-inner h3 {
+  font-size: clamp(1.5rem, 3.5vw, 2.25rem);
+  letter-spacing: -0.015em;
+  line-height: 1.15;
+  margin: var(--sp-3) 0 var(--sp-4);
+  color: var(--c-ink);
+}
+.outil-cta-inner h3 em {
+  font-style: italic;
+  color: var(--c-accent-deep);
+}
+.outil-cta-inner p {
+  max-width: 56ch;
+  margin: 0 auto var(--sp-5);
+  font-size: 1.0625rem;
+  line-height: 1.55;
+  color: var(--c-ink-soft);
+}
+.outil-cta-sub {
+  font-size: 0.8125rem !important;
+  font-family: var(--font-mono);
+  color: color-mix(in oklch, var(--c-ink) 55%, transparent) !important;
+  margin-top: var(--sp-4) !important;
+  letter-spacing: 0.05em;
+}
+.outil-related h2 {
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  letter-spacing: -0.015em;
+  text-align: center;
+  margin: 0 0 var(--sp-6);
+  color: var(--c-ink);
+}
+.outil-related-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: var(--sp-4);
+}
+.outil-related-card {
+  background: white;
+  border-radius: 16px;
+  padding: var(--sp-5);
+  border: 1px solid color-mix(in oklch, var(--c-ink) 8%, transparent);
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+.outil-related-card:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in oklch, var(--c-accent) 40%, transparent);
+}
+.outil-related-card .eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--c-accent-deep);
+  font-weight: 600;
+}
+.outil-related-card h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0;
+  color: var(--c-ink);
+  line-height: 1.35;
+  flex: 1;
+}
+.outil-related-card .card-cta {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--c-accent-deep);
+  font-weight: 600;
+}
+
+/* ─── @media print : optimisation impression A4 ──────────────────── */
+@media print {
+  /* Forcer impression des couleurs (sinon le navigateur les retire pour
+     économiser l'encre, ce qui casse le design coloré) */
+  * {
+    color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Hide tout sauf la grille */
+  .outil-breadcrumb,
+  .outil-hero-photo,
+  .grille-controls,
+  .grille-hint,
+  .outil-cta,
+  .outil-related {
+    display: none !important;
+  }
+
+  /* Background page blanc */
+  body, .outil-page, .izi-landing-root {
+    background: white !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Centre la grille sur la page A4 */
+  .outil-page {
+    padding: 0 !important;
+  }
+  .container {
+    max-width: none !important;
+    padding: 0 !important;
+  }
+
+  /* La grille elle-même : pleine page A4, marges réduites, borders subtils */
+  .grille-preview {
+    margin: 0 auto !important;
+    max-width: 100% !important;
+    box-shadow: none !important;
+    border: 1px solid var(--grille-border) !important;
+    page-break-inside: avoid;
+    border-radius: 0 !important;
+    padding: 30mm 24mm !important;
+  }
+
+  /* Hide les hovers/focus visuels sur les inputs */
+  .grille-input,
+  .grille-input:hover,
+  .grille-input:focus {
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
+
+  /* Force les couleurs Instrument Serif visibles */
+  .grille-input-studio,
+  .grille-input-price,
+  .grille-section h3 {
+    color: var(--grille-accent-deep) !important;
+  }
+
+  /* Compact print : un peu moins d'espace */
+  .grille-section { margin-bottom: 14pt; }
+  .grille-row { padding: 3pt 0; }
+}
+
+/* Format @page A4 */
+@page {
+  size: A4;
+  margin: 12mm;
+}

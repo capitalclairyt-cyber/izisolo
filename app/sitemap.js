@@ -37,6 +37,7 @@ const STATIC_PATHS = [
   { path: '/calculateur',          changeFrequency: 'monthly',  priority: 0.8 },
   { path: '/outils/calculateur-revenu-prof-yoga',     changeFrequency: 'monthly', priority: 0.85 },
   { path: '/outils/comparateur-statuts-prof-yoga',    changeFrequency: 'monthly', priority: 0.85 },
+  { path: '/outils/grille-tarifaire-prof-yoga',       changeFrequency: 'monthly', priority: 0.85 },
   { path: '/blog',                 changeFrequency: 'weekly',   priority: 0.8 },
   { path: '/login',                changeFrequency: 'yearly',   priority: 0.5 },
   { path: '/register',             changeFrequency: 'yearly',   priority: 0.7 },

@@ -264,6 +264,16 @@ CONDITIONS
   Carnet valable 6 mois
 ```
 
+<aside class="article-tool-callout">
+  <div class="callout-icon">🎨</div>
+  <div class="callout-body">
+    <span class="callout-eyebrow">Outil gratuit · imprimable</span>
+    <h4>Crée ta grille tarifaire en 5 minutes (et imprime-la)</h4>
+    <p>Édite tes prix en direct, choisis ta palette de couleurs, exporte en PDF ou imprime pour ton studio. Tes modifications sont sauvegardées automatiquement dans ton navigateur.</p>
+    <a href="/outils/grille-tarifaire-prof-yoga" class="callout-link">→ Créer ma grille tarifaire</a>
+  </div>
+</aside>
+
 Tu as une grille en 15 minutes. Tu peux l'affiner sur 2-3 mois en testant.
 
 ## Conclusion : ton tarif est aussi ton positionnement
