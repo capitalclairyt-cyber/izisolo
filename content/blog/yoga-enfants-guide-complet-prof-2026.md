@@ -117,6 +117,16 @@ Pour toute intervention en école, crèche, mairie : **convention obligatoire** 
 ### 5. Anamnèse des enfants
 Demande aux parents pour chaque enfant : allergies, asthme, handicap moteur, traitement médical en cours, contre-indications. Une simple fiche A4 que le parent remplit avant le 1er cours.
 
+<aside class="article-tool-callout">
+  <div class="callout-icon">📋</div>
+  <div class="callout-body">
+    <span class="callout-eyebrow">Outil gratuit · imprimable</span>
+    <h4>Notre modèle de fiche d'inscription enfant + accord parental</h4>
+    <p>Identité, parents, antécédents médicaux, contact d'urgence et les 4 autorisations parentales indispensables (image, reprise, sortie autonome, soins d'urgence). Personnalise avec ton nom et ta palette de couleurs, imprime sur A4.</p>
+    <a href="/outils/fiche-inscription-yoga-enfant" class="callout-link">→ Ouvrir le modèle</a>
+  </div>
+</aside>
+
 ## Les 5 cadres d'intervention possibles
 
 ### Cadre 1 — En école élémentaire (intervention extérieure)

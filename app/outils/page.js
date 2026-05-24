@@ -70,6 +70,17 @@ const OUTILS = [
     cta: 'Ouvrir ma checklist',
     timeNeeded: '~1 h cumulé',
   },
+  {
+    slug: 'fiche-inscription-yoga-enfant',
+    eyebrow: 'Pour yoga enfants · imprimable',
+    title: 'Fiche d\'inscription yoga enfant',
+    description:
+      "Le modèle qu'il te faut pour la rentrée scolaire ou tes stages vacances : identité, parents, antécédents médicaux, contact d'urgence et les 4 autorisations parentales (image, reprise, sortie autonome, soins). Personnalisable, imprimable A4 pour signature.",
+    photo: '/outils/hero-fiche-enfant.jpg',
+    color: 'sage',
+    cta: 'Créer ma fiche',
+    timeNeeded: '4 min',
+  },
 ];
 
 const FAQ = [

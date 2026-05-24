@@ -11,10 +11,14 @@ const ILLUS = { lotus: YogaLotusIllu, tree: YogaTreeIllu, sun: SunCurveIllu };
 /**
  * Landing personnalisée par persona (SEO long-tail).
  * Utilisée par :
- *   /profs-de-yoga       (persona = 'yoga')
- *   /profs-de-pilates    (persona = 'pilates')
- *   /coachs-bien-etre    (persona = 'coaching')
- *   /therapeutes         (persona = 'therapeutes')
+ *   /profs-de-yoga          (persona = 'yoga')
+ *   /profs-de-yoga-enfants  (persona = 'yoga-enfants')
+ *   /profs-de-pilates       (persona = 'pilates')
+ *   /coachs-bien-etre       (persona = 'coaching')
+ *   /therapeutes            (persona = 'therapeutes')
+ *   /profs-de-meditation    (persona = 'meditation')
+ *   /sophrologues           (persona = 'sophrologie')
+ *   /profs-de-danse         (persona = 'danse')
  */
 export default function PersonaLanding({ persona }) {
   useEffect(() => {
@@ -132,6 +136,28 @@ export default function PersonaLanding({ persona }) {
 }
 
 export const PERSONAS = {
+  'yoga-enfants': {
+    qui: 'profs de yoga pour enfants',
+    eyebrow: 'Pour les profs de yoga enfants (3-16 ans)',
+    titre1: 'Gérer tes cours yoga enfants',
+    titre2: 'sans s\'arracher les cheveux.',
+    lead: "Cours hebdo, stages vacances scolaires, interventions écoles et mairies. Les inscriptions sont gérées par les parents, les paiements aussi, les autorisations parentales sont obligatoires. IziSolo a tous les workflows spécifiques : autorisations, contacts d'urgence, communication aux parents, conventions écoles, suivi par enfant.",
+    illu: 'lotus',
+    h2_quoi: 'Yoga enfants,',
+    h2_em: 'l\'admin en plus.',
+    benefices: [
+      { kw: 'Fiche par enfant', title: 'Toutes les infos qu\'il faut', desc: "Date de naissance, école, classe, allergies, contre-indications, contacts d'urgence, droit à l'image. Tout est là, sans bricolage Excel." },
+      { kw: 'Parents = comptes', title: 'Les parents inscrivent, payent, gèrent', desc: "Le parent crée un compte, inscrit son ou ses enfants, paye, reçoit les notifs. L'enfant ne touche pas à l'app — toi non plus aux SMS parents." },
+      { kw: 'Stages vacances', title: 'Cycles 3-5 séances en 1 clic', desc: "Crée une offre 'Stage Toussaint 3 séances 60 €', publie le lien, les parents inscrivent leurs enfants. Pas de chronopost de chèques à gérer." },
+      { kw: 'Écoles & mairies', title: 'Conventions et factures clean', desc: "Tarifs séance, planning trimestriel, facturation institution avec mention TVA. Tu joues dans la cour des grands sans armée d'administratifs." },
+    ],
+    use_cases: [
+      { titre: 'Rentrée scolaire — créer 12 cours hebdo en 30 sec', desc: 'Tu choisis jour, heure, lieu, capacité (10 enfants), et l\'app génère les 12 occurrences du trimestre. Les parents voient le planning sur leur portail.' },
+      { titre: 'Stage vacances Toussaint 3 séances', desc: 'Tu crées une offre cycle (3 séances pour 60 €), publies le lien sur tes réseaux. Les parents inscrivent leurs enfants directement, paient en ligne. Tu vois la liste en temps réel.' },
+      { titre: 'Convention école — facturer la mairie', desc: 'Tu crées un "élève institutionnel" (École Jean Jaurès), planifies tes 30 séances annuelles, génères la facture trimestrielle avec ton SIRET. La mairie te paye par virement.' },
+      { titre: 'Absence d\'un enfant — prévenir le parent', desc: 'L\'enfant n\'est pas là, tu pointes "absent". Si c\'est en délai d\'annulation, la séance est décomptée du carnet. Le parent reçoit automatiquement la notif.' },
+    ],
+  },
   yoga: {
     qui: 'profs de yoga',
     eyebrow: 'Pensé pour les profs de yoga indépendant·e·s',

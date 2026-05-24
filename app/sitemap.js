@@ -6,6 +6,7 @@ const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://izisolo.fr';
 const STATIC_PATHS = [
   { path: '/',                     changeFrequency: 'monthly',  priority: 1.0 },
   { path: '/profs-de-yoga',        changeFrequency: 'monthly',  priority: 0.9 },
+  { path: '/profs-de-yoga-enfants', changeFrequency: 'monthly', priority: 0.9 },
   { path: '/profs-de-pilates',     changeFrequency: 'monthly',  priority: 0.9 },
   { path: '/profs-de-meditation',  changeFrequency: 'monthly',  priority: 0.9 },
   { path: '/profs-de-danse',       changeFrequency: 'monthly',  priority: 0.9 },
@@ -40,6 +41,7 @@ const STATIC_PATHS = [
   { path: '/outils/comparateur-statuts-prof-yoga',    changeFrequency: 'monthly', priority: 0.85 },
   { path: '/outils/grille-tarifaire-prof-yoga',       changeFrequency: 'monthly', priority: 0.85 },
   { path: '/outils/checklist-lancement-prof-yoga',    changeFrequency: 'monthly', priority: 0.85 },
+  { path: '/outils/fiche-inscription-yoga-enfant',    changeFrequency: 'monthly', priority: 0.85 },
   { path: '/blog',                 changeFrequency: 'weekly',   priority: 0.8 },
   { path: '/login',                changeFrequency: 'yearly',   priority: 0.5 },
   { path: '/register',             changeFrequency: 'yearly',   priority: 0.7 },
