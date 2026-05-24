@@ -48,7 +48,7 @@ export default function CalculateurRevenuPage() {
             <nav className="outil-breadcrumb" aria-label="Fil d'Ariane">
               <Link href="/">Accueil</Link>
               <span>›</span>
-              <Link href="/blog">Le journal</Link>
+              <Link href="/outils">Outils</Link>
               <span>›</span>
               <span className="current">Calculateur de revenu</span>
             </nav>
