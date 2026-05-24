@@ -164,6 +164,10 @@
   color: var(--c-accent-deep);
   font-weight: 400;
 }
+/* Couleurs sémantiques sur la valeur affichée selon la section */
+.input-block.is-revenu .input-value { color: var(--calc-positive); }
+.input-block.is-cout   .input-value { color: var(--calc-negative); }
+
 .input-range {
   width: 100%;
   -webkit-appearance: none;
@@ -198,6 +202,40 @@
   border: 3px solid white;
   box-shadow: 0 2px 8px rgba(0,0,0,0.15);
   cursor: pointer;
+}
+
+/* SLIDERS REVENUS — vert sage */
+.input-block.is-revenu .input-range {
+  background: linear-gradient(
+    to right,
+    var(--calc-positive) 0%,
+    var(--calc-positive) 40%,
+    color-mix(in oklch, var(--c-ink) 10%, transparent) 40%,
+    color-mix(in oklch, var(--c-ink) 10%, transparent) 100%
+  );
+}
+.input-block.is-revenu .input-range::-webkit-slider-thumb {
+  background: var(--calc-positive);
+}
+.input-block.is-revenu .input-range::-moz-range-thumb {
+  background: var(--calc-positive);
+}
+
+/* SLIDERS COÛTS — corail */
+.input-block.is-cout .input-range {
+  background: linear-gradient(
+    to right,
+    var(--calc-negative) 0%,
+    var(--calc-negative) 40%,
+    color-mix(in oklch, var(--c-ink) 10%, transparent) 40%,
+    color-mix(in oklch, var(--c-ink) 10%, transparent) 100%
+  );
+}
+.input-block.is-cout .input-range::-webkit-slider-thumb {
+  background: var(--calc-negative);
+}
+.input-block.is-cout .input-range::-moz-range-thumb {
+  background: var(--calc-negative);
 }
 .input-scale {
   display: flex;
@@ -242,7 +280,13 @@
   transition: background 0.2s ease;
 }
 .input-toggle-block.active {
-  background: color-mix(in oklch, var(--c-accent) 8%, white);
+  background: color-mix(in oklch, var(--calc-positive) 6%, white);
+}
+.input-toggle-block.is-revenu.active {
+  background: color-mix(in oklch, var(--calc-positive) 8%, white);
+}
+.input-toggle-block.is-cout.active {
+  background: color-mix(in oklch, var(--calc-negative) 6%, white);
 }
 .input-toggle {
   display: flex;
@@ -284,6 +328,14 @@
 .input-toggle-block.active .toggle-thumb {
   transform: translateX(16px);
 }
+/* Toggle actif sur section revenus → track vert sage */
+.input-toggle-block.is-revenu.active .toggle-track {
+  background: var(--calc-positive);
+}
+/* Toggle actif sur section coûts → track corail */
+.input-toggle-block.is-cout.active .toggle-track {
+  background: var(--calc-negative);
+}
 .toggle-label {
   font-size: 0.9375rem;
   color: var(--c-ink);
@@ -313,8 +365,11 @@
   font-size: 1.125rem;
   color: var(--c-accent-deep);
 }
+/* Mini-valeurs colorées selon la section parent */
+.input-toggle-block.is-revenu .input-value-mini { color: var(--calc-positive); }
+.input-toggle-block.is-cout   .input-value-mini { color: var(--calc-negative); }
 
-/* Radio pills */
+/* Radio pills — radio statut juridique, plus discret côté couleur */
 .radio-group {
   display: flex;
   gap: 8px;
@@ -328,11 +383,12 @@
   font-size: 0.875rem;
   transition: all 0.2s ease;
   background: white;
+  color: var(--c-ink);
 }
 .radio-pill input { display: none; }
 .radio-pill.active {
-  background: var(--c-accent-deep);
-  border-color: var(--c-accent-deep);
+  background: var(--calc-negative);
+  border-color: var(--calc-negative);
   color: white;
 }
 

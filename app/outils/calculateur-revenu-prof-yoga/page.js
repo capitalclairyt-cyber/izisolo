@@ -82,7 +82,7 @@ export default async function CalculateurRevenuPage() {
                 </h2>
 
                 {/* Tarif cours collectif */}
-                <div className="input-block">
+                <div className="input-block is-revenu">
                   <label htmlFor="tarif-cours">
                     Tarif moyen par cours collectif
                     <span className="input-value">15 €</span>
@@ -102,7 +102,7 @@ export default async function CalculateurRevenuPage() {
                 </div>
 
                 {/* Cours par semaine */}
-                <div className="input-block">
+                <div className="input-block is-revenu">
                   <label htmlFor="cours-sem">
                     Nombre de cours par semaine
                     <span className="input-value">10</span>
@@ -122,7 +122,7 @@ export default async function CalculateurRevenuPage() {
                 </div>
 
                 {/* Élèves par cours */}
-                <div className="input-block">
+                <div className="input-block is-revenu">
                   <label htmlFor="eleves-cours">
                     Élèves en moyenne par cours
                     <span className="input-value">7</span>
@@ -146,7 +146,7 @@ export default async function CalculateurRevenuPage() {
                   <span>Sources complémentaires</span>
                 </div>
 
-                <div className="input-toggle-block active">
+                <div className="input-toggle-block is-revenu active">
                   <label className="input-toggle">
                     <input type="checkbox" defaultChecked />
                     <span className="toggle-track"><span className="toggle-thumb"></span></span>
@@ -164,7 +164,7 @@ export default async function CalculateurRevenuPage() {
                   </div>
                 </div>
 
-                <div className="input-toggle-block active">
+                <div className="input-toggle-block is-revenu active">
                   <label className="input-toggle">
                     <input type="checkbox" defaultChecked />
                     <span className="toggle-track"><span className="toggle-thumb"></span></span>
@@ -182,7 +182,7 @@ export default async function CalculateurRevenuPage() {
                   </div>
                 </div>
 
-                <div className="input-toggle-block">
+                <div className="input-toggle-block is-revenu">
                   <label className="input-toggle">
                     <input type="checkbox" />
                     <span className="toggle-track"><span className="toggle-thumb"></span></span>
@@ -209,7 +209,7 @@ export default async function CalculateurRevenuPage() {
                   </div>
                 </div>
 
-                <div className="input-block">
+                <div className="input-block is-cout">
                   <label htmlFor="loyer">
                     Loyer salle mensuel
                     <span className="input-value">350 €</span>
@@ -297,7 +297,7 @@ export default async function CalculateurRevenuPage() {
                     <div
                       className="chart-pie"
                       style={{
-                        background: 'conic-gradient(var(--c-accent-deep) 0% 82.5%, var(--c-accent) 82.5% 95.7%, color-mix(in oklch, var(--c-accent) 50%, transparent) 95.7% 100%)',
+                        background: 'conic-gradient(var(--calc-positive) 0% 82.5%, var(--calc-amber) 82.5% 95.7%, var(--calc-blush) 95.7% 100%)',
                       }}
                       aria-hidden="true"
                     />
