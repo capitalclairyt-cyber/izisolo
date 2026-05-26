@@ -25,6 +25,7 @@ const PUBLIC_ROUTES = [
   '/blog',                  // /blog (liste) + /blog/[slug] (articles)
   '/outils',                // /outils/calculateur-revenu-prof-yoga, etc. (lead magnets HTML)
   '/calculateur',                // calculateur de frais (lead magnet)
+  '/ressources/',           // /ressources/voyage-abeille.html, etc. (cours HTML offerts)
   '/sitemap.xml', '/robots.txt',
 ];
 
