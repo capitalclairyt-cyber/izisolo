@@ -314,5 +314,70 @@ document.addEventListener('DOMContentLoaded', async function() {
       .izi-footer-cta { padding: 7px 16px; font-size: 0.82rem; }
     }
   </style>
+
+  <!-- ─── Auto-linkify des mentions "izisolo.fr" ────────────────────────
+       Scanne le DOM après le rendu de l'app React et transforme tous les
+       textes "izisolo.fr" (où qu'ils apparaissent) en liens cliquables
+       vers izisolo.fr. Couvre les mentions dans le contenu bundlé. -->
+  <script>
+    (function() {
+      function linkifyIziSolo(root) {
+        if (!root) return;
+        const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+          acceptNode: function(node) {
+            if (!node.parentElement) return NodeFilter.FILTER_REJECT;
+            if (node.parentElement.closest('a')) return NodeFilter.FILTER_REJECT;
+            const tag = node.parentElement.tagName;
+            if (tag === 'SCRIPT' || tag === 'STYLE' || tag === 'NOSCRIPT') {
+              return NodeFilter.FILTER_REJECT;
+            }
+            return /izisolo\.fr/i.test(node.textContent)
+              ? NodeFilter.FILTER_ACCEPT
+              : NodeFilter.FILTER_REJECT;
+          }
+        });
+        const nodes = [];
+        let n;
+        while ((n = walker.nextNode())) nodes.push(n);
+        nodes.forEach(function(node) {
+          const replaced = node.textContent.replace(
+            /(https?:\/\/)?(www\.)?izisolo\.fr(\/[a-zA-Z0-9_\-\/]*)?/gi,
+            function(match) {
+              const path = match.replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/^izisolo\.fr/, '');
+              const url = 'https://www.izisolo.fr' + path;
+              return '<a href="' + url + '" target="_blank" rel="noopener noreferrer" style="color:#7a4a2b;font-weight:600;text-decoration:underline;text-underline-offset:2px;">' + match + '</a>';
+            }
+          );
+          if (replaced !== node.textContent) {
+            const span = document.createElement('span');
+            span.innerHTML = replaced;
+            node.replaceWith.apply(node, Array.from(span.childNodes));
+          }
+        });
+      }
+
+      // Premier scan après ~2 sec (le bundle React a le temps de se rendre)
+      setTimeout(function() { linkifyIziSolo(document.body); }, 2000);
+
+      // Re-scan après 5 sec et 10 sec au cas où le contenu se rend tardivement
+      setTimeout(function() { linkifyIziSolo(document.body); }, 5000);
+      setTimeout(function() { linkifyIziSolo(document.body); }, 10000);
+
+      // Observer les changements DOM pour catcher du contenu rendu plus tard
+      if (typeof MutationObserver !== 'undefined') {
+        setTimeout(function() {
+          const observer = new MutationObserver(function(mutations) {
+            for (let i = 0; i < mutations.length; i++) {
+              const added = mutations[i].addedNodes;
+              for (let j = 0; j < added.length; j++) {
+                if (added[j].nodeType === 1) linkifyIziSolo(added[j]);
+              }
+            }
+          });
+          observer.observe(document.body, { childList: true, subtree: true });
+        }, 12000);
+      }
+    })();
+  </script>
 </body>
 </html>
