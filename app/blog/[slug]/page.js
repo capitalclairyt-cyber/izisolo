@@ -1,184 +1,195 @@
-import { notFound } from 'next/navigation';
-import Link from 'next/link';
-import { getArticleBySlug, getAllSlugs, formatDateFR, getAllArticles } from '@/lib/blog';
-import { getArticleSchema, getBreadcrumbSchema, getFAQSchema, ogImageUrl, BASE_URL } from '@/lib/seo';
-import '../../landing.css';
-import '../blog.css';
+'use client';
 
-export async function generateStaticParams() {
-  return getAllSlugs().map(slug => ({ slug }));
+/**
+ * Page cliente "fallback fragment URL"
+ *
+ * Cas d'usage : un lien email Supabase legacy redirige le navigateur sur
+ * `https://www.izisolo.fr/#access_token=xxx&refresh_token=yyy&type=signup`
+ * (tokens dans le fragment URL `#`).
+ *
+ * Le serveur Next.js ne voit jamais le fragment (HTTP standard), donc
+ * `/auth/callback` route handler ne peut rien faire. Il nous renvoie ici.
+ *
+ * Cette page lit `window.location.hash` côté client, pose la session via
+ * `supabase.auth.setSession()`, puis redirige vers `next` (ou /dashboard).
+ *
+ * À terme, mieux vaut éditer les templates email Supabase pour utiliser
+ * `?token_hash={{ .TokenHash }}&type=signup` (gestion serveur dans le
+ * callback). Cette page reste utile en filet de sécurité.
+ */
+
+import { useEffect, useState, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { supabase } from '@/lib/supabase';
+import { Sparkles, Loader2, AlertCircle } from 'lucide-react';
+
+// Next.js 16 : useSearchParams() force le bailout CSR et exige un <Suspense>
+// boundary parent, sinon le build de prerendering échoue. On force aussi
+// dynamic pour cette page : elle ne doit JAMAIS être servie depuis le cache
+// (chaque visite a un fragment / next param différent).
+export const dynamic = 'force-dynamic';
+
+export default function FinaliserAuthPageWrapper() {
+  return (
+    <Suspense fallback={<FinaliserLoading />}>
+      <FinaliserAuthPage />
+    </Suspense>
+  );
 }
 
-export async function generateMetadata({ params }) {
-  const { slug } = await params;
-  const article = getArticleBySlug(slug);
-  if (!article) return { title: 'Article introuvable' };
-
-  // OG image dynamique : eyebrow = "Le journal", titre = titre article, sous-titre = excerpt tronqué.
-  // (On préfère cette image générique au hero photo pour les partages sociaux :
-  // les hero photos en portrait s'affichent mal dans les cards landscape 1.91:1).
-  const subtitle = (article.excerpt || article.description || '').slice(0, 140);
-  const ogImg = ogImageUrl({
-    eyebrow: 'Le journal',
-    title: article.title,
-    subtitle,
-    palette: 'sable',
-  });
-
-  return {
-    title: article.title,
-    description: article.description || article.excerpt,
-    alternates: { canonical: `${BASE_URL}/blog/${slug}` },
-    openGraph: {
-      type: 'article',
-      title: article.title,
-      description: article.description || article.excerpt,
-      url: `${BASE_URL}/blog/${slug}`,
-      publishedTime: article.date,
-      modifiedTime: article.updated || article.date,
-      authors: [article.author],
-      tags: article.tags,
-      images: [{ url: ogImg, width: 1200, height: 630, alt: article.title }],
-    },
-    twitter: {
-      card: 'summary_large_image',
-      title: article.title,
-      description: article.description || article.excerpt,
-      images: [ogImg],
-    },
-  };
+function FinaliserLoading() {
+  return (
+    <div className="finaliser-container">
+      <div className="finaliser-card">
+        <div className="finaliser-icon"><Sparkles size={28} /></div>
+        <h1 className="finaliser-title">Connexion en cours…</h1>
+        <p className="finaliser-text">On finalise ton authentification, un instant.</p>
+        <div className="finaliser-loader"><Loader2 size={20} className="spin" /></div>
+      </div>
+      <FinaliserStyles />
+    </div>
+  );
 }
 
-export default async function ArticlePage({ params }) {
-  const { slug } = await params;
-  const article = getArticleBySlug(slug);
-  if (!article) notFound();
+// Empêche les open redirects : `next` doit être une URL relative interne.
+// Bloque //evil.com, /\evil.com, et toute valeur qui n'est pas relative.
+function safeNext(raw) {
+  if (!raw || !raw.startsWith('/')) return '/dashboard';
+  if (raw.startsWith('//') || raw.startsWith('/\\')) return '/dashboard';
+  if (/[\x00-\x1f\x7f]/.test(raw)) return '/dashboard';
+  return raw;
+}
 
-  // Articles "related" (3 plus récents hors celui-ci)
-  const allArticles = getAllArticles();
-  const related = allArticles
-    .filter(a => a.slug !== slug)
-    .slice(0, 3);
+function FinaliserAuthPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [error, setError] = useState('');
 
-  // Schema.org : BlogPosting + Breadcrumb (+ FAQ si l'article en a un)
-  const articleSchema = getArticleSchema({
-    title: article.title,
-    description: article.description || article.excerpt,
-    slug: article.slug,
-    image: article.image,
-    datePublished: article.date,
-    dateModified: article.updated,
-    authorName: article.author,
-  });
+  useEffect(() => {
+    (async () => {
+      const next = safeNext(searchParams.get('next'));
 
-  const breadcrumb = getBreadcrumbSchema([
-    { name: 'Accueil', url: '/' },
-    { name: 'Le journal', url: '/blog' },
-    { name: article.title, url: `/blog/${article.slug}` },
-  ]);
+      // Lire le fragment URL : #access_token=...&refresh_token=...&type=signup
+      // Le hash commence par '#', on l'enlève puis on parse comme query string.
+      const hash = (typeof window !== 'undefined' ? window.location.hash : '').replace(/^#/, '');
 
-  const faqSchema = article.faq && article.faq.length
-    ? getFAQSchema(article.faq)
-    : null;
+      if (!hash) {
+        setError("Lien d'authentification invalide ou expiré.");
+        setTimeout(() => router.push('/login'), 2500);
+        return;
+      }
+
+      const params = new URLSearchParams(hash);
+      const accessToken  = params.get('access_token');
+      const refreshToken = params.get('refresh_token');
+      const type         = params.get('type'); // signup | recovery | magiclink | invite
+      const errorDesc    = params.get('error_description');
+
+      if (errorDesc) {
+        setError(decodeURIComponent(errorDesc.replace(/\+/g, ' ')));
+        setTimeout(() => router.push('/login'), 3500);
+        return;
+      }
+
+      if (!accessToken || !refreshToken) {
+        setError("Lien d'authentification incomplet.");
+        setTimeout(() => router.push('/login'), 2500);
+        return;
+      }
+
+      // Établir la session côté client → Supabase écrit les cookies via @supabase/ssr
+      const { error: sessionError } = await supabase.auth.setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken,
+      });
+
+      if (sessionError) {
+        setError(sessionError.message);
+        setTimeout(() => router.push('/login'), 3000);
+        return;
+      }
+
+      // Reset password → page dédiée
+      if (type === 'recovery') {
+        router.replace('/nouveau-mot-de-passe');
+        return;
+      }
+
+      // Sinon redirection vers la cible (par défaut /onboarding pour signup,
+      // /dashboard sinon — géré par le param `next`)
+      router.replace(next);
+      router.refresh();
+    })();
+  }, []);
 
   return (
-    <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumb) }}
-      />
-      {faqSchema && (
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
-        />
-      )}
-
-      <div className="izi-landing-root" data-palette="sable">
-        <main className="article-page">
-          <div className="container article-container">
-            {/* Breadcrumb visible */}
-            <nav className="article-breadcrumb" aria-label="Fil d'Ariane">
-              <Link href="/">Accueil</Link>
-              <span>›</span>
-              <Link href="/blog">Le journal</Link>
-              <span>›</span>
-              <span className="current">{article.title}</span>
-            </nav>
-
-            {/* En-tête article */}
-            <header className="article-header">
-              {article.tags?.length > 0 && (
-                <div className="article-tags">
-                  {article.tags.slice(0, 3).map(tag => (
-                    <span key={tag} className="blog-tag">{tag}</span>
-                  ))}
-                </div>
-              )}
-              <h1 className="article-h1 serif">{article.title}</h1>
-              {article.excerpt && (
-                <p className="article-lead">{article.excerpt}</p>
-              )}
-              <div className="article-meta">
-                <span className="article-author">Par {article.author}</span>
-                <span className="article-dot">·</span>
-                <time dateTime={article.date}>{formatDateFR(article.date)}</time>
-                <span className="article-dot">·</span>
-                <span>{article.readingTime} min de lecture</span>
-              </div>
-            </header>
-
-            {/* Contenu rendu depuis le markdown */}
-            <article
-              className="article-body"
-              dangerouslySetInnerHTML={{ __html: article.html }}
-            />
-
-            {/* CTA fin d'article */}
-            <aside className="article-cta">
-              <div className="article-cta-inner">
-                <span className="eyebrow">Outil recommandé</span>
-                <h3 className="serif">
-                  IziSolo, l'app pour gérer ton studio <em>en 5 minutes par jour</em>.
-                </h3>
-                <p>
-                  Agenda, élèves, paiements, portail public — tout-en-un.
-                  14 jours d'essai sans CB, dès 17 €/mois (12 € pour les 100 premières).
-                </p>
-                <Link href="/" className="btn btn-primary btn-lg">Découvrir IziSolo →</Link>
-              </div>
-            </aside>
-
-            {/* Articles connexes */}
-            {related.length > 0 && (
-              <section className="article-related">
-                <h2 className="serif">À lire aussi</h2>
-                <div className="blog-grid">
-                  {related.map(a => (
-                    <article key={a.slug} className="blog-card">
-                      <Link href={`/blog/${a.slug}`} className="blog-card-link">
-                        <div className="blog-card-content">
-                          <div className="blog-card-meta">
-                            <time dateTime={a.date}>{formatDateFR(a.date)}</time>
-                            <span className="blog-card-dot">·</span>
-                            <span>{a.readingTime} min</span>
-                          </div>
-                          <h3 className="serif">{a.title}</h3>
-                          <p className="blog-card-excerpt">{a.excerpt}</p>
-                        </div>
-                      </Link>
-                    </article>
-                  ))}
-                </div>
-              </section>
-            )}
+    <div className="finaliser-container">
+      <div className="finaliser-card">
+        <div className="finaliser-icon">
+          {error ? <AlertCircle size={28} /> : <Sparkles size={28} />}
+        </div>
+        <h1 className="finaliser-title">
+          {error ? 'Oups...' : 'Connexion en cours…'}
+        </h1>
+        <p className="finaliser-text">
+          {error || 'On finalise ton authentification, un instant.'}
+        </p>
+        {!error && (
+          <div className="finaliser-loader">
+            <Loader2 size={20} className="spin" />
           </div>
-        </main>
+        )}
       </div>
-    </>
+
+      <FinaliserStyles />
+    </div>
+  );
+}
+
+function FinaliserStyles() {
+  return (
+    <style jsx global>{`
+      .finaliser-container {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        background: var(--bg-page);
+      }
+      .finaliser-card {
+        width: 100%;
+        max-width: 420px;
+        background: var(--bg-card);
+        border-radius: var(--radius-xl);
+        box-shadow: var(--shadow-lg);
+        padding: 40px 32px;
+        text-align: center;
+      }
+      .finaliser-icon {
+        width: 64px; height: 64px; border-radius: 50%;
+        background: var(--brand-light);
+        color: var(--brand);
+        display: flex; align-items: center; justify-content: center;
+        margin: 0 auto 16px;
+      }
+      .finaliser-title {
+        font-size: 1.25rem; font-weight: 700;
+        color: var(--text-primary);
+        margin: 0 0 8px;
+      }
+      .finaliser-text {
+        color: var(--text-secondary);
+        font-size: 0.9375rem;
+        margin: 0 0 20px;
+        line-height: 1.5;
+      }
+      .finaliser-loader {
+        display: flex; justify-content: center;
+        color: var(--brand);
+      }
+      .spin { animation: spin 1s linear infinite; }
+      @keyframes spin { to { transform: rotate(360deg); } }
+    `}</style>
   );
 }

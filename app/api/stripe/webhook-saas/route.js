@@ -12,7 +12,7 @@ export const dynamic = 'force-dynamic';
  *   - STRIPE_WEBHOOK_SECRET_SAAS (signing secret du webhook configuré sur Stripe)
  *
  * À configurer sur dashboard.stripe.com côté MÉLUTEK :
- *   Endpoint : https://izisolo.fr/api/stripe/webhook-saas
+ *   Endpoint : https://www.izisolo.fr/api/stripe/webhook-saas
  *   Events :
  *     - checkout.session.completed
  *     - customer.subscription.created

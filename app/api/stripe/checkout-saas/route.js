@@ -84,7 +84,7 @@ export async function POST(request) {
     apiVersion: '2025-09-30.clover',
   });
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://izisolo.fr';
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.izisolo.fr';
 
   // Calcul du trial restant : si l'user souscrit AVANT la fin de son
   // trial in-app (14j à partir de signup), Stripe doit respecter le temps

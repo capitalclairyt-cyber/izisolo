@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { getAllArticles } from '@/lib/blog';
 
-const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://izisolo.fr';
+const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.izisolo.fr';
 
 const STATIC_PATHS = [
   { path: '/',                     changeFrequency: 'monthly',  priority: 1.0 },

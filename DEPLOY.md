@@ -74,10 +74,10 @@ Référence complète : [migrations/README.md](./migrations/README.md).
 
 Dashboard Supabase → **Authentication** → **URL Configuration** :
 
-- **Site URL** : `https://izisolo.fr`
+- **Site URL** : `https://www.izisolo.fr`
 - **Redirect URLs** (ajouter) :
-  - `https://izisolo.fr/auth/callback`
-  - `https://izisolo.fr/p/*/connexion`
+  - `https://www.izisolo.fr/auth/callback`
+  - `https://www.izisolo.fr/p/*/connexion`
   - `http://localhost:3333/auth/callback` (dev)
   - `http://localhost:3333/p/*/connexion` (dev)
 
@@ -131,7 +131,7 @@ vercel env add CRON_SECRET production
 | `NEXT_PUBLIC_SUPABASE_URL` | URL Supabase prod (`https://xxxx.supabase.co`) |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Anon key Supabase prod |
 | `SUPABASE_SERVICE_ROLE_KEY` | Service role key Supabase prod (SECRET — ne jamais exposer côté client) |
-| `NEXT_PUBLIC_APP_URL` | `https://izisolo.fr` |
+| `NEXT_PUBLIC_APP_URL` | `https://www.izisolo.fr` |
 | `ANTHROPIC_API_KEY` | Clé API Anthropic prod |
 | `RESEND_API_KEY` | API key Resend prod |
 | `RESEND_FROM_EMAIL` | `IziSolo <no-reply@izisolo.fr>` |
@@ -180,13 +180,13 @@ Dans cet ordre :
 
 2. **Headers de sécurité** :
    ```bash
-   curl -I https://izisolo.fr | grep -iE 'strict-transport|x-frame|x-content-type|referrer-policy|permissions-policy'
+   curl -I https://www.izisolo.fr | grep -iE 'strict-transport|x-frame|x-content-type|referrer-policy|permissions-policy'
    ```
    → doit afficher les 5 headers.
 
 3. **Indexation** :
-   - `https://izisolo.fr/robots.txt` → doit lister les Disallow et le sitemap
-   - `https://izisolo.fr/sitemap.xml` → doit lister les pages publiques + studios
+   - `https://www.izisolo.fr/robots.txt` → doit lister les Disallow et le sitemap
+   - `https://www.izisolo.fr/sitemap.xml` → doit lister les pages publiques + studios
 
 4. **Smoke test fonctionnel** — voir [DEPLOY-SMOKE.md](./DEPLOY-SMOKE.md) ou checklist du plan.
 
@@ -242,7 +242,7 @@ Pour le DB, utiliser les **point-in-time recovery** de Supabase si besoin (Setti
 ### Côté pro (à expliquer dans la doc utilisateur)
 
 1. Le pro va dans **Paramètres → Profil → Paiement en ligne** dans IziSolo.
-2. Il copie l'URL d'endpoint affichée (`https://izisolo.fr/api/stripe/webhook?profile=<id>`).
+2. Il copie l'URL d'endpoint affichée (`https://www.izisolo.fr/api/stripe/webhook?profile=<id>`).
 3. Il colle cette URL dans **dashboard.stripe.com → Developers → Webhooks → + Add endpoint**.
 4. Il coche les événements `checkout.session.completed` (et optionnellement `charge.refunded`).
 5. Il copie le **Signing secret** (commence par `whsec_`) et le colle dans le champ paramètres IziSolo, puis sauvegarde.

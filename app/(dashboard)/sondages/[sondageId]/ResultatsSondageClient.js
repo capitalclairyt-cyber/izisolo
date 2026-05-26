@@ -29,7 +29,7 @@ export default function ResultatsSondageClient({ sondage: initialSondage, crenea
   const [sondage, setSondage] = useState(initialSondage);
   const [showCommentaires, setShowCommentaires] = useState(false);
 
-  const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://izisolo.fr';
+  const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://www.izisolo.fr';
   const publicUrl = `${baseUrl}/p/${studioSlug}/sondage/${sondage.slug}`;
 
   // Pour chaque créneau, agréger oui/peut_etre/non + score = oui*2 + peut_etre*1

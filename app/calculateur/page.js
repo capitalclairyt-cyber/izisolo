@@ -14,11 +14,11 @@ const OG = ogImageUrl({
 export const metadata = {
   title: 'Calculateur de frais — Combien coûte IziSolo ?',
   description: 'Calcule le coût réel d\'IziSolo selon ton volume de paiements. Abonnement + commission détaillés, frais Stripe expliqués. Transparent, sans surprises.',
-  alternates: { canonical: 'https://izisolo.fr/calculateur' },
+  alternates: { canonical: 'https://www.izisolo.fr/calculateur' },
   openGraph: {
     title: 'Calculateur de frais — Combien coûte IziSolo ?',
     description: 'Le coût réel selon ton volume. Abonnement + commission, sans surprises.',
-    url: 'https://izisolo.fr/calculateur',
+    url: 'https://www.izisolo.fr/calculateur',
     type: 'website',
     images: [{ url: OG, width: 1200, height: 630, alt: 'Calculateur de frais IziSolo' }],
   },

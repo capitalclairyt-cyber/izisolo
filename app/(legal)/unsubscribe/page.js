@@ -71,7 +71,7 @@ function UnsubscribeForm() {
         </p>
         <div style={{ marginTop: 32 }}>
           <Link
-            href="https://izisolo.fr"
+            href="https://www.izisolo.fr"
             style={{
               display: 'inline-block', padding: '10px 24px',
               background: '#d4a0a0', color: 'white', borderRadius: 8,

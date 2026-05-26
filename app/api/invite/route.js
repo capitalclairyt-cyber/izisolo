@@ -19,7 +19,7 @@ export async function POST(req) {
     const slug = studioSlug || profile.studio_slug;
     const studio = studioNom || profile.studio_nom || 'mon studio';
     const prof = profPrenom || profile.prenom || '';
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://izisolo.fr';
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.izisolo.fr';
     const portailUrl = `${appUrl}/p/${slug}/connexion?email=${encodeURIComponent(email)}`;
     const salutation = prenom ? `Salut ${prenom}` : 'Coucou';
 
@@ -60,7 +60,7 @@ export async function POST(req) {
           </p>
           <hr style="border:none;border-top:1px solid #eee;margin:24px 0;" />
           <p style="color:#bbb;font-size:0.6875rem;text-align:center;">
-            Envoyé via <a href="https://izisolo.fr" style="color:#b87333;">IziSolo</a> de la part de ${studio}
+            Envoyé via <a href="https://www.izisolo.fr" style="color:#b87333;">IziSolo</a> de la part de ${studio}
           </p>
         </div>
       `,

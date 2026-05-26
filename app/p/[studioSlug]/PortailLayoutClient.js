@@ -110,7 +110,7 @@ function PortailLayoutInner({ studioSlug, children }) {
       )}
 
       <footer className="portail-footer">
-        <span>Propulsé par <a href="https://izisolo.fr" target="_blank" rel="noopener noreferrer">IziSolo</a></span>
+        <span>Propulsé par <a href="https://www.izisolo.fr" target="_blank" rel="noopener noreferrer">IziSolo</a></span>
         <span className="portail-footer-sep">·</span>
         <a href="/legal/cgu">CGU</a>
         <span className="portail-footer-sep">·</span>

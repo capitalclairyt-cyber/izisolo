@@ -1092,7 +1092,7 @@ function PagePubliqueSection({ profile, setProfile, setDirty }) {
   const trial = getTrialStatus(profile);
   // Avertir si trial actif ET plan réel = solo (= ce qui sera effectif après J14)
   const showTrialWarning = trial.active && (profile?.plan === 'solo' || !profile?.plan);
-  const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://izisolo.fr';
+  const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://www.izisolo.fr';
   const publicUrl = studioSlug ? `${baseUrl}/p/${studioSlug}` : null;
   const previewUrl = publicUrl ? `${publicUrl}?preview=1` : null;
   const [previewLoading, setPreviewLoading] = useState(false);
@@ -1470,7 +1470,7 @@ function StripePaiementSection({ profile, setProfile, setDirty }) {
   const [copied, setCopied] = useState(false);
   const [showSecret, setShowSecret] = useState(false);
 
-  const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://izisolo.fr';
+  const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://www.izisolo.fr';
   const webhookUrl = profile?.id ? `${baseUrl}/api/stripe/webhook?profile=${profile.id}` : '';
   const secret = profile?.stripe_webhook_secret || '';
   const configured = !!secret;

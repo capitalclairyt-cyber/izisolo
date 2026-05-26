@@ -14,11 +14,11 @@ const OG = ogImageUrl({
 export const metadata = {
   title: 'Le journal IziSolo — Ressources pour profs indépendant·e·s',
   description: "Articles, guides et tableaux pour les profs de yoga, pilates, danse, méditation et coachs bien-être indépendant·e·s. Gérer ses élèves, fixer ses tarifs, lancer son activité.",
-  alternates: { canonical: 'https://izisolo.fr/blog' },
+  alternates: { canonical: 'https://www.izisolo.fr/blog' },
   openGraph: {
     title: 'Le journal IziSolo',
     description: 'Ressources pour les profs indépendant·e·s du mouvement et du bien-être.',
-    url: 'https://izisolo.fr/blog',
+    url: 'https://www.izisolo.fr/blog',
     type: 'website',
     images: [{ url: OG, width: 1200, height: 630, alt: 'Le journal IziSolo' }],
   },

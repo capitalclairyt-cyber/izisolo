@@ -11,7 +11,7 @@ import './landing.css';
  * Gère trois cas spéciaux d'arrivée AUTH AVANT d'afficher la landing,
  * pour récupérer les inscrits qui atterrissent ici via les liens de
  * confirmation email Supabase (templates par défaut qui pointent sur
- * SiteURL = `https://izisolo.fr/` au lieu de `/auth/callback`).
+ * SiteURL = `https://www.izisolo.fr/` au lieu de `/auth/callback`).
  *
  *   1) Visiteur déjà authentifié (cookie session valide) → /dashboard
  *

@@ -14,11 +14,11 @@ const OG = ogImageUrl({
 export const metadata = {
   title: 'Logiciel de gestion pour coachs bien-être indépendant·e·s',
   description: "Sessions 1-à-1, programmes, suivi sur la durée. IziSolo réunit tes RDV, tes notes confidentielles et tes paiements. 14 jours d'essai gratuit, dès 17 €/mois.",
-  alternates: { canonical: 'https://izisolo.fr/coachs-bien-etre' },
+  alternates: { canonical: 'https://www.izisolo.fr/coachs-bien-etre' },
   openGraph: {
     title: 'Logiciel de gestion pour coachs bien-être — IziSolo',
     description: 'Sessions 1-à-1, programmes, suivi sur la durée. RDV, notes, paiements en un seul outil.',
-    url: 'https://izisolo.fr/coachs-bien-etre',
+    url: 'https://www.izisolo.fr/coachs-bien-etre',
     type: 'website',
     images: [{ url: OG, width: 1200, height: 630, alt: 'Logiciel de gestion pour coachs bien-être' }],
   },

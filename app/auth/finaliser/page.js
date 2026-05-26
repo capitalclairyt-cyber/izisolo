@@ -4,7 +4,7 @@
  * Page cliente "fallback fragment URL"
  *
  * Cas d'usage : un lien email Supabase legacy redirige le navigateur sur
- * `https://izisolo.fr/#access_token=xxx&refresh_token=yyy&type=signup`
+ * `https://www.izisolo.fr/#access_token=xxx&refresh_token=yyy&type=signup`
  * (tokens dans le fragment URL `#`).
  *
  * Le serveur Next.js ne voit jamais le fragment (HTTP standard), donc

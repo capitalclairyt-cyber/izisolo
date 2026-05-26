@@ -37,7 +37,7 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY: dummy-anon-key
           SUPABASE_SERVICE_ROLE_KEY: dummy-service-role-key
-          NEXT_PUBLIC_APP_URL: https://izisolo.fr
+          NEXT_PUBLIC_APP_URL: https://www.izisolo.fr
           ANTHROPIC_API_KEY: dummy
           RESEND_API_KEY: dummy
           STRIPE_SECRET_KEY: dummy

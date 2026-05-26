@@ -442,7 +442,7 @@ export async function POST(request, { params }) {
   let magicLink = null;
   if (!isAuthenticated) {
     try {
-      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://izisolo.fr';
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.izisolo.fr';
       const { data: linkData, error: linkErr } = await supabaseAdmin.auth.admin.generateLink({
         type: 'magiclink',
         email,
@@ -477,7 +477,7 @@ export async function POST(request, { params }) {
         weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
       });
       const heureStr = cours.heure ? cours.heure.slice(0, 5).replace(':', 'h') : '';
-      const espaceUrl = magicLink || `${process.env.NEXT_PUBLIC_APP_URL || 'https://izisolo.fr'}/p/${studioSlug}/espace`;
+      const espaceUrl = magicLink || `${process.env.NEXT_PUBLIC_APP_URL || 'https://www.izisolo.fr'}/p/${studioSlug}/espace`;
       magicLinkSent = !!magicLink;
 
       await resend.emails.send({
@@ -512,7 +512,7 @@ export async function POST(request, { params }) {
               Tu peux annuler depuis ton espace jusqu'à 24h avant le cours.
             </div>
             <p style="color: #aaa; font-size: 0.8rem; margin: 32px 0 0; border-top: 1px solid #eee; padding-top: 16px; text-align: center;">
-              Propulsé par <a href="https://izisolo.fr" style="color: #d4a0a0;">IziSolo</a>
+              Propulsé par <a href="https://www.izisolo.fr" style="color: #d4a0a0;">IziSolo</a>
             </p>
           </div>
         `,

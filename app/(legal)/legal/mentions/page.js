@@ -15,7 +15,7 @@ export default function MentionsLegalesPage() {
       <h2>1. Éditeur du service</h2>
       <p>
         La plateforme IziSolo, accessible à l'adresse{' '}
-        <a href="https://izisolo.fr">izisolo.fr</a>, est éditée par :
+        <a href="https://www.izisolo.fr">izisolo.fr</a>, est éditée par :
       </p>
       <p>
         <strong>Atelier Mélusine</strong> — SASU au capital de 1 000 €<br />

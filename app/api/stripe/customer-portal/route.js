@@ -52,7 +52,7 @@ export async function POST() {
     apiVersion: '2025-09-30.clover',
   });
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://izisolo.fr';
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.izisolo.fr';
 
   try {
     const session = await stripe.billingPortal.sessions.create({

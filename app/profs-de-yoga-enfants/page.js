@@ -14,11 +14,11 @@ const OG = ogImageUrl({
 export const metadata = {
   title: 'Logiciel de gestion pour profs de yoga pour enfants',
   description: "L'outil de gestion pensé pour les profs de yoga enfants (3-16 ans). Cours hebdo, stages vacances, interventions écoles. Inscription parents, autorisations parentales, contacts d'urgence — tout est intégré. 14 jours d'essai gratuit sans CB.",
-  alternates: { canonical: 'https://izisolo.fr/profs-de-yoga-enfants' },
+  alternates: { canonical: 'https://www.izisolo.fr/profs-de-yoga-enfants' },
   openGraph: {
     title: 'Logiciel de gestion pour profs de yoga enfants — IziSolo',
     description: "Cours hebdo, stages, écoles. Inscriptions parents, autorisations, suivi par enfant. Pensé pour le yoga 3-16 ans.",
-    url: 'https://izisolo.fr/profs-de-yoga-enfants',
+    url: 'https://www.izisolo.fr/profs-de-yoga-enfants',
     type: 'website',
     images: [{ url: OG, width: 1200, height: 630, alt: 'Logiciel de gestion pour profs de yoga enfants' }],
   },

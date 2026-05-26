@@ -5,7 +5,7 @@ import { Instrument_Serif, Fraunces, Inter, JetBrains_Mono, Caveat } from 'next/
 import AuthFragmentCatcher from '@/components/auth/AuthFragmentCatcher';
 import { getOrganizationSchema, getWebSiteSchema } from '@/lib/seo';
 
-const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://izisolo.fr';
+const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.izisolo.fr';
 
 // === Phase 2 charte 2026 ===
 // On garde Fraunces (display chaud, workhorse 2026 confirmé par typo-bible).

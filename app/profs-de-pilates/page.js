@@ -14,11 +14,11 @@ const OG = ogImageUrl({
 export const metadata = {
   title: 'Logiciel de gestion pour profs et studios Pilates',
   description: "Mat, Reformer, ateliers — IziSolo gère ton planning, tes capacités par appareil, tes carnets et abonnements. 14 jours d'essai gratuit, dès 17 €/mois (12 € pour les 100 premières).",
-  alternates: { canonical: 'https://izisolo.fr/profs-de-pilates' },
+  alternates: { canonical: 'https://www.izisolo.fr/profs-de-pilates' },
   openGraph: {
     title: 'Logiciel de gestion pour profs Pilates — IziSolo',
     description: 'Mat, Reformer, ateliers — IziSolo gère ton planning, tes capacités, tes carnets et abonnements.',
-    url: 'https://izisolo.fr/profs-de-pilates',
+    url: 'https://www.izisolo.fr/profs-de-pilates',
     type: 'website',
     images: [{ url: OG, width: 1200, height: 630, alt: 'Logiciel de gestion pour profs Pilates' }],
   },

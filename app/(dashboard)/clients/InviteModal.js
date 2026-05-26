@@ -35,7 +35,7 @@ export default function InviteModal({ open, onClose, profile, clients = [] }) {
   // URL de base — côté client uniquement
   const portailUrl = typeof window !== 'undefined' && studioSlug
     ? `${window.location.origin}/p/${studioSlug}/connexion`
-    : `https://izisolo.fr/p/${studioSlug || 'mon-studio'}/connexion`;
+    : `https://www.izisolo.fr/p/${studioSlug || 'mon-studio'}/connexion`;
 
   // Prenom + email cibles selon le mode (saisie libre OU élève sélectionnée)
   const prenomCible = (recipientMode === 'new' ? newPrenom : selectedClient?.prenom) || '';

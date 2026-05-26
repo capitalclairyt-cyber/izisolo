@@ -76,7 +76,7 @@ export async function GET(request) {
       to: email,
       prenom: pro.prenom || 'là',
       nbRecus,
-      url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://izisolo.fr'}/messagerie`,
+      url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://www.izisolo.fr'}/messagerie`,
       contexte: 'pro',
     });
     if (success) totalSent++;
@@ -116,7 +116,7 @@ export async function GET(request) {
 
     const studioNom = client.profiles?.studio_nom || 'Ton studio';
     const studioSlug = client.profiles?.studio_slug || '';
-    const url = `${process.env.NEXT_PUBLIC_APP_URL || 'https://izisolo.fr'}/p/${studioSlug}/espace/messages`;
+    const url = `${process.env.NEXT_PUBLIC_APP_URL || 'https://www.izisolo.fr'}/p/${studioSlug}/espace/messages`;
 
     const success = await envoyerDigest({
       to: client.email,
@@ -170,7 +170,7 @@ async function envoyerDigest({ to, prenom, nbRecus, url, contexte, studioNom }) 
           </p>
           <p style="color: #aaa; font-size: 0.8rem; margin: 32px 0 0; border-top: 1px solid #eee; padding-top: 16px; text-align: center;">
             Tu reçois ce digest 1×/jour. Tu peux changer ta préférence (instantané, digest ou off) dans tes paramètres.
-            <br/>Propulsé par <a href="https://izisolo.fr" style="color: #d4a0a0;">IziSolo</a>
+            <br/>Propulsé par <a href="https://www.izisolo.fr" style="color: #d4a0a0;">IziSolo</a>
           </p>
         </div>
       `,

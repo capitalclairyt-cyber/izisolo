@@ -1,4 +1,4 @@
-const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://izisolo.fr';
+const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.izisolo.fr';
 
 export default function robots() {
   return {
@@ -28,6 +28,7 @@ export default function robots() {
           '/auth/',
           '/mot-de-passe-oublie',
           '/nouveau-mot-de-passe',
+          '/ressources/',
         ],
       },
     ],

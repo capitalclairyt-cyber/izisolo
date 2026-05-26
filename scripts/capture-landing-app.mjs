@@ -14,7 +14,7 @@
  *
  *        $env:DEMO_PASSWORD="motdepasse" ; node scripts/capture-landing-app.mjs
  *
- *   4. (Optionnel) BASE_URL si tu testes contre prod (ex: https://izisolo.fr)
+ *   4. (Optionnel) BASE_URL si tu testes contre prod (ex: https://www.izisolo.fr)
  *
  * Sortie : public/landing/screen-{slug}.png (1280×800, format PNG @1x)
  *

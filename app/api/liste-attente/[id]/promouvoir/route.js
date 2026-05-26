@@ -142,7 +142,7 @@ export async function POST(request, { params }) {
             </div>
             <p style="color:#555;margin:0 0 20px;">Ta réservation est <strong>déjà enregistrée</strong>. Tu n'as rien à faire — à très bientôt !</p>
             <p style="color:#aaa;font-size:0.8rem;margin:32px 0 0;border-top:1px solid #eee;padding-top:16px;text-align:center;">
-              Propulsé par <a href="https://izisolo.fr" style="color:#b87333;">IziSolo</a>
+              Propulsé par <a href="https://www.izisolo.fr" style="color:#b87333;">IziSolo</a>
             </p>
           </div>
         `,
