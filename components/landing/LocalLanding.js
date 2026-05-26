@@ -15,6 +15,8 @@
  */
 
 import Link from 'next/link';
+import { CITIES } from '@/content/cities';
+import { CITIES_EXTRA } from '@/content/cities-extra';
 
 const DISCIPLINE_LABEL = {
   yoga: 'yoga',
@@ -39,6 +41,11 @@ export default function LocalLanding({ city, discipline = 'yoga' }) {
   const data = (discipline !== 'yoga' && city[discipline])
     ? { ...city, ...city[discipline] }
     : city;
+
+  // Champs additionnels par ville (quartiers, marché local, FAQ, villes proches)
+  // pour différenciation SEO. Voir content/cities-extra.js.
+  const extra = CITIES_EXTRA[city.slug] || {};
+  const discBase = discipline === 'pilates' ? 'prof-pilates' : 'prof-yoga';
 
   return (
     <div className="izi-landing-root" data-palette="sable">
@@ -110,6 +117,39 @@ export default function LocalLanding({ city, discipline = 'yoga' }) {
               )}
             </div>
           </section>
+
+          {/* Quartiers et zones de pratique populaires */}
+          {extra.quartiers && extra.quartiers.length > 0 && (
+            <section className="local-quartiers">
+              <span className="eyebrow">Les quartiers à connaître</span>
+              <h2 className="serif">Où enseigner et pratiquer à {city.name}.</h2>
+              <p className="local-quartiers-intro">
+                Chaque quartier de {city.name} a sa propre ambiance et sa clientèle.
+                Voici les zones où les profs de {d} sont les plus installé·e·s, avec ce qui les caractérise :
+              </p>
+              <ul className="local-quartiers-list">
+                {extra.quartiers.map((q, i) => (
+                  <li key={i} className="local-quartier-card">
+                    <h3>{q.name}</h3>
+                    <p>{q.ambiance}</p>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
+          {/* Marché local : opportunités et défis */}
+          {extra.marcheLocal && (
+            <section className="local-marche">
+              <div className="local-marche-inner">
+                <span className="eyebrow">Le marché {d} à {city.name} en 2026</span>
+                <h2 className="serif">
+                  Ce que tu dois <em>vraiment savoir</em> avant de te lancer.
+                </h2>
+                <p>{extra.marcheLocal}</p>
+              </div>
+            </section>
+          )}
 
           {/* Lieux de pratique connus */}
           {data.lieuxConnus && data.lieuxConnus.length > 0 && (
@@ -204,6 +244,43 @@ export default function LocalLanding({ city, discipline = 'yoga' }) {
               </p>
             </div>
           </section>
+
+          {/* FAQ locale */}
+          {extra.faq && extra.faq.length > 0 && (
+            <section className="local-faq" aria-label="Questions fréquentes locales">
+              <span className="eyebrow">Questions fréquentes — {city.name}</span>
+              <h2 className="serif">Ce qu'on nous demande souvent sur {city.name}.</h2>
+              <div className="local-faq-list">
+                {extra.faq.map((item, i) => (
+                  <details key={i} className="local-faq-item">
+                    <summary>{item.q}</summary>
+                    <p>{item.r}</p>
+                  </details>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* Villes proches — maillage interne géographique */}
+          {extra.villesProches && extra.villesProches.length > 0 && (
+            <nav className="local-villes-proches" aria-label="Autres villes">
+              <span className="eyebrow">Tu cherches ailleurs ?</span>
+              <h2 className="serif">{d.charAt(0).toUpperCase() + d.slice(1)} dans d'autres villes proches.</h2>
+              <div className="local-villes-grid">
+                {extra.villesProches.map((slug) => {
+                  const c = CITIES[slug];
+                  if (!c) return null;
+                  return (
+                    <Link key={slug} href={`/${discBase}-${slug}`} className="local-ville-card">
+                      <span className="local-ville-name">{c.name}</span>
+                      <span className="local-ville-region">{c.region}</span>
+                      <span className="local-ville-arrow">→</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            </nav>
+          )}
 
           {/* Liens internes maillage */}
           <nav className="local-related" aria-label="Articles connexes">
@@ -524,6 +601,219 @@ export default function LocalLanding({ city, discipline = 'yoga' }) {
           color: var(--c-ink);
           font-weight: 600;
           line-height: 1.35;
+        }
+
+        /* ─── Quartiers (section différenciante par ville) ─────────────── */
+        .local-quartiers {
+          margin-bottom: var(--sp-14);
+        }
+        .local-quartiers h2 {
+          font-size: clamp(1.75rem, 3.5vw, 2.5rem);
+          letter-spacing: -0.015em;
+          line-height: 1.15;
+          margin: var(--sp-3) 0 var(--sp-4);
+          color: var(--c-ink);
+        }
+        .local-quartiers-intro {
+          font-size: 1.0625rem;
+          color: var(--c-ink-soft);
+          line-height: 1.6;
+          margin: 0 0 var(--sp-7);
+          max-width: 64ch;
+        }
+        .local-quartiers-list {
+          list-style: none;
+          padding: 0;
+          margin: 0;
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+          gap: var(--sp-4);
+        }
+        .local-quartier-card {
+          background: white;
+          border: 1px solid color-mix(in oklch, var(--c-ink) 8%, transparent);
+          border-radius: 16px;
+          padding: var(--sp-5);
+          transition: border-color 0.2s ease, transform 0.2s ease;
+        }
+        .local-quartier-card:hover {
+          border-color: color-mix(in oklch, var(--c-accent) 35%, transparent);
+          transform: translateY(-2px);
+        }
+        .local-quartier-card h3 {
+          font-family: 'Instrument Serif', Georgia, serif;
+          font-size: 1.25rem;
+          color: var(--c-accent-deep);
+          margin: 0 0 var(--sp-2);
+          letter-spacing: -0.005em;
+          font-weight: 400;
+        }
+        .local-quartier-card p {
+          font-size: 0.9375rem;
+          color: var(--c-ink-soft);
+          line-height: 1.55;
+          margin: 0;
+        }
+
+        /* ─── Marché local ─────────────────────────────────────────────── */
+        .local-marche {
+          margin-bottom: var(--sp-14);
+        }
+        .local-marche-inner {
+          background: linear-gradient(135deg, #fefaf5 0%, #fef0dc 100%);
+          border: 1px solid color-mix(in oklch, var(--c-accent) 20%, transparent);
+          border-radius: 24px;
+          padding: clamp(var(--sp-8), 5vw, var(--sp-12));
+          max-width: 760px;
+          margin: 0 auto;
+        }
+        .local-marche-inner h2 {
+          font-size: clamp(1.75rem, 3.5vw, 2.5rem);
+          letter-spacing: -0.015em;
+          line-height: 1.15;
+          margin: var(--sp-3) 0 var(--sp-5);
+          color: var(--c-ink);
+        }
+        .local-marche-inner h2 em {
+          font-style: italic;
+          color: var(--c-accent-deep);
+        }
+        .local-marche-inner p {
+          font-size: 1.0625rem;
+          line-height: 1.7;
+          color: var(--c-ink-soft);
+          margin: 0;
+        }
+
+        /* ─── FAQ locale ───────────────────────────────────────────────── */
+        .local-faq {
+          margin-bottom: var(--sp-14);
+          max-width: 760px;
+          margin-inline: auto;
+        }
+        .local-faq h2 {
+          font-size: clamp(1.5rem, 3vw, 2.25rem);
+          letter-spacing: -0.015em;
+          line-height: 1.15;
+          margin: var(--sp-3) 0 var(--sp-7);
+          color: var(--c-ink);
+          text-align: center;
+        }
+        .local-faq-list {
+          display: flex;
+          flex-direction: column;
+          gap: var(--sp-3);
+        }
+        .local-faq-item {
+          background: white;
+          border: 1px solid color-mix(in oklch, var(--c-ink) 8%, transparent);
+          border-radius: 14px;
+          overflow: hidden;
+          transition: border-color 0.2s ease;
+        }
+        .local-faq-item:hover {
+          border-color: color-mix(in oklch, var(--c-ink) 18%, transparent);
+        }
+        .local-faq-item[open] {
+          border-color: color-mix(in oklch, var(--c-accent) 35%, transparent);
+        }
+        .local-faq-item summary {
+          padding: var(--sp-4) var(--sp-5);
+          font-weight: 600;
+          font-size: 1rem;
+          cursor: pointer;
+          list-style: none;
+          position: relative;
+          padding-right: 48px;
+          color: var(--c-ink);
+          user-select: none;
+        }
+        .local-faq-item summary::-webkit-details-marker { display: none; }
+        .local-faq-item summary::after {
+          content: '+';
+          position: absolute;
+          right: 20px;
+          top: 50%;
+          transform: translateY(-50%);
+          font-size: 1.5rem;
+          font-weight: 300;
+          line-height: 1;
+          color: var(--c-accent-deep);
+        }
+        .local-faq-item[open] summary::after {
+          content: '−';
+        }
+        .local-faq-item p {
+          padding: 0 var(--sp-5) var(--sp-5);
+          margin: 0;
+          font-size: 0.9375rem;
+          line-height: 1.65;
+          color: var(--c-ink-soft);
+        }
+
+        /* ─── Villes proches (maillage géographique) ───────────────────── */
+        .local-villes-proches {
+          margin-bottom: var(--sp-12);
+          text-align: center;
+        }
+        .local-villes-proches h2 {
+          font-size: clamp(1.5rem, 3vw, 2rem);
+          letter-spacing: -0.015em;
+          margin: var(--sp-3) 0 var(--sp-6);
+          color: var(--c-ink);
+        }
+        .local-villes-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+          gap: var(--sp-4);
+          max-width: 800px;
+          margin: 0 auto;
+        }
+        .local-ville-card {
+          background: white;
+          border: 1px solid color-mix(in oklch, var(--c-ink) 8%, transparent);
+          border-radius: 14px;
+          padding: var(--sp-4) var(--sp-5);
+          text-decoration: none;
+          color: inherit;
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 2px;
+          transition: all 0.2s ease;
+          position: relative;
+        }
+        .local-ville-card:hover {
+          border-color: var(--c-accent);
+          transform: translateY(-2px);
+          box-shadow: 0 8px 20px -8px rgba(0, 0, 0, 0.1);
+        }
+        .local-ville-name {
+          font-family: 'Instrument Serif', Georgia, serif;
+          font-size: 1.5rem;
+          color: var(--c-ink);
+          letter-spacing: -0.01em;
+        }
+        .local-ville-region {
+          font-family: var(--font-mono);
+          font-size: 0.72rem;
+          text-transform: uppercase;
+          letter-spacing: 0.1em;
+          color: var(--c-ink-soft);
+        }
+        .local-ville-arrow {
+          position: absolute;
+          right: var(--sp-4);
+          top: 50%;
+          transform: translateY(-50%);
+          font-size: 1.25rem;
+          color: var(--c-accent-deep);
+          opacity: 0.6;
+          transition: transform 0.2s ease, opacity 0.2s ease;
+        }
+        .local-ville-card:hover .local-ville-arrow {
+          opacity: 1;
+          transform: translateY(-50%) translateX(4px);
         }
       `}</style>
     </div>
