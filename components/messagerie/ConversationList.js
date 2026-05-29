@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Loader2, Users, User, Megaphone, ChevronDown, ChevronRight, Eye } from 'lucide-react';
 import Pagination, { usePagination } from '@/components/ui/Pagination';
+import EmptyState from '@/components/ui/EmptyState';
 
 /**
  * ConversationList — liste des conversations du viewer (pro ou élève).
@@ -102,21 +103,13 @@ export default function ConversationList({ onSelect, selectedId, onCounts }) {
 
   if (conversations.length === 0) {
     return (
-      <div className="cl-empty">
-        <div className="cl-empty-icon"><User size={28} /></div>
-        <p className="cl-empty-title">Aucune conversation</p>
-        <p className="cl-empty-desc">
-          {viewer === 'pro'
-            ? "Démarre un échange avec un élève depuis sa fiche, ou envoie une annonce groupée depuis l'onglet \"Annoncer\"."
-            : "Tu n'as pas encore reçu de message."}
-        </p>
-        <style>{`
-          .cl-empty { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 40px 20px; text-align: center; }
-          .cl-empty-icon { color: var(--text-muted); margin-bottom: 6px; }
-          .cl-empty-title { font-weight: 600; color: var(--text-primary); }
-          .cl-empty-desc { font-size: 0.8125rem; color: var(--text-muted); max-width: 320px; line-height: 1.4; }
-        `}</style>
-      </div>
+      <EmptyState
+        icon={<User size={28} />}
+        title="Aucune conversation"
+        description={viewer === 'pro'
+          ? "Démarre un échange avec un élève depuis sa fiche, ou envoie une annonce groupée depuis l'onglet \"Annoncer\"."
+          : "Tu n'as pas encore reçu de message."}
+      />
     );
   }
 

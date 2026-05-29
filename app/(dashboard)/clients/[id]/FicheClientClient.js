@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Pagination, { usePagination } from '@/components/ui/Pagination';
+import EmptyState from '@/components/ui/EmptyState';
 import {
   ArrowLeft, Phone, Mail, Edit3, Ticket, Calendar,
   CheckCircle2, XCircle, Plus, X, Building2, MapPin,
@@ -208,13 +209,11 @@ function AssignerOffreModal({ client, onClose, onSuccess }) {
             {loadingOffres ? (
               <div className="modal-loading"><Loader2 size={24} className="spin" /> Chargement...</div>
             ) : offres.length === 0 ? (
-              <div className="modal-empty">
-                <Package size={32} />
-                <p>Aucune offre active.</p>
+              <EmptyState icon={<Package size={32} />} title="Aucune offre active.">
                 <Link href="/offres/nouveau" className="izi-btn izi-btn-secondary" onClick={onClose}>
                   Créer une offre
                 </Link>
-              </div>
+              </EmptyState>
             ) : (
               <div className="offre-list">
                 {offres.map(offre => {
@@ -926,7 +925,7 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
           </div>
 
           {abonnements.length === 0 ? (
-            <div className="empty-mini">Aucune offre souscrite</div>
+            <EmptyState title="Aucune offre souscrite" />
           ) : (
             abonnementsPag.paginated.map(abo => {
               const sInfo = STATUTS_ABONNEMENT[abo.statut] || {};
@@ -1062,7 +1061,7 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
           </div>
 
           {paiements.length === 0 ? (
-            <div className="empty-mini">Aucun paiement enregistré pour {vocab.client || 'cet élève'}</div>
+            <EmptyState title={`Aucun paiement enregistré pour ${vocab.client || 'cet élève'}`} />
           ) : (
             <div className="paiements-list-fiche">
               {paiementsPag.paginated.map(p => {
@@ -1218,7 +1217,7 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
           )}
 
           {presences.length === 0 ? (
-            <div className="empty-mini">Aucune présence enregistrée</div>
+            <EmptyState title="Aucune présence enregistrée" />
           ) : (
             presencesPag.paginated.map(p => (
               <Link key={p.id} href={`/cours/${p.cours_id}`} className="presence-item presence-item-link">

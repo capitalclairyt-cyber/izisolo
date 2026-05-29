@@ -23,6 +23,7 @@ import { useToast } from '@/components/ui/ToastProvider';
 import { CASES } from '@/lib/regles-metier';
 import ResolveCasModal from '@/components/cas-a-traiter/ResolveCasModal';
 import Pagination, { usePagination } from '@/components/ui/Pagination';
+import EmptyState from '@/components/ui/EmptyState';
 
 const ACTIONS_PAR_CAS = {
   eleve_sans_carnet: [
@@ -199,11 +200,11 @@ export default function CasATraiterClient({ casOuverts, casResolus }) {
       {activeTab === 'ouverts' && (
         <>
           {items.length === 0 ? (
-            <div className="cas-empty">
-              <Inbox size={32} />
-              <div className="cas-empty-title">Tout est sous contrôle 🌿</div>
-              <div className="cas-empty-desc">Aucun cas à traiter pour le moment.</div>
-            </div>
+            <EmptyState
+              icon={<Inbox size={32} />}
+              title="Tout est sous contrôle 🌿"
+              description="Aucun cas à traiter pour le moment."
+            />
           ) : (
             <div className="cas-list">
               {itemsPag.paginated.map(item => {
@@ -274,11 +275,11 @@ export default function CasATraiterClient({ casOuverts, casResolus }) {
       {activeTab === 'historique' && (
         <>
           {history.length === 0 ? (
-            <div className="cas-empty">
-              <CheckCircle2 size={32} />
-              <div className="cas-empty-title">Pas encore d'historique</div>
-              <div className="cas-empty-desc">Les cas que tu auras résolus apparaîtront ici.</div>
-            </div>
+            <EmptyState
+              icon={<CheckCircle2 size={32} />}
+              title="Pas encore d'historique"
+              description="Les cas que tu auras résolus apparaîtront ici."
+            />
           ) : (
             <div className="cas-list">
               {historyPag.paginated.map(item => {

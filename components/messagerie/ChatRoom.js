@@ -6,6 +6,7 @@ import ChatInput from './ChatInput';
 import { Loader2, Pencil, Check, X } from 'lucide-react';
 import { createClient } from '@/lib/supabase';
 import { useToast } from '@/components/ui/ToastProvider';
+import EmptyState from '@/components/ui/EmptyState';
 
 /**
  * ChatRoom — affiche les messages d'une conversation + input.
@@ -278,10 +279,10 @@ export default function ChatRoom({ conversationId, viewerKind, onMessageSent, in
 
       <div ref={scrollRef} className={`cr-scroll ${messages.length === 0 ? 'is-empty' : ''}`}>
         {messages.length === 0 ? (
-          <div className="cr-empty">
-            <div>Aucun message pour le moment.</div>
-            <div className="cr-empty-sub">Lance la conversation !</div>
-          </div>
+          <EmptyState
+            title="Aucun message pour le moment."
+            description="Lance la conversation !"
+          />
         ) : (
           messages.map((m, i) => (
             <div key={m.id}>

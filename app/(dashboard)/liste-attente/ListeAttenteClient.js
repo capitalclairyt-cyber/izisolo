@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { Clock, Users, Calendar, MapPin, ArrowRight, Loader2, X, CheckCircle2, Send, Trash2 } from 'lucide-react';
 import { useToast } from '@/components/ui/ToastProvider';
 import { formatDate } from '@/lib/utils';
+import EmptyState from '@/components/ui/EmptyState';
 
 function formatHeure(h) {
   if (!h) return '';
@@ -75,11 +76,12 @@ export default function ListeAttenteClient({ groupes: groupesInit }) {
       </div>
 
       {groupes.length === 0 ? (
-        <div className="la-empty animate-fade-in">
-          <CheckCircle2 size={36} style={{ color: '#9ca3af' }} />
-          <h2>Personne en attente</h2>
-          <p>Quand un cours sera complet et qu'un·e élève rejoindra la liste d'attente, tu le verras ici.</p>
-        </div>
+        <EmptyState
+          className="animate-fade-in"
+          icon={<CheckCircle2 size={36} />}
+          title="Personne en attente"
+          description="Quand un cours sera complet et qu'un·e élève rejoindra la liste d'attente, tu le verras ici."
+        />
       ) : (
         <div className="la-list animate-slide-up">
           {groupes.map(g => {

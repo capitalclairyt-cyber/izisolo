@@ -12,6 +12,7 @@ import {
 import { formatDate, formatMontant } from '@/lib/utils';
 import { toneForAbonnement } from '@/lib/tones';
 import Pagination, { usePagination } from '@/components/ui/Pagination';
+import EmptyState from '@/components/ui/EmptyState';
 
 // ─── Types d'offre ───────────────────────────────────────────────────────────
 const TYPE_CONFIG = {
@@ -239,34 +240,30 @@ export default function AbonnementsClient({ abonnements: initAbo, paiementsParAb
 
       {/* ── Liste ── */}
       {filtered.length === 0 ? (
-        <div className="abo-empty animate-fade-in">
-          <Ticket size={36} style={{ color: 'var(--text-muted)' }} />
-          {search ? (
-            <>
-              <p>Aucun abonnement trouvé</p>
-              <button className="izi-btn izi-btn-secondary" onClick={() => setSearch('')}>
-                Effacer la recherche
-              </button>
-            </>
-          ) : filtre !== 'tous' ? (
-            <>
-              <p style={{ fontWeight: 600 }}>Aucun abonnement {STATUT_CONFIG[filtre]?.label.toLowerCase()}</p>
-              <button className="izi-btn izi-btn-secondary" onClick={() => setFiltre('tous')}>
-                Voir tous les abonnements
-              </button>
-            </>
-          ) : (
-            <>
-              <p style={{ fontWeight: 600 }}>Aucun abonnement actif</p>
-              <p style={{ fontSize: '0.8125rem', maxWidth: 320, margin: 0 }}>
-                Crée d'abord une offre, puis assigne-la à un·e élève depuis sa fiche pour démarrer un abonnement.
-              </p>
-              <Link href="/offres/nouveau" className="izi-btn izi-btn-primary">
-                Créer une offre
-              </Link>
-            </>
-          )}
-        </div>
+        search ? (
+          <EmptyState className="animate-fade-in" icon={<Ticket size={36} />} title="Aucun abonnement trouvé">
+            <button className="izi-btn izi-btn-secondary" onClick={() => setSearch('')}>
+              Effacer la recherche
+            </button>
+          </EmptyState>
+        ) : filtre !== 'tous' ? (
+          <EmptyState className="animate-fade-in" icon={<Ticket size={36} />} title={`Aucun abonnement ${STATUT_CONFIG[filtre]?.label.toLowerCase()}`}>
+            <button className="izi-btn izi-btn-secondary" onClick={() => setFiltre('tous')}>
+              Voir tous les abonnements
+            </button>
+          </EmptyState>
+        ) : (
+          <EmptyState
+            className="animate-fade-in"
+            icon={<Ticket size={36} />}
+            title="Aucun abonnement actif"
+            description="Crée d'abord une offre, puis assigne-la à un·e élève depuis sa fiche pour démarrer un abonnement."
+          >
+            <Link href="/offres/nouveau" className="izi-btn izi-btn-primary">
+              Créer une offre
+            </Link>
+          </EmptyState>
+        )
       ) : (
         <>
           <div className="abo-list animate-slide-up">

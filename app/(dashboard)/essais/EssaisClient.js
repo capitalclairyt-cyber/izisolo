@@ -6,6 +6,7 @@ import { Sparkles, Calendar, Clock, MapPin, Mail, Phone, Check, X, Loader, Alert
 import { useToast } from '@/components/ui/ToastProvider';
 import { toneForCours } from '@/lib/tones';
 import Pagination, { usePagination } from '@/components/ui/Pagination';
+import EmptyState from '@/components/ui/EmptyState';
 
 const STATUT_CONFIG = {
   en_attente:  { label: 'En attente',  tone: 'sand'     },
@@ -81,25 +82,15 @@ export default function EssaisClient({ profile, demandes: initialDemandes }) {
 
   if (!profile?.essai_actif) {
     return (
-      <div className="essais-empty">
-        <Sparkles size={32} />
-        <h2>Cours d'essai non activé</h2>
-        <p>
-          Active la fonctionnalité dans les paramètres pour permettre aux visiteurs
-          de demander un cours d'essai depuis ton portail public.
-        </p>
+      <EmptyState
+        icon={<Sparkles size={32} />}
+        title="Cours d'essai non activé"
+        description="Active la fonctionnalité dans les paramètres pour permettre aux visiteurs de demander un cours d'essai depuis ton portail public."
+      >
         <Link href="/parametres" className="izi-btn izi-btn-primary">
           <SettingsIcon size={16} /> Activer dans les paramètres
         </Link>
-        <style jsx>{`
-          .essais-empty {
-            text-align: center; padding: 60px 24px;
-            display: flex; flex-direction: column; align-items: center; gap: 12px;
-          }
-          .essais-empty h2 { font-size: 1.25rem; font-weight: 700; margin: 0; }
-          .essais-empty p { color: var(--text-secondary); max-width: 400px; line-height: 1.5; }
-        `}</style>
-      </div>
+      </EmptyState>
     );
   }
 
@@ -140,9 +131,14 @@ export default function EssaisClient({ profile, demandes: initialDemandes }) {
 
       {/* Liste */}
       {filtered.length === 0 ? (
-        <div className="essais-list-empty">
-          <p>Aucune demande {filterStatut === 'en_attente' ? 'en attente' : filterStatut === 'finalisee' ? 'finalisée' : filterStatut === 'refusee' ? 'refusée' : ''}.</p>
-        </div>
+        <EmptyState
+          title={
+            filterStatut === 'en_attente' ? 'Aucune demande en attente.'
+            : filterStatut === 'finalisee' ? 'Aucune demande finalisée.'
+            : filterStatut === 'refusee' ? 'Aucune demande refusée.'
+            : 'Aucune demande pour ce filtre.'
+          }
+        />
       ) : (
         <div className="essais-list">
           {paginated.map(d => {

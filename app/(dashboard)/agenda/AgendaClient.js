@@ -14,6 +14,7 @@ import {
   formatDateLong, formatDateCourte
 } from '@/lib/dates';
 import { createClient } from '@/lib/supabase';
+import EmptyState from '@/components/ui/EmptyState';
 
 // ============================================
 // Constantes
@@ -407,13 +408,11 @@ function VueJour({ dateRef, cours, todayStr, onCoursMaj, listeAttenteByCours = {
         </div>
       </div>
       {coursDuJour.length === 0 ? (
-        <div className="empty-state izi-card">
-          <div className="empty-emoji">📅</div>
-          <p className="empty-title">Aucun cours ce jour</p>
+        <EmptyState icon="📅" title="Aucun cours ce jour">
           <Link href={`/cours/nouveau?date=${dateStr}`} className="izi-btn izi-btn-secondary" style={{ marginTop: 8 }}>
             <Plus size={18} /> Créer un cours
           </Link>
-        </div>
+        </EmptyState>
       ) : (
         <div className="cours-list">
           {coursDuJour.map(c => <CoursCard key={c.id} cours={c} todayStr={todayStr} onCoursMaj={onCoursMaj} nbEnAttente={listeAttenteByCours[c.id] || 0} />)}

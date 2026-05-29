@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Play, Plus, Trash2, Edit3, X, Save, Eye, EyeOff, Loader2, Video } from 'lucide-react';
 import { createClient } from '@/lib/supabase';
 import { useToast } from '@/components/ui/ToastProvider';
+import EmptyState from '@/components/ui/EmptyState';
 
 const ACCES_LABELS = {
   gratuit: 'Gratuit (tout le monde)',
@@ -202,14 +203,13 @@ export default function VideosClient({ videosInit }) {
 
       {/* List */}
       {videos.length === 0 && !editing ? (
-        <div className="izi-card" style={{ padding: '40px 24px', textAlign: 'center' }}>
-          <Video size={36} style={{ margin: '0 auto 12px', color: 'var(--text-muted)' }} />
-          <p style={{ fontWeight: 600, marginBottom: 4 }}>Aucune vidéo pour l'instant</p>
-          <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: 16 }}>
-            Ajoute une vidéo (YouTube, Vimeo, Drive) pour permettre à tes élèves de pratiquer chez eux.
-          </p>
+        <EmptyState
+          icon={<Video size={36} />}
+          title="Aucune vidéo pour l'instant"
+          description="Ajoute une vidéo (YouTube, Vimeo, Drive) pour permettre à tes élèves de pratiquer chez eux."
+        >
           <button onClick={startNew} className="izi-btn izi-btn-primary"><Plus size={16} /> Ma première vidéo</button>
-        </div>
+        </EmptyState>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {videos.map(v => (

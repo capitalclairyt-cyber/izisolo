@@ -10,6 +10,7 @@ import { formatMontant, formatDate } from '@/lib/utils';
 import { STATUTS_PAIEMENT } from '@/lib/constantes';
 import { useToast } from '@/components/ui/ToastProvider';
 import Pagination, { usePagination } from '@/components/ui/Pagination';
+import EmptyState from '@/components/ui/EmptyState';
 
 const MODES = [
   { value: 'especes',  label: 'Espèces',  Icon: Banknote },
@@ -413,11 +414,10 @@ export default function RevenusClient({ paiements: initialPaiements }) {
         </div>
 
         {filtered.length === 0 ? (
-          <div className="empty-state izi-card">
-            <div className="empty-emoji">💰</div>
-            <p className="empty-title">
-              {periodeFilt.length === 0 ? 'Aucun paiement sur cette période' : 'Aucun résultat avec ces filtres'}
-            </p>
+          <EmptyState
+            icon="💰"
+            title={periodeFilt.length === 0 ? 'Aucun paiement sur cette période' : 'Aucun résultat avec ces filtres'}
+          >
             {periodeFilt.length === 0 ? (
               <Link href="/revenus/nouveau" className="izi-btn izi-btn-secondary">
                 <Plus size={18} /> Saisir un paiement
@@ -427,7 +427,7 @@ export default function RevenusClient({ paiements: initialPaiements }) {
                 Réinitialiser les filtres
               </button>
             )}
-          </div>
+          </EmptyState>
         ) : (
           <div className="paiements-list">
             {paginatedPay.map(p => {
