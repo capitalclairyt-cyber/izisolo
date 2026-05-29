@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase';
 import { useToast } from '@/components/ui/ToastProvider';
-import { formatMontant } from '@/lib/utils';
+import { formatMontant, getAllTypesFromCategories } from '@/lib/utils';
 import { PLANS } from '@/lib/constantes';
 import { effectivePlan } from '@/lib/trial';
 
@@ -119,7 +119,7 @@ export default function NouvelleOffre() {
       ]);
 
       setOffresUnitaires(unitaires || []);
-      setTypesCoursDisponibles(profile?.types_cours || []);
+      setTypesCoursDisponibles(getAllTypesFromCategories(profile?.types_cours));
 
       // Vérifier la limite du plan
       const planKey = effectivePlan(profile);
