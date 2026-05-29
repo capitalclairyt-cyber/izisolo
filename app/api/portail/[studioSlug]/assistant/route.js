@@ -1,5 +1,6 @@
 import { createServerClient } from '@/lib/supabase-server';
 import { createClient as createAdminSupabase } from '@supabase/supabase-js';
+import { checkAntiBot } from '@/lib/antibot';
 import Anthropic from '@anthropic-ai/sdk';
 
 export const runtime = 'nodejs';
@@ -29,6 +30,18 @@ export async function POST(request, { params }) {
   const { messages = [] } = body;
   if (!Array.isArray(messages) || messages.length === 0) {
     return Response.json({ error: 'Aucun message' }, { status: 400 });
+  }
+  // Borne dure : seuls les 10 derniers messages partent au LLM (plus bas), mais on
+  // refuse les payloads géants en amont (bande passante + parsing).
+  if (messages.length > 50) {
+    return Response.json({ error: 'Conversation trop longue' }, { status: 400 });
+  }
+
+  // Rate-limit best-effort : route non authentifiée qui appelle Anthropic.
+  // 30 req/h/IP, compteur isolé du reste de l'app via le scope 'assistant'.
+  const antibot = await checkAntiBot(request, { max: 30, scope: 'assistant' });
+  if (!antibot.ok) {
+    return Response.json({ error: antibot.reason }, { status: 429 });
   }
 
   // Auth (optionnel — on peut tourner aussi pour les visiteurs anonymes)
