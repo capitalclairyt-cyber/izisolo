@@ -9,6 +9,7 @@ import { STATUTS_CLIENT } from '@/lib/constantes';
 import { toneForClient } from '@/lib/tones';
 import InviteModal from './InviteModal';
 import Pagination, { usePagination, DEFAULT_PAGE_SIZE } from '@/components/ui/Pagination';
+import EmptyState from '@/components/ui/EmptyState';
 
 const PAGE_SIZE = DEFAULT_PAGE_SIZE;
 const INACTIF_DAYS_THRESHOLD = 30;
@@ -235,20 +236,17 @@ export default function ClientsClient({ clients: clientsInit, profile }) {
 
       {/* Liste */}
       {filtered.length === 0 ? (
-        <div className="empty-state izi-card animate-slide-up">
-          <div className="empty-emoji">&#x1f465;</div>
-          <p className="empty-title">
-            {search ? 'Aucun résultat' : `Aucun ${(vocab.client || 'élève').toLowerCase()}`}
-          </p>
-          <p className="empty-desc">
-            {search ? 'Essaie avec un autre terme' : `Ajoute ton premier ${(vocab.client || 'élève').toLowerCase()} pour commencer`}
-          </p>
+        <EmptyState
+          icon="👥"
+          title={search ? 'Aucun résultat' : `Aucun ${(vocab.client || 'élève').toLowerCase()}`}
+          description={search ? 'Essaie avec un autre terme' : `Ajoute ton premier ${(vocab.client || 'élève').toLowerCase()} pour commencer`}
+        >
           {!search && (
             <Link href="/clients/nouveau" className="izi-btn izi-btn-primary">
               <Plus size={18} /> Ajouter
             </Link>
           )}
-        </div>
+        </EmptyState>
       ) : (
         <>
           {/* Compteur résultats */}
@@ -608,18 +606,6 @@ export default function ClientsClient({ clients: clientsInit, profile }) {
           color: var(--text-muted);
           flex-shrink: 0;
         }
-
-        .empty-state {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 8px;
-          padding: 40px 20px;
-          text-align: center;
-        }
-        .empty-emoji { font-size: 2.5rem; }
-        .empty-title { font-weight: 600; color: var(--text-primary); }
-        .empty-desc { font-size: 0.875rem; color: var(--text-muted); margin-bottom: 8px; }
       `}</style>
     </div>
   );

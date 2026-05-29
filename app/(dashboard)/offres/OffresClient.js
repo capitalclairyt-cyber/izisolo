@@ -13,6 +13,7 @@ import { formatMontant } from '@/lib/utils';
 import { toneForOffre } from '@/lib/tones';
 import { TYPES_OFFRE } from '@/lib/constantes';
 import { createClient } from '@/lib/supabase';
+import EmptyState from '@/components/ui/EmptyState';
 
 const TYPE_ICONS = { carnet: Ticket, abonnement: CalendarCheck, cours_unique: Zap };
 
@@ -513,14 +514,15 @@ export default function OffresClient({ offres, profile, planKey, limiteOffres })
       </div>
 
       {offres.length === 0 ? (
-        <div className="empty-state izi-card animate-slide-up">
-          <div className="empty-emoji">🎫</div>
-          <p className="empty-title">Aucune offre créée</p>
-          <p className="empty-desc">Crée tes carnets, abonnements ou cours à l'unité</p>
+        <EmptyState
+          icon="🎫"
+          title="Aucune offre créée"
+          description="Crée tes carnets, abonnements ou cours à l'unité"
+        >
           <Link href="/offres/nouveau" className="izi-btn izi-btn-primary">
             <Plus size={18} /> Créer une offre
           </Link>
-        </div>
+        </EmptyState>
       ) : (
         <>
           {actives.length > 0 && (
@@ -631,11 +633,6 @@ export default function OffresClient({ offres, profile, planKey, limiteOffres })
         .action-btn { width: 36px; height: 36px; border: none; background: none; border-radius: var(--radius-sm); cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--text-muted); transition: background var(--transition-fast); }
         .action-btn:active, .action-btn:hover { background: var(--cream-dark); }
         .assign-btn { color: var(--brand-700); }
-
-        .empty-state { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 40px 20px; text-align: center; }
-        .empty-emoji { font-size: 2.5rem; }
-        .empty-title { font-weight: 600; color: var(--text-primary); }
-        .empty-desc { font-size: 0.875rem; color: var(--text-muted); margin-bottom: 8px; }
 
         /* ── Modal partagé ── */
         .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 200; display: flex; align-items: flex-end; justify-content: center; }

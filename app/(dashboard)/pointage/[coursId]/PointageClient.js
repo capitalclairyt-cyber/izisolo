@@ -423,10 +423,13 @@ export default function PointageClient({ cours, presences: initialPresences, tou
     });
   }, [presences]);
 
-  // ── Marquer un élève ──────────────────────────────────
+  // ── Marquer un élève (optimiste) ──────────────────────
+  // L'UI se met à jour IMMÉDIATEMENT (statut + compteur séances), puis on
+  // persiste. En cas d'échec réseau on rétablit la ligne et on prévient via toast.
+  // Le verrou actionLoading sérialise les taps sur une même ligne → protège le
+  // read-modify-write du compteur de séances contre les courses concurrentes.
   const handleMarquer = useCallback(async (presence, newStatut) => {
     if (locked) return;
-    setActionLoading(presence.id);
     const oldStatut  = getStatut(presence);
     const isPresent  = newStatut === 'present';
     const isAbsent   = newStatut === 'absent';
@@ -440,77 +443,90 @@ export default function PointageClient({ cours, presences: initialPresences, tou
     const decompteSiAbsent = isAbsent && regleNoShow.mode === 'auto' && regleNoShow.choix === 'decompter_auto';
     const logCasManuel = isAbsent && (regleNoShow.mode === 'manuel' || regleNoShow.notifProf);
 
+    // Delta compteur séances :
+    //   present : +1 (l'élève était là)
+    //   retour arrière depuis present : -1 (annule le décompte précédent)
+    //   absence + decompteSiAbsent : +1 (politique stricte, séance décomptée)
+    let delta = 0;
+    if (isPresent && !wasPresent) delta = 1;
+    else if (!isPresent && wasPresent) delta = -1;
+    else if (isAbsent && !wasPresent && decompteSiAbsent) delta = 1;
+
+    const nowIso = new Date().toISOString();
+
+    // ── 1. Optimiste : flip immédiat de la ligne ──
+    setActionLoading(presence.id);
+    setPresences(prev => prev.map(p =>
+      p.id !== presence.id ? p : {
+        ...p,
+        statut_pointage: newStatut,
+        pointee: isPresent,
+        heure_pointage: isPresent ? nowIso : null,
+        abonnements: p.abonnements ? {
+          ...p.abonnements,
+          seances_utilisees: Math.max(0, (p.abonnements.seances_utilisees || 0) + delta),
+        } : null,
+      }
+    ));
+
+    // ── 2. Persistance de la présence ──
     const supabase = createClient();
     const { error } = await supabase
       .from('presences')
       .update({
         statut_pointage: newStatut,
         pointee:         isPresent,
-        heure_pointage:  isPresent ? new Date().toISOString() : null,
+        heure_pointage:  isPresent ? nowIso : null,
       })
       .eq('id', presence.id);
 
-    if (!error) {
-      // Maj compteur séances :
-      //   present : +1 (l'élève était là)
-      //   absent + decompteSiAbsent : +1 (politique stricte, séance décomptée)
-      //   absent + crédit_reporté : -1 si on revient d'un état "present" (annule le décompte précédent)
-      //   absent + crédit_reporté + non précédemment présent : 0
-      if (presence.abonnement_id && presence.abonnements) {
-        let delta = 0;
-        if (isPresent && !wasPresent) delta = 1;
-        else if (!isPresent && wasPresent) delta = -1;
-        else if (isAbsent && !wasPresent && decompteSiAbsent) delta = 1;
-        if (delta !== 0) {
-          const current = presence.abonnements.seances_utilisees || 0;
-          await supabase
-            .from('abonnements')
-            .update({ seances_utilisees: Math.max(0, current + delta) })
-            .eq('id', presence.abonnement_id);
-        }
-      }
-
-      // Log dans cas_a_traiter si mode manuel ou notifProf actif
-      if (logCasManuel) {
-        try {
-          await supabase.from('cas_a_traiter').insert({
-            profile_id: cours.profile_id,
-            case_type: 'no_show',
-            client_id: presence.client_id,
-            cours_id: cours.id,
-            presence_id: presence.id,
-            context: {
-              mode: regleNoShow.mode,
-              choix: regleNoShow.choix,
-              client_nom: `${presence.clients?.prenom || ''} ${presence.clients?.nom || ''}`.trim(),
-              cours_nom: cours.nom,
-              cours_date: cours.date,
-            },
-          });
-        } catch (e) { /* non-bloquant */ }
-      }
-
+    if (error) {
+      // ── Rollback ciblé : on restaure les valeurs de la ligne d'avant le tap ──
       setPresences(prev => prev.map(p =>
         p.id !== presence.id ? p : {
           ...p,
-          statut_pointage: newStatut,
-          pointee: isPresent,
-          heure_pointage: isPresent ? new Date().toISOString() : null,
-          abonnements: p.abonnements ? {
-            ...p.abonnements,
-            seances_utilisees: (() => {
-              const c = p.abonnements.seances_utilisees || 0;
-              if (isPresent && !wasPresent) return c + 1;
-              if (!isPresent && wasPresent) return Math.max(0, c - 1);
-              if (isAbsent && !wasPresent && decompteSiAbsent) return c + 1;
-              return c;
-            })(),
-          } : null,
+          statut_pointage: presence.statut_pointage ?? null,
+          pointee: presence.pointee,
+          heure_pointage: presence.heure_pointage ?? null,
+          abonnements: presence.abonnements ? { ...presence.abonnements } : (p.abonnements ?? null),
         }
       ));
+      setActionLoading(null);
+      toast.error('Pointage non enregistré, réessaie.');
+      return;
     }
+
+    // ── 3. Effets de bord (compteur abo persistant + cas_a_traiter) ──
+    if (presence.abonnement_id && presence.abonnements && delta !== 0) {
+      const current = presence.abonnements.seances_utilisees || 0;
+      await supabase
+        .from('abonnements')
+        .update({ seances_utilisees: Math.max(0, current + delta) })
+        .eq('id', presence.abonnement_id);
+    }
+
+    // Log dans cas_a_traiter si mode manuel ou notifProf actif
+    if (logCasManuel) {
+      try {
+        await supabase.from('cas_a_traiter').insert({
+          profile_id: cours.profile_id,
+          case_type: 'no_show',
+          client_id: presence.client_id,
+          cours_id: cours.id,
+          presence_id: presence.id,
+          context: {
+            mode: regleNoShow.mode,
+            choix: regleNoShow.choix,
+            client_nom: `${presence.clients?.prenom || ''} ${presence.clients?.nom || ''}`.trim(),
+            cours_nom: cours.nom,
+            cours_date: cours.date,
+          },
+        });
+      } catch (e) { /* non-bloquant */ }
+    }
+
     setActionLoading(null);
-  }, [locked, profile, cours]);
+  }, [locked, profile, cours, toast]);
 
   // ── Tout marquer présent ──────────────────────────────
   const toutPresent = async () => {
