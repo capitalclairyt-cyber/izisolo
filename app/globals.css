@@ -295,11 +295,11 @@ body:has(.izi-bg-decor) {
   main {
     padding-top: 60px;
   }
-  /* Réserve la place du FAB "+" flottant (bottom 92px + 56px de haut + marge)
+  /* Réserve la place du FAB "+" flottant (bottom 20px + 56px de haut + marge)
      pour que le contenu de bas de page (pagination "Suivant") ne passe pas
      dessous sur mobile. */
   .dashboard-content {
-    padding-bottom: calc(var(--bottom-nav-height) + 96px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px));
   }
 }
 
@@ -307,6 +307,8 @@ body:has(.izi-bg-decor) {
 @media (min-width: 1024px) {
   .dashboard-content {
     margin-left: var(--sidebar-width);
+    /* dégagement du FAB "+" (bottom 32px + 56px) en bas de page longue */
+    padding-bottom: 112px;
   }
 }
 
@@ -377,7 +379,9 @@ body:has(.izi-bg-decor) {
 /* === Bouton flottant (FAB) === */
 .izi-fab {
   position: fixed;
-  bottom: calc(var(--bottom-nav-height) + 20px + env(safe-area-inset-bottom, 0px));
+  /* Le dashboard n'a pas de bottom-nav (Sidebar uniquement) : pas d'offset
+     --bottom-nav-height fantôme, juste une marge basse + la safe-area iOS. */
+  bottom: calc(20px + env(safe-area-inset-bottom, 0px));
   right: 20px;
   width: 56px;
   height: 56px;
