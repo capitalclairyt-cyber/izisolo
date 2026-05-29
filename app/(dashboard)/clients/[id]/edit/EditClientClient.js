@@ -130,6 +130,7 @@ export default function EditClientClient({ client, lieux: lieuxInitiaux }) {
   const STATUTS = [
     { value: 'prospect', label: 'Prospect' },
     { value: 'actif', label: 'Actif' },
+    { value: 'fidele', label: 'Fidèle' },
     { value: 'inactif', label: 'Inactif' },
     { value: 'archive', label: 'Archivé' },
   ];

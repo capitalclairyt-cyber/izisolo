@@ -102,10 +102,12 @@ export default function ListeAttenteClient({ groupes: groupesInit }) {
                         <Users size={12} /> {g.inscrits}/{g.cours.capacite_max} inscrits
                       </span>
                     )}
-                    <span className={`la-stat ${g.placesDispos > 0 ? 'la-stat-ok' : 'la-stat-full'}`}>
-                      {g.placesDispos > 0
-                        ? `${g.placesDispos} place${g.placesDispos > 1 ? 's' : ''} libre${g.placesDispos > 1 ? 's' : ''}`
-                        : 'Complet'}
+                    <span className={`la-stat ${g.placesDispos === null || g.placesDispos > 0 ? 'la-stat-ok' : 'la-stat-full'}`}>
+                      {g.placesDispos === null
+                        ? 'Places libres'
+                        : g.placesDispos > 0
+                          ? `${g.placesDispos} place${g.placesDispos > 1 ? 's' : ''} libre${g.placesDispos > 1 ? 's' : ''}`
+                          : 'Complet'}
                     </span>
                     <span className="la-stat la-stat-waiting">
                       <Clock size={12} /> {g.enAttente.length} en attente
@@ -125,7 +127,7 @@ export default function ListeAttenteClient({ groupes: groupesInit }) {
                         </span>
                       </div>
                       <div className="la-entry-actions">
-                        {g.placesDispos > 0 ? (
+                        {(g.placesDispos === null || g.placesDispos > 0) ? (
                           <button
                             type="button"
                             className="la-btn la-btn-primary"

@@ -16,7 +16,7 @@ const MENU_SECTIONS = [
       { href: '/offres', label: 'Offres', icon: Package, desc: 'Carnets, abonnements, cours à l\'unité' },
       { href: '/revenus', label: 'Revenus', icon: BarChart3, desc: 'Paiements et suivi financier' },
       { href: '/abonnements', label: 'Abonnements', icon: BookOpen, desc: 'Suivi des crédits et forfaits' },
-      { href: '/evenements', label: 'Événements', icon: Calendar, desc: 'Stages, ateliers, événements' },
+      { href: '/evenements', label: 'Événements', icon: Calendar, desc: 'Stages, ateliers, événements', soon: true },
     ],
   },
   {
@@ -54,17 +54,30 @@ export default function PlusPage() {
         <div key={idx} className="menu-section animate-slide-up">
           <div className="section-title">{section.title}</div>
           <div className="menu-cards">
-            {section.items.map(({ href, label, icon: Icon, desc }) => (
-              <Link key={href} href={href} className="menu-card izi-card izi-card-interactive">
-                <div className="menu-icon">
-                  <Icon size={20} />
+            {section.items.map(({ href, label, icon: Icon, desc, soon }) => (
+              soon ? (
+                <div key={href} className="menu-card izi-card menu-card--soon" aria-disabled="true">
+                  <div className="menu-icon">
+                    <Icon size={20} />
+                  </div>
+                  <div className="menu-info">
+                    <span className="menu-label">{label}</span>
+                    <span className="menu-desc">{desc}</span>
+                  </div>
+                  <span className="menu-soon-badge">Bientôt</span>
                 </div>
-                <div className="menu-info">
-                  <span className="menu-label">{label}</span>
-                  <span className="menu-desc">{desc}</span>
-                </div>
-                <ChevronRight size={18} className="menu-chevron" />
-              </Link>
+              ) : (
+                <Link key={href} href={href} className="menu-card izi-card izi-card-interactive">
+                  <div className="menu-icon">
+                    <Icon size={20} />
+                  </div>
+                  <div className="menu-info">
+                    <span className="menu-label">{label}</span>
+                    <span className="menu-desc">{desc}</span>
+                  </div>
+                  <ChevronRight size={18} className="menu-chevron" />
+                </Link>
+              )
             ))}
           </div>
         </div>
@@ -90,6 +103,8 @@ export default function PlusPage() {
         .menu-label { font-weight: 600; font-size: 0.9375rem; display: block; }
         .menu-desc { font-size: 0.75rem; color: var(--text-muted); display: block; margin-top: 1px; }
         .menu-chevron { color: var(--text-muted); flex-shrink: 0; }
+        .menu-card--soon { opacity: 0.6; cursor: default; }
+        .menu-soon-badge { flex-shrink: 0; font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--brand-700); background: var(--brand-light); padding: 3px 8px; border-radius: 99px; }
 
         .logout-btn { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 14px; border-radius: var(--radius-md); border: 1px solid var(--border); background: var(--bg-card); color: var(--danger); font-size: 0.9375rem; font-weight: 600; cursor: pointer; min-height: 48px; transition: all var(--transition-fast); }
         .logout-btn:active { background: #fef2f2; transform: scale(0.98); }

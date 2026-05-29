@@ -284,11 +284,13 @@ export default function MessagerieClient({ profile, clients, cours, offres }) {
       <style jsx global>{`
         .msg-page {
           display: flex; flex-direction: column;
-          height: calc(100vh - var(--bottom-nav-height, 0px) - 20px);
+          /* 100dvh : gère la barre d'URL mobile dynamique. Pas de soustraction
+             de bottom-nav (le dashboard n'en a pas). */
+          height: calc(100dvh - 20px);
           padding-bottom: 0;
         }
         @media (min-width: 1024px) {
-          .msg-page { height: 100vh; }
+          .msg-page { height: 100dvh; }
         }
 
         .msg-header {

@@ -139,7 +139,7 @@ Pas de mot de passe à retenir, c'est juste ton email à chaque fois.
     <div className="invite-backdrop" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="invite-sheet animate-slide-up" role="dialog" aria-modal="true">
         <div className="invite-header">
-          <span className="invite-title">📨 Inviter une élève</span>
+          <span className="invite-title">📨 Inviter un·e élève</span>
           <button className="invite-close" onClick={onClose} aria-label="Fermer">
             <X size={20} />
           </button>
@@ -164,7 +164,7 @@ Pas de mot de passe à retenir, c'est juste ton email à chaque fois.
                 className={`invite-mode-btn ${recipientMode === 'existing' ? 'active' : ''}`}
                 onClick={() => { setRecipientMode('existing'); setNewPrenom(''); setNewEmail(''); }}
               >
-                <User size={14} /> Élève existant
+                <User size={14} /> Élève existant·e
               </button>
             </div>
 
@@ -221,7 +221,7 @@ Pas de mot de passe à retenir, c'est juste ton email à chaque fois.
                       <Search size={16} className="invite-search-icon" />
                       <input
                         className="izi-input invite-search-input"
-                        placeholder="Chercher une élève par nom..."
+                        placeholder="Chercher un·e élève par nom..."
                         value={search}
                         onChange={e => setSearch(e.target.value)}
                       />

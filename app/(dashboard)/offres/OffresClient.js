@@ -435,7 +435,7 @@ export default function OffresClient({ offres, profile, planKey, limiteOffres })
           <div className="offre-nom">{offre.nom}</div>
           <div className="offre-details">
             <span className={`izi-badge tone-${tone}-bg`}>{typeInfo.label || offre.type}</span>
-            {offre.seances && <span className="offre-seances">{offre.seances} séances</span>}
+            {offre.seances && <span className="offre-seances">{offre.seances} séance{offre.seances > 1 ? 's' : ''}</span>}
             {offre.duree_jours && <span className="offre-duree">{offre.duree_jours}j</span>}
           </div>
         </div>

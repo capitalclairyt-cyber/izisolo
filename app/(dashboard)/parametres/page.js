@@ -2702,7 +2702,7 @@ export default function Parametres() {
           {notifSubTab === 'general' && (
             <div className="notif-general animate-fade-in">
               <p className="param-section-desc" style={{ marginBottom: 4 }}>
-                Choisissez les événements pour lesquels vous souhaitez recevoir une notification dans l'application.
+                Choisis les événements pour lesquels tu veux recevoir une notification dans l'application.
               </p>
 
               {[

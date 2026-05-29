@@ -186,7 +186,7 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
           <div className="bento-icon"><CalendarDays size={20} /></div>
           <div>
             <div className="bento-value">{coursDuJour.length}</div>
-            <div className="bento-label">Séances aujourd'hui</div>
+            <div className="bento-label">Séance{coursDuJour.length > 1 ? 's' : ''} aujourd'hui</div>
           </div>
         </Link>
 

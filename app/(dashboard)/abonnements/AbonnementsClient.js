@@ -174,7 +174,7 @@ export default function AbonnementsClient({ abonnements: initAbo, paiementsParAb
       <div className="abo-header animate-fade-in">
         <div>
           <h1 className="abo-title">Abonnements</h1>
-          <p className="abo-subtitle">{stats.total} au total · {stats.actifs} actifs</p>
+          <p className="abo-subtitle">{stats.total} au total · {stats.actifs} actif{stats.actifs > 1 ? 's' : ''}</p>
         </div>
       </div>
 
@@ -246,6 +246,13 @@ export default function AbonnementsClient({ abonnements: initAbo, paiementsParAb
               <p>Aucun abonnement trouvé</p>
               <button className="izi-btn izi-btn-secondary" onClick={() => setSearch('')}>
                 Effacer la recherche
+              </button>
+            </>
+          ) : filtre !== 'tous' ? (
+            <>
+              <p style={{ fontWeight: 600 }}>Aucun abonnement {STATUT_CONFIG[filtre]?.label.toLowerCase()}</p>
+              <button className="izi-btn izi-btn-secondary" onClick={() => setFiltre('tous')}>
+                Voir tous les abonnements
               </button>
             </>
           ) : (

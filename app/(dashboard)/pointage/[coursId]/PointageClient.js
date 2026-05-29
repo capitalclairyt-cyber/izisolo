@@ -1153,6 +1153,12 @@ export default function PointageClient({ cours, presences: initialPresences, tou
         .pres-row.pres-ptard    { border-left: 4px solid #fb923c; }
         .pres-row.pres-loading  { opacity: 0.55; }
 
+        /* Mobile étroit : réduit les zones Présent/Absent pour laisser
+           respirer le centre (nom + badges) sous ~375px. */
+        @media (max-width: 400px) {
+          .pres-zone { width: 68px; }
+        }
+
         /* ── Boutons de zone ── */
         .pres-zone {
           flex-shrink: 0;
