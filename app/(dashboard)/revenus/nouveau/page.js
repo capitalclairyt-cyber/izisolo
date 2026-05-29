@@ -251,7 +251,7 @@ export default function NouveauPaiement() {
                   onBlur={() => setTimeout(() => setShowDropdown(false), 150)}
                   autoComplete="off"
                 />
-                {showDropdown && (clientSearch || true) && (
+                {showDropdown && (
                   <div className="np-dropdown">
                     {clientSearch && filteredClients.slice(0, 6).map(c => (
                       <button key={c.id} type="button" className="np-dropdown-item" onMouseDown={() => selectClient(c)}>

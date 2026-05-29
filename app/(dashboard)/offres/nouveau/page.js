@@ -423,6 +423,7 @@ export default function NouvelleOffre() {
                 <div className="no-ref-row">
                   <select
                     className="izi-input no-ref-select"
+                    aria-label="Cours de référence pour le prix unitaire"
                     value={prixUnitaireRef}
                     onChange={e => setPrixUnitaireRef(e.target.value)}
                   >
@@ -434,6 +435,7 @@ export default function NouvelleOffre() {
                   <span className="no-ref-or">ou</span>
                   <input
                     className="izi-input no-ref-input"
+                    aria-label="Prix par séance"
                     type="number"
                     step="0.01"
                     min="0"

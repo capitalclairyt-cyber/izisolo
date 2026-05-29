@@ -303,55 +303,6 @@ export default function SupportPage() {
           padding-top: 12px;
         }
 
-        /* Chat */
-        .chat-box { display: flex; flex-direction: column; gap: 0; padding: 0; overflow: hidden; }
-        .chat-messages {
-          flex: 1; padding: 16px; display: flex; flex-direction: column; gap: 12px;
-          max-height: 380px; overflow-y: auto;
-        }
-        .chat-msg { display: flex; gap: 10px; align-items: flex-start; }
-        .chat-msg.user { flex-direction: row-reverse; }
-        .chat-msg-avatar {
-          width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
-          display: flex; align-items: center; justify-content: center; font-size: 0.75rem;
-        }
-        .chat-msg.assistant .chat-msg-avatar { background: var(--brand-light); color: var(--brand); }
-        .chat-msg.user .chat-msg-avatar { background: var(--brand); color: white; }
-        .chat-msg-content {
-          max-width: 80%; padding: 10px 14px;
-          border-radius: 14px; font-size: 0.875rem; line-height: 1.5;
-          white-space: pre-wrap;
-        }
-        .chat-msg.assistant .chat-msg-content { background: var(--bg-soft, #f5f5f5); color: var(--text-primary); border-bottom-left-radius: 4px; }
-        .chat-msg.user .chat-msg-content { background: var(--brand); color: white; border-bottom-right-radius: 4px; }
-        .chat-loading { animation: spin 1s linear infinite; }
-
-        .chat-suggestions { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 16px 12px; }
-        .chat-suggestion {
-          padding: 6px 12px; background: var(--bg-soft); border: 1px solid var(--border);
-          border-radius: var(--radius-full); font-size: 0.8rem; color: var(--text-secondary);
-          cursor: pointer; transition: all 0.15s;
-        }
-        .chat-suggestion:hover { border-color: var(--brand); color: var(--brand); background: var(--brand-light); }
-
-        .chat-input-row {
-          display: flex; gap: 8px; padding: 12px 16px;
-          border-top: 1px solid var(--border);
-        }
-        .chat-input {
-          flex: 1; border: 1.5px solid var(--border); border-radius: var(--radius-full);
-          padding: 10px 16px; font-size: 0.9rem; outline: none; transition: border-color 0.15s;
-          background: var(--bg-soft);
-        }
-        .chat-input:focus { border-color: var(--brand); background: white; }
-        .chat-send {
-          width: 40px; height: 40px; border-radius: 50%;
-          background: var(--brand); color: white; border: none;
-          cursor: pointer; display: flex; align-items: center; justify-content: center;
-          transition: background 0.15s; flex-shrink: 0;
-        }
-        .chat-send:hover:not(:disabled) { background: var(--brand-600, #b07070); }
-        .chat-send:disabled { opacity: 0.5; cursor: not-allowed; }
         .spin { animation: spin 1s linear infinite; }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
       `}</style>

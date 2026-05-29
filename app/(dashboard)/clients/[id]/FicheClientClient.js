@@ -1078,6 +1078,7 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
                     key={p.id}
                     className={`paiement-fiche-item ${hasAbo ? 'paiement-fiche-clickable' : ''}`}
                     onClick={hasAbo ? () => setActiveTab('abonnements') : undefined}
+                    onKeyDown={hasAbo ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setActiveTab('abonnements'); } } : undefined}
                     role={hasAbo ? 'button' : undefined}
                     tabIndex={hasAbo ? 0 : undefined}
                   >

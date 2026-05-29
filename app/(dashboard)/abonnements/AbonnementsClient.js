@@ -229,9 +229,10 @@ export default function AbonnementsClient({ abonnements: initAbo, paiementsParAb
             placeholder="Rechercher un élève ou une offre…"
             value={search}
             onChange={e => setSearch(e.target.value)}
+            aria-label="Rechercher un abonnement"
           />
         </div>
-        <select className="abo-sort izi-input" value={sort} onChange={e => setSort(e.target.value)}>
+        <select className="abo-sort izi-input" value={sort} onChange={e => setSort(e.target.value)} aria-label="Trier les abonnements">
           <option value="date_desc">Plus récents</option>
           <option value="nom_asc">Nom A→Z</option>
           <option value="statut">Par statut</option>

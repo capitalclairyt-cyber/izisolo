@@ -91,7 +91,7 @@ function PaymentModal({ presence, coursNom, coursDate, onClose, onSaved, onPayer
 
         <div className="pm-header">
           <h3><CreditCard size={18} /> Règlement — {client.prenom} {client.nom}</h3>
-          <button className="modal-close-x" onClick={onClose}>✕</button>
+          <button className="modal-close-x" onClick={onClose} aria-label="Fermer">✕</button>
         </div>
 
         {!confirming ? (
@@ -226,11 +226,11 @@ function PresenceCard({ presence, onMarquer, onPayer, onTypePresence, loading, l
             <span className="pres-name">{client.prenom} {client.nom}</span>
             {/* Badge impayé */}
             {impaye && !locked && (
-              <button className="impaye-btn" onClick={e => { e.stopPropagation(); onPayer(presence); }} title="Impayé — encaisser">€</button>
+              <button className="impaye-btn" onClick={e => { e.stopPropagation(); onPayer(presence); }} title="Impayé — encaisser" aria-label="Encaisser">€</button>
             )}
             {/* Badge payer plus tard */}
             {ptard && !locked && (
-              <button className="ptard-btn" onClick={e => { e.stopPropagation(); onPayer(presence); }} title="Paiement différé — encaisser maintenant">⏰</button>
+              <button className="ptard-btn" onClick={e => { e.stopPropagation(); onPayer(presence); }} title="Paiement différé — encaisser maintenant" aria-label="Paiement différé">⏰</button>
             )}
             {/* Alerte multi-dettes */}
             {nbDettes >= 2 && (
@@ -277,6 +277,7 @@ function PresenceCard({ presence, onMarquer, onPayer, onTypePresence, loading, l
               className={`tp-more-btn ${typeP !== 'normal' ? 'tp-more-active' : ''}`}
               onClick={e => { e.stopPropagation(); setShowTypeMenu(s => !s); }}
               title="Type de séance"
+              aria-label="Type de séance"
             >
               ···
             </button>
@@ -817,7 +818,7 @@ export default function PointageClient({ cours, presences: initialPresences, tou
             {/* Header */}
             <div className="modal-header">
               <h3><UserPlus size={18} /> {isLive ? '⚡ Ajout dernière minute' : `Ajouter un ${vocab.client || 'élève'}`}</h3>
-              <button className="modal-close-x" onClick={() => { setShowAddModal(false); setAddMode('search'); setAddTypePresence('normal'); setNewClientForm({ prenom: '', nom: '', email: '', telephone: '' }); }}>✕</button>
+              <button className="modal-close-x" onClick={() => { setShowAddModal(false); setAddMode('search'); setAddTypePresence('normal'); setNewClientForm({ prenom: '', nom: '', email: '', telephone: '' }); }} aria-label="Fermer">✕</button>
             </div>
 
             {/* Onglets */}

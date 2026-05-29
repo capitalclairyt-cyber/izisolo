@@ -157,8 +157,8 @@ export default function ResultatsSondageClient({ sondage: initialSondage, crenea
           <div className="rs-link-label">Lien à partager</div>
           <div className="rs-link-url">{publicUrl}</div>
         </div>
-        <button onClick={copyLink} className="rs-icon-btn" title="Copier le lien"><Copy size={14} /></button>
-        <a href={publicUrl} target="_blank" rel="noopener noreferrer" className="rs-icon-btn" title="Voir la page">
+        <button onClick={copyLink} className="rs-icon-btn" title="Copier le lien" aria-label="Copier le lien"><Copy size={14} /></button>
+        <a href={publicUrl} target="_blank" rel="noopener noreferrer" className="rs-icon-btn" title="Voir la page" aria-label="Voir la page publique">
           <ExternalLink size={14} />
         </a>
       </div>

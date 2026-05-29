@@ -283,7 +283,9 @@ export default function ClientsClient({ clients: clientsInit, profile }) {
                       <span
                         className={`izi-badge izi-badge-${statutInfo.color} izi-badge-clickable`}
                         onClick={(e) => { e.preventDefault(); e.stopPropagation(); setStatutDropdown(statutDropdown === client.id ? null : client.id); }}
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); setStatutDropdown(statutDropdown === client.id ? null : client.id); } }}
                         role="button"
+                        tabIndex={0}
                       >
                         {statutInfo.label}
                       </span>
@@ -502,36 +504,6 @@ export default function ClientsClient({ clients: clientsInit, profile }) {
           font-size: 0.8125rem;
           color: var(--text-muted, #888);
           padding: 4px 0;
-        }
-        .clients-pagination {
-          display: flex; align-items: center; justify-content: space-between;
-          gap: 12px;
-          padding: 16px 0 24px;
-        }
-        .pagination-btn {
-          display: inline-flex; align-items: center; gap: 4px;
-          padding: 8px 14px;
-          background: white;
-          border: 1px solid var(--border);
-          border-radius: 8px;
-          font-size: 0.875rem; font-weight: 500;
-          color: var(--text-primary);
-          cursor: pointer;
-          transition: all 0.15s ease;
-          font-family: inherit;
-        }
-        .pagination-btn:hover:not(:disabled) {
-          border-color: var(--brand);
-          color: var(--brand-700);
-        }
-        .pagination-btn:disabled {
-          opacity: 0.4;
-          cursor: not-allowed;
-        }
-        .pagination-info {
-          font-size: 0.8125rem;
-          color: var(--text-muted);
-          font-family: var(--font-geist-mono), ui-monospace, monospace;
         }
         .client-avatar {
           width: 44px;

@@ -150,6 +150,7 @@ export default function ListeAttenteClient({ groupes: groupesInit }) {
                           onClick={() => retirer(entry.id, entry.nom)}
                           disabled={submittingId === entry.id}
                           title="Retirer de la liste d'attente"
+                          aria-label="Retirer de la liste d'attente"
                         >
                           <Trash2 size={13} />
                         </button>

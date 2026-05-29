@@ -740,34 +740,6 @@ export default function RevenusClient({ paiements: initialPaiements }) {
         }
         .paiement-montant { font-weight: 700; font-size: 1rem; white-space: nowrap; }
 
-        .pay-pagination {
-          display: flex; align-items: center; justify-content: space-between;
-          gap: 12px; margin-top: 16px; padding: 12px 0;
-        }
-        .pay-pagination-btn {
-          padding: 8px 14px;
-          background: white;
-          border: 1px solid var(--border);
-          border-radius: 8px;
-          font-size: 0.875rem; font-weight: 500;
-          color: var(--text-primary);
-          cursor: pointer;
-          transition: all 0.15s ease;
-          font-family: inherit;
-        }
-        .pay-pagination-btn:hover:not(:disabled) {
-          border-color: var(--brand);
-          color: var(--brand-700);
-        }
-        .pay-pagination-btn:disabled {
-          opacity: 0.4; cursor: not-allowed;
-        }
-        .pay-pagination-info {
-          font-size: 0.8125rem;
-          color: var(--text-muted);
-          font-family: var(--font-geist-mono), ui-monospace, monospace;
-        }
-
         .encaisser-btn {
           display: inline-flex; align-items: center; gap: 4px;
           padding: 4px 10px; border-radius: var(--radius-full);

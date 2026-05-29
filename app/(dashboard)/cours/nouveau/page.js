@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { parseDate, toDateStr } from '@/lib/dates';
 import { getAllTypesFromCategories, normalizeTypesCours } from '@/lib/utils';
-import { estPendantVacances, estJourFerie, getPeriodeVacances, ZONES_VACANCES } from '@/lib/vacances-scolaires';
+import { estJourFerie, getPeriodeVacances, ZONES_VACANCES } from '@/lib/vacances-scolaires';
 import Link from 'next/link';
 import {
   ArrowLeft, Save, Calendar, Clock, MapPin, Users, Repeat,
@@ -1132,47 +1132,6 @@ function NouveauCoursInner() {
       `}</style>
     </div>
   );
-}
-
-// Générer les dates à partir de la config de récurrence (timezone-safe)
-function genererDates(form, maxSemaines = 12) {
-  const dates  = [];
-  const debut  = parseDate(form.date);                           // local, pas UTC
-  const fin    = form.date_fin ? parseDate(form.date_fin) : null;
-  const maxMs  = maxSemaines * 7 * 24 * 60 * 60 * 1000;
-  const maxDate = fin || new Date(debut.getTime() + maxMs);
-
-  if (form.frequence === 'quotidien') {
-    let d = new Date(debut);
-    while (d <= maxDate) {
-      dates.push(toDateStr(d));
-      d.setDate(d.getDate() + 1);
-    }
-  } else if (form.frequence === 'hebdomadaire' || form.frequence === 'bimensuel') {
-    const intervalle = form.frequence === 'bimensuel' ? 2 : 1;
-    let d = new Date(debut);
-    while (d <= maxDate) {
-      dates.push(toDateStr(d));
-      d.setDate(d.getDate() + 7 * intervalle);
-    }
-  } else if (form.frequence === 'mensuel') {
-    let d = new Date(debut);
-    while (d <= maxDate) {
-      dates.push(toDateStr(d));
-      d.setMonth(d.getMonth() + 1);
-    }
-  } else if (form.frequence === 'personnalise' && form.jours_semaine.length > 0) {
-    let d = new Date(debut);
-    while (d <= maxDate) {
-      const jourISO = d.getDay() === 0 ? 7 : d.getDay();
-      if (form.jours_semaine.includes(jourISO)) {
-        dates.push(toDateStr(d));
-      }
-      d.setDate(d.getDate() + 1);
-    }
-  }
-
-  return dates;
 }
 
 // useSearchParams nécessite Suspense dans Next.js App Router

@@ -67,9 +67,6 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
     weekday: 'long', day: 'numeric', month: 'long'
   });
 
-  // Nombre d'inscrits aujourd'hui
-  const inscritsAujourdhui = coursDuJour.reduce((sum, c) => sum + (c.presences?.[0]?.count || 0), 0);
-
   return (
     <div className="dashboard">
       {/* Header avec avatar + salutation + date */}
@@ -796,120 +793,6 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
         }
         .dash-checklist-cta:hover { background: var(--brand-dark, #b07070); }
 
-        /* CTA Sondage planning — style Snug Simple lavender */
-        .dash-sondage-cta {
-          display: flex; align-items: center; gap: 14px;
-          padding: 18px 20px; border-radius: 20px;
-          background: var(--tone-lavender-bg);
-          color: var(--tone-lavender-ink);
-          text-decoration: none;
-          transition: transform 0.15s, box-shadow 0.15s;
-        }
-        .dash-sondage-cta:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 6px 18px rgba(90, 77, 117, 0.18);
-        }
-        .dash-sondage-icon {
-          width: 44px; height: 44px; border-radius: 50%;
-          background: rgba(255, 255, 255, 0.7);
-          color: var(--tone-lavender-ink);
-          flex-shrink: 0;
-          display: flex; align-items: center; justify-content: center;
-        }
-        .dash-sondage-text { flex: 1; min-width: 0; }
-        .dash-sondage-title { font-size: 0.9375rem; font-weight: 600; color: var(--tone-lavender-ink); }
-        .dash-sondage-desc { font-size: 0.8125rem; color: var(--tone-lavender-ink); opacity: 0.75; margin-top: 4px; line-height: 1.4; }
-
-        /* Widget Mes coûts */
-        .dash-couts {
-          display: flex; flex-direction: column; gap: 10px;
-          padding: 14px 16px;
-        }
-        .dash-couts-header {
-          display: flex; justify-content: space-between; align-items: center;
-        }
-        .dash-couts-title {
-          display: inline-flex; align-items: center; gap: 8px;
-          font-size: 0.875rem; font-weight: 700; color: var(--text-primary);
-        }
-        .dash-couts-cog {
-          width: 30px; height: 30px; border-radius: 8px;
-          display: inline-flex; align-items: center; justify-content: center;
-          color: var(--text-muted); border: 1px solid var(--border);
-          background: white; transition: all 0.15s;
-        }
-        .dash-couts-cog:hover { color: var(--brand); border-color: var(--brand); }
-        .dash-couts-rows {
-          display: flex; flex-direction: column; gap: 4px;
-          padding: 8px 0; border-top: 1px solid var(--border);
-        }
-        .dash-couts-row {
-          display: flex; justify-content: space-between; align-items: center;
-          padding: 6px 0; font-size: 0.8125rem;
-        }
-        .dash-couts-row-left {
-          display: inline-flex; align-items: center; gap: 8px;
-          color: var(--text-secondary);
-        }
-        .dash-couts-badge {
-          background: var(--brand-light); color: var(--brand-700);
-          font-size: 0.6875rem; font-weight: 700;
-          padding: 2px 8px; border-radius: 99px;
-        }
-        .dash-couts-amount {
-          font-weight: 600; color: var(--text-primary);
-          font-variant-numeric: tabular-nums;
-        }
-        .dash-couts-total {
-          padding-top: 10px; margin-top: 4px;
-          border-top: 1px dashed var(--border);
-          font-weight: 700; font-size: 0.9375rem;
-        }
-        .dash-couts-total .dash-couts-amount { color: var(--brand); }
-        .dash-couts-note {
-          font-size: 0.7rem; color: var(--text-muted); line-height: 1.5;
-          margin: 4px 0 0;
-        }
-        .dash-couts-note a { color: var(--brand); text-decoration: underline; }
-
-        /* Widget portail élève — tonal sage */
-        .dash-portal-widget {
-          display: flex; align-items: center; gap: 14px;
-          padding: 18px 20px;
-          border-radius: 20px;
-          background: var(--tone-sage-bg);
-          color: var(--tone-sage-ink);
-          box-shadow: 0 2px 10px rgba(70, 35, 25, 0.05);
-        }
-        .dash-portal-icon {
-          width: 44px; height: 44px; border-radius: 50%;
-          background: rgba(255, 255, 255, 0.7);
-          color: var(--tone-sage-ink);
-          display: flex; align-items: center; justify-content: center;
-          flex-shrink: 0;
-        }
-        .dash-portal-text { flex: 1; min-width: 0; }
-        .dash-portal-title {
-          font-size: 0.9375rem; font-weight: 600;
-          color: var(--tone-sage-ink);
-        }
-        .dash-portal-url {
-          font-size: 0.8125rem; color: var(--tone-sage-ink); opacity: 0.75;
-          font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-          white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-          margin-top: 4px;
-        }
-        .dash-portal-actions { display: flex; gap: 6px; flex-shrink: 0; }
-        .dash-portal-btn {
-          width: 36px; height: 36px; border-radius: 50%;
-          border: none;
-          background: rgba(255, 255, 255, 0.7);
-          color: var(--tone-sage-ink); cursor: pointer;
-          display: flex; align-items: center; justify-content: center;
-          transition: all 0.15s; text-decoration: none;
-        }
-        .dash-portal-btn:hover { background: white; transform: scale(1.05); }
-
         /* Widget Coûts — tonal sand */
         .dash-couts {
           display: flex; flex-direction: column; gap: 10px;
@@ -919,24 +802,53 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
           color: var(--tone-sand-ink);
           border: none !important;
         }
+        .dash-couts-header {
+          display: flex; justify-content: space-between; align-items: center;
+        }
         .dash-couts-title {
+          display: inline-flex; align-items: center; gap: 8px;
           font-size: 0.9375rem; font-weight: 600; color: var(--tone-sand-ink);
         }
         .dash-couts-cog {
           width: 32px; height: 32px; border-radius: 50%;
-          background: rgba(255, 255, 255, 0.6);
-          color: var(--tone-sand-ink);
           display: flex; align-items: center; justify-content: center;
+          color: var(--tone-sand-ink); border: 1px solid var(--border);
+          background: rgba(255, 255, 255, 0.6); transition: all 0.15s;
         }
-        .dash-couts-row { color: var(--tone-sand-ink); }
-        .dash-couts-row-left { color: var(--tone-sand-ink); opacity: 0.85; }
-        .dash-couts-amount { color: var(--tone-sand-ink); }
-        .dash-couts-total .dash-couts-amount { color: var(--tone-sand-ink); font-weight: 700; }
-        .dash-couts-note { color: var(--tone-sand-ink); opacity: 0.7; }
-        .dash-couts-badge {
-          background: rgba(255, 255, 255, 0.7);
+        .dash-couts-cog:hover { color: var(--brand); border-color: var(--brand); }
+        .dash-couts-rows {
+          display: flex; flex-direction: column; gap: 4px;
+          padding: 8px 0; border-top: 1px solid var(--border);
+        }
+        .dash-couts-row {
+          display: flex; justify-content: space-between; align-items: center;
+          padding: 6px 0; font-size: 0.8125rem;
           color: var(--tone-sand-ink);
         }
+        .dash-couts-row-left {
+          display: inline-flex; align-items: center; gap: 8px;
+          color: var(--tone-sand-ink); opacity: 0.85;
+        }
+        .dash-couts-badge {
+          background: rgba(255, 255, 255, 0.7); color: var(--tone-sand-ink);
+          font-size: 0.6875rem; font-weight: 700;
+          padding: 2px 8px; border-radius: 99px;
+        }
+        .dash-couts-amount {
+          font-weight: 600; color: var(--tone-sand-ink);
+          font-variant-numeric: tabular-nums;
+        }
+        .dash-couts-total {
+          padding-top: 10px; margin-top: 4px;
+          border-top: 1px dashed var(--border);
+          font-weight: 700; font-size: 0.9375rem;
+        }
+        .dash-couts-total .dash-couts-amount { color: var(--tone-sand-ink); font-weight: 700; }
+        .dash-couts-note {
+          font-size: 0.7rem; color: var(--tone-sand-ink); line-height: 1.5;
+          margin: 4px 0 0; opacity: 0.7;
+        }
+        .dash-couts-note a { color: var(--brand); text-decoration: underline; }
       `}</style>
     </div>
   );
