@@ -70,7 +70,9 @@ export async function GET(request) {
     const candidatIds = candidats.map(c => c.id);
 
     const [{ data: recentPresences }, { data: recentPaiements }, { data: activeAbos }] = await Promise.all([
-      supabaseAdmin.from('presences').select('client_id').gte('date', il10mois).in('client_id', candidatIds),
+      // presences n'a pas de colonne `date` (la date est sur `cours`) — on filtre
+      // sur created_at, qui date la création de la présence ≈ activité de l'élève.
+      supabaseAdmin.from('presences').select('client_id').gte('created_at', il10mois).in('client_id', candidatIds),
       supabaseAdmin.from('paiements').select('client_id').gte('date', il10mois).in('client_id', candidatIds),
       supabaseAdmin.from('abonnements').select('client_id').eq('statut', 'actif').in('client_id', candidatIds),
     ]);
