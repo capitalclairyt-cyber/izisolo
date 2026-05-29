@@ -3,9 +3,12 @@
 import { useEffect } from 'react';
 import Link from 'next/link';
 import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
+import { isChunkLoadError, recoverFromChunkError } from '@/lib/chunk-recovery';
 
 export default function DashboardError({ error, reset }) {
   useEffect(() => {
+    // PWA périmée après un déploiement → on recharge sur un build frais.
+    if (isChunkLoadError(error) && recoverFromChunkError()) return;
     console.error('[IziSolo] Dashboard error:', error);
   }, [error]);
 

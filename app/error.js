@@ -2,9 +2,12 @@
 
 import { useEffect } from 'react';
 import Link from 'next/link';
+import { isChunkLoadError, recoverFromChunkError } from '@/lib/chunk-recovery';
 
 export default function GlobalError({ error, reset }) {
   useEffect(() => {
+    // PWA périmée après un déploiement → on recharge sur un build frais.
+    if (isChunkLoadError(error) && recoverFromChunkError()) return;
     console.error('[IziSolo] Global error:', error);
   }, [error]);
 
