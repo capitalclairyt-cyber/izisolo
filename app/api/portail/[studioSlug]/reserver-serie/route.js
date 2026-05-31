@@ -1,5 +1,6 @@
 import { createServerClient } from '@/lib/supabase-server';
 import { createClient as createAdminSupabase } from '@supabase/supabase-js';
+import { reserverSerieSchema } from '@/lib/validation';
 
 /**
  * POST /api/portail/[studioSlug]/reserver-serie
@@ -21,6 +22,11 @@ export async function POST(request, { params }) {
   const { coursId, jusquAu } = body || {};
   if (!coursId || !jusquAu) {
     return Response.json({ error: 'coursId et jusquAu requis' }, { status: 400 });
+  }
+  // Validation zod : coursId UUID + jusquAu date YYYY-MM-DD.
+  // On ne renvoie pas le détail brut zod.
+  if (!reserverSerieSchema.safeParse(body).success) {
+    return Response.json({ error: 'Données invalides' }, { status: 400 });
   }
 
   // Auth requise (l'élève doit être connecté pour s'inscrire en série)

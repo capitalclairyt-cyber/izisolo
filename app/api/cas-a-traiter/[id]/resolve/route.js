@@ -137,7 +137,8 @@ export async function POST(request, { params }) {
     .single();
 
   if (updErr) {
-    return NextResponse.json({ error: updErr.message }, { status: 500 });
+    console.error('[cas-a-traiter resolve] update err:', updErr);
+    return NextResponse.json({ error: 'Une erreur est survenue.' }, { status: 500 });
   }
 
   return NextResponse.json({ ok: true, mode: body.mode, cas: updated });
@@ -229,7 +230,7 @@ async function applyDirectEffect({ supabase, cas, action, userId }) {
       .from('presences')
       .update({ statut: newStatut })
       .eq('id', cas.presence_id);
-    if (updErr) return { error: updErr.message, status: 500 };
+    if (updErr) { console.error('[cas resolve applyDirectEffect]', updErr); return { error: 'Une erreur est survenue.', status: 500 }; }
 
     // Si décompte ET abonnement lié → incrément seances_utilisees (idempotent
     // via comparaison statut avant/après)
@@ -262,7 +263,7 @@ async function applyDirectEffect({ supabase, cas, action, userId }) {
       .from('abonnements')
       .update({ seances_utilisees: Math.max(0, (abo.seances_utilisees || 0) - 1) })
       .eq('id', aboId);
-    if (updErr) return { error: updErr.message, status: 500 };
+    if (updErr) { console.error('[cas resolve applyDirectEffect]', updErr); return { error: 'Une erreur est survenue.', status: 500 }; }
 
     return {
       beforeState: { abonnement_id: aboId, ...before },
@@ -289,7 +290,7 @@ async function applyDirectEffect({ supabase, cas, action, userId }) {
       .from('abonnements')
       .update({ date_fin: newDateFin })
       .eq('id', aboId);
-    if (updErr) return { error: updErr.message, status: 500 };
+    if (updErr) { console.error('[cas resolve applyDirectEffect]', updErr); return { error: 'Une erreur est survenue.', status: 500 }; }
 
     return {
       beforeState: { abonnement_id: aboId, ...before },
@@ -315,7 +316,7 @@ async function applyDirectEffect({ supabase, cas, action, userId }) {
       .from('presences')
       .update({ cours_id: newCoursId })
       .eq('id', cas.presence_id);
-    if (updErr) return { error: updErr.message, status: 500 };
+    if (updErr) { console.error('[cas resolve applyDirectEffect]', updErr); return { error: 'Une erreur est survenue.', status: 500 }; }
 
     return {
       beforeState: { presence_id: cas.presence_id, ...before },

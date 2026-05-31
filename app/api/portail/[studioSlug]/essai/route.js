@@ -1,6 +1,7 @@
 import { createClient as createAdminSupabase } from '@supabase/supabase-js';
 import { finaliserDemande, emailConfirmationVisiteur, emailEnAttenteVisiteur, emailNotifPro } from '@/lib/essai';
 import { checkAntiBot, ipFromRequest } from '@/lib/antibot';
+import { essaiSchema } from '@/lib/validation';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -41,9 +42,10 @@ export async function POST(request, { params }) {
   if (!coursId || !prenom || !email) {
     return Response.json({ error: 'coursId, prenom et email sont requis' }, { status: 400 });
   }
-  // Validation email basique
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    return Response.json({ error: 'Email invalide' }, { status: 400 });
+  // Validation zod : coursId UUID + prenom/email (passthrough conserve les
+  // autres champs). On ne renvoie pas le détail brut zod.
+  if (!essaiSchema.safeParse(body).success) {
+    return Response.json({ error: 'Données invalides' }, { status: 400 });
   }
 
   // ── Anti-bot : honeypot + rate limit + Turnstile ──

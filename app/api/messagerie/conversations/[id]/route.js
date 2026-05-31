@@ -22,7 +22,10 @@ export async function GET(_request, { params }) {
     .select('id, type, titre, profile_id, client_id, cours_id, last_message_at, archived')
     .eq('id', conversationId)
     .maybeSingle();
-  if (error) return Response.json({ error: error.message }, { status: 500 });
+  if (error) {
+    console.error('[messagerie GET conversation]', error);
+    return Response.json({ error: 'Une erreur est survenue.' }, { status: 500 });
+  }
   if (!conv) return Response.json({ error: 'Conversation introuvable' }, { status: 404 });
 
   // Hydrater peer_label selon le viewer
@@ -118,7 +121,7 @@ export async function PATCH(request, { params }) {
 
   if (error) {
     console.error('[messagerie PATCH] err:', error);
-    return Response.json({ error: 'Erreur mise à jour', detail: error.message }, { status: 500 });
+    return Response.json({ error: 'Une erreur est survenue.' }, { status: 500 });
   }
   if (!data) {
     return Response.json({ error: 'Conversation introuvable ou non autorisé' }, { status: 404 });

@@ -52,7 +52,10 @@ export async function POST(request, { params }) {
       })
       .eq('id', id);
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) {
+      console.error('[abonnements pause] update err:', error);
+      return NextResponse.json({ error: 'Une erreur est survenue.' }, { status: 500 });
+    }
     return NextResponse.json({ ok: true });
   }
 
@@ -67,7 +70,10 @@ export async function POST(request, { params }) {
       })
       .eq('id', id);
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) {
+      console.error('[abonnements pause] reprendre err:', error);
+      return NextResponse.json({ error: 'Une erreur est survenue.' }, { status: 500 });
+    }
     return NextResponse.json({ ok: true });
   }
 

@@ -72,8 +72,10 @@ export async function POST() {
         { status: 503 }
       );
     }
+    // Détail conservé côté serveur uniquement (cf. console.error ci-dessus) ;
+    // on ne fuite pas le message brut Stripe au client.
     return Response.json(
-      { error: err.message || 'Erreur Stripe' },
+      { error: 'Une erreur est survenue, réessaie.' },
       { status: 500 }
     );
   }

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/api-auth';
 import { createClient as createAdminSupabase } from '@supabase/supabase-js';
+import { libererSerieSchema } from '@/lib/validation';
 
 /**
  * POST /api/presences/liberer-serie
@@ -30,7 +31,13 @@ export async function POST(request) {
   if (!clientId || !recurrenceId) {
     return NextResponse.json({ error: 'clientId et recurrenceId requis' }, { status: 400 });
   }
-  const depuisDate = body.depuisDate || new Date().toISOString().slice(0, 10);
+
+  // Validation zod (UUID) — on ne renvoie pas le détail brut zod.
+  const parsed = libererSerieSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json({ error: 'Données invalides' }, { status: 400 });
+  }
+  const depuisDate = parsed.data.depuisDate || new Date().toISOString().slice(0, 10);
 
   // Vérifier que le client appartient bien à ce prof
   const { data: client } = await supabase
@@ -41,16 +48,17 @@ export async function POST(request) {
     .single();
   if (!client) return NextResponse.json({ error: 'Client introuvable' }, { status: 404 });
 
-  // Récupérer toutes les présences futures de ce client sur cette récurrence
+  // Récupérer toutes les présences futures de ce client sur cette récurrence.
+  // Le filtre recurrence_id est appliqué côté SQL (jointure interne sur cours)
+  // pour éviter tout match accidentel — pas seulement en JS post-fetch.
   const { data: presences } = await supabase
     .from('presences')
-    .select('id, cours_id, cours:cours_id(id, date, heure, nom, recurrence_id, capacite_max)')
+    .select('id, cours_id, cours:cours_id!inner(id, date, heure, nom, recurrence_id, capacite_max)')
     .eq('client_id', clientId)
-    .eq('profile_id', profile.id);
+    .eq('profile_id', profile.id)
+    .eq('cours.recurrence_id', recurrenceId);
 
-  const aLiberer = (presences || []).filter(p =>
-    p.cours?.recurrence_id === recurrenceId && p.cours?.date >= depuisDate
-  );
+  const aLiberer = (presences || []).filter(p => p.cours?.date >= depuisDate);
 
   if (aLiberer.length === 0) {
     return NextResponse.json({ ok: true, liberees: 0, promues: 0, skipped: 0 });

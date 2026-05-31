@@ -46,7 +46,7 @@ async function getProConversations(supabase, profileId) {
       .limit(100);
     if (convsErr) {
       console.error('[messagerie GET] convs err:', convsErr);
-      return Response.json({ error: 'Erreur lecture conversations', detail: convsErr.message }, { status: 500 });
+      return Response.json({ error: 'Une erreur est survenue.' }, { status: 500 });
     }
     if (!convs || convs.length === 0) {
       return Response.json({ conversations: [], viewer: 'pro' });
@@ -147,7 +147,7 @@ async function getProConversations(supabase, profileId) {
     return Response.json({ conversations, viewer: 'pro' });
   } catch (err) {
     console.error('[messagerie GET] unexpected err:', err);
-    return Response.json({ error: 'Erreur serveur', detail: err?.message }, { status: 500 });
+    return Response.json({ error: 'Une erreur est survenue.' }, { status: 500 });
   }
 }
 
@@ -160,7 +160,7 @@ async function getEleveConversations(supabase, userEmail) {
       .ilike('email', userEmail);
     if (clientsErr) {
       console.error('[messagerie GET eleve] clients err:', clientsErr);
-      return Response.json({ error: 'Erreur lecture clients', detail: clientsErr.message }, { status: 500 });
+      return Response.json({ error: 'Une erreur est survenue.' }, { status: 500 });
     }
     if (!clients || clients.length === 0) {
       return Response.json({ conversations: [], viewer: 'eleve' });
@@ -182,7 +182,7 @@ async function getEleveConversations(supabase, userEmail) {
       .in('client_id', clientIds);
     if (memErr) {
       console.error('[messagerie GET eleve] members err:', memErr);
-      return Response.json({ error: 'Erreur lecture membres', detail: memErr.message }, { status: 500 });
+      return Response.json({ error: 'Une erreur est survenue.' }, { status: 500 });
     }
     if (!members || members.length === 0) {
       return Response.json({ conversations: [], viewer: 'eleve' });
@@ -250,7 +250,7 @@ async function getEleveConversations(supabase, userEmail) {
     });
   } catch (err) {
     console.error('[messagerie GET eleve] unexpected err:', err);
-    return Response.json({ error: 'Erreur serveur', detail: err?.message }, { status: 500 });
+    return Response.json({ error: 'Une erreur est survenue.' }, { status: 500 });
   }
 }
 

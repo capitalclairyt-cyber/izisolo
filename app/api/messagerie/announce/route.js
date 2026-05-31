@@ -1,5 +1,6 @@
 import { requireAuth } from '@/lib/api-auth';
 import { announce } from '@/lib/messagerie';
+import { parseJsonBody, messagerieAnnounceSchema } from '@/lib/validation';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -33,8 +34,8 @@ export async function POST(request) {
   // Vrai pro = a un studio_slug (le trigger Supabase crée un profil pour tout user)
   if (!profile?.studio_slug) return Response.json({ error: 'Réservé aux pros' }, { status: 403 });
 
-  let body;
-  try { body = await request.json(); } catch { return Response.json({ error: 'JSON invalide' }, { status: 400 }); }
+  const { data: body, errorResponse } = await parseJsonBody(request, messagerieAnnounceSchema);
+  if (errorResponse) return errorResponse;
 
   const content = (body.content || '').trim();
   if (!content && (!body.media_urls || body.media_urls.length === 0)) {
@@ -60,6 +61,16 @@ export async function POST(request) {
   }
 
   else if (scope === 'cours' && body.cours_id) {
+    // OWNERSHIP : ce cours doit appartenir au pro connecté, sinon les présences
+    // (et la conv de groupe) remonteraient les élèves d'un AUTRE studio.
+    const { data: coursOwn } = await supabase
+      .from('cours')
+      .select('id')
+      .eq('id', body.cours_id)
+      .eq('profile_id', profile.id)
+      .maybeSingle();
+    if (!coursOwn) return Response.json({ error: 'Cours introuvable' }, { status: 404 });
+
     if (mode === 'groupe') {
       // 1 seule conversation de groupe
       targets = [{ type: 'cours', id: body.cours_id }];
@@ -94,6 +105,15 @@ export async function POST(request) {
   }
 
   else if (scope === 'abonnement' && body.offre_id) {
+    // OWNERSHIP : l'offre doit appartenir au pro connecté.
+    const { data: offreOwn } = await supabase
+      .from('offres')
+      .select('id')
+      .eq('id', body.offre_id)
+      .eq('profile_id', profile.id)
+      .maybeSingle();
+    if (!offreOwn) return Response.json({ error: 'Offre introuvable' }, { status: 404 });
+
     const { data: abos } = await supabase
       .from('abonnements')
       .select('client_id')
@@ -123,14 +143,30 @@ export async function POST(request) {
     return Response.json({ error: `Trop de destinataires (${targets.length}). Max 500.` }, { status: 400 });
   }
 
+  // OWNERSHIP : si une référence partagée (chip cours/offre) est jointe,
+  // elle doit pointer vers une ressource du pro connecté. Sinon on la retire
+  // (le mailing part quand même, juste sans le chip d'un autre studio).
+  let sharedRefType = body.shared_ref_type || null;
+  let sharedRefId = body.shared_ref_id || null;
+  if (sharedRefId && (sharedRefType === 'cours' || sharedRefType === 'offre')) {
+    const refTable = sharedRefType === 'cours' ? 'cours' : 'offres';
+    const { data: refOwn } = await supabase
+      .from(refTable)
+      .select('id')
+      .eq('id', sharedRefId)
+      .eq('profile_id', profile.id)
+      .maybeSingle();
+    if (!refOwn) { sharedRefType = null; sharedRefId = null; }
+  }
+
   try {
     const { batchId, count } = await announce(supabase, {
       profileId: profile.id,
       targets,
       content,
       mediaUrls: body.media_urls || [],
-      sharedRefType: body.shared_ref_type || null,
-      sharedRefId: body.shared_ref_id || null,
+      sharedRefType,
+      sharedRefId,
     });
     return Response.json({ batch_id: batchId, count });
   } catch (err) {

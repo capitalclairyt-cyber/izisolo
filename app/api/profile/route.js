@@ -41,7 +41,8 @@ export async function PUT(request) {
       .single();
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
+      console.error('[profile PUT] update err:', error);
+      return NextResponse.json({ error: 'Une erreur est survenue.' }, { status: 400 });
     }
 
     return NextResponse.json(data);

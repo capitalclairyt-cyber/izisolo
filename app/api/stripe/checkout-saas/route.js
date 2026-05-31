@@ -123,7 +123,9 @@ export async function POST(request) {
 
     return Response.json({ url: session.url });
   } catch (err) {
+    // Détail conservé côté serveur uniquement ; on ne fuite pas le message
+    // brut Stripe au client (peut révéler des infos internes).
     console.error('[checkout-saas] error:', err);
-    return Response.json({ error: err.message || 'Erreur Stripe' }, { status: 500 });
+    return Response.json({ error: 'Une erreur est survenue, réessaie.' }, { status: 500 });
   }
 }

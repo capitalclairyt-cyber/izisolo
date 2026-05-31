@@ -103,7 +103,8 @@ export async function POST(request, { params }) {
     .single();
 
   if (updErr) {
-    return NextResponse.json({ error: updErr.message }, { status: 500 });
+    console.error('[cas-a-traiter undo] update err:', updErr);
+    return NextResponse.json({ error: 'Une erreur est survenue.' }, { status: 500 });
   }
 
   return NextResponse.json({

@@ -157,7 +157,10 @@ export async function POST(request) {
 
     return Response.json({ received: true });
   } catch (err) {
+    // On garde le 500 pour que Stripe rejoue l'event, mais on ne renvoie pas
+    // le détail de l'erreur (le message brut peut fuiter des infos internes).
+    // Le détail reste loggé côté serveur.
     console.error('[webhook-saas] handler error:', err);
-    return new Response(`Handler error: ${err.message}`, { status: 500 });
+    return new Response('Handler error', { status: 500 });
   }
 }

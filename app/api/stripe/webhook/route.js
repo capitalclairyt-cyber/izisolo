@@ -177,6 +177,15 @@ async function handleChargeRefunded(supabase, profileId, charge) {
   const sessionId = charge.metadata?.session_id || charge.payment_intent;
   if (!sessionId) return;
 
+  // Sécurité : sessionId provient de données Stripe contrôlables (metadata).
+  // Il est interpolé dans un filtre PostgREST `.or(...)` — une virgule ou une
+  // parenthèse casserait ou élargirait le filtre OR (injection PostgREST).
+  // On valide donc strictement le format avant toute requête.
+  if (!/^[a-zA-Z0-9_]+$/.test(sessionId)) {
+    console.error('[stripe/webhook] sessionId invalide pour refund, ignoré:', sessionId);
+    return;
+  }
+
   // Marquer le paiement comme remboursé via les notes (pas de statut "refunded" en DB)
   const { error } = await supabase
     .from('paiements')

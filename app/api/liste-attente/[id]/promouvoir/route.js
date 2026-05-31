@@ -174,6 +174,9 @@ export async function DELETE(request, { params }) {
     .eq('id', id)
     .eq('profile_id', profile.id);
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    console.error('[liste-attente DELETE] err:', error);
+    return NextResponse.json({ error: 'Une erreur est survenue.' }, { status: 500 });
+  }
   return NextResponse.json({ ok: true });
 }
