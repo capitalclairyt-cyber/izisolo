@@ -105,6 +105,7 @@ export default function RegisterPage() {
             <h1>IziSolo</h1>
           </div>
           <p className="auth-subtitle">Crée ton studio en 2 minutes</p>
+          <p className="auth-reassurance">14 jours d'essai · Sans carte bancaire · Sans engagement</p>
         </div>
 
         <form onSubmit={handleRegister} className="auth-form">
@@ -226,6 +227,11 @@ export default function RegisterPage() {
         .auth-subtitle {
           color: var(--text-secondary);
           font-size: 0.9375rem;
+        }
+        .auth-reassurance {
+          color: var(--text-muted);
+          font-size: 0.8125rem;
+          margin-top: 6px;
         }
         .auth-form {
           display: flex;

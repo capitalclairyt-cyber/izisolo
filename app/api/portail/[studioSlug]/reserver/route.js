@@ -4,6 +4,7 @@ import { parseJsonBody, reservationSchema } from '@/lib/validation';
 import { checkAntiBot, ipFromRequest } from '@/lib/antibot';
 import { getRegle } from '@/lib/regles-metier';
 import { sendNotifElevePourRegle } from '@/lib/notif-eleve-regle';
+import { getDelaiPourCours } from '@/lib/regles-annulation';
 
 export async function POST(request, { params }) {
   const { studioSlug } = await params;
@@ -44,7 +45,7 @@ export async function POST(request, { params }) {
   // Charge aussi regles_metier pour appliquer la règle "élève sans carnet".
   const { data: profile } = await supabaseAdmin
     .from('profiles')
-    .select('id, studio_nom, regles_metier')
+    .select('id, studio_nom, regles_metier, regles_annulation')
     .eq('studio_slug', studioSlug)
     .single();
 
@@ -478,6 +479,7 @@ export async function POST(request, { params }) {
       });
       const heureStr = cours.heure ? cours.heure.slice(0, 5).replace(':', 'h') : '';
       const espaceUrl = magicLink || `${process.env.NEXT_PUBLIC_APP_URL || 'https://www.izisolo.fr'}/p/${studioSlug}/espace`;
+      const delaiAnnulation = getDelaiPourCours(profile, cours.type_cours);
       magicLinkSent = !!magicLink;
 
       await resend.emails.send({
@@ -509,7 +511,7 @@ export async function POST(request, { params }) {
             ` : ''}
             <div style="background: #fffaf0; border: 1px solid #ffe0b2; border-radius: 10px; padding: 12px 16px; margin: 0 0 16px; color: #7c4a03; font-size: 0.875rem;">
               <strong>Annulation flexible</strong><br/>
-              Tu peux annuler depuis ton espace jusqu'à 24h avant le cours.
+              Tu peux annuler depuis ton espace jusqu'à ${delaiAnnulation}h avant le cours.
             </div>
             <p style="color: #aaa; font-size: 0.8rem; margin: 32px 0 0; border-top: 1px solid #eee; padding-top: 16px; text-align: center;">
               Propulsé par <a href="https://www.izisolo.fr" style="color: #d4a0a0;">IziSolo</a>

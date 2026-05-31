@@ -177,15 +177,19 @@ async function getData(studioSlug, userEmail) {
   const today = new Date().toISOString().slice(0, 10);
   const all = presences || [];
 
+  // Les cours annulés DANS LE FUTUR restent dans « à venir » (avec le tag
+  // « Annulé » géré par CoursCard) : l'élève doit être alerté qu'un cours
+  // qu'elle avait réservé n'aura pas lieu, sans aller fouiller l'historique.
+  // Seuls les cours réellement passés (date < aujourd'hui) basculent en historique.
   const aVenir = all
-    .filter(p => p.cours && p.cours.date >= today && !p.cours.est_annule)
+    .filter(p => p.cours && p.cours.date >= today)
     .sort((a, b) => {
       if (a.cours.date !== b.cours.date) return a.cours.date.localeCompare(b.cours.date);
       return (a.cours.heure || '').localeCompare(b.cours.heure || '');
     });
 
   const passes = all
-    .filter(p => p.cours && (p.cours.date < today || p.cours.est_annule))
+    .filter(p => p.cours && p.cours.date < today)
     .sort((a, b) => b.cours.date.localeCompare(a.cours.date));
 
   return { profile, client, aVenir, passes, paiements: paiements || [], offresStripe: offresStripe || [], abonnements: abonnements || [] };

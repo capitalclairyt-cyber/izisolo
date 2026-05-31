@@ -7,7 +7,7 @@ export const metadata = { title: 'Cours d\'essai' };
 async function getData(studioSlug) {
   const supabase = await createServerClient();
   const today = new Date().toISOString().slice(0, 10);
-  const in30 = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10);
+  const in60 = new Date(Date.now() + 60 * 86400000).toISOString().slice(0, 10);
 
   const { data: profile } = await supabase
     .from('profiles')
@@ -17,14 +17,15 @@ async function getData(studioSlug) {
 
   if (!profile || !profile.essai_actif) return null;
 
-  // Cours futurs (30j) du studio, pour la sélection du créneau
+  // Cours futurs (60j) du studio, pour la sélection du créneau
+  // (aligné sur la fenêtre de la home pour qu'un cours présélectionné à 31-60j apparaisse)
   const { data: cours } = await supabase
     .from('cours')
     .select('id, nom, type_cours, date, heure, duree_minutes, lieu, capacite_max, est_annule')
     .eq('profile_id', profile.id)
     .eq('est_annule', false)
     .gte('date', today)
-    .lte('date', in30)
+    .lte('date', in60)
     .order('date', { ascending: true })
     .order('heure', { ascending: true })
     .limit(60);

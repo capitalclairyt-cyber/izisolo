@@ -14,6 +14,7 @@ export default function OnboardingPage() {
   const router = useRouter();
   const [etape, setEtape] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [erreur, setErreur] = useState('');
   const [createdSlug, setCreatedSlug] = useState('');
   const [copied, setCopied] = useState(false);
 
@@ -81,9 +82,11 @@ export default function OnboardingPage() {
 
   async function handleFinish() {
     setLoading(true);
+    setErreur('');
 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
+      setLoading(false);
       router.push('/login');
       return;
     }
@@ -117,6 +120,9 @@ export default function OnboardingPage() {
 
     if (profileError) {
       console.error('Erreur profil:', profileError);
+      setErreur("Oups, on n'a pas réussi à enregistrer ton studio. Vérifie ta connexion et réessaie.");
+      setLoading(false);
+      return;
     }
 
     // Créer la première offre si renseignée
@@ -349,6 +355,7 @@ export default function OnboardingPage() {
                 </div>
               </div>
             </div>
+            {erreur && <div className="onboarding-error" role="alert">{erreur}</div>}
             <div className="step-nav">
               <button type="button" className="izi-btn izi-btn-ghost" onClick={() => setEtape(1)}>
                 <ArrowLeft size={18} /> Retour
@@ -527,6 +534,14 @@ export default function OnboardingPage() {
         .skip-btn {
           align-self: center;
           font-size: 0.8125rem;
+        }
+        .onboarding-error {
+          background: var(--danger-light, #fef2f2);
+          color: var(--danger);
+          padding: 10px 14px;
+          border-radius: var(--radius-sm);
+          font-size: 0.875rem;
+          text-align: center;
         }
         .welcome-emoji {
           width: 64px; height: 64px; border-radius: 50%;
