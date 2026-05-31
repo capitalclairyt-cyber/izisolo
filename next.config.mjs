@@ -20,6 +20,11 @@ const securityHeaders = [
 const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  // AVIF en plus de WebP : -20 à -30% de poids sur les photos (hero, personas,
+  // couverture portail) servies via next/image, sans perte visible.
+  images: {
+    formats: ['image/avif', 'image/webp'],
+  },
   async headers() {
     return [
       {
