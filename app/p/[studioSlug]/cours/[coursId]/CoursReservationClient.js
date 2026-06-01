@@ -145,6 +145,7 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
 
   const places = cours.capacite_max ? cours.capacite_max - nbInscrits : null;
   const complet = places !== null && places <= 0;
+  const afficherInscrits = profile.afficher_inscrits !== false; // jauge publique (toggle studio)
   // "Passé" = date avant aujourd'hui, OU date = aujourd'hui mais heure déjà dépassée
   const now = new Date();
   const today = now.toISOString().slice(0, 10);
@@ -300,14 +301,14 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
           <div className="resa-detail-row"><Calendar size={15} /><span>{formatDate(cours.date)}</span></div>
           <div className="resa-detail-row"><Clock size={15} /><span>{formatHeure(cours.heure)}{cours.duree_minutes ? ` · ${cours.duree_minutes} min` : ''}</span></div>
           {cours.lieu && <div className="resa-detail-row"><MapPin size={15} /><span>{cours.lieu}</span></div>}
-          {cours.capacite_max && (
+          {cours.capacite_max && (afficherInscrits || complet) && (
             <div className="resa-detail-row">
               <Users size={15} />
               <span>
-                {nbInscrits}/{cours.capacite_max} inscrits
+                {afficherInscrits && <>{nbInscrits}/{cours.capacite_max} inscrits</>}
                 {complet
-                  ? <span className="portail-tag portail-tag-amber" style={{ marginLeft: '8px' }}>Complet</span>
-                  : places <= 3
+                  ? <span className="portail-tag portail-tag-amber" style={{ marginLeft: afficherInscrits ? '8px' : '0' }}>Complet</span>
+                  : afficherInscrits && places <= 3
                   ? <span className="portail-tag portail-tag-amber" style={{ marginLeft: '8px' }}>{places} place{places > 1 ? 's' : ''} restante{places > 1 ? 's' : ''}</span>
                   : null
                 }

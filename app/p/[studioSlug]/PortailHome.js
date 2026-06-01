@@ -60,10 +60,13 @@ function formatHeure(h) {
   return mm === '00' ? `${parseInt(hh)}h` : `${parseInt(hh)}h${mm}`;
 }
 
-function PlacesBadge({ capacite, inscrits }) {
+function PlacesBadge({ capacite, inscrits, afficherInscrits = true }) {
   if (!capacite) return null;
   const dispo = capacite - inscrits;
+  // "Complet" reste toujours affiché (info utile). Si la jauge est masquée
+  // (afficherInscrits=false), on n'expose pas le détail places/inscrits.
   if (dispo <= 0) return <span className="portail-tag portail-tag-amber">Complet</span>;
+  if (!afficherInscrits) return null;
   if (dispo <= 3) return <span className="portail-tag portail-tag-amber">{dispo} place{dispo > 1 ? 's' : ''}</span>;
   return <span className="portail-tag portail-tag-green">Places disponibles</span>;
 }
@@ -511,7 +514,7 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
                       </div>
                     </div>
                     <div className="portail-cours-right">
-                      <PlacesBadge capacite={c.capacite_max} inscrits={c.nbInscrits} />
+                      <PlacesBadge capacite={c.capacite_max} inscrits={c.nbInscrits} afficherInscrits={profile.afficher_inscrits !== false} />
                       <ChevronRight size={16} style={{ color: '#ccc' }} />
                     </div>
                   </Link>
@@ -562,7 +565,7 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
                   </div>
                 </div>
                 <div className="portail-cours-right">
-                  <PlacesBadge capacite={c.capacite_max} inscrits={c.nbInscrits} />
+                  <PlacesBadge capacite={c.capacite_max} inscrits={c.nbInscrits} afficherInscrits={profile.afficher_inscrits !== false} />
                   <ChevronRight size={16} style={{ color: '#ccc' }} />
                 </div>
               </Link>

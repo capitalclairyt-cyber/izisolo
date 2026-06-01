@@ -4,8 +4,8 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Save, Palette, User, Building2, Bell, MapPin,
-  Plus, X, Trash2, Flower2, Sliders, Crown, Mail, Home,
-  Eye, Settings, Zap, Gift, ToggleLeft, ToggleRight, Cake,
+  Plus, X, Trash2, Flower2, Crown, Mail, Home,
+  Eye, Zap, Gift, ToggleLeft, ToggleRight, Cake,
   CreditCard, Copy, Check, ExternalLink, AlertCircle, Loader2,
   Pencil, Image as ImageIcon,
 } from 'lucide-react';
@@ -44,11 +44,11 @@ const PALETTES = [
 ];
 
 const TABS = [
-  { id: 'profil',        label: 'Profil',        icon: User },
-  { id: 'reglages',      label: 'Réglages',      icon: Sliders },
-  { id: 'notifications', label: 'Notifications', icon: Bell },
-  { id: 'regles',        label: 'Règles',        icon: Zap },
-  { id: 'abonnement',    label: 'Abonnement',    icon: Crown },
+  { id: 'profil',        label: 'Profil & studio', icon: User },
+  { id: 'portail',       label: 'Portail public',  icon: Eye },
+  { id: 'notifications', label: 'Notifications',   icon: Bell },
+  { id: 'regles',        label: 'Règles',          icon: Zap },
+  { id: 'abonnement',    label: 'Abonnement',      icon: Crown },
 ];
 
 const ANNIV_MODES = [
@@ -56,12 +56,6 @@ const ANNIV_MODES = [
   { id: 'manuel', label: 'Manuel',     desc: 'Notification uniquement, tu envoies toi-même' },
   { id: 'semi',   label: 'Semi-auto',  desc: 'Notification + confirmation avant envoi' },
   { id: 'auto',   label: 'Automatique',desc: 'Envoi automatique sans confirmation' },
-];
-
-// Sous-onglets Réglages — Apparences retiré (palette + décor imposés brand
-// pour cohérence visuelle de toute l'app, plus de personnalisation pro).
-const REGLAGES_SUBTABS = [
-  { id: 'general', label: 'Général', icon: Settings },
 ];
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -1674,6 +1668,23 @@ function VisibiliteSection({ profile, setProfile, setDirty }) {
         ))}
       </div>
 
+      {/* Toggle : afficher ou non la jauge places/inscrits sur le portail public */}
+      <div className="vis-inscrits">
+        <button
+          type="button"
+          className={`vis-switch ${profile?.afficher_inscrits !== false ? 'on' : ''}`}
+          onClick={() => { setProfile(prev => ({ ...prev, afficher_inscrits: !(prev?.afficher_inscrits !== false) })); setDirty(true); }}
+          aria-pressed={profile?.afficher_inscrits !== false}
+          aria-label="Afficher les places / inscrits sur le portail public"
+        >
+          <span className="vis-knob" />
+        </button>
+        <div>
+          <div className="vis-radio-label">Afficher les places / inscrits sur le portail</div>
+          <div className="vis-radio-desc">Le badge « Complet » reste toujours affiché. Désactive si tu préfères ne pas montrer les places restantes (utile quand il y a peu d'inscrits).</div>
+        </div>
+      </div>
+
       <style jsx>{`
         .vis-radio-group { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
         .vis-radio-opt {
@@ -1685,6 +1696,11 @@ function VisibiliteSection({ profile, setProfile, setDirty }) {
         .vis-radio-opt input { margin-top: 4px; accent-color: var(--brand); }
         .vis-radio-label { font-size: 0.875rem; font-weight: 600; color: var(--text-primary); }
         .vis-radio-desc { font-size: 0.75rem; color: var(--text-secondary); margin-top: 2px; line-height: 1.4; }
+        .vis-inscrits { display: flex; align-items: flex-start; gap: 12px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
+        .vis-switch { flex-shrink: 0; width: 42px; height: 24px; border-radius: 99px; border: none; background: var(--border); cursor: pointer; position: relative; transition: background 0.2s; padding: 0; }
+        .vis-switch.on { background: var(--brand); }
+        .vis-knob { position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: white; transition: transform 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+        .vis-switch.on .vis-knob { transform: translateX(18px); }
       `}</style>
     </div>
   );
@@ -1906,7 +1922,6 @@ export default function Parametres() {
   const tabsRef = useRef(null);
   const [canScrollRight, setCanScrollRight] = useState(false);
   const [canScrollLeft, setCanScrollLeft]   = useState(false);
-  const [reglagesSubTab, setReglagesSubTab] = useState('general');
   // Sous-onglet notifications
   const [notifSubTab, setNotifSubTab] = useState('general');
   // Notifications générales
@@ -2181,6 +2196,7 @@ export default function Parametres() {
       horaires_studio_jours:   profile.horaires_studio_jours || null,  // structuré v40
       client_fields_config:    profile.client_fields_config || null,    // v40 — champs élèves configurables
       afficher_tarifs:         profile.afficher_tarifs === true,
+      afficher_inscrits:       profile.afficher_inscrits !== false,
       faq_publique:            profile.faq_publique || [],
       // URLs : normaliser pour respecter la contrainte CHECK (must start with http(s)://)
       // Si vide → null, sinon préfixer https:// si absent
@@ -2483,22 +2499,18 @@ export default function Parametres() {
             </div>
           )}
 
-          {/* Page publique enrichie — reste dans Profil (logique : c'est la
-              "vitrine" qui dépend du profil prof/studio) */}
-          <PagePubliqueSection
+          {/* Champs collectés sur les fiches élèves — rattaché à Profil & studio
+              (2026-06-01) : c'est la config des données qu'on collecte sur ses
+              élèves, naturellement liée à l'identité du studio. */}
+          <ChampsElevesSection
             profile={profile}
             setProfile={setProfile}
             setDirty={setDirty}
           />
 
-          {/* Note : les sections suivantes ont été déplacées vers l'onglet
-              Réglages (2026-05-05) car elles relèvent plus du paramétrage
-              opérationnel que de l'identité du profil/studio :
-              - ReglesAnnulationSection
-              - NotifsElevesSection
-              - StripePaiementSection (paiement en ligne)
-              - VisibiliteSection (visibilité par défaut des cours)
-              - CoursEssaiSection */}
+          {/* Note : la page publique (PagePubliqueSection) a été déplacée vers
+              l'onglet "Portail public" (2026-06-01), avec VisibiliteSection,
+              CoursEssaiSection et StripePaiementSection. */}
 
           <button onClick={handleSave} className="izi-btn izi-btn-primary save-btn" disabled={saving}>
             <Save size={18} /> {saving ? 'Enregistrement...' : 'Enregistrer'}
@@ -2507,172 +2519,44 @@ export default function Parametres() {
       )}
 
       {/* ============================================ */}
-      {/* ONGLET 2 — RÉGLAGES                         */}
+      {/* ONGLET 2 — PORTAIL PUBLIC                   */}
+      {/* Regroupe tout ce qui concerne la vitrine     */}
+      {/* publique /p/[slug] (2026-06-01).             */}
       {/* ============================================ */}
-      {activeTab === 'reglages' && (
+      {activeTab === 'portail' && (
         <div className="tab-content animate-fade-in">
 
-          {/* Sous-onglets Réglages */}
-          <div className="subtabs-bar">
-            {REGLAGES_SUBTABS.map(sub => {
-              const Icon = sub.icon;
-              return (
-                <button
-                  key={sub.id}
-                  className={`subtab-btn ${reglagesSubTab === sub.id ? 'active' : ''}`}
-                  onClick={() => setReglagesSubTab(sub.id)}
-                >
-                  <Icon size={14} />
-                  <span>{sub.label}</span>
-                </button>
-              );
-            })}
-          </div>
+          {/* Page publique enrichie (bio, photos, FAQ, horaires…) */}
+          <PagePubliqueSection
+            profile={profile}
+            setProfile={setProfile}
+            setDirty={setDirty}
+          />
 
-          {/* === SOUS-ONGLET APPARENCES retiré ===
-              Palette de couleur + décor visuel + grille/animation d'arrière-plan
-              ne sont plus personnalisables — on impose le brand IziSolo (rose
-              tonal Claude Design) pour assurer la cohérence visuelle. Les colonnes
-              ui_couleur / ui_illustration / ui_grille_active / ui_animation_active
-              restent en DB mais ne sont plus exposées. */}
+          {/* Visibilité par défaut des cours */}
+          <VisibiliteSection
+            profile={profile}
+            setProfile={setProfile}
+            setDirty={setDirty}
+          />
 
-          {/* === SOUS-ONGLET : GÉNÉRAL ===
-              Sections déplacées depuis l'onglet Profil (2026-05-05) car elles
-              relèvent plus du paramétrage opérationnel que de l'identité. */}
-          {reglagesSubTab === 'general' && (
-            <div className="subtab-content animate-fade-in">
+          {/* Cours d'essai pour visiteurs */}
+          <CoursEssaiSection
+            profile={profile}
+            setProfile={setProfile}
+            setDirty={setDirty}
+          />
 
-              {/* Seuils d'alerte — pilotent à la fois (1) les alertes affichées
-                  sur le dashboard prof et (2) les notifications auto envoyées
-                  aux élèves (cf. section "Notifications élèves auto" ci-dessous
-                  pour activer les canaux email/SMS). */}
-              <div className="section izi-card">
-                <div className="section-top">
-                  <div className="section-icon"><Bell size={20} /></div>
-                  <h2>Seuils d'alerte</h2>
-                </div>
-                <p className="section-desc">
-                  Ces seuils déterminent quand l'app considère qu'une situation mérite ton
-                  attention. Ils servent à <strong>(1)</strong> afficher des alertes sur
-                  ton tableau de bord, et <strong>(2)</strong> déclencher les
-                  notifications automatiques envoyées à tes élèves (si activées
-                  ci-dessous dans <em>Notifications élèves auto</em>).
-                </p>
+          {/* Paiement en ligne (Stripe Payment Link) */}
+          <StripePaiementSection
+            profile={profile}
+            setProfile={setProfile}
+            setDirty={setDirty}
+          />
 
-                <div className="form-row">
-                  <div className="form-group">
-                    <label className="form-label">Carnet bientôt épuisé</label>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <input
-                        className="izi-input"
-                        type="number"
-                        min="1"
-                        max="20"
-                        style={{ maxWidth: 100 }}
-                        value={profile.alerte_seances_seuil || 2}
-                        onChange={handleChange('alerte_seances_seuil')}
-                      />
-                      <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>séances ou moins</span>
-                    </div>
-                    <p className="form-hint">
-                      Ex. <strong>2</strong> → quand un élève n'a plus que 2 séances dans son
-                      carnet, tu vois une alerte « Caroline a 2 séances restantes » + (si activé)
-                      l'élève reçoit un email type « Plus que 2 séances dans ton carnet ».
-                    </p>
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label">Abonnement bientôt expiré</label>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <input
-                        className="izi-input"
-                        type="number"
-                        min="1"
-                        max="60"
-                        style={{ maxWidth: 100 }}
-                        value={profile.alerte_expiration_jours || 7}
-                        onChange={handleChange('alerte_expiration_jours')}
-                      />
-                      <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>jours avant la date de fin</span>
-                    </div>
-                    <p className="form-hint">
-                      Ex. <strong>7</strong> → 7 jours avant l'expiration d'un abonnement, tu vois
-                      une alerte sur le dashboard + (si activé) l'élève reçoit un rappel pour
-                      penser à renouveler.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Paiement en attente</label>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <input
-                      className="izi-input"
-                      type="number"
-                      min="1"
-                      max="90"
-                      style={{ maxWidth: 100 }}
-                      value={profile.alerte_paiement_attente_jours || 14}
-                      onChange={handleChange('alerte_paiement_attente_jours')}
-                    />
-                    <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>jours après émission</span>
-                  </div>
-                  <p className="form-hint">
-                    Ex. <strong>14</strong> → quand un paiement (chèque, virement, espèces) reste
-                    marqué « en attente » depuis 14 jours, alerte sur ton dashboard pour relancer
-                    l'élève. Pas de notif auto envoyée à l'élève sur ce point — c'est à toi de
-                    décider du ton (gentil rappel ou plus ferme).
-                  </p>
-                </div>
-              </div>
-
-              {/* Règles d'annulation */}
-              <ReglesAnnulationSection
-                profile={profile}
-                setProfile={setProfile}
-                setDirty={setDirty}
-              />
-
-              {/* Champs collectés sur les fiches élèves */}
-              <ChampsElevesSection
-                profile={profile}
-                setProfile={setProfile}
-                setDirty={setDirty}
-              />
-
-              {/* Notifications élèves automatiques */}
-              <NotifsElevesSection
-                profile={profile}
-                setProfile={setProfile}
-                setDirty={setDirty}
-              />
-
-              {/* Visibilité par défaut des cours */}
-              <VisibiliteSection
-                profile={profile}
-                setProfile={setProfile}
-                setDirty={setDirty}
-              />
-
-              {/* Cours d'essai pour visiteurs */}
-              <CoursEssaiSection
-                profile={profile}
-                setProfile={setProfile}
-                setDirty={setDirty}
-              />
-
-              {/* Paiement en ligne (Stripe Payment Link) */}
-              <StripePaiementSection
-                profile={profile}
-                setProfile={setProfile}
-                setDirty={setDirty}
-              />
-
-              <button onClick={handleSave} className="izi-btn izi-btn-primary save-btn" disabled={saving}>
-                <Save size={18} /> {saving ? 'Enregistrement...' : 'Enregistrer'}
-              </button>
-            </div>
-          )}
+          <button onClick={handleSave} className="izi-btn izi-btn-primary save-btn" disabled={saving}>
+            <Save size={18} /> {saving ? 'Enregistrement...' : 'Enregistrer'}
+          </button>
         </div>
       )}
 
@@ -2681,6 +2565,104 @@ export default function Parametres() {
       {/* ============================================ */}
       {activeTab === 'notifications' && (
         <div className="tab-content animate-fade-in">
+
+          {/* Seuils d'alerte — pilotent à la fois (1) les alertes affichées
+              sur le dashboard prof et (2) les notifications auto envoyées
+              aux élèves (cf. section "Notifications élèves auto" ci-dessous
+              pour activer les canaux email/SMS).
+              Déplacé ici depuis l'onglet Réglages (2026-06-01). */}
+          <div className="section izi-card">
+            <div className="section-top">
+              <div className="section-icon"><Bell size={20} /></div>
+              <h2>Seuils d'alerte</h2>
+            </div>
+            <p className="section-desc">
+              Ces seuils déterminent quand l'app considère qu'une situation mérite ton
+              attention. Ils servent à <strong>(1)</strong> afficher des alertes sur
+              ton tableau de bord, et <strong>(2)</strong> déclencher les
+              notifications automatiques envoyées à tes élèves (si activées
+              ci-dessous dans <em>Notifications élèves auto</em>).
+            </p>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label className="form-label">Carnet bientôt épuisé</label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <input
+                    className="izi-input"
+                    type="number"
+                    min="1"
+                    max="20"
+                    style={{ maxWidth: 100 }}
+                    value={profile.alerte_seances_seuil || 2}
+                    onChange={handleChange('alerte_seances_seuil')}
+                  />
+                  <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>séances ou moins</span>
+                </div>
+                <p className="form-hint">
+                  Ex. <strong>2</strong> → quand un élève n'a plus que 2 séances dans son
+                  carnet, tu vois une alerte « Caroline a 2 séances restantes » + (si activé)
+                  l'élève reçoit un email type « Plus que 2 séances dans ton carnet ».
+                </p>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Abonnement bientôt expiré</label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <input
+                    className="izi-input"
+                    type="number"
+                    min="1"
+                    max="60"
+                    style={{ maxWidth: 100 }}
+                    value={profile.alerte_expiration_jours || 7}
+                    onChange={handleChange('alerte_expiration_jours')}
+                  />
+                  <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>jours avant la date de fin</span>
+                </div>
+                <p className="form-hint">
+                  Ex. <strong>7</strong> → 7 jours avant l'expiration d'un abonnement, tu vois
+                  une alerte sur le dashboard + (si activé) l'élève reçoit un rappel pour
+                  penser à renouveler.
+                </p>
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Paiement en attente</label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <input
+                  className="izi-input"
+                  type="number"
+                  min="1"
+                  max="90"
+                  style={{ maxWidth: 100 }}
+                  value={profile.alerte_paiement_attente_jours || 14}
+                  onChange={handleChange('alerte_paiement_attente_jours')}
+                />
+                <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>jours après émission</span>
+              </div>
+              <p className="form-hint">
+                Ex. <strong>14</strong> → quand un paiement (chèque, virement, espèces) reste
+                marqué « en attente » depuis 14 jours, alerte sur ton dashboard pour relancer
+                l'élève. Pas de notif auto envoyée à l'élève sur ce point — c'est à toi de
+                décider du ton (gentil rappel ou plus ferme).
+              </p>
+            </div>
+          </div>
+
+          {/* Notifications élèves automatiques — déplacé ici depuis l'onglet
+              Réglages (2026-06-01). */}
+          <NotifsElevesSection
+            profile={profile}
+            setProfile={setProfile}
+            setDirty={setDirty}
+          />
+
+          {/* Bouton couvrant les seuils + notifs élèves ci-dessus */}
+          <button onClick={handleSave} className="izi-btn izi-btn-primary save-btn" disabled={saving}>
+            <Save size={18} /> {saving ? 'Enregistrement...' : 'Enregistrer'}
+          </button>
 
           {/* ── Sous-onglets ── */}
           <div className="notif-subtabs">
@@ -2935,6 +2917,18 @@ export default function Parametres() {
       {/* ============================================ */}
       {activeTab === 'regles' && (
         <div className="tab-content animate-fade-in">
+          {/* Règles d'annulation — déplacé ici depuis l'onglet Réglages
+              (2026-06-01). S'enregistre via handleSave (champ regles_annulation). */}
+          <ReglesAnnulationSection
+            profile={profile}
+            setProfile={setProfile}
+            setDirty={setDirty}
+          />
+
+          <button onClick={handleSave} className="izi-btn izi-btn-primary save-btn" disabled={saving}>
+            <Save size={18} /> {saving ? 'Enregistrement...' : 'Enregistrer'}
+          </button>
+
           <ReglesMetierTab profileId={profile.id} />
         </div>
       )}
