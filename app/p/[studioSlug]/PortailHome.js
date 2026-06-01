@@ -95,7 +95,14 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
   }, [cours]);
 
   const filtered = useMemo(() => {
+    // Masque les cours déjà commencés : un cours de 9h disparaît à 9h00,
+    // pas à minuit. Même règle que "prochainCours" (heure locale du visiteur).
+    const todayIso = fmtIsoDate(new Date());
+    const now = new Date();
+    const nowHH = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
     return cours.filter(c => {
+      if (c.date < todayIso) return false;
+      if (c.date === todayIso && c.heure && c.heure.slice(0, 5) <= nowHH) return false;
       const matchSearch = !search ||
         (c.nom || '').toLowerCase().includes(search.toLowerCase()) ||
         (c.type_cours || '').toLowerCase().includes(search.toLowerCase()) ||
