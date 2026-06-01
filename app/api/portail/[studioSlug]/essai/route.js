@@ -140,8 +140,6 @@ export async function POST(request, { params }) {
 
   // 4. Selon le mode
   const isManuel = profile.essai_mode === 'manuel';
-  const isSemi   = profile.essai_mode === 'semi';
-  const isAuto   = profile.essai_mode === 'auto';
 
   if (!isManuel) {
     // auto OU semi : finaliser immédiatement
@@ -153,7 +151,22 @@ export async function POST(request, { params }) {
     }
   }
 
-  // 5. Emails (non-bloquants)
+  // 5. Notif in-app pour la prof (cloche) — TOUS les modes, pour qu'elle soit
+  // toujours au courant d'une nouvelle demande/inscription d'essai (avant, la
+  // demande tombait en "Finalisées" sans aucune alerte en mode auto/semi).
+  const coursDateStr = new Date(cours.date + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+  const coursHeureStr = cours.heure ? ' · ' + cours.heure.slice(0, 5).replace(':', 'h') : '';
+  await supabaseAdmin.from('notifications').upsert({
+    profile_id: profile.id,
+    type: 'essai_demande',
+    titre: isManuel ? `✨ Demande d'essai à valider — ${prenom}` : `✨ Nouveau cours d'essai — ${prenom}`,
+    corps: `${cours.nom} · ${coursDateStr}${coursHeureStr}`,
+    data: { demande_id: demande.id, cours_id: cours.id, prenom },
+    ref_key: `essai_demande_${demande.id}`,
+    expires_at: null,
+  }, { onConflict: 'profile_id,ref_key', ignoreDuplicates: true });
+
+  // 6. Emails (non-bloquants)
   const stripeLink = profile.essai_paiement === 'stripe' ? profile.essai_stripe_payment_link : null;
   if (isManuel) {
     emailEnAttenteVisiteur({ profileNom: profile.studio_nom, prenom, email, cours });
@@ -174,9 +187,8 @@ export async function POST(request, { params }) {
       ville: profile.ville,
       telephone: profile.telephone,
     });
-    if (isSemi) {
-      emailNotifPro({ proEmail: profile.email_contact, proNom: profile.prenom, modeManuel: false, demande, cours });
-    }
+    // auto ET semi : on prévient toujours la prof par email d'une inscription
+    emailNotifPro({ proEmail: profile.email_contact, proNom: profile.prenom, modeManuel: false, demande, cours });
   }
 
   return Response.json({

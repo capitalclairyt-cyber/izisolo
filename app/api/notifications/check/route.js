@@ -136,11 +136,12 @@ export async function POST() {
 
     const { data: nouveaux } = await supabase
       .from('clients')
-      .select('id, prenom, nom, created_at')
+      .select('id, prenom, nom, created_at, source')
       .eq('profile_id', user.id)
       .gte('created_at', since48h.toISOString());
 
-    for (const c of nouveaux || []) {
+    // Les inscriptions via cours d'essai ont leur propre notif dédiée (évite le doublon)
+    for (const c of (nouveaux || []).filter(c => c.source !== 'Cours d\'essai')) {
       const createdDay = c.created_at.split('T')[0];
       toUpsert.push({
         profile_id: user.id,
