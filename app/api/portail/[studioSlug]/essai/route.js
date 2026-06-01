@@ -65,7 +65,7 @@ export async function POST(request, { params }) {
   // 1. Profil + config essai
   const { data: profile } = await supabaseAdmin
     .from('profiles')
-    .select('id, prenom, studio_nom, email_contact, essai_actif, essai_mode, essai_paiement, essai_prix, essai_stripe_payment_link, essai_message')
+    .select('id, prenom, studio_nom, email_contact, adresse, code_postal, ville, telephone, essai_actif, essai_mode, essai_paiement, essai_prix, essai_stripe_payment_link, essai_message')
     .eq('studio_slug', studioSlug)
     .single();
 
@@ -168,6 +168,11 @@ export async function POST(request, { params }) {
       paiement: profile.essai_paiement,
       prix: profile.essai_prix,
       stripeLink,
+      proEmail: profile.email_contact,
+      adresse: profile.adresse,
+      codePostal: profile.code_postal,
+      ville: profile.ville,
+      telephone: profile.telephone,
     });
     if (isSemi) {
       emailNotifPro({ proEmail: profile.email_contact, proNom: profile.prenom, modeManuel: false, demande, cours });
