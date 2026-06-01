@@ -36,10 +36,12 @@ const ACTIONS_PAR_CAS = {
     { value: 'decompte',     label: 'Séance décomptée',            desc: 'On retire la séance du carnet.' },
     { value: 'excuse',       label: 'Excusé exceptionnellement',   desc: 'On rend la séance.' },
     { value: 'dette_creee',  label: 'Dette créée',                 desc: 'À régulariser au prochain achat.' },
+    { value: 'ignore',       label: 'Ignorer',                     desc: 'Marquer le cas comme vu, sans aucune action.' },
   ],
   no_show: [
     { value: 'decompte',     label: 'Séance décomptée',            desc: 'Politique stricte appliquée cette fois.' },
     { value: 'excuse',       label: 'Excusé',                      desc: 'Crédit reporté.' },
+    { value: 'ignore',       label: 'Ignorer',                     desc: 'Marquer le cas comme vu, sans aucune action.' },
   ],
   cours_annule_prof: [
     { value: 'credit_rendu', label: 'Crédit restitué',             desc: 'La séance est recréditée sur le carnet.' },
@@ -52,10 +54,12 @@ const ACTIONS_PAR_CAS = {
     { value: 'nouveau_carnet', label: 'Nouveau carnet vendu',      desc: 'L\'élève a renouvelé son carnet.' },
     { value: 'unitaire',       label: 'Cours payé à l\'unité',     desc: 'L\'élève a payé ce cours en one-shot.' },
     { value: 'annule',         label: 'Réservation annulée',       desc: 'On retire l\'inscription.' },
+    { value: 'ignore',         label: 'Ignorer',                   desc: 'Marquer le cas comme vu, sans aucune action.' },
   ],
   liste_attente: [
     { value: 'place_donnee', label: 'Place attribuée',             desc: 'L\'élève a confirmé son inscription.' },
     { value: 'declinee',     label: 'Place déclinée',              desc: 'L\'élève n\'a pas confirmé / pas pris la place.' },
+    { value: 'ignore',       label: 'Ignorer',                     desc: 'Marquer le cas comme vu, sans aucune action.' },
   ],
   workshop_vs_cours: [
     { value: 'paye_stripe',  label: 'Paiement Stripe reçu',        desc: 'L\'élève a réglé via le lien Stripe.' },
