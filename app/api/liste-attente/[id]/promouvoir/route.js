@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/api-auth';
 import { createClient as createAdminSupabase } from '@supabase/supabase-js';
 import { Resend } from 'resend';
+import { infosPratiquesBlock } from '@/lib/email-helpers';
 
 /**
  * POST /api/liste-attente/[id]/promouvoir
@@ -125,6 +126,12 @@ export async function POST(request, { params }) {
         ? new Date(cours.date + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })
         : 'la date prévue';
       const heureStr = cours.heure ? cours.heure.slice(0, 5).replace(':', 'h') : '';
+      const { data: studio } = await supabase
+        .from('profiles')
+        .select('studio_nom, studio_slug, adresse, code_postal, ville, telephone, email_contact')
+        .eq('id', profile.id)
+        .single();
+      const infosBlock = infosPratiquesBlock({ adresse: studio?.adresse, codePostal: studio?.code_postal, ville: studio?.ville, telephone: studio?.telephone, email: studio?.email_contact, studioSlug: studio?.studio_slug, profileNom: studio?.studio_nom });
       await resend.emails.send({
         from: process.env.RESEND_FROM_EMAIL || 'IziSolo <bonjour@izisolo.fr>',
         ...(user?.email ? { reply_to: user.email } : {}),
@@ -141,6 +148,7 @@ export async function POST(request, { params }) {
               ${cours.lieu ? `<br/><span style="color:#888;">📍 ${cours.lieu}</span>` : ''}
             </div>
             <p style="color:#555;margin:0 0 20px;">Ta réservation est <strong>déjà enregistrée</strong>. Tu n'as rien à faire — à très bientôt !</p>
+            ${infosBlock}
             <p style="color:#aaa;font-size:0.8rem;margin:32px 0 0;border-top:1px solid #eee;padding-top:16px;text-align:center;">
               Propulsé par <a href="https://www.izisolo.fr" style="color:#b87333;">IziSolo</a>
             </p>

@@ -5,6 +5,7 @@ import { checkAntiBot, ipFromRequest } from '@/lib/antibot';
 import { getRegle } from '@/lib/regles-metier';
 import { sendNotifElevePourRegle } from '@/lib/notif-eleve-regle';
 import { getDelaiPourCours } from '@/lib/regles-annulation';
+import { infosPratiquesBlock } from '@/lib/email-helpers';
 
 export async function POST(request, { params }) {
   const { studioSlug } = await params;
@@ -45,7 +46,7 @@ export async function POST(request, { params }) {
   // Charge aussi regles_metier pour appliquer la règle "élève sans carnet".
   const { data: profile } = await supabaseAdmin
     .from('profiles')
-    .select('id, studio_nom, regles_metier, regles_annulation')
+    .select('id, studio_nom, regles_metier, regles_annulation, adresse, code_postal, ville, telephone, email_contact')
     .eq('studio_slug', studioSlug)
     .single();
 
@@ -488,6 +489,7 @@ export async function POST(request, { params }) {
       const heureStr = cours.heure ? cours.heure.slice(0, 5).replace(':', 'h') : '';
       const espaceUrl = magicLink || `${process.env.NEXT_PUBLIC_APP_URL || 'https://www.izisolo.fr'}/p/${studioSlug}/espace`;
       const delaiAnnulation = getDelaiPourCours(profile, cours.type_cours);
+      const infosBlock = infosPratiquesBlock({ adresse: profile.adresse, codePostal: profile.code_postal, ville: profile.ville, telephone: profile.telephone, email: profile.email_contact, studioSlug, profileNom: profile.studio_nom });
       magicLinkSent = !!magicLink;
 
       await resend.emails.send({
@@ -521,6 +523,7 @@ export async function POST(request, { params }) {
               <strong>Annulation flexible</strong><br/>
               Tu peux annuler depuis ton espace jusqu'à ${delaiAnnulation}h avant le cours.
             </div>
+            ${infosBlock}
             <p style="color: #aaa; font-size: 0.8rem; margin: 32px 0 0; border-top: 1px solid #eee; padding-top: 16px; text-align: center;">
               Propulsé par <a href="https://www.izisolo.fr" style="color: #d4a0a0;">IziSolo</a>
             </p>
