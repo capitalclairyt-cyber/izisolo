@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Save, User, Building2, MapPin, Plus, Trash2, Sparkles, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Save, User, Building2, MapPin, Plus, Trash2, Sparkles, AlertTriangle, Camera, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase';
 import { validerEmail, validerTelephone, formaterTelephone, validerSiret, formaterSiret } from '@/lib/validation';
@@ -29,7 +29,9 @@ export default function NouveauClient() {
   const [statut, setStatut] = useState('prospect');
   const [prefilled, setPrefilled] = useState(false); // animation quand prérempli
   const [doublonsSuggeres, setDoublonsSuggeres] = useState([]); // clients similaires détectés
+  const [extracting, setExtracting] = useState(false); // lecture photo en cours
   const debounceRef = useRef(null);
+  const photoInputRef = useRef(null);
 
   const [form, setForm] = useState({
     prenom: '', nom: '', email: '', telephone: '',
@@ -125,6 +127,65 @@ export default function NouveauClient() {
   // Commune autocomplete
   const handleCommuneSelect = ({ codePostal, ville }) => {
     setForm(prev => ({ ...prev, code_postal: codePostal || prev.code_postal, ville: ville || prev.ville }));
+  };
+
+  // ── Import depuis une photo (carte de visite, fiche papier, capture…) ───────
+  // La photo est lue par l'IA (Claude vision) côté serveur pour préremplir le
+  // formulaire. L'image n'est jamais stockée. La prof vérifie/corrige toujours
+  // avant d'enregistrer. Réservé Pro+ (géré côté API → toast si non éligible).
+  const handlePhotoSelect = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // reset pour autoriser une nouvelle sélection du même fichier
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      toast.warning('Choisis une image (photo ou capture d\'écran).');
+      return;
+    }
+    setExtracting(true);
+    try {
+      // Fichier → base64 (sans le préfixe data:)
+      const dataUrl = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(new Error('Lecture du fichier impossible'));
+        reader.readAsDataURL(file);
+      });
+      const match = /^data:(.+);base64,(.*)$/.exec(String(dataUrl));
+      if (!match) throw new Error('Format d\'image non reconnu');
+      const [, media_type, data] = match;
+
+      const res = await fetch('/api/clients/extract-photo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ media_type, data }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Lecture de la photo impossible.');
+
+      const ex = json.extracted || {};
+      const hasAny = ex.prenom || ex.nom || ex.email || ex.telephone || ex.notes;
+      if (!hasAny) {
+        toast.info('Aucune info trouvée sur la photo. Saisis le contact à la main.');
+        return;
+      }
+
+      setMode('particulier');
+      setForm(prev => ({
+        ...prev,
+        prenom: ex.prenom || prev.prenom,
+        nom: ex.nom || prev.nom,
+        email: ex.email || prev.email,
+        telephone: ex.telephone ? formaterTelephone(ex.telephone) : prev.telephone,
+        notes: ex.notes ? (prev.notes ? `${prev.notes}\n${ex.notes}` : ex.notes) : prev.notes,
+      }));
+      setPrefilled(true);
+      setTimeout(() => setPrefilled(false), 2000);
+      toast.success('Photo lue ! Vérifie et complète avant d\'enregistrer.');
+    } catch (err) {
+      toast.error(err.message || 'Lecture de la photo impossible.');
+    } finally {
+      setExtracting(false);
+    }
   };
 
   const addLieu = () => {
@@ -393,14 +454,45 @@ export default function NouveauClient() {
         ) : (
           <>
             {/* Mode Particulier */}
+
+            {/* Import depuis une photo : carte de visite, fiche papier, capture… */}
+            <div className="photo-import">
+              <input
+                ref={photoInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={handlePhotoSelect}
+                hidden
+              />
+              <button
+                type="button"
+                className="izi-btn izi-btn-ghost photo-import-btn"
+                onClick={() => photoInputRef.current?.click()}
+                disabled={extracting}
+              >
+                {extracting
+                  ? <><Loader2 size={16} className="spin" /> Lecture de la photo…</>
+                  : <><Camera size={16} /> Remplir depuis une photo</>}
+              </button>
+              <p className="photo-import-hint">
+                Carte de visite, fiche papier ou capture d'écran — l'IA pré-remplit, tu vérifies.
+              </p>
+              {prefilled && (
+                <div className="prefill-badge">
+                  <Sparkles size={14} /> Informations préremplies
+                </div>
+              )}
+            </div>
+
             <div className="form-row">
               <div className="form-group">
                 <label className="form-label" htmlFor="nc-prenom">Prénom</label>
-                <input id="nc-prenom" className="izi-input" type="text" value={form.prenom} onChange={handleChange('prenom')} placeholder="Marie" />
+                <input id="nc-prenom" className={`izi-input ${prefilled ? 'izi-input-prefilled' : ''}`} type="text" value={form.prenom} onChange={handleChange('prenom')} placeholder="Marie" />
               </div>
               <div className="form-group">
                 <label className="form-label" htmlFor="nc-nom">Nom *</label>
-                <input id="nc-nom" className="izi-input" type="text" value={form.nom} onChange={handleChange('nom')} placeholder="Dupont" required aria-required="true" />
+                <input id="nc-nom" className={`izi-input ${prefilled ? 'izi-input-prefilled' : ''}`} type="text" value={form.nom} onChange={handleChange('nom')} placeholder="Dupont" required aria-required="true" />
               </div>
             </div>
 
@@ -611,6 +703,20 @@ export default function NouveauClient() {
           0% { background: var(--brand-light); }
           100% { background: var(--bg-card); }
         }
+
+        /* Import depuis une photo */
+        .photo-import {
+          display: flex; flex-direction: column; align-items: flex-start; gap: 6px;
+          padding: 14px; margin-bottom: 4px;
+          background: var(--brand-light, #f5f3ef);
+          border: 1px dashed var(--brand, #b08968);
+          border-radius: var(--radius-md, 12px);
+        }
+        .photo-import-btn { align-self: stretch; justify-content: center; }
+        @media (min-width: 600px) { .photo-import-btn { align-self: flex-start; } }
+        .photo-import-hint { margin: 0; font-size: 0.75rem; color: var(--text-muted); line-height: 1.4; }
+        .spin { animation: photoSpin 0.8s linear infinite; }
+        @keyframes photoSpin { to { transform: rotate(360deg); } }
 
         .section-label { display: flex; align-items: center; gap: 6px; font-size: 0.875rem; font-weight: 700; color: var(--brand-700); margin-top: 4px; padding-top: 8px; border-top: 1px solid var(--border); }
         .section-hint { font-size: 0.75rem; color: var(--text-muted); margin: -8px 0 0; }
