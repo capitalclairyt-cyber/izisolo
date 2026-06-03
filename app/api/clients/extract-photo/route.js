@@ -40,7 +40,7 @@ const extractSchema = z.object({
 export async function POST(request) {
   let auth;
   try { auth = await requireAuth(); } catch (res) { return res; }
-  const { profile } = auth;
+  const { profile, supabase } = auth;
 
   // Réservé Pro+ (essai inclus, donc dispo pour les nouvelles utilisatrices)
   const plan = effectivePlan(profile);
@@ -63,6 +63,39 @@ export async function POST(request) {
   }
   if (data.length > MAX_BASE64_LEN) {
     return Response.json({ error: 'Image trop lourde (max ~6 Mo).' }, { status: 413 });
+  }
+
+  // Garde-fous coût IA, PAR PROF (cf. migration v51) : on incrémente avant
+  // d'appeler le modèle → chaque appel payant est compté.
+  //   DAILY_LIMIT   : anti-abus / anti-boucle
+  //   MONTHLY_LIMIT : 2 €/mois/prof au pire cas Opus 4.8 (~0,025 €/appel)
+  const DAILY_LIMIT = 50;
+  const MONTHLY_LIMIT = 80;
+  try {
+    const { data: gate, error: gateErr } = await supabase.rpc('check_and_bump_ia_usage', {
+      p_feature: 'extract_photo',
+      p_daily_limit: DAILY_LIMIT,
+      p_monthly_limit: MONTHLY_LIMIT,
+    });
+    if (gateErr) {
+      // Fail-open volontaire : un souci de compteur ne doit pas casser la
+      // feature. Le coût d'un appel isolé est négligeable ; un plafond de
+      // dépense dans la Console Anthropic reste le filet ultime à 100%.
+      console.error('[extract-photo] usage gate error (fail-open):', gateErr.message);
+    } else if (gate && gate.allowed === false) {
+      if (gate.reason === 'monthly') {
+        return Response.json(
+          { error: "Tu as atteint ta limite d'import par photo pour ce mois-ci. Elle se réinitialise le 1er du mois prochain." },
+          { status: 429 }
+        );
+      }
+      return Response.json(
+        { error: `Limite du jour atteinte (${DAILY_LIMIT} lectures photo). Réessaie demain.` },
+        { status: 429 }
+      );
+    }
+  } catch (e) {
+    console.error('[extract-photo] usage gate exception (fail-open):', e?.message);
   }
 
   const systemPrompt = `Tu extrais les coordonnées d'UN seul contact (un·e élève) depuis une image fournie par une prof de yoga/pilates/bien-être : carte de visite, fiche d'inscription papier, capture d'écran d'un message, ou note manuscrite.
