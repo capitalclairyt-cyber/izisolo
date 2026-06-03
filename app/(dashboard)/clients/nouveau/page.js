@@ -129,6 +129,38 @@ export default function NouveauClient() {
     setForm(prev => ({ ...prev, code_postal: codePostal || prev.code_postal, ville: ville || prev.ville }));
   };
 
+  // Réduit + compresse l'image AVANT envoi. Les photos de téléphone font
+  // 3-8 Mo ; en base64 (+33%) ça dépasse la limite de body Vercel (~4.5 Mo),
+  // qui répond alors en texte brut "Request Entity Too Large" → erreur
+  // "Unexpected token" côté client. On downscale à 1600px max + JPEG q0.82 :
+  // largement assez pour lire le texte, payload ~200-400 Ko.
+  const compressImage = (file) => new Promise((resolve, reject) => {
+    const MAX_DIM = 1600;
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      let { width, height } = img;
+      if (!width || !height) { reject(new Error('Image illisible')); return; }
+      if (Math.max(width, height) > MAX_DIM) {
+        const ratio = MAX_DIM / Math.max(width, height);
+        width = Math.round(width * ratio);
+        height = Math.round(height * ratio);
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, width, height);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+      const data = dataUrl.split(',')[1];
+      if (!data) { reject(new Error('Compression de l\'image impossible')); return; }
+      resolve({ media_type: 'image/jpeg', data });
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Image illisible (format non supporté ?)')); };
+    img.src = url;
+  });
+
   // ── Import depuis une photo (carte de visite, fiche papier, capture…) ───────
   // La photo est lue par l'IA (Claude vision) côté serveur pour préremplir le
   // formulaire. L'image n'est jamais stockée. La prof vérifie/corrige toujours
@@ -143,23 +175,19 @@ export default function NouveauClient() {
     }
     setExtracting(true);
     try {
-      // Fichier → base64 (sans le préfixe data:)
-      const dataUrl = await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = () => reject(new Error('Lecture du fichier impossible'));
-        reader.readAsDataURL(file);
-      });
-      const match = /^data:(.+);base64,(.*)$/.exec(String(dataUrl));
-      if (!match) throw new Error('Format d\'image non reconnu');
-      const [, media_type, data] = match;
+      // Downscale + compression côté client (évite la limite de body Vercel)
+      const { media_type, data } = await compressImage(file);
 
       const res = await fetch('/api/clients/extract-photo', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ media_type, data }),
       });
-      const json = await res.json();
+      // Réponse robuste : si le serveur renvoie autre chose que du JSON
+      // (page d'erreur proxy, timeout…), on ne plante pas sur res.json().
+      let json;
+      try { json = await res.json(); }
+      catch { throw new Error(res.ok ? 'Réponse inattendue du serveur, réessaie.' : `Lecture impossible (erreur ${res.status}).`); }
       if (!res.ok) throw new Error(json.error || 'Lecture de la photo impossible.');
 
       const ex = json.extracted || {};
