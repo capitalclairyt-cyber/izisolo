@@ -30,6 +30,10 @@ export default function NouveauClient() {
   const [prefilled, setPrefilled] = useState(false); // animation quand prérempli
   const [doublonsSuggeres, setDoublonsSuggeres] = useState([]); // clients similaires détectés
   const [extracting, setExtracting] = useState(false); // lecture photo en cours
+  // Incrémenté à chaque préremplissage photo pour forcer le remount de
+  // DateNaissanceInput / AdresseInput (ils ne resynchronisent pas leur état
+  // interne sur un changement externe de `value`).
+  const [prefillKey, setPrefillKey] = useState(0);
   const debounceRef = useRef(null);
   const photoInputRef = useRef(null);
 
@@ -191,21 +195,35 @@ export default function NouveauClient() {
       if (!res.ok) throw new Error(json.error || 'Lecture de la photo impossible.');
 
       const ex = json.extracted || {};
-      const hasAny = ex.prenom || ex.nom || ex.email || ex.telephone || ex.notes;
+      const hasAny = ex.prenom || ex.nom || ex.email || ex.telephone || ex.notes
+        || ex.date_naissance || ex.adresse_rue || ex.code_postal || ex.ville;
       if (!hasAny) {
         toast.info('Aucune info trouvée sur la photo. Saisis le contact à la main.');
         return;
       }
 
       setMode('particulier');
+      // Date de naissance : on ne garde que du strict ISO AAAA-MM-JJ valide
+      // (DateNaissanceInput ignore tout autre format → champ vide sinon), et
+      // seulement si le champ est activé dans la config (sinon non revu/non visible).
+      const isoDob = (fieldsConfig.predefined.date_naissance && /^\d{4}-\d{2}-\d{2}$/.test(ex.date_naissance || ''))
+        ? ex.date_naissance : '';
       setForm(prev => ({
         ...prev,
         prenom: ex.prenom || prev.prenom,
         nom: ex.nom || prev.nom,
         email: ex.email || prev.email,
         telephone: ex.telephone ? formaterTelephone(ex.telephone) : prev.telephone,
+        date_naissance: isoDob || prev.date_naissance,
         notes: ex.notes ? (prev.notes ? `${prev.notes}\n${ex.notes}` : ex.notes) : prev.notes,
       }));
+      // Adresse (mode particulier = champ adressePostale, format "rue\nCP ville")
+      const rue = (ex.adresse_rue || '').trim();
+      const cpVille = [(ex.code_postal || '').trim(), (ex.ville || '').trim()].filter(Boolean).join(' ');
+      const adresseExtraite = [rue, cpVille].filter(Boolean).join('\n');
+      if (adresseExtraite && fieldsConfig.predefined.adresse) setAdressePostale(adresseExtraite);
+      // Force le remount des sous-champs date/adresse pour qu'ils affichent les valeurs
+      setPrefillKey(k => k + 1);
       setPrefilled(true);
       setTimeout(() => setPrefilled(false), 2000);
       toast.success('Photo lue ! Vérifie et complète avant d\'enregistrer.');
@@ -554,6 +572,7 @@ export default function NouveauClient() {
                   </span>
                 </label>
                 <DateNaissanceInput
+                  key={`dob-${prefillKey}`}
                   id="nc-date-naissance"
                   className="izi-input"
                   value={form.date_naissance}
@@ -566,6 +585,7 @@ export default function NouveauClient() {
               <div className="form-group">
                 <label className="form-label" htmlFor="nc-adresse-postale">Adresse postale</label>
                 <AdresseInput
+                  key={`addr-${prefillKey}`}
                   id="nc-adresse-postale"
                   value={adressePostale}
                   onChange={setAdressePostale}

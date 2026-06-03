@@ -30,6 +30,10 @@ const extractSchema = z.object({
   nom: z.string().max(120).nullable().optional(),
   email: z.string().max(254).nullable().optional(),
   telephone: z.string().max(40).nullable().optional(),
+  date_naissance: z.string().max(10).nullable().optional(), // ISO AAAA-MM-JJ
+  adresse_rue: z.string().max(200).nullable().optional(),
+  code_postal: z.string().max(10).nullable().optional(),
+  ville: z.string().max(120).nullable().optional(),
   notes: z.string().max(1000).nullable().optional(),
 });
 
@@ -64,12 +68,14 @@ export async function POST(request) {
   const systemPrompt = `Tu extrais les coordonnées d'UN seul contact (un·e élève) depuis une image fournie par une prof de yoga/pilates/bien-être : carte de visite, fiche d'inscription papier, capture d'écran d'un message, ou note manuscrite.
 
 Réponds UNIQUEMENT par un objet JSON valide, sans aucun texte autour, avec exactement ces clés :
-{ "prenom": string|null, "nom": string|null, "email": string|null, "telephone": string|null, "notes": string|null }
+{ "prenom": string|null, "nom": string|null, "email": string|null, "telephone": string|null, "date_naissance": string|null, "adresse_rue": string|null, "code_postal": string|null, "ville": string|null, "notes": string|null }
 
 Règles strictes :
 - N'invente RIEN. Si une info est absente, illisible ou incertaine, mets null.
 - "telephone" : format français lisible si possible (ex. "06 12 34 56 78").
-- "notes" : uniquement des infos utiles réellement lues (niveau, objectif, contrainte/blessure mentionnée…). Jamais une description de l'image. null si rien d'utile.
+- "date_naissance" : format ISO AAAA-MM-JJ. Les dates manuscrites françaises sont JJ/MM/AAAA (ex. "05/12/1990" → "1990-12-05"). null si absente ou ambiguë.
+- "adresse_rue" : numéro + nom de rue uniquement (ex. "12 rue des Lilas"). "code_postal" : 5 chiffres. "ville" : nom de la ville. null pour chaque partie absente.
+- "notes" : uniquement des infos utiles réellement lues (niveau, objectif, contrainte/blessure mentionnée…). Jamais une description de l'image, ni les infos déjà mises dans les autres champs. null si rien d'utile.
 - S'il y a plusieurs contacts sur l'image, prends le plus visible/principal.`;
 
   const messages = [{
