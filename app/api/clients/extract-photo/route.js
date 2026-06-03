@@ -88,7 +88,9 @@ Règles strictes :
 
   let raw;
   try {
-    raw = await askClaude(systemPrompt, messages, { maxTokens: 512 });
+    // Opus 4.8 = meilleure lecture (manuscrit inclus). maxTokens large pour
+    // laisser de la place à un éventuel "thinking" avant le JSON.
+    raw = await askClaude(systemPrompt, messages, { model: 'claude-opus-4-8', maxTokens: 1500 });
   } catch (err) {
     console.error('[extract-photo] claude error:', err);
     return Response.json({ error: 'Lecture de la photo impossible pour le moment, réessaie.' }, { status: 502 });

@@ -139,7 +139,9 @@ export default function NouveauClient() {
   // "Unexpected token" côté client. On downscale à 1600px max + JPEG q0.82 :
   // largement assez pour lire le texte, payload ~200-400 Ko.
   const compressImage = (file) => new Promise((resolve, reject) => {
-    const MAX_DIM = 1600;
+    // 1568px = la cote optimale d'Anthropic (au-delà, l'API redimensionne de
+    // toute façon → autant éviter une double compression).
+    const MAX_DIM = 1568;
     const url = URL.createObjectURL(file);
     const img = new Image();
     img.onload = () => {
@@ -156,7 +158,7 @@ export default function NouveauClient() {
       canvas.height = height;
       const ctx = canvas.getContext('2d');
       ctx.drawImage(img, 0, 0, width, height);
-      const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
       const data = dataUrl.split(',')[1];
       if (!data) { reject(new Error('Compression de l\'image impossible')); return; }
       resolve({ media_type: 'image/jpeg', data });
