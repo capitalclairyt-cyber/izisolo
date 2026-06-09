@@ -130,9 +130,10 @@ export default function RootLayout({ children }) {
 (function(){try{
   var h=window.location.hash||'';
   if(h.indexOf('access_token=')<0 && h.indexOf('refresh_token=')<0 && h.indexOf('error_description=')<0) return;
+  var path=window.location.pathname||'';
+  if(path.indexOf('/auth/')===0) return;
   var p=new URLSearchParams(h.replace(/^#/,''));
   var t=p.get('type')||'';
-  var path=window.location.pathname||'';
   var n;
   if(path.indexOf('/p/')===0){
     var slug=path.split('/')[2];

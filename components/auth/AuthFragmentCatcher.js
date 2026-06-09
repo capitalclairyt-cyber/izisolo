@@ -16,6 +16,12 @@ import { useEffect } from 'react';
 export default function AuthFragmentCatcher() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
+    const path = window.location.pathname || '';
+    // NE PAS intercepter sur les pages d'auth elles-mêmes : /auth/finaliser
+    // gère déjà le fragment et connaît le `next` cible. Si le catcher se
+    // redéclenchait ici, il écraserait le next (ex: /p/[slug]/espace → /dashboard
+    // → /onboarding pour un élève). C'était LA cause du "j'arrive sur création studio".
+    if (path.startsWith('/auth/')) return;
     const hash = window.location.hash || '';
     // Heuristique : on intercepte UNIQUEMENT si le fragment ressemble à un
     // retour Supabase Auth (access_token / refresh_token / error_description).
