@@ -18,7 +18,9 @@ function buildDemoData(profile) {
     prenom: 'Camille',
     nom: '(démo)',
     email: 'demo@izisolo.fr',
-    telephone: null,
+    telephone: '06 12 34 56 78',
+    adresse_postale: '12 rue des Lilas',
+    ville: 'Gillonnay',
   };
 
   const demoAVenir = [
@@ -100,6 +102,15 @@ function buildDemoData(profile) {
     },
   ];
 
+  const demoARegler = [
+    {
+      id: 'demo-cas-1',
+      case_type: 'eleve_sans_carnet',
+      context: { choix_applique: 'paiement_sur_place', montant: 15, cours_nom: 'Pilates barre' },
+      cours: { nom: 'Pilates barre', date: fmt(addDays(5)), heure: '18:00' },
+    },
+  ];
+
   return {
     profile,
     client: demoClient,
@@ -108,6 +119,7 @@ function buildDemoData(profile) {
     paiements: demoPaiements,
     offresStripe: [],
     abonnements: demoAbonnements,
+    aRegler: demoARegler,
   };
 }
 
@@ -131,7 +143,7 @@ async function getData(studioSlug, userEmail) {
   const [{ data: client }, { data: offresStripe }] = await Promise.all([
     supabase
       .from('clients')
-      .select('id, prenom, nom, email, telephone')
+      .select('id, prenom, nom, email, telephone, adresse_postale, ville')
       .eq('profile_id', profile.id)
       .ilike('email', userEmail)
       .single(),
@@ -145,7 +157,7 @@ async function getData(studioSlug, userEmail) {
   ]);
 
   if (!client) {
-    return { profile, client: null, aVenir: [], passes: [], paiements: [], offresStripe: offresStripe || [], abonnements: [] };
+    return { profile, client: null, aVenir: [], passes: [], paiements: [], offresStripe: offresStripe || [], abonnements: [], aRegler: [] };
   }
 
   // Mes paiements + abonnements actifs (pour afficher le solde)
@@ -198,7 +210,22 @@ async function getData(studioSlug, userEmail) {
     .filter(p => p.cours && p.cours.date < today)
     .sort((a, b) => b.cours.date.localeCompare(a.cours.date));
 
-  return { profile, client, aVenir, passes, paiements: paiements || [], offresStripe: offresStripe || [], abonnements: abonnements || [] };
+  // Paiements à prévoir : cas ouverts (resolu_at null) impliquant une somme due
+  // par l'élève — dette créée ou paiement attendu sur place. Quand la prof
+  // résout le cas (encaissé / offert), il disparaît automatiquement d'ici.
+  const { data: casOuverts } = await supabase
+    .from('cas_a_traiter')
+    .select('id, case_type, context, created_at, cours:cours_id(nom, date, heure)')
+    .eq('profile_id', profile.id)
+    .eq('client_id', client.id)
+    .is('resolu_at', null)
+    .order('created_at', { ascending: false });
+  const aRegler = (casOuverts || []).filter(c => {
+    const ch = c.context?.choix_applique;
+    return ch === 'creer_dette' || ch === 'paiement_sur_place' || c.context?.dette_a_regler === true;
+  });
+
+  return { profile, client, aVenir, passes, paiements: paiements || [], offresStripe: offresStripe || [], abonnements: abonnements || [], aRegler };
 }
 
 export default async function EspacePage({ params, searchParams }) {
@@ -240,6 +267,7 @@ export default async function EspacePage({ params, searchParams }) {
           paiements={demoData.paiements}
           offresStripe={demoData.offresStripe}
           abonnements={demoData.abonnements}
+          aRegler={demoData.aRegler}
           studioSlug={studioSlug}
           userEmail={user.email}
           isDemo={true}
@@ -261,6 +289,7 @@ export default async function EspacePage({ params, searchParams }) {
       paiements={data.paiements || []}
       offresStripe={data.offresStripe || []}
       abonnements={data.abonnements || []}
+      aRegler={data.aRegler || []}
       studioSlug={studioSlug}
       userEmail={user.email}
     />

@@ -99,6 +99,20 @@ async function getStudioData(studioSlug) {
   const clientInfo = user ? await resolveClientInfo(supabase, profile.id, user.email) : null;
   const cours = filterCoursVisibles(coursRaw || [], clientInfo);
 
+  // ── Réservation 1 clic : si le visiteur est un client reconnu de ce studio,
+  // on charge son identité (nom/email pour l'appel /reserver) + la liste des
+  // cours déjà réservés (pour afficher « Inscrit·e » au lieu du bouton).
+  let currentClient = null;
+  let reservedCoursIds = [];
+  if (clientInfo?.client_id) {
+    const [{ data: cli }, { data: pres }] = await Promise.all([
+      supabase.from('clients').select('prenom, nom, email').eq('id', clientInfo.client_id).single(),
+      supabase.from('presences').select('cours_id').eq('client_id', clientInfo.client_id).eq('profile_id', profile.id),
+    ]);
+    if (cli) currentClient = { nom: [cli.prenom, cli.nom].filter(Boolean).join(' ') || cli.email, email: cli.email };
+    reservedCoursIds = (pres || []).map(p => p.cours_id);
+  }
+
   // Count presences per cours
   const coursIds = (cours || []).map(c => c.id);
   let presencesCounts = {};
@@ -136,6 +150,8 @@ async function getStudioData(studioSlug) {
     offresStripe: offresStripe || [],
     offresPubliques: offresPubliques || [],
     sondageActif: sondageActif || null,
+    currentClient,
+    reservedCoursIds,
   };
 }
 
@@ -182,6 +198,8 @@ export default async function PortailPage({ params, searchParams }) {
       studioSlug={studioSlug}
       isPreview={isPreview}
       isDemo={isDemo}
+      currentClient={data.currentClient}
+      reservedCoursIds={data.reservedCoursIds}
     />
   );
 }

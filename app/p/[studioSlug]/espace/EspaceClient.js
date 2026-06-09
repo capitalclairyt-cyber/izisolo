@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Calendar, Clock, MapPin, ArrowLeft, LogOut, CheckCircle, XCircle, Loader, AlertCircle, User, Lock, CreditCard, Ticket, CalendarCheck, Zap, Download, Receipt, MessageCircle, Send, X } from 'lucide-react';
+import { Calendar, Clock, MapPin, ArrowLeft, LogOut, CheckCircle, XCircle, Loader, AlertCircle, User, Lock, CreditCard, Ticket, CalendarCheck, Zap, Download, Receipt, MessageCircle, Send, X, Phone, Home, Pencil, Save, Wallet } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/components/ui/ToastProvider';
 import { evaluerAnnulation, formatDateLimite } from '@/lib/regles-annulation';
@@ -253,13 +253,45 @@ function CoursCard({ presence, profile, studioSlug, onAnnuler, annulEnCours }) {
   );
 }
 
-export default function EspaceClient({ profile, client, aVenir, passes, paiements = [], offresStripe = [], abonnements = [], studioSlug, userEmail, isDemo = false }) {
+export default function EspaceClient({ profile, client, aVenir, passes, paiements = [], offresStripe = [], abonnements = [], aRegler = [], studioSlug, userEmail, isDemo = false }) {
   const router = useRouter();
   const { toast } = useToast();
   const [annulEnCours, setAnnulEnCours] = useState(null);
   const [annuleIds, setAnnuleIds]       = useState([]);
   const [errMsg, setErrMsg]             = useState('');
   const [loggingOut, setLoggingOut]     = useState(false);
+
+  // Coordonnées éditables par l'élève (téléphone / adresse / ville).
+  // `coords` est la source d'affichage ET d'édition → reste à jour après save
+  // sans recharger la page. `coordsBackup` permet d'annuler une édition.
+  const [coords, setCoords] = useState({
+    telephone: client?.telephone || '',
+    adresse_postale: client?.adresse_postale || '',
+    ville: client?.ville || '',
+  });
+  const [coordsBackup, setCoordsBackup] = useState(null);
+  const [editCoords, setEditCoords] = useState(false);
+  const [savingCoords, setSavingCoords] = useState(false);
+
+  const handleSaveCoords = async () => {
+    if (isDemo) { setEditCoords(false); return; }
+    setSavingCoords(true);
+    try {
+      const res = await fetch(`/api/portail/${studioSlug}/profil`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(coords),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json.error || 'Erreur');
+      toast.success('Coordonnées mises à jour 🌿');
+      setEditCoords(false);
+    } catch (e) {
+      toast.error(e.message);
+    } finally {
+      setSavingCoords(false);
+    }
+  };
 
   const handleAnnuler = async (presenceId, tardiveAttendue = false) => {
     setAnnulEnCours(presenceId);
@@ -392,6 +424,65 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
           </Link>
         </div>
       </div>
+
+      {/* Mes coordonnées — affichées + modifiables par l'élève */}
+      {(() => {
+        const hasCoords = !!(coords.telephone || coords.adresse_postale || coords.ville);
+        return (
+          <div className="portail-card" style={{ marginBottom: 20 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+              <h2 className="espace-section-title" style={{ margin: 0 }}>
+                <User size={16} style={{ color: '#d4a0a0' }} /> Mes coordonnées
+              </h2>
+              {!editCoords && !isDemo && (
+                <button
+                  type="button"
+                  onClick={() => { setCoordsBackup(coords); setEditCoords(true); }}
+                  className="espace-coord-edit"
+                >
+                  <Pencil size={13} /> {hasCoords ? 'Modifier' : 'Compléter'}
+                </button>
+              )}
+            </div>
+
+            {editCoords ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 14 }}>
+                <label className="espace-coord-field">
+                  <span><Phone size={13} /> Téléphone</span>
+                  <input value={coords.telephone} onChange={e => setCoords({ ...coords, telephone: e.target.value })} placeholder="06 12 34 56 78" autoComplete="tel" inputMode="tel" />
+                </label>
+                <label className="espace-coord-field">
+                  <span><Home size={13} /> Adresse</span>
+                  <input value={coords.adresse_postale} onChange={e => setCoords({ ...coords, adresse_postale: e.target.value })} placeholder="12 rue des Lilas" autoComplete="street-address" />
+                </label>
+                <label className="espace-coord-field">
+                  <span><MapPin size={13} /> Ville</span>
+                  <input value={coords.ville} onChange={e => setCoords({ ...coords, ville: e.target.value })} placeholder="Gillonnay" autoComplete="address-level2" />
+                </label>
+                <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+                  <button type="button" onClick={handleSaveCoords} disabled={savingCoords} className="portail-btn-primary" style={{ flex: 1 }}>
+                    {savingCoords ? <Loader size={15} className="spin" /> : <><Save size={15} /> Enregistrer</>}
+                  </button>
+                  <button type="button" onClick={() => { if (coordsBackup) setCoords(coordsBackup); setEditCoords(false); }} className="portail-btn-ghost" style={{ flex: 1 }}>
+                    Annuler
+                  </button>
+                </div>
+              </div>
+            ) : hasCoords ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 12 }}>
+                {coords.telephone && <div className="espace-coord-row"><Phone size={14} /> {coords.telephone}</div>}
+                {(coords.adresse_postale || coords.ville) && (
+                  <div className="espace-coord-row"><MapPin size={14} /> {[coords.adresse_postale, coords.ville].filter(Boolean).join(', ')}</div>
+                )}
+              </div>
+            ) : (
+              <p style={{ color: '#aaa', fontSize: '0.875rem', margin: '10px 0 0', lineHeight: 1.5 }}>
+                Ajoute ton téléphone et ton adresse pour que ton studio puisse te joindre facilement.
+              </p>
+            )}
+          </div>
+        );
+      })()}
 
       {errMsg && (
         <div style={{ background: '#fff0f0', border: '1px solid #ffcdd2', borderRadius: '10px', padding: '12px 14px', color: '#c62828', fontSize: '0.875rem', marginBottom: 14, display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -546,6 +637,43 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
         </div>
       )}
 
+      {/* Section "À régler" — paiements à prévoir (dettes / séances dues ouvertes) */}
+      {aRegler.length > 0 && (
+        <div style={{ marginTop: 28, paddingTop: 20, borderTop: '1px solid #f0ebe8' }}>
+          <h2 className="espace-section-title">
+            <Wallet size={16} style={{ color: '#d97706' }} />
+            À régler
+            <span className="espace-count" style={{ background: '#fff0d6', color: '#b45309' }}>{aRegler.length}</span>
+          </h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {aRegler.map(c => {
+              const montant = c.context?.montant ?? c.context?.tarif_unitaire ?? null;
+              const coursNom = c.cours?.nom || c.context?.cours_nom || 'Séance';
+              const dateStr = c.cours?.date
+                ? new Date(c.cours.date + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })
+                : (c.context?.cours_date ? new Date(c.context.cours_date + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' }) : null);
+              const reason = c.case_type === 'annulation_hors_delai' ? 'Annulation tardive' : 'Séance sans carnet';
+              return (
+                <div key={c.id} className="espace-aregler-row">
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 600, fontSize: '0.875rem', color: '#1a1a2e' }}>{coursNom}</div>
+                    <div style={{ fontSize: '0.7rem', color: '#b45309', marginTop: 2 }}>
+                      {reason}{dateStr ? ` · ${dateStr}` : ''}
+                    </div>
+                  </div>
+                  <div style={{ fontWeight: 700, fontSize: '0.9375rem', color: '#b45309', flexShrink: 0 }}>
+                    {montant != null ? `${montant} €` : 'à régler'}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <p style={{ fontSize: '0.72rem', color: '#a16207', margin: '10px 2px 0', lineHeight: 1.5 }}>
+            À régler directement avec ton studio (sur place ou selon ses modalités habituelles).
+          </p>
+        </div>
+      )}
+
       {/* Section "Mes paiements" — historique + téléchargement reçu PDF */}
       {paiements.length > 0 && (
         <div style={{ marginTop: 28, paddingTop: 20, borderTop: '1px solid #f0ebe8' }}>
@@ -660,6 +788,39 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
           background: #fce8e8; color: #c06060;
           font-size: 0.75rem; font-weight: 700;
           padding: 2px 8px; border-radius: 99px; letter-spacing: 0;
+        }
+
+        /* Coordonnées éditables */
+        .espace-coord-edit {
+          display: inline-flex; align-items: center; gap: 4px;
+          font-size: 0.75rem; font-weight: 600; color: #d4a0a0;
+          background: none; border: 1px solid #f0d4d4; border-radius: 99px;
+          padding: 5px 11px; cursor: pointer; transition: all 0.15s; flex-shrink: 0;
+        }
+        .espace-coord-edit:hover { background: #fdf3f3; border-color: #d4a0a0; }
+        .espace-coord-row {
+          display: flex; align-items: center; gap: 8px;
+          font-size: 0.9375rem; color: #444;
+        }
+        .espace-coord-row svg { color: #d4a0a0; flex-shrink: 0; }
+        .espace-coord-field { display: flex; flex-direction: column; gap: 5px; }
+        .espace-coord-field > span {
+          display: inline-flex; align-items: center; gap: 5px;
+          font-size: 0.75rem; font-weight: 600; color: #888;
+        }
+        .espace-coord-field > span svg { color: #d4a0a0; }
+        .espace-coord-field input {
+          padding: 10px 12px; border: 1.5px solid #f0ebe8; border-radius: 10px;
+          font-size: 0.9375rem; outline: none; transition: border-color 0.15s;
+          width: 100%; box-sizing: border-box; background: white;
+        }
+        .espace-coord-field input:focus { border-color: #d4a0a0; }
+
+        /* À régler (paiements à prévoir) */
+        .espace-aregler-row {
+          display: flex; align-items: center; gap: 12px;
+          background: #fffaf0; border: 1px solid #fde8c8; border-radius: 12px;
+          padding: 12px 14px; border-left: 4px solid #d97706;
         }
 
         .espace-cours-card {

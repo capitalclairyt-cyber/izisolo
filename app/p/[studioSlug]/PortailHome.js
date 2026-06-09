@@ -2,9 +2,10 @@
 
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
-import { MapPin, Calendar, Clock, Users, ChevronRight, ChevronLeft, Search, CreditCard, Ticket, CalendarCheck, Zap, Instagram, Facebook, Globe, Award, BookOpen, LayoutGrid, List } from 'lucide-react';
+import { MapPin, Calendar, Clock, Users, ChevronRight, ChevronLeft, Search, CreditCard, Ticket, CalendarCheck, Zap, Instagram, Facebook, Globe, Award, BookOpen, LayoutGrid, List, Check, Loader } from 'lucide-react';
 import { toneForCours } from '@/lib/tones';
 import ScrollReveal from '@/components/landing/ScrollReveal';
+import { useToast } from '@/components/ui/ToastProvider';
 
 // Helpers semaine
 function getWeekStart(date) {
@@ -71,9 +72,89 @@ function PlacesBadge({ capacite, inscrits, afficherInscrits = true }) {
   return <span className="portail-tag portail-tag-green">Places disponibles</span>;
 }
 
-export default function PortailHome({ profile, cours, offresStripe = [], offresPubliques = [], sondageActif = null, studioSlug, isPreview = false, isDemo = false }) {
+export default function PortailHome({ profile, cours, offresStripe = [], offresPubliques = [], sondageActif = null, studioSlug, isPreview = false, isDemo = false, currentClient = null, reservedCoursIds = [] }) {
   // Suffixe de query pour préserver le mode demo dans les liens internes
   const demoQS = isDemo ? '?demo=1' : '';
+
+  // ── Réservation 1 clic (élève connecté + reconnu) ──────────────────────────
+  // currentClient = { nom, email } d'un visiteur qui a déjà une fiche dans ce
+  // studio. Pour lui, les cartes de cours portent un bouton « Réserver » qui
+  // réserve directement (toast + bascule « Inscrit·e »), sans page intermédiaire.
+  // Désactivé en aperçu/démo (le pro qui visite n'est pas un élève).
+  const { toast } = useToast();
+  const canQuickBook = !!currentClient && !isPreview && !isDemo;
+  const [reserved, setReserved] = useState(() => new Set(reservedCoursIds));
+  const [pendingId, setPendingId] = useState(null);
+
+  const handleQuickReserve = async (c) => {
+    if (!currentClient || pendingId) return;
+    setPendingId(c.id);
+    try {
+      const res = await fetch(`/api/portail/${studioSlug}/reserver`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ coursId: c.id, nom: currentClient.nom, email: currentClient.email }),
+      });
+      const json = await res.json().catch(() => ({}));
+      // Cours payant à l'unité → ouvrir le paiement Stripe
+      if (res.status === 402 && json.requirePayment) {
+        if (json.paymentUrl) window.open(json.paymentUrl, '_blank', 'noopener,noreferrer');
+        toast.warning('Ce cours se règle en ligne — finalise le paiement pour confirmer ta place.');
+        return;
+      }
+      if (!res.ok) {
+        // 409 « déjà inscrit » → on bascule quand même en « Inscrit·e »
+        if (res.status === 409 && /déjà inscrit/i.test(json.error || '')) {
+          setReserved(prev => new Set(prev).add(c.id));
+          toast.warning('Tu es déjà inscrit·e à ce cours.');
+          return;
+        }
+        // Complet → renvoyer vers la page du cours (liste d'attente)
+        if (res.status === 409 && /complet/i.test(json.error || '')) {
+          toast.warning('Ce cours est complet — rejoins la liste d\'attente depuis sa page.');
+          return;
+        }
+        throw new Error(json.error || 'La réservation a échoué');
+      }
+      setReserved(prev => new Set(prev).add(c.id));
+      toast.success('C\'est réservé ! 🌿');
+    } catch (e) {
+      toast.error(e.message);
+    } finally {
+      setPendingId(null);
+    }
+  };
+
+  // Rend l'action à droite d'une carte de cours : bouton « Réserver » 1 clic
+  // pour un élève reconnu, badge « Inscrit·e » s'il l'est déjà, sinon le chevron
+  // classique (visiteur non connecté → la carte mène à la page de réservation).
+  const renderCoursAction = (c) => {
+    const dispo = c.capacite_max ? c.capacite_max - c.nbInscrits : null;
+    const complet = dispo !== null && dispo <= 0;
+    if (canQuickBook && reserved.has(c.id)) {
+      return <span className="portail-resa-done"><Check size={13} /> Inscrit·e</span>;
+    }
+    if (canQuickBook && !complet) {
+      // <span role=button> (et non <button>) car la carte est un <Link> (<a>) :
+      // un <button> imbriqué dans un <a> est du HTML invalide → warning + DOM
+      // « réparé » par le navigateur. Le span reste valide et accessible.
+      const activate = (e) => { e.preventDefault(); e.stopPropagation(); handleQuickReserve(c); };
+      const busy = pendingId === c.id;
+      return (
+        <span
+          role="button"
+          tabIndex={0}
+          aria-disabled={busy}
+          className="portail-resa-btn"
+          onClick={activate}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') activate(e); }}
+        >
+          {busy ? <><Loader size={13} className="spin" /> …</> : 'Réserver'}
+        </span>
+      );
+    }
+    return <ChevronRight size={16} style={{ color: '#ccc' }} />;
+  };
   const hasAbout = !!(profile.bio || profile.philosophie || profile.formations || profile.annees_experience);
   const hasSocial = !!(profile.instagram_url || profile.facebook_url || profile.website_url);
   const faq = Array.isArray(profile.faq_publique) ? profile.faq_publique.filter(f => f?.q && f?.a) : [];
@@ -515,7 +596,7 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
                     </div>
                     <div className="portail-cours-right">
                       <PlacesBadge capacite={c.capacite_max} inscrits={c.nbInscrits} afficherInscrits={profile.afficher_inscrits !== false} />
-                      <ChevronRight size={16} style={{ color: '#ccc' }} />
+                      {renderCoursAction(c)}
                     </div>
                   </Link>
                 );
@@ -566,7 +647,7 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
                 </div>
                 <div className="portail-cours-right">
                   <PlacesBadge capacite={c.capacite_max} inscrits={c.nbInscrits} afficherInscrits={profile.afficher_inscrits !== false} />
-                  <ChevronRight size={16} style={{ color: '#ccc' }} />
+                  {renderCoursAction(c)}
                 </div>
               </Link>
             );
@@ -1177,6 +1258,30 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
         .portail-cours-details { display: flex; flex-wrap: wrap; gap: 8px; font-size: 0.8125rem; color: #888; align-items: center; }
         .portail-cours-details span { display: flex; align-items: center; gap: 4px; }
         .portail-cours-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+
+        /* Réservation 1 clic — bouton + état inscrit + spinner */
+        .portail-resa-btn {
+          display: inline-flex; align-items: center; gap: 5px;
+          padding: 7px 14px;
+          background: #b87333; color: white;
+          border: none; border-radius: 99px;
+          font-size: 0.8125rem; font-weight: 700;
+          cursor: pointer; white-space: nowrap;
+          transition: background 0.15s ease, transform 0.1s ease;
+        }
+        .portail-resa-btn:hover:not([aria-disabled="true"]) { background: #a06228; }
+        .portail-resa-btn:active:not([aria-disabled="true"]) { transform: scale(0.95); }
+        .portail-resa-btn[aria-disabled="true"] { opacity: 0.7; cursor: default; }
+        .portail-resa-done {
+          display: inline-flex; align-items: center; gap: 4px;
+          padding: 6px 12px;
+          background: #f0faf0; color: #2e7d32;
+          border: 1px solid #c8e6c9; border-radius: 99px;
+          font-size: 0.8125rem; font-weight: 700;
+          white-space: nowrap;
+        }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .spin { animation: spin 0.8s linear infinite; }
 
         /* Tons par type de cours : fond soft tinté + bord épais accent */
         .portail-cours-card--rose     { background: var(--tone-rose-bg);     border-left-color: var(--tone-rose-accent); }

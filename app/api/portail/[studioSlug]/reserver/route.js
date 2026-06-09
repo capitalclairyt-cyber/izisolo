@@ -453,11 +453,24 @@ export async function POST(request, { params }) {
   if (!isAuthenticated) {
     try {
       const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.izisolo.fr';
+      // Garantir l'existence du compte auth (idempotent) AVANT generateLink :
+      // sans ça, generateLink peut échouer pour un email encore inconnu → pas de
+      // lien → l'élève qui vient de réserver ne peut pas rejoindre son espace en
+      // un clic. email_confirm: true ⇒ aucun email Supabase parasite n'est envoyé.
+      try {
+        await supabaseAdmin.auth.admin.createUser({ email, email_confirm: true });
+      } catch { /* user déjà existant : normal, on continue */ }
+
       const { data: linkData, error: linkErr } = await supabaseAdmin.auth.admin.generateLink({
         type: 'magiclink',
         email,
         options: {
-          redirectTo: `${appUrl}/auth/callback?next=/p/${studioSlug}/espace`,
+          // Callback élève dédié (slug dans le PATH) = même pattern robuste que
+          // l'invitation. L'ancien /auth/callback?next=/p/slug/espace reposait sur
+          // un double-hop fragile (callback → finaliser) où le contexte portail
+          // pouvait se perdre. /p/[slug]/connecte échange le code puis route direct
+          // vers l'espace.
+          redirectTo: `${appUrl}/p/${studioSlug}/connecte`,
         },
       });
       if (linkErr) {
