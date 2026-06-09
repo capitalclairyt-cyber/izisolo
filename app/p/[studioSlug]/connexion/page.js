@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Mail, ArrowLeft, CheckCircle, Loader } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
 
 export default function ConnexionPortailPage() {
   const { studioSlug } = useParams();
@@ -21,12 +20,17 @@ export default function ConnexionPortailPage() {
     setLoading(true);
     setError('');
     try {
-      const redirectTo = `${window.location.origin}/auth/callback?next=/p/${studioSlug}/espace`;
-      const { error: authError } = await supabase.auth.signInWithOtp({
-        email: email.trim().toLowerCase(),
-        options: { emailRedirectTo: redirectTo },
+      // On passe par notre propre route serveur (generateLink + Resend) plutôt
+      // que supabase.auth.signInWithOtp() : ça évite le template email + le flux
+      // signup PROF de Supabase ("active ton compte et gère ton studio") qui
+      // partait par erreur aux élèves et les renvoyait vers /onboarding.
+      const res = await fetch('/api/portail-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim().toLowerCase(), studioSlug }),
       });
-      if (authError) throw authError;
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Erreur');
       setSent(true);
     } catch {
       setError('Une erreur est survenue. Réessaie dans quelques instants.');

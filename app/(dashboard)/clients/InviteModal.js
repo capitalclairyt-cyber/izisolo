@@ -44,19 +44,16 @@ export default function InviteModal({ open, onClose, profile, clients = [] }) {
   // Templates — utilisent prenom du destinataire si saisi, sinon générique
   const salutation = prenomCible ? `Salut ${prenomCible}` : 'Coucou';
 
-  const sujetEmail = `Ton espace ${studioNom}`;
+  const sujetEmail = `Ton lien de connexion — ${studioNom}`;
   const corpsEmail = `${salutation},
 
-J'utilise un nouvel outil pour gérer les inscriptions, suivre tes cours et te tenir au courant : IziSolo.
+Voici ton accès direct à l'espace élève de ${studioNom}.
 
-Pour créer ton espace, rien de plus simple :
-1. Va sur : ${portailUrl}
-2. Tape l'email auquel tu reçois ce message (important pour qu'on soit reliées dans le système)
-3. Tu reçois un lien magique par email — clique dessus, c'est tout
+L'email contient un bouton « Accéder à mon espace » : un seul clic et tu es connecté·e, sans mot de passe.
 
-Ensuite tu pourras voir tes cours réservés, t'inscrire à de nouveaux cours et garder un œil sur ton carnet de séances.
+Tu pourras voir tes cours réservés, t'inscrire à de nouveaux créneaux et garder un œil sur ton carnet de séances.
 
-Pas de mot de passe à retenir, c'est juste ton email à chaque fois.
+Le lien se génère au moment de l'envoi (valable 1 heure).
 
 À très vite${profPrenom ? ' — ' + profPrenom : ''} 🌿`;
 
