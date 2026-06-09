@@ -25,13 +25,21 @@ export default function AuthFragmentCatcher() {
       hash.includes('refresh_token=') ||
       hash.includes('error_description=')
     ) {
-      // Déterminer la cible : pour signup → /onboarding, sinon /dashboard
       const params = new URLSearchParams(hash.replace(/^#/, ''));
       const type = params.get('type');
-      const next = type === 'signup' ? '/onboarding' : '/dashboard';
+      const path = window.location.pathname || '';
+      // CONTEXTE PORTAIL ÉLÈVE : si le fragment arrive sur une page /p/[slug]/...
+      // (magic link élève), on doit rester dans le portail et router vers
+      // l'espace élève — surtout PAS vers /onboarding (création studio prof).
+      let next;
+      if (path.startsWith('/p/')) {
+        const slug = path.split('/')[2];
+        next = slug ? `/p/${slug}/espace` : '/dashboard';
+      } else {
+        next = type === 'signup' ? '/onboarding' : '/dashboard';
+      }
       // On préserve le hash en construisant l'URL nous-mêmes (router.replace
-      // efface parfois le fragment). On utilise window.location pour garder
-      // le hash, et on n'ajoute la session qu'une fois sur /auth/finaliser.
+      // efface parfois le fragment). La session est posée sur /auth/finaliser.
       const target = `/auth/finaliser?next=${encodeURIComponent(next)}${hash}`;
       window.location.replace(target);
     }

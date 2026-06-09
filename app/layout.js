@@ -132,7 +132,14 @@ export default function RootLayout({ children }) {
   if(h.indexOf('access_token=')<0 && h.indexOf('refresh_token=')<0 && h.indexOf('error_description=')<0) return;
   var p=new URLSearchParams(h.replace(/^#/,''));
   var t=p.get('type')||'';
-  var n=(t==='signup')?'/onboarding':((t==='recovery')?'/nouveau-mot-de-passe':'/dashboard');
+  var path=window.location.pathname||'';
+  var n;
+  if(path.indexOf('/p/')===0){
+    var slug=path.split('/')[2];
+    n=slug?('/p/'+slug+'/espace'):'/dashboard';
+  } else {
+    n=(t==='signup')?'/onboarding':((t==='recovery')?'/nouveau-mot-de-passe':'/dashboard');
+  }
   window.location.replace('/auth/finaliser?next='+encodeURIComponent(n)+h);
 }catch(e){console.warn('[auth-catcher]',e);}})();
             `.trim(),
