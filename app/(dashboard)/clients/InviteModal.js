@@ -183,7 +183,9 @@ Le lien se génère au moment de l'envoi (valable 1 heure).
                 />
                 <p className="invite-help-small">
                   Cet email sera utilisé comme identifiant côté élève. Pas besoin
-                  qu'iel soit déjà en CRM — l'invitation crée juste le contact.
+                  qu'iel soit déjà dans ton CRM — l'invitation crée la fiche
+                  automatiquement (statut « prospect »), tu la verras tout de
+                  suite dans tes élèves.
                 </p>
               </div>
             )}

@@ -1,17 +1,18 @@
 import { NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/api-auth';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 import { sendPortailMagicLink } from '@/lib/portail-magic-link';
 
 /**
  * POST /api/invite — La prof invite un·e élève à rejoindre son portail.
  *
- * Génère un magic link DIRECT (via generateLink côté serveur) et l'envoie par
- * email avec Resend. L'élève clique → connecté·e direct sur /p/[slug]/espace.
- *
- * Avant : l'email pointait vers /p/[slug]/connexion où l'élève devait re-saisir
- * son email, ce qui déclenchait un 2ᵉ email (Supabase, wording prof "gère ton
- * studio") + une redirection vers /onboarding. Bug corrigé : un seul email,
- * lien direct, wording élève.
+ * 1) Crée une FICHE prospect dans le CRM si l'email n'en a pas encore une dans
+ *    ce studio → la personne invitée apparaît immédiatement dans l'admin de la
+ *    prof (même avant sa 1ʳᵉ connexion / réservation). Idempotent par email :
+ *    si la fiche existe déjà (mode « Élève existant·e »), on n'y touche pas, et
+ *    quand l'élève réservera, `reserver` retrouvera cette même fiche → 0 doublon.
+ * 2) Génère un magic link DIRECT (generateLink serveur) + l'envoie par Resend.
+ *    L'élève clique → connecté·e direct sur son espace.
  */
 export async function POST(req) {
   try {
@@ -24,8 +25,50 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Studio non configuré' }, { status: 400 });
     }
 
+    const cleanEmail = (email || '').trim().toLowerCase();
+    if (!cleanEmail || !cleanEmail.includes('@')) {
+      return NextResponse.json({ error: 'Email invalide' }, { status: 400 });
+    }
+
+    // ── 1) Fiche prospect (si pas déjà cliente de ce studio) ────────────────
+    // On résout l'id du studio par son slug (robuste en mode équipe), puis on
+    // upsert « manuel » : on ne crée la fiche que si aucune n'existe pour cet
+    // email, pour éviter d'écraser une fiche réelle ou d'en dupliquer.
+    const { data: studioProfile } = await supabaseAdmin
+      .from('profiles')
+      .select('id')
+      .eq('studio_slug', slug)
+      .single();
+
+    if (studioProfile) {
+      const { data: existing } = await supabaseAdmin
+        .from('clients')
+        .select('id')
+        .eq('profile_id', studioProfile.id)
+        .ilike('email', cleanEmail)
+        .maybeSingle();
+
+      if (!existing) {
+        const prenomFiche = (prenom || '').trim() || cleanEmail.split('@')[0];
+        const { error: ficheErr } = await supabaseAdmin
+          .from('clients')
+          .insert({
+            profile_id: studioProfile.id,
+            prenom: prenomFiche,
+            nom: '',                 // colonne NOT NULL — la prof complétera
+            email: cleanEmail,
+            statut: 'prospect',
+            source: 'invitation',
+          });
+        // Non bloquant : si la création de fiche échoue, on envoie quand même
+        // l'invitation (l'élève sera fiché·e au plus tard à sa 1ʳᵉ réservation).
+        if (ficheErr) console.error('[invite] création fiche prospect (non-bloquant):', ficheErr);
+      }
+    }
+
+    // ── 2) Magic link + email ───────────────────────────────────────────────
     const result = await sendPortailMagicLink({
-      email,
+      email: cleanEmail,
       studioSlug: slug,
       studioNom: studioNom || profile.studio_nom || 'mon studio',
       prenom,
