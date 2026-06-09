@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 
 function isoToDisplay(iso) {
   if (!iso) return '';
@@ -29,14 +29,29 @@ function autoFormat(raw) {
 export default function DateNaissanceInput({ id, className, value, onChange, max }) {
   const [display, setDisplay] = useState(() => isoToDisplay(value));
   const [touched, setTouched] = useState(false);
+  // Dernière valeur ISO émise. Distingue un changement externe de `value`
+  // (reset après création, chargement d'une fiche) d'un écho de notre onChange.
+  const lastEmittedRef = useRef(value);
+
+  // Resync l'affichage quand `value` change DE L'EXTÉRIEUR. Sans ça, la date
+  // d'une fiche en édition ne s'affiche pas et le champ garde la date de la
+  // cliente précédente après reset (même bug que l'adresse).
+  useEffect(() => {
+    if (value !== lastEmittedRef.current) {
+      setDisplay(isoToDisplay(value));
+      lastEmittedRef.current = value;
+    }
+  }, [value]);
 
   const handleChange = useCallback((e) => {
     const formatted = autoFormat(e.target.value);
     setDisplay(formatted);
     const iso = displayToIso(formatted);
     if (iso) {
+      lastEmittedRef.current = iso;
       onChange({ target: { value: iso } });
     } else if (formatted === '') {
+      lastEmittedRef.current = '';
       onChange({ target: { value: '' } });
     }
   }, [onChange]);
@@ -46,6 +61,7 @@ export default function DateNaissanceInput({ id, className, value, onChange, max
     const iso = displayToIso(display);
     if (display && !iso) {
       setDisplay('');
+      lastEmittedRef.current = '';
       onChange({ target: { value: '' } });
     }
   }, [display, onChange]);

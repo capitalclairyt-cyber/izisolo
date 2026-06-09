@@ -516,6 +516,26 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
     }
   };
 
+  const [deleting, setDeleting] = useState(false);
+  const deleteClient = async () => {
+    const msg = `Supprimer définitivement la fiche de ${displayName} ?\n\n`
+      + `Les carnets, présences et inscriptions liés seront aussi supprimés. `
+      + `Les paiements déjà encaissés restent dans ta compta (sans lien à la fiche). `
+      + `Cette action est irréversible.`;
+    if (!confirm(msg)) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/clients/${client.id}`, { method: 'DELETE' });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json.error || 'Erreur');
+      toast.success('Fiche client supprimée');
+      router.push('/clients');
+    } catch (e) {
+      toast.error(e.message || 'Erreur lors de la suppression');
+      setDeleting(false);
+    }
+  };
+
   const deleteAbonnement = async (abo) => {
     const aboPays = paiements.filter(p => p.abonnement_id === abo.id);
     const msg = aboPays.length > 0
@@ -743,6 +763,15 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
             </button>
           )}
           <Link href={`/clients/${client.id}/edit`} className="edit-btn"><Edit3 size={18} /></Link>
+          <button
+            type="button"
+            className="delete-client-btn"
+            onClick={deleteClient}
+            disabled={deleting}
+            title="Supprimer cette fiche client"
+          >
+            {deleting ? <Loader2 size={18} className="invite-spin" /> : <Trash2 size={18} />}
+          </button>
         </div>
       </div>
 
@@ -1734,6 +1763,9 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
         .page-header { display: flex; align-items: center; gap: 12px; }
         .header-title { flex: 1; font-size: 1.0625rem; font-weight: 600; }
         .back-btn, .edit-btn { width: 40px; height: 40px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-card); display: flex; align-items: center; justify-content: center; color: var(--text-secondary); text-decoration: none; flex-shrink: 0; }
+        .delete-client-btn { width: 40px; height: 40px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-card); display: flex; align-items: center; justify-content: center; color: var(--text-secondary); cursor: pointer; flex-shrink: 0; transition: all 0.15s; }
+        .delete-client-btn:hover:not(:disabled) { background: #fef2f2; color: #dc2626; border-color: #fca5a5; }
+        .delete-client-btn:disabled { opacity: 0.5; cursor: not-allowed; }
         .header-actions { display: flex; align-items: center; gap: 8px; }
         .header-msg-btn {
           display: flex; align-items: center; gap: 6px;

@@ -54,6 +54,7 @@ export default function ClientsClient({ clients: clientsInit, profile }) {
   const [filtreStatut, setFiltreStatut] = useState('tous');
   const [filtreType, setFiltreType]     = useState('tous'); // tous | particulier | pro
   const [filtreAbo, setFiltreAbo]       = useState('tous'); // nom d'offre exact
+  const [tri, setTri]                   = useState('alpha'); // alpha | recent
 
 
   // Liste des noms d'offres distincts (pour le filtre "type d'abonnement")
@@ -104,8 +105,18 @@ export default function ClientsClient({ clients: clientsInit, profile }) {
     else if (filtreType === 'pro')    list = list.filter(c =>  c.type_client && c.type_client !== 'particulier');
     if (filtreAbo !== 'tous')         list = list.filter(c => (c.abonnements || []).some(a => a.statut === 'actif' && a.offre_nom === filtreAbo));
 
+    // 4. Tri
+    if (tri === 'alpha') {
+      const keyOf = (c) => {
+        const pro = c.type_client && c.type_client !== 'particulier';
+        return (pro ? (c.nom_structure || c.nom || '') : `${c.prenom || ''} ${c.nom || ''}`).trim().toLowerCase();
+      };
+      list = [...list].sort((a, b) => keyOf(a).localeCompare(keyOf(b), 'fr'));
+    }
+    // tri === 'recent' : on garde l'ordre serveur (updated_at desc), pas de tri.
+
     return list;
-  }, [clientsList, search, filtrePrimaire, filtreStatut, filtreType, filtreAbo]);
+  }, [clientsList, search, filtrePrimaire, filtreStatut, filtreType, filtreAbo, tri]);
 
   // Pagination 8/page (cf. components/ui/Pagination.js)
   const { paginated, currentPage, totalPages, setPage } = usePagination(filtered, PAGE_SIZE);
@@ -166,6 +177,25 @@ export default function ClientsClient({ clients: clientsInit, profile }) {
           value={search}
           onChange={e => setSearch(e.target.value)}
         />
+      </div>
+
+      {/* Tri */}
+      <div className="tri-bar animate-slide-up">
+        <span className="tri-label">Trier&nbsp;:</span>
+        <button
+          className={`tri-btn ${tri === 'alpha' ? 'active' : ''}`}
+          onClick={() => setTri('alpha')}
+          type="button"
+        >
+          A → Z
+        </button>
+        <button
+          className={`tri-btn ${tri === 'recent' ? 'active' : ''}`}
+          onClick={() => setTri('recent')}
+          type="button"
+        >
+          Récents
+        </button>
       </div>
 
       {/* Filtres primaires — orientés action ("qui dois-je relancer ?") */}
@@ -487,6 +517,31 @@ export default function ClientsClient({ clients: clientsInit, profile }) {
         }
         .filter-chip:hover { border-color: var(--brand); color: var(--brand-700); }
         .filter-chip.active {
+          background: var(--brand);
+          border-color: var(--brand);
+          color: white;
+        }
+        .tri-bar {
+          display: flex; align-items: center; gap: 6px;
+          margin-bottom: 12px;
+        }
+        .tri-label {
+          font-size: 0.75rem; font-weight: 500;
+          color: var(--text-secondary, #666);
+        }
+        .tri-btn {
+          padding: 4px 12px;
+          border-radius: 99px;
+          border: 1px solid var(--border, #e5e0d8);
+          background: white;
+          font-size: 0.75rem; font-weight: 500;
+          color: var(--text-secondary, #666);
+          cursor: pointer;
+          transition: all 0.15s ease;
+          font-family: inherit;
+        }
+        .tri-btn:hover { border-color: var(--brand); color: var(--brand-700); }
+        .tri-btn.active {
           background: var(--brand);
           border-color: var(--brand);
           color: white;

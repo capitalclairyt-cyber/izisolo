@@ -45,6 +45,10 @@ export default function AdresseInput({ value, onChange, id }) {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const debounceRef = useRef(null);
   const wrapRef = useRef(null);
+  // Dernière valeur émise par CE composant. Sert à distinguer un changement
+  // de `value` venant de l'extérieur (reset après création, chargement d'une
+  // fiche en édition) d'un simple écho de notre propre onChange.
+  const lastEmittedRef = useRef(value);
 
   useEffect(() => {
     const handler = (e) => {
@@ -54,8 +58,24 @@ export default function AdresseInput({ value, onChange, id }) {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
+  // Resynchronise l'état interne quand `value` change DE L'EXTÉRIEUR.
+  // Sans ça : l'adresse d'une fiche en édition ne s'affiche pas, et le champ
+  // garde l'adresse de la cliente précédente après un reset (fuite de données).
+  // La comparaison à lastEmittedRef évite la boucle infinie avec onChange.
+  useEffect(() => {
+    if (value !== lastEmittedRef.current) {
+      const p = parseAdresse(value);
+      setRue(p.rue);
+      setCodePostal(p.codePostal);
+      setVille(p.ville);
+      lastEmittedRef.current = value;
+    }
+  }, [value]);
+
   const emit = (r, cp, v) => {
-    onChange(formatAdresse(r, cp, v));
+    const formatted = formatAdresse(r, cp, v);
+    lastEmittedRef.current = formatted;
+    onChange(formatted);
   };
 
   const handleRueChange = (val) => {
