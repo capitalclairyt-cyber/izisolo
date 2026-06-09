@@ -1,4 +1,5 @@
 import { createServerClient } from '@/lib/supabase-server';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 import { redirect } from 'next/navigation';
 import { notFound } from 'next/navigation';
 import EspaceClient from './EspaceClient';
@@ -111,7 +112,12 @@ function buildDemoData(profile) {
 }
 
 async function getData(studioSlug, userEmail) {
-  const supabase = await createServerClient();
+  // On utilise le client admin (service_role, hors RLS) : le studio est une
+  // info publique, et toutes les requêtes élève sont filtrées par profile_id
+  // (studio) + email/client_id (l'élève authentifié·e), donc l'isolation est
+  // garantie par les filtres. Sans ça, les RLS bloquent l'élève (qui n'est pas
+  // le prof) → la lecture du profil studio renvoie null → notFound().
+  const supabase = supabaseAdmin;
 
   // Studio (+ règles d'annulation pour application dans EspaceClient)
   const { data: profile } = await supabase
@@ -207,8 +213,10 @@ export default async function EspacePage({ params, searchParams }) {
     redirect(`/p/${studioSlug}/connexion`);
   }
 
-  // Récupérer le profil du studio pour détecter si l'user est le prof
-  const { data: ownerProfile } = await supabase
+  // Récupérer le profil du studio pour détecter si l'user est le prof.
+  // Via le client admin : le studio est public, et un élève (≠ prof) ne peut
+  // pas le lire avec son propre client à cause des RLS → null → notFound().
+  const { data: ownerProfile } = await supabaseAdmin
     .from('profiles')
     .select('id, studio_nom, studio_slug, regles_annulation')
     .eq('studio_slug', studioSlug)
