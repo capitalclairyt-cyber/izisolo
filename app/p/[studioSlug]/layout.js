@@ -1,4 +1,4 @@
-import { createServerClient } from '@/lib/supabase-server';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 import PortailLayoutClient from './PortailLayoutClient';
 
 /**
@@ -8,8 +8,9 @@ import PortailLayoutClient from './PortailLayoutClient';
  */
 async function getStudioNom(studioSlug) {
   try {
-    const supabase = await createServerClient();
-    const { data } = await supabase
+    // Lecture publique du nom du studio via admin (hors RLS) : les RLS bloquent
+    // un élève connecté (authenticated ≠ prof). Ne sélectionne que le nom public.
+    const { data } = await supabaseAdmin
       .from('profiles')
       .select('studio_nom')
       .eq('studio_slug', studioSlug)

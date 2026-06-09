@@ -1,10 +1,15 @@
 import { createServerClient } from '@/lib/supabase-server';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 import { notFound } from 'next/navigation';
 import CoursReservationClient from './CoursReservationClient';
 import { canSeeCours, resolveClientInfo } from '@/lib/visibilite';
 
 async function getData(studioSlug, coursId) {
-  const supabase = await createServerClient();
+  // Contenu PUBLIC du portail (studio, cours) + données élève filtrées par
+  // client_id/email : on lit via admin (hors RLS), car les RLS bloquent un
+  // élève connecté (authenticated ≠ prof) → sans ça, "Cours introuvable".
+  // Aucun champ sensible (secrets Stripe) n'est sélectionné sur profiles.
+  const supabase = supabaseAdmin;
 
   const { data: profile } = await supabase
     .from('profiles')
@@ -21,8 +26,11 @@ async function getData(studioSlug, coursId) {
     .single();
   if (!cours) return null;
 
-  // Récupérer l'utilisateur connecté et son profil client dans ce studio
-  const { data: { user } } = await supabase.auth.getUser();
+  // Récupérer l'utilisateur connecté et son profil client dans ce studio.
+  // getUser() nécessite le client SSR (porteur des cookies de session) ;
+  // supabaseAdmin ne connaît pas la session.
+  const ssrClient = await createServerClient();
+  const { data: { user } } = await ssrClient.auth.getUser();
 
   // ── Vérification visibilité — si le cours n'est pas accessible au viewer, on
   // retourne null (déclenche notFound() côté page) ──

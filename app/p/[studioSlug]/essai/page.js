@@ -1,11 +1,14 @@
-import { createServerClient } from '@/lib/supabase-server';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 import { notFound } from 'next/navigation';
 import EssaiClient from './EssaiClient';
 
 export const metadata = { title: 'Cours d\'essai' };
 
 async function getData(studioSlug) {
-  const supabase = await createServerClient();
+  // Contenu PUBLIC (studio + cours futurs) via admin : les RLS bloquent un
+  // élève connecté (authenticated ≠ prof) → sans ça, page "introuvable".
+  // Le select sur profiles ne liste que des champs publics (pas de secrets).
+  const supabase = supabaseAdmin;
   const today = new Date().toISOString().slice(0, 10);
   const in60 = new Date(Date.now() + 60 * 86400000).toISOString().slice(0, 10);
 

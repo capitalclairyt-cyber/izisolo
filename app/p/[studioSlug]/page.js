@@ -1,4 +1,5 @@
 import { createServerClient } from '@/lib/supabase-server';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import PortailHome from './PortailHome';
@@ -6,8 +7,10 @@ import { resolveClientInfo, filterCoursVisibles } from '@/lib/visibilite';
 
 export async function generateMetadata({ params }) {
   const { studioSlug } = await params;
-  const supabase = await createServerClient();
-  const { data: profile } = await supabase
+  // Lecture publique du studio via admin : les RLS bloquent un élève connecté
+  // (authenticated ≠ prof) → sans ça, "Studio introuvable" pour les élèves.
+  // On ne sélectionne QUE des champs publics (jamais de secrets Stripe).
+  const { data: profile } = await supabaseAdmin
     .from('profiles')
     .select('studio_nom, metier, ville')
     .eq('studio_slug', studioSlug)
@@ -21,7 +24,10 @@ export async function generateMetadata({ params }) {
 }
 
 async function getStudioData(studioSlug) {
-  const supabase = await createServerClient();
+  // Contenu PUBLIC du portail (studio, cours, offres, sondages) via admin :
+  // les RLS bloquent les utilisateur·ices authenticated (un élève connecté
+  // n'est pas le prof). Tous les select sont publics, pas de secrets.
+  const supabase = supabaseAdmin;
   const today = new Date().toISOString().slice(0, 10);
   const in60 = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
@@ -86,8 +92,10 @@ async function getStudioData(studioSlug) {
 
   // ── Filtrage par visibilité (selon l'auth context du visiteur) ──
   // Le visiteur peut être : pas authentifié / authentifié mais pas client /
-  // client (avec statut + abos actifs).
-  const { data: { user } } = await supabase.auth.getUser();
+  // client (avec statut + abos actifs). getUser() nécessite le client SSR
+  // (porteur des cookies de session) ; supabaseAdmin ne connaît pas la session.
+  const ssrClient = await createServerClient();
+  const { data: { user } } = await ssrClient.auth.getUser();
   const clientInfo = user ? await resolveClientInfo(supabase, profile.id, user.email) : null;
   const cours = filterCoursVisibles(coursRaw || [], clientInfo);
 

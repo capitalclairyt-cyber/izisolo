@@ -1,10 +1,13 @@
 import { createServerClient } from '@/lib/supabase-server';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 import { notFound } from 'next/navigation';
 import SondageReponseClient from './SondageReponseClient';
 
 export async function generateMetadata({ params }) {
   const { studioSlug, sondageSlug } = await params;
-  const supabase = await createServerClient();
+  // Lecture publique du sondage via admin : les RLS bloquent un élève connecté
+  // (authenticated ≠ prof). Select restreint à des champs publics.
+  const supabase = supabaseAdmin;
   const { data: sondage } = await supabase
     .from('sondages_planning')
     .select('titre, profiles!inner(studio_nom, studio_slug)')
@@ -21,7 +24,10 @@ export async function generateMetadata({ params }) {
 
 export default async function SondagePublicPage({ params }) {
   const { studioSlug, sondageSlug } = await params;
-  const supabase = await createServerClient();
+  // Contenu PUBLIC (studio, sondage, créneaux) via admin : les RLS bloquent un
+  // élève connecté (authenticated ≠ prof) → sans ça, notFound() pour l'élève.
+  // Le select sur profiles ne liste que des champs publics (pas de secrets).
+  const supabase = supabaseAdmin;
 
   // Le studio
   const { data: profile } = await supabase
@@ -49,8 +55,10 @@ export default async function SondagePublicPage({ params }) {
     .eq('sondage_id', sondage.id)
     .order('ordre');
 
-  // Si élève connecté du studio : auto-pré-rempli côté client (via API qui regarde le user)
-  const { data: { user } } = await supabase.auth.getUser();
+  // Si élève connecté du studio : auto-pré-rempli côté client (via API qui regarde le user).
+  // getUser() nécessite le client SSR (cookies de session) ; l'admin n'a pas de session.
+  const ssrClient = await createServerClient();
+  const { data: { user } } = await ssrClient.auth.getUser();
   let connectedClient = null;
   if (user) {
     const { data: client } = await supabase

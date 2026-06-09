@@ -1,19 +1,17 @@
-import { createClient } from '@supabase/supabase-js';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 
 /**
  * Manifest PWA dynamique par studio.
  * Chaque studio peut être installé comme une app distincte sur l'écran d'accueil :
  * "Maude Yoga", "Sophie Pilates", etc.
+ *
+ * Lecture publique du studio via admin (hors RLS) : ne sélectionne que le nom
+ * public du studio, jamais de secret.
  */
 export async function GET(request, { params }) {
   const { studioSlug } = await params;
 
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY
-  );
-
-  const { data: profile } = await supabase
+  const { data: profile } = await supabaseAdmin
     .from('profiles')
     .select('studio_nom')
     .eq('studio_slug', studioSlug)

@@ -1,4 +1,5 @@
 import { createServerClient } from '@/lib/supabase-server';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 import { redirect, notFound } from 'next/navigation';
 import EspaceMessagesClient from './EspaceMessagesClient';
 
@@ -7,7 +8,10 @@ export const metadata = { title: 'Mes messages', robots: { index: false, follow:
 export default async function EspaceMessagesPage({ params }) {
   const { studioSlug } = await params;
 
-  const supabase = await createServerClient();
+  // Studio (public) + vérif client (filtrée par profile_id + email) via admin :
+  // les RLS bloquent un élève connecté (authenticated ≠ prof) → sans ça,
+  // notFound(). Le select sur profiles ne liste que des champs publics.
+  const supabase = supabaseAdmin;
   const { data: profile } = await supabase
     .from('profiles')
     .select('id, studio_nom, studio_slug')
@@ -15,7 +19,9 @@ export default async function EspaceMessagesPage({ params }) {
     .maybeSingle();
   if (!profile) notFound();
 
-  const { data: { user } } = await supabase.auth.getUser();
+  // getUser() nécessite le client SSR (cookies de session) ; l'admin n'a pas de session.
+  const ssrClient = await createServerClient();
+  const { data: { user } } = await ssrClient.auth.getUser();
   if (!user) {
     redirect(`/p/${studioSlug}/connexion?next=/p/${studioSlug}/espace/messages`);
   }
