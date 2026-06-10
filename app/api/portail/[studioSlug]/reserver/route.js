@@ -465,22 +465,18 @@ export async function POST(request, { params }) {
         await supabaseAdmin.auth.admin.createUser({ email, email_confirm: true });
       } catch { /* user déjà existant : normal, on continue */ }
 
+      // Lien construit avec hashed_token (Sprint 4) : clic → /p/[slug]/connecte
+      // ?token_hash=… → verifyOtp server-side → espace. Plus de passage par
+      // supabase.co/verify (qui renvoyait les tokens en fragment #, invisibles
+      // côté serveur → 5 sauts de rattrapage client).
       const { data: linkData, error: linkErr } = await supabaseAdmin.auth.admin.generateLink({
         type: 'magiclink',
         email,
-        options: {
-          // Callback élève dédié (slug dans le PATH) = même pattern robuste que
-          // l'invitation. L'ancien /auth/callback?next=/p/slug/espace reposait sur
-          // un double-hop fragile (callback → finaliser) où le contexte portail
-          // pouvait se perdre. /p/[slug]/connecte échange le code puis route direct
-          // vers l'espace.
-          redirectTo: `${appUrl}/p/${studioSlug}/connecte`,
-        },
       });
       if (linkErr) {
         console.error('magic link error (non-blocking):', linkErr);
-      } else {
-        magicLink = linkData?.properties?.action_link || null;
+      } else if (linkData?.properties?.hashed_token) {
+        magicLink = `${appUrl}/p/${studioSlug}/connecte?token_hash=${encodeURIComponent(linkData.properties.hashed_token)}&type=magiclink`;
       }
     } catch (linkErr) {
       console.error('magic link exception (non-blocking):', linkErr);

@@ -9,6 +9,7 @@ export default function ConnexionPortailPage() {
   const { studioSlug } = useParams();
   const searchParams = useSearchParams();
   const prefillEmail = searchParams.get('email') || '';
+  const erreurParam = searchParams.get('erreur');
   const [email, setEmail]   = useState(prefillEmail);
   const [loading, setLoading] = useState(false);
   const [sent, setSent]     = useState(false);
@@ -88,6 +89,13 @@ export default function ConnexionPortailPage() {
             Connecte-toi pour voir tes réservations<br />et gérer tes inscriptions.
           </p>
         </div>
+
+        {erreurParam === 'expire' && (
+          <div style={{ background: '#fffaf0', border: '1px solid #ffe0b2', borderRadius: 8, padding: '10px 14px', color: '#7c4a03', fontSize: '0.875rem', marginBottom: 16, lineHeight: 1.5 }}>
+            Ton lien de connexion a expiré ou a déjà été utilisé.<br />
+            Entre ton email pour en recevoir un nouveau.
+          </div>
+        )}
 
         <form onSubmit={handleSubmit}>
           <div className="portail-field">

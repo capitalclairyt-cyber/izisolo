@@ -48,13 +48,16 @@ export const POST = withRoute({ auth: 'active' }, async ({ request, auth }) => {
       .maybeSingle();
 
     if (!existing) {
-      const prenomFiche = (prenom || '').trim() || cleanEmail.split('@')[0];
+      // « Camille Dupont » → prénom + nom séparés (même découpage que reserver).
+      // Saisie d'un seul mot → nom reste '' (colonne NOT NULL), la prof complétera.
+      const saisie = (prenom || '').trim() || cleanEmail.split('@')[0];
+      const parts = saisie.split(' ');
       const { error: ficheErr } = await supabaseAdmin
         .from('clients')
         .insert({
           profile_id: studioProfile.id,
-          prenom: prenomFiche,
-          nom: '',                 // colonne NOT NULL — la prof complétera
+          prenom: parts[0],
+          nom: parts.slice(1).join(' '),
           email: cleanEmail,
           statut: 'prospect',
           source: 'invitation',

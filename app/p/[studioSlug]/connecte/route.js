@@ -35,15 +35,18 @@ export async function GET(request, { params }) {
     }
   }
 
-  // 2) OTP server-side (?token_hash=...&type=...)
+  // 2) OTP server-side (?token_hash=...&type=...) — chemin NOMINAL depuis le
+  // Sprint 4 : les liens élève sont construits avec hashed_token.
   if (tokenHash && type) {
     const supabase = await createServerClient();
     const { error } = await supabase.auth.verifyOtp({ type, token_hash: tokenHash });
     if (!error) {
       return NextResponse.redirect(espaceUrl);
     }
+    // Lien expiré ou déjà utilisé → écran clair avec renvoi en un clic
+    return NextResponse.redirect(`${connexionUrl}?erreur=expire`);
   }
 
-  // 3) Échec ou format inattendu → retour à la connexion du studio
+  // 3) Format inattendu → retour à la connexion du studio
   return NextResponse.redirect(connexionUrl);
 }
