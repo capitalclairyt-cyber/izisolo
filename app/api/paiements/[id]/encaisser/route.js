@@ -1,6 +1,5 @@
 import { z } from 'zod';
-import { requireAuth } from '@/lib/api-auth';
-import { parseJsonBody } from '@/lib/validation';
+import { withRoute } from '@/lib/api-route';
 
 const encaisserSchema = z.object({
   mode: z.enum(['especes', 'cheque', 'virement', 'CB']),
@@ -9,20 +8,12 @@ const encaisserSchema = z.object({
   numero_cheque: z.string().trim().max(100).nullable().optional(),
 });
 
-export async function POST(request, { params }) {
-  let user, supabase;
-  try {
-    ({ user, supabase } = await requireAuth());
-  } catch (res) {
-    return res;
-  }
-
-  const { id } = await params;
-  const { data, errorResponse } = await parseJsonBody(request, encaisserSchema);
-  if (errorResponse) return errorResponse;
+export const POST = withRoute({ auth: 'active', schema: encaisserSchema }, async ({ params, auth, body }) => {
+  const { user, supabase } = auth;
+  const { id } = params;
 
   const today = new Date().toISOString().slice(0, 10);
-  const { mode, date_encaissement = today, notes, numero_cheque } = data;
+  const { mode, date_encaissement = today, notes, numero_cheque } = body;
 
   // Vérifier que le paiement appartient bien au profile
   const { data: paiement, error: fetchErr } = await supabase
@@ -63,4 +54,4 @@ export async function POST(request, { params }) {
   }
 
   return Response.json({ ok: true });
-}
+});

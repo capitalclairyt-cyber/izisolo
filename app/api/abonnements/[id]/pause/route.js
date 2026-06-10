@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { requireAuth } from '@/lib/api-auth';
+import { withRoute } from '@/lib/api-route';
 
 /**
  * POST /api/abonnements/[id]/pause
@@ -10,13 +10,9 @@ import { requireAuth } from '@/lib/api-auth';
  *
  * RLS : l'abonnement doit appartenir au prof (profile_id = user.id).
  */
-export async function POST(request, { params }) {
-  let profile, supabase;
-  try {
-    ({ profile, supabase } = await requireAuth());
-  } catch (res) { return res; }
-
-  const { id } = await params;
+export const POST = withRoute({ auth: 'active' }, async ({ request, params, auth }) => {
+  const { profile, supabase } = auth;
+  const { id } = params;
 
   let body;
   try { body = await request.json(); } catch { return NextResponse.json({ error: 'JSON invalide' }, { status: 400 }); }
@@ -78,4 +74,4 @@ export async function POST(request, { params }) {
   }
 
   return NextResponse.json({ error: 'Action inconnue' }, { status: 400 });
-}
+});

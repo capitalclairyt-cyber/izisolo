@@ -1,5 +1,6 @@
-import { requireAuth } from '@/lib/api-auth';
-import { createClient as createAdminSupabase } from '@supabase/supabase-js';
+// requireActiveAccount : écriture métier → bloquée si compte gelé (402)
+import { requireActiveAccount } from '@/lib/api-auth';
+import { createAdminClient } from '@/lib/supabase-admin';
 import { finaliserDemande, emailConfirmationVisiteur } from '@/lib/essai';
 import { Resend } from 'resend';
 
@@ -18,7 +19,7 @@ export const dynamic = 'force-dynamic';
 export async function POST(request, { params }) {
   let profile, supabase, user;
   try {
-    ({ profile, supabase, user } = await requireAuth());
+    ({ profile, supabase, user } = await requireActiveAccount());
   } catch (res) { return res; }
 
   if (!profile?.studio_slug) {
@@ -46,10 +47,7 @@ export async function POST(request, { params }) {
   }
 
   // Service-role pour les opérations cross-table (finalisation)
-  const supabaseAdmin = createAdminSupabase(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY
-  );
+  const supabaseAdmin = createAdminClient();
 
   if (action === 'valider') {
     try {

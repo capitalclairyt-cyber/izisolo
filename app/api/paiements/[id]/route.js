@@ -1,6 +1,5 @@
 import { z } from 'zod';
-import { requireAuth } from '@/lib/api-auth';
-import { parseJsonBody } from '@/lib/validation';
+import { withRoute } from '@/lib/api-route';
 
 const updateSchema = z.object({
   montant: z.number().positive().optional(),
@@ -12,17 +11,9 @@ const updateSchema = z.object({
   statut: z.enum(['paid', 'pending', 'overdue']).optional(),
 });
 
-export async function PATCH(request, { params }) {
-  let user, supabase;
-  try {
-    ({ user, supabase } = await requireAuth());
-  } catch (res) {
-    return res;
-  }
-
-  const { id } = await params;
-  const { data, errorResponse } = await parseJsonBody(request, updateSchema);
-  if (errorResponse) return errorResponse;
+export const PATCH = withRoute({ auth: 'active', schema: updateSchema }, async ({ params, auth, body }) => {
+  const { user, supabase } = auth;
+  const { id } = params;
 
   const { data: paiement, error: fetchErr } = await supabase
     .from('paiements')
@@ -36,13 +27,13 @@ export async function PATCH(request, { params }) {
   }
 
   const update = {};
-  if (data.montant !== undefined) update.montant = data.montant;
-  if (data.mode !== undefined) update.mode = data.mode;
-  if (data.date !== undefined) update.date = data.date;
-  if (data.date_encaissement !== undefined) update.date_encaissement = data.date_encaissement;
-  if (data.notes !== undefined) update.notes = data.notes;
-  if (data.numero_cheque !== undefined) update.numero_cheque = data.numero_cheque;
-  if (data.statut !== undefined) update.statut = data.statut;
+  if (body.montant !== undefined) update.montant = body.montant;
+  if (body.mode !== undefined) update.mode = body.mode;
+  if (body.date !== undefined) update.date = body.date;
+  if (body.date_encaissement !== undefined) update.date_encaissement = body.date_encaissement;
+  if (body.notes !== undefined) update.notes = body.notes;
+  if (body.numero_cheque !== undefined) update.numero_cheque = body.numero_cheque;
+  if (body.statut !== undefined) update.statut = body.statut;
 
   if (Object.keys(update).length === 0) {
     return Response.json({ error: 'Rien à modifier' }, { status: 400 });
@@ -59,17 +50,11 @@ export async function PATCH(request, { params }) {
   }
 
   return Response.json({ ok: true });
-}
+});
 
-export async function DELETE(request, { params }) {
-  let user, supabase;
-  try {
-    ({ user, supabase } = await requireAuth());
-  } catch (res) {
-    return res;
-  }
-
-  const { id } = await params;
+export const DELETE = withRoute({ auth: 'active' }, async ({ params, auth }) => {
+  const { user, supabase } = auth;
+  const { id } = params;
 
   const { data: paiement, error: fetchErr } = await supabase
     .from('paiements')
@@ -93,4 +78,4 @@ export async function DELETE(request, { params }) {
   }
 
   return Response.json({ ok: true });
-}
+});

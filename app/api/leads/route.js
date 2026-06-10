@@ -20,7 +20,7 @@
  */
 
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createAdminClient } from '@/lib/supabase-admin';
 import crypto from 'node:crypto';
 
 const DISPOSABLE_DOMAINS = new Set([
@@ -112,10 +112,7 @@ export async function POST(request) {
     }
 
     // ─── Couche 6 : Rate limit (Supabase) ─────────────────────────
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_ROLE_KEY
-    );
+    const supabase = createAdminClient();
 
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
     const { count: recentCount, error: rateLimitErr } = await supabase

@@ -1,6 +1,6 @@
-import { requireAuth } from '@/lib/api-auth';
+import { withRoute } from '@/lib/api-route';
 import { announce } from '@/lib/messagerie';
-import { parseJsonBody, messagerieAnnounceSchema } from '@/lib/validation';
+import { messagerieAnnounceSchema } from '@/lib/validation';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -26,16 +26,10 @@ export const dynamic = 'force-dynamic';
  * Réponse : { batch_id, count }
  */
 
-export async function POST(request) {
-  let profile, supabase;
-  try {
-    ({ profile, supabase } = await requireAuth());
-  } catch (res) { return res; }
+export const POST = withRoute({ auth: 'active', schema: messagerieAnnounceSchema }, async ({ auth, body }) => {
+  const { profile, supabase } = auth;
   // Vrai pro = a un studio_slug (le trigger Supabase crée un profil pour tout user)
   if (!profile?.studio_slug) return Response.json({ error: 'Réservé aux pros' }, { status: 403 });
-
-  const { data: body, errorResponse } = await parseJsonBody(request, messagerieAnnounceSchema);
-  if (errorResponse) return errorResponse;
 
   const content = (body.content || '').trim();
   if (!content && (!body.media_urls || body.media_urls.length === 0)) {
@@ -173,4 +167,4 @@ export async function POST(request) {
     console.error('[messagerie] announce err:', err);
     return Response.json({ error: 'Erreur diffusion : ' + err.message }, { status: 500 });
   }
-}
+});

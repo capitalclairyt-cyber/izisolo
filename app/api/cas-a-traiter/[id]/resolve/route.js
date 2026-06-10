@@ -27,7 +27,8 @@
 
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { requireAuth } from '@/lib/api-auth';
+// requireActiveAccount : écriture métier → bloquée si compte gelé (402)
+import { requireActiveAccount } from '@/lib/api-auth';
 
 const ResolveBodySchema = z.object({
   action: z.string().min(1).max(50),
@@ -40,7 +41,7 @@ const ResolveBodySchema = z.object({
 export async function POST(request, { params }) {
   let auth;
   try {
-    auth = await requireAuth();
+    auth = await requireActiveAccount();
   } catch (res) {
     return res;
   }

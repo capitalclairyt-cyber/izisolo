@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { requireAuth } from '@/lib/api-auth';
-import { createClient as createAdminSupabase } from '@supabase/supabase-js';
+import { withRoute } from '@/lib/api-route';
+import { createAdminClient } from '@/lib/supabase-admin';
 import { Resend } from 'resend';
 import { infosPratiquesBlock } from '@/lib/email-helpers';
 
@@ -17,13 +17,9 @@ import { infosPratiquesBlock } from '@/lib/email-helpers';
  *
  * Retour : { ok, presence_id, client_id }
  */
-export async function POST(request, { params }) {
-  let profile, user, supabase;
-  try {
-    ({ profile, user, supabase } = await requireAuth());
-  } catch (res) { return res; }
-
-  const { id } = await params;
+export const POST = withRoute({ auth: 'active' }, async ({ params, auth }) => {
+  const { profile, user, supabase } = auth;
+  const { id } = params;
 
   // Récupérer l'entrée liste_attente (filtrée par RLS profile_id)
   const { data: entry } = await supabase
@@ -45,10 +41,7 @@ export async function POST(request, { params }) {
   const today = new Date().toISOString().slice(0, 10);
   if (cours.date < today) return NextResponse.json({ error: 'Ce cours est passé' }, { status: 400 });
 
-  const supabaseAdmin = createAdminSupabase(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY
-  );
+  const supabaseAdmin = createAdminClient();
 
   // Vérifier qu'il y a bien une place dispo
   if (cours.capacite_max) {
@@ -94,23 +87,27 @@ export async function POST(request, { params }) {
     }
   }
 
-  // Créer la presence
-  const { data: newPresence, error: presErr } = await supabaseAdmin
-    .from('presences')
-    .insert({
-      cours_id: cours.id,
-      client_id: clientId,
-      profile_id: profile.id,
-      present: false,
-      source: 'liste_attente',
-    })
-    .select('id')
-    .single();
+  // Créer la presence — RPC v53 atomique. NB : l'ancien insert utilisait des
+  // colonnes INEXISTANTES (present, source) → 500 systématique, la promotion
+  // manuelle n'a jamais fonctionné.
+  const { data: resa, error: presErr } = await supabaseAdmin
+    .rpc('reserver_place', {
+      p_profile_id: profile.id,
+      p_cours_id: cours.id,
+      p_client_id: clientId,
+    });
 
-  if (presErr) {
-    console.error('[promouvoir] presence err:', presErr);
+  if (presErr || !resa?.ok) {
+    if (resa?.reason === 'doublon') {
+      return NextResponse.json({ error: 'Cette personne est déjà inscrite à ce cours.' }, { status: 409 });
+    }
+    if (resa?.reason === 'complet') {
+      return NextResponse.json({ error: 'Le cours est complet — la place a été reprise entre-temps.' }, { status: 409 });
+    }
+    console.error('[promouvoir] presence err:', presErr || resa?.reason);
     return NextResponse.json({ error: 'Erreur lors de la création de la place' }, { status: 500 });
   }
+  const newPresence = { id: resa.presence_id };
 
   // Marquer la ligne comme notifiée
   await supabaseAdmin
@@ -161,20 +158,16 @@ export async function POST(request, { params }) {
   }
 
   return NextResponse.json({ ok: true, presence_id: newPresence.id, client_id: clientId });
-}
+});
 
 /**
  * DELETE /api/liste-attente/[id]/promouvoir
  *
  * Retire la personne de la liste d'attente (cas : ne veut plus venir, ou doublon).
  */
-export async function DELETE(request, { params }) {
-  let profile, supabase;
-  try {
-    ({ profile, supabase } = await requireAuth());
-  } catch (res) { return res; }
-
-  const { id } = await params;
+export const DELETE = withRoute({ auth: 'active' }, async ({ params, auth }) => {
+  const { profile, supabase } = auth;
+  const { id } = params;
 
   const { error } = await supabase
     .from('liste_attente')
@@ -187,4 +180,4 @@ export async function DELETE(request, { params }) {
     return NextResponse.json({ error: 'Une erreur est survenue.' }, { status: 500 });
   }
   return NextResponse.json({ ok: true });
-}
+});

@@ -17,14 +17,15 @@
  */
 
 import { NextResponse } from 'next/server';
-import { requireAuth } from '@/lib/api-auth';
+// requireActiveAccount : écriture métier → bloquée si compte gelé (402)
+import { requireActiveAccount } from '@/lib/api-auth';
 
 const UNDO_WINDOW_DAYS = 7;
 
 export async function POST(request, { params }) {
   let auth;
   try {
-    auth = await requireAuth();
+    auth = await requireActiveAccount();
   } catch (res) {
     return res;
   }

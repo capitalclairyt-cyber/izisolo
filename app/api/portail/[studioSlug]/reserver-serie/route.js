@@ -1,5 +1,5 @@
 import { createServerClient } from '@/lib/supabase-server';
-import { createClient as createAdminSupabase } from '@supabase/supabase-js';
+import { createAdminClient } from '@/lib/supabase-admin';
 import { reserverSerieSchema } from '@/lib/validation';
 import { checkRateLimitIP } from '@/lib/antibot';
 
@@ -40,10 +40,7 @@ export async function POST(request, { params }) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return Response.json({ error: 'Tu dois être connecté·e' }, { status: 401 });
 
-  const supabaseAdmin = createAdminSupabase(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY
-  );
+  const supabaseAdmin = createAdminClient();
 
   // Studio
   const { data: profile } = await supabaseAdmin

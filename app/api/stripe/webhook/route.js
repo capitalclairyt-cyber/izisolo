@@ -1,4 +1,4 @@
-import { createClient as createAdminSupabase } from '@supabase/supabase-js';
+import { createAdminClient } from '@/lib/supabase-admin';
 import { verifyStripeSignature, getCheckoutSessionAmount, getCheckoutSessionEmail } from '@/lib/stripe';
 
 // Frais de fonctionnement IziSolo sur chaque paiement encaissé via le portail (Stripe).
@@ -11,10 +11,7 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 function adminClient() {
-  return createAdminSupabase(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY
-  );
+  return createAdminClient();
 }
 
 export async function POST(request) {

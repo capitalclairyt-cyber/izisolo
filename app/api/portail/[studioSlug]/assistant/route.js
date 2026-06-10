@@ -1,5 +1,5 @@
 import { createServerClient } from '@/lib/supabase-server';
-import { createClient as createAdminSupabase } from '@supabase/supabase-js';
+import { createAdminClient } from '@/lib/supabase-admin';
 import { checkAntiBot } from '@/lib/antibot';
 import Anthropic from '@anthropic-ai/sdk';
 
@@ -48,10 +48,7 @@ export async function POST(request, { params }) {
   const supabase = await createServerClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  const supabaseAdmin = createAdminSupabase(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY
-  );
+  const supabaseAdmin = createAdminClient();
 
   // Studio + planning à venir (14 jours)
   const today = new Date().toISOString().slice(0, 10);

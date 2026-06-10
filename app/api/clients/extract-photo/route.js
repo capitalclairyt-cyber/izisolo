@@ -1,4 +1,5 @@
-import { requireAuth } from '@/lib/api-auth';
+// requireActiveAccount : feature payante (IA) → bloquée si compte gelé (402)
+import { requireActiveAccount } from '@/lib/api-auth';
 import { effectivePlan } from '@/lib/plan-guard';
 import { askClaude } from '@/lib/claude';
 import { z } from 'zod';
@@ -39,7 +40,7 @@ const extractSchema = z.object({
 
 export async function POST(request) {
   let auth;
-  try { auth = await requireAuth(); } catch (res) { return res; }
+  try { auth = await requireActiveAccount(); } catch (res) { return res; }
   const { profile, supabase } = auth;
 
   // Réservé Pro+ (essai inclus, donc dispo pour les nouvelles utilisatrices)

@@ -1,6 +1,5 @@
 import { z } from 'zod';
-import { requireAuth } from '@/lib/api-auth';
-import { parseJsonBody } from '@/lib/validation';
+import { withRoute } from '@/lib/api-route';
 
 const updateSchema = z.object({
   statut: z.enum(['actif', 'suspendu', 'expire', 'resilie']).optional(),
@@ -11,17 +10,9 @@ const updateSchema = z.object({
   notes: z.string().max(1000).nullable().optional(),
 });
 
-export async function PATCH(request, { params }) {
-  let user, supabase;
-  try {
-    ({ user, supabase } = await requireAuth());
-  } catch (res) {
-    return res;
-  }
-
-  const { id } = await params;
-  const { data, errorResponse } = await parseJsonBody(request, updateSchema);
-  if (errorResponse) return errorResponse;
+export const PATCH = withRoute({ auth: 'active', schema: updateSchema }, async ({ params, auth, body }) => {
+  const { user, supabase } = auth;
+  const { id } = params;
 
   const { data: abo, error: fetchErr } = await supabase
     .from('abonnements')
@@ -35,12 +26,12 @@ export async function PATCH(request, { params }) {
   }
 
   const update = {};
-  if (data.statut !== undefined) update.statut = data.statut;
-  if (data.date_debut !== undefined) update.date_debut = data.date_debut;
-  if (data.date_fin !== undefined) update.date_fin = data.date_fin;
-  if (data.seances_total !== undefined) update.seances_total = data.seances_total;
-  if (data.seances_utilisees !== undefined) update.seances_utilisees = data.seances_utilisees;
-  if (data.notes !== undefined) update.notes = data.notes;
+  if (body.statut !== undefined) update.statut = body.statut;
+  if (body.date_debut !== undefined) update.date_debut = body.date_debut;
+  if (body.date_fin !== undefined) update.date_fin = body.date_fin;
+  if (body.seances_total !== undefined) update.seances_total = body.seances_total;
+  if (body.seances_utilisees !== undefined) update.seances_utilisees = body.seances_utilisees;
+  if (body.notes !== undefined) update.notes = body.notes;
 
   if (Object.keys(update).length === 0) {
     return Response.json({ error: 'Rien à modifier' }, { status: 400 });
@@ -57,17 +48,11 @@ export async function PATCH(request, { params }) {
   }
 
   return Response.json({ ok: true });
-}
+});
 
-export async function DELETE(request, { params }) {
-  let user, supabase;
-  try {
-    ({ user, supabase } = await requireAuth());
-  } catch (res) {
-    return res;
-  }
-
-  const { id } = await params;
+export const DELETE = withRoute({ auth: 'active' }, async ({ params, auth }) => {
+  const { user, supabase } = auth;
+  const { id } = params;
 
   const { data: abo, error: fetchErr } = await supabase
     .from('abonnements')
@@ -101,4 +86,4 @@ export async function DELETE(request, { params }) {
   }
 
   return Response.json({ ok: true });
-}
+});

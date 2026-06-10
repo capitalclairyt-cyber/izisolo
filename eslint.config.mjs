@@ -84,4 +84,16 @@ export default [
       'no-console': ['warn', { allow: ['warn', 'error'] }],
     },
   },
+  {
+    // Sprint 2 audit : la clé service_role ne s'instancie QUE dans
+    // lib/supabase-admin.js (le service_role contourne la RLS — son usage
+    // doit passer par createAdminClient()/supabaseAdmin, avec scoping tenant).
+    files: ['app/**/*.{js,jsx}', 'components/**/*.{js,jsx}', 'hooks/**/*.{js,jsx}'],
+    rules: {
+      'no-restricted-syntax': ['error', {
+        selector: "MemberExpression[property.name='SUPABASE_SERVICE_ROLE_KEY']",
+        message: "Clé service_role interdite ici — importe createAdminClient() (ou supabaseAdmin) depuis '@/lib/supabase-admin', et filtre TOUJOURS par tenant.",
+      }],
+    },
+  },
 ];

@@ -1,5 +1,5 @@
 import { requireCronAuth } from '@/lib/api-auth';
-import { createClient as createAdminSupabase } from '@supabase/supabase-js';
+import { createAdminClient } from '@/lib/supabase-admin';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -28,10 +28,7 @@ export async function GET(request) {
     return res;
   }
 
-  const supabase = createAdminSupabase(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY
-  );
+  const supabase = createAdminClient();
 
   const il24h = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
   // Référence de dédup : un seul digest par destinataire et par jour (Paris).

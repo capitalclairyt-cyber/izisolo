@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { requireAuth } from '@/lib/api-auth';
-import { createClient as createAdminSupabase } from '@supabase/supabase-js';
+import { withRoute } from '@/lib/api-route';
+import { createAdminClient } from '@/lib/supabase-admin';
 import { libererSerieSchema } from '@/lib/validation';
 
 /**
@@ -18,11 +18,8 @@ import { libererSerieSchema } from '@/lib/validation';
  * Utilité : un·e élève ne vient plus → libérer toutes ses réservations
  * récurrentes futures d'un coup au lieu d'annuler une par une.
  */
-export async function POST(request) {
-  let profile, supabase;
-  try {
-    ({ profile, supabase } = await requireAuth());
-  } catch (res) { return res; }
+export const POST = withRoute({ auth: 'active' }, async ({ request, auth }) => {
+  const { profile, supabase } = auth;
 
   let body;
   try { body = await request.json(); } catch { return NextResponse.json({ error: 'JSON invalide' }, { status: 400 }); }
@@ -64,10 +61,7 @@ export async function POST(request) {
     return NextResponse.json({ ok: true, liberees: 0, promues: 0, skipped: 0 });
   }
 
-  const supabaseAdmin = createAdminSupabase(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY
-  );
+  const supabaseAdmin = createAdminClient();
 
   // Supprimer toutes les présences à libérer
   const ids = aLiberer.map(p => p.id);
@@ -98,7 +92,7 @@ export async function POST(request) {
     promues,
     skipped: 0,
   });
-}
+});
 
 // ─── Promotion automatique de la liste d'attente (copié de annuler/route.js) ──
 async function promouvoirListeAttente(supabaseAdmin, profileId, cours) {
@@ -147,17 +141,16 @@ async function promouvoirListeAttente(supabaseAdmin, profileId, cours) {
   }
   if (!clientId) return false;
 
-  const { error: presErr } = await supabaseAdmin
-    .from('presences')
-    .insert({
-      cours_id: cours.id,
-      client_id: clientId,
-      profile_id: profileId,
-      present: false,
-      source: 'liste_attente',
+  // RPC v53 atomique — l'ancien insert utilisait des colonnes INEXISTANTES
+  // (present, source) → la promotion après libération n'a jamais fonctionné.
+  const { data: resa, error: presErr } = await supabaseAdmin
+    .rpc('reserver_place', {
+      p_profile_id: profileId,
+      p_cours_id: cours.id,
+      p_client_id: clientId,
     });
-  if (presErr) {
-    console.error('[liberer-serie] create presence error:', presErr);
+  if (presErr || (!resa?.ok && resa?.reason !== 'doublon')) {
+    console.error('[liberer-serie] create presence error:', presErr || resa?.reason);
     return false;
   }
 

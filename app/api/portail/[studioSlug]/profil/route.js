@@ -1,5 +1,5 @@
 import { createServerClient } from '@/lib/supabase-server';
-import { createClient as createAdminSupabase } from '@supabase/supabase-js';
+import { createAdminClient } from '@/lib/supabase-admin';
 
 /**
  * PATCH /api/portail/[studioSlug]/profil
@@ -17,10 +17,7 @@ export async function PATCH(request, { params }) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return Response.json({ error: 'Non authentifié' }, { status: 401 });
 
-  const supabaseAdmin = createAdminSupabase(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY
-  );
+  const supabaseAdmin = createAdminClient();
 
   const { data: profile } = await supabaseAdmin
     .from('profiles')

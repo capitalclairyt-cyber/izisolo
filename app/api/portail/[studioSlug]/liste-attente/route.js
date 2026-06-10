@@ -1,4 +1,4 @@
-import { createClient as createAdminSupabase } from '@supabase/supabase-js';
+import { createAdminClient } from '@/lib/supabase-admin';
 import { listeAttenteSchema } from '@/lib/validation';
 import { checkAntiBot, ipFromRequest } from '@/lib/antibot';
 
@@ -25,10 +25,7 @@ export async function POST(request, { params }) {
   if (!parsed.success) return Response.json({ error: 'Données invalides' }, { status: 400 });
   const { coursId, nom, email, tel } = parsed.data;
 
-  const supabaseAdmin = createAdminSupabase(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY
-  );
+  const supabaseAdmin = createAdminClient();
 
   // Vérifier studio + cours
   const { data: profile } = await supabaseAdmin

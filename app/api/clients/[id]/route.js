@@ -1,4 +1,4 @@
-import { requireAuth } from '@/lib/api-auth';
+import { withRoute } from '@/lib/api-route';
 
 /**
  * DELETE /api/clients/[id] — Supprime une fiche client.
@@ -11,15 +11,9 @@ import { requireAuth } from '@/lib/api-auth';
  *
  * Un simple DELETE sur clients suffit donc : la base s'occupe du reste.
  */
-export async function DELETE(request, { params }) {
-  let user, supabase;
-  try {
-    ({ user, supabase } = await requireAuth());
-  } catch (res) {
-    return res;
-  }
-
-  const { id } = await params;
+export const DELETE = withRoute({ auth: 'active' }, async ({ params, auth }) => {
+  const { user, supabase } = auth;
+  const { id } = params;
 
   // Vérifie que le client existe et appartient bien au prof connecté.
   const { data: client, error: fetchErr } = await supabase
@@ -44,4 +38,4 @@ export async function DELETE(request, { params }) {
   }
 
   return Response.json({ ok: true });
-}
+});

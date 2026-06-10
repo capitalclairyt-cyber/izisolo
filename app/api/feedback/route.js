@@ -1,5 +1,5 @@
 import { requireAuth } from '@/lib/api-auth';
-import { createClient as createAdminSupabase } from '@supabase/supabase-js';
+import { createAdminClient } from '@/lib/supabase-admin';
 
 export async function POST(request) {
   let profile;
@@ -23,10 +23,7 @@ export async function POST(request) {
 
   const userAgent = (request.headers.get('user-agent') || '').slice(0, 500);
 
-  const supabaseAdmin = createAdminSupabase(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY
-  );
+  const supabaseAdmin = createAdminClient();
 
   const { error } = await supabaseAdmin.from('feedback').insert({
     user_id: profile.id,

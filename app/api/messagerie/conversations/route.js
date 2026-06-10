@@ -299,11 +299,8 @@ export async function POST(request) {
       return Response.json({ error: 'Tu n\'es pas client·e de ce studio' }, { status: 403 });
     }
     // Créer ou retrouver la conv via service-role (RLS bloque l'INSERT par l'élève sinon)
-    const { createClient: createAdminSupabase } = await import('@supabase/supabase-js');
-    const supabaseAdmin = createAdminSupabase(
-      process.env.NEXT_PUBLIC_SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_ROLE_KEY
-    );
+    const { createAdminClient } = await import('@/lib/supabase-admin');
+    const supabaseAdmin = createAdminClient();
     const conv = await getOrCreateConversationClient(supabaseAdmin, targetProfile.id, client.id);
     return Response.json({ conversation: conv });
   }

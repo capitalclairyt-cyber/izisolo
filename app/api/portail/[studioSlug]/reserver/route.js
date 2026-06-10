@@ -1,5 +1,5 @@
 import { createServerClient } from '@/lib/supabase-server';
-import { createClient as createAdminSupabase } from '@supabase/supabase-js';
+import { createAdminClient } from '@/lib/supabase-admin';
 import { parseJsonBody, reservationSchema } from '@/lib/validation';
 import { checkAntiBot, ipFromRequest } from '@/lib/antibot';
 import { getRegle } from '@/lib/regles-metier';
@@ -37,10 +37,7 @@ export async function POST(request, { params }) {
   const isAuthenticated = !!authUser && authUser.email?.toLowerCase() === email.toLowerCase();
 
   // Utiliser le service role pour les opérations admin
-  const supabaseAdmin = createAdminSupabase(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY
-  );
+  const supabaseAdmin = createAdminClient();
 
   // Vérifier que le studio existe et que le cours lui appartient.
   // Charge aussi regles_metier pour appliquer la règle "élève sans carnet".

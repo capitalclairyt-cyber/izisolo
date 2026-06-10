@@ -1,5 +1,5 @@
 import { createServerClient } from '@/lib/supabase-server';
-import { createClient as createAdminSupabase } from '@supabase/supabase-js';
+import { createAdminClient } from '@/lib/supabase-admin';
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 
 export const runtime = 'nodejs';
@@ -16,10 +16,7 @@ export async function GET(request, { params }) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return new Response('Unauthorized', { status: 401 });
 
-  const supabaseAdmin = createAdminSupabase(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY
-  );
+  const supabaseAdmin = createAdminClient();
 
   // Studio
   const { data: profile } = await supabaseAdmin

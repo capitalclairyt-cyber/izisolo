@@ -1,4 +1,4 @@
-import { createClient as createAdminSupabase } from '@supabase/supabase-js';
+import { createAdminClient } from '@/lib/supabase-admin';
 import { finaliserDemande, emailConfirmationVisiteur, emailEnAttenteVisiteur, emailNotifPro } from '@/lib/essai';
 import { checkAntiBot, ipFromRequest } from '@/lib/antibot';
 import { essaiSchema } from '@/lib/validation';
@@ -55,10 +55,7 @@ export async function POST(request, { params }) {
     return Response.json({ error: antibotCheck.reason }, { status: antibotCheck.code === 'RATE_LIMITED' ? 429 : 400 });
   }
 
-  const supabaseAdmin = createAdminSupabase(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY
-  );
+  const supabaseAdmin = createAdminClient();
 
   const emailLower = email.trim().toLowerCase();
 

@@ -19,7 +19,7 @@
  *   { sent: number, failed: number, errors: string[] }
  */
 
-import { createServerClient } from '@/lib/supabase-server';
+import { withRoute } from '@/lib/api-route';
 import { SMS_ENABLED } from '@/lib/constantes';
 
 // Plans autorisés à envoyer des SMS. `free` inclus pour comptes internes
@@ -36,7 +36,7 @@ function normalizePhone(telephone) {
   return raw; // déjà normalisé ou numéro international sans indicatif
 }
 
-export async function POST(request) {
+export const POST = withRoute({ auth: 'active' }, async ({ request, auth }) => {
   // 0. Kill-switch global : SMS désactivés temporairement (cf. constantes.js)
   if (!SMS_ENABLED) {
     return Response.json(
@@ -45,12 +45,7 @@ export async function POST(request) {
     );
   }
 
-  // 1. Authentification
-  const supabase = await createServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    return Response.json({ error: 'Non autorisé' }, { status: 401 });
-  }
+  const { user, supabase } = auth;
 
   // 2. Vérification du plan
   const { data: profile } = await supabase
@@ -88,6 +83,13 @@ export async function POST(request) {
 
   if (!Array.isArray(phones) || phones.length === 0 || !message?.trim()) {
     return Response.json({ error: 'Paramètres manquants (phones, message)' }, { status: 400 });
+  }
+  // Bornes anti-abus (audit S0) : coût Twilio plafonné par requête
+  if (phones.length > 100) {
+    return Response.json({ error: 'Trop de destinataires (max 100 par envoi).' }, { status: 400 });
+  }
+  if (message.length > 600) {
+    return Response.json({ error: 'Message trop long (max 600 caractères).' }, { status: 400 });
   }
 
   // 5. Envoi via l'API REST Twilio (sans twilio npm — simple fetch)
@@ -127,4 +129,4 @@ export async function POST(request) {
   }
 
   return Response.json(results);
-}
+});

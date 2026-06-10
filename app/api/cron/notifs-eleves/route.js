@@ -1,5 +1,5 @@
 import { requireCronAuth } from '@/lib/api-auth';
-import { createClient as createAdminSupabase } from '@supabase/supabase-js';
+import { createAdminClient } from '@/lib/supabase-admin';
 import { sendNotifEleve } from '@/lib/notifs-eleves';
 import { evaluerReglesAll } from '@/lib/regles';
 
@@ -35,10 +35,7 @@ export async function GET(request) {
     return res;
   }
 
-  const supabase = createAdminSupabase(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY
-  );
+  const supabase = createAdminClient();
 
   const today = new Date().toISOString().slice(0, 10);
 

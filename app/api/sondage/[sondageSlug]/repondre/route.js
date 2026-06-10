@@ -1,4 +1,4 @@
-import { createClient as createAdminSupabase } from '@supabase/supabase-js';
+import { createAdminClient } from '@/lib/supabase-admin';
 import { createServerClient } from '@/lib/supabase-server';
 import { parseJsonBody, sondageReponseSchema } from '@/lib/validation';
 import { createHash } from 'crypto';
@@ -54,10 +54,7 @@ export async function POST(request, { params }) {
   }
 
   // Service role pour bypasser RLS sur insert (pas de policy publique INSERT, exprès)
-  const supabase = createAdminSupabase(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY
-  );
+  const supabase = createAdminClient();
 
   // Charger sondage + créneaux pour valider que les ids appartiennent bien au sondage
   const { data: sondage } = await supabase

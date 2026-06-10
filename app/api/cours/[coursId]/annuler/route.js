@@ -1,5 +1,5 @@
-import { requireAuth } from '@/lib/api-auth';
-import { createClient as createAdminSupabase } from '@supabase/supabase-js';
+import { withRoute } from '@/lib/api-route';
+import { createAdminClient } from '@/lib/supabase-admin';
 import { sendNotifEleve } from '@/lib/notifs-eleves';
 import { getRegle } from '@/lib/regles-metier';
 
@@ -14,23 +14,14 @@ export const runtime = 'nodejs';
  *   Body : { raison?: string }    — message optionnel à inclure dans l'email
  */
 
-export async function POST(request, { params }) {
-  let user;
-  try {
-    ({ user } = await requireAuth());
-  } catch (res) {
-    return res;
-  }
-
-  const { coursId } = await params;
+export const POST = withRoute({ auth: 'active' }, async ({ request, params, auth }) => {
+  const { user } = auth;
+  const { coursId } = params;
   let body = {};
   try { body = await request.json(); } catch {}
   const raison = (body.raison || '').toString().trim().slice(0, 500);
 
-  const supabaseAdmin = createAdminSupabase(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY
-  );
+  const supabaseAdmin = createAdminClient();
 
   // Vérifie ownership + récupère le cours
   const { data: cours } = await supabaseAdmin
@@ -164,4 +155,4 @@ Désolé·e pour le désagrément, à très vite.`;
     cas_loggés: casLoggés,
     regle_appliquée: regleAnnul.mode === 'auto' ? regleAnnul.choix : 'manuel',
   });
-}
+});

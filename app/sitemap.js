@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 import { getAllArticles } from '@/lib/blog';
 
 const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.izisolo.fr';
@@ -52,12 +52,10 @@ const STATIC_PATHS = [
 ];
 
 async function getPublicStudios() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !key) return [];
+  // Singleton admin (dégradation gracieuse : env absente → la requête échoue
+  // → catch → sitemap sans studios, comme avant)
   try {
-    const supabase = createClient(url, key);
-    const { data } = await supabase
+    const { data } = await supabaseAdmin
       .from('profiles')
       .select('studio_slug, updated_at')
       .not('studio_slug', 'is', null);
