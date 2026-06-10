@@ -1,4 +1,4 @@
-import { requireAuth } from '@/lib/api-auth';
+import { withRoute } from '@/lib/api-route';
 
 const PERIODE_TO_RANGE = (periode) => {
   const now = new Date();
@@ -57,13 +57,9 @@ function csvEscape(value) {
   return str;
 }
 
-export async function GET(request) {
-  let user, supabase;
-  try {
-    ({ user, supabase } = await requireAuth());
-  } catch (res) {
-    return res;
-  }
+// plan 'export_compta' : feature Pro (gate serveur — l'UI seule était contournable)
+export const GET = withRoute({ auth: 'user', plan: 'export_compta' }, async ({ request, auth }) => {
+  const { user, supabase } = auth;
 
   const url = new URL(request.url);
   const periode = url.searchParams.get('periode') || 'mois';
@@ -132,4 +128,4 @@ export async function GET(request) {
       'Cache-Control': 'no-store',
     },
   });
-}
+});

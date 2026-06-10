@@ -2,6 +2,7 @@ import { createAdminClient } from '@/lib/supabase-admin';
 import { finaliserDemande, emailConfirmationVisiteur, emailEnAttenteVisiteur, emailNotifPro } from '@/lib/essai';
 import { checkAntiBot, ipFromRequest } from '@/lib/antibot';
 import { essaiSchema } from '@/lib/validation';
+import { studioHasFeature } from '@/lib/plan-guard';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -62,12 +63,18 @@ export async function POST(request, { params }) {
   // 1. Profil + config essai
   const { data: profile } = await supabaseAdmin
     .from('profiles')
-    .select('id, prenom, studio_nom, email_contact, adresse, code_postal, ville, telephone, essai_actif, essai_mode, essai_paiement, essai_prix, essai_stripe_payment_link, essai_message')
+    .select('id, prenom, studio_nom, email_contact, adresse, code_postal, ville, telephone, essai_actif, essai_mode, essai_paiement, essai_prix, essai_stripe_payment_link, essai_message, plan, trial_started_at, stripe_subscription_status')
     .eq('studio_slug', studioSlug)
     .single();
 
   if (!profile) return Response.json({ error: 'Studio introuvable' }, { status: 404 });
   if (!profile.essai_actif) return Response.json({ error: 'Les cours d\'essai ne sont pas activés sur ce studio' }, { status: 403 });
+
+  // Gate plan (Sprint 3) : le cours d'essai est une feature Pro du STUDIO
+  // (essai_actif peut rester true après un downgrade — le plan prime).
+  if (!studioHasFeature(profile, 'coursEssai')) {
+    return Response.json({ error: 'Les cours d\'essai ne sont pas activés sur ce studio' }, { status: 403 });
+  }
 
   // ── Anti-doublon : un même email ne peut pas demander 2 essais sur le même studio ──
   const { data: demandeMemeStudio } = await supabaseAdmin

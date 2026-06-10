@@ -2,6 +2,7 @@ import { createServerClient } from '@/lib/supabase-server';
 import { createAdminClient } from '@/lib/supabase-admin';
 import { parseJsonBody, annulationSchema } from '@/lib/validation';
 import { checkRateLimitIP } from '@/lib/antibot';
+import { studioHasFeature } from '@/lib/plan-guard';
 import { evaluerAnnulation } from '@/lib/regles-annulation';
 import { sendNotifEleve } from '@/lib/notifs-eleves';
 import { getRegle } from '@/lib/regles-metier';
@@ -32,7 +33,7 @@ export async function POST(request, { params }) {
   // Vérifier que le studio existe + récupérer ses règles + config notifs
   const { data: profile } = await supabaseAdmin
     .from('profiles')
-    .select('id, studio_nom, regles_annulation, regles_metier, notifs_eleves, twilio_account_sid, twilio_auth_token, twilio_phone_number')
+    .select('id, studio_nom, regles_annulation, regles_metier, notifs_eleves, twilio_account_sid, twilio_auth_token, twilio_phone_number, plan, trial_started_at, stripe_subscription_status')
     .eq('studio_slug', studioSlug)
     .single();
 
@@ -45,6 +46,14 @@ export async function POST(request, { params }) {
 
   if (!profile) {
     return Response.json({ error: 'Studio introuvable' }, { status: 404 });
+  }
+
+  // Gate plan (Sprint 3) : l'annulation en ligne par l'élève est une feature
+  // Pro du STUDIO. En Solo, l'élève contacte directement sa prof.
+  if (!studioHasFeature(profile, 'annulationParEleve')) {
+    return Response.json({
+      error: 'L\'annulation en ligne n\'est pas activée pour ce studio. Contacte directement ton studio pour annuler.',
+    }, { status: 403 });
   }
 
   // Trouver le client lié à cet user dans ce studio (incl. infos pour notif)

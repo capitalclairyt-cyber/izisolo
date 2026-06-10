@@ -1,4 +1,5 @@
 import { createServerClient } from '@/lib/supabase-server';
+import { createAdminClient } from '@/lib/supabase-admin';
 import { parseJsonBody, adminTicketUpdateSchema } from '@/lib/validation';
 
 const ADMIN_EMAILS = [
@@ -22,14 +23,21 @@ export async function POST(request) {
   if (status) updates.status = status;
   if (admin_reply !== undefined) updates.admin_reply = admin_reply;
 
-  const { error } = await supabase
+  // Écriture via le client ADMIN : la RLS rendait l'update d'un ticket d'un
+  // autre user silencieusement sans effet (0 ligne touchée). Sprint 3 audit.
+  const admin = createAdminClient();
+  const { data: updated, error } = await admin
     .from('support_tickets')
     .update(updates)
-    .eq('id', ticketId);
+    .eq('id', ticketId)
+    .select('id');
 
   if (error) {
     console.error('update ticket error:', error);
     return new Response('Server error', { status: 500 });
+  }
+  if (!updated?.length) {
+    return Response.json({ error: 'Ticket introuvable' }, { status: 404 });
   }
 
   return new Response(JSON.stringify({ ok: true }), {

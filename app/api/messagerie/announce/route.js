@@ -26,7 +26,7 @@ export const dynamic = 'force-dynamic';
  * Réponse : { batch_id, count }
  */
 
-export const POST = withRoute({ auth: 'active', schema: messagerieAnnounceSchema }, async ({ auth, body }) => {
+export const POST = withRoute({ auth: 'active', schema: messagerieAnnounceSchema, plan: 'mailing' }, async ({ auth, body }) => {
   const { profile, supabase } = auth;
   // Vrai pro = a un studio_slug (le trigger Supabase crée un profil pour tout user)
   if (!profile?.studio_slug) return Response.json({ error: 'Réservé aux pros' }, { status: 403 });

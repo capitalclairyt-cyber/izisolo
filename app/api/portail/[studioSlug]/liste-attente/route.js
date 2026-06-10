@@ -1,6 +1,7 @@
 import { createAdminClient } from '@/lib/supabase-admin';
 import { listeAttenteSchema } from '@/lib/validation';
 import { checkAntiBot, ipFromRequest } from '@/lib/antibot';
+import { studioHasFeature } from '@/lib/plan-guard';
 
 export async function POST(request, { params }) {
   const { studioSlug } = await params;
@@ -30,10 +31,17 @@ export async function POST(request, { params }) {
   // Vérifier studio + cours
   const { data: profile } = await supabaseAdmin
     .from('profiles')
-    .select('id, studio_nom')
+    .select('id, studio_nom, plan, trial_started_at, stripe_subscription_status')
     .eq('studio_slug', studioSlug)
     .single();
   if (!profile) return Response.json({ error: 'Studio introuvable' }, { status: 404 });
+
+  // Gate plan (Sprint 3) : la liste d'attente est une feature Pro du STUDIO
+  if (!studioHasFeature(profile, 'listeAttente')) {
+    return Response.json({
+      error: 'La liste d\'attente n\'est pas disponible pour ce studio.',
+    }, { status: 403 });
+  }
 
   const { data: cours } = await supabaseAdmin
     .from('cours')
