@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/nextjs';
 import { createAdminClient } from '@/lib/supabase-admin';
 import { verifyStripeSignature, getCheckoutSessionAmount, getCheckoutSessionEmail } from '@/lib/stripe';
 
@@ -63,6 +64,7 @@ export async function POST(request) {
     return Response.json({ received: true });
   } catch (err) {
     console.error('[stripe/webhook] handler error:', err);
+    Sentry.captureException(err);
     return new Response(`Handler error: ${err.message}`, { status: 500 });
   }
 }
@@ -131,6 +133,8 @@ async function handleCheckoutCompleted(supabase, profileId, session) {
     date: today,
     date_encaissement: today,
     stripe_session_id: session.id,
+    // v55 : permet de rattacher les remboursements (charge.payment_intent)
+    stripe_payment_intent: typeof session.payment_intent === 'string' ? session.payment_intent : null,
     commission_taux: COMMISSION_RATE,
     commission_montant: commission,
     notes: `Stripe · ${email || 'email inconnu'}${clientId ? '' : ' · client à attribuer'}`,
@@ -170,30 +174,43 @@ async function handleCheckoutCompleted(supabase, profileId, session) {
 }
 
 async function handleChargeRefunded(supabase, profileId, charge) {
-  // Trouver le paiement via la session associée
-  const sessionId = charge.metadata?.session_id || charge.payment_intent;
-  if (!sessionId) return;
+  // Sprint 5 audit : l'ancien matching cherchait charge.payment_intent (pi_…)
+  // dans stripe_session_id (cs_…) → AUCUN remboursement n'était jamais
+  // répercuté. On matche désormais sur stripe_payment_intent (stocké à
+  // l'encaissement depuis v55), avec fallback legacy sur la session.
+  const notesRembourse = `[REMBOURSÉ ${new Date().toISOString().slice(0, 10)}] Stripe charge: ${charge.id}`;
+  const ID_FORMAT = /^[a-zA-Z0-9_]+$/; // ids Stripe : pas d'injection PostgREST
 
-  // Sécurité : sessionId provient de données Stripe contrôlables (metadata).
-  // Il est interpolé dans un filtre PostgREST `.or(...)` — une virgule ou une
-  // parenthèse casserait ou élargirait le filtre OR (injection PostgREST).
-  // On valide donc strictement le format avant toute requête.
-  if (!/^[a-zA-Z0-9_]+$/.test(sessionId)) {
-    console.error('[stripe/webhook] sessionId invalide pour refund, ignoré:', sessionId);
-    return;
+  let touched = 0;
+
+  const paymentIntent = typeof charge.payment_intent === 'string' ? charge.payment_intent : null;
+  if (paymentIntent && ID_FORMAT.test(paymentIntent)) {
+    const { data, error } = await supabase
+      .from('paiements')
+      .update({ statut: 'overdue', notes: notesRembourse })
+      .eq('profile_id', profileId)
+      .eq('stripe_payment_intent', paymentIntent)
+      .select('id');
+    if (error) console.error('[stripe/webhook] refund update (pi) error:', error);
+    else touched = data?.length || 0;
   }
 
-  // Marquer le paiement comme remboursé via les notes (pas de statut "refunded" en DB)
-  const { error } = await supabase
-    .from('paiements')
-    .update({
-      statut: 'overdue',
-      notes: `[REMBOURSÉ ${new Date().toISOString().slice(0, 10)}] Stripe charge: ${charge.id}`,
-    })
-    .eq('profile_id', profileId)
-    .or(`stripe_session_id.eq.${sessionId},notes.ilike.%${sessionId}%`);
+  // Fallback : metadata.session_id (paiements antérieurs à v55)
+  const sessionId = charge.metadata?.session_id || null;
+  if (!touched && sessionId && ID_FORMAT.test(sessionId)) {
+    const { data, error } = await supabase
+      .from('paiements')
+      .update({ statut: 'overdue', notes: notesRembourse })
+      .eq('profile_id', profileId)
+      .eq('stripe_session_id', sessionId)
+      .select('id');
+    if (error) console.error('[stripe/webhook] refund update (session) error:', error);
+    else touched = data?.length || 0;
+  }
 
-  if (error) {
-    console.error('[stripe/webhook] refund update error:', error);
+  if (!touched) {
+    // Remboursement orphelin : visible dans Sentry au lieu de disparaître
+    console.error('[stripe/webhook] refund non rattaché à un paiement:', charge.id);
+    Sentry.captureMessage(`[stripe/webhook] refund non rattaché : charge ${charge.id} (profile ${profileId})`);
   }
 }

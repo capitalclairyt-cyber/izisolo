@@ -6,6 +6,7 @@ import { getRegle } from '@/lib/regles-metier';
 import { sendNotifElevePourRegle } from '@/lib/notif-eleve-regle';
 import { getDelaiPourCours } from '@/lib/regles-annulation';
 import { infosPratiquesBlock } from '@/lib/email-helpers';
+import { sendEmail } from '@/lib/email';
 
 export async function POST(request, { params }) {
   const { studioSlug } = await params;
@@ -494,8 +495,6 @@ export async function POST(request, { params }) {
   let magicLinkSent = false;
   try {
     if (process.env.RESEND_API_KEY) {
-      const { Resend } = await import('resend');
-      const resend = new Resend(process.env.RESEND_API_KEY);
       const dateStr = new Date(cours.date + 'T12:00:00').toLocaleDateString('fr-FR', {
         weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
       });
@@ -505,9 +504,10 @@ export async function POST(request, { params }) {
       const infosBlock = infosPratiquesBlock({ adresse: profile.adresse, codePostal: profile.code_postal, ville: profile.ville, telephone: profile.telephone, email: profile.email_contact, studioSlug, profileNom: profile.studio_nom });
       magicLinkSent = !!magicLink;
 
-      await resend.emails.send({
-        from: process.env.RESEND_FROM_EMAIL || 'IziSolo <bonjour@izisolo.fr>',
-        ...(proEmail ? { reply_to: proEmail } : {}),
+      // Transactionnel : confirmation de SA réservation (contient le lien d'accès)
+      await sendEmail({
+        categorie: 'transactionnel',
+        replyTo: proEmail,
         to: email,
         subject: `Réservation confirmée — ${cours.nom}`,
         html: `

@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/nextjs';
 import { createAdminClient } from '@/lib/supabase-admin';
 import Stripe from 'stripe';
 
@@ -69,7 +70,13 @@ export async function POST(request) {
       case 'checkout.session.completed': {
         const session = event.data.object;
         const profileId = session.metadata?.profile_id || session.client_reference_id;
-        if (!profileId) break;
+        if (!profileId) {
+          // Un paiement SaaS encaissé qui n'active aucun plan = grave et
+          // invisible avant ce sprint (break muet + 200). Alerte Sentry.
+          console.error('[webhook-saas] checkout.session.completed SANS profile_id:', session.id);
+          Sentry.captureMessage(`[webhook-saas] checkout sans profile_id : ${session.id}`);
+          break;
+        }
         // Stocker stripe_customer_id pour retrouver le client lors des prochains events
         if (session.customer) {
           await supabase
@@ -158,6 +165,7 @@ export async function POST(request) {
     // le détail de l'erreur (le message brut peut fuiter des infos internes).
     // Le détail reste loggé côté serveur.
     console.error('[webhook-saas] handler error:', err);
+    Sentry.captureException(err);
     return new Response('Handler error', { status: 500 });
   }
 }

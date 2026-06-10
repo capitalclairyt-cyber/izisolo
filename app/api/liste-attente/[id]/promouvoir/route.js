@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { withRoute } from '@/lib/api-route';
 import { createAdminClient } from '@/lib/supabase-admin';
-import { Resend } from 'resend';
+import { sendEmail } from '@/lib/email';
 import { infosPratiquesBlock } from '@/lib/email-helpers';
 
 /**
@@ -118,7 +118,6 @@ export const POST = withRoute({ auth: 'active' }, async ({ params, auth }) => {
   // Email de notification (best effort)
   try {
     if (process.env.RESEND_API_KEY) {
-      const resend = new Resend(process.env.RESEND_API_KEY);
       const dateStr = cours.date
         ? new Date(cours.date + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })
         : 'la date prévue';
@@ -129,9 +128,10 @@ export const POST = withRoute({ auth: 'active' }, async ({ params, auth }) => {
         .eq('id', profile.id)
         .single();
       const infosBlock = infosPratiquesBlock({ adresse: studio?.adresse, codePostal: studio?.code_postal, ville: studio?.ville, telephone: studio?.telephone, email: studio?.email_contact, studioSlug: studio?.studio_slug, profileNom: studio?.studio_nom });
-      await resend.emails.send({
-        from: process.env.RESEND_FROM_EMAIL || 'IziSolo <bonjour@izisolo.fr>',
-        ...(user?.email ? { reply_to: user.email } : {}),
+      // Pipeline central (Sprint 5) : blacklist respectée + List-Unsubscribe
+      await sendEmail({
+        categorie: 'notification',
+        replyTo: user?.email || null,
         to: entry.email,
         subject: `🎉 Une place s'est libérée pour ${cours.nom} !`,
         html: `

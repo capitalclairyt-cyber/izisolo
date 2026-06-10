@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase-admin';
 import { parseJsonBody, annulationSchema } from '@/lib/validation';
 import { checkRateLimitIP } from '@/lib/antibot';
 import { studioHasFeature } from '@/lib/plan-guard';
+import { sendEmail } from '@/lib/email';
 import { evaluerAnnulation } from '@/lib/regles-annulation';
 import { sendNotifEleve } from '@/lib/notifs-eleves';
 import { getRegle } from '@/lib/regles-metier';
@@ -342,17 +343,15 @@ async function promouvoirListeAttente(supabaseAdmin, profileId, cours, proEmail 
     .update({ notified_at: new Date().toISOString() })
     .eq('id', nextRow.id);
 
-  // Email de notification
+  // Email de notification — pipeline central (blacklist respectée)
   try {
     if (process.env.RESEND_API_KEY) {
-      const { Resend } = await import('resend');
-      const resend = new Resend(process.env.RESEND_API_KEY);
       const dateStr = cours.date
         ? new Date(cours.date + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })
         : 'la date prévue';
-      await resend.emails.send({
-        from: process.env.RESEND_FROM_EMAIL || 'IziSolo <bonjour@izisolo.fr>',
-        ...(proEmail ? { reply_to: proEmail } : {}),
+      await sendEmail({
+        categorie: 'notification',
+        replyTo: proEmail,
         to: nextRow.email,
         subject: `🎉 Une place s'est libérée !`,
         html: `

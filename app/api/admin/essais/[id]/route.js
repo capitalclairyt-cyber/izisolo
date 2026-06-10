@@ -2,7 +2,7 @@
 import { requireActiveAccount } from '@/lib/api-auth';
 import { createAdminClient } from '@/lib/supabase-admin';
 import { finaliserDemande, emailConfirmationVisiteur } from '@/lib/essai';
-import { Resend } from 'resend';
+import { sendEmail } from '@/lib/email';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -90,10 +90,10 @@ export async function POST(request, { params }) {
   // Email refus au visiteur
   if (process.env.RESEND_API_KEY) {
     try {
-      const resend = new Resend(process.env.RESEND_API_KEY);
-      await resend.emails.send({
-        from: process.env.RESEND_FROM_EMAIL || 'IziSolo <bonjour@izisolo.fr>',
-        ...(user?.email ? { reply_to: user.email } : {}),
+      // Transactionnel : réponse à SA demande d'essai
+      await sendEmail({
+        categorie: 'transactionnel',
+        replyTo: user?.email || null,
         to: demande.email,
         subject: `Demande de cours d'essai chez ${profile.studio_nom}`,
         html: `

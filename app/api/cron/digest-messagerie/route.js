@@ -1,5 +1,6 @@
 import { requireCronAuth } from '@/lib/api-auth';
 import { createAdminClient } from '@/lib/supabase-admin';
+import { sendEmail } from '@/lib/email';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -192,9 +193,6 @@ async function envoyerDigest({ to, prenom, nbRecus, url, contexte, studioNom }) 
     return false;
   }
   try {
-    const { Resend } = await import('resend');
-    const resend = new Resend(process.env.RESEND_API_KEY);
-
     const sujet = contexte === 'pro'
       ? `${nbRecus} nouveau${nbRecus > 1 ? 'x' : ''} message${nbRecus > 1 ? 's' : ''} de tes élèves`
       : `${studioNom} t'a écrit`;
@@ -203,8 +201,9 @@ async function envoyerDigest({ to, prenom, nbRecus, url, contexte, studioNom }) 
       ? `Bonjour ${prenom},\n\nTu as ${nbRecus} message${nbRecus > 1 ? 's' : ''} non lu${nbRecus > 1 ? 's' : ''} dans ta messagerie IziSolo.\n\nJette un œil quand tu as un moment :`
       : `Bonjour ${prenom},\n\n${studioNom} t'a envoyé ${nbRecus} message${nbRecus > 1 ? 's' : ''}. Voici le lien pour le${nbRecus > 1 ? 's' : ''} consulter :`;
 
-    await resend.emails.send({
-      from: process.env.RESEND_FROM_EMAIL || 'IziSolo <bonjour@izisolo.fr>',
+    // Pipeline central (Sprint 5) : blacklist respectée + List-Unsubscribe
+    const r = await sendEmail({
+      categorie: 'notification',
       to,
       subject: sujet,
       html: `
@@ -222,7 +221,7 @@ async function envoyerDigest({ to, prenom, nbRecus, url, contexte, studioNom }) 
         </div>
       `,
     });
-    return true;
+    return r.ok;
   } catch (err) {
     console.error('[cron digest] envoi err:', err);
     return false;
