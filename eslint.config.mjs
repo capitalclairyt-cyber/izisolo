@@ -54,6 +54,7 @@ export default [
         Audio: 'readonly',
         Video: 'readonly',
         getComputedStyle: 'readonly',
+        CSS: 'readonly',
         MutationObserver: 'readonly',
         IntersectionObserver: 'readonly',
         ResizeObserver: 'readonly',

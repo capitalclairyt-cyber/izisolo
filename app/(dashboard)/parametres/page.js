@@ -1905,7 +1905,6 @@ export default function Parametres() {
       toast.info('Souscription annulée. Tu peux relancer quand tu veux.');
       router.replace('/parametres?tab=abonnement', { scroll: false });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const [saving, setSaving] = useState(false);

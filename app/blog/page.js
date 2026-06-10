@@ -71,7 +71,6 @@ export default function BlogIndexPage() {
                     <Link href={`/blog/${featured.slug}`} className="blog-featured-link">
                       {featured.image && (
                         <div className="blog-featured-image">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
                             src={featured.image}
                             alt={featured.title}
@@ -102,7 +101,6 @@ export default function BlogIndexPage() {
                         <Link href={`/blog/${article.slug}`} className="blog-card-link">
                           {article.image && (
                             <div className="blog-card-image">
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
                               <img
                                 src={article.image}
                                 alt={article.title}
