@@ -1,11 +1,29 @@
 import { createClient as createAdminSupabase } from '@supabase/supabase-js';
-import { parseJsonBody, listeAttenteSchema } from '@/lib/validation';
+import { listeAttenteSchema } from '@/lib/validation';
+import { checkAntiBot, ipFromRequest } from '@/lib/antibot';
 
 export async function POST(request, { params }) {
   const { studioSlug } = await params;
-  const { data: body, errorResponse } = await parseJsonBody(request, listeAttenteSchema);
-  if (errorResponse) return errorResponse;
-  const { coursId, nom, email, tel } = body;
+  // Body brut lu une seule fois : website/turnstileToken sont hors schéma zod.
+  const rawBody = await request.json().catch(() => null);
+  if (!rawBody) return Response.json({ error: 'Body JSON invalide' }, { status: 400 });
+
+  // Anti-bot : honeypot + rate limit + Turnstile — même pipeline que /reserver.
+  // Route publique qui insère nom/email/tel arbitraires → borne anti-spam.
+  const antibot = await checkAntiBot(request, {
+    honeypot: rawBody.website,
+    turnstileToken: rawBody.turnstileToken,
+    max: 10,
+    scope: 'liste-attente',
+  });
+  if (!antibot.ok) {
+    console.warn('[liste-attente] antibot rejected:', antibot.code, 'ip=', ipFromRequest(request));
+    return Response.json({ error: antibot.reason }, { status: antibot.code === 'RATE_LIMITED' ? 429 : 400 });
+  }
+
+  const parsed = listeAttenteSchema.safeParse(rawBody);
+  if (!parsed.success) return Response.json({ error: 'Données invalides' }, { status: 400 });
+  const { coursId, nom, email, tel } = parsed.data;
 
   const supabaseAdmin = createAdminSupabase(
     process.env.NEXT_PUBLIC_SUPABASE_URL,

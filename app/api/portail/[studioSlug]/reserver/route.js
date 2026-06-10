@@ -382,12 +382,23 @@ export async function POST(request, { params }) {
   // Nettoyer toute entrée liste_attente pour cet élève sur ce cours
   // (cas où l'élève était inscrit en LA puis trouve une place via résa directe)
   try {
+    // Deux deletes séparés plutôt qu'un .or(...) : l'email est une donnée
+    // utilisateur, on ne l'interpole JAMAIS dans la syntaxe d'un filtre
+    // PostgREST (cf. la validation regex du webhook Stripe pour le même
+    // risque). Les .eq()/.ilike() passent par des paramètres, pas la syntaxe.
     await supabaseAdmin
       .from('liste_attente')
       .delete()
       .eq('cours_id', coursId)
       .eq('profile_id', profile.id)
-      .or(`client_id.eq.${clientId},email.ilike.${email}`);
+      .eq('client_id', clientId);
+    // ilike : on échappe % et _ pour que l'email ne devienne pas un wildcard.
+    await supabaseAdmin
+      .from('liste_attente')
+      .delete()
+      .eq('cours_id', coursId)
+      .eq('profile_id', profile.id)
+      .ilike('email', email.replace(/([%_\\])/g, '\\$1'));
   } catch (e) {
     console.warn('[reserver] cleanup liste_attente non-bloquant:', e?.message);
   }

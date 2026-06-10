@@ -3,6 +3,8 @@ import { createClient as createAdminSupabase } from '@supabase/supabase-js';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+// Durée max explicite (fluid compute : 300 s = plafond Hobby)
+export const maxDuration = 300;
 
 /**
  * Cron quotidien (16h UTC = 18h Paris) qui envoie un digest des messages
@@ -32,6 +34,8 @@ export async function GET(request) {
   );
 
   const il24h = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
+  // Référence de dédup : un seul digest par destinataire et par jour (Paris).
+  const refDate = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Paris' });
 
   let totalSent = 0;
   let totalErrors = 0;
@@ -72,6 +76,10 @@ export async function GET(request) {
     const email = authUser?.email;
     if (!email) continue;
 
+    // Dédup : claim avant envoi — un re-run du cron ne double-envoie pas.
+    const claim = await claimEnvoi(supabase, email, refDate);
+    if (!claim.claimed) { totalSkipped++; continue; }
+
     const success = await envoyerDigest({
       to: email,
       prenom: pro.prenom || 'là',
@@ -80,7 +88,11 @@ export async function GET(request) {
       contexte: 'pro',
     });
     if (success) totalSent++;
-    else totalErrors++;
+    else {
+      totalErrors++;
+      // Échec d'envoi → on libère le claim pour permettre un retry.
+      if (claim.persisted) await releaseEnvoi(supabase, email, refDate);
+    }
   }
 
   // ─── Élèves : itérer sur les clients ayant reçu un message hier
@@ -118,6 +130,10 @@ export async function GET(request) {
     const studioSlug = client.profiles?.studio_slug || '';
     const url = `${process.env.NEXT_PUBLIC_APP_URL || 'https://www.izisolo.fr'}/p/${studioSlug}/espace/messages`;
 
+    // Dédup : claim avant envoi — un re-run du cron ne double-envoie pas.
+    const claim = await claimEnvoi(supabase, client.email, refDate);
+    if (!claim.claimed) { totalSkipped++; continue; }
+
     const success = await envoyerDigest({
       to: client.email,
       prenom: client.prenom || 'là',
@@ -127,7 +143,10 @@ export async function GET(request) {
       studioNom,
     });
     if (success) totalSent++;
-    else totalErrors++;
+    else {
+      totalErrors++;
+      if (claim.persisted) await releaseEnvoi(supabase, client.email, refDate);
+    }
   }
 
   return Response.json({
@@ -137,6 +156,37 @@ export async function GET(request) {
     errors: totalErrors,
     timestamp: new Date().toISOString(),
   });
+}
+
+// ─── Dédup des envois (table emails_envoyes, migration v52) ─────────────────
+// Fail-open : si la table n'existe pas encore (migration non appliquée), on
+// envoie sans dédup, comme avant — avec un warn pour ne pas l'oublier.
+
+async function claimEnvoi(supabase, destinataire, refDate) {
+  try {
+    const { data, error } = await supabase
+      .from('emails_envoyes')
+      .upsert(
+        { type: 'digest_messagerie', destinataire: destinataire.toLowerCase(), ref: refDate },
+        { onConflict: 'type,destinataire,ref', ignoreDuplicates: true }
+      )
+      .select('id');
+    if (error) throw error;
+    // data vide = conflit unique = digest déjà envoyé aujourd'hui
+    return { claimed: (data || []).length > 0, persisted: true };
+  } catch (err) {
+    console.warn('[cron digest] dédup indisponible (migration v52 appliquée ?) :', err?.message);
+    return { claimed: true, persisted: false };
+  }
+}
+
+async function releaseEnvoi(supabase, destinataire, refDate) {
+  try {
+    await supabase
+      .from('emails_envoyes')
+      .delete()
+      .match({ type: 'digest_messagerie', destinataire: destinataire.toLowerCase(), ref: refDate });
+  } catch {}
 }
 
 async function envoyerDigest({ to, prenom, nbRecus, url, contexte, studioNom }) {

@@ -1,6 +1,7 @@
 import { createServerClient } from '@/lib/supabase-server';
 import { createClient as createAdminSupabase } from '@supabase/supabase-js';
 import { reserverSerieSchema } from '@/lib/validation';
+import { checkRateLimitIP } from '@/lib/antibot';
 
 /**
  * POST /api/portail/[studioSlug]/reserver-serie
@@ -16,6 +17,11 @@ import { reserverSerieSchema } from '@/lib/validation';
  */
 export async function POST(request, { params }) {
   const { studioSlug } = await params;
+
+  // Rate-limit IP : route d'écriture qui boucle sur N occurrences — on borne
+  // le volume par IP (10/h), compteur isolé du reste via le scope.
+  const rl = checkRateLimitIP(request, { max: 10, scope: 'reserver-serie' });
+  if (!rl.ok) return Response.json({ error: rl.reason }, { status: 429 });
 
   let body;
   try { body = await request.json(); } catch { return Response.json({ error: 'JSON invalide' }, { status: 400 }); }

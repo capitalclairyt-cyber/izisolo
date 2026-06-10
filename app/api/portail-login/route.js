@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { sendPortailMagicLink } from '@/lib/portail-magic-link';
+import { checkRateLimitIP } from '@/lib/antibot';
 
 /**
  * POST /api/portail-login — Demande de lien de connexion ÉLÈVE (self-service).
@@ -25,6 +26,12 @@ export async function POST(req) {
     if (!studioSlug) {
       return NextResponse.json({ error: 'Studio manquant' }, { status: 400 });
     }
+
+    // Rate-limit IP : route publique qui déclenche un email signé du studio
+    // (+ createUser idempotent) — borne anti-spam. 15/h et pas 5 : plusieurs
+    // élèves peuvent partager l'IP du studio (wifi) avant un cours.
+    const rl = checkRateLimitIP(req, { max: 15, scope: 'portail-login' });
+    if (!rl.ok) return NextResponse.json({ error: rl.reason }, { status: 429 });
 
     // Vérifie que le studio existe (et récupère son nom pour l'email)
     const { data: studio, error: studioErr } = await supabaseAdmin

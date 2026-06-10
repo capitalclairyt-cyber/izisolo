@@ -5,6 +5,8 @@ import { evaluerReglesAll } from '@/lib/regles';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+// Durée max explicite (fluid compute : 300 s = plafond Hobby)
+export const maxDuration = 300;
 
 /**
  * Cron quotidien (8h UTC = 9h/10h Paris selon DST). Deux passes :

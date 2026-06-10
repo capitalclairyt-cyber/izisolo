@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { requireCronAuth } from '@/lib/api-auth';
 
+// Durée max explicite (fluid compute : 300 s = plafond Hobby)
+export const maxDuration = 300;
+
 // Cron quotidien : marquer les abonnements expirés
 export async function GET(request) {
   try {

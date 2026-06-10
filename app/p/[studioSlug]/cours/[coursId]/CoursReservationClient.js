@@ -25,6 +25,7 @@ function CompletAvecListeAttente({ cours, studioSlug, currentUser }) {
   const [nom, setNom]     = useState(currentUser?.nom || '');
   const [email, setEmail] = useState(currentUser?.email || '');
   const [tel, setTel]     = useState(currentUser?.tel || '');
+  const [website, setWebsite] = useState(''); // honeypot — DOIT rester vide
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
   const [position, setPosition] = useState(null);
@@ -44,6 +45,10 @@ function CompletAvecListeAttente({ cours, studioSlug, currentUser }) {
           nom: nom.trim(),
           email: email.trim(),
           tel: tel.trim(),
+          website,           // honeypot
+          turnstileToken: typeof window !== 'undefined'
+            ? document.querySelector('[name="cf-turnstile-response"]')?.value
+            : undefined,
         }),
       });
       const json = await res.json();
@@ -100,6 +105,32 @@ function CompletAvecListeAttente({ cours, studioSlug, currentUser }) {
           <label className="portail-label" htmlFor="la-tel">Téléphone <span style={{ color: '#aaa', fontWeight: 400 }}>(optionnel — SMS si place libérée)</span></label>
           <input id="la-tel" type="tel" className="portail-input" value={tel} onChange={e => setTel(e.target.value)} placeholder="06 12 34 56 78" autoComplete="tel" />
         </div>
+
+        {/* Honeypot anti-bot — caché aux humains */}
+        <input
+          type="text"
+          name="website"
+          tabIndex={-1}
+          autoComplete="off"
+          value={website}
+          onChange={e => setWebsite(e.target.value)}
+          aria-hidden="true"
+          style={{ position: 'absolute', left: -9999, width: 1, height: 1, opacity: 0, pointerEvents: 'none' }}
+        />
+
+        {/* Cloudflare Turnstile (actif uniquement si NEXT_PUBLIC_TURNSTILE_SITE_KEY défini) */}
+        {process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && (
+          <>
+            <div
+              className="cf-turnstile"
+              data-sitekey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY}
+              data-theme="light"
+              data-size="flexible"
+              style={{ marginBottom: 12 }}
+            />
+            <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer />
+          </>
+        )}
 
         {error && (
           <div style={{ background: '#fff0f0', border: '1px solid #ffcdd2', borderRadius: '8px', padding: '10px 14px', color: '#c62828', fontSize: '0.875rem', marginBottom: '14px' }}>

@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { createServerClient } from '@/lib/supabase-server';
+import { checkRateLimitIP } from '@/lib/antibot';
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -34,11 +35,28 @@ export async function POST(request) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return new Response('Unauthorized', { status: 401 });
 
+  // Rate-limit : endpoint LLM (coût Anthropic) — 30 req/h/IP, aligné sur
+  // l'assistant portail, compteur isolé via le scope.
+  const rl = checkRateLimitIP(request, { max: 30, scope: 'support' });
+  if (!rl.ok) return Response.json({ error: rl.reason }, { status: 429 });
+
   const { messages } = await request.json();
   if (!messages?.length) return new Response('Bad request', { status: 400 });
+  if (!Array.isArray(messages) || messages.length > 50) {
+    return Response.json({ error: 'Conversation trop longue' }, { status: 400 });
+  }
 
-  // Limiter à 20 messages pour éviter les abus
-  const recentMessages = messages.slice(-20);
+  // Borne le payload envoyé au LLM : 20 derniers messages, 4000 caractères
+  // max chacun, rôles user/assistant uniquement (contenu non-string rejeté).
+  const recentMessages = messages.slice(-20)
+    .map(m => ({
+      role: m?.role,
+      content: typeof m?.content === 'string' ? m.content.slice(0, 4000) : '',
+    }))
+    .filter(m => (m.role === 'user' || m.role === 'assistant') && m.content.trim());
+  if (recentMessages.length === 0) {
+    return Response.json({ error: 'Message vide' }, { status: 400 });
+  }
 
   const stream = await anthropic.messages.stream({
     model: 'claude-haiku-4-5-20251001',

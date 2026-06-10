@@ -1,6 +1,7 @@
 import { createServerClient } from '@/lib/supabase-server';
 import { createClient as createAdminSupabase } from '@supabase/supabase-js';
 import { parseJsonBody, annulationSchema } from '@/lib/validation';
+import { checkRateLimitIP } from '@/lib/antibot';
 import { evaluerAnnulation } from '@/lib/regles-annulation';
 import { sendNotifEleve } from '@/lib/notifs-eleves';
 import { getRegle } from '@/lib/regles-metier';
@@ -8,6 +9,12 @@ import { sendNotifElevePourRegle } from '@/lib/notif-eleve-regle';
 
 export async function POST(request, { params }) {
   const { studioSlug } = await params;
+
+  // Rate-limit IP : route publique d'écriture destructrice (delete presences)
+  // — on borne les annulations automatisées (10/h/IP).
+  const rl = checkRateLimitIP(request, { max: 10, scope: 'portail-annuler' });
+  if (!rl.ok) return Response.json({ error: rl.reason }, { status: 429 });
+
   const { data, errorResponse } = await parseJsonBody(request, annulationSchema);
   if (errorResponse) return errorResponse;
   const { presenceId } = data;
@@ -58,7 +65,7 @@ export async function POST(request, { params }) {
   // Vérifier que la présence appartient bien à ce client dans ce studio
   const { data: presence } = await supabaseAdmin
     .from('presences')
-    .select('id, abonnement_id, cours:cours_id(date, heure, type_cours, est_annule)')
+    .select('id, abonnement_id, cours:cours_id(id, date, heure, type_cours, est_annule)')
     .eq('id', presenceId)
     .eq('client_id', client.id)
     .eq('profile_id', profile.id)
