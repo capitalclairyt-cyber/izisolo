@@ -470,18 +470,20 @@ export default function PointageClient({ cours, presences: initialPresences, tou
       }
     ));
 
-    // ── 2. Persistance de la présence ──
+    // ── 2. Persistance ATOMIQUE : présence + compteur carnet en UN appel ──
+    // RPC v53 pointer_presence (SECURITY INVOKER → RLS). Le compteur est
+    // incrémenté EN SQL (seances_utilisees = seances_utilisees + delta) :
+    // plus de lost update multi-device / multi-onglets.
     const supabase = createClient();
-    const { error } = await supabase
-      .from('presences')
-      .update({
-        statut_pointage: newStatut,
-        pointee:         isPresent,
-        heure_pointage:  isPresent ? nowIso : null,
-      })
-      .eq('id', presence.id);
+    const { data: result, error } = await supabase.rpc('pointer_presence', {
+      p_presence_id: presence.id,
+      p_statut: newStatut,
+      p_pointee: isPresent,
+      p_heure: isPresent ? nowIso : null,
+      p_delta: presence.abonnement_id ? delta : 0,
+    });
 
-    if (error) {
+    if (error || !result?.ok) {
       // ── Rollback ciblé : on restaure les valeurs de la ligne d'avant le tap ──
       setPresences(prev => prev.map(p =>
         p.id !== presence.id ? p : {
@@ -497,13 +499,14 @@ export default function PointageClient({ cours, presences: initialPresences, tou
       return;
     }
 
-    // ── 3. Effets de bord (compteur abo persistant + cas_a_traiter) ──
-    if (presence.abonnement_id && presence.abonnements && delta !== 0) {
-      const current = presence.abonnements.seances_utilisees || 0;
-      await supabase
-        .from('abonnements')
-        .update({ seances_utilisees: Math.max(0, current + delta) })
-        .eq('id', presence.abonnement_id);
+    // ── 3. Resynchronise le compteur sur la valeur DB (autoritative) ──
+    if (result.abonnement_id && typeof result.seances_utilisees === 'number') {
+      setPresences(prev => prev.map(p =>
+        p.id !== presence.id || !p.abonnements ? p : {
+          ...p,
+          abonnements: { ...p.abonnements, seances_utilisees: result.seances_utilisees },
+        }
+      ));
     }
 
     // Log dans cas_a_traiter si mode manuel ou notifProf actif

@@ -207,15 +207,17 @@ async function applyDirectEffect({ supabase, cas, action, userId }) {
     if (!cas.presence_id) {
       return { error: `Pas de présence liée au cas, action "${action}" impossible`, status: 400 };
     }
+    // NB : la colonne s'appelle statut_pointage (PAS statut — colonne
+    // inexistante que l'ancien code sélectionnait → 404 systématique).
     const { data: presence, error: pErr } = await supabase
       .from('presences')
-      .select('id, statut, abonnement_id')
+      .select('id, statut_pointage, abonnement_id')
       .eq('id', cas.presence_id)
       .single();
     if (pErr || !presence) {
       return { error: 'Présence introuvable', status: 404 };
     }
-    const before = { statut: presence.statut };
+    const before = { statut: presence.statut_pointage };
 
     const newStatut = (
       action === 'decompte' ? 'absent_compte'
@@ -223,19 +225,26 @@ async function applyDirectEffect({ supabase, cas, action, userId }) {
       : action === 'annule' ? 'annule'
       : action === 'place_donnee' ? 'confirme'
       : action === 'declinee' ? 'declinee'
-      : presence.statut
+      : presence.statut_pointage
     );
 
     const { error: updErr } = await supabase
       .from('presences')
-      .update({ statut: newStatut })
+      .update({ statut_pointage: newStatut })
       .eq('id', cas.presence_id);
     if (updErr) { console.error('[cas resolve applyDirectEffect]', updErr); return { error: 'Une erreur est survenue.', status: 500 }; }
 
     // Si décompte ET abonnement lié → incrément seances_utilisees (idempotent
-    // via comparaison statut avant/après)
+    // via comparaison statut avant/après). RPC v53 atomique — et l'échec
+    // n'est PLUS avalé (avant : .catch(() => {}) sur une RPC inexistante,
+    // le décompte ne s'appliquait jamais).
     if (action === 'decompte' && presence.abonnement_id && before.statut !== 'absent_compte') {
-      await supabase.rpc('incr_seances_utilisees', { p_abo_id: presence.abonnement_id }).catch(() => {});
+      const { error: incErr } = await supabase
+        .rpc('ajuster_seances', { p_abo_id: presence.abonnement_id, p_delta: 1 });
+      if (incErr) {
+        console.error('[cas resolve] décompte carnet échoué:', incErr);
+        return { error: 'Le décompte de la séance a échoué.', status: 500 };
+      }
     }
 
     return {
@@ -259,10 +268,9 @@ async function applyDirectEffect({ supabase, cas, action, userId }) {
     if (aErr || !abo) return { error: 'Abonnement introuvable', status: 404 };
 
     const before = { seances_utilisees: abo.seances_utilisees };
+    // RPC v53 : décrément atomique (borné à 0 côté SQL)
     const { error: updErr } = await supabase
-      .from('abonnements')
-      .update({ seances_utilisees: Math.max(0, (abo.seances_utilisees || 0) - 1) })
-      .eq('id', aboId);
+      .rpc('ajuster_seances', { p_abo_id: aboId, p_delta: -1 });
     if (updErr) { console.error('[cas resolve applyDirectEffect]', updErr); return { error: 'Une erreur est survenue.', status: 500 }; }
 
     return {

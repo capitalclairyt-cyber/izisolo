@@ -111,21 +111,12 @@ Désolé·e pour le désagrément, à très vite.`;
     clientsNotifies++;
 
     // 1) Restitution du crédit si rendre_seances + abonnement lié
+    //    RPC v53 : décrément atomique borné à 0 (plus de read-modify-write)
     if (isAutoRendre && row.abonnement_id) {
-      try {
-        const { data: abo } = await supabaseAdmin
-          .from('abonnements')
-          .select('seances_utilisees')
-          .eq('id', row.abonnement_id)
-          .single();
-        if (abo && (abo.seances_utilisees || 0) > 0) {
-          await supabaseAdmin
-            .from('abonnements')
-            .update({ seances_utilisees: (abo.seances_utilisees || 0) - 1 })
-            .eq('id', row.abonnement_id);
-          creditsRestitues++;
-        }
-      } catch (e) { console.warn('[annuler] credit non-restitue:', e?.message); }
+      const { error: decErr } = await supabaseAdmin
+        .rpc('ajuster_seances', { p_abo_id: row.abonnement_id, p_delta: -1 });
+      if (decErr) console.warn('[annuler] credit non-restitue:', decErr.message);
+      else creditsRestitues++;
     }
 
     // 2) Log dans cas_a_traiter pour modes 'eleve_choisit' ou 'manuel'

@@ -129,7 +129,9 @@ async function restoreBeforeState({ supabase, cas, before, action }) {
     const { error } = await supabase
       .from('presences')
       .update({
-        ...(before.statut !== undefined && { statut: before.statut }),
+        // La colonne réelle est statut_pointage (resolve écrit before.statut
+        // depuis statut_pointage — l'ancienne colonne `statut` n'existe pas).
+        ...(before.statut !== undefined && { statut_pointage: before.statut }),
         ...(before.cours_id !== undefined && { cours_id: before.cours_id }),
       })
       .eq('id', before.presence_id);
@@ -144,17 +146,10 @@ async function restoreBeforeState({ supabase, cas, before, action }) {
         .eq('id', before.presence_id)
         .single();
       if (presence?.abonnement_id) {
-        const { data: abo } = await supabase
-          .from('abonnements')
-          .select('seances_utilisees')
-          .eq('id', presence.abonnement_id)
-          .single();
-        if (abo) {
-          await supabase
-            .from('abonnements')
-            .update({ seances_utilisees: Math.max(0, (abo.seances_utilisees || 1) - 1) })
-            .eq('id', presence.abonnement_id);
-        }
+        // RPC v53 : décrément atomique (borné à 0 côté SQL)
+        const { error: decErr } = await supabase
+          .rpc('ajuster_seances', { p_abo_id: presence.abonnement_id, p_delta: -1 });
+        if (decErr) return decErr.message;
       }
     }
     return null;

@@ -196,18 +196,11 @@ export async function POST(request, { params }) {
   }
 
   // Incrémenter le compteur de séances utilisées de l'abonnement (si lié)
+  // RPC v53 : incrément atomique (plus de read-modify-write)
   if (presence.abonnement_id) {
-    const { data: abo } = await supabaseAdmin
-      .from('abonnements')
-      .select('seances_utilisees')
-      .eq('id', presence.abonnement_id)
-      .single();
-    if (abo) {
-      await supabaseAdmin
-        .from('abonnements')
-        .update({ seances_utilisees: (abo.seances_utilisees || 0) + 1 })
-        .eq('id', presence.abonnement_id);
-    }
+    const { error: incErr } = await supabaseAdmin
+      .rpc('ajuster_seances', { p_abo_id: presence.abonnement_id, p_delta: 1 });
+    if (incErr) console.error('annulation tardive — décompte err:', incErr);
   } else if (choixDecompte === 'decompter_ou_dette') {
     // Pas de carnet lié → log une dette dans cas_a_traiter
     try {
@@ -320,18 +313,20 @@ async function promouvoirListeAttente(supabaseAdmin, profileId, cours, proEmail 
   }
   if (!clientId) return;
 
-  // Créer la presence (inscrit, pas pointé)
-  const { error: presErr } = await supabaseAdmin
-    .from('presences')
-    .insert({
-      cours_id: cours.id,
-      client_id: clientId,
-      profile_id: profileId,
-      present: false,
-      source: 'liste_attente',
+  // Créer la presence (inscrit, pas pointé) — RPC v53 atomique.
+  // NB : l'ancien insert utilisait des colonnes INEXISTANTES (present,
+  // source) → il échouait systématiquement et la promotion était morte.
+  const { data: resa, error: presErr } = await supabaseAdmin
+    .rpc('reserver_place', {
+      p_profile_id: profileId,
+      p_cours_id: cours.id,
+      p_client_id: clientId,
     });
-  if (presErr) {
-    console.error('promotion: create presence error:', presErr);
+  if (presErr || (!resa?.ok && resa?.reason !== 'doublon')) {
+    // 'complet' = la place a été reprise entre-temps → on laisse la personne
+    // dans la file pour la prochaine libération. 'doublon' = déjà inscrite
+    // par ailleurs → on continue (marquage notifiée plus bas).
+    console.error('promotion: create presence error:', presErr?.message || resa?.reason);
     return;
   }
 

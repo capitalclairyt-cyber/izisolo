@@ -73,6 +73,7 @@ const OFFRE_LIBRE = {
 };
 
 function AssignerOffreModal({ client, onClose, onSuccess }) {
+  const { toast } = useToast();
   const [step, setStep] = useState('offre'); // 'offre' | 'paiement'
   const [offres, setOffres] = useState([]);
   const [loadingOffres, setLoadingOffres] = useState(true);
@@ -116,38 +117,27 @@ function AssignerOffreModal({ client, onClose, onSuccess }) {
     setSubmitting(true);
     try {
       const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
       const today = new Date().toISOString().split('T')[0];
 
-      let aboId = null;
+      // Abonnement à créer (null en mode libre). profile_id est forcé à
+      // auth.uid() côté SQL — jamais pris du client.
+      const abonnement = isLibre ? null : {
+        client_id: client.id,
+        offre_id: selectedOffre.id,
+        offre_nom: selectedOffre.nom,
+        type: selectedOffre.type,
+        date_debut: selectedOffre.date_debut || today,
+        date_fin: selectedOffre.date_fin || calcDateFin(selectedOffre.duree_jours),
+        seances_total: selectedOffre.seances || null,
+        types_cours_autorises: selectedOffre.types_cours_autorises || null,
+      };
 
-      // Mode libre : pas d'abonnement à créer (juste un paiement one-shot)
-      // Mode offre : on crée un abonnement lié à l'offre + le paiement
-      if (!isLibre) {
-        const { data: abo, error: aboErr } = await supabase.from('abonnements').insert({
-          profile_id: user.id,
-          client_id: client.id,
-          offre_id: selectedOffre.id,
-          offre_nom: selectedOffre.nom,
-          type: selectedOffre.type,
-          date_debut: selectedOffre.date_debut || today,
-          date_fin: selectedOffre.date_fin || calcDateFin(selectedOffre.duree_jours),
-          seances_total: selectedOffre.seances || null,
-          seances_utilisees: 0,
-          statut: 'actif',
-          types_cours_autorises: selectedOffre.types_cours_autorises || null,
-        }).select().single();
-        if (aboErr) throw aboErr;
-        aboId = abo.id;
-      }
-
+      let paiements;
       if (multiVersement && versements.length > 1) {
         const echId = crypto.randomUUID();
-        const rows = versements.map((v, i) => ({
-          profile_id: user.id,
+        paiements = versements.map((v, i) => ({
           client_id: client.id,
           offre_id: isLibre ? null : selectedOffre.id,
-          abonnement_id: aboId,
           echeancier_id: echId,
           intitule: `${isLibre ? intituleLibre.trim() : selectedOffre.nom} (${i + 1}/${versements.length})`,
           type: isLibre ? null : selectedOffre.type,
@@ -156,16 +146,13 @@ function AssignerOffreModal({ client, onClose, onSuccess }) {
           mode: i === 0 ? modePaiement : null,
           date: v.date,
           notes: i === 0 ? (notes || null) : null,
-          ...(i === 0 && numeroCheque ? { numero_cheque: numeroCheque } : {}),
+          numero_cheque: i === 0 && numeroCheque ? numeroCheque : null,
         }));
-        const { error: payErr } = await supabase.from('paiements').insert(rows);
-        if (payErr) throw payErr;
       } else {
-        const { error: payErr } = await supabase.from('paiements').insert({
-          profile_id: user.id,
+        paiements = [{
           client_id: client.id,
           offre_id: isLibre ? null : selectedOffre.id,
-          abonnement_id: aboId,
+          echeancier_id: null,
           intitule: isLibre ? intituleLibre.trim() : selectedOffre.nom,
           type: isLibre ? null : selectedOffre.type,
           montant: montant,
@@ -173,13 +160,25 @@ function AssignerOffreModal({ client, onClose, onSuccess }) {
           mode: modePaiement,
           date: today,
           notes: notes || null,
-          ...(numeroCheque ? { numero_cheque: numeroCheque } : {}),
-        });
-        if (payErr) throw payErr;
+          numero_cheque: numeroCheque || null,
+        }];
+      }
+
+      // RPC v53 : abonnement + paiement(s) dans UNE transaction SQL —
+      // plus d'abo orphelin actif si l'insert du paiement échoue.
+      const { data: result, error } = await supabase.rpc('vendre_offre', {
+        p_abonnement: abonnement,
+        p_paiements: paiements,
+      });
+      if (error || !result?.ok) {
+        throw (error || new Error(result?.reason || 'Vente non enregistrée'));
       }
 
       onSuccess();
     } catch (err) {
+      // Avant : échec 100 % silencieux (le modal restait simplement ouvert)
+      console.error('[vendre_offre]', err);
+      toast.error(`La vente n'a pas été enregistrée : ${err.message || 'erreur inconnue'}`);
       setSubmitting(false);
     }
   };

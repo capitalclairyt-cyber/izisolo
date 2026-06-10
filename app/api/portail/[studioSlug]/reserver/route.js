@@ -347,37 +347,33 @@ export async function POST(request, { params }) {
     }
   }
 
-  // Créer la présence (inscrit, pas encore pointé)
-  // Schéma : pointee BOOLEAN (default false), statut_pointage TEXT (default 'inscrit')
-  const { data: newPresence, error: presenceErr } = await supabaseAdmin
-    .from('presences')
-    .insert({
-      cours_id: coursId,
-      client_id: clientId,
-      profile_id: profile.id,
-      // pointee + statut_pointage prennent leurs defaults ('false' + 'inscrit')
-    })
-    .select('id')
-    .single();
+  // Créer la présence ATOMIQUEMENT (RPC v53) : doublon + capacité vérifiés
+  // sous verrou par cours. Remplace l'ancien check-insert-recheck-delete où
+  // deux résas simultanées sur la dernière place s'annulaient mutuellement.
+  const { data: resa, error: presenceErr } = await supabaseAdmin
+    .rpc('reserver_place', {
+      p_profile_id: profile.id,
+      p_cours_id: coursId,
+      p_client_id: clientId,
+    });
 
   if (presenceErr) {
     console.error('create presence error:', presenceErr);
     return Response.json({ error: 'Erreur lors de la réservation : ' + presenceErr.message }, { status: 500 });
   }
-
-  // Re-vérification atomique de la capacité après insertion (anti race-condition).
-  // Si on dépasse la capacité, on supprime la presence qu'on vient de créer.
-  if (cours.capacite_max) {
-    const { count: nbApres } = await supabaseAdmin
-      .from('presences')
-      .select('id', { count: 'exact', head: true })
-      .eq('cours_id', coursId);
-    if ((nbApres || 0) > cours.capacite_max) {
-      // Rollback : on supprime notre presence (la dernière à être passée)
-      await supabaseAdmin.from('presences').delete().eq('id', newPresence.id);
+  if (!resa?.ok) {
+    if (resa?.reason === 'doublon') {
+      return Response.json({ error: 'Tu es déjà inscrit·e à ce cours' }, { status: 409 });
+    }
+    if (resa?.reason === 'complet') {
       return Response.json({ error: 'Ce cours est complet' }, { status: 409 });
     }
+    if (resa?.reason === 'annule') {
+      return Response.json({ error: 'Ce cours est annulé' }, { status: 400 });
+    }
+    return Response.json({ error: 'Cours introuvable' }, { status: 404 });
   }
+  const newPresence = { id: resa.presence_id };
 
   // Nettoyer toute entrée liste_attente pour cet élève sur ce cours
   // (cas où l'élève était inscrit en LA puis trouve une place via résa directe)

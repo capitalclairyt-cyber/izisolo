@@ -90,58 +90,30 @@ export async function POST(request, { params }) {
       continue;
     }
 
-    // Doublon
-    const { data: existing } = await supabaseAdmin
-      .from('presences')
-      .select('id')
-      .eq('cours_id', c.id)
-      .eq('client_id', client.id)
-      .maybeSingle();
-    if (existing) {
-      skipped.push({ coursId: c.id, date: c.date, reason: 'Déjà inscrit·e' });
-      continue;
-    }
-
-    // Capacité
-    if (c.capacite_max) {
-      const { count } = await supabaseAdmin
-        .from('presences')
-        .select('id', { count: 'exact', head: true })
-        .eq('cours_id', c.id);
-      if ((count || 0) >= c.capacite_max) {
-        skipped.push({ coursId: c.id, date: c.date, reason: 'Complet' });
-        continue;
-      }
-    }
-
-    // Création presence
-    const { data: newP, error: pErr } = await supabaseAdmin
-      .from('presences')
-      .insert({
-        cours_id: c.id,
-        client_id: client.id,
-        profile_id: profile.id,
-      })
-      .select('id')
-      .single();
+    // Réservation ATOMIQUE (RPC v53) : doublon + capacité vérifiés sous
+    // verrou par cours — remplace le check-insert-recheck-delete.
+    const { data: resa, error: pErr } = await supabaseAdmin
+      .rpc('reserver_place', {
+        p_profile_id: profile.id,
+        p_cours_id: c.id,
+        p_client_id: client.id,
+      });
 
     if (pErr) {
-      console.error('[reserver-serie] insert err:', pErr);
+      console.error('[reserver-serie] rpc err:', pErr);
       skipped.push({ coursId: c.id, date: c.date, reason: 'Erreur' });
       continue;
     }
-
-    // Re-check capacité après insertion (rollback si dépassement)
-    if (c.capacite_max) {
-      const { count: apres } = await supabaseAdmin
-        .from('presences')
-        .select('id', { count: 'exact', head: true })
-        .eq('cours_id', c.id);
-      if ((apres || 0) > c.capacite_max) {
-        await supabaseAdmin.from('presences').delete().eq('id', newP.id);
-        skipped.push({ coursId: c.id, date: c.date, reason: 'Complet' });
-        continue;
-      }
+    if (!resa?.ok) {
+      skipped.push({
+        coursId: c.id,
+        date: c.date,
+        reason: resa?.reason === 'doublon' ? 'Déjà inscrit·e'
+          : resa?.reason === 'complet' ? 'Complet'
+          : resa?.reason === 'annule' ? 'Cours annulé'
+          : 'Erreur',
+      });
+      continue;
     }
 
     booked.push({ coursId: c.id, date: c.date, heure: c.heure });
