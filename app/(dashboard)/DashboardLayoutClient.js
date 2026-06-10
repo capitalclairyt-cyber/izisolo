@@ -5,6 +5,7 @@ import Sidebar from '@/components/navigation/Sidebar';
 import AccountStatusBanner from '@/components/trial/AccountStatusBanner';
 import { getVocabulaire } from '@/lib/vocabulaire';
 import { ToastProvider } from '@/components/ui/ToastProvider';
+import { ConfirmProvider } from '@/components/ui/ConfirmDialog';
 import FeedbackWidget from '@/components/feedback/FeedbackWidget';
 
 // Petite touche d'identité : illustration sidebar choisie selon le métier
@@ -33,6 +34,7 @@ export default function DashboardLayoutClient({ children, profile, trial, nbCasA
 
   return (
     <ToastProvider>
+    <ConfirmProvider>
     <div className="dashboard-wrapper">
       {/* Palette d'identité visuelle imposée (Sauge & Cuivre), pas de
           personnalisation côté pro — cohérence brand pour tout le monde. */}
@@ -106,6 +108,7 @@ export default function DashboardLayoutClient({ children, profile, trial, nbCasA
       `}</style>
 
     </div>
+    </ConfirmProvider>
     </ToastProvider>
   );
 }
