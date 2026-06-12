@@ -1,21 +1,14 @@
 import { createServerClient } from '@/lib/supabase-server';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
+import { isAdminEmail } from '@/lib/admin';
 import './admin.css';
-
-// Emails autorisés à accéder au panel admin Mélutek
-// À terme : gérer via un champ "role" dans la table profiles
-const ADMIN_EMAILS = [
-  'admin@melutek.fr',
-  'colin.boulgakoff@free.fr', // dev
-  // Ajouter ici les emails des admins Mélutek
-];
 
 export default async function AdminLayout({ children }) {
   const supabase = await createServerClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  if (!user || !ADMIN_EMAILS.includes(user.email)) {
+  if (!user || !isAdminEmail(user.email)) {
     redirect('/dashboard');
   }
 

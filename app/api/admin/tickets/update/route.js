@@ -1,17 +1,13 @@
 import { createServerClient } from '@/lib/supabase-server';
 import { createAdminClient } from '@/lib/supabase-admin';
 import { parseJsonBody, adminTicketUpdateSchema } from '@/lib/validation';
-
-const ADMIN_EMAILS = [
-  'admin@melutek.fr',
-  'colin.boulgakoff@free.fr',
-];
+import { isAdminEmail } from '@/lib/admin';
 
 export async function POST(request) {
   const supabase = await createServerClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  if (!user || !ADMIN_EMAILS.includes(user.email)) {
+  if (!user || !isAdminEmail(user.email)) {
     return new Response('Forbidden', { status: 403 });
   }
 
