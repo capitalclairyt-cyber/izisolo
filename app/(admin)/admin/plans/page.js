@@ -1,4 +1,4 @@
-import { createServerClient } from '@/lib/supabase-server';
+import { createAdminClient } from '@/lib/supabase-admin';
 
 // Refonte 2026-05-05 : 3 plans publics + free interne (cf. lib/constantes.js)
 const PLANS_CONFIG = [
@@ -52,7 +52,9 @@ async function getPlanStats(supabase) {
 }
 
 export default async function AdminPlansPage() {
-  const supabase = await createServerClient();
+  // Client ADMIN : stats GLOBALES (le client session + RLS ne comptait que
+  // le profil de l'admin connecté → « 1 utilisateur · 100% Free »).
+  const supabase = createAdminClient();
   const { dist, total } = await getPlanStats(supabase);
 
   return (

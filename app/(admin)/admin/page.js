@@ -1,5 +1,4 @@
-import { createServerClient } from '@/lib/supabase-server';
-import { createClient as createAdminClient } from '@supabase/supabase-js';
+import { createAdminClient } from '@/lib/supabase-admin';
 import Link from 'next/link';
 
 async function getStats(supabase) {
@@ -32,7 +31,9 @@ async function getStats(supabase) {
 }
 
 export default async function AdminDashboard() {
-  const supabase = await createServerClient();
+  // Client ADMIN : données GLOBALES (le client session + RLS limitait tout
+  // au seul profil de l'admin connecté).
+  const supabase = createAdminClient();
   const stats = await getStats(supabase);
 
   // Derniers inscrits

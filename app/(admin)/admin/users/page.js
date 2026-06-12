@@ -1,6 +1,4 @@
-import { createServerClient } from '@/lib/supabase-server';
-import { createClient as createAdminClient } from '@supabase/supabase-js';
-import Link from 'next/link';
+import { createAdminClient } from '@/lib/supabase-admin';
 import AdminUsersClient from './AdminUsersClient';
 
 async function getUsers(supabase) {
@@ -14,7 +12,9 @@ async function getUsers(supabase) {
 }
 
 export default async function AdminUsersPage() {
-  const supabase = await createServerClient();
+  // Client ADMIN : liste GLOBALE des utilisateurs (le client session + RLS
+  // ne renvoyait que le profil de l'admin connecté).
+  const supabase = createAdminClient();
   const users = await getUsers(supabase);
 
   return <AdminUsersClient initialUsers={users} />;
