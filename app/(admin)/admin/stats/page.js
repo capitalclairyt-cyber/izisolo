@@ -1,4 +1,4 @@
-import { createServerClient } from '@/lib/supabase-server';
+import { createAdminClient } from '@/lib/supabase-admin';
 
 async function getStats(supabase) {
   const today = new Date();
@@ -104,9 +104,97 @@ function MiniBarChart({ data, color = '#60a5fa', label }) {
   );
 }
 
+// ─── Fil d'activité (tous studios) ──────────────────────────────────────────
+// Fusionne connexions (Supabase Auth) + événements métier datés en un fil
+// chronologique unique. Lecture via client ADMIN : la page est réservée aux
+// ADMIN_EMAILS par le layout ; avec le client session, la RLS filtrerait
+// tout sur le compte connecté (même bug que les routes admin, corrigé S3).
+async function getActivityFeed(admin) {
+  const events = [];
+
+  // Connexions + nouveaux comptes (API admin Supabase)
+  try {
+    const { data: usersPage } = await admin.auth.admin.listUsers({ page: 1, perPage: 200 });
+    for (const u of usersPage?.users || []) {
+      if (u.last_sign_in_at) {
+        events.push({ date: u.last_sign_in_at, icone: '🔑', type: 'Connexion', label: u.email, studio: null });
+      }
+      if (u.created_at) {
+        events.push({ date: u.created_at, icone: '✨', type: 'Nouveau compte', label: u.email, studio: null });
+      }
+    }
+  } catch (e) {
+    console.error('[admin/stats] listUsers:', e?.message);
+  }
+
+  const nomClient = (c) => [c?.prenom, c?.nom].filter(Boolean).join(' ') || 'élève inconnu·e';
+
+  const [{ data: presences }, { data: paiements }, { data: clients }, { data: essais }] = await Promise.all([
+    admin.from('presences')
+      .select('created_at, clients(prenom, nom), cours(nom, date), profiles(studio_nom)')
+      .order('created_at', { ascending: false }).limit(15),
+    admin.from('paiements')
+      .select('created_at, montant, intitule, statut, clients(prenom, nom), profiles(studio_nom)')
+      .order('created_at', { ascending: false }).limit(15),
+    admin.from('clients')
+      .select('created_at, prenom, nom, statut, source, profiles(studio_nom)')
+      .order('created_at', { ascending: false }).limit(15),
+    admin.from('cours_essai_demandes')
+      .select('created_at, prenom, statut, profiles(studio_nom)')
+      .order('created_at', { ascending: false }).limit(10),
+  ]);
+
+  for (const p of presences || []) {
+    events.push({
+      date: p.created_at, icone: '📅', type: 'Réservation',
+      label: `${nomClient(p.clients)} → ${p.cours?.nom || 'cours'}${p.cours?.date ? ` (${p.cours.date})` : ''}`,
+      studio: p.profiles?.studio_nom,
+    });
+  }
+  for (const p of paiements || []) {
+    events.push({
+      date: p.created_at, icone: '💶', type: `Paiement ${p.statut === 'paid' ? 'encaissé' : p.statut}`,
+      label: `${p.intitule || 'Paiement'} · ${p.montant} € · ${nomClient(p.clients)}`,
+      studio: p.profiles?.studio_nom,
+    });
+  }
+  for (const c of clients || []) {
+    events.push({
+      date: c.created_at, icone: '👤', type: `Fiche élève (${c.statut || 'prospect'})`,
+      label: `${nomClient(c)}${c.source ? ` · via ${c.source}` : ''}`,
+      studio: c.profiles?.studio_nom,
+    });
+  }
+  for (const e of essais || []) {
+    events.push({
+      date: e.created_at, icone: '🎟️', type: `Demande d'essai (${e.statut})`,
+      label: e.prenom || '—',
+      studio: e.profiles?.studio_nom,
+    });
+  }
+
+  return events
+    .filter(e => e.date)
+    .sort((a, b) => b.date.localeCompare(a.date))
+    .slice(0, 40);
+}
+
+function formatDateFeed(iso) {
+  try {
+    return new Date(iso).toLocaleString('fr-FR', {
+      timeZone: 'Europe/Paris', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit',
+    });
+  } catch {
+    return iso;
+  }
+}
+
 export default async function AdminStatsPage() {
-  const supabase = await createServerClient();
+  // Client ADMIN (service_role) : stats GLOBALES. Avant : client session →
+  // la RLS limitait les comptages aux données du compte admin connecté.
+  const supabase = createAdminClient();
   const stats = await getStats(supabase);
+  const feed = await getActivityFeed(supabase);
 
   const currentMonthSignups = stats.signupsByMonth[stats.signupsByMonth.length - 1]?.count ?? 0;
   const prevMonthSignups = stats.signupsByMonth[stats.signupsByMonth.length - 2]?.count ?? 0;
@@ -142,6 +230,37 @@ export default async function AdminStatsPage() {
           </div>
           <div className="admin-stat-sub">cours par utilisateur</div>
         </div>
+      </div>
+
+      {/* Fil d'activité récente — tous studios */}
+      <div className="admin-card">
+        <h2 className="admin-subtitle" style={{ marginBottom: '4px' }}>🕒 Activité récente (tous studios)</h2>
+        <p style={{ color: '#64748b', fontSize: '0.8125rem', margin: '0 0 16px' }}>
+          Connexions, comptes, réservations, paiements, fiches élèves et demandes d'essai — 40 derniers événements.
+        </p>
+        {feed.length === 0 ? (
+          <p style={{ color: '#475569', fontSize: '0.875rem', margin: 0 }}>Aucune activité récente.</p>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            {feed.map((e, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'baseline', gap: '10px', padding: '7px 0', borderBottom: i < feed.length - 1 ? '1px solid #2d2d3f' : 'none' }}>
+                <span style={{ fontSize: '0.75rem', color: '#64748b', whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums', minWidth: '88px' }}>
+                  {formatDateFeed(e.date)}
+                </span>
+                <span aria-hidden="true">{e.icone}</span>
+                <span style={{ fontSize: '0.8125rem', color: '#94a3b8', whiteSpace: 'nowrap' }}>{e.type}</span>
+                <span style={{ fontSize: '0.875rem', color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+                  {e.label}
+                </span>
+                {e.studio && (
+                  <span style={{ fontSize: '0.7rem', color: '#c084fc', background: '#c084fc18', borderRadius: '99px', padding: '2px 9px', whiteSpace: 'nowrap' }}>
+                    {e.studio}
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Charts */}
