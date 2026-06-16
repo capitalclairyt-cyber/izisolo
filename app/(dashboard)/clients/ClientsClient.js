@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import { Search, Plus, User, Building2, Phone, Mail, ChevronRight, Filter, Send, SlidersHorizontal, Upload } from 'lucide-react';
+import { Search, Plus, User, Building2, Phone, Mail, ChevronRight, Filter, Send, SlidersHorizontal, Upload, Download } from 'lucide-react';
 import { createClient } from '@/lib/supabase';
 import { getVocabulaire } from '@/lib/vocabulaire';
 import { STATUTS_CLIENT } from '@/lib/constantes';
@@ -46,6 +46,37 @@ export default function ClientsClient({ clients: clientsInit, profile }) {
     const supabase = createClient();
     const { error } = await supabase.from('clients').update({ statut: newStatut }).eq('id', clientId);
     if (error) setClientsList(list => list.map(c => c.id === clientId ? { ...c, statut: prev } : c));
+  };
+
+  // Export CSV de la base élève — côté client (la liste complète est déjà
+  // chargée). Gratuit + dispo même compte gelé : c'est de la portabilité, on
+  // ne verrouille jamais quelqu'un hors de ses propres données. Round-trip
+  // avec l'import : les 7 1res colonnes sont reconnues par /clients/importer.
+  const handleExport = () => {
+    if (clientsList.length === 0) return;
+    const cols = [
+      ['Prénom', 'prenom'], ['Nom', 'nom'], ['Email', 'email'], ['Téléphone', 'telephone'],
+      ['Date de naissance', 'date_naissance'], ['Ville', 'ville'], ['Notes', 'notes'],
+      ['Statut', 'statut'], ['Type', 'type_client'], ['Structure', 'nom_structure'],
+      ['Adresse', 'adresse'], ['Niveau', 'niveau'], ['Source', 'source'], ['Créé le', 'created_at'],
+    ];
+    const esc = (v) => {
+      if (v == null) return '';
+      const s = String(v);
+      return /[;"\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const lines = [cols.map(c => c[0]).join(';')];
+    for (const c of clientsList) {
+      lines.push(cols.map(([, k]) => esc(k === 'created_at' ? (c.created_at || '').slice(0, 10) : c[k])).join(';'));
+    }
+    // BOM UTF-8 pour qu'Excel ouvre les accents correctement
+    const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `mes-eleves-izisolo-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
   };
 
   // Filtres : 1 principal visible toujours + un panel "avancé" repliable
@@ -157,6 +188,15 @@ export default function ClientsClient({ clients: clientsInit, profile }) {
         >
           <Upload size={15} /> <span className="invite-btn-label">Importer</span>
         </Link>
+        <button
+          className="izi-btn izi-btn-secondary invite-btn"
+          onClick={handleExport}
+          type="button"
+          disabled={clientsList.length === 0}
+          title="Exporter tous mes élèves en CSV"
+        >
+          <Download size={15} /> <span className="invite-btn-label">Exporter</span>
+        </button>
         <button
           className="izi-btn izi-btn-secondary invite-btn"
           onClick={() => setInviteOpen(true)}
