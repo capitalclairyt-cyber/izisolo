@@ -41,6 +41,7 @@ export default [
         sessionStorage: 'readonly',
         FormData: 'readonly',
         File: 'readonly',
+        FileReader: 'readonly',
         Blob: 'readonly',
         alert: 'readonly',
         confirm: 'readonly',

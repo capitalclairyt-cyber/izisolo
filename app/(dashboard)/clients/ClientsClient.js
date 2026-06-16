@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import { Search, Plus, User, Building2, Phone, Mail, ChevronRight, Filter, Send, SlidersHorizontal } from 'lucide-react';
+import { Search, Plus, User, Building2, Phone, Mail, ChevronRight, Filter, Send, SlidersHorizontal, Upload } from 'lucide-react';
 import { createClient } from '@/lib/supabase';
 import { getVocabulaire } from '@/lib/vocabulaire';
 import { STATUTS_CLIENT } from '@/lib/constantes';
@@ -150,6 +150,13 @@ export default function ClientsClient({ clients: clientsInit, profile }) {
       <div className="page-header animate-fade-in">
         <h1>{vocab.Clients || 'Élèves'}</h1>
         <span className="count-badge">{clientsList.length}</span>
+        <Link
+          href="/clients/importer"
+          className="izi-btn izi-btn-secondary invite-btn"
+          title="Importer des élèves depuis un fichier CSV"
+        >
+          <Upload size={15} /> <span className="invite-btn-label">Importer</span>
+        </Link>
         <button
           className="izi-btn izi-btn-secondary invite-btn"
           onClick={() => setInviteOpen(true)}
