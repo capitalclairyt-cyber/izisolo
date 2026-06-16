@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase';
 import { METIERS, TYPES_COURS_DEFAUT } from '@/lib/constantes';
 import { getVocabulaire } from '@/lib/vocabulaire';
 import { slugify } from '@/lib/utils';
-import { Sparkles, ArrowRight, ArrowLeft, Check, Copy, ExternalLink, PartyPopper } from 'lucide-react';
+import { Sparkles, ArrowRight, ArrowLeft, Check, Copy, ExternalLink, PartyPopper, Upload } from 'lucide-react';
 
 const ETAPES = ['metier', 'studio', 'offre', 'portail'];
 
@@ -403,6 +403,22 @@ export default function OnboardingPage() {
               </button>
             </div>
 
+            {/* Levier d'activation : importer sa base dès la 1re minute. */}
+            <div className="welcome-import-card">
+              <div className="welcome-import-title">📋 Tu as déjà une liste d'élèves ?</div>
+              <p className="welcome-import-sub">
+                Importe-la depuis un CSV en quelques secondes, rien à ressaisir.<br />
+                Tu viens d'un autre outil&nbsp;? Exporte ta base et récupère tout ici.
+              </p>
+              <button
+                type="button"
+                onClick={() => { router.push('/clients/importer'); router.refresh(); }}
+                className="izi-btn izi-btn-primary"
+              >
+                <Upload size={16} /> Importer mes élèves
+              </button>
+            </div>
+
             <div className="welcome-actions">
               <a
                 href={`/p/${createdSlug}`}
@@ -412,7 +428,7 @@ export default function OnboardingPage() {
               >
                 <ExternalLink size={16} /> Voir comme un élève
               </a>
-              <button type="button" onClick={goToDashboard} className="izi-btn izi-btn-primary">
+              <button type="button" onClick={goToDashboard} className="izi-btn izi-btn-ghost">
                 Aller au tableau de bord <ArrowRight size={16} />
               </button>
             </div>
@@ -575,6 +591,21 @@ export default function OnboardingPage() {
         }
         .welcome-copy-btn:hover { background: var(--brand-dark, #b07070); }
         .welcome-copy-btn.copied { background: #4ade80; }
+        .welcome-import-card {
+          background: var(--brand-50, #f7f2ea);
+          border: 1px solid var(--brand-200, #f0d9a8);
+          border-radius: 14px;
+          padding: 18px 16px;
+          margin: 0 0 18px;
+          text-align: center;
+        }
+        .welcome-import-title {
+          font-weight: 700; color: var(--text-primary); margin-bottom: 4px;
+        }
+        .welcome-import-sub {
+          font-size: 0.85rem; color: var(--text-secondary);
+          margin: 0 0 14px; line-height: 1.45;
+        }
         .welcome-actions {
           display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;
         }
