@@ -130,8 +130,14 @@ export default function ClientsClient({ clients: clientsInit, profile }) {
     }
 
     // 3. Filtres avancés (cumulatifs avec le primaire)
-    if (filtreStatut === 'tous') list = list.filter(c => c.statut !== 'archive');
-    else list = list.filter(c => c.statut === filtreStatut);
+    if (filtreStatut === 'tous') {
+      // Par défaut on masque les archivés — mais PAS quand une recherche est
+      // active : sinon une prof cherche un·e élève archivé·e, ne le/la trouve
+      // pas, et finit par recréer un doublon (cf. bug Christel/Karine).
+      if (!search) list = list.filter(c => c.statut !== 'archive');
+    } else {
+      list = list.filter(c => c.statut === filtreStatut);
+    }
     if (filtreType === 'particulier') list = list.filter(c => !c.type_client || c.type_client === 'particulier');
     else if (filtreType === 'pro')    list = list.filter(c =>  c.type_client && c.type_client !== 'particulier');
     if (filtreAbo !== 'tous')         list = list.filter(c => (c.abonnements || []).some(a => a.statut === 'actif' && a.offre_nom === filtreAbo));

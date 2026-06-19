@@ -6,6 +6,7 @@ import { ArrowLeft, Save, User, Building2, MapPin, Plus, Trash2, Sparkles, Alert
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase';
 import { validerEmail, validerTelephone, formaterTelephone, validerSiret, formaterSiret } from '@/lib/validation';
+import { messageErreurClient } from '@/lib/client-errors';
 import { useToast } from '@/components/ui/ToastProvider';
 import { STATUTS_CLIENT } from '@/lib/constantes';
 import AutocompleteEntreprise from '@/components/forms/AutocompleteEntreprise';
@@ -327,7 +328,7 @@ export default function NouveauClient() {
       router.push('/clients');
       router.refresh();
     } catch (err) {
-      toast.error('Erreur : ' + err.message);
+      toast.error(await messageErreurClient(err, form.email));
     } finally {
       setLoading(false);
     }
