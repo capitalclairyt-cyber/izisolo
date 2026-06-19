@@ -345,6 +345,11 @@ export default function PointageClient({ cours, presences: initialPresences, tou
   const [addTypePresence, setAddTypePresence] = useState('normal');
   const [newClientForm, setNewClientForm]   = useState({ prenom: '', nom: '', email: '', telephone: '' });
   const [addingNew, setAddingNew]           = useState(false);
+  // Sélection multiple (onglet « élève existant ») : on coche plusieurs élèves
+  // puis on valide une seule fois — Maude note les présences à la main et ne
+  // veut pas rouvrir le modal à chaque élève.
+  const [selectedToAdd, setSelectedToAdd]   = useState([]);
+  const [addingBatch, setAddingBatch]       = useState(false);
 
   // Mise à jour de l'heure toutes les 30s
   useEffect(() => {
@@ -538,33 +543,47 @@ export default function PointageClient({ cours, presences: initialPresences, tou
     for (const p of enAttente) await handleMarquer(p, 'present');
   };
 
-  // ── Ajouter un élève existant ─────────────────────────
-  const ajouterClient = async (client, typePresence = 'normal') => {
-    setActionLoading(client.id);
+  // ── Fermeture + reset du modal d'ajout ────────────────
+  const fermerAddModal = () => {
+    setShowAddModal(false);
+    setSearchAdd('');
+    setSelectedToAdd([]);
+    setAddTypePresence('normal');
+    setAddMode('search');
+    setNewClientForm({ prenom: '', nom: '', email: '', telephone: '' });
+  };
+
+  // ── Sélection multiple d'élèves existants ─────────────
+  const toggleSelectAdd = (id) =>
+    setSelectedToAdd(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+
+  // ── Ajouter tous les élèves cochés d'un coup (un seul insert) ──
+  const ajouterPlusieurs = async () => {
+    if (selectedToAdd.length === 0) return;
+    setAddingBatch(true);
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
-    const aboActif = client.abonnements?.find(a => a.statut === 'actif');
-
-    const { data, error } = await supabase
-      .from('presences')
-      .insert({
+    const rows = selectedToAdd.map(id => {
+      const client = tousClients.find(c => c.id === id);
+      const aboActif = client?.abonnements?.find(a => a.statut === 'actif');
+      return {
         profile_id:      user.id,
         cours_id:        cours.id,
-        client_id:       client.id,
+        client_id:       id,
         abonnement_id:   aboActif?.id || null,
         pointee:         false,
         statut_pointage: 'inscrit',
-        type_presence:   typePresence,
-      })
-      .select('*, clients(id, prenom, nom, statut, email, telephone), abonnements(id, offre_nom, seances_total, seances_utilisees, statut)')
-      .single();
-
-    if (!error && data) setPresences(prev => [...prev, data]);
-    setActionLoading(null);
-    setShowAddModal(false);
-    setSearchAdd('');
-    setAddTypePresence('normal');
-    setAddMode('search');
+        type_presence:   addTypePresence,
+      };
+    });
+    const { data, error } = await supabase
+      .from('presences')
+      .insert(rows)
+      .select('*, clients(id, prenom, nom, statut, email, telephone), abonnements(id, offre_nom, seances_total, seances_utilisees, statut)');
+    setAddingBatch(false);
+    if (error) { toast.error('Erreur lors de l\'ajout : ' + error.message); return; }
+    if (data) setPresences(prev => [...prev, ...data]);
+    fermerAddModal();
   };
 
   // ── Créer un nouveau client et l'inscrire ─────────────
@@ -611,10 +630,7 @@ export default function PointageClient({ cours, presences: initialPresences, tou
 
     if (!presErr && pres) setPresences(prev => [...prev, pres]);
     setAddingNew(false);
-    setShowAddModal(false);
-    setNewClientForm({ prenom: '', nom: '', email: '', telephone: '' });
-    setAddTypePresence('normal');
-    setAddMode('search');
+    fermerAddModal();
   };
 
   // ── Changer le type de présence ───────────────────────
@@ -815,13 +831,13 @@ export default function PointageClient({ cours, presences: initialPresences, tou
 
       {/* ─── Modal : ajouter un élève ─── */}
       {showAddModal && (
-        <div className="modal-overlay" onClick={() => { setShowAddModal(false); setAddMode('search'); setAddTypePresence('normal'); setNewClientForm({ prenom: '', nom: '', email: '', telephone: '' }); }}>
+        <div className="modal-overlay" onClick={fermerAddModal}>
           <div className="add-modal" onClick={e => e.stopPropagation()}>
 
             {/* Header */}
             <div className="modal-header">
               <h3><UserPlus size={18} /> {isLive ? '⚡ Ajout dernière minute' : `Ajouter un ${vocab.client || 'élève'}`}</h3>
-              <button className="modal-close-x" onClick={() => { setShowAddModal(false); setAddMode('search'); setAddTypePresence('normal'); setNewClientForm({ prenom: '', nom: '', email: '', telephone: '' }); }} aria-label="Fermer">✕</button>
+              <button className="modal-close-x" onClick={fermerAddModal} aria-label="Fermer">✕</button>
             </div>
 
             {/* Onglets */}
@@ -871,27 +887,43 @@ export default function PointageClient({ cours, presences: initialPresences, tou
                       {searchAdd ? 'Aucun résultat' : 'Tous les élèves sont déjà inscrits'}
                     </p>
                   ) : (
-                    clientsFiltres.map(c => (
-                      <button
-                        key={c.id}
-                        className="modal-item"
-                        onClick={() => ajouterClient(c, addTypePresence)}
-                        disabled={actionLoading === c.id}
-                      >
-                        <div className={`modal-avatar av-${c.statut}`}>{getInitials(c)}</div>
-                        <div className="modal-item-info">
-                          <span className="modal-item-name">{c.prenom} {c.nom}</span>
-                          {c.abonnements?.[0] && (
-                            <span className="modal-item-abo">{c.abonnements[0].offre_nom}</span>
-                          )}
-                        </div>
-                        {actionLoading === c.id
-                          ? <div className="pres-spinner" />
-                          : <Plus size={18} className="modal-plus" />}
-                      </button>
-                    ))
+                    clientsFiltres.map(c => {
+                      const sel = selectedToAdd.includes(c.id);
+                      return (
+                        <button
+                          key={c.id}
+                          type="button"
+                          className={`modal-item ${sel ? 'modal-item-selected' : ''}`}
+                          onClick={() => toggleSelectAdd(c.id)}
+                        >
+                          <div className={`modal-avatar av-${c.statut}`}>{getInitials(c)}</div>
+                          <div className="modal-item-info">
+                            <span className="modal-item-name">{c.prenom} {c.nom}</span>
+                            {c.abonnements?.[0] && (
+                              <span className="modal-item-abo">{c.abonnements[0].offre_nom}</span>
+                            )}
+                          </div>
+                          {sel
+                            ? <Check size={18} className="modal-check" />
+                            : <Plus size={18} className="modal-plus" />}
+                        </button>
+                      );
+                    })
                   )}
                 </div>
+                {selectedToAdd.length > 0 && (
+                  <div className="add-multi-footer">
+                    <button
+                      className="izi-btn izi-btn-primary add-multi-btn"
+                      onClick={ajouterPlusieurs}
+                      disabled={addingBatch}
+                    >
+                      {addingBatch
+                        ? <><div className="pres-spinner" style={{ borderColor: 'rgba(255,255,255,0.3)', borderTopColor: 'white' }} /> Ajout…</>
+                        : <><UserPlus size={16} /> Ajouter {selectedToAdd.length} élève{selectedToAdd.length > 1 ? 's' : ''}</>}
+                    </button>
+                  </div>
+                )}
               </>
             )}
 
@@ -1388,6 +1420,16 @@ export default function PointageClient({ cours, presences: initialPresences, tou
         .modal-item-name { font-weight: 600; font-size: 0.875rem; display: block; }
         .modal-item-abo  { font-size: 0.75rem; color: var(--text-muted); }
         .modal-plus      { color: var(--text-muted); }
+        .modal-check     { color: var(--brand, #B87333); flex-shrink: 0; }
+        .modal-item-selected .modal-item-name { font-weight: 700; }
+        .modal-item-selected .modal-avatar { box-shadow: 0 0 0 2px var(--brand, #B87333); }
+        .add-multi-footer {
+          position: sticky; bottom: 0;
+          padding: 12px 16px;
+          background: var(--bg-card, #fff);
+          border-top: 1px solid var(--border);
+        }
+        .add-multi-btn { width: 100%; }
 
         /* ══════════════════════════════════════
            MODAL PAIEMENT (centré)
