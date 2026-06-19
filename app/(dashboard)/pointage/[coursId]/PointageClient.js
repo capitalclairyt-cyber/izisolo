@@ -210,9 +210,9 @@ function PresenceCard({ presence, onMarquer, onPayer, onTypePresence, loading, l
       {/* ── Zone PRÉSENT (gauche) ── */}
       <button className="pres-zone zone-ok" onClick={handleOk} disabled={loading} aria-label="Marquer présent">
         <div className="zone-circle">
-          {locked ? <Lock size={20} />
-            : statut === 'present' ? <CheckCircle2 size={26} strokeWidth={2.5} />
-            : <Check size={24} strokeWidth={2} />}
+          {locked ? <Lock size={18} />
+            : statut === 'present' ? <CheckCircle2 size={24} strokeWidth={2.5} />
+            : <Check size={22} strokeWidth={2} />}
         </div>
         <span className="zone-txt">Présent</span>
       </button>
@@ -258,17 +258,17 @@ function PresenceCard({ presence, onMarquer, onPayer, onTypePresence, loading, l
               <span className="pres-heure">✓ {heurePointage}</span>
             )}
           </div>
-        </div>
 
-        {/* Chip excusé */}
-        {statut === 'absent' && !loading && !locked && (
-          <button className="excuse-chip" onClick={e => { e.stopPropagation(); onMarquer(presence, 'excuse'); }}>
-            <AlertTriangle size={10} /> Excusé
-          </button>
-        )}
-        {statut === 'excuse' && (
-          <span className="excuse-tag"><AlertTriangle size={10} /> Excusé</span>
-        )}
+          {/* Excuser : ligne dédiée sous le nom — ne rogne plus la largeur du nom */}
+          {statut === 'absent' && !loading && !locked && (
+            <button className="excuse-chip" onClick={e => { e.stopPropagation(); onMarquer(presence, 'excuse'); }}>
+              <AlertTriangle size={12} /> Marquer excusé
+            </button>
+          )}
+          {statut === 'excuse' && (
+            <span className="excuse-tag"><AlertTriangle size={11} /> Excusé</span>
+          )}
+        </div>
 
         {/* Bouton ··· type de séance (discret, derrière un tap) */}
         {!locked && (
@@ -313,9 +313,9 @@ function PresenceCard({ presence, onMarquer, onPayer, onTypePresence, loading, l
         aria-label="Marquer absent"
       >
         <div className="zone-circle">
-          {locked ? <Lock size={20} />
-            : (statut === 'absent' || statut === 'excuse') ? <XCircle size={26} strokeWidth={2.5} />
-            : <X size={24} strokeWidth={2} />}
+          {locked ? <Lock size={18} />
+            : (statut === 'absent' || statut === 'excuse') ? <XCircle size={24} strokeWidth={2.5} />
+            : <X size={22} strokeWidth={2} />}
         </div>
         <span className="zone-txt">Absent</span>
       </button>
@@ -419,8 +419,11 @@ export default function PointageClient({ cours, presences: initialPresences, tou
     .filter(c => !searchAdd || `${c.prenom} ${c.nom}`.toLowerCase().includes(searchAdd.toLowerCase()));
 
   // ── Tri : en attente → présents → absents/excusés ─────
+  // absent ET excusé partagent le rang 2 : basculer de l'un à l'autre ne
+  // fait PAS sauter la ligne (sinon la prof perd la ligne qu'elle veut
+  // excuser juste après l'avoir marquée absente).
   const sortedPresences = useMemo(() => {
-    const order = { inscrit: 0, present: 1, absent: 2, excuse: 3 };
+    const order = { inscrit: 0, present: 1, absent: 2, excuse: 2 };
     return [...presences].sort((a, b) => {
       const sa = getStatut(a), sb = getStatut(b);
       if (order[sa] !== order[sb]) return order[sa] - order[sb];
@@ -440,6 +443,7 @@ export default function PointageClient({ cours, presences: initialPresences, tou
     const isPresent  = newStatut === 'present';
     const isAbsent   = newStatut === 'absent';
     const wasPresent = oldStatut === 'present';
+    const wasAbsent  = oldStatut === 'absent';
 
     // Règle métier no_show :
     //   • mode auto + decompter_auto → l'absence DÉCOMPTE la séance (politique stricte)
@@ -514,23 +518,37 @@ export default function PointageClient({ cours, presences: initialPresences, tou
       ));
     }
 
-    // Log dans cas_a_traiter si mode manuel ou notifProf actif
-    if (logCasManuel) {
+    // ── Cas no_show : dédoublonné + nettoyé ──────────────────────────────
+    // Un no-show ne concerne qu'une absence NON excusée, et il ne doit JAMAIS
+    // y en avoir plus d'UN par présence. À chaque entrée/sortie de l'état
+    // absent on repart propre : on efface le(s) cas no_show NON résolu(s) de
+    // cette présence (ce qui rattrape aussi d'anciens doublons accidentels),
+    // puis on en recrée un seul SI — et seulement si — on (re)passe en absent
+    // en mode manuel/notif. Marquer présent, en attente, ou EXCUSÉ ⇒ aucun cas
+    // (excuser = absence légitime). Les cas déjà résolus restent (historique).
+    if (isAbsent || wasAbsent) {
       try {
-        await supabase.from('cas_a_traiter').insert({
-          profile_id: cours.profile_id,
-          case_type: 'no_show',
-          client_id: presence.client_id,
-          cours_id: cours.id,
-          presence_id: presence.id,
-          context: {
-            mode: regleNoShow.mode,
-            choix: regleNoShow.choix,
-            client_nom: `${presence.clients?.prenom || ''} ${presence.clients?.nom || ''}`.trim(),
-            cours_nom: cours.nom,
-            cours_date: cours.date,
-          },
-        });
+        await supabase.from('cas_a_traiter')
+          .delete()
+          .eq('presence_id', presence.id)
+          .eq('case_type', 'no_show')
+          .is('resolu_at', null);
+        if (isAbsent && logCasManuel) {
+          await supabase.from('cas_a_traiter').insert({
+            profile_id: cours.profile_id,
+            case_type: 'no_show',
+            client_id: presence.client_id,
+            cours_id: cours.id,
+            presence_id: presence.id,
+            context: {
+              mode: regleNoShow.mode,
+              choix: regleNoShow.choix,
+              client_nom: `${presence.clients?.prenom || ''} ${presence.clients?.nom || ''}`.trim(),
+              cours_nom: cours.nom,
+              cours_date: cours.date,
+            },
+          });
+        }
       } catch (e) { /* non-bloquant */ }
     }
 
@@ -1192,13 +1210,13 @@ export default function PointageClient({ cours, presences: initialPresences, tou
         /* Mobile étroit : réduit les zones Présent/Absent pour laisser
            respirer le centre (nom + badges) sous ~375px. */
         @media (max-width: 400px) {
-          .pres-zone { width: 68px; }
+          .pres-zone { width: 54px; }
         }
 
         /* ── Boutons de zone ── */
         .pres-zone {
           flex-shrink: 0;
-          width: 88px;
+          width: 64px;
           display: flex;
           flex-direction: column;
           align-items: center;
@@ -1213,7 +1231,7 @@ export default function PointageClient({ cours, presences: initialPresences, tou
 
         /* Cercle icône */
         .zone-circle {
-          width: 46px; height: 46px;
+          width: 40px; height: 40px;
           border-radius: 50%;
           display: flex; align-items: center; justify-content: center;
           transition: background 0.18s, transform 0.12s, box-shadow 0.18s;
@@ -1326,23 +1344,25 @@ export default function PointageClient({ cours, presences: initialPresences, tou
         .pres-abo-warn { color: #ef4444; font-weight: 600; }
         .pres-heure    { font-size: 0.7rem; color: #15803d; font-weight: 600; }
 
-        /* Chips excuse */
+        /* Chips excuse — ligne dédiée sous le nom (dans .pres-body), ne
+           rogne plus la largeur du nom ; cible de tap confortable. */
         .excuse-chip {
-          flex-shrink: 0;
-          display: flex; align-items: center; gap: 3px;
-          padding: 3px 8px; border-radius: var(--radius-full);
-          background: #fffbeb; border: 1.5px solid #fde68a;
-          color: #92400e; font-size: 0.65rem; font-weight: 700;
+          margin-top: 6px;
+          display: inline-flex; align-items: center; gap: 4px;
+          padding: 5px 11px; border-radius: var(--radius-full);
+          background: #fffbeb; border: 1.5px solid #fcd34d;
+          color: #92400e; font-size: 0.72rem; font-weight: 700;
           cursor: pointer; white-space: nowrap;
-          transition: background 0.12s;
+          transition: background 0.12s, transform 0.1s;
         }
-        .excuse-chip:hover { background: #fef3c7; }
+        .excuse-chip:hover  { background: #fef3c7; }
+        .excuse-chip:active { transform: scale(0.94); }
         .excuse-tag {
-          flex-shrink: 0;
-          display: flex; align-items: center; gap: 3px;
-          padding: 2px 8px; border-radius: var(--radius-full);
-          background: #fef3c7; border: 1px solid #fde68a;
-          color: #92400e; font-size: 0.65rem; font-weight: 700; white-space: nowrap;
+          margin-top: 6px;
+          display: inline-flex; align-items: center; gap: 4px;
+          padding: 3px 10px; border-radius: var(--radius-full);
+          background: #fef3c7; border: 1px solid #fcd34d;
+          color: #92400e; font-size: 0.7rem; font-weight: 700; white-space: nowrap;
         }
 
         /* Spinner */
@@ -1673,8 +1693,8 @@ export default function PointageClient({ cours, presences: initialPresences, tou
 
         /* Responsive */
         @media (min-width: 640px) {
-          .pres-zone { width: 100px; }
-          .zone-circle { width: 50px; height: 50px; }
+          .pres-zone { width: 92px; }
+          .zone-circle { width: 44px; height: 44px; }
           .pres-name { font-size: 0.9375rem; }
         }
       `}</style>
