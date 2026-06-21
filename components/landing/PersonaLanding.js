@@ -5,6 +5,7 @@ import { Nav, Footer, FAQ, FinalCta, Pricing } from './Sections';
 import { IziSoloLogo, YogaLotusIllu, YogaTreeIllu, SunCurveIllu } from './Brand';
 import Link from 'next/link';
 import Image from 'next/image';
+import { CITIES } from '@/content/cities';
 
 const ILLUS = { lotus: YogaLotusIllu, tree: YogaTreeIllu, sun: SunCurveIllu };
 
@@ -125,6 +126,47 @@ export default function PersonaLanding({ persona }) {
             </ul>
           </div>
         </section>
+
+        {/* Villes — maillage interne hub → pages locales (yoga & pilates uniquement) */}
+        {(persona === 'yoga' || persona === 'pilates') && (
+          <section className="benefits" aria-label="Villes">
+            <div className="container">
+              <div className="section-head">
+                <span className="eyebrow">Partout en France</span>
+                <h2 className="serif">
+                  {persona === 'pilates' ? 'Le Pilates' : 'Le yoga'} <em>près de chez toi.</em>
+                </h2>
+                <p style={{ maxWidth: 640, margin: '14px auto 0', color: 'var(--c-ink-soft)', textAlign: 'center', lineHeight: 1.6 }}>
+                  On a écrit une page rien que pour ta ville : contexte local, lieux de pratique,
+                  marché et tarifs du coin. Trouve la tienne.
+                </p>
+              </div>
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
+                gap: 12, maxWidth: 900, margin: '0 auto',
+              }}>
+                {Object.entries(CITIES).map(([slug, c]) => (
+                  <Link
+                    key={slug}
+                    href={`/prof-${persona}-${slug}`}
+                    style={{
+                      display: 'flex', flexDirection: 'column', gap: 2,
+                      padding: '14px 18px', borderRadius: 14,
+                      background: 'var(--c-surface)', border: '1px solid var(--c-line)',
+                      color: 'var(--c-ink)', textDecoration: 'none',
+                    }}
+                  >
+                    <span style={{ fontWeight: 600 }}>
+                      {persona === 'pilates' ? 'Pilates' : 'Yoga'} à {c.name}
+                    </span>
+                    <span style={{ fontSize: '0.8125rem', color: 'var(--c-ink-soft)' }}>{c.region}</span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
 
         <Pricing />
         <FAQ />

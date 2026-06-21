@@ -873,8 +873,11 @@ export function Footer() {
             { label: 'Profs de yoga', href: '/profs-de-yoga' },
             { label: 'Profs de yoga enfants', href: '/profs-de-yoga-enfants' },
             { label: 'Profs de pilates', href: '/profs-de-pilates' },
+            { label: 'Profs de méditation', href: '/profs-de-meditation' },
+            { label: 'Profs de danse', href: '/profs-de-danse' },
             { label: 'Coachs bien-être', href: '/coachs-bien-etre' },
             { label: 'Thérapeutes', href: '/therapeutes' },
+            { label: 'Sophrologues', href: '/sophrologues' },
           ]}
         />
         <FooterCol
