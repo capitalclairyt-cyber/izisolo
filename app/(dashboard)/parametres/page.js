@@ -33,6 +33,8 @@ import ReglesMetierTab from './ReglesMetierTab';
 import PhotoUploader from '@/components/ui/PhotoUploader';
 import CoverPhotoEditor from '@/components/ui/CoverPhotoEditor';
 import UnsavedChangesGuard from '@/components/ui/UnsavedChangesGuard';
+import PushToggle from '@/components/push/PushToggle';
+import NotifPrefsPanel from '@/components/push/NotifPrefsPanel';
 
 const PALETTES = [
   { id: 'rose', label: 'Rose', color: '#d4a0a0' },
@@ -2564,6 +2566,37 @@ export default function Parametres() {
       {/* ============================================ */}
       {activeTab === 'notifications' && (
         <div className="tab-content animate-fade-in">
+
+          {/* Mes notifications — ce que LA PROF veut recevoir (push navigateur +
+              choix par type). Distinct des "Notifications élèves auto" plus bas
+              (= ce que l'app envoie AUX élèves). Sauvegarde immédiate au toggle. */}
+          <div className="section izi-card">
+            <div className="section-top">
+              <div className="section-icon"><Bell size={20} /></div>
+              <h2>Mes notifications</h2>
+            </div>
+            <p className="section-desc">
+              Reçois une notification (et un email) quand il se passe quelque chose
+              dans ton studio. Active-les d'abord sur cet appareil, puis choisis ce
+              que tu veux recevoir.
+            </p>
+            <div style={{ marginBottom: 14 }}>
+              <PushToggle />
+            </div>
+            <NotifPrefsPanel
+              audience="prof"
+              initialPrefs={profile?.notif_prefs || {}}
+              onSave={async (next) => {
+                const res = await fetch('/api/profile', {
+                  method: 'PUT',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ notif_prefs: next }),
+                });
+                if (!res.ok) throw new Error('save failed');
+                setProfile(prev => ({ ...prev, notif_prefs: next }));
+              }}
+            />
+          </div>
 
           {/* Seuils d'alerte — pilotent à la fois (1) les alertes affichées
               sur le dashboard prof et (2) les notifications auto envoyées

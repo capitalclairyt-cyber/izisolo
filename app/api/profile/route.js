@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/api-auth';
+import { sanitizePrefs } from '@/lib/notif-prefs';
 
 // GET /api/profile — Récupérer le profil courant
 export async function GET() {
@@ -31,6 +32,10 @@ export async function PUT(request) {
       if (body[key] !== undefined) {
         updates[key] = body[key];
       }
+    }
+    // Préférences de notification prof : sanitizées (jamais du JSON arbitraire).
+    if (body.notif_prefs && typeof body.notif_prefs === 'object') {
+      updates.notif_prefs = sanitizePrefs(body.notif_prefs, 'prof');
     }
 
     const { data, error } = await supabase

@@ -356,7 +356,7 @@ async function promouvoirListeAttente(supabaseAdmin, profileId, cours, proEmail 
       body: `Ta place est réservée pour ${cours.nom || 'ton cours'}.`,
       url: studioSlug ? `/p/${studioSlug}/espace` : '/',
       tag: `la-${cours.id}`,
-    }).catch(() => {});
+    }, { type: 'place_liberee', profileId }).catch(() => {});
   }
 
   // Email de notification — pipeline central (blacklist respectée)

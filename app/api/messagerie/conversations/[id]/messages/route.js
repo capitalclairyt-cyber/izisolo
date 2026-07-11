@@ -109,7 +109,7 @@ export async function POST(request, { params }) {
               body: (body.content || '').slice(0, 120) || 'Nouveau message',
               url: profile.studio_slug ? `/p/${profile.studio_slug}/espace/messages` : '/',
               tag: `msg-${conversationId}`,
-            });
+            }, { type: 'message', profileId: profile.id });
           }
         })().catch(() => {});
       }
@@ -153,7 +153,7 @@ export async function POST(request, { params }) {
       body: (body.content || '').slice(0, 120) || 'Nouveau message',
       url: '/messagerie',
       tag: `msg-${conversationId}`,
-    }).catch(() => {});
+    }, { type: 'message' }).catch(() => {});
     return Response.json({ message: msg });
   } catch (err) {
     console.error('[messagerie] eleve send err:', err);

@@ -164,7 +164,7 @@ export const POST = withRoute({ auth: 'active' }, async ({ params, auth }) => {
     body: `Ta place est réservée pour ${cours.nom || 'ton cours'}.`,
     url: profile.studio_slug ? `/p/${profile.studio_slug}/espace` : '/',
     tag: `la-${cours.id}`,
-  }).catch(() => {});
+  }, { type: 'place_liberee', profileId: profile.id }).catch(() => {});
 
   return NextResponse.json({ ok: true, presence_id: newPresence.id, client_id: clientId });
 });

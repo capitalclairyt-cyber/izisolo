@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Calendar, Clock, MapPin, ArrowLeft, LogOut, CheckCircle, XCircle, Loader, AlertCircle, User, Lock, CreditCard, Ticket, CalendarCheck, Zap, Download, Receipt, MessageCircle, Send, X, Phone, Home, Pencil, Save, Wallet, Bell } from 'lucide-react';
 import PushToggle from '@/components/push/PushToggle';
+import NotifPrefsPanel from '@/components/push/NotifPrefsPanel';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/components/ui/ToastProvider';
 import { evaluerAnnulation, formatDateLimite } from '@/lib/regles-annulation';
@@ -259,7 +260,7 @@ function CoursCard({ presence, profile, studioSlug, onAnnuler, annulEnCours }) {
   );
 }
 
-export default function EspaceClient({ profile, client, aVenir, passes, paiements = [], offresStripe = [], abonnements = [], aRegler = [], unreadMessages = 0, studioSlug, userEmail, isDemo = false }) {
+export default function EspaceClient({ profile, client, aVenir, passes, paiements = [], offresStripe = [], abonnements = [], aRegler = [], unreadMessages = 0, clientPrefs = {}, studioSlug, userEmail, isDemo = false }) {
   const router = useRouter();
   const { toast } = useToast();
   const [notifsOpen, setNotifsOpen] = useState(false);
@@ -536,6 +537,30 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
           </Link>
         </div>
       </div>
+
+      {/* Notifications — activation push (cet appareil) + préférences par type */}
+      {!isDemo && (
+        <div className="portail-card" style={{ marginBottom: 20 }}>
+          <h2 className="espace-section-title" style={{ margin: '0 0 12px' }}>
+            <Bell size={16} style={{ color: '#d4a0a0' }} /> Notifications
+          </h2>
+          <div style={{ marginBottom: 14 }}>
+            <PushToggle />
+          </div>
+          <NotifPrefsPanel
+            audience="eleve"
+            initialPrefs={clientPrefs}
+            onSave={async (next) => {
+              const res = await fetch(`/api/portail/${studioSlug}/profil`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ notif_prefs: next }),
+              });
+              if (!res.ok) throw new Error('save failed');
+            }}
+          />
+        </div>
+      )}
 
       {/* Mes coordonnées — affichées + modifiables par l'élève */}
       {(() => {

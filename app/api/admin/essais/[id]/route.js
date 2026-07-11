@@ -81,7 +81,7 @@ export async function POST(request, { params }) {
         body: `${profile.studio_nom} a validé ta demande — ${cours?.nom || 'ton cours'}.`,
         url: `/p/${profile.studio_slug}/espace`,
         tag: `essai-${id}`,
-      }).catch(() => {});
+      }, { type: 'essai', profileId: profile.id }).catch(() => {});
 
       return Response.json({ ok: true, client_id, presence_id });
     } catch (err) {
@@ -136,7 +136,7 @@ export async function POST(request, { params }) {
     body: `${profile.studio_nom} n'a pas pu donner suite pour le moment.`,
     url: `/p/${profile.studio_slug}`,
     tag: `essai-${id}`,
-  }).catch(() => {});
+  }, { type: 'essai', profileId: profile.id }).catch(() => {});
 
   return Response.json({ ok: true });
 }

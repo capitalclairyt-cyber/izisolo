@@ -113,7 +113,7 @@ Pour ne pas être pris·e de court, n'hésite pas à renouveler dès que possibl
                 body: `Ton carnet « ${abo.offre_nom || 'carnet'} » chez ${profile.studio_nom} — pense à renouveler.`,
                 url: profile.studio_slug ? `/p/${profile.studio_slug}/espace` : '/',
                 tag: `carnet-${abo.id}`,
-              }).catch(() => {});
+              }, { type: 'carnet', profileId: profile.id }).catch(() => {});
             }
           } catch (e) {
             console.error('[cron notifs] credits_faibles err', e);
@@ -160,7 +160,7 @@ Pour assurer la continuité de tes cours, pense à le renouveler avant cette dat
               body: `« ${abo.offre_nom || 'abonnement'} » chez ${profile.studio_nom} — dans ${joursRestants} j.`,
               url: profile.studio_slug ? `/p/${profile.studio_slug}/espace` : '/',
               tag: `exp-${abo.id}`,
-            }).catch(() => {});
+            }, { type: 'carnet', profileId: profile.id }).catch(() => {});
           }
         } catch (e) {
           console.error('[cron notifs] expiration_abo err', e);

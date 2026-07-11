@@ -1,5 +1,6 @@
 import { createServerClient } from '@/lib/supabase-server';
 import { createAdminClient } from '@/lib/supabase-admin';
+import { sanitizePrefs } from '@/lib/notif-prefs';
 
 /**
  * PATCH /api/portail/[studioSlug]/profil
@@ -40,11 +41,19 @@ export async function PATCH(request, { params }) {
     const t = v.trim();
     return t ? t.slice(0, 200) : null;
   };
-  const update = {
-    telephone: clean(body.telephone),
-    adresse_postale: clean(body.adresse_postale),
-    ville: clean(body.ville),
-  };
+  // Deux usages : soit MAJ des coordonnées, soit MAJ des préférences de notif
+  // (le front envoie l'un OU l'autre). Si notif_prefs présent → on ne touche
+  // qu'à ça, pour ne pas écraser les coordonnées par des null.
+  let update;
+  if (body.notif_prefs && typeof body.notif_prefs === 'object') {
+    update = { notif_prefs: sanitizePrefs(body.notif_prefs, 'eleve') };
+  } else {
+    update = {
+      telephone: clean(body.telephone),
+      adresse_postale: clean(body.adresse_postale),
+      ville: clean(body.ville),
+    };
+  }
 
   const { error } = await supabaseAdmin
     .from('clients')

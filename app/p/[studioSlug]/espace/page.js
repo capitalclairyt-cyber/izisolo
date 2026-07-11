@@ -230,7 +230,15 @@ async function getData(studioSlug, userEmail) {
   let unreadMessages = 0;
   try { unreadMessages = await countUnread(supabase, 'eleve', client.id); } catch {}
 
-  return { profile, client, aVenir, passes, paiements: paiements || [], offresStripe: offresStripe || [], abonnements: abonnements || [], aRegler, unreadMessages };
+  // Préférences de notif — requête SÉPARÉE et défensive : si la colonne
+  // notif_prefs n'existe pas encore (migration v60 pas appliquée), on retombe
+  // sur {} sans casser tout le chargement de l'espace.
+  let clientPrefs = {};
+  const { data: cp, error: cpErr } = await supabase
+    .from('clients').select('notif_prefs').eq('id', client.id).maybeSingle();
+  if (!cpErr && cp?.notif_prefs) clientPrefs = cp.notif_prefs;
+
+  return { profile, client, aVenir, passes, paiements: paiements || [], offresStripe: offresStripe || [], abonnements: abonnements || [], aRegler, unreadMessages, clientPrefs };
 }
 
 export default async function EspacePage({ params, searchParams }) {
@@ -296,6 +304,7 @@ export default async function EspacePage({ params, searchParams }) {
       abonnements={data.abonnements || []}
       aRegler={data.aRegler || []}
       unreadMessages={data.unreadMessages || 0}
+      clientPrefs={data.clientPrefs || {}}
       studioSlug={studioSlug}
       userEmail={user.email}
     />
