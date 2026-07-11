@@ -139,17 +139,20 @@ async function restoreBeforeState({ supabase, cas, before, action }) {
     if (error) return error.message;
 
     // Si l'action était "decompte" et qu'on avait incrémenté seances_utilisees,
-    // on décrémente pour rétablir.
-    if (action === 'decompte') {
+    // on décrémente pour rétablir. Symétriquement, si "excuse" avait re-crédité
+    // une séance (before.recredited), on la re-décompte.
+    if (action === 'decompte' || (action === 'excuse' && before.recredited)) {
       const { data: presence } = await supabase
         .from('presences')
         .select('abonnement_id')
         .eq('id', before.presence_id)
         .single();
       if (presence?.abonnement_id) {
-        // RPC v53 : décrément atomique (borné à 0 côté SQL)
+        // decompte : on avait +1 → on rend -1. excuse re-créditée : on avait -1
+        // → on re-décompte +1.
+        const p_delta = action === 'decompte' ? -1 : 1;
         const { error: decErr } = await supabase
-          .rpc('ajuster_seances', { p_abo_id: presence.abonnement_id, p_delta: -1 });
+          .rpc('ajuster_seances', { p_abo_id: presence.abonnement_id, p_delta });
         if (decErr) return decErr.message;
       }
     }

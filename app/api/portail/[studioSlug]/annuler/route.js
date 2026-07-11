@@ -337,6 +337,11 @@ async function promouvoirListeAttente(supabaseAdmin, profileId, cours, proEmail 
     return;
   }
 
+  // La personne était-elle DÉJÀ inscrite (doublon) ? Alors on la sort de la
+  // file (notified_at) mais on NE lui envoie PAS l'email « une place s'est
+  // libérée » : elle a déjà sa place, ce serait trompeur.
+  const dejaInscrite = resa?.reason === 'doublon';
+
   // Marquer la ligne comme notifiée
   await supabaseAdmin
     .from('liste_attente')
@@ -345,7 +350,7 @@ async function promouvoirListeAttente(supabaseAdmin, profileId, cours, proEmail 
 
   // Email de notification — pipeline central (blacklist respectée)
   try {
-    if (process.env.RESEND_API_KEY) {
+    if (process.env.RESEND_API_KEY && !dejaInscrite) {
       const dateStr = cours.date
         ? new Date(cours.date + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })
         : 'la date prévue';

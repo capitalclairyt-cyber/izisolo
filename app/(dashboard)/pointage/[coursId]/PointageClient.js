@@ -13,6 +13,7 @@ import { getVocabulaire } from '@/lib/vocabulaire';
 import { createClient } from '@/lib/supabase';
 import { evaluerRegles } from '@/lib/regles';
 import { getRegle } from '@/lib/regles-metier';
+import { seanceDelta } from '@/lib/pointage-delta';
 import { useToast } from '@/components/ui/ToastProvider';
 
 
@@ -450,17 +451,15 @@ export default function PointageClient({ cours, presences: initialPresences, tou
     //   • mode auto + crédit_reporté → l'absence ne décompte pas (politique souple, comportement historique)
     //   • mode manuel               → log dans cas_a_traiter pour décision prof
     const regleNoShow = getRegle({ regles_metier: profile?.regles_metier }, 'no_show');
-    const decompteSiAbsent = isAbsent && regleNoShow.mode === 'auto' && regleNoShow.choix === 'decompter_auto';
+    // Une absence "compte" une séance UNIQUEMENT en politique stricte
+    // (auto + decompter_auto). Sinon l'absence est neutre pour le carnet.
+    const absenceCompte = regleNoShow.mode === 'auto' && regleNoShow.choix === 'decompter_auto';
     const logCasManuel = isAbsent && (regleNoShow.mode === 'manuel' || regleNoShow.notifProf);
 
-    // Delta compteur séances :
-    //   present : +1 (l'élève était là)
-    //   retour arrière depuis present : -1 (annule le décompte précédent)
-    //   absence + decompteSiAbsent : +1 (politique stricte, séance décomptée)
-    let delta = 0;
-    if (isPresent && !wasPresent) delta = 1;
-    else if (!isPresent && wasPresent) delta = -1;
-    else if (isAbsent && !wasPresent && decompteSiAbsent) delta = 1;
+    // Delta compteur séances = (nouvel état compte ?) − (ancien état comptait ?).
+    // Formule unifiée (lib/pointage-delta) qui corrige les transitions quittant
+    // un 'absent' déjà décompté (absent→présent, absent→excusé, présent→absent-strict).
+    const delta = seanceDelta(oldStatut, newStatut, absenceCompte);
 
     const nowIso = new Date().toISOString();
 
@@ -543,6 +542,9 @@ export default function PointageClient({ cours, presences: initialPresences, tou
             context: {
               mode: regleNoShow.mode,
               choix: regleNoShow.choix,
+              // Trace si une séance a VRAIMENT été décomptée à l'absence : c'est
+              // le seul cas où « Excuser » devra la re-créditer (cf. resolve).
+              seance_decomptee: absenceCompte && !!presence.abonnement_id,
               client_nom: `${presence.clients?.prenom || ''} ${presence.clients?.nom || ''}`.trim(),
               cours_nom: cours.nom,
               cours_date: cours.date,

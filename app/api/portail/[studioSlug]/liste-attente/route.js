@@ -2,6 +2,7 @@ import { createAdminClient } from '@/lib/supabase-admin';
 import { listeAttenteSchema } from '@/lib/validation';
 import { checkAntiBot, ipFromRequest } from '@/lib/antibot';
 import { studioHasFeature } from '@/lib/plan-guard';
+import { sendEmail } from '@/lib/email';
 
 export async function POST(request, { params }) {
   const { studioSlug } = await params;
@@ -45,7 +46,7 @@ export async function POST(request, { params }) {
 
   const { data: cours } = await supabaseAdmin
     .from('cours')
-    .select('id, nom, date, capacite_max, est_annule, profile_id')
+    .select('id, nom, date, heure, capacite_max, est_annule, profile_id')
     .eq('id', coursId)
     .eq('profile_id', profile.id)
     .single();
@@ -88,17 +89,30 @@ export async function POST(request, { params }) {
     }
   }
 
-  // Calculer position (taille actuelle + 1)
+  // Déjà en liste d'attente pour ce cours ? → idempotent, on renvoie sa
+  // position EXISTANTE sans la recalculer (bug historique : le re-submit
+  // faisait un upsert avec position = count+1, qui s'incrémentait à chaque
+  // envoi) et sans re-notifier (pas de spam prof/élève).
+  const { data: dejaEnListe } = await supabaseAdmin
+    .from('liste_attente')
+    .select('id, position')
+    .eq('cours_id', coursId)
+    .ilike('email', email)
+    .maybeSingle();
+  if (dejaEnListe) {
+    return Response.json({ ok: true, position: dejaEnListe.position, deja: true });
+  }
+
+  // Nouvelle inscription : position = taille actuelle + 1 (INSERT, pas upsert).
   const { count: tailleListe } = await supabaseAdmin
     .from('liste_attente')
     .select('id', { count: 'exact', head: true })
     .eq('cours_id', coursId);
   const position = (tailleListe || 0) + 1;
 
-  // Upsert (unique sur cours_id + email)
   const { data: row, error: insertErr } = await supabaseAdmin
     .from('liste_attente')
-    .upsert({
+    .insert({
       profile_id: profile.id,
       cours_id: coursId,
       client_id: existingClient?.id || null,
@@ -106,17 +120,73 @@ export async function POST(request, { params }) {
       nom,
       telephone: tel || null,
       position,
-    }, { onConflict: 'cours_id,email' })
+    })
     .select('id, position')
     .single();
 
   if (insertErr) {
+    // 23505 = deux inscriptions simultanées du même email (course rare) →
+    // l'autre a gagné, l'élève est bien en liste : on ne montre pas d'erreur.
+    if (insertErr.code === '23505') {
+      return Response.json({ ok: true, position, deja: true });
+    }
     console.error('liste-attente insert error:', insertErr);
     return Response.json({ error: 'Erreur lors de l\'inscription' }, { status: 500 });
   }
 
-  return Response.json({
-    ok: true,
-    position: row?.position || position,
-  });
+  // Email de PROF pour reply-to (l'élève peut répondre pour se retirer)
+  let proEmail = null;
+  try {
+    const { data: { user: proUser } } = await supabaseAdmin.auth.admin.getUserById(profile.id);
+    proEmail = proUser?.email || null;
+  } catch {}
+
+  const dateStr = cours.date
+    ? new Date(cours.date + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })
+    : 'la date prévue';
+  const heureStr = cours.heure ? ` à ${cours.heure.slice(0, 5).replace(':', 'h')}` : '';
+  const finalPosition = row?.position || position;
+  const prenom = (nom || '').split(' ')[0] || '';
+
+  // Email de confirmation à l'élève (non bloquant) : position + comment se retirer.
+  try {
+    await sendEmail({
+      categorie: 'notification',
+      replyTo: proEmail,
+      to: email,
+      subject: `Tu es sur la liste d'attente — ${cours.nom || 'ton cours'}`,
+      html: `
+        <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:560px;margin:0 auto;padding:24px;">
+          <h2 style="color:#b87333;margin:0 0 6px;">C'est noté !</h2>
+          <p style="color:#555;margin:0 0 14px;">${prenom ? `Bonjour ${prenom},` : 'Bonjour,'}</p>
+          <p style="color:#555;margin:0 0 14px;">
+            Le cours <strong>${cours.nom || ''}</strong> (${dateStr}${heureStr}) est complet.
+            Tu es inscrit·e sur la liste d'attente en <strong>position ${finalPosition}</strong>.
+          </p>
+          <p style="color:#555;margin:0 0 14px;">
+            Si une place se libère, tu recevras automatiquement un email — ta place
+            sera alors réservée, tu n'auras rien à faire.
+          </p>
+          <p style="color:#999;margin:16px 0 0;font-size:0.8125rem;">
+            Tu ne veux plus attendre ce cours ? Réponds simplement à cet email et
+            ${profile.studio_nom || 'ton studio'} te retirera de la liste.
+          </p>
+        </div>
+      `,
+    });
+  } catch (e) { console.error('[liste-attente] email confirmation non-bloquant:', e?.message); }
+
+  // Notification cloche côté prof (non bloquant).
+  try {
+    await supabaseAdmin.from('notifications').insert({
+      profile_id: profile.id,
+      type: 'liste_attente',
+      titre: 'Nouvelle inscription en liste d\'attente',
+      corps: `${nom || email} attend une place — ${cours.nom || 'cours'} (${dateStr}${heureStr}).`,
+      data: { cours_id: coursId, email },
+      lu: false,
+    });
+  } catch (e) { console.error('[liste-attente] notif prof non-bloquant:', e?.message); }
+
+  return Response.json({ ok: true, position: finalPosition });
 }

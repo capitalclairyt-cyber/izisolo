@@ -33,6 +33,32 @@ export async function GET(request) {
   const { data: epuises } = await supabaseAdmin
     .rpc('marquer_carnets_epuises');
 
+  // ── Nettoyage liste d'attente ────────────────────────────────────────────
+  // Les entrées de cours passés depuis > 60 jours ne servent plus à rien
+  // (la place ne se libérera jamais rétroactivement). On les purge pour éviter
+  // l'accumulation infinie (la table n'était jamais nettoyée).
+  let listeAttentePurgee = 0;
+  try {
+    const il60jours = new Date(Date.now() - 60 * 86400000).toISOString().split('T')[0];
+    const { data: coursVieux } = await supabaseAdmin
+      .from('cours')
+      .select('id')
+      .lt('date', il60jours);
+    const vieuxIds = (coursVieux || []).map(c => c.id);
+    // Supprime par lots de 200 ids pour rester sous la limite d'URL PostgREST.
+    for (let i = 0; i < vieuxIds.length; i += 200) {
+      const lot = vieuxIds.slice(i, i + 200);
+      const { data: del } = await supabaseAdmin
+        .from('liste_attente')
+        .delete()
+        .in('cours_id', lot)
+        .select('id');
+      listeAttentePurgee += del?.length || 0;
+    }
+  } catch (e) {
+    console.error('[cron/expirations] purge liste_attente:', e?.message);
+  }
+
   // ── Auto-statut clients ──────────────────────────────────────────────────
   let promoCount = 0;
   let archiveCount = 0;
@@ -102,6 +128,7 @@ export async function GET(request) {
     epuises: epuises?.length || 0,
     promoActif: promoCount,
     autoArchive: archiveCount,
+    listeAttentePurgee,
     timestamp: new Date().toISOString(),
   });
 }

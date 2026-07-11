@@ -248,8 +248,24 @@ async function applyDirectEffect({ supabase, cas, action, userId }) {
       }
     }
 
+    // Excuse d'une absence qui avait DÉJÀ été décomptée (no-show strict) → on
+    // rend la séance. Le flag context.seance_decomptee, posé à la création du
+    // cas par le pointage, est le seul signal fiable (le statut 'absent' seul
+    // ne dit pas si le carnet a été touché). `recredited` permet à l'undo de
+    // rétablir le décompte.
+    let recredited = false;
+    if (action === 'excuse' && cas.context?.seance_decomptee && presence.abonnement_id && before.statut !== 'excuse') {
+      const { error: credErr } = await supabase
+        .rpc('ajuster_seances', { p_abo_id: presence.abonnement_id, p_delta: -1 });
+      if (credErr) {
+        console.error('[cas resolve] re-crédit excuse échoué:', credErr);
+        return { error: 'La restitution de la séance a échoué.', status: 500 };
+      }
+      recredited = true;
+    }
+
     return {
-      beforeState: { presence_id: cas.presence_id, ...before },
+      beforeState: { presence_id: cas.presence_id, ...before, ...(recredited && { recredited: true }) },
       ressource: { type: 'presence', id: cas.presence_id },
     };
   }
