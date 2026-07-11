@@ -1,6 +1,7 @@
 import * as Sentry from '@sentry/nextjs';
 import { createAdminClient } from '@/lib/supabase-admin';
 import { verifyStripeSignature, getCheckoutSessionAmount, getCheckoutSessionEmail } from '@/lib/stripe';
+import { sendPushToUser } from '@/lib/push-server';
 
 // Frais de fonctionnement IziSolo sur chaque paiement encaissé via le portail (Stripe).
 // Calculés et stockés en DB pour facturation SaaS mensuelle (sprint post-launch).
@@ -144,6 +145,14 @@ async function handleCheckoutCompleted(supabase, profileId, session) {
     console.error('[stripe/webhook] insert paiement error:', insertErr);
     throw new Error('Failed to create paiement: ' + insertErr.message);
   }
+
+  // Push prof « paiement en ligne reçu » (gaté sur pref ; no-op sans abo)
+  sendPushToUser(profileId, {
+    title: `Paiement en ligne reçu 💳`,
+    body: `${amount} € — ${intitule}`,
+    url: '/revenus',
+    tag: `stripe-${session.id}`,
+  }, { type: 'paiement_stripe' }).catch(() => {});
 
   // Si l'offre est de type carnet/abonnement et qu'un client est matché,
   // on peut auto-créer l'abonnement correspondant.

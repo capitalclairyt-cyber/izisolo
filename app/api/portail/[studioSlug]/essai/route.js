@@ -1,6 +1,7 @@
 import { createAdminClient } from '@/lib/supabase-admin';
 import { finaliserDemande, emailConfirmationVisiteur, emailEnAttenteVisiteur, emailNotifPro } from '@/lib/essai';
 import { buildPortailMagicLink } from '@/lib/portail-magic-link';
+import { sendPushToUser } from '@/lib/push-server';
 import { checkAntiBot, ipFromRequest } from '@/lib/antibot';
 import { essaiSchema } from '@/lib/validation';
 import { studioHasFeature } from '@/lib/plan-guard';
@@ -170,6 +171,14 @@ export async function POST(request, { params }) {
     ref_key: `essai_demande_${demande.id}`,
     expires_at: null,
   }, { onConflict: 'profile_id,ref_key', ignoreDuplicates: true });
+
+  // Push prof (gaté sur pref essai_demande ; no-op sans abonnement)
+  sendPushToUser(profile.id, {
+    title: isManuel ? `Demande d'essai à valider ✨` : `Nouveau cours d'essai ✨`,
+    body: `${prenom} — ${cours.nom} · ${coursDateStr}${coursHeureStr}`,
+    url: '/essais',
+    tag: `essai-demande-${demande.id}`,
+  }, { type: 'essai_demande' }).catch(() => {});
 
   // 6. Emails (non-bloquants)
   const stripeLink = profile.essai_paiement === 'stripe' ? profile.essai_stripe_payment_link : null;

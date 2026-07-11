@@ -1,6 +1,7 @@
 import { withRoute } from '@/lib/api-route';
 import { createAdminClient } from '@/lib/supabase-admin';
 import { sendNotifEleve } from '@/lib/notifs-eleves';
+import { sendPushToEmail } from '@/lib/push-server';
 import { getRegle } from '@/lib/regles-metier';
 
 export const runtime = 'nodejs';
@@ -37,7 +38,7 @@ export const POST = withRoute({ auth: 'active' }, async ({ request, params, auth
   // Profile complet (pour twilio + notifs_eleves + règles métier)
   const { data: profile } = await supabaseAdmin
     .from('profiles')
-    .select('id, studio_nom, notifs_eleves, regles_metier, twilio_account_sid, twilio_auth_token, twilio_phone_number')
+    .select('id, studio_nom, studio_slug, notifs_eleves, regles_metier, twilio_account_sid, twilio_auth_token, twilio_phone_number')
     .eq('id', user.id)
     .single();
 
@@ -146,6 +147,16 @@ Désolé·e pour le désagrément, à très vite.`;
     });
     sentTotal += result.sent;
     skippedTotal += result.skipped;
+
+    // Push élève « cours annulé » (gaté sur pref cours_annule ; no-op sans abo)
+    if (client.email) {
+      sendPushToEmail(client.email, {
+        title: `Cours annulé`,
+        body: `${cours.nom} — ${dateStr}${heureStr ? ` à ${heureStr}` : ''} est annulé.`,
+        url: profile?.studio_slug ? `/p/${profile.studio_slug}/espace` : '/',
+        tag: `annul-cours-${coursId}`,
+      }, { type: 'cours_annule', profileId: user.id }).catch(() => {});
+    }
   }
 
   return Response.json({

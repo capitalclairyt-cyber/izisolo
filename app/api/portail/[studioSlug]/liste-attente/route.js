@@ -3,6 +3,7 @@ import { listeAttenteSchema } from '@/lib/validation';
 import { checkAntiBot, ipFromRequest } from '@/lib/antibot';
 import { studioHasFeature } from '@/lib/plan-guard';
 import { sendEmail } from '@/lib/email';
+import { sendPushToUser } from '@/lib/push-server';
 
 export async function POST(request, { params }) {
   const { studioSlug } = await params;
@@ -187,6 +188,14 @@ export async function POST(request, { params }) {
       lu: false,
     });
   } catch (e) { console.error('[liste-attente] notif prof non-bloquant:', e?.message); }
+
+  // Push prof (gaté sur pref liste_attente ; no-op sans abonnement)
+  sendPushToUser(profile.id, {
+    title: `Nouvelle inscription en liste d'attente ⏳`,
+    body: `${nom || email} attend une place — ${cours.nom || 'cours'} (${dateStr}${heureStr}).`,
+    url: '/liste-attente',
+    tag: `la-inscr-${coursId}`,
+  }, { type: 'liste_attente' }).catch(() => {});
 
   return Response.json({ ok: true, position: finalPosition });
 }

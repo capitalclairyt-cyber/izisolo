@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { requireCronAuth } from '@/lib/api-auth';
 import { sendNotifEleve } from '@/lib/notifs-eleves';
-import { sendPushToEmail } from '@/lib/push-server';
+import { sendPushToEmail, sendPushToUser } from '@/lib/push-server';
 import { wantsNotif } from '@/lib/notif-prefs';
 
 // Durée max explicite (fluid compute : 300 s = plafond Hobby)
@@ -118,11 +118,59 @@ Petit rappel : tu es inscrit·e à ${cours.nom} demain ${dateStr}${heureStr ? ` 
     }
   }
 
+  // ── Rappel de pointage (prof) — cours d'HIER non pointés ──────────────────
+  // Défaut OFF (pref pointage_rappel) → seuls les profs qui l'activent le
+  // reçoivent. Dédup 1×/jour via notifications.ref_key. Cloche + push.
+  let pointageRappels = 0;
+  try {
+    const hierD = new Date(parisDate + 'T12:00:00Z');
+    hierD.setUTCDate(hierD.getUTCDate() - 1);
+    const hier = hierD.toISOString().slice(0, 10);
+
+    const { data: coursHier } = await supabaseAdmin
+      .from('cours').select('id, profile_id').eq('date', hier).eq('est_annule', false);
+    if (coursHier && coursHier.length) {
+      const { data: presH } = await supabaseAdmin
+        .from('presences').select('cours_id, statut_pointage').in('cours_id', coursHier.map(c => c.id));
+      const nonPointes = new Set();
+      for (const p of (presH || [])) {
+        if (!p.statut_pointage || p.statut_pointage === 'inscrit') nonPointes.add(p.cours_id);
+      }
+      const parProfil = {};
+      for (const c of coursHier) {
+        if (nonPointes.has(c.id)) parProfil[c.profile_id] = (parProfil[c.profile_id] || 0) + 1;
+      }
+      const profIds = Object.keys(parProfil);
+      if (profIds.length) {
+        const { data: profs } = await supabaseAdmin
+          .from('profiles').select('id, notif_prefs').in('id', profIds);
+        for (const prof of (profs || [])) {
+          if (!wantsNotif(prof.notif_prefs, 'pointage_rappel', 'prof')) continue;
+          const n = parProfil[prof.id];
+          const titre = `${n} cours non pointé${n > 1 ? 's' : ''} hier`;
+          const corps = `Pense à pointer les présences pour fiabiliser tes carnets.`;
+          // Dédup : ref_key par jour → un seul rappel, même si le cron re-tourne.
+          const { data: ins } = await supabaseAdmin.from('notifications').upsert({
+            profile_id: prof.id, type: 'pointage_rappel', titre, corps,
+            ref_key: `pointage_${hier}`, lu: false,
+          }, { onConflict: 'profile_id,ref_key', ignoreDuplicates: true }).select('id');
+          if (ins && ins.length) {
+            pointageRappels++;
+            sendPushToUser(prof.id, { title: titre, body: corps, url: '/agenda', tag: `pointage-${hier}` }, { type: 'pointage_rappel' }).catch(() => {});
+          }
+        }
+      }
+    }
+  } catch (e) {
+    console.error('[cron alertes] pointage rappel:', e?.message);
+  }
+
   return NextResponse.json({
     rappels: pres.length,
     sent,
     skipped,
     prefOff,
+    pointageRappels,
     demain,
     timestamp: new Date().toISOString(),
   });
