@@ -1,7 +1,8 @@
 import { requireCronAuth } from '@/lib/api-auth';
 import { createAdminClient } from '@/lib/supabase-admin';
 import { sendNotifEleve } from '@/lib/notifs-eleves';
-import { sendPushToEmail } from '@/lib/push-server';
+import { sendPushToEmail, claimCronPush } from '@/lib/push-server';
+import { wantsNotif } from '@/lib/notif-prefs';
 import { evaluerReglesAll } from '@/lib/regles';
 
 export const runtime = 'nodejs';
@@ -81,15 +82,18 @@ export async function GET(request) {
         const reste = abo.seances_total - (abo.seances_utilisees || 0);
         if (reste > 0 && reste <= seuilSeances) {
           try {
-            const r = await sendNotifEleve(supabase, {
-              profile, client,
-              type: 'credits_faibles',
-              relatedId: abo.id,
-              contexte: { cours_nom: abo.offre_nom || 'ton carnet', seances_restantes: reste },
-              templates: {
-                email: {
-                  sujet: `Plus que ${reste} séance${reste > 1 ? 's' : ''} sur ton carnet`,
-                  corps:
+            const wantEmail = wantsNotif(client.notif_prefs, 'carnet', 'eleve', 'email');
+            const wantPush = wantsNotif(client.notif_prefs, 'carnet', 'eleve', 'push');
+            if (wantEmail) {
+              const r = await sendNotifEleve(supabase, {
+                profile, client,
+                type: 'credits_faibles',
+                relatedId: abo.id,
+                contexte: { cours_nom: abo.offre_nom || 'ton carnet', seances_restantes: reste },
+                templates: {
+                  email: {
+                    sujet: `Plus que ${reste} séance${reste > 1 ? 's' : ''} sur ton carnet`,
+                    corps:
 `Bonjour {{prenom}},
 
 Petit rappel amical : il te reste seulement ${reste} séance${reste > 1 ? 's' : ''} sur ton carnet « ${abo.offre_nom || 'carnet'} » chez ${profile.studio_nom}.
@@ -97,23 +101,26 @@ Petit rappel amical : il te reste seulement ${reste} séance${reste > 1 ? 's' : 
 Pour ne pas être pris·e de court, n'hésite pas à renouveler dès que possible — on aura toujours plaisir à te revoir.
 
 À très vite,`,
+                  },
+                  sms: {
+                    corps: `Hello {{prenom}}, plus que ${reste} seance${reste > 1 ? 's' : ''} sur ton carnet ${abo.offre_nom || ''} chez ${profile.studio_nom}. Pense a renouveler !`,
+                  },
                 },
-                sms: {
-                  corps: `Hello {{prenom}}, plus que ${reste} seance${reste > 1 ? 's' : ''} sur ton carnet ${abo.offre_nom || ''} chez ${profile.studio_nom}. Pense a renouveler !`,
-                },
-              },
-            });
-            totalSent += r.sent;
-            totalSkipped += r.skipped;
-            // Push seulement si l'email a réellement été envoyé (respecte la
-            // dédup quotidienne de sendNotifEleve → pas de push à chaque run).
-            if (r.sent > 0 && client.email) {
-              sendPushToEmail(client.email, {
-                title: `Plus que ${reste} séance${reste > 1 ? 's' : ''} 📋`,
-                body: `Ton carnet « ${abo.offre_nom || 'carnet'} » chez ${profile.studio_nom} — pense à renouveler.`,
-                url: profile.studio_slug ? `/p/${profile.studio_slug}/espace` : '/',
-                tag: `carnet-${abo.id}`,
-              }, { type: 'carnet', profileId: profile.id }).catch(() => {});
+              });
+              totalSent += r.sent;
+              totalSkipped += r.skipped;
+            }
+            // Push : canal indépendant, dédupé par claimCronPush.
+            if (wantPush && client.email) {
+              const fresh = await claimCronPush({ profileId: profile.id, clientId: client.id, type: 'credits_faibles', relatedId: abo.id });
+              if (fresh) {
+                sendPushToEmail(client.email, {
+                  title: `Plus que ${reste} séance${reste > 1 ? 's' : ''} 📋`,
+                  body: `Ton carnet « ${abo.offre_nom || 'carnet'} » chez ${profile.studio_nom} — pense à renouveler.`,
+                  url: profile.studio_slug ? `/p/${profile.studio_slug}/espace` : '/',
+                  tag: `carnet-${abo.id}`,
+                }, { type: 'carnet', profileId: profile.id }).catch(() => {});
+              }
             }
           } catch (e) {
             console.error('[cron notifs] credits_faibles err', e);
@@ -126,19 +133,22 @@ Pour ne pas être pris·e de court, n'hésite pas à renouveler dès que possibl
       if (abo.date_fin && abo.date_fin >= today && abo.date_fin <= dateExpMax) {
         const joursRestants = Math.ceil((new Date(abo.date_fin) - new Date(today)) / 86400000);
         try {
-          const r = await sendNotifEleve(supabase, {
-            profile, client,
-            type: 'expiration_abo',
-            relatedId: abo.id,
-            contexte: {
-              cours_nom: abo.offre_nom || 'ton abonnement',
-              jours_restants: joursRestants,
-              date_fin: new Date(abo.date_fin).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' }),
-            },
-            templates: {
-              email: {
-                sujet: `Ton abonnement expire dans ${joursRestants} jour${joursRestants > 1 ? 's' : ''}`,
-                corps:
+          const wantEmail = wantsNotif(client.notif_prefs, 'carnet', 'eleve', 'email');
+          const wantPush = wantsNotif(client.notif_prefs, 'carnet', 'eleve', 'push');
+          if (wantEmail) {
+            const r = await sendNotifEleve(supabase, {
+              profile, client,
+              type: 'expiration_abo',
+              relatedId: abo.id,
+              contexte: {
+                cours_nom: abo.offre_nom || 'ton abonnement',
+                jours_restants: joursRestants,
+                date_fin: new Date(abo.date_fin).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' }),
+              },
+              templates: {
+                email: {
+                  sujet: `Ton abonnement expire dans ${joursRestants} jour${joursRestants > 1 ? 's' : ''}`,
+                  corps:
 `Bonjour {{prenom}},
 
 Ton abonnement « ${abo.offre_nom || 'abonnement'} » chez ${profile.studio_nom} arrive à échéance le ${new Date(abo.date_fin).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })} (dans ${joursRestants} jour${joursRestants > 1 ? 's' : ''}).
@@ -146,21 +156,25 @@ Ton abonnement « ${abo.offre_nom || 'abonnement'} » chez ${profile.studio_nom}
 Pour assurer la continuité de tes cours, pense à le renouveler avant cette date.
 
 À très vite,`,
+                },
+                sms: {
+                  corps: `Hello {{prenom}}, ton abonnement ${abo.offre_nom || ''} chez ${profile.studio_nom} expire dans ${joursRestants}j (${new Date(abo.date_fin).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}). Pense a renouveler !`,
+                },
               },
-              sms: {
-                corps: `Hello {{prenom}}, ton abonnement ${abo.offre_nom || ''} chez ${profile.studio_nom} expire dans ${joursRestants}j (${new Date(abo.date_fin).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}). Pense a renouveler !`,
-              },
-            },
-          });
-          totalSent += r.sent;
-          totalSkipped += r.skipped;
-          if (r.sent > 0 && client.email) {
-            sendPushToEmail(client.email, {
-              title: `Ton abonnement expire bientôt ⏳`,
-              body: `« ${abo.offre_nom || 'abonnement'} » chez ${profile.studio_nom} — dans ${joursRestants} j.`,
-              url: profile.studio_slug ? `/p/${profile.studio_slug}/espace` : '/',
-              tag: `exp-${abo.id}`,
-            }, { type: 'carnet', profileId: profile.id }).catch(() => {});
+            });
+            totalSent += r.sent;
+            totalSkipped += r.skipped;
+          }
+          if (wantPush && client.email) {
+            const fresh = await claimCronPush({ profileId: profile.id, clientId: client.id, type: 'expiration_abo', relatedId: abo.id });
+            if (fresh) {
+              sendPushToEmail(client.email, {
+                title: `Ton abonnement expire bientôt ⏳`,
+                body: `« ${abo.offre_nom || 'abonnement'} » chez ${profile.studio_nom} — dans ${joursRestants} j.`,
+                url: profile.studio_slug ? `/p/${profile.studio_slug}/espace` : '/',
+                tag: `exp-${abo.id}`,
+              }, { type: 'carnet', profileId: profile.id }).catch(() => {});
+            }
           }
         } catch (e) {
           console.error('[cron notifs] expiration_abo err', e);

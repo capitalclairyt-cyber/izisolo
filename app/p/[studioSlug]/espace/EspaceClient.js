@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Calendar, Clock, MapPin, ArrowLeft, LogOut, CheckCircle, XCircle, Loader, AlertCircle, User, Lock, CreditCard, Ticket, CalendarCheck, Zap, Download, Receipt, MessageCircle, Send, X, Phone, Home, Pencil, Save, Wallet, Bell } from 'lucide-react';
 import PushToggle from '@/components/push/PushToggle';
+import PushPrompt from '@/components/push/PushPrompt';
 import NotifPrefsPanel from '@/components/push/NotifPrefsPanel';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/components/ui/ToastProvider';
@@ -437,6 +438,8 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
       <Link href={`/p/${studioSlug}${isDemo ? '?demo=1' : ''}`} className="portail-back-link">
         <ArrowLeft size={15} /> Retour aux cours
       </Link>
+
+      {!isDemo && <PushPrompt audience="eleve" />}
 
       {/* En-tête profil */}
       <div className="portail-card" style={{ marginBottom: 20 }}>

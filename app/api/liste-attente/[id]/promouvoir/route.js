@@ -3,6 +3,7 @@ import { withRoute } from '@/lib/api-route';
 import { createAdminClient } from '@/lib/supabase-admin';
 import { sendEmail } from '@/lib/email';
 import { sendPushToEmail } from '@/lib/push-server';
+import { wantsNotif } from '@/lib/notif-prefs';
 import { infosPratiquesBlock } from '@/lib/email-helpers';
 
 /**
@@ -116,9 +117,14 @@ export const POST = withRoute({ auth: 'active' }, async ({ params, auth }) => {
     .update({ notified_at: new Date().toISOString() })
     .eq('id', id);
 
-  // Email de notification (best effort)
+  // Email de notification (best effort), gaté sur la pref élève place_liberee.
+  let promuWantsEmail = true;
   try {
-    if (process.env.RESEND_API_KEY) {
+    const { data: cp } = await supabaseAdmin.from('clients').select('notif_prefs').eq('id', clientId).maybeSingle();
+    promuWantsEmail = wantsNotif(cp?.notif_prefs, 'place_liberee', 'eleve', 'email');
+  } catch {}
+  try {
+    if (process.env.RESEND_API_KEY && promuWantsEmail) {
       const dateStr = cours.date
         ? new Date(cours.date + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })
         : 'la date prévue';

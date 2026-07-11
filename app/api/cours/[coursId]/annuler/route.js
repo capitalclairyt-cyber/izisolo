@@ -2,6 +2,7 @@ import { withRoute } from '@/lib/api-route';
 import { createAdminClient } from '@/lib/supabase-admin';
 import { sendNotifEleve } from '@/lib/notifs-eleves';
 import { sendPushToEmail } from '@/lib/push-server';
+import { wantsNotif } from '@/lib/notif-prefs';
 import { getRegle } from '@/lib/regles-metier';
 
 export const runtime = 'nodejs';
@@ -59,7 +60,7 @@ export const POST = withRoute({ auth: 'active' }, async ({ request, params, auth
   // Envoyer notifications aux inscrits + restituer crédits selon règle
   const { data: presences } = await supabaseAdmin
     .from('presences')
-    .select('id, abonnement_id, client:client_id(id, prenom, nom, email, telephone)')
+    .select('id, abonnement_id, client:client_id(id, prenom, nom, email, telephone, notif_prefs)')
     .eq('cours_id', coursId)
     .eq('profile_id', user.id);
 
@@ -136,19 +137,21 @@ Désolé·e pour le désagrément, à très vite.`;
       } catch (e) { console.warn('[annuler] cas log non-bloquant:', e?.message); }
     }
 
-    // 3) Envoyer la notif email/SMS standard
-    const result = await sendNotifEleve(supabaseAdmin, {
-      profile,
-      client,
-      type: 'cours_annule',
-      relatedId: coursId,
-      contexte: { cours_nom: cours.nom, date: dateStr, heure: heureStr, lieu: cours.lieu || '' },
-      templates,
-    });
-    sentTotal += result.sent;
-    skippedTotal += result.skipped;
+    // 3) Envoyer la notif email/SMS standard (gaté sur pref élève email)
+    if (wantsNotif(client.notif_prefs, 'cours_annule', 'eleve', 'email')) {
+      const result = await sendNotifEleve(supabaseAdmin, {
+        profile,
+        client,
+        type: 'cours_annule',
+        relatedId: coursId,
+        contexte: { cours_nom: cours.nom, date: dateStr, heure: heureStr, lieu: cours.lieu || '' },
+        templates,
+      });
+      sentTotal += result.sent;
+      skippedTotal += result.skipped;
+    }
 
-    // Push élève « cours annulé » (gaté sur pref cours_annule ; no-op sans abo)
+    // Push élève « cours annulé » (gaté sur pref cours_annule push ; no-op sans abo)
     if (client.email) {
       sendPushToEmail(client.email, {
         title: `Cours annulé`,

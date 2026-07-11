@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { requireCronAuth } from '@/lib/api-auth';
 import { sendNotifEleve } from '@/lib/notifs-eleves';
-import { sendPushToEmail, sendPushToUser } from '@/lib/push-server';
+import { sendPushToEmail, sendPushToUser, claimCronPush } from '@/lib/push-server';
 import { wantsNotif } from '@/lib/notif-prefs';
 
 // Durée max explicite (fluid compute : 300 s = plafond Hobby)
@@ -77,41 +77,51 @@ export async function GET(request) {
     const cours = coursById[p.cours_id];
     const profile = cours ? profileById[cours.profile_id] : null;
     if (!client || !cours || !profile) continue;
-    if (!wantsNotif(client.notif_prefs, 'rappel_cours', 'eleve')) { prefOff++; continue; }
+
+    const prefs = client.notif_prefs;
+    const wantEmail = wantsNotif(prefs, 'rappel_cours', 'eleve', 'email');
+    const wantPush = wantsNotif(prefs, 'rappel_cours', 'eleve', 'push');
+    if (!wantEmail && !wantPush) { prefOff++; continue; }
 
     const heureStr = cours.heure ? cours.heure.slice(0, 5).replace(':', 'h') : '';
     const lieuStr = cours.lieu ? ` — ${cours.lieu}` : '';
 
     try {
-      const r = await sendNotifEleve(supabaseAdmin, {
-        profile, client,
-        type: 'rappel_cours',
-        relatedId: p.id,
-        prefsOverride: { email: true, sms: false },
-        contexte: { cours_nom: cours.nom, date: dateStr, heure: heureStr },
-        templates: {
-          email: {
-            sujet: `Rappel : ${cours.nom} demain`,
-            corps:
+      // Email (canal indépendant, dédupé par sendNotifEleve)
+      if (wantEmail) {
+        const r = await sendNotifEleve(supabaseAdmin, {
+          profile, client,
+          type: 'rappel_cours',
+          relatedId: p.id,
+          prefsOverride: { email: true, sms: false },
+          contexte: { cours_nom: cours.nom, date: dateStr, heure: heureStr },
+          templates: {
+            email: {
+              sujet: `Rappel : ${cours.nom} demain`,
+              corps:
 `Bonjour {{prenom}},
 
 Petit rappel : tu es inscrit·e à ${cours.nom} demain ${dateStr}${heureStr ? ` à ${heureStr}` : ''}${lieuStr} chez ${profile.studio_nom}.
 
 À demain !`,
+            },
           },
-        },
-      });
-      sent += r.sent;
-      skipped += r.skipped;
+        });
+        sent += r.sent;
+        skipped += r.skipped;
+      }
 
-      // Push seulement si l'email a réellement été envoyé (respecte la dédup).
-      if (r.sent > 0 && client.email) {
-        sendPushToEmail(client.email, {
-          title: `Demain : ${cours.nom} ⏰`,
-          body: `${dateStr}${heureStr ? ` à ${heureStr}` : ''}${lieuStr}`,
-          url: profile.studio_slug ? `/p/${profile.studio_slug}/espace` : '/',
-          tag: `rappel-${p.id}`,
-        }, { type: 'rappel_cours', profileId: profile.id }).catch(() => {});
+      // Push (canal indépendant, dédupé par claimCronPush)
+      if (wantPush && client.email) {
+        const fresh = await claimCronPush({ profileId: profile.id, clientId: client.id, type: 'rappel_cours', relatedId: p.id });
+        if (fresh) {
+          sendPushToEmail(client.email, {
+            title: `Demain : ${cours.nom} ⏰`,
+            body: `${dateStr}${heureStr ? ` à ${heureStr}` : ''}${lieuStr}`,
+            url: profile.studio_slug ? `/p/${profile.studio_slug}/espace` : '/',
+            tag: `rappel-${p.id}`,
+          }, { type: 'rappel_cours', profileId: profile.id }).catch(() => {});
+        }
       }
     } catch (e) {
       console.error('[cron alertes] rappel err', p.id, e?.message);

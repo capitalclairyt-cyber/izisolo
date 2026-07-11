@@ -2,6 +2,7 @@ import { createAdminClient } from '@/lib/supabase-admin';
 import { finaliserDemande, emailConfirmationVisiteur, emailEnAttenteVisiteur, emailNotifPro } from '@/lib/essai';
 import { buildPortailMagicLink } from '@/lib/portail-magic-link';
 import { sendPushToUser } from '@/lib/push-server';
+import { wantsNotif } from '@/lib/notif-prefs';
 import { checkAntiBot, ipFromRequest } from '@/lib/antibot';
 import { essaiSchema } from '@/lib/validation';
 import { studioHasFeature } from '@/lib/plan-guard';
@@ -65,7 +66,7 @@ export async function POST(request, { params }) {
   // 1. Profil + config essai
   const { data: profile } = await supabaseAdmin
     .from('profiles')
-    .select('id, prenom, studio_nom, email_contact, adresse, code_postal, ville, telephone, essai_actif, essai_mode, essai_paiement, essai_prix, essai_stripe_payment_link, essai_message, plan, trial_started_at, stripe_subscription_status')
+    .select('id, prenom, studio_nom, email_contact, adresse, code_postal, ville, telephone, essai_actif, essai_mode, essai_paiement, essai_prix, essai_stripe_payment_link, essai_message, plan, trial_started_at, stripe_subscription_status, notif_prefs')
     .eq('studio_slug', studioSlug)
     .single();
 
@@ -182,9 +183,10 @@ export async function POST(request, { params }) {
 
   // 6. Emails (non-bloquants)
   const stripeLink = profile.essai_paiement === 'stripe' ? profile.essai_stripe_payment_link : null;
+  const proWantsEmail = wantsNotif(profile.notif_prefs, 'essai_demande', 'prof', 'email');
   if (isManuel) {
     emailEnAttenteVisiteur({ profileNom: profile.studio_nom, prenom, email, cours });
-    emailNotifPro({ proEmail: profile.email_contact, proNom: profile.prenom, modeManuel: true, demande, cours });
+    if (proWantsEmail) emailNotifPro({ proEmail: profile.email_contact, proNom: profile.prenom, modeManuel: true, demande, cours });
   } else {
     // Accès direct à l'espace pour l'invité inscrit (auto/semi).
     const magicLink = await buildPortailMagicLink({ email, studioSlug });
@@ -204,8 +206,8 @@ export async function POST(request, { params }) {
       telephone: profile.telephone,
       magicLink,
     });
-    // auto ET semi : on prévient toujours la prof par email d'une inscription
-    emailNotifPro({ proEmail: profile.email_contact, proNom: profile.prenom, modeManuel: false, demande, cours });
+    // auto ET semi : on prévient la prof par email d'une inscription (gaté)
+    if (proWantsEmail) emailNotifPro({ proEmail: profile.email_contact, proNom: profile.prenom, modeManuel: false, demande, cours });
   }
 
   return Response.json({
