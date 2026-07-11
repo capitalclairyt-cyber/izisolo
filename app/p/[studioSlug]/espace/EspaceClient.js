@@ -178,13 +178,18 @@ function CoursCard({ presence, profile, studioSlug, onAnnuler, annulEnCours }) {
         {c.est_annule ? (
           <span className="portail-tag portail-tag-amber">Annulé</span>
         ) : aVenir ? (
-          presence.present
-            ? <span className="portail-tag portail-tag-green">Présent·e</span>
-            : <span className="portail-tag portail-tag-blue">Inscrit·e</span>
+          // Cours à venir : toujours « Inscrit·e » (rien n'est encore pointé).
+          <span className="portail-tag portail-tag-blue">Inscrit·e</span>
+        ) : presence.statut_pointage === 'present' ? (
+          <span className="portail-tag portail-tag-green">✓ Présent·e</span>
+        ) : presence.statut_pointage === 'absent' ? (
+          <span className="portail-tag" style={{ background: '#f5f5f5', color: '#999' }}>Absent·e</span>
+        ) : presence.statut_pointage === 'excuse' ? (
+          <span className="portail-tag" style={{ background: '#fef3e2', color: '#b45309' }}>Excusé·e</span>
         ) : (
-          presence.present
-            ? <span className="portail-tag portail-tag-green">✓ Présent·e</span>
-            : <span className="portail-tag" style={{ background: '#f5f5f5', color: '#999' }}>Absent·e</span>
+          // Cours passé non pointé par la prof → aucun statut affirmé
+          // (avant : lisait presence.present, champ inexistant → « Absent·e » à tort).
+          null
         )}
 
         {aVenir && !c.est_annule && (
@@ -278,7 +283,12 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
   // en attente (echeancier_id) apparaît donc à régler tant qu'il n'est pas encaissé.
   const paiementsDus = (paiements || []).filter(p => p.statut && p.statut !== 'paid');
   const paiementsRegles = (paiements || []).filter(p => p.statut === 'paid');
-  const totalDu = paiementsDus.reduce((s, p) => s + (parseFloat(p.montant) || 0), 0);
+  // Total dû = paiements en attente + dettes issues des cas (annulation tardive,
+  // séance sans carnet…) quand un montant est connu. Les cas sans montant chiffré
+  // restent listés mais ne faussent pas le total.
+  const totalDu =
+    paiementsDus.reduce((s, p) => s + (parseFloat(p.montant) || 0), 0) +
+    aRegler.reduce((s, c) => s + (parseFloat(c.context?.montant ?? c.context?.tarif_unitaire ?? 0) || 0), 0);
   const nbARegler = aRegler.length + paiementsDus.length;
 
   const handleSaveCoords = async () => {
