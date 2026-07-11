@@ -2,6 +2,7 @@
 import { requireActiveAccount } from '@/lib/api-auth';
 import { createAdminClient } from '@/lib/supabase-admin';
 import { finaliserDemande, emailConfirmationVisiteur } from '@/lib/essai';
+import { buildPortailMagicLink } from '@/lib/portail-magic-link';
 import { sendEmail } from '@/lib/email';
 
 export const runtime = 'nodejs';
@@ -59,6 +60,8 @@ export async function POST(request, { params }) {
         .select('id, nom, date, heure, lieu')
         .eq('id', demande.cours_id)
         .single();
+      // Accès direct à l'espace pour l'invité validé (comme la réservation).
+      const magicLink = await buildPortailMagicLink({ email: demande.email, studioSlug: profile.studio_slug });
       emailConfirmationVisiteur({
         profileNom: profile.studio_nom,
         studioSlug: profile.studio_slug,
@@ -68,6 +71,7 @@ export async function POST(request, { params }) {
         paiement: profile.essai_paiement,
         prix: profile.essai_prix,
         stripeLink: profile.essai_paiement === 'stripe' ? profile.essai_stripe_payment_link : null,
+        magicLink,
       });
 
       return Response.json({ ok: true, client_id, presence_id });

@@ -1,5 +1,6 @@
 import { createAdminClient } from '@/lib/supabase-admin';
 import { finaliserDemande, emailConfirmationVisiteur, emailEnAttenteVisiteur, emailNotifPro } from '@/lib/essai';
+import { buildPortailMagicLink } from '@/lib/portail-magic-link';
 import { checkAntiBot, ipFromRequest } from '@/lib/antibot';
 import { essaiSchema } from '@/lib/validation';
 import { studioHasFeature } from '@/lib/plan-guard';
@@ -176,6 +177,8 @@ export async function POST(request, { params }) {
     emailEnAttenteVisiteur({ profileNom: profile.studio_nom, prenom, email, cours });
     emailNotifPro({ proEmail: profile.email_contact, proNom: profile.prenom, modeManuel: true, demande, cours });
   } else {
+    // Accès direct à l'espace pour l'invité inscrit (auto/semi).
+    const magicLink = await buildPortailMagicLink({ email, studioSlug });
     emailConfirmationVisiteur({
       profileNom: profile.studio_nom,
       studioSlug,
@@ -190,6 +193,7 @@ export async function POST(request, { params }) {
       codePostal: profile.code_postal,
       ville: profile.ville,
       telephone: profile.telephone,
+      magicLink,
     });
     // auto ET semi : on prévient toujours la prof par email d'une inscription
     emailNotifPro({ proEmail: profile.email_contact, proNom: profile.prenom, modeManuel: false, demande, cours });
