@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Calendar, Clock, MapPin, ArrowLeft, LogOut, CheckCircle, XCircle, Loader, AlertCircle, User, Lock, CreditCard, Ticket, CalendarCheck, Zap, Download, Receipt, MessageCircle, Send, X, Phone, Home, Pencil, Save, Wallet } from 'lucide-react';
+import { Calendar, Clock, MapPin, ArrowLeft, LogOut, CheckCircle, XCircle, Loader, AlertCircle, User, Lock, CreditCard, Ticket, CalendarCheck, Zap, Download, Receipt, MessageCircle, Send, X, Phone, Home, Pencil, Save, Wallet, Bell } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/components/ui/ToastProvider';
 import { evaluerAnnulation, formatDateLimite } from '@/lib/regles-annulation';
@@ -258,9 +258,10 @@ function CoursCard({ presence, profile, studioSlug, onAnnuler, annulEnCours }) {
   );
 }
 
-export default function EspaceClient({ profile, client, aVenir, passes, paiements = [], offresStripe = [], abonnements = [], aRegler = [], studioSlug, userEmail, isDemo = false }) {
+export default function EspaceClient({ profile, client, aVenir, passes, paiements = [], offresStripe = [], abonnements = [], aRegler = [], unreadMessages = 0, studioSlug, userEmail, isDemo = false }) {
   const router = useRouter();
   const { toast } = useToast();
+  const [notifsOpen, setNotifsOpen] = useState(false);
   const [annulEnCours, setAnnulEnCours] = useState(null);
   const [annuleIds, setAnnuleIds]       = useState([]);
   const [errMsg, setErrMsg]             = useState('');
@@ -290,6 +291,41 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
     paiementsDus.reduce((s, p) => s + (parseFloat(p.montant) || 0), 0) +
     aRegler.reduce((s, c) => s + (parseFloat(c.context?.montant ?? c.context?.tarif_unitaire ?? 0) || 0), 0);
   const nbARegler = aRegler.length + paiementsDus.length;
+
+  // ── Notifications in-app (cloche) : agrégées côté client à partir des
+  // données déjà chargées + le compteur de messages non lus (calculé serveur).
+  // Pas de push : l'espace est rendu à chaque visite, la cloche reflète l'état
+  // au chargement. (Le push web PWA serait un chantier séparé.)
+  const notifsEleve = [];
+  const todayIso = new Date().toISOString().slice(0, 10);
+  if (unreadMessages > 0) {
+    notifsEleve.push({
+      id: 'msg',
+      icon: '💬',
+      text: `${unreadMessages} nouveau${unreadMessages > 1 ? 'x' : ''} message${unreadMessages > 1 ? 's' : ''} de ton studio`,
+      href: `/p/${studioSlug}/espace/messages`,
+    });
+  }
+  for (const abo of (abonnements || [])) {
+    if (abo.statut !== 'actif') continue;
+    const nom = abo.offre_nom || 'ton carnet';
+    if (abo.seances_total != null) {
+      const reste = Math.max(0, abo.seances_total - (abo.seances_utilisees || 0));
+      if (reste === 0) notifsEleve.push({ id: `abo-epuise-${abo.id}`, icon: '📋', text: `Ton carnet « ${nom} » est épuisé` });
+      else if (reste <= 2) notifsEleve.push({ id: `abo-bas-${abo.id}`, icon: '📋', text: `Plus que ${reste} séance${reste > 1 ? 's' : ''} sur « ${nom} »` });
+    }
+    if (abo.date_fin) {
+      const j = Math.ceil((new Date(abo.date_fin) - new Date(todayIso)) / 86400000);
+      if (j >= 0 && j <= 7) notifsEleve.push({ id: `abo-exp-${abo.id}`, icon: '⏳', text: `Ton carnet « ${nom} » expire ${j === 0 ? "aujourd'hui" : `dans ${j} j`}` });
+    }
+  }
+  if (nbARegler > 0) {
+    notifsEleve.push({
+      id: 'regler',
+      icon: '💰',
+      text: totalDu > 0 ? `Tu as ${totalDu.toFixed(2).replace('.', ',')} € à régler` : `Tu as ${nbARegler} paiement${nbARegler > 1 ? 's' : ''} à régler`,
+    });
+  }
 
   const handleSaveCoords = async () => {
     if (isDemo) { setEditCoords(false); return; }
@@ -414,14 +450,65 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
               <div style={{ fontSize: '0.8125rem', color: '#888' }}>{client.email}</div>
             </div>
           </div>
-          <button
-            onClick={handleDeconnexion}
-            disabled={loggingOut}
-            title="Se déconnecter"
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#bbb', padding: 8, display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.8125rem' }}
-          >
-            {loggingOut ? <Loader size={15} className="spin" /> : <LogOut size={15} />}
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            {/* Cloche de notifications */}
+            <div style={{ position: 'relative' }}>
+              <button
+                onClick={() => setNotifsOpen(o => !o)}
+                title="Notifications"
+                aria-label={`Notifications${notifsEleve.length ? ` (${notifsEleve.length})` : ''}`}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: notifsEleve.length ? '#d4a0a0' : '#bbb', padding: 8, position: 'relative', display: 'flex' }}
+              >
+                <Bell size={18} />
+                {notifsEleve.length > 0 && (
+                  <span style={{ position: 'absolute', top: 2, right: 2, minWidth: 16, height: 16, padding: '0 4px', borderRadius: 8, background: '#e0574f', color: 'white', fontSize: '0.625rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>
+                    {notifsEleve.length}
+                  </span>
+                )}
+              </button>
+              {notifsOpen && (
+                <>
+                  <div onClick={() => setNotifsOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 40 }} />
+                  <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: 6, width: 280, maxWidth: '80vw', background: 'white', border: '1px solid #f0ebe8', borderRadius: 12, boxShadow: '0 8px 24px rgba(0,0,0,0.12)', zIndex: 41, overflow: 'hidden' }}>
+                    <div style={{ padding: '10px 14px', borderBottom: '1px solid #f5f0ed', fontWeight: 700, fontSize: '0.8125rem', color: '#1a1a2e' }}>
+                      Notifications
+                    </div>
+                    {notifsEleve.length === 0 ? (
+                      <div style={{ padding: '20px 14px', textAlign: 'center', color: '#aaa', fontSize: '0.8125rem' }}>
+                        Rien de neuf pour l'instant 🌿
+                      </div>
+                    ) : (
+                      notifsEleve.map(n => {
+                        const inner = (
+                          <>
+                            <span style={{ fontSize: '1rem', flexShrink: 0 }}>{n.icon}</span>
+                            <span style={{ fontSize: '0.8125rem', color: '#333', lineHeight: 1.4 }}>{n.text}</span>
+                          </>
+                        );
+                        return n.href ? (
+                          <Link key={n.id} href={n.href} onClick={() => setNotifsOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '11px 14px', borderBottom: '1px solid #f7f3f0', textDecoration: 'none' }}>
+                            {inner}
+                          </Link>
+                        ) : (
+                          <div key={n.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '11px 14px', borderBottom: '1px solid #f7f3f0' }}>
+                            {inner}
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+            <button
+              onClick={handleDeconnexion}
+              disabled={loggingOut}
+              title="Se déconnecter"
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#bbb', padding: 8, display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.8125rem' }}
+            >
+              {loggingOut ? <Loader size={15} className="spin" /> : <LogOut size={15} />}
+            </button>
+          </div>
         </div>
         <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid #f5f0ee', fontSize: '0.8125rem', color: '#888' }}>
           Studio : <strong style={{ color: '#555' }}>{profile.studio_nom}</strong>

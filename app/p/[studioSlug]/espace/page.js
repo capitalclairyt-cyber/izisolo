@@ -2,6 +2,7 @@ import { createServerClient } from '@/lib/supabase-server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { redirect } from 'next/navigation';
 import { notFound } from 'next/navigation';
+import { countUnread } from '@/lib/messagerie';
 import EspaceClient from './EspaceClient';
 
 export const metadata = { title: 'Mon espace — IziSolo' };
@@ -225,7 +226,11 @@ async function getData(studioSlug, userEmail) {
     return ch === 'creer_dette' || ch === 'paiement_sur_place' || c.context?.dette_a_regler === true;
   });
 
-  return { profile, client, aVenir, passes, paiements: paiements || [], offresStripe: offresStripe || [], abonnements: abonnements || [], aRegler };
+  // Compteur de messages non lus (pour la cloche de notifications de l'espace).
+  let unreadMessages = 0;
+  try { unreadMessages = await countUnread(supabase, 'eleve', client.id); } catch {}
+
+  return { profile, client, aVenir, passes, paiements: paiements || [], offresStripe: offresStripe || [], abonnements: abonnements || [], aRegler, unreadMessages };
 }
 
 export default async function EspacePage({ params, searchParams }) {
@@ -290,6 +295,7 @@ export default async function EspacePage({ params, searchParams }) {
       offresStripe={data.offresStripe || []}
       abonnements={data.abonnements || []}
       aRegler={data.aRegler || []}
+      unreadMessages={data.unreadMessages || 0}
       studioSlug={studioSlug}
       userEmail={user.email}
     />
