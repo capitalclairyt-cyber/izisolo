@@ -9,13 +9,17 @@
  */
 
 import { useState, useMemo, useEffect } from 'react';
-import { X, Copy, Check, Mail, Link as LinkIcon, User, Search, UserPlus, Send, Loader2 } from 'lucide-react';
+import { X, Copy, Check, Mail, Link as LinkIcon, User, Search, UserPlus, Send, Loader2, Share2 } from 'lucide-react';
 import { useToast } from '@/components/ui/ToastProvider';
 
 export default function InviteModal({ open, onClose, profile, clients = [] }) {
   const { toast } = useToast();
   const [tab, setTab] = useState('lien'); // 'lien' | 'email' (sms désactivé V2)
   const [copied, setCopied] = useState(false);
+  // Partage natif mobile (SMS, WhatsApp…). State + useEffect pour éviter
+  // un hydration mismatch (navigator absent au rendu serveur).
+  const [canShare, setCanShare] = useState(false);
+  useEffect(() => { setCanShare(typeof navigator !== 'undefined' && !!navigator.share); }, []);
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
 
@@ -104,6 +108,22 @@ Le lien se génère au moment de l'envoi (valable 1 heure).
       // Fallback : sélection manuelle
       alert('Copie manuelle requise');
     }
+  };
+
+  // Message court prêt à envoyer par SMS/WhatsApp : le lien /connexion permet
+  // à l'élève de demander son accès elle-même (email → magic link).
+  const messagePartage = `${salutation} ! Voici ton espace élève chez ${studioNom} : ${portailUrl} — entre ton email et tu reçois ton lien de connexion direct.${profPrenom ? ` — ${profPrenom}` : ''}`;
+
+  const handleShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({ text: messagePartage });
+        return;
+      } catch (e) {
+        if (e?.name === 'AbortError') return; // partage annulé
+      }
+    }
+    handleCopy(messagePartage);
   };
 
   const sendInviteEmail = async () => {
@@ -285,13 +305,23 @@ Le lien se génère au moment de l'envoi (valable 1 heure).
           {tab === 'lien' && (
             <div className="invite-tab-content">
               <p className="invite-help">
-                Copie ce lien et envoie-le à ton élève par WhatsApp, Messenger, ou tout autre canal.
+                Envoie ce lien à ton élève par SMS, WhatsApp, Messenger… Iel entre
+                son email et reçoit son accès direct — rien d'autre à faire.
               </p>
               <div className="invite-link-box">
                 <code>{portailUrl}</code>
               </div>
+              {canShare && (
+                <button
+                  className="izi-btn izi-btn-primary invite-action-btn"
+                  onClick={handleShare}
+                  type="button"
+                >
+                  <Share2 size={16} /> Partager (SMS, WhatsApp…)
+                </button>
+              )}
               <button
-                className={`izi-btn izi-btn-primary invite-action-btn ${copied ? 'copied' : ''}`}
+                className={`izi-btn ${canShare ? 'izi-btn-secondary' : 'izi-btn-primary'} invite-action-btn ${copied ? 'copied' : ''}`}
                 onClick={() => handleCopy(portailUrl)}
                 type="button"
               >

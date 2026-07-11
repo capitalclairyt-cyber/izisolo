@@ -54,6 +54,30 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
     }
   };
 
+  // Partage natif mobile (SMS, WhatsApp…) avec message prêt à envoyer.
+  // canShare en state + useEffect pour éviter un hydration mismatch
+  // (navigator n'existe pas au rendu serveur). Fallback : copie.
+  const [canShare, setCanShare] = useState(false);
+  useEffect(() => { setCanShare(typeof navigator !== 'undefined' && !!navigator.share); }, []);
+
+  const sharePortalUrl = async () => {
+    if (!portalPath) return;
+    const fullUrl = `${window.location.origin}${portalPath}`;
+    const studioNom = profile?.studio_nom || 'mon studio';
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          text: `Réserve tes cours et retrouve ton carnet de séances chez ${studioNom} : ${fullUrl}`,
+        });
+        return;
+      } catch (e) {
+        if (e?.name === 'AbortError') return; // partage annulé, ne rien faire
+        // partage indisponible → on retombe sur la copie
+      }
+    }
+    copyPortalUrl();
+  };
+
   const dismissChecklist = () => {
     if (typeof window !== 'undefined') {
       localStorage.setItem('izi_checklist_dismissed', '1');
@@ -106,8 +130,8 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
                   </span>
                   <span className={`dash-checklist-label${item.done ? ' done' : ''}`}>{item.label}</span>
                   {!item.done && item.action === 'share' && portalPath ? (
-                    <button onClick={copyPortalUrl} className="dash-checklist-cta">
-                      <Copy size={12} /> Copier le lien
+                    <button onClick={sharePortalUrl} className="dash-checklist-cta">
+                      {canShare ? <><Share2 size={12} /> Partager le lien</> : <><Copy size={12} /> Copier le lien</>}
                     </button>
                   ) : !item.done ? (
                     <ChevronRight size={14} style={{ color: 'var(--brand)' }} />
@@ -235,12 +259,12 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
             </div>
             <button
               type="button"
-              onClick={(e) => { e.preventDefault(); e.stopPropagation(); copyPortalUrl(); }}
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); sharePortalUrl(); }}
               className="bento-portal-copy"
-              title="Copier le lien"
-              aria-label="Copier le lien du portail"
+              title={canShare ? 'Partager le lien (SMS, WhatsApp…)' : 'Copier le lien'}
+              aria-label={canShare ? 'Partager le lien du portail' : 'Copier le lien du portail'}
             >
-              <Copy size={14} />
+              {canShare ? <Share2 size={14} /> : <Copy size={14} />}
             </button>
           </a>
         )}

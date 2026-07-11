@@ -3,7 +3,7 @@
 import { useState, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Upload, ArrowLeft, Check, Loader2, FileText, AlertCircle, PartyPopper } from 'lucide-react';
+import { Upload, ArrowLeft, Check, Loader2, FileText, AlertCircle, PartyPopper, Send } from 'lucide-react';
 
 // ─── Parser CSV robuste (guillemets, BOM, délimiteur ; ou , auto) ───────────
 function parseCSV(text) {
@@ -72,6 +72,8 @@ export default function ImporterClientsPage() {
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [report, setReport] = useState(null);
+  // Invitation groupée post-import : null | { sent, errors, total, running }
+  const [inviteState, setInviteState] = useState(null);
 
   const headers = rows[0] || [];
   const dataRows = headerRow ? rows.slice(1) : rows;
@@ -119,12 +121,38 @@ export default function ImporterClientsPage() {
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.ok) throw new Error(data.error || 'Erreur lors de l\'import.');
       setReport(data);
+      setInviteState(null);
       setStep('done');
     } catch (e) {
       setError(e.message);
     } finally {
       setSubmitting(false);
     }
+  };
+
+  // Invitation groupée : envoie à chaque importé·e (avec email) son lien
+  // d'accès portail via POST /api/invite, en séquentiel avec progression.
+  // /api/invite est idempotent (fiche déjà créée par l'import → pas de
+  // doublon) et génère un magic link frais à chaque envoi.
+  const handleInviteAll = async () => {
+    const invitables = report?.invitables || [];
+    if (!invitables.length || inviteState?.running) return;
+    let sent = 0, errors = 0;
+    setInviteState({ sent, errors, total: invitables.length, running: true });
+    for (const inv of invitables) {
+      try {
+        const res = await fetch('/api/invite', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: inv.email, prenom: inv.prenom }),
+        });
+        if (res.ok) sent++; else errors++;
+      } catch {
+        errors++;
+      }
+      setInviteState({ sent, errors, total: invitables.length, running: true });
+    }
+    setInviteState({ sent, errors, total: invitables.length, running: false });
   };
 
   // ── Aperçu : 6 premières lignes mappées ──
@@ -235,9 +263,41 @@ export default function ImporterClientsPage() {
           {report.bloques_limite > 0 && (
             <p className="imp-upsell">Passe en Pro pour des élèves illimités et importer le reste.</p>
           )}
+
+          {/* Invitation groupée : envoyer leur lien d'accès aux importés */}
+          {(report.invitables?.length || 0) > 0 && (
+            <div className="imp-invite-card">
+              {!inviteState ? (
+                <>
+                  <div className="imp-invite-title">📨 Envoie-leur leur accès élève&nbsp;?</div>
+                  <p className="imp-invite-sub">
+                    Chaque élève avec un email reçoit un lien de connexion direct à ton
+                    portail : réservations, carnet de séances, messages — sans mot de passe.
+                  </p>
+                  <button className="izi-btn izi-btn-primary" onClick={handleInviteAll}>
+                    <Send size={16} /> Inviter les {report.invitables.length} élève{report.invitables.length > 1 ? 's' : ''} par email
+                  </button>
+                </>
+              ) : inviteState.running ? (
+                <div className="imp-invite-progress">
+                  <Loader2 size={18} className="spin" />
+                  <span>Envoi en cours… {inviteState.sent + inviteState.errors}/{inviteState.total}</span>
+                </div>
+              ) : (
+                <div className="imp-invite-done">
+                  <Check size={18} />
+                  <span>
+                    {inviteState.sent} invitation{inviteState.sent > 1 ? 's' : ''} envoyée{inviteState.sent > 1 ? 's' : ''}
+                    {inviteState.errors > 0 && ` — ${inviteState.errors} en échec (tu pourras les ré-inviter depuis leur fiche)`}
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="imp-actions" style={{ justifyContent: 'center' }}>
             <button className="izi-btn izi-btn-primary" onClick={() => router.push('/clients')}><Check size={16} /> Voir mes élèves</button>
-            <button className="izi-btn izi-btn-secondary" onClick={() => { setStep('upload'); setRows([]); setReport(null); }}>Importer un autre fichier</button>
+            <button className="izi-btn izi-btn-secondary" onClick={() => { setStep('upload'); setRows([]); setReport(null); setInviteState(null); }}>Importer un autre fichier</button>
           </div>
         </div>
       )}
@@ -293,6 +353,13 @@ export default function ImporterClientsPage() {
         .imp-stat.ok{background:#EAEFE2}.imp-stat.ok b{color:#5d7245}
         .imp-stat.warn{background:#FFF6E6}.imp-stat.warn b{color:#8A6420}
         .imp-upsell{color:#8A6420;font-size:.9rem;margin:6px 0 18px}
+        .imp-invite-card{background:#FCF8F2;border:1px solid var(--line,#E7DCCD);border-radius:14px;
+          padding:18px 16px;margin:0 auto 20px;max-width:440px;text-align:center}
+        .imp-invite-title{font-weight:700;color:var(--text-primary,#3A2E26);margin-bottom:4px}
+        .imp-invite-sub{font-size:.85rem;color:var(--text-secondary,#6B5D52);margin:0 0 14px;line-height:1.5}
+        .imp-invite-progress,.imp-invite-done{display:flex;align-items:center;justify-content:center;gap:8px;
+          font-size:.9rem;color:var(--text-primary,#3A2E26);padding:6px 0}
+        .imp-invite-done{color:#3d7a44;font-weight:600}
         :global(.spin){animation:impspin .8s linear infinite}
         @keyframes impspin{to{transform:rotate(360deg)}}
       `}</style>

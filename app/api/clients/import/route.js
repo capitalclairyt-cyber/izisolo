@@ -17,7 +17,11 @@ import { effectivePlan, planConfig } from '@/lib/plan-guard';
  *     le reste est reporté « bloqué par la limite » (les triggers v54 = filet)
  *   - jamais d'écrasement : un email déjà présent est ignoré, pas mis à jour
  *
- * Réponse : { ok, total, importes, doublons, bloques_limite, invalides }
+ * Réponse : { ok, total, importes, doublons, bloques_limite, invalides,
+ *             invitables: [{ email, prenom }] }
+ *   invitables = les élèves réellement insérés qui ont un email → utilisés
+ *   par l'écran de fin d'import pour proposer l'invitation groupée
+ *   (envoi de leur lien d'accès portail via POST /api/invite).
  */
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -105,6 +109,7 @@ export const POST = withRoute({ auth: 'active', schema: clientsImportSchema }, a
   }));
 
   let importes = 0;
+  const invitables = [];
   if (payload.length) {
     const { data, error } = await supabase.from('clients').insert(payload).select('id');
     if (error) {
@@ -113,12 +118,18 @@ export const POST = withRoute({ auth: 'active', schema: clientsImportSchema }, a
       // importer le maximum et compter précisément.
       for (const p of payload) {
         const { error: e1 } = await supabase.from('clients').insert(p);
-        if (!e1) importes++;
+        if (!e1) {
+          importes++;
+          if (p.email) invitables.push({ email: p.email, prenom: p.prenom || '' });
+        }
         else if (e1.code === '23505') doublons++;
         else if (e1.code === 'P0001') bloques_limite++;
       }
     } else {
       importes = data?.length || 0;
+      for (const p of payload) {
+        if (p.email) invitables.push({ email: p.email, prenom: p.prenom || '' });
+      }
     }
   }
 
@@ -129,5 +140,6 @@ export const POST = withRoute({ auth: 'active', schema: clientsImportSchema }, a
     doublons,
     bloques_limite,
     invalides,
+    invitables,
   });
 });
