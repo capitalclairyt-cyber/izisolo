@@ -21,7 +21,19 @@ test.describe('wantsNotif — canaux', () => {
 
   test('défaut du catalogue quand la clé est absente', () => {
     expect(wantsNotif({}, 'rappel_cours', 'eleve', 'email')).toBe(true);
-    expect(wantsNotif({}, 'pointage_rappel', 'prof', 'push')).toBe(false); // seul défaut OFF
+    expect(wantsNotif({}, 'pointage_rappel', 'prof', 'push')).toBe(false); // défaut OFF
+  });
+
+  test('canal inapp (cloche prof) unifié', () => {
+    // alertes calculées : cloche par défaut ON
+    expect(wantsNotif({}, 'paiement_retard', 'prof', 'inapp')).toBe(true);
+    expect(wantsNotif({ paiement_retard: { inapp: false } }, 'paiement_retard', 'prof', 'inapp')).toBe(false);
+    // essai_demande : 3 canaux
+    expect(wantsNotif({}, 'essai_demande', 'prof', 'inapp')).toBe(true);
+    expect(wantsNotif({}, 'essai_demande', 'prof', 'push')).toBe(true);
+    expect(wantsNotif({}, 'essai_demande', 'prof', 'email')).toBe(true);
+    // reservation : push seul → pas de cloche
+    expect(wantsNotif({}, 'reservation', 'prof', 'inapp')).toBe(false);
   });
 
   test('rétrocompat : ancien booléen s\'applique à tous les canaux', () => {

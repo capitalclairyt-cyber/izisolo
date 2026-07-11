@@ -2696,24 +2696,19 @@ export default function Parametres() {
             <Save size={18} /> {saving ? 'Enregistrement...' : 'Enregistrer'}
           </button>
 
-          {/* ── Sous-onglets ── */}
-          <div className="notif-subtabs">
-            <button
-              className={`notif-subtab ${notifSubTab === 'general' ? 'active' : ''}`}
-              onClick={() => setNotifSubTab('general')}
-            >
-              <Bell size={14} /> Général
-            </button>
-            <button
-              className={`notif-subtab ${notifSubTab === 'anniversaire' ? 'active' : ''}`}
-              onClick={() => setNotifSubTab('anniversaire')}
-            >
-              <Cake size={14} /> Anniversaires
-            </button>
+          {/* Anniversaires : messages auto ENVOYÉS aux élèves — feature à part
+              (≠ « Mes notifications » ci-dessus = ce que la prof reçoit). */}
+          <div className="section izi-card" style={{ marginTop: 4 }}>
+            <div className="section-top">
+              <div className="section-icon"><Cake size={20} /></div>
+              <h2>Anniversaires des élèves</h2>
+            </div>
           </div>
 
-          {/* ══════════ SOUS-ONGLET GÉNÉRAL ══════════ */}
-          {notifSubTab === 'general' && (
+          {/* Ancien sous-onglet « Général » (cloche) → fusionné dans le panneau
+              « Mes notifications » (canal Appli). Bloc désactivé, à retirer au
+              prochain nettoyage du fichier (S6bis). */}
+          {false && (
             <div className="notif-general animate-fade-in">
               <p className="param-section-desc" style={{ marginBottom: 4 }}>
                 Choisis les événements pour lesquels tu veux recevoir une notification dans l'application.
@@ -2784,8 +2779,8 @@ export default function Parametres() {
             </div>
           )}
 
-          {/* ══════════ SOUS-ONGLET ANNIVERSAIRES ══════════ */}
-          {notifSubTab === 'anniversaire' && (
+          {/* ══════════ ANNIVERSAIRES (toujours visible) ══════════ */}
+          {true && (
             <div className="notif-anniv animate-fade-in">
 
               {/* Mode */}

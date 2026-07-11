@@ -4,6 +4,7 @@ import { checkAntiBot, ipFromRequest } from '@/lib/antibot';
 import { studioHasFeature } from '@/lib/plan-guard';
 import { sendEmail } from '@/lib/email';
 import { sendPushToUser } from '@/lib/push-server';
+import { wantsNotif } from '@/lib/notif-prefs';
 
 export async function POST(request, { params }) {
   const { studioSlug } = await params;
@@ -33,7 +34,7 @@ export async function POST(request, { params }) {
   // Vérifier studio + cours
   const { data: profile } = await supabaseAdmin
     .from('profiles')
-    .select('id, studio_nom, plan, trial_started_at, stripe_subscription_status')
+    .select('id, studio_nom, plan, trial_started_at, stripe_subscription_status, notif_prefs')
     .eq('studio_slug', studioSlug)
     .single();
   if (!profile) return Response.json({ error: 'Studio introuvable' }, { status: 404 });
@@ -177,17 +178,19 @@ export async function POST(request, { params }) {
     });
   } catch (e) { console.error('[liste-attente] email confirmation non-bloquant:', e?.message); }
 
-  // Notification cloche côté prof (non bloquant).
-  try {
-    await supabaseAdmin.from('notifications').insert({
-      profile_id: profile.id,
-      type: 'liste_attente',
-      titre: 'Nouvelle inscription en liste d\'attente',
-      corps: `${nom || email} attend une place — ${cours.nom || 'cours'} (${dateStr}${heureStr}).`,
-      data: { cours_id: coursId, email },
-      lu: false,
-    });
-  } catch (e) { console.error('[liste-attente] notif prof non-bloquant:', e?.message); }
+  // Notification cloche côté prof (non bloquant, gaté sur pref Appli).
+  if (wantsNotif(profile.notif_prefs, 'liste_attente', 'prof', 'inapp')) {
+    try {
+      await supabaseAdmin.from('notifications').insert({
+        profile_id: profile.id,
+        type: 'liste_attente',
+        titre: 'Nouvelle inscription en liste d\'attente',
+        corps: `${nom || email} attend une place — ${cours.nom || 'cours'} (${dateStr}${heureStr}).`,
+        data: { cours_id: coursId, email },
+        lu: false,
+      });
+    } catch (e) { console.error('[liste-attente] notif prof non-bloquant:', e?.message); }
+  }
 
   // Push prof (gaté sur pref liste_attente ; no-op sans abonnement)
   sendPushToUser(profile.id, {

@@ -1,17 +1,20 @@
 import { NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase-server';
+import { wantsNotif } from '@/lib/notif-prefs';
 
 export async function POST() {
   const supabase = await createServerClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
 
-  // Lire les préférences du profil
+  // Préférences unifiées (canal 'inapp' = cloche) + anniversaire (feature à part)
   const { data: prof } = await supabase
     .from('profiles')
-    .select('notif_paiement_retard, notif_carnet_epuise, notif_abonnement_expire, anniversaire_mode')
+    .select('notif_prefs, anniversaire_mode')
     .eq('id', user.id)
     .single();
+  const prefs = prof?.notif_prefs;
+  const wantInapp = (type) => wantsNotif(prefs, type, 'prof', 'inapp');
 
   const today     = new Date();
   const todayStr  = today.toISOString().split('T')[0];
@@ -54,7 +57,7 @@ export async function POST() {
   }
 
   // ── 2. Paiements en retard (> 7 jours, non réglés) ───────────────────────
-  if (prof?.notif_paiement_retard !== false) {
+  if (wantInapp('paiement_retard')) {
   const sevenAgo = new Date(today); sevenAgo.setDate(today.getDate() - 7);
 
   const { data: retards } = await supabase
@@ -79,7 +82,7 @@ export async function POST() {
   } // fin notif_paiement_retard
 
   // ── 3. Carnets épuisés (< 2 séances restantes, statut actif) ─────────────
-  if (prof?.notif_carnet_epuise !== false) {
+  if (wantInapp('carnet_epuise')) {
   const { data: carnets } = await supabase
     .from('abonnements')
     .select('id, seances_restantes, client_id, offres(nom), clients(prenom, nom)')
@@ -103,7 +106,7 @@ export async function POST() {
   } // fin notif_carnet_epuise
 
   // ── 4. Abonnements qui expirent dans < 14 jours ───────────────────────────
-  if (prof?.notif_abonnement_expire !== false) {
+  if (wantInapp('abonnement_expire')) {
   const in14 = new Date(today); in14.setDate(today.getDate() + 14);
 
   const { data: expirant } = await supabase
@@ -131,7 +134,7 @@ export async function POST() {
   } // fin notif_abonnement_expire
 
   // ── 5. Nouveaux clients (créés dans les dernières 48h) ───────────────────
-  if (prof?.notif_nouveau_client !== false) {
+  if (wantInapp('nouveau_client')) {
     const since48h = new Date(today); since48h.setHours(today.getHours() - 48);
 
     const { data: nouveaux } = await supabase

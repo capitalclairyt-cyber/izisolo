@@ -155,7 +155,10 @@ Petit rappel : tu es inscrit·e à ${cours.nom} demain ${dateStr}${heureStr ? ` 
         const { data: profs } = await supabaseAdmin
           .from('profiles').select('id, notif_prefs').in('id', profIds);
         for (const prof of (profs || [])) {
-          if (!wantsNotif(prof.notif_prefs, 'pointage_rappel', 'prof')) continue;
+          // La cloche (Appli) est l'ancre de dédup du rappel de pointage :
+          // sans elle activée, on ne déclenche rien (feature niche, défaut OFF).
+          if (!wantsNotif(prof.notif_prefs, 'pointage_rappel', 'prof', 'inapp')) continue;
+          const wantPush = wantsNotif(prof.notif_prefs, 'pointage_rappel', 'prof', 'push');
           const n = parProfil[prof.id];
           const titre = `${n} cours non pointé${n > 1 ? 's' : ''} hier`;
           const corps = `Pense à pointer les présences pour fiabiliser tes carnets.`;
@@ -166,7 +169,7 @@ Petit rappel : tu es inscrit·e à ${cours.nom} demain ${dateStr}${heureStr ? ` 
           }, { onConflict: 'profile_id,ref_key', ignoreDuplicates: true }).select('id');
           if (ins && ins.length) {
             pointageRappels++;
-            sendPushToUser(prof.id, { title: titre, body: corps, url: '/agenda', tag: `pointage-${hier}` }, { type: 'pointage_rappel' }).catch(() => {});
+            if (wantPush) sendPushToUser(prof.id, { title: titre, body: corps, url: '/agenda', tag: `pointage-${hier}` }, { type: 'pointage_rappel' }).catch(() => {});
           }
         }
       }

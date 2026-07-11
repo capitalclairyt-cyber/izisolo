@@ -163,15 +163,17 @@ export async function POST(request, { params }) {
   // demande tombait en "Finalisées" sans aucune alerte en mode auto/semi).
   const coursDateStr = new Date(cours.date + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
   const coursHeureStr = cours.heure ? ' · ' + cours.heure.slice(0, 5).replace(':', 'h') : '';
-  await supabaseAdmin.from('notifications').upsert({
-    profile_id: profile.id,
-    type: 'essai_demande',
-    titre: isManuel ? `✨ Demande d'essai à valider — ${prenom}` : `✨ Nouveau cours d'essai — ${prenom}`,
-    corps: `${cours.nom} · ${coursDateStr}${coursHeureStr}`,
-    data: { demande_id: demande.id, cours_id: cours.id, prenom },
-    ref_key: `essai_demande_${demande.id}`,
-    expires_at: null,
-  }, { onConflict: 'profile_id,ref_key', ignoreDuplicates: true });
+  if (wantsNotif(profile.notif_prefs, 'essai_demande', 'prof', 'inapp')) {
+    await supabaseAdmin.from('notifications').upsert({
+      profile_id: profile.id,
+      type: 'essai_demande',
+      titre: isManuel ? `✨ Demande d'essai à valider — ${prenom}` : `✨ Nouveau cours d'essai — ${prenom}`,
+      corps: `${cours.nom} · ${coursDateStr}${coursHeureStr}`,
+      data: { demande_id: demande.id, cours_id: cours.id, prenom },
+      ref_key: `essai_demande_${demande.id}`,
+      expires_at: null,
+    }, { onConflict: 'profile_id,ref_key', ignoreDuplicates: true });
+  }
 
   // Push prof (gaté sur pref essai_demande ; no-op sans abonnement)
   sendPushToUser(profile.id, {

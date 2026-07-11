@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Loader2, Check, Mail, Bell } from 'lucide-react';
+import { Loader2, Check, Mail, Bell, Smartphone } from 'lucide-react';
 import { NOTIF_TYPES_ELEVE, NOTIF_TYPES_PROF, effectivePrefs } from '@/lib/notif-prefs';
 
 /**
@@ -12,8 +12,9 @@ import { NOTIF_TYPES_ELEVE, NOTIF_TYPES_PROF, effectivePrefs } from '@/lib/notif
  * n'affiche que les toggles pertinents (déclarés dans le catalogue `channels`).
  */
 const CHANNEL_META = {
-  email: { label: 'Mail', Icon: Mail },
-  push:  { label: 'Push', Icon: Bell },
+  inapp: { label: 'Appli', Icon: Bell },       // cloche dans l'app
+  push:  { label: 'Push',  Icon: Smartphone },  // notification téléphone
+  email: { label: 'Mail',  Icon: Mail },
 };
 
 export default function NotifPrefsPanel({ audience = 'eleve', initialPrefs = {}, onSave }) {
