@@ -18,6 +18,12 @@ export default function OnboardingPage() {
   const [createdSlug, setCreatedSlug] = useState('');
   const [copied, setCopied] = useState(false);
 
+  // Compte élève (créé via le portail d'un studio, v57) : on n'affiche pas
+  // le wizard prof mais un écran dédié avec ses portails + « devenir prof ».
+  const [isEleve, setIsEleve] = useState(false);
+  const [portails, setPortails] = useState([]);
+  const [devenirLoading, setDevenirLoading] = useState(false);
+
   // Données du formulaire
   const [metier, setMetier] = useState('');
   const [studioNom, setStudioNom] = useState('');
@@ -39,6 +45,17 @@ export default function OnboardingPage() {
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
+        // Élève arrivé côté app prof (login, mot de passe oublié, lien
+        // direct) : écran dédié, pas de wizard. On charge ses portails.
+        if (user.user_metadata?.role === 'eleve') {
+          setIsEleve(true);
+          try {
+            const res = await fetch('/api/eleve/compte');
+            const data = await res.json().catch(() => ({}));
+            if (res.ok && Array.isArray(data.portails)) setPortails(data.portails);
+          } catch {}
+          return;
+        }
         const metaPrenom = user.user_metadata?.prenom;
         if (metaPrenom && !prenom) setPrenom(metaPrenom);
         // Si le profil a déjà été partiellement rempli (par ex. l'utilisateur
@@ -158,9 +175,79 @@ export default function OnboardingPage() {
     router.refresh();
   }
 
+  // Élève qui veut ouvrir SON studio : POST /api/eleve/compte passe le
+  // compte en prof et crée le profil avec un essai 14 jours NEUF (le
+  // trigger v33 pose trial_started_at à l'insert). On rafraîchit ensuite
+  // la session pour récupérer le nouveau role, puis on ouvre le wizard.
+  async function handleDevenirProf() {
+    setDevenirLoading(true);
+    setErreur('');
+    try {
+      const res = await fetch('/api/eleve/compte', { method: 'POST' });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || 'Erreur serveur');
+      }
+      await supabase.auth.refreshSession().catch(() => {});
+      setIsEleve(false);
+    } catch (e) {
+      console.error('devenir prof:', e);
+      setErreur("Oups, on n'a pas réussi à préparer ton espace studio. Réessaie dans un instant.");
+    }
+    setDevenirLoading(false);
+  }
+
   return (
     <div className="onboarding-container">
       <div className="onboarding-card">
+        {/* Compte élève : pas de wizard prof, écran dédié (v57) */}
+        {isEleve && (
+          <div className="onboarding-step animate-fade-in" style={{ textAlign: 'center' }}>
+            <div className="welcome-emoji">
+              <Sparkles size={28} style={{ color: 'var(--brand)' }} />
+            </div>
+            <h2 style={{ fontSize: '1.375rem', fontWeight: 800, margin: '0 0 6px' }}>
+              Ton compte est un compte élève 🌿
+            </h2>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9375rem', margin: '0 0 20px', lineHeight: 1.5 }}>
+              Tu utilises IziSolo pour réserver tes cours — ton espace se trouve
+              sur le portail de ton studio, pas ici.
+            </p>
+
+            {portails.length > 0 ? (
+              <div className="eleve-portails">
+                {portails.map(p => (
+                  <a key={p.slug} href={`/p/${p.slug}/espace`} className="izi-btn izi-btn-primary eleve-portail-btn">
+                    <ExternalLink size={16} /> Mon espace — {p.nom}
+                  </a>
+                ))}
+              </div>
+            ) : (
+              <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', margin: '0 0 20px' }}>
+                Pour retrouver ton espace, utilise le lien de connexion envoyé
+                par ton studio (ou demandes-en un nouveau sur son portail).
+              </p>
+            )}
+
+            <div className="eleve-divider" />
+
+            <p style={{ fontSize: '0.9375rem', color: 'var(--text-secondary)', margin: '0 0 14px', lineHeight: 1.5 }}>
+              Tu enseignes aussi et tu veux <strong>ouvrir ton propre studio</strong> ?
+              Ton essai gratuit de 14 jours démarre à ce moment-là, pas avant.
+            </p>
+            {erreur && <div className="onboarding-error" role="alert">{erreur}</div>}
+            <button
+              type="button"
+              className="izi-btn izi-btn-ghost"
+              onClick={handleDevenirProf}
+              disabled={devenirLoading}
+            >
+              {devenirLoading ? 'Préparation...' : 'Ouvrir mon studio'} <ArrowRight size={16} />
+            </button>
+          </div>
+        )}
+
+        {!isEleve && (<>
         {/* Progress */}
         <div className="onboarding-progress">
           {ETAPES.map((_, i) => (
@@ -438,6 +525,7 @@ export default function OnboardingPage() {
             </p>
           </div>
         )}
+        </>)}
       </div>
 
       <style jsx global>{`
@@ -610,6 +698,15 @@ export default function OnboardingPage() {
           display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;
         }
         .welcome-actions .izi-btn { flex: 1 1 auto; min-width: 180px; }
+        .eleve-portails {
+          display: flex; flex-direction: column; gap: 10px;
+          margin: 0 0 4px;
+        }
+        .eleve-portail-btn { width: 100%; }
+        .eleve-divider {
+          border-top: 1px solid var(--border);
+          margin: 20px 0;
+        }
       `}</style>
     </div>
   );

@@ -11,6 +11,13 @@ export default async function DashboardLayout({ children }) {
     redirect('/login');
   }
 
+  // Compte élève (créé via le portail d'un studio, v57) : jamais de
+  // dashboard prof. /onboarding affiche l'écran dédié « tu es élève ici »
+  // avec les liens vers ses portails + le parcours « devenir prof ».
+  if (user.user_metadata?.role === 'eleve') {
+    redirect('/onboarding');
+  }
+
   // Charger le profil (incluant trial_started_at + stripe_subscription_status
   // pour calculer le statut du trial 14j côté serveur, à passer au client)
   const { data: profile } = await supabase

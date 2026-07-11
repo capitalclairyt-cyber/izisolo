@@ -462,8 +462,13 @@ export async function POST(request, { params }) {
       // sans ça, generateLink peut échouer pour un email encore inconnu → pas de
       // lien → l'élève qui vient de réserver ne peut pas rejoindre son espace en
       // un clic. email_confirm: true ⇒ aucun email Supabase parasite n'est envoyé.
+      // role: 'eleve' ⇒ handle_new_user (v57) ne crée pas de profil prof.
       try {
-        await supabaseAdmin.auth.admin.createUser({ email, email_confirm: true });
+        await supabaseAdmin.auth.admin.createUser({
+          email,
+          email_confirm: true,
+          user_metadata: { role: 'eleve' },
+        });
       } catch { /* user déjà existant : normal, on continue */ }
 
       // Lien construit avec hashed_token (Sprint 4) : clic → /p/[slug]/connecte
