@@ -1,6 +1,7 @@
 import { requireCronAuth } from '@/lib/api-auth';
 import { createAdminClient } from '@/lib/supabase-admin';
 import { sendNotifEleve } from '@/lib/notifs-eleves';
+import { sendPushToEmail } from '@/lib/push-server';
 import { evaluerReglesAll } from '@/lib/regles';
 
 export const runtime = 'nodejs';
@@ -104,6 +105,16 @@ Pour ne pas être pris·e de court, n'hésite pas à renouveler dès que possibl
             });
             totalSent += r.sent;
             totalSkipped += r.skipped;
+            // Push seulement si l'email a réellement été envoyé (respecte la
+            // dédup quotidienne de sendNotifEleve → pas de push à chaque run).
+            if (r.sent > 0 && client.email) {
+              sendPushToEmail(client.email, {
+                title: `Plus que ${reste} séance${reste > 1 ? 's' : ''} 📋`,
+                body: `Ton carnet « ${abo.offre_nom || 'carnet'} » chez ${profile.studio_nom} — pense à renouveler.`,
+                url: profile.studio_slug ? `/p/${profile.studio_slug}/espace` : '/',
+                tag: `carnet-${abo.id}`,
+              }).catch(() => {});
+            }
           } catch (e) {
             console.error('[cron notifs] credits_faibles err', e);
             totalErrors++;
@@ -143,6 +154,14 @@ Pour assurer la continuité de tes cours, pense à le renouveler avant cette dat
           });
           totalSent += r.sent;
           totalSkipped += r.skipped;
+          if (r.sent > 0 && client.email) {
+            sendPushToEmail(client.email, {
+              title: `Ton abonnement expire bientôt ⏳`,
+              body: `« ${abo.offre_nom || 'abonnement'} » chez ${profile.studio_nom} — dans ${joursRestants} j.`,
+              url: profile.studio_slug ? `/p/${profile.studio_slug}/espace` : '/',
+              tag: `exp-${abo.id}`,
+            }).catch(() => {});
+          }
         } catch (e) {
           console.error('[cron notifs] expiration_abo err', e);
           totalErrors++;

@@ -1,5 +1,6 @@
 import { requireAuth } from '@/lib/api-auth';
 import { sendMessage, resolveClientFromUserEmail } from '@/lib/messagerie';
+import { sendPushToUser, sendPushToEmail } from '@/lib/push-server';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -98,6 +99,20 @@ export async function POST(request, { params }) {
         sharedRefType: body.shared_ref_type || null,
         sharedRefId: body.shared_ref_id || null,
       });
+      // Push à l'élève (conversations 1-à-1 uniquement ; no-op sans abonnement)
+      if (conv.type === 'client' && conv.client_id) {
+        (async () => {
+          const { data: c } = await supabase.from('clients').select('email').eq('id', conv.client_id).maybeSingle();
+          if (c?.email) {
+            await sendPushToEmail(c.email, {
+              title: `${profile.studio_nom || 'Ton studio'} t'a écrit`,
+              body: (body.content || '').slice(0, 120) || 'Nouveau message',
+              url: profile.studio_slug ? `/p/${profile.studio_slug}/espace/messages` : '/',
+              tag: `msg-${conversationId}`,
+            });
+          }
+        })().catch(() => {});
+      }
       return Response.json({ message: msg });
     } catch (err) {
       console.error('[messagerie] pro send err:', err);
@@ -132,6 +147,13 @@ export async function POST(request, { params }) {
       mediaUrl: body.media_url || null,
       mediaUrls: body.media_urls || [],
     });
+    // Push au prof (no-op sans abonnement)
+    sendPushToUser(conv.profile_id, {
+      title: `${client.prenom || 'Un élève'} t'a écrit`,
+      body: (body.content || '').slice(0, 120) || 'Nouveau message',
+      url: '/messagerie',
+      tag: `msg-${conversationId}`,
+    }).catch(() => {});
     return Response.json({ message: msg });
   } catch (err) {
     console.error('[messagerie] eleve send err:', err);

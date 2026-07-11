@@ -3,6 +3,7 @@ import { requireActiveAccount } from '@/lib/api-auth';
 import { createAdminClient } from '@/lib/supabase-admin';
 import { finaliserDemande, emailConfirmationVisiteur } from '@/lib/essai';
 import { buildPortailMagicLink } from '@/lib/portail-magic-link';
+import { sendPushToEmail } from '@/lib/push-server';
 import { sendEmail } from '@/lib/email';
 
 export const runtime = 'nodejs';
@@ -74,6 +75,14 @@ export async function POST(request, { params }) {
         magicLink,
       });
 
+      // Push (no-op si l'invité n'a pas d'abonnement)
+      sendPushToEmail(demande.email, {
+        title: `Cours d'essai confirmé 🎉`,
+        body: `${profile.studio_nom} a validé ta demande — ${cours?.nom || 'ton cours'}.`,
+        url: `/p/${profile.studio_slug}/espace`,
+        tag: `essai-${id}`,
+      }).catch(() => {});
+
       return Response.json({ ok: true, client_id, presence_id });
     } catch (err) {
       console.error('[admin/essai] valider err:', err);
@@ -120,6 +129,14 @@ export async function POST(request, { params }) {
       console.error('[admin/essai] email refus err:', err);
     }
   }
+
+  // Push refus (no-op si pas d'abonnement)
+  sendPushToEmail(demande.email, {
+    title: `Réponse à ta demande d'essai`,
+    body: `${profile.studio_nom} n'a pas pu donner suite pour le moment.`,
+    url: `/p/${profile.studio_slug}`,
+    tag: `essai-${id}`,
+  }).catch(() => {});
 
   return Response.json({ ok: true });
 }

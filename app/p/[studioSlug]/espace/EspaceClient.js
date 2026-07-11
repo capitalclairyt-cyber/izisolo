@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Calendar, Clock, MapPin, ArrowLeft, LogOut, CheckCircle, XCircle, Loader, AlertCircle, User, Lock, CreditCard, Ticket, CalendarCheck, Zap, Download, Receipt, MessageCircle, Send, X, Phone, Home, Pencil, Save, Wallet, Bell } from 'lucide-react';
+import PushToggle from '@/components/push/PushToggle';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/components/ui/ToastProvider';
 import { evaluerAnnulation, formatDateLimite } from '@/lib/regles-annulation';
@@ -474,7 +475,7 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
                       Notifications
                     </div>
                     {notifsEleve.length === 0 ? (
-                      <div style={{ padding: '20px 14px', textAlign: 'center', color: '#aaa', fontSize: '0.8125rem' }}>
+                      <div style={{ padding: '16px 14px', textAlign: 'center', color: '#aaa', fontSize: '0.8125rem' }}>
                         Rien de neuf pour l'instant 🌿
                       </div>
                     ) : (
@@ -495,6 +496,12 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
                           </div>
                         );
                       })
+                    )}
+                    {/* Activer les notifs navigateur sur cet appareil */}
+                    {!isDemo && (
+                      <div style={{ padding: '10px 14px', borderTop: '1px solid #f5f0ed', display: 'flex', justifyContent: 'center' }}>
+                        <PushToggle variant="compact" />
+                      </div>
                     )}
                   </div>
                 </>

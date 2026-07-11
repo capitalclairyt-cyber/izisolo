@@ -12,6 +12,7 @@ import { formatHeure, formatMontant } from '@/lib/utils';
 import { getVocabulaire } from '@/lib/vocabulaire';
 import { useToast } from '@/components/ui/ToastProvider';
 import { toneForCours } from '@/lib/tones';
+import PushToggle from '@/components/push/PushToggle';
 
 export default function DashboardClient({ profile, coursDuJour, nbClients, nbCoursTotal, revenusMois, alertes, coutsMois, hasSondage = false, nbCasATraiter = 0 }) {
   const vocab = getVocabulaire(profile?.metier || 'yoga', profile?.vocabulaire);
@@ -103,6 +104,9 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
             <h1>Bonjour {prenom} !</h1>
             <p className="dash-date">{jourStr}</p>
           </div>
+        </div>
+        <div style={{ marginTop: 12 }}>
+          <PushToggle />
         </div>
       </div>
 

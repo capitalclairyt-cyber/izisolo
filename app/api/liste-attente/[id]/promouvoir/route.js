@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { withRoute } from '@/lib/api-route';
 import { createAdminClient } from '@/lib/supabase-admin';
 import { sendEmail } from '@/lib/email';
+import { sendPushToEmail } from '@/lib/push-server';
 import { infosPratiquesBlock } from '@/lib/email-helpers';
 
 /**
@@ -156,6 +157,14 @@ export const POST = withRoute({ auth: 'active' }, async ({ params, auth }) => {
   } catch (e) {
     console.warn('[promouvoir] email non-bloquant:', e?.message);
   }
+
+  // Push « place libérée » (no-op si pas d'abonnement)
+  sendPushToEmail(entry.email, {
+    title: `Une place s'est libérée 🎉`,
+    body: `Ta place est réservée pour ${cours.nom || 'ton cours'}.`,
+    url: profile.studio_slug ? `/p/${profile.studio_slug}/espace` : '/',
+    tag: `la-${cours.id}`,
+  }).catch(() => {});
 
   return NextResponse.json({ ok: true, presence_id: newPresence.id, client_id: clientId });
 });

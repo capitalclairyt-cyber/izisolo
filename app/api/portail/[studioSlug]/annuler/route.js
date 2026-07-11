@@ -8,6 +8,7 @@ import { evaluerAnnulation } from '@/lib/regles-annulation';
 import { sendNotifEleve } from '@/lib/notifs-eleves';
 import { getRegle } from '@/lib/regles-metier';
 import { sendNotifElevePourRegle } from '@/lib/notif-eleve-regle';
+import { sendPushToEmail } from '@/lib/push-server';
 
 export async function POST(request, { params }) {
   const { studioSlug } = await params;
@@ -112,7 +113,7 @@ export async function POST(request, { params }) {
     // on promeut le 1er (n°1 par created_at), on lui crée une presence et
     // on lui envoie un email de notification.
     try {
-      await promouvoirListeAttente(supabaseAdmin, profile.id, presence.cours, proEmail);
+      await promouvoirListeAttente(supabaseAdmin, profile.id, presence.cours, proEmail, studioSlug);
     } catch (promErr) {
       console.error('promotion liste attente (non-blocking):', promErr);
     }
@@ -146,7 +147,7 @@ export async function POST(request, { params }) {
     }
     // Promotion liste d'attente comme pour annulation libre
     try {
-      await promouvoirListeAttente(supabaseAdmin, profile.id, presence.cours, proEmail);
+      await promouvoirListeAttente(supabaseAdmin, profile.id, presence.cours, proEmail, studioSlug);
     } catch (e) { console.error('promotion (excuse): non-blocking:', e); }
     return Response.json({ ok: true, tardive: true, action: 'excusee' });
   }
@@ -180,7 +181,7 @@ export async function POST(request, { params }) {
         },
       });
     } catch (e) { console.error('annulation (manuel): cas_a_traiter non-bloquant:', e); }
-    try { await promouvoirListeAttente(supabaseAdmin, profile.id, presence.cours, proEmail); } catch {}
+    try { await promouvoirListeAttente(supabaseAdmin, profile.id, presence.cours, proEmail, studioSlug); } catch {}
     return Response.json({ ok: true, tardive: true, action: 'manuel' });
   }
 
@@ -272,7 +273,7 @@ Tu peux retrouver le détail dans ton espace personnel.
 }
 
 // ─── Promotion automatique de la liste d'attente ────────────────────────────
-async function promouvoirListeAttente(supabaseAdmin, profileId, cours, proEmail = null) {
+async function promouvoirListeAttente(supabaseAdmin, profileId, cours, proEmail = null, studioSlug = null) {
   if (!cours?.id) return;
 
   // Cherche le 1er de la liste (par position puis created_at)
@@ -347,6 +348,16 @@ async function promouvoirListeAttente(supabaseAdmin, profileId, cours, proEmail 
     .from('liste_attente')
     .update({ notified_at: new Date().toISOString() })
     .eq('id', nextRow.id);
+
+  // Push « une place s'est libérée » (no-op si déjà inscrite ou pas d'abonnement)
+  if (!dejaInscrite) {
+    sendPushToEmail(nextRow.email, {
+      title: `Une place s'est libérée 🎉`,
+      body: `Ta place est réservée pour ${cours.nom || 'ton cours'}.`,
+      url: studioSlug ? `/p/${studioSlug}/espace` : '/',
+      tag: `la-${cours.id}`,
+    }).catch(() => {});
+  }
 
   // Email de notification — pipeline central (blacklist respectée)
   try {
