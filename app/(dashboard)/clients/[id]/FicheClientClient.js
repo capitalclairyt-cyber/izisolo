@@ -112,12 +112,13 @@ function AssignerOffreModal({ client, onClose, onSuccess }) {
     setStep('paiement');
   };
 
-  const handleConfirm = async ({ montant, modePaiement, notes, numeroCheque, multiVersement, versements }) => {
+  const handleConfirm = async ({ montant, modePaiement, notes, numeroCheque, reglement = 'paye', premierEncaisse = true, versements = [] }) => {
     if (!selectedOffre) return;
     setSubmitting(true);
     try {
       const supabase = createClient();
       const today = new Date().toISOString().split('T')[0];
+      const multiVersement = reglement === 'multi';
 
       // Abonnement à créer (null en mode libre). profile_id est forcé à
       // auth.uid() côté SQL — jamais pris du client.
@@ -134,21 +135,31 @@ function AssignerOffreModal({ client, onClose, onSuccess }) {
 
       let paiements;
       if (multiVersement && versements.length > 1) {
+        // Échéancier : chaque versement est un paiement. Le 1er est 'paid'
+        // seulement si la prof a coché « déjà encaissé » ; sinon TOUT est
+        // 'pending' (échéancier entièrement à régler). Les versements pending
+        // apparaissent en « à percevoir » et s'encaissent un par un.
         const echId = crypto.randomUUID();
-        paiements = versements.map((v, i) => ({
-          client_id: client.id,
-          offre_id: isLibre ? null : selectedOffre.id,
-          echeancier_id: echId,
-          intitule: `${isLibre ? intituleLibre.trim() : selectedOffre.nom} (${i + 1}/${versements.length})`,
-          type: isLibre ? null : selectedOffre.type,
-          montant: v.montant,
-          statut: i === 0 ? 'paid' : 'pending',
-          mode: i === 0 ? modePaiement : null,
-          date: v.date,
-          notes: i === 0 ? (notes || null) : null,
-          numero_cheque: i === 0 && numeroCheque ? numeroCheque : null,
-        }));
+        paiements = versements.map((v, i) => {
+          const encaisse = i === 0 && premierEncaisse;
+          return {
+            client_id: client.id,
+            offre_id: isLibre ? null : selectedOffre.id,
+            echeancier_id: echId,
+            intitule: `${isLibre ? intituleLibre.trim() : selectedOffre.nom} (${i + 1}/${versements.length})`,
+            type: isLibre ? null : selectedOffre.type,
+            montant: v.montant,
+            statut: encaisse ? 'paid' : 'pending',
+            mode: encaisse ? modePaiement : null,
+            date: v.date,
+            notes: encaisse ? (notes || null) : null,
+            numero_cheque: encaisse && numeroCheque ? numeroCheque : null,
+          };
+        });
       } else {
+        // Paiement simple : 'paid' (payé maintenant) OU 'pending' (à régler
+        // plus tard). Dans les deux cas l'offre est bien attribuée.
+        const impaye = reglement === 'aregler';
         paiements = [{
           client_id: client.id,
           offre_id: isLibre ? null : selectedOffre.id,
@@ -156,11 +167,11 @@ function AssignerOffreModal({ client, onClose, onSuccess }) {
           intitule: isLibre ? intituleLibre.trim() : selectedOffre.nom,
           type: isLibre ? null : selectedOffre.type,
           montant: montant,
-          statut: 'paid',
-          mode: modePaiement,
+          statut: impaye ? 'pending' : 'paid',
+          mode: impaye ? null : modePaiement,
           date: today,
           notes: notes || null,
-          numero_cheque: numeroCheque || null,
+          numero_cheque: impaye ? null : (numeroCheque || null),
         }];
       }
 

@@ -273,6 +273,14 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
   const [editCoords, setEditCoords] = useState(false);
   const [savingCoords, setSavingCoords] = useState(false);
 
+  // Paiements dus (statut ≠ 'paid') : affichés dans « À régler ». Les paiements
+  // réglés vont dans « Mes paiements » (avec reçu). Un versement d'échéancier
+  // en attente (echeancier_id) apparaît donc à régler tant qu'il n'est pas encaissé.
+  const paiementsDus = (paiements || []).filter(p => p.statut && p.statut !== 'paid');
+  const paiementsRegles = (paiements || []).filter(p => p.statut === 'paid');
+  const totalDu = paiementsDus.reduce((s, p) => s + (parseFloat(p.montant) || 0), 0);
+  const nbARegler = aRegler.length + paiementsDus.length;
+
   const handleSaveCoords = async () => {
     if (isDemo) { setEditCoords(false); return; }
     setSavingCoords(true);
@@ -637,15 +645,34 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
         </div>
       )}
 
-      {/* Section "À régler" — paiements à prévoir (dettes / séances dues ouvertes) */}
-      {aRegler.length > 0 && (
+      {/* Section "À régler" — paiements dus + dettes / séances dues ouvertes */}
+      {nbARegler > 0 && (
         <div style={{ marginTop: 28, paddingTop: 20, borderTop: '1px solid #f0ebe8' }}>
           <h2 className="espace-section-title">
             <Wallet size={16} style={{ color: '#d97706' }} />
             À régler
-            <span className="espace-count" style={{ background: '#fff0d6', color: '#b45309' }}>{aRegler.length}</span>
+            <span className="espace-count" style={{ background: '#fff0d6', color: '#b45309' }}>{nbARegler}</span>
           </h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {/* Paiements/versements en attente attribués par le studio */}
+            {paiementsDus.map(p => {
+              const dateStr = p.date
+                ? new Date(p.date + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })
+                : null;
+              return (
+                <div key={`pay-${p.id}`} className="espace-aregler-row">
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 600, fontSize: '0.875rem', color: '#1a1a2e' }}>{p.intitule || 'Paiement'}</div>
+                    <div style={{ fontSize: '0.7rem', color: '#b45309', marginTop: 2 }}>
+                      En attente de règlement{dateStr ? ` · échéance ${dateStr}` : ''}
+                    </div>
+                  </div>
+                  <div style={{ fontWeight: 700, fontSize: '0.9375rem', color: '#b45309', flexShrink: 0 }}>
+                    {parseFloat(p.montant).toFixed(2).replace('.', ',')} €
+                  </div>
+                </div>
+              );
+            })}
             {aRegler.map(c => {
               const montant = c.context?.montant ?? c.context?.tarif_unitaire ?? null;
               const coursNom = c.cours?.nom || c.context?.cours_nom || 'Séance';
@@ -669,21 +696,24 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
             })}
           </div>
           <p style={{ fontSize: '0.72rem', color: '#a16207', margin: '10px 2px 0', lineHeight: 1.5 }}>
+            {totalDu > 0 && (
+              <>Total à régler : <strong>{totalDu.toFixed(2).replace('.', ',')} €</strong>. </>
+            )}
             À régler directement avec ton studio (sur place ou selon ses modalités habituelles).
           </p>
         </div>
       )}
 
-      {/* Section "Mes paiements" — historique + téléchargement reçu PDF */}
-      {paiements.length > 0 && (
+      {/* Section "Mes paiements" — historique des règlements + reçu PDF */}
+      {paiementsRegles.length > 0 && (
         <div style={{ marginTop: 28, paddingTop: 20, borderTop: '1px solid #f0ebe8' }}>
           <h2 className="espace-section-title">
             <Receipt size={16} style={{ color: '#d4a0a0' }} />
             Mes paiements
-            <span className="espace-count">{paiements.length}</span>
+            <span className="espace-count">{paiementsRegles.length}</span>
           </h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {paiements.slice(0, 10).map(p => {
+            {paiementsRegles.slice(0, 10).map(p => {
               const tone = toneForPaiement(p.statut);
               return (
               <div key={p.id} className={`paiement-row paiement-row--${tone}`}>
