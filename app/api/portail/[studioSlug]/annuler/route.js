@@ -8,7 +8,7 @@ import { evaluerAnnulation } from '@/lib/regles-annulation';
 import { sendNotifEleve } from '@/lib/notifs-eleves';
 import { getRegle } from '@/lib/regles-metier';
 import { sendNotifElevePourRegle } from '@/lib/notif-eleve-regle';
-import { sendPushToEmail } from '@/lib/push-server';
+import { sendPushToEmail, sendPushToUser } from '@/lib/push-server';
 
 export async function POST(request, { params }) {
   const { studioSlug } = await params;
@@ -73,7 +73,7 @@ export async function POST(request, { params }) {
   // Vérifier que la présence appartient bien à ce client dans ce studio
   const { data: presence } = await supabaseAdmin
     .from('presences')
-    .select('id, abonnement_id, cours:cours_id(id, date, heure, type_cours, est_annule)')
+    .select('id, abonnement_id, cours:cours_id(id, nom, date, heure, type_cours, est_annule)')
     .eq('id', presenceId)
     .eq('client_id', client.id)
     .eq('profile_id', profile.id)
@@ -96,6 +96,20 @@ export async function POST(request, { params }) {
     presence.cours?.heure,
     presence.cours?.type_cours
   );
+
+  // Push prof « annulation » (gaté sur sa pref ; no-op sans abonnement).
+  // Posé ici : quelle que soit la branche ci-dessous, l'élève annule bien.
+  {
+    const dStr = presence.cours?.date
+      ? new Date(presence.cours.date + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })
+      : '';
+    sendPushToUser(profile.id, {
+      title: evaluation.annulable ? 'Annulation' : 'Annulation tardive ⚠️',
+      body: `${client.prenom || client.email} — ${presence.cours?.nom || 'un cours'}${dStr ? ` (${dStr})` : ''}`,
+      url: '/agenda',
+      tag: `annul-${presenceId}`,
+    }, { type: 'annulation' }).catch(() => {});
+  }
 
   // ── Cas 1 : Annulation libre (dans les délais) → suppression de la presence
   if (evaluation.annulable) {

@@ -4,6 +4,7 @@ import { parseJsonBody, reservationSchema } from '@/lib/validation';
 import { checkAntiBot, ipFromRequest } from '@/lib/antibot';
 import { getRegle } from '@/lib/regles-metier';
 import { sendNotifElevePourRegle } from '@/lib/notif-eleve-regle';
+import { sendPushToUser } from '@/lib/push-server';
 import { getDelaiPourCours } from '@/lib/regles-annulation';
 import { infosPratiquesBlock } from '@/lib/email-helpers';
 import { sendEmail } from '@/lib/email';
@@ -372,6 +373,19 @@ export async function POST(request, { params }) {
     return Response.json({ error: 'Cours introuvable' }, { status: 404 });
   }
   const newPresence = { id: resa.presence_id };
+
+  // Push prof « nouvelle réservation » (gaté sur sa pref ; no-op sans abonnement)
+  {
+    const dStr = cours.date
+      ? new Date(cours.date + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })
+      : '';
+    sendPushToUser(profile.id, {
+      title: `Nouvelle réservation 🎉`,
+      body: `${prenom || email} — ${cours.nom || 'un cours'}${dStr ? ` (${dStr})` : ''}`,
+      url: '/agenda',
+      tag: `resa-${coursId}`,
+    }, { type: 'reservation' }).catch(() => {});
+  }
 
   // Nettoyer toute entrée liste_attente pour cet élève sur ce cours
   // (cas où l'élève était inscrit en LA puis trouve une place via résa directe)
