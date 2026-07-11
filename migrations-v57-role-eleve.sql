@@ -49,22 +49,35 @@ $$ language plpgsql security definer;
 --     metadata prenom (le signup prof passe toujours prenom)
 --   • est bien élève quelque part (email présent dans `clients`)
 --   • ne possède AUCUNE donnée de prof (clients/cours/offres)
---   • n'est pas membre d'équipe (team_members)
-create temp table _fantomes_eleves on commit drop as
-select p.id
-from public.profiles p
-join auth.users u on u.id = p.id
-where coalesce(p.studio_nom, '') in ('', 'Mon Studio')
-  and coalesce(p.metier, '') = ''
-  and coalesce(p.plan, 'solo') <> 'free'
-  and p.stripe_customer_id is null
-  and u.encrypted_password is null
-  and coalesce(u.raw_user_meta_data ->> 'prenom', '') = ''
-  and exists (select 1 from public.clients c  where lower(c.email) = lower(u.email))
-  and not exists (select 1 from public.clients      c2 where c2.profile_id = p.id)
-  and not exists (select 1 from public.cours        co where co.profile_id = p.id)
-  and not exists (select 1 from public.offres       o  where o.profile_id  = p.id)
-  and not exists (select 1 from public.team_members tm where tm.user_id    = p.id);
+--   • n'est pas membre d'équipe (team_members — clause appliquée
+--     seulement si la table existe : la migration v2 n'est pas posée
+--     sur toutes les bases, dont la prod)
+do $$
+declare
+  team_clause text := '';
+begin
+  if to_regclass('public.team_members') is not null then
+    team_clause := 'and not exists (select 1 from public.team_members tm where tm.user_id = p.id)';
+  end if;
+
+  execute format($sql$
+    create temp table _fantomes_eleves on commit drop as
+    select p.id
+    from public.profiles p
+    join auth.users u on u.id = p.id
+    where coalesce(p.studio_nom, '') in ('', 'Mon Studio')
+      and coalesce(p.metier, '') = ''
+      and coalesce(p.plan, 'solo') <> 'free'
+      and p.stripe_customer_id is null
+      and u.encrypted_password is null
+      and coalesce(u.raw_user_meta_data ->> 'prenom', '') = ''
+      and exists (select 1 from public.clients c  where lower(c.email) = lower(u.email))
+      and not exists (select 1 from public.clients c2 where c2.profile_id = p.id)
+      and not exists (select 1 from public.cours   co where co.profile_id = p.id)
+      and not exists (select 1 from public.offres  o  where o.profile_id  = p.id)
+      %s
+  $sql$, team_clause);
+end $$;
 
 -- ── 3. Tagger les auth.users correspondants role='eleve' ─────────
 update auth.users u
