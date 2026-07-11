@@ -197,6 +197,14 @@ export default function OnboardingPage() {
     setDevenirLoading(false);
   }
 
+  // Porte de sortie : un compte coincé sur l'onboarding (mauvais compte,
+  // envie de changer d'utilisateur) doit toujours pouvoir se déconnecter.
+  async function handleLogout() {
+    try { await supabase.auth.signOut(); } catch {}
+    router.push('/login');
+    router.refresh();
+  }
+
   return (
     <div className="onboarding-container">
       <div className="onboarding-card">
@@ -526,6 +534,17 @@ export default function OnboardingPage() {
           </div>
         )}
         </>)}
+
+        {/* Sortie de secours — visible sur TOUS les écrans de l'onboarding */}
+        <div style={{ textAlign: 'center', marginTop: 22, paddingTop: 16, borderTop: '1px solid var(--border)' }}>
+          <button
+            type="button"
+            onClick={handleLogout}
+            style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '0.8125rem', cursor: 'pointer', textDecoration: 'underline', padding: 6 }}
+          >
+            Ce n'est pas toi ? Se déconnecter
+          </button>
+        </div>
       </div>
 
       <style jsx global>{`
