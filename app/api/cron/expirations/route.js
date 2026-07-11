@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { requireCronAuth } from '@/lib/api-auth';
+import { getTrialStatus } from '@/lib/trial';
+import { sendEmail } from '@/lib/email';
 
 // Durée max explicite (fluid compute : 300 s = plafond Hobby)
 export const maxDuration = 300;
@@ -123,12 +125,77 @@ export async function GET(request) {
     }
   }
 
+  // ── Relance de fin d'essai SaaS (J-3 / J-1) ───────────────────────────────
+  // Email transactionnel au prof dont l'essai 14j se termine bientôt (conversion
+  // vers un plan payant). Flags trial_reminder_sent_j3/j1 (v33) = anti-doublon.
+  // Pas de push (cron à 3h ≈ 5h Paris) : le canal email + la bannière in-app
+  // suffisent. ⚠️ Sûr depuis v57 (plus d'élèves fantômes en faux trial).
+  let trialJ3 = 0, trialJ1 = 0;
+  try {
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.izisolo.fr';
+    const { data: trialProfiles } = await supabaseAdmin
+      .from('profiles')
+      .select('id, prenom, email_contact, plan, trial_started_at, stripe_subscription_status, trial_reminder_sent_j3, trial_reminder_sent_j1')
+      .not('trial_started_at', 'is', null)
+      .neq('plan', 'free');
+
+    for (const prof of (trialProfiles || [])) {
+      const st = getTrialStatus(prof);
+      if (!st.active) continue;
+      const to = prof.email_contact;
+      if (!to) continue;
+
+      const isJ1 = st.daysLeft <= 1 && !prof.trial_reminder_sent_j1;
+      const isJ3 = !isJ1 && st.daysLeft <= 3 && !prof.trial_reminder_sent_j3;
+      if (!isJ1 && !isJ3) continue;
+
+      const jours = st.daysLeft;
+      const sujet = jours <= 1 ? `Ton essai IziSolo se termine demain` : `Ton essai IziSolo se termine dans ${jours} jours`;
+      try {
+        await sendEmail({
+          categorie: 'transactionnel',
+          to,
+          subject: sujet,
+          html: `
+            <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:560px;margin:0 auto;padding:24px;">
+              <h2 style="color:#b87333;margin:0 0 6px;">Ton essai touche à sa fin</h2>
+              <p style="color:#555;margin:0 0 14px;">Bonjour ${prof.prenom || ''},</p>
+              <p style="color:#555;margin:0 0 14px;">
+                Ton essai gratuit de 14 jours se termine ${jours <= 1 ? 'demain' : `dans ${jours} jours`}.
+                Pour continuer à gérer ton studio sans interruption, choisis ton plan dès maintenant.
+              </p>
+              <div style="text-align:center;margin:24px 0;">
+                <a href="${appUrl}/parametres?tab=abonnement" style="display:inline-block;padding:14px 28px;background:#b87333;color:white;text-decoration:none;border-radius:99px;font-weight:700;">
+                  Choisir mon plan
+                </a>
+              </div>
+              <p style="color:#999;margin:16px 0 0;font-size:0.8125rem;">
+                Une question ? Réponds simplement à cet email.
+              </p>
+            </div>
+          `,
+        });
+        await supabaseAdmin
+          .from('profiles')
+          .update(isJ1 ? { trial_reminder_sent_j1: true } : { trial_reminder_sent_j3: true })
+          .eq('id', prof.id);
+        if (isJ1) trialJ1++; else trialJ3++;
+      } catch (e) {
+        console.error('[cron/expirations] trial reminder err', prof.id, e?.message);
+      }
+    }
+  } catch (e) {
+    console.error('[cron/expirations] trial reminders section:', e?.message);
+  }
+
   return NextResponse.json({
     expires: data?.length || 0,
     epuises: epuises?.length || 0,
     promoActif: promoCount,
     autoArchive: archiveCount,
     listeAttentePurgee,
+    trialJ3,
+    trialJ1,
     timestamp: new Date().toISOString(),
   });
 }
