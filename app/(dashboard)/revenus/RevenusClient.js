@@ -129,6 +129,16 @@ export default function RevenusClient({ paiements: initialPaiements }) {
     };
   }, [periodeFilt]);
 
+  // Total dû, TOUTES périodes confondues (l'argent qu'on te doit n'est pas
+  // mensuel) — alimente les tuiles d'en-tête « à encaisser » / « en retard ».
+  const outstanding = useMemo(() => {
+    const today = new Date().toISOString().split('T')[0];
+    const du = paiements.filter(p => p.statut === 'pending' || p.statut === 'overdue');
+    const enRetard = du.filter(p => p.statut === 'overdue' || (p.statut === 'pending' && p.date < today));
+    const sum = arr => arr.reduce((s, p) => s + parseFloat(p.montant || 0), 0);
+    return { aEncaisser: sum(du), retards: sum(enRetard), retardCount: enRetard.length };
+  }, [paiements]);
+
   // Variation vs période précédente (uniquement pour 'mois')
   const variation = useMemo(() => {
     if (periode !== 'mois') return null;
@@ -266,7 +276,8 @@ export default function RevenusClient({ paiements: initialPaiements }) {
         ))}
       </div>
 
-      {/* Stats principales */}
+      {/* Stats principales — répond en un coup d'œil : encaissé (période) /
+          à encaisser / en retard (total dû). Les 3 tuiles sont TOUJOURS là. */}
       <div className="stats-grid animate-slide-up">
         <div className="big-stat izi-card">
           <div className="big-stat-label">{periodeLabel} — encaissé</div>
@@ -278,24 +289,20 @@ export default function RevenusClient({ paiements: initialPaiements }) {
             </div>
           )}
         </div>
-        {stats.pending > 0 && (
-          <div className="small-stat izi-card">
-            <Clock size={18} style={{ color: 'var(--warning)' }} />
-            <div>
-              <div className="small-stat-value">{formatMontant(stats.pending)}</div>
-              <div className="small-stat-label">en attente</div>
-            </div>
+        <div className="small-stat izi-card">
+          <Clock size={18} style={{ color: 'var(--warning, #ca8a04)' }} />
+          <div>
+            <div className="small-stat-value">{formatMontant(outstanding.aEncaisser)}</div>
+            <div className="small-stat-label">à encaisser</div>
           </div>
-        )}
-        {stats.overdue > 0 && (
-          <div className="small-stat izi-card" style={{ borderColor: '#fca5a5' }}>
-            <Clock size={18} style={{ color: '#dc2626' }} />
-            <div>
-              <div className="small-stat-value" style={{ color: '#dc2626' }}>{formatMontant(stats.overdue)}</div>
-              <div className="small-stat-label">en retard</div>
-            </div>
+        </div>
+        <div className="small-stat izi-card" style={outstanding.retards > 0 ? { borderColor: '#fca5a5' } : undefined}>
+          <AlertTriangle size={18} style={{ color: outstanding.retards > 0 ? '#dc2626' : 'var(--text-muted, #999)' }} />
+          <div>
+            <div className="small-stat-value" style={outstanding.retards > 0 ? { color: '#dc2626' } : undefined}>{formatMontant(outstanding.retards)}</div>
+            <div className="small-stat-label">{outstanding.retards > 0 ? `en retard${outstanding.retardCount > 1 ? ` · ${outstanding.retardCount}` : ''}` : 'aucun retard ✓'}</div>
           </div>
-        )}
+        </div>
       </div>
 
       {/* Récap par mode */}
