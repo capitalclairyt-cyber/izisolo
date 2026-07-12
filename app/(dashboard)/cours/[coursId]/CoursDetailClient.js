@@ -341,9 +341,9 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
             <button
               className="edit-btn"
               onClick={() => router.push(`/cours/nouveau?from=${cours.id}`)}
-              title="Dupliquer ce cours"
+              title="Dupliquer cette séance"
               type="button"
-              aria-label="Dupliquer ce cours"
+              aria-label="Dupliquer cette séance"
             >
               <Copy size={18} />
             </button>
@@ -994,7 +994,7 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
         <div className="danger-zone">
           {!cours.est_annule && (
             <button className="izi-btn izi-btn-ghost danger-btn" onClick={handleCancel}>
-              <X size={16} /> Annuler ce cours
+              <X size={16} /> Annuler cette séance
             </button>
           )}
           <button className="izi-btn izi-btn-ghost danger-btn" onClick={() => setShowDeleteModal(true)}>
@@ -1010,11 +1010,11 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
       {showDeleteModal && (
         <div className="modal-overlay" onClick={() => setShowDeleteModal(false)}>
           <div className="modal" onClick={e => e.stopPropagation()} role="dialog" aria-modal="true">
-            <h3><AlertTriangle size={20} /> Supprimer ce cours</h3>
+            <h3><AlertTriangle size={20} /> Supprimer cette séance</h3>
 
             {isRecurrent ? (
               <div className="delete-options">
-                <p>Ce cours fait partie d'une série récurrente. Que souhaitez-vous supprimer ?</p>
+                <p>Cette séance fait partie d'une série récurrente. Que souhaitez-vous supprimer ?</p>
 
                 <label className="delete-option">
                   <input type="radio" name="scope" value="single" checked={deleteScope === 'single'} onChange={() => setDeleteScope('single')} />

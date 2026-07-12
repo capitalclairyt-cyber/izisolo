@@ -147,7 +147,7 @@ function PaymentModal({ presence, coursNom, coursDate, onClose, onSaved, onPayer
           <div className="pm-confirm-zone">
             <div className="pm-confirm-icon">⏰</div>
             <p className="pm-confirm-text">
-              Confirmer que <strong>{client.prenom} {client.nom}</strong> paiera ce cours ultérieurement ?
+              Confirmer que <strong>{client.prenom} {client.nom}</strong> paiera cette séance ultérieurement ?
             </p>
             <p className="pm-confirm-hint">
               Un rappel apparaîtra lors des prochains pointages.
@@ -235,7 +235,7 @@ function PresenceCard({ presence, onMarquer, onPayer, onTypePresence, loading, l
             )}
             {/* Alerte multi-dettes */}
             {nbDettes >= 2 && (
-              <span className="dette-alert" title={`${nbDettes} cours non réglés au total`}>⚠ {nbDettes}</span>
+              <span className="dette-alert" title={`${nbDettes} séances non réglées au total`}>⚠ {nbDettes}</span>
             )}
           </div>
 
@@ -389,7 +389,7 @@ export default function PointageClient({ cours, presences: initialPresences, tou
   }, [profile, cours]);
 
   const regleMessage = reglesAnnulation.message
-    || `Annulation acceptée jusqu'à ${reglesAnnulation.delai_heures}h avant le cours`;
+    || `Annulation acceptée jusqu'à ${reglesAnnulation.delai_heures}h avant la séance`;
 
   // ── Date lisible ──────────────────────────────────────
   const dateLisible = cours.date

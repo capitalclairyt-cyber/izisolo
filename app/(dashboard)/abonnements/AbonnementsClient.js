@@ -154,7 +154,7 @@ export default function AbonnementsClient({ abonnements: initAbo, paiementsParAb
       <div className="abo-page">
         <div className="abo-header animate-fade-in">
           <div>
-            <h1 className="abo-title">Abonnements</h1>
+            <h1 className="abo-title">Carnets & abos</h1>
             <p className="abo-subtitle">Chargement…</p>
           </div>
         </div>

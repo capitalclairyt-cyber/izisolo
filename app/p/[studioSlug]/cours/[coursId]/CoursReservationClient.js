@@ -87,7 +87,7 @@ function CompletAvecListeAttente({ cours, studioSlug, currentUser }) {
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '12px 14px', background: '#fffaf0', border: '1px solid #ffe0b2', borderRadius: 12, marginBottom: 16 }}>
         <AlertCircle size={18} style={{ color: '#d97706', flexShrink: 0, marginTop: 1 }} />
         <div style={{ fontSize: '0.875rem', color: '#7c4a03', lineHeight: 1.5 }}>
-          <strong>Ce cours est complet.</strong><br />
+          <strong>Cette séance est complète.</strong><br />
           Inscris-toi sur la liste d'attente — on te prévient en priorité si une place se libère.
         </div>
       </div>
@@ -294,7 +294,7 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
 
           <div style={{ background: '#fffaf0', border: '1px solid #ffe0b2', borderRadius: '10px', padding: '12px 16px', marginBottom: '20px', fontSize: '0.8125rem', color: '#7c4a03', display: 'flex', alignItems: 'flex-start', gap: '8px', textAlign: 'left' }}>
             <Shield size={15} style={{ flexShrink: 0, marginTop: 2 }} />
-            <span>Tu peux annuler depuis ton espace jusqu'à <strong>{getDelaiPourCours(profile, cours.type_cours)}h avant le cours</strong>.</span>
+            <span>Tu peux annuler depuis ton espace jusqu'à <strong>{getDelaiPourCours(profile, cours.type_cours)}h avant la séance</strong>.</span>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -384,8 +384,8 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
             <div>
               <strong style={{ display: 'block', marginBottom: 2 }}>Annulation flexible</strong>
               {limiteStr
-                ? <>Annulation libre jusqu'au <strong>{limiteStr}</strong> ({delai}h avant le cours). Après, la séance sera décomptée de ton crédit.</>
-                : <>Annulation libre jusqu'à <strong>{delai}h avant le cours</strong>. Après, la séance sera décomptée de ton crédit.</>
+                ? <>Annulation libre jusqu'au <strong>{limiteStr}</strong> ({delai}h avant la séance). Après, la séance sera décomptée de ton crédit.</>
+                : <>Annulation libre jusqu'à <strong>{delai}h avant la séance</strong>. Après, la séance sera décomptée de ton crédit.</>
               }
             </div>
           </div>
@@ -396,7 +396,7 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
       {annule ? (
         <div className="portail-card" style={{ textAlign: 'center', color: '#888' }}>
           <AlertCircle size={32} style={{ margin: '0 auto 8px', display: 'block', color: '#dc2626' }} />
-          <p style={{ margin: '0 0 12px', fontWeight: 600 }}>Ce cours a été annulé par le studio.</p>
+          <p style={{ margin: '0 0 12px', fontWeight: 600 }}>Cette séance a été annulée par le studio.</p>
           <Link href={`/p/${studioSlug}`} style={{ fontSize: '0.875rem', color: '#d4a0a0', fontWeight: 600, textDecoration: 'none' }}>
             Voir d'autres cours →
           </Link>
@@ -404,7 +404,7 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
       ) : passe ? (
         <div className="portail-card" style={{ textAlign: 'center', color: '#888' }}>
           <AlertCircle size={32} style={{ margin: '0 auto 8px', display: 'block', opacity: 0.5 }} />
-          <p style={{ margin: 0 }}>Ce cours est passé.</p>
+          <p style={{ margin: 0 }}>Cette séance est passée.</p>
         </div>
       ) : alreadyRegistered ? (
         <div className="portail-card" style={{ textAlign: 'center', padding: '32px 24px' }}>

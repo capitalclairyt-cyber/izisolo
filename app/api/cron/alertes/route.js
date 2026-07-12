@@ -101,7 +101,7 @@ export async function GET(request) {
               corps:
 `Bonjour {{prenom}},
 
-Petit rappel : tu es inscrit·e à ${cours.nom} demain ${dateStr}${heureStr ? ` à ${heureStr}` : ''}${lieuStr} chez ${profile.studio_nom}.
+Petit rappel : tu es inscrit·e à la séance ${cours.nom} demain ${dateStr}${heureStr ? ` à ${heureStr}` : ''}${lieuStr} chez ${profile.studio_nom}.
 
 À demain !`,
             },

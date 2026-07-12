@@ -28,7 +28,7 @@ const NAV_SECTIONS = [
     items: [
       { href: '/offres',         label: 'Offres',         icon: Package },
       { href: '/revenus',        label: 'Revenus',        icon: BarChart3 },
-      { href: '/abonnements',    label: 'Abonnements',    icon: BookOpen },
+      { href: '/abonnements',    label: 'Carnets & abos', icon: BookOpen },
     ],
   },
   {

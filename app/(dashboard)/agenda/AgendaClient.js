@@ -402,7 +402,7 @@ function VueJour({ dateRef, cours, todayStr, onCoursMaj, listeAttenteByCours = {
       <div className="jour-head">
         <span className="jour-date-long">{formatDateLong(dateRef)}</span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span className="jour-count">{coursDuJour.length} cours</span>
+          <span className="jour-count">{coursDuJour.length} séance{coursDuJour.length > 1 ? 's' : ''}</span>
           <Link
             href={`/cours/nouveau?date=${dateStr}`}
             className="jour-add-btn"
@@ -413,7 +413,7 @@ function VueJour({ dateRef, cours, todayStr, onCoursMaj, listeAttenteByCours = {
         </div>
       </div>
       {coursDuJour.length === 0 ? (
-        <EmptyState icon="📅" title="Aucun cours ce jour">
+        <EmptyState icon="📅" title="Aucune séance ce jour">
           <Link href={`/cours/nouveau?date=${dateStr}`} className="izi-btn izi-btn-secondary" style={{ marginTop: 8 }}>
             <Plus size={18} /> Créer un cours
           </Link>

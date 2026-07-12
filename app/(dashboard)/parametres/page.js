@@ -50,7 +50,7 @@ const TABS = [
   { id: 'portail',       label: 'Portail public',  icon: Eye },
   { id: 'notifications', label: 'Notifications',   icon: Bell },
   { id: 'regles',        label: 'Règles',          icon: Zap },
-  { id: 'abonnement',    label: 'Abonnement',      icon: Crown },
+  { id: 'abonnement',    label: 'Abonnement IziSolo', icon: Crown },
 ];
 
 const ANNIV_MODES = [
@@ -3006,7 +3006,7 @@ export default function Parametres() {
               <div className="section izi-card">
                 <div className="section-top">
                   <div className="section-icon abo-icon"><Crown size={20} /></div>
-                  <h2>Mon abonnement</h2>
+                  <h2>Mon abonnement IziSolo</h2>
                 </div>
 
                 <div className="abo-current">
