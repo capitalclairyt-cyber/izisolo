@@ -24,7 +24,7 @@ function illustrationParMetier(metier) {
   return ILLUSTRATIONS_PAR_METIER[metier] || 'lotus';
 }
 
-export default function DashboardLayoutClient({ children, profile, trial, nbCasATraiter = 0 }) {
+export default function DashboardLayoutClient({ children, profile, trial, nbCasATraiter = 0, nbEssais = 0 }) {
   const pathname = usePathname();
 
   const vocabulaire = getVocabulaire(
@@ -43,6 +43,7 @@ export default function DashboardLayoutClient({ children, profile, trial, nbCasA
         studioNom={profile?.studio_nom || 'Mon Studio'}
         vocabulaire={vocabulaire}
         nbCasATraiter={nbCasATraiter}
+        nbEssais={nbEssais}
         illustration={illustrationParMetier(profile?.metier)}
       />
 

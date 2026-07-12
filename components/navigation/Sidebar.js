@@ -42,7 +42,9 @@ const NAV_SECTIONS = [
   },
 ];
 
-export default function Sidebar({ studioNom = 'Mon Studio', vocabulaire = {}, illustration = 'lotus', nbCasATraiter = 0 }) {
+export default function Sidebar({ studioNom = 'Mon Studio', vocabulaire = {}, illustration = 'lotus', nbCasATraiter = 0, nbEssais = 0 }) {
+  // Compteurs affichés en pastille sur les entrées « à action » de la nav.
+  const navCounts = { '/cas-a-traiter': nbCasATraiter, '/essais': nbEssais };
   const pathname = usePathname();
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -120,8 +122,8 @@ export default function Sidebar({ studioNom = 'Mon Studio', vocabulaire = {}, il
             )}
             {section.items.map(({ href, label, icon: Icon, badge }) => {
               const isActive = pathname === href || pathname.startsWith(href + '/');
-              // Badge compteur "À traiter"
-              const showCasBadge = href === '/cas-a-traiter' && nbCasATraiter > 0;
+              // Badge compteur générique (à traiter, demandes d'essai…)
+              const count = navCounts[href] || 0;
               return (
                 <Link
                   key={href}
@@ -132,9 +134,9 @@ export default function Sidebar({ studioNom = 'Mon Studio', vocabulaire = {}, il
                   <span className="sidebar-icon-wrap" style={{ position: 'relative' }}>
                     <Icon size={20} strokeWidth={isActive ? 2.2 : 1.8} />
                     {badge && <MessagesBadge />}
-                    {showCasBadge && (
-                      <span className="sidebar-count-badge" aria-label={`${nbCasATraiter} cas à traiter`}>
-                        {nbCasATraiter > 9 ? '9+' : nbCasATraiter}
+                    {count > 0 && (
+                      <span className="sidebar-count-badge" aria-label={`${count} à traiter`}>
+                        {count > 9 ? '9+' : count}
                       </span>
                     )}
                   </span>

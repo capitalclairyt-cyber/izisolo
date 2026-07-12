@@ -66,8 +66,19 @@ export default async function DashboardLayout({ children }) {
     nbCasATraiter = count || 0;
   } catch {}
 
+  // Demandes d'essai EN ATTENTE (mode manuel) = actions à trancher → badge nav.
+  let nbEssais = 0;
+  try {
+    const { count } = await supabase
+      .from('cours_essai_demandes')
+      .select('id', { count: 'exact', head: true })
+      .eq('profile_id', user.id)
+      .eq('statut', 'en_attente');
+    nbEssais = count || 0;
+  } catch {}
+
   return (
-    <DashboardLayoutClient profile={profile} trial={trial} nbCasATraiter={nbCasATraiter}>
+    <DashboardLayoutClient profile={profile} trial={trial} nbCasATraiter={nbCasATraiter} nbEssais={nbEssais}>
       {children}
     </DashboardLayoutClient>
   );

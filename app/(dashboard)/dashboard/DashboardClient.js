@@ -93,6 +93,14 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
     weekday: 'long', day: 'numeric', month: 'long'
   });
 
+  // ── Bloc "Aujourd'hui" : répond à « que dois-je faire maintenant ? ».
+  // Prochain cours = 1er cours du jour dont l'heure n'est pas passée.
+  const nowHM = today.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', hour12: false });
+  const coursJour = (coursDuJour || []).filter(c => !c.est_annule);
+  const coursJourTries = [...coursJour].sort((a, b) => (a.heure || '').localeCompare(b.heure || ''));
+  const prochainCours = coursJourTries.find(c => (c.heure || '').slice(0, 5) >= nowHM) || null;
+  const elevesAttendus = coursJour.reduce((s, c) => s + (c.presences?.[0]?.count || 0), 0);
+
   return (
     <div className="dashboard">
       <PushPrompt audience="prof" />
@@ -109,6 +117,38 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
         </div>
         <div style={{ marginTop: 12 }}>
           <PushToggle />
+        </div>
+      </div>
+
+      {/* Bloc "Aujourd'hui" — la question du jour + l'action principale */}
+      <div className="dash-today animate-fade-in">
+        <div className="dash-today-info">
+          <span className="dash-today-eyebrow">Aujourd'hui</span>
+          {coursJourTries.length > 0 ? (
+            <div className="dash-today-summary">
+              <strong>{coursJourTries.length}</strong> cours · <strong>{elevesAttendus}</strong> élève{elevesAttendus > 1 ? 's' : ''} attendu{elevesAttendus > 1 ? 's' : ''}
+              {nbCasATraiter > 0 && <> · <Link href="/cas-a-traiter" className="dash-today-cas">{nbCasATraiter} à traiter</Link></>}
+            </div>
+          ) : (
+            <div className="dash-today-summary dash-today-empty">Pas de cours prévu aujourd'hui</div>
+          )}
+        </div>
+        <div className="dash-today-action">
+          {prochainCours ? (
+            <>
+              <span className="dash-today-next">Prochain : <strong>{prochainCours.nom}</strong>{prochainCours.heure && <> à {formatHeure(prochainCours.heure)}</>}</span>
+              <Link href={`/pointage/${prochainCours.id}`} className="izi-btn izi-btn-primary dash-today-cta">
+                <ClipboardList size={16} /> Ouvrir le prochain cours
+              </Link>
+            </>
+          ) : coursJourTries.length > 0 ? (
+            <>
+              <span className="dash-today-next">Tous tes cours du jour sont passés</span>
+              <Link href="/agenda?vue=jour" className="izi-btn izi-btn-secondary dash-today-cta">Voir la journée</Link>
+            </>
+          ) : (
+            <Link href="/cours/nouveau" className="izi-btn izi-btn-secondary dash-today-cta"><Plus size={16} /> Créer un cours</Link>
+          )}
         </div>
       </div>
 
@@ -403,6 +443,34 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
       {/* FAB retiré — le widget feedback occupe désormais cette position */}
 
       <style jsx global>{`
+        /* Bloc "Aujourd'hui" */
+        .dash-today {
+          display: flex; align-items: center; justify-content: space-between;
+          gap: 16px; flex-wrap: wrap;
+          background: linear-gradient(135deg, var(--brand, #B87333), var(--brand-dark, #8c5826));
+          color: #fff; border-radius: var(--radius-lg, 16px);
+          padding: 18px 20px; margin-bottom: 18px;
+        }
+        .dash-today-eyebrow {
+          font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+          letter-spacing: 0.08em; opacity: 0.85;
+        }
+        .dash-today-summary { font-size: 1.05rem; font-weight: 600; margin-top: 3px; line-height: 1.4; }
+        .dash-today-summary strong { font-weight: 800; }
+        .dash-today-empty { opacity: 0.9; font-weight: 500; }
+        .dash-today-cas { color: #fff; text-decoration: underline; text-underline-offset: 2px; }
+        .dash-today-action { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+        .dash-today-next { font-size: 0.8125rem; opacity: 0.92; text-align: right; }
+        .dash-today-next strong { font-weight: 700; }
+        .dash-today-cta {
+          background: #fff !important; color: var(--brand-dark, #8c5826) !important;
+          border: none !important; font-weight: 700; white-space: nowrap;
+        }
+        @media (max-width: 560px) {
+          .dash-today-action { align-items: stretch; width: 100%; }
+          .dash-today-next { text-align: left; }
+          .dash-today-cta { width: 100%; justify-content: center; }
+        }
         .dashboard {
           display: flex;
           flex-direction: column;
