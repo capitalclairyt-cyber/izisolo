@@ -30,13 +30,18 @@ const VUES = [
 // ============================================
 export default function AgendaClient({ cours: initialCours, profile, initialDate, listeAttenteByCours = {} }) {
   const searchParams = useSearchParams();
-  // Permet aux liens externes (ex: dashboard "Séances aujourd'hui") de
-  // forcer la vue jour via /agenda?vue=jour. Default = semaine.
-  const initialVue = (searchParams.get('vue') === 'jour' || searchParams.get('vue') === 'mois')
-    ? searchParams.get('vue')
-    : 'semaine';
+  // Liens externes : ?date=YYYY-MM-DD positionne l'agenda sur cette date
+  // (ex: retour depuis une fiche cours), ?vue=jour|mois force la vue.
+  // Sans ?date, on ouvre sur aujourd'hui. Un ?date implique la vue jour par
+  // défaut (on veut voir CE jour précis), sauf si ?vue est explicitement donné.
+  const dateParam = searchParams.get('date');
+  const validDate = dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam) ? dateParam : null;
+  const vueParam = searchParams.get('vue');
+  const initialVue = (vueParam === 'jour' || vueParam === 'mois' || vueParam === 'semaine')
+    ? vueParam
+    : (validDate ? 'jour' : 'semaine');
   const [vue, setVue]               = useState(initialVue);
-  const [dateRef, setDateRef]       = useState(() => parseDate(initialDate));
+  const [dateRef, setDateRef]       = useState(() => parseDate(validDate || initialDate));
   const [cours, setCours]           = useState(initialCours);
   const [loading, setLoading]       = useState(false);
   const [filtre, setFiltre]         = useState(null);

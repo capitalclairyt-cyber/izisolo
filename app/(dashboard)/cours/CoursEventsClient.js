@@ -581,8 +581,12 @@ function CategoryManager({ categories, saving, profileId, todayStr, onAddCategor
 // Carte série récurrente
 // ═══════════════════════════════════════════════════
 function SerieCard({ serie, stats, lieuxMap }) {
-  const href     = stats.nextCoursId ? `/cours/${stats.nextCoursId}` : `/agenda`;
-  const editHref = stats.nextCoursId ? `/cours/${stats.nextCoursId}?edit=1` : `/cours/nouveau`;
+  // Fallback quand la série n'a pas d'occurrence à venir matérialisée : on
+  // renvoie vers le calendrier des récurrences (gestion de la série), JAMAIS
+  // vers `/agenda` nu qui s'ouvrait sur aujourd'hui et paraissait vide
+  // (bug « mon cours a disparu » — cf. audit 2026-07-12).
+  const href     = stats.nextCoursId ? `/cours/${stats.nextCoursId}` : `/cours/recurrences`;
+  const editHref = stats.nextCoursId ? `/cours/${stats.nextCoursId}?edit=1` : `/cours/recurrences`;
 
   const joursLabel = useMemo(() => {
     if (!serie.jours_semaine?.length) return null;

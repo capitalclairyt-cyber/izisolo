@@ -181,7 +181,7 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
           .eq('id', cours.recurrence_parent_id);
       }
 
-      router.push('/agenda');
+      router.push(cours.date ? `/agenda?date=${cours.date}` : '/agenda');
       router.refresh();
     } catch (err) {
       toast.error('Erreur : ' + err.message);
@@ -327,7 +327,7 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
     <div className="cours-detail">
       {/* Header */}
       <div className="page-header">
-        <Link href="/agenda" className="back-btn"><ArrowLeft size={20} /></Link>
+        <Link href={cours.date ? `/agenda?date=${cours.date}` : '/agenda'} className="back-btn"><ArrowLeft size={20} /></Link>
         <div className="page-header-info">
           <h1>{cours.nom}</h1>
           {isRecurrent && (

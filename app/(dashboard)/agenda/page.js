@@ -1,7 +1,7 @@
 import { createServerClient } from '@/lib/supabase-server';
 import AgendaClient from './AgendaClient';
 
-export default async function AgendaPage() {
+export default async function AgendaPage({ searchParams }) {
   const supabase = await createServerClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -11,8 +11,12 @@ export default async function AgendaPage() {
     .eq('id', user.id)
     .single();
 
-  // Charger les cours du mois en cours (± 1 semaine pour la grille mois)
-  const now = new Date();
+  // Fenêtre de chargement centrée sur ?date= si fourni (ex: retour depuis une
+  // fiche cours lointaine), sinon sur aujourd'hui — pour ne jamais tomber sur
+  // un agenda vide de la date visée (cf. audit 2026-07-12).
+  const sp = (await searchParams) || {};
+  const dateParam = typeof sp.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(sp.date) ? sp.date : null;
+  const now = dateParam ? new Date(dateParam + 'T12:00:00') : new Date();
   const y = now.getFullYear();
   const m = now.getMonth();
   const debut = new Date(y, m - 1, 1); // mois précédent
