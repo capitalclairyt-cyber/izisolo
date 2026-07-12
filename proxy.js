@@ -16,6 +16,7 @@ const PUBLIC_ROUTES = [
   '/login', '/register', '/onboarding', '/offline',
   '/mot-de-passe-oublie', '/nouveau-mot-de-passe',
   '/auth/',                 // /auth/callback Supabase
+  '/demo/',                 // ⚠️ TEMPORAIRE — accès démo privé (token secret dans le path)
   '/p/',                    // portails publics studio (sondages, cours, espace, etc.)
   '/legal/',                // CGU/CGV/Mentions/RGPD
   '/profs-de-yoga', '/profs-de-pilates', '/profs-de-meditation', '/profs-de-danse',
