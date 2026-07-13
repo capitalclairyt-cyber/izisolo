@@ -483,12 +483,17 @@ export default function PointageClient({ cours, presences: initialPresences, tou
     // incrémenté EN SQL (seances_utilisees = seances_utilisees + delta) :
     // plus de lost update multi-device / multi-onglets.
     const supabase = createClient();
+    // On passe TOUJOURS le vrai delta (plus « 0 si non lié »). Le RPC v64 résout
+    // dynamiquement le carnet applicable au pointage quand la présence n'est pas
+    // encore liée (agnostique à l'ordre : « attribuer puis pointer » comme
+    // « pointer puis attribuer » décomptent correctement). Il ne résout jamais
+    // pour un crédit (delta < 0).
     const { data: result, error } = await supabase.rpc('pointer_presence', {
       p_presence_id: presence.id,
       p_statut: newStatut,
       p_pointee: isPresent,
       p_heure: isPresent ? nowIso : null,
-      p_delta: presence.abonnement_id ? delta : 0,
+      p_delta: delta,
     });
 
     if (error || !result?.ok) {
@@ -508,11 +513,18 @@ export default function PointageClient({ cours, presences: initialPresences, tou
     }
 
     // ── 3. Resynchronise le compteur sur la valeur DB (autoritative) ──
-    if (result.abonnement_id && typeof result.seances_utilisees === 'number') {
+    // Le RPC peut avoir RÉSOLU + lié un carnet (présence non liée auparavant) :
+    // on enregistre alors le lien renvoyé. Si les détails du carnet n'étaient pas
+    // chargés côté client (cas non lié), ils s'afficheront au prochain reload
+    // (le décompte, lui, est déjà correct en base). Lot 2b chargera ces détails.
+    if (result.abonnement_id) {
       setPresences(prev => prev.map(p =>
-        p.id !== presence.id || !p.abonnements ? p : {
+        p.id !== presence.id ? p : {
           ...p,
-          abonnements: { ...p.abonnements, seances_utilisees: result.seances_utilisees },
+          abonnement_id: result.abonnement_id,
+          abonnements: p.abonnements && typeof result.seances_utilisees === 'number'
+            ? { ...p.abonnements, seances_utilisees: result.seances_utilisees }
+            : p.abonnements,
         }
       ));
     }
