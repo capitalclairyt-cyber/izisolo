@@ -358,22 +358,33 @@ export default function Sidebar({ studioNom = 'Mon Studio', vocabulaire = {}, il
           opacity: 0.4;
           flex-shrink: 0;
         }
-        /* Badge compteur "À traiter" — pastille persimmon en haut à droite de l'icône */
+        /* Badge compteur "À traiter" / "Demandes d'essai" — pastille persimmon
+           en haut à droite de l'icône. Anneau couleur-fond + pulse doux pour
+           qu'elle accroche vraiment l'œil (avant : trop discrète). */
         .sidebar-count-badge {
           position: absolute;
-          top: -4px;
-          right: -8px;
-          min-width: 16px;
-          height: 16px;
-          padding: 0 4px;
+          top: -5px;
+          right: -9px;
+          min-width: 18px;
+          height: 18px;
+          padding: 0 5px;
           background: var(--hot, #E8722A);
           color: white;
           border-radius: 99px;
-          font-size: 0.625rem;
-          font-weight: 700;
-          line-height: 16px;
+          font-size: 0.6875rem;
+          font-weight: 800;
+          line-height: 18px;
           text-align: center;
-          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+          border: 2px solid #faf6f0; /* anneau = fond sidebar → détache la pastille */
+          box-shadow: 0 1px 3px rgba(232, 114, 42, 0.5);
+          animation: sidebarCountPulse 2.4s ease-in-out infinite;
+        }
+        @keyframes sidebarCountPulse {
+          0%, 100% { transform: scale(1); box-shadow: 0 1px 3px rgba(232, 114, 42, 0.5); }
+          50%      { transform: scale(1.14); box-shadow: 0 0 0 5px rgba(232, 114, 42, 0.18); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .sidebar-count-badge { animation: none; }
         }
 
         /* === ILLUSTRATION === */
