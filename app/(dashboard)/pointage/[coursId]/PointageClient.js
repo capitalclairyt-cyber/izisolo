@@ -474,20 +474,29 @@ export default function PointageClient({ cours, presences: initialPresences, tou
 
     const nowIso = new Date().toISOString();
 
-    // ── 1. Optimiste : flip immédiat de la ligne ──
+    // Carnet qui sera impacté (mêmes règles que le RPC v64) : lié en priorité,
+    // sinon résolu — UNIQUEMENT pour une consommation (delta>0), jamais pour un
+    // crédit. Sert à décompter en DIRECT dans l'UI même quand la présence n'est
+    // pas encore liée (le détail du carnet vit alors dans client_abos).
+    const aboImpacteId = presence.abonnement_id
+      || (delta > 0
+          ? resoudreCarnetApplicable(presence.client_abos, { type_cours: cours.type_cours, date: cours.date })?.id
+          : null);
+    const bumpAbos = (abos, id, d) => (abos || []).map(a =>
+      a.id === id ? { ...a, seances_utilisees: Math.max(0, (a.seances_utilisees || 0) + d) } : a);
+
+    // ── 1. Optimiste : flip immédiat de la ligne + décompte visible ──
     setActionLoading(presence.id);
-    setPresences(prev => prev.map(p =>
-      p.id !== presence.id ? p : {
-        ...p,
-        statut_pointage: newStatut,
-        pointee: isPresent,
-        heure_pointage: isPresent ? nowIso : null,
-        abonnements: p.abonnements ? {
-          ...p.abonnements,
-          seances_utilisees: Math.max(0, (p.abonnements.seances_utilisees || 0) + delta),
-        } : null,
+    setPresences(prev => prev.map(p => {
+      if (p.id !== presence.id) return p;
+      const next = { ...p, statut_pointage: newStatut, pointee: isPresent, heure_pointage: isPresent ? nowIso : null };
+      if (p.abonnements) {
+        next.abonnements = { ...p.abonnements, seances_utilisees: Math.max(0, (p.abonnements.seances_utilisees || 0) + delta) };
+      } else if (aboImpacteId) {
+        next.client_abos = bumpAbos(p.client_abos, aboImpacteId, delta);
       }
-    ));
+      return next;
+    }));
 
     // ── 2. Persistance ATOMIQUE : présence + compteur carnet en UN appel ──
     // RPC v53 pointer_presence (SECURITY INVOKER → RLS). Le compteur est
@@ -516,6 +525,7 @@ export default function PointageClient({ cours, presences: initialPresences, tou
           pointee: presence.pointee,
           heure_pointage: presence.heure_pointage ?? null,
           abonnements: presence.abonnements ? { ...presence.abonnements } : (p.abonnements ?? null),
+          client_abos: presence.client_abos ?? p.client_abos, // restaure le décompte optimiste
         }
       ));
       setActionLoading(null);
@@ -525,19 +535,23 @@ export default function PointageClient({ cours, presences: initialPresences, tou
 
     // ── 3. Resynchronise le compteur sur la valeur DB (autoritative) ──
     // Le RPC peut avoir RÉSOLU + lié un carnet (présence non liée auparavant) :
-    // on enregistre alors le lien renvoyé. Si les détails du carnet n'étaient pas
-    // chargés côté client (cas non lié), ils s'afficheront au prochain reload
-    // (le décompte, lui, est déjà correct en base). Lot 2b chargera ces détails.
+    // on enregistre le lien renvoyé et on cale le compteur autoritatif — que le
+    // détail vive dans `abonnements` (présence liée) ou dans `client_abos`
+    // (présence résolue au pointage).
     if (result.abonnement_id) {
-      setPresences(prev => prev.map(p =>
-        p.id !== presence.id ? p : {
-          ...p,
-          abonnement_id: result.abonnement_id,
-          abonnements: p.abonnements && typeof result.seances_utilisees === 'number'
-            ? { ...p.abonnements, seances_utilisees: result.seances_utilisees }
-            : p.abonnements,
+      setPresences(prev => prev.map(p => {
+        if (p.id !== presence.id) return p;
+        const next = { ...p, abonnement_id: result.abonnement_id };
+        if (typeof result.seances_utilisees === 'number') {
+          if (p.abonnements) {
+            next.abonnements = { ...p.abonnements, seances_utilisees: result.seances_utilisees };
+          } else {
+            next.client_abos = (p.client_abos || []).map(a =>
+              a.id === result.abonnement_id ? { ...a, seances_utilisees: result.seances_utilisees } : a);
+          }
         }
-      ));
+        return next;
+      }));
     }
 
     // ── Cas no_show : dédoublonné + nettoyé ──────────────────────────────

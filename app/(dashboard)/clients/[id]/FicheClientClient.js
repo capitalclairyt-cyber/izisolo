@@ -261,9 +261,9 @@ function AssignerOffreModal({ client, onClose, onSuccess }) {
                 >
                   <div className="offre-choice-icon"><Package size={20} /></div>
                   <div className="offre-choice-info">
-                    <span className="offre-choice-nom">Autre prestation</span>
+                    <span className="offre-choice-nom">Encaisser une séance / autre</span>
                     <span className="offre-choice-detail">
-                      Saisie libre (intitulé + montant) — pas de carnet créé
+                      Séance à l'unité, frais ponctuel… — montant libre, sans créer de carnet
                     </span>
                   </div>
                   <ChevronRight size={16} style={{ color: 'var(--text-muted)' }} />

@@ -644,8 +644,8 @@ export default function NouvelleOffre() {
         {(type === 'carnet' || type === 'abonnement') && typesCoursDisponibles.length > 0 && (
           <div className="no-field">
             <label className="no-label">
-              Types de cours autorisés
-              <span className="no-label-hint"> — vide = tous les types</span>
+              Vaut pour quels cours ?
+              <span className="no-label-hint"> — décide quand ce {type === 'carnet' ? 'carnet' : 'abonnement'} se décompte</span>
             </label>
             <div className="no-presets">
               {typesCoursDisponibles.map(t => {
@@ -666,10 +666,15 @@ export default function NouvelleOffre() {
                 );
               })}
             </div>
-            {typesCoursAutorises.length > 0 && (
+            {typesCoursAutorises.length === 0 ? (
               <span className="form-hint">
-                Cette offre ne permettra de réserver que les cours de type :
-                <strong> {typesCoursAutorises.join(', ')}</strong>.
+                ✓ <strong>Tous tes cours</strong> — utilisable sur n'importe quel type.
+                Sélectionne un ou plusieurs types ci-dessus seulement si tu veux le restreindre.
+              </span>
+            ) : (
+              <span className="form-hint">
+                Restreint aux cours de type <strong>{typesCoursAutorises.join(', ')}</strong> —
+                sur un autre type de cours, l'élève paiera à la séance.
               </span>
             )}
           </div>
