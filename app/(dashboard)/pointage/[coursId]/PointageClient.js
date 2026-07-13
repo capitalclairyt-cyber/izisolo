@@ -14,6 +14,7 @@ import { createClient } from '@/lib/supabase';
 import { evaluerRegles } from '@/lib/regles';
 import { getRegle } from '@/lib/regles-metier';
 import { seanceDelta } from '@/lib/pointage-delta';
+import { resoudreCarnetApplicable } from '@/lib/carnet-resolution';
 import { useToast } from '@/components/ui/ToastProvider';
 
 
@@ -39,11 +40,11 @@ function isPtard(presence, paidIds) {
 // ─────────────────────────────────────────────────────────
 //  Modal paiement rapide
 // ─────────────────────────────────────────────────────────
-function PaymentModal({ presence, coursNom, coursDate, onClose, onSaved, onPayerPlusTard, ptardAuto = false, ptardAutoNom = '' }) {
+function PaymentModal({ presence, coursNom, coursDate, montantDefaut = '', onClose, onSaved, onPayerPlusTard, ptardAuto = false, ptardAutoNom = '' }) {
   const client  = presence.clients || {};
   const abo     = presence.abonnements;
   const { toast } = useToast();
-  const [montant, setMontant]   = useState('');
+  const [montant, setMontant]   = useState(montantDefaut ? String(montantDefaut) : '');
   const [mode, setMode]         = useState('CB');
   const [saving, setSaving]     = useState(false);
   const [confirming, setConfirming] = useState(false); // étape confirmation "payer plus tard"
@@ -63,14 +64,15 @@ function PaymentModal({ presence, coursNom, coursDate, onClose, onSaved, onPayer
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       await supabase.from('paiements').insert({
-        profile_id: user.id,
-        client_id:  presence.client_id,
-        intitule:   `${coursNom} — ${coursDate}`,
-        montant:    val,
-        statut:     'paid',
+        profile_id:  user.id,
+        client_id:   presence.client_id,
+        presence_id: presence.id, // paiement à la séance (v65)
+        intitule:    `${coursNom} — ${coursDate}`,
+        montant:     val,
+        statut:      'paid',
         mode,
-        date:       new Date().toISOString().split('T')[0],
-        notes:      'Encaissement rapide depuis le pointage',
+        date:        new Date().toISOString().split('T')[0],
+        notes:       'Encaissement rapide depuis le pointage',
       });
       onSaved(presence.id);
       onClose();
@@ -171,7 +173,7 @@ function PaymentModal({ presence, coursNom, coursDate, onClose, onSaved, onPayer
 // ─────────────────────────────────────────────────────────
 //  Carte de présence (split cell)
 // ─────────────────────────────────────────────────────────
-function PresenceCard({ presence, onMarquer, onPayer, onTypePresence, loading, locked, impaye, ptard, nbDettes, essaisRestants }) {
+function PresenceCard({ presence, resolvedCarnet, estPayAsYouGo, paye, onMarquer, onPayer, onTypePresence, loading, locked, impaye, ptard, nbDettes, essaisRestants }) {
   const [showTypeMenu, setShowTypeMenu] = useState(false);
 
   // Fermer le menu au premier clic en dehors
@@ -183,7 +185,8 @@ function PresenceCard({ presence, onMarquer, onPayer, onTypePresence, loading, l
   }, [showTypeMenu]);
 
   const client   = presence.clients || {};
-  const abo      = presence.abonnements;
+  // Carnet applicable à ce cours (lié ou résolu) — null = paiement à la séance.
+  const abo      = resolvedCarnet;
   const statut   = presence.statut_pointage || (presence.pointee ? 'present' : 'inscrit');
   const typeP    = presence.type_presence || 'normal';
   const initials = ((client.prenom?.[0] || '') + (client.nom?.[0] || '')).toUpperCase() || '?';
@@ -199,7 +202,9 @@ function PresenceCard({ presence, onMarquer, onPayer, onTypePresence, loading, l
     if (locked) return;
     const newStatut = statut === 'present' ? 'inscrit' : 'present';
     onMarquer(presence, newStatut);
-    if (newStatut === 'present' && impaye) onPayer(presence);
+    // Présent + pas de carnet applicable (pay-as-you-go) OU carnet épuisé →
+    // on propose le règlement de la séance tout de suite (fermable = à régler).
+    if (newStatut === 'present' && (impaye || (estPayAsYouGo && !paye))) onPayer(presence);
   };
 
   return (
@@ -225,9 +230,9 @@ function PresenceCard({ presence, onMarquer, onPayer, onTypePresence, loading, l
         <div className="pres-body">
           <div className="pres-name-row">
             <span className="pres-name">{client.prenom} {client.nom}</span>
-            {/* Badge impayé */}
-            {impaye && !locked && (
-              <button className="impaye-btn" onClick={e => { e.stopPropagation(); onPayer(presence); }} title="Impayé — encaisser" aria-label="Encaisser">€</button>
+            {/* Badge à régler (carnet épuisé OU séance à l'unité non payée) */}
+            {(impaye || (estPayAsYouGo && !paye && !ptard)) && !locked && (
+              <button className="impaye-btn" onClick={e => { e.stopPropagation(); onPayer(presence); }} title="À régler — encaisser" aria-label="Encaisser">€</button>
             )}
             {/* Badge payer plus tard */}
             {ptard && !locked && (
@@ -249,6 +254,12 @@ function PresenceCard({ presence, onMarquer, onPayer, onTypePresence, loading, l
                   </span>
                 )}
               </span>
+            )}
+            {/* Séance à l'unité (aucun carnet applicable) : payé ou à régler */}
+            {estPayAsYouGo && !ptard && (
+              paye
+                ? <span className="pres-paye">✓ Payé</span>
+                : <span className="pres-aregler">À régler</span>
             )}
             {typeP !== 'normal' && (
               <span className={`pres-type-badge tp-badge-${typeP}`}>
@@ -329,7 +340,7 @@ function PresenceCard({ presence, onMarquer, onPayer, onTypePresence, loading, l
 // ─────────────────────────────────────────────────────────
 //  Composant principal
 // ─────────────────────────────────────────────────────────
-export default function PointageClient({ cours, presences: initialPresences, tousClients, profile, dettesParClient = {}, regles = [] }) {
+export default function PointageClient({ cours, presences: initialPresences, tousClients, profile, dettesParClient = {}, regles = [], initialPaidPresenceIds = [] }) {
   const vocab = getVocabulaire(profile?.metier || 'yoga', profile?.vocabulaire);
   const { toast } = useToast();
 
@@ -338,7 +349,7 @@ export default function PointageClient({ cours, presences: initialPresences, tou
   const [searchAdd, setSearchAdd]         = useState('');
   const [actionLoading, setActionLoading] = useState(null);
   const [paymentTarget, setPaymentTarget] = useState(null);
-  const [paidIds, setPaidIds]             = useState(new Set());
+  const [paidIds, setPaidIds]             = useState(() => new Set(initialPaidPresenceIds));
   const [now, setNow]                     = useState(() => new Date());
 
   // ── Ajout modal : mode search / new ──────────────────
@@ -843,21 +854,33 @@ export default function PointageClient({ cours, presences: initialPresences, tou
         </div>
       ) : (
         <div className="presences-list animate-slide-up">
-          {sortedPresences.map(p => (
-            <PresenceCard
-              key={p.id}
-              presence={p}
-              onMarquer={handleMarquer}
-              onPayer={setPaymentTarget}
-              onTypePresence={handleTypePresence}
-              loading={actionLoading === p.id}
-              locked={locked}
-              impaye={isImpaye(p, paidIds)}
-              ptard={isPtard(p, paidIds)}
-              nbDettes={dettesParClient[p.client_id] || 0}
-              essaisRestants={essaisRestants}
-            />
-          ))}
+          {sortedPresences.map(p => {
+            // Carnet applicable à CE cours : lié en priorité, sinon résolu
+            // dynamiquement (mêmes règles que le RPC v64). null = pay-as-you-go.
+            const resolvedCarnet = p.abonnements
+              || resoudreCarnetApplicable(p.client_abos, { type_cours: cours.type_cours, date: cours.date });
+            const typeP = p.type_presence || 'normal';
+            const paye = paidIds.has(p.id);
+            const estPayAsYouGo = !resolvedCarnet && typeP === 'normal';
+            return (
+              <PresenceCard
+                key={p.id}
+                presence={p}
+                resolvedCarnet={resolvedCarnet}
+                estPayAsYouGo={estPayAsYouGo}
+                paye={paye}
+                onMarquer={handleMarquer}
+                onPayer={setPaymentTarget}
+                onTypePresence={handleTypePresence}
+                loading={actionLoading === p.id}
+                locked={locked}
+                impaye={isImpaye(p, paidIds)}
+                ptard={isPtard(p, paidIds)}
+                nbDettes={dettesParClient[p.client_id] || 0}
+                essaisRestants={essaisRestants}
+              />
+            );
+          })}
         </div>
       )}
 
@@ -1032,6 +1055,7 @@ export default function PointageClient({ cours, presences: initialPresences, tou
             presence={paymentTarget}
             coursNom={cours.nom}
             coursDate={dateLisible}
+            montantDefaut={cours.tarif_unitaire || ''}
             onClose={() => setPaymentTarget(null)}
             onSaved={id => setPaidIds(prev => new Set([...prev, id]))}
             onPayerPlusTard={handlePayerPlusTard}
@@ -1357,6 +1381,11 @@ export default function PointageClient({ cours, presences: initialPresences, tou
         .pres-abo  { font-size: 0.7rem; color: var(--text-muted); }
         .pres-abo-warn { color: #ef4444; font-weight: 600; }
         .pres-heure    { font-size: 0.7rem; color: #15803d; font-weight: 600; }
+        /* Séance à l'unité (pay-as-you-go) : payé = vert calme, à régler = ambre doux */
+        .pres-paye    { font-size: 0.7rem; color: #15803d; font-weight: 600; }
+        .pres-aregler { font-size: 0.7rem; color: #b45309; font-weight: 600;
+                        background: #fff7ed; border: 1px solid #fed7aa;
+                        border-radius: 6px; padding: 0 6px; }
 
         /* Chips excuse — ligne dédiée sous le nom (dans .pres-body), ne
            rogne plus la largeur du nom ; cible de tap confortable. */
