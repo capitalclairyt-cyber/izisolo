@@ -200,10 +200,11 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
       {alertes.length > 0 && (
         <div className="dash-alertes animate-slide-up">
           {alertes.slice(0, 3).map((a, i) => {
+            const AlerteIcon = a.type === 'renew' ? Sparkles : AlertTriangle;
             const inner = (
               <>
-                <AlertTriangle size={16} />
-                <span>{a.message}</span>
+                <AlerteIcon size={16} />
+                <span>{a.message}{a.hint ? <em className="alerte-hint"> · {a.hint}</em> : null}</span>
               </>
             );
             return a.client_id ? (
@@ -541,6 +542,17 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
           background: #fef2f2;
           color: #8c2a2a;
           border: 1px solid #f2d4d4;
+        }
+        /* Renouvellement = opportunité, ton sauge calme (jamais rouge/alarme) */
+        .alerte-renew {
+          background: #eef4ee;
+          color: #3f5540;
+          border: 1px solid #d7e5d7;
+        }
+        .alerte-hint {
+          font-style: normal;
+          font-weight: 600;
+          opacity: 0.7;
         }
         .alerte-info {
           background: #eff6ff;

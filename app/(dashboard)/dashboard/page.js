@@ -46,26 +46,38 @@ export default async function DashboardPage() {
   const coutSmsMois = (smsMois || 0) * SMS_PRIX_UNITAIRE;
   const totalACoutsMois = parseFloat((coutSmsMois + fraisStripeMois).toFixed(2));
 
-  // Alertes simples
+  // Alertes = OPPORTUNITÉS de renouvellement, jamais des erreurs
+  // (cf. MODELE-PAIEMENTS-2026.md §4.4). On n'alerte QUE sur de vrais packs :
+  //   - type carnet/abonnement (JAMAIS une séance à l'unité 'cours_unique') ;
+  //   - seances_total > 1 (un « carnet » d'1 séance = un drop-in payé+fait,
+  //     état normal et réussi → aucune alerte, aucun rouge) ;
+  //   - le pack a commencé à être consommé (reste < total) → pas de nudge sur
+  //     un carnet flambant neuf.
+  // Un carnet terminé n'est PAS une alarme rouge : c'est un « proposer la suite ? ».
+  const seuil = profile?.alerte_seances_seuil || 2;
   const alertes = [];
   if (alertesAbos) {
     for (const abo of alertesAbos) {
-      if (abo.seances_total !== null) {
-        const reste = (abo.seances_total || 0) - (abo.seances_utilisees || 0);
-        if (reste <= (profile?.alerte_seances_seuil || 2) && reste > 0) {
-          alertes.push({
-            type: 'warning',
-            message: `${abo.clients?.prenom || ''} ${abo.clients?.nom || ''} — ${reste} séance${reste > 1 ? 's' : ''} restante${reste > 1 ? 's' : ''}`,
-            client_id: abo.clients?.id || null,
-          });
-        }
-        if (reste <= 0) {
-          alertes.push({
-            type: 'danger',
-            message: `${abo.clients?.prenom || ''} ${abo.clients?.nom || ''} — crédit épuisé`,
-            client_id: abo.clients?.id || null,
-          });
-        }
+      const total = abo.seances_total;
+      const estVraiPack = total != null && total > 1 && abo.type !== 'cours_unique';
+      if (!estVraiPack) continue;
+      const reste = total - (abo.seances_utilisees || 0);
+      const nom = `${abo.clients?.prenom || ''} ${abo.clients?.nom || ''}`.trim();
+      const client_id = abo.clients?.id || null;
+      if (reste > 0 && reste <= seuil && reste < total) {
+        alertes.push({
+          type: 'renew',
+          message: `${nom} — il reste ${reste} séance${reste > 1 ? 's' : ''}`,
+          hint: 'proposer la suite ?',
+          client_id,
+        });
+      } else if (reste <= 0) {
+        alertes.push({
+          type: 'renew',
+          message: `${nom} — carnet terminé`,
+          hint: 'renouveler ?',
+          client_id,
+        });
       }
     }
   }

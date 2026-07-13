@@ -81,24 +81,33 @@ export async function POST() {
   }
   } // fin notif_paiement_retard
 
-  // ── 3. Carnets épuisés (< 2 séances restantes, statut actif) ─────────────
+  // ── 3. Carnets bientôt finis — OPPORTUNITÉ de renouvellement ──────────────
+  // (cf. MODELE-PAIEMENTS-2026.md §4.4). Seulement de VRAIS packs : type
+  // carnet/abo, seances_total > 1 (jamais un drop-in / cours à l'unité).
+  // ⚠️ Il n'existe PAS de colonne seances_restantes : l'ancienne requête la
+  // lisait → échec silencieux, notif jamais émise. On calcule total - utilisées.
   if (wantInapp('carnet_epuise')) {
   const { data: carnets } = await supabase
     .from('abonnements')
-    .select('id, seances_restantes, client_id, offres(nom), clients(prenom, nom)')
+    .select('id, type, seances_total, seances_utilisees, client_id, offres(nom), clients(prenom, nom)')
     .eq('profile_id', user.id)
     .eq('statut', 'actif')
-    .not('seances_restantes', 'is', null)
-    .lt('seances_restantes', 2);
+    .not('seances_total', 'is', null)
+    .gt('seances_total', 1);
 
   for (const ab of carnets || []) {
+    if (ab.type === 'cours_unique') continue;
+    const reste = ab.seances_total - (ab.seances_utilisees || 0);
+    if (reste >= 2) continue; // seulement les carnets presque/déjà finis
     toUpsert.push({
       profile_id: user.id,
       type:       'carnet_epuise',
-      titre:      `📋 Carnet épuisé — ${ab.clients?.prenom} ${ab.clients?.nom}`,
-      corps:      `${ab.offres?.nom} · ${ab.seances_restantes ?? 0} séance(s) restante(s)`,
+      titre:      reste <= 0
+        ? `📋 Carnet terminé — ${ab.clients?.prenom} ${ab.clients?.nom}`
+        : `📋 Carnet presque fini — ${ab.clients?.prenom} ${ab.clients?.nom}`,
+      corps:      `${ab.offres?.nom || 'Carnet'} · ${Math.max(0, reste)} séance(s) restante(s) — proposer la suite ?`,
       data:       { abonnement_id: ab.id, client_id: ab.client_id,
-                    seances_restantes: ab.seances_restantes },
+                    seances_restantes: Math.max(0, reste) },
       ref_key:    `carnet_epuise_${todayStr}_${ab.id}`,
       expires_at: null,
     });
