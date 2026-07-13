@@ -11,6 +11,8 @@ const TYPE_CONFIG = {
   carnet_epuise:    { color: '#d97706', bg: '#fffbeb', border: '#fde68a' },
   abonnement_expire:{ color: '#2563eb', bg: '#eff6ff', border: '#bfdbfe' },
   nouveau_client:   { color: '#0891b2', bg: '#ecfeff', border: '#a5f3fc' },
+  reservation:      { color: '#059669', bg: '#ecfdf5', border: '#a7f3d0' },
+  essai_demande:    { color: '#c2410c', bg: '#fff7ed', border: '#fed7aa' },
 };
 
 function timeAgo(dateStr) {
@@ -152,6 +154,20 @@ export default function NotificationBell() {
       return;
     }
 
+    // Nouvelle réservation — on va sur l'agenda du jour du cours (pour voir la
+    // séance et sa liste). Sinon, agenda générique.
+    if (notif.type === 'reservation') {
+      const d = data.date || data.cours_date;
+      router.push(data.cours_id && d ? `/agenda?date=${d}` : '/agenda');
+      return;
+    }
+
+    // Demande de cours d'essai — inbox des essais (valider / refuser).
+    if (notif.type === 'essai_demande') {
+      router.push('/essais');
+      return;
+    }
+
     // Fallback — au moins on quitte le panneau
     router.push('/dashboard');
   };
@@ -189,6 +205,18 @@ export default function NotificationBell() {
             <button className="nb-action-btn secondary"
                     onClick={() => handleAction(notif, 'voir')}>
               <ExternalLink size={12} /> Voir l'élève
+            </button>
+          )}
+          {notif.type === 'reservation' && (
+            <button className="nb-action-btn secondary"
+                    onClick={() => handleAction(notif, 'voir')}>
+              <ExternalLink size={12} /> Voir la séance
+            </button>
+          )}
+          {notif.type === 'essai_demande' && (
+            <button className="nb-action-btn secondary"
+                    onClick={() => handleAction(notif, 'voir')}>
+              <ExternalLink size={12} /> Voir la demande
             </button>
           )}
           {/* Marquer lu */}

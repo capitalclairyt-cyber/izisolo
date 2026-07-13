@@ -5,6 +5,7 @@ import { checkAntiBot, ipFromRequest } from '@/lib/antibot';
 import { getRegle } from '@/lib/regles-metier';
 import { sendNotifElevePourRegle } from '@/lib/notif-eleve-regle';
 import { sendPushToUser } from '@/lib/push-server';
+import { wantsNotif } from '@/lib/notif-prefs';
 import { getDelaiPourCours } from '@/lib/regles-annulation';
 import { infosPratiquesBlock } from '@/lib/email-helpers';
 import { sendEmail } from '@/lib/email';
@@ -45,7 +46,7 @@ export async function POST(request, { params }) {
   // Charge aussi regles_metier pour appliquer la règle "élève sans carnet".
   const { data: profile } = await supabaseAdmin
     .from('profiles')
-    .select('id, studio_nom, regles_metier, regles_annulation, adresse, code_postal, ville, telephone, email_contact')
+    .select('id, studio_nom, regles_metier, regles_annulation, adresse, code_postal, ville, telephone, email_contact, notif_prefs')
     .eq('studio_slug', studioSlug)
     .single();
 
@@ -374,11 +375,34 @@ export async function POST(request, { params }) {
   }
   const newPresence = { id: resa.presence_id };
 
-  // Push prof « nouvelle réservation » (gaté sur sa pref ; no-op sans abonnement)
+  // Notif prof « nouvelle réservation » — cloche in-app + push. La cloche est
+  // le canal fiable (le push exige un abonnement web push) : sans elle, une
+  // résa d'un élève existant ne laissait AUCUNE trace côté prof.
   {
     const dStr = cours.date
-      ? new Date(cours.date + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })
+      ? new Date(cours.date + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })
       : '';
+    const hStr = cours.heure ? ' · ' + cours.heure.slice(0, 5).replace(':', 'h') : '';
+
+    // Cloche in-app (gaté sur la pref inapp ; défaut ON). ref_key = presence_id
+    // → une notif par réservation, dédupée. Expire 3j après pour ne pas encombrer.
+    // Non-bloquant : une notif ratée ne doit jamais faire échouer la résa.
+    if (wantsNotif(profile.notif_prefs, 'reservation', 'prof', 'inapp')) {
+      try {
+        const expire = new Date(); expire.setDate(expire.getDate() + 3);
+        await supabaseAdmin.from('notifications').upsert({
+          profile_id: profile.id,
+          type: 'reservation',
+          titre: `🎉 Nouvelle réservation — ${prenom || email}`,
+          corps: `${cours.nom || 'un cours'}${dStr ? ` · ${dStr}` : ''}${hStr}`,
+          data: { client_id: clientId, cours_id: coursId, cours_date: cours.date, presence_id: newPresence?.id || null, prenom },
+          ref_key: `reservation_${newPresence?.id || coursId + '_' + clientId}`,
+          expires_at: expire.toISOString(),
+        }, { onConflict: 'profile_id,ref_key', ignoreDuplicates: true });
+      } catch (e) { console.warn('[reserver] notif cloche non-bloquant:', e?.message); }
+    }
+
+    // Push (gaté sur la pref push ; no-op sans abonnement)
     sendPushToUser(profile.id, {
       title: `Nouvelle réservation 🎉`,
       body: `${prenom || email} — ${cours.nom || 'un cours'}${dStr ? ` (${dStr})` : ''}`,
@@ -553,7 +577,7 @@ export async function POST(request, { params }) {
             ` : ''}
             <div style="background: #fffaf0; border: 1px solid #ffe0b2; border-radius: 10px; padding: 12px 16px; margin: 0 0 16px; color: #7c4a03; font-size: 0.875rem;">
               <strong>Annulation flexible</strong><br/>
-              Tu peux annuler depuis ton espace jusqu'à ${delaiAnnulation}h avant le cours.
+              Tu peux annuler depuis ton espace jusqu'à ${delaiAnnulation}h avant la séance.
             </div>
             ${infosBlock}
             <p style="color: #aaa; font-size: 0.8rem; margin: 32px 0 0; border-top: 1px solid #eee; padding-top: 16px; text-align: center;">

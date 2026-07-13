@@ -2,6 +2,8 @@ import { createServerClient } from '@/lib/supabase-server';
 import { createAdminClient } from '@/lib/supabase-admin';
 import { reserverSerieSchema } from '@/lib/validation';
 import { checkRateLimitIP } from '@/lib/antibot';
+import { sendPushToUser } from '@/lib/push-server';
+import { wantsNotif } from '@/lib/notif-prefs';
 
 /**
  * POST /api/portail/[studioSlug]/reserver-serie
@@ -44,7 +46,7 @@ export async function POST(request, { params }) {
 
   // Studio
   const { data: profile } = await supabaseAdmin
-    .from('profiles').select('id, studio_nom').eq('studio_slug', studioSlug).single();
+    .from('profiles').select('id, studio_nom, notif_prefs').eq('studio_slug', studioSlug).single();
   if (!profile) return Response.json({ error: 'Studio introuvable' }, { status: 404 });
 
   // Client lié à cet email dans ce studio
@@ -114,6 +116,36 @@ export async function POST(request, { params }) {
     }
 
     booked.push({ coursId: c.id, date: c.date, heure: c.heure });
+  }
+
+  // Notif prof — UNE seule notif récapitulative pour toute la série (≠ N notifs
+  // qui spammeraient la cloche). Cloche in-app + push, non-bloquant.
+  if (booked.length > 0) {
+    const dDeb = new Date(booked[0].date + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
+    const dFin = new Date(booked[booked.length - 1].date + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
+    const corps = `${baseCours.nom} · ${booked.length} séance${booked.length > 1 ? 's' : ''} (du ${dDeb} au ${dFin})`;
+
+    if (wantsNotif(profile.notif_prefs, 'reservation', 'prof', 'inapp')) {
+      try {
+        const expire = new Date(); expire.setDate(expire.getDate() + 3);
+        await supabaseAdmin.from('notifications').upsert({
+          profile_id: profile.id,
+          type: 'reservation',
+          titre: `🎉 Inscription en série — ${client.prenom || 'un·e élève'}`,
+          corps,
+          data: { client_id: client.id, cours_id: baseCours.id, cours_date: booked[0].date, nb: booked.length },
+          ref_key: `serie_${baseCours.recurrence_id}_${client.id}_${booked[0].date}`,
+          expires_at: expire.toISOString(),
+        }, { onConflict: 'profile_id,ref_key', ignoreDuplicates: true });
+      } catch (e) { console.warn('[reserver-serie] notif cloche non-bloquant:', e?.message); }
+    }
+
+    sendPushToUser(profile.id, {
+      title: `Inscription en série 🎉`,
+      body: `${client.prenom || 'un·e élève'} — ${corps}`,
+      url: '/agenda',
+      tag: `resa-serie-${baseCours.recurrence_id}`,
+    }, { type: 'reservation' }).catch(() => {});
   }
 
   return Response.json({

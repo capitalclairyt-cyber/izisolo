@@ -158,6 +158,36 @@ export async function POST() {
     }
   }
 
+  // ── 6. Demandes de cours d'essai EN ATTENTE (mode manuel) ────────────────
+  // Filet stateful : tant qu'une demande est 'en_attente', la prof la voit dans
+  // la cloche. Même ref_key que la notif posée à la réservation (essai/route.js)
+  // → dédup : si elle l'a déjà lue, ignoreDuplicates ne la ré-affiche pas ; si
+  // l'insert event-time a été manqué, ce filet la rattrape au prochain check.
+  if (wantInapp('essai_demande')) {
+    const { data: demandes } = await supabase
+      .from('cours_essai_demandes')
+      .select('id, prenom, created_at, cours:cours_id(nom, date, heure)')
+      .eq('profile_id', user.id)
+      .eq('statut', 'en_attente');
+
+    for (const d of demandes || []) {
+      const coursNom = d.cours?.nom || 'un cours';
+      const dStr = d.cours?.date
+        ? new Date(d.cours.date + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })
+        : '';
+      const hStr = d.cours?.heure ? ' · ' + d.cours.heure.slice(0, 5).replace(':', 'h') : '';
+      toUpsert.push({
+        profile_id: user.id,
+        type:       'essai_demande',
+        titre:      `✨ Demande d'essai à valider — ${d.prenom}`,
+        corps:      `${coursNom}${dStr ? ` · ${dStr}` : ''}${hStr}`,
+        data:       { demande_id: d.id, cours_id: d.cours?.id, prenom: d.prenom },
+        ref_key:    `essai_demande_${d.id}`,
+        expires_at: null,
+      });
+    }
+  }
+
   // ── Upsert (ignoreDuplicates = ne pas écraser lu=true) ────────────────────
   if (toUpsert.length > 0) {
     await supabase
