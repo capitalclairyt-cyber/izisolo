@@ -323,7 +323,13 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
   const [invited, setInvited] = useState(false);
 
   const sendPortailInvite = async () => {
-    if (!client.email || inviting) return;
+    if (inviting) return;
+    // Sans email, l'invitation portail est impossible → message clair au lieu
+    // d'un bouton qui ne fait rien (feedback #15).
+    if (!client.email) {
+      toast.warning(`${client.prenom || 'Cette élève'} n'a pas d'adresse email. Ajoute-en une (bouton Modifier) pour pouvoir l'inviter.`);
+      return;
+    }
     setInviting(true);
     try {
       const res = await fetch('/api/invite', {
