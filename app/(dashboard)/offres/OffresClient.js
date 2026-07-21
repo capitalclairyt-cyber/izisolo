@@ -613,7 +613,7 @@ export default function OffresClient({ offres, profile, planKey, limiteOffres })
         .section { display: flex; flex-direction: column; gap: 8px; }
         .section-title { font-size: 0.8125rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); }
         .offres-list { display: flex; flex-direction: column; gap: 8px; }
-        .offre-card { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-left: 6px solid transparent; }
+        .offre-card { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-left: 6px solid transparent; flex-wrap: wrap; }
         .offre-card--rose     { background: var(--tone-rose-bg);     border-left-color: var(--tone-rose-accent); }
         .offre-card--sage     { background: var(--tone-sage-bg);     border-left-color: var(--tone-sage-accent); }
         .offre-card--sand     { background: var(--tone-sand-bg);     border-left-color: var(--tone-sand-accent); }
@@ -625,11 +625,17 @@ export default function OffresClient({ offres, profile, planKey, limiteOffres })
         .offre-inactive { opacity: 0.55; }
         .offre-icon { width: 40px; height: 40px; border-radius: var(--radius-sm); background: var(--brand-light); color: var(--brand-700); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
         .offre-info { flex: 1; min-width: 0; }
-        .offre-nom { font-weight: 600; font-size: 0.9375rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .offre-nom { font-weight: 600; font-size: 0.9375rem; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow-wrap: anywhere; }
         .offre-details { display: flex; gap: 6px; align-items: center; margin-top: 4px; flex-wrap: wrap; }
         .offre-seances, .offre-duree { font-size: 0.75rem; color: var(--text-muted); }
         .offre-prix { font-weight: 700; font-size: 1rem; color: var(--brand-700); white-space: nowrap; }
-        .offre-actions { display: flex; gap: 2px; }
+        .offre-actions { display: flex; gap: 2px; flex-shrink: 0; }
+        /* Mobile : les actions passent sur leur propre ligne pour libérer toute
+           la largeur au nom + prix (évite le nom tronqué « Cours à l'... »).
+           Row 1 = icône + nom/détails + prix ; row 2 = actions à droite. */
+        @media (max-width: 560px) {
+          .offre-actions { flex-basis: 100%; justify-content: flex-end; margin-top: 2px; }
+        }
         .action-btn { width: 36px; height: 36px; border: none; background: none; border-radius: var(--radius-sm); cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--text-muted); transition: background var(--transition-fast); }
         .action-btn:active, .action-btn:hover { background: var(--cream-dark); }
         .assign-btn { color: var(--brand-700); }
