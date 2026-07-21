@@ -12,6 +12,7 @@ import {
   Home, Navigation, Phone,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase';
+import HeureSelect from '@/components/ui/HeureSelect';
 import { useToast } from '@/components/ui/ToastProvider';
 
 const FREQUENCES = [
@@ -650,7 +651,7 @@ function NouveauCoursInner() {
           </div>
           <div className="form-group">
             <label className="form-label"><Clock size={14} /> Heure</label>
-            <input className="izi-input" type="time" value={form.heure} onChange={handleChange('heure')} />
+            <HeureSelect value={form.heure} onChange={v => setForm(prev => ({ ...prev, heure: v }))} />
           </div>
         </div>
 

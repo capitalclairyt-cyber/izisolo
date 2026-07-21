@@ -13,6 +13,7 @@ import { formatHeure, getAllTypesFromCategories } from '@/lib/utils';
 import { parseDate } from '@/lib/dates';
 import { createClient } from '@/lib/supabase';
 import { useToast } from '@/components/ui/ToastProvider';
+import HeureSelect from '@/components/ui/HeureSelect';
 import { SMS_ENABLED } from '@/lib/constantes';
 
 export default function CoursDetailClient({ cours, presences, lieux, profile, nbOccurrences, autoEdit, listeAttente = [] }) {
@@ -65,6 +66,7 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
   const [recurrenceConfirmed, setRecurrenceConfirmed] = useState(false);
   const [savingRecurrence, setSavingRecurrence]     = useState(false);
   const [recurrenceForm, setRecurrenceForm]         = useState({
+    nom:           cours.nom || '',
     heure:         cours.heure?.substring(0, 5) || '',
     duree_minutes: cours.duree_minutes?.toString() || '60',
     lieu_id:       cours.lieu_id || '',
@@ -199,6 +201,7 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
       const lieuNom   = lieux.find(l => l.id === recurrenceForm.lieu_id)?.nom || null;
       const today     = (() => { const n = new Date(); return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`; })();
       const payload   = {
+        nom:           recurrenceForm.nom?.trim() || cours.nom, // nom NOT NULL — jamais vide
         heure:         recurrenceForm.heure || null,
         duree_minutes: recurrenceForm.duree_minutes ? parseInt(recurrenceForm.duree_minutes) : 60,
         lieu_id:       recurrenceForm.lieu_id || null,
@@ -499,7 +502,7 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
               </div>
               <div className="form-group">
                 <label className="form-label"><Clock size={14} /> Heure</label>
-                <input className="izi-input" type="time" value={form.heure} onChange={handleChange('heure')} />
+                <HeureSelect value={form.heure} onChange={v => setForm(prev => ({ ...prev, heure: v }))} />
               </div>
             </div>
 
@@ -753,12 +756,17 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
 
               {/* Formulaire série */}
               <div className="recurrence-form">
+                <div className="form-group">
+                  <label className="form-label">Nom du cours</label>
+                  <input className="izi-input" type="text"
+                    value={recurrenceForm.nom}
+                    onChange={e => setRecurrenceForm(p => ({ ...p, nom: e.target.value }))}
+                    placeholder="Ex : Yoga Vinyasa" />
+                </div>
                 <div className="form-row">
                   <div className="form-group">
                     <label className="form-label"><Clock size={14} /> Heure</label>
-                    <input className="izi-input" type="time"
-                      value={recurrenceForm.heure}
-                      onChange={e => setRecurrenceForm(p => ({ ...p, heure: e.target.value }))} />
+                    <HeureSelect value={recurrenceForm.heure} onChange={v => setRecurrenceForm(p => ({ ...p, heure: v }))} />
                   </div>
                   <div className="form-group">
                     <label className="form-label">Durée (min)</label>
