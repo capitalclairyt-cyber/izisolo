@@ -39,6 +39,9 @@ export const POST = withRoute({ auth: 'active' }, async ({ request, auth }) => {
     .eq('studio_slug', slug)
     .single();
 
+  // On mémorise l'id de la fiche (existante ou créée) pour tracer l'invitation
+  // APRÈS un envoi réussi (invitation_envoyee_at, v67).
+  let ficheClientId = null;
   if (studioProfile) {
     const { data: existing } = await supabaseAdmin
       .from('clients')
@@ -47,12 +50,14 @@ export const POST = withRoute({ auth: 'active' }, async ({ request, auth }) => {
       .ilike('email', cleanEmail)
       .maybeSingle();
 
-    if (!existing) {
+    if (existing) {
+      ficheClientId = existing.id;
+    } else {
       // « Camille Dupont » → prénom + nom séparés (même découpage que reserver).
       // Saisie d'un seul mot → nom reste '' (colonne NOT NULL), la prof complétera.
       const saisie = (prenom || '').trim() || cleanEmail.split('@')[0];
       const parts = saisie.split(' ');
-      const { error: ficheErr } = await supabaseAdmin
+      const { data: inserted, error: ficheErr } = await supabaseAdmin
         .from('clients')
         .insert({
           profile_id: studioProfile.id,
@@ -61,10 +66,13 @@ export const POST = withRoute({ auth: 'active' }, async ({ request, auth }) => {
           email: cleanEmail,
           statut: 'prospect',
           source: 'invitation',
-        });
+        })
+        .select('id')
+        .maybeSingle();
       // Non bloquant : si la création de fiche échoue, on envoie quand même
       // l'invitation (l'élève sera fiché·e au plus tard à sa 1ʳᵉ réservation).
       if (ficheErr) console.error('[invite] création fiche prospect (non-bloquant):', ficheErr);
+      else ficheClientId = inserted?.id || null;
     }
   }
 
@@ -79,6 +87,16 @@ export const POST = withRoute({ auth: 'active' }, async ({ request, auth }) => {
 
   if (result.error) {
     return NextResponse.json({ error: result.error }, { status: result.status || 500 });
+  }
+
+  // ── 3) Trace l'invitation sur la fiche (après envoi réussi, v67) ─────────
+  if (ficheClientId) {
+    const { error: majErr } = await supabaseAdmin
+      .from('clients')
+      .update({ invitation_envoyee_at: new Date().toISOString() })
+      .eq('id', ficheClientId);
+    // Non bloquant : la migration v67 peut ne pas être encore appliquée.
+    if (majErr) console.error('[invite] maj invitation_envoyee_at (non-bloquant):', majErr);
   }
 
   return NextResponse.json({ ok: true });

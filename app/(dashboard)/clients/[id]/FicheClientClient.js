@@ -15,6 +15,7 @@ import {
 import { formatDate, formatMontant } from '@/lib/utils';
 import { getVocabulaire } from '@/lib/vocabulaire';
 import { STATUTS_CLIENT, STATUTS_ABONNEMENT, STATUTS_PAIEMENT } from '@/lib/constantes';
+import { statutCompteEleve, formatDateRelative } from '@/lib/eleve-statut';
 import { createClient } from '@/lib/supabase';
 import { useToast } from '@/components/ui/ToastProvider';
 import PaiementStep from '@/components/paiements/PaiementStep';
@@ -297,7 +298,7 @@ function AssignerOffreModal({ client, onClose, onSuccess }) {
 // ═══════════════════════════════════════════════════════════════════════════
 // Composant principal
 // ═══════════════════════════════════════════════════════════════════════════
-export default function FicheClientClient({ client, profile, abonnements: abosInit, presences, paiements: paiementsInit = [], lieux }) {
+export default function FicheClientClient({ client, profile, abonnements: abosInit, presences, paiements: paiementsInit = [], lieux, statutCompte = null }) {
   const router = useRouter();
   const { toast } = useToast();
   const vocab = getVocabulaire(profile?.metier || 'yoga', profile?.vocabulaire);
@@ -842,6 +843,28 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
             </Link>
           )}
         </div>
+
+        {/* État de compte (v67) — la prof voit si l'élève a un compte, s'il/elle
+            a été invité·e, et sa dernière connexion. */}
+        {!isPro && (() => {
+          const base = statutCompteEleve(client, statutCompte);
+          const etat = base.etat === 'aucun' && invited ? 'invite' : base.etat;
+          if (etat === 'actif') return (
+            <div className="compte-pastille compte-actif" style={{ marginTop: 10 }}>
+              <span className="compte-dot" /> Compte actif · dernière connexion {formatDateRelative(base.lastSignIn)}
+            </div>
+          );
+          if (etat === 'invite') return (
+            <div className="compte-pastille compte-invite" style={{ marginTop: 10 }}>
+              <span className="compte-dot" /> {base.invite ? `Invité·e ${formatDateRelative(base.invite)}` : 'Invitation envoyée'} · pas encore connecté·e
+            </div>
+          );
+          return (
+            <div className="compte-pastille compte-aucun" style={{ marginTop: 10 }}>
+              <span className="compte-dot" /> Pas de compte{client.email ? " · pense à l'inviter" : ' · ajoute un email pour inviter'}
+            </div>
+          );
+        })()}
 
         {isPro && (
           <div className="pro-details">

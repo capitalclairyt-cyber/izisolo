@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase';
 import { getVocabulaire } from '@/lib/vocabulaire';
 import { STATUTS_CLIENT } from '@/lib/constantes';
 import { toneForClient } from '@/lib/tones';
+import { statutCompteEleve, formatDateRelative } from '@/lib/eleve-statut';
 import InviteModal from './InviteModal';
 import Pagination, { usePagination, DEFAULT_PAGE_SIZE } from '@/components/ui/Pagination';
 import EmptyState from '@/components/ui/EmptyState';
@@ -25,7 +26,7 @@ const FILTRES_PRIMAIRES = [
   { key: 'inactifs_30j', label: 'Pas de nouvelles >30j' },
 ];
 
-export default function ClientsClient({ clients: clientsInit, profile }) {
+export default function ClientsClient({ clients: clientsInit, profile, statutMap = {} }) {
   const vocab = getVocabulaire(profile?.metier || 'yoga', profile?.vocabulaire);
   const [search, setSearch] = useState('');
   const [inviteOpen, setInviteOpen] = useState(false);
@@ -390,6 +391,27 @@ export default function ClientsClient({ clients: clientsInit, profile }) {
                           {seancesRestantes} séance{seancesRestantes > 1 ? 's' : ''}
                         </span>
                       )}
+                      {/* État de compte (v67) — actif / invité·e / pas de compte */}
+                      {(() => {
+                        const st = statutCompteEleve(client, statutMap[client.id]);
+                        if (st.etat === 'actif') return (
+                          <span className="compte-pastille compte-actif" title={`Dernière connexion ${formatDateRelative(st.lastSignIn)}`}>
+                            <span className="compte-dot" /> Actif · {formatDateRelative(st.lastSignIn)}
+                          </span>
+                        );
+                        if (st.etat === 'invite') return (
+                          <span className="compte-pastille compte-invite" title={`Invité·e ${formatDateRelative(st.invite)}`}>
+                            <span className="compte-dot" /> Invité·e
+                          </span>
+                        );
+                        // Pas de compte : seulement si invitable (a un email)
+                        if (client.email) return (
+                          <span className="compte-pastille compte-aucun" title="Pas de compte — pense à l'inviter">
+                            <span className="compte-dot" /> Pas de compte
+                          </span>
+                        );
+                        return null;
+                      })()}
                     </div>
                   </div>
                   <ChevronRight size={18} className="client-chevron" />

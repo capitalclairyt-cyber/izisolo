@@ -23,6 +23,13 @@ export default async function FicheClientPage({ params }) {
 
   if (!client) notFound();
 
+  // Statut de compte (RPC v67) — dégrade proprement si migration non appliquée.
+  let statutCompte = null;
+  {
+    const { data: statuts } = await supabase.rpc('eleves_statut_compte');
+    statutCompte = (statuts || []).find(s => s.client_id === client.id) || null;
+  }
+
   // Fetch lieux linked to this client pro
   let lieux = [];
   if (client.type_client && client.type_client !== 'particulier') {
@@ -42,6 +49,7 @@ export default async function FicheClientPage({ params }) {
       presences={presences || []}
       paiements={paiements || []}
       lieux={lieux}
+      statutCompte={statutCompte}
     />
   );
 }

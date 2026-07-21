@@ -741,6 +741,17 @@ body:has(.izi-bg-decor) {
 }
 
 /* --- Sous-onglets (légèrement plus discrets) --- */
+/* Pastille « état de compte élève » (v67) — liste + fiche */
+.compte-pastille {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 2px 8px; border-radius: 99px;
+  font-size: 0.6875rem; font-weight: 600; white-space: nowrap;
+}
+.compte-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+.compte-actif  { background: #e8f5e9; color: #2e7d32; }
+.compte-invite { background: #e3f2fd; color: #1565c0; }
+.compte-aucun  { background: var(--cream-dark, #f0ebe3); color: var(--text-muted, #8a7f72); }
+
 .subtabs-bar {
   display: flex;
   gap: 0;
