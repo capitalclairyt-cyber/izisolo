@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
-  ArrowLeft, Save, Calendar, Clock, MapPin, Users, Repeat,
+  ArrowLeft, Save, Calendar, Clock, MapPin, Users, Repeat, UserPlus,
   Trash2, AlertTriangle, CheckCircle2, Edit3, X, Copy,
   ChevronDown, ChevronUp, Mail, Send, ShieldAlert, Smartphone, CheckCheck, Lock,
   Home, Navigation,
@@ -561,13 +561,20 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
       <div className="section">
         <div className="section-header">
           <h2><Users size={18} /> Inscrits ({presences.length})</h2>
-          <Link
-            href={`/pointage/${cours.id}`}
-            className={`izi-btn btn-sm ${nbPointes > 0 ? 'izi-btn-ghost btn-modifier-pointage' : 'izi-btn-secondary'}`}
-          >
-            <CheckCircle2 size={16} />
-            {nbPointes > 0 ? 'Modifier le pointage' : 'Pointer'}
-          </Link>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            {/* Inscrire des élèves à tout moment (avant / pendant / après le
+                cours) — le pointage accepte l'ajout hors de la fenêtre horaire. */}
+            <Link href={`/pointage/${cours.id}`} className="izi-btn btn-sm izi-btn-secondary">
+              <UserPlus size={16} /> Ajouter des élèves
+            </Link>
+            <Link
+              href={`/pointage/${cours.id}`}
+              className={`izi-btn btn-sm ${nbPointes > 0 ? 'izi-btn-ghost btn-modifier-pointage' : 'izi-btn-secondary'}`}
+            >
+              <CheckCircle2 size={16} />
+              {nbPointes > 0 ? 'Modifier le pointage' : 'Pointer'}
+            </Link>
+          </div>
         </div>
 
         {/* Bannière pointage effectué */}
@@ -581,7 +588,12 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
         )}
 
         {presences.length === 0 ? (
-          <p className="empty-text">Aucun inscrit pour le moment</p>
+          <div className="empty-inscrits">
+            <p className="empty-text">Aucun inscrit pour le moment</p>
+            <Link href={`/pointage/${cours.id}`} className="izi-btn btn-sm izi-btn-primary">
+              <UserPlus size={16} /> Ajouter des élèves
+            </Link>
+          </div>
         ) : (
           <div className="inscrits-list">
             {presences.map(p => (
@@ -1327,6 +1339,15 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
           font-size: 0.875rem;
           padding: 12px 0;
         }
+        .empty-inscrits {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 8px;
+          padding: 12px 0 4px;
+          text-align: center;
+        }
+        .empty-inscrits .empty-text { padding: 0; }
         .inscrits-list {
           display: flex;
           flex-direction: column;

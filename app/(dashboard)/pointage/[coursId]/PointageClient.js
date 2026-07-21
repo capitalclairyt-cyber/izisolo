@@ -817,23 +817,24 @@ export default function PointageClient({ cours, presences: initialPresences, tou
       )}
 
       {/* ─── Actions ─── */}
-      {!locked && (
-        <div className="quick-actions animate-slide-up">
-          {nbEnAttente > 0 && (
-            <button className="izi-btn izi-btn-primary qa-btn" onClick={toutPresent}>
-              <CheckCheck size={16} />
-              Tous présents ({nbEnAttente})
-            </button>
-          )}
-          <button
-            className={`izi-btn izi-btn-secondary qa-btn ${isLive ? 'qa-live' : ''}`}
-            onClick={() => setShowAddModal(true)}
-          >
-            <UserPlus size={16} />
-            {isLive ? '+ Dernière minute' : 'Ajouter'}
+      {/* « Ajouter des élèves » est dispo À TOUT MOMENT : construire la liste
+          (inscrire) ne dépend pas de la fenêtre de pointage — seul le marquage
+          présent/absent est borné dans le temps. « Tous présents » reste gaté. */}
+      <div className="quick-actions animate-slide-up">
+        {!locked && nbEnAttente > 0 && (
+          <button className="izi-btn izi-btn-primary qa-btn" onClick={toutPresent}>
+            <CheckCheck size={16} />
+            Tous présents ({nbEnAttente})
           </button>
-        </div>
-      )}
+        )}
+        <button
+          className={`izi-btn izi-btn-secondary qa-btn ${isLive ? 'qa-live' : ''}`}
+          onClick={() => setShowAddModal(true)}
+        >
+          <UserPlus size={16} />
+          {isLive ? '+ Dernière minute' : 'Ajouter des élèves'}
+        </button>
+      </div>
 
       {/* ─── Bravo ! ─── */}
       {tousTraites && !locked && (
