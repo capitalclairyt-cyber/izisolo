@@ -389,6 +389,7 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
       montant: String(p.montant),
       mode: p.mode || 'especes',
       date: p.date || '',
+      date_encaissement: p.date_encaissement || '',
       notes: p.notes || '',
       numero_cheque: p.numero_cheque || '',
       statut: p.statut || 'pending',
@@ -406,6 +407,7 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
           montant: parseFloat(editPayForm.montant),
           mode: editPayForm.mode,
           date: editPayForm.date,
+          date_encaissement: editPayForm.date_encaissement || null,
           notes: editPayForm.notes || null,
           numero_cheque: editPayForm.numero_cheque || null,
           statut: editPayForm.statut,
@@ -415,7 +417,7 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
       if (!res.ok) throw new Error(json.error || 'Erreur');
       setPaiements(prev => prev.map(p =>
         p.id === editPayModal.id
-          ? { ...p, montant: parseFloat(editPayForm.montant), mode: editPayForm.mode, date: editPayForm.date, notes: editPayForm.notes, numero_cheque: editPayForm.numero_cheque, statut: editPayForm.statut }
+          ? { ...p, montant: parseFloat(editPayForm.montant), mode: editPayForm.mode, date: editPayForm.date, date_encaissement: editPayForm.date_encaissement || null, notes: editPayForm.notes, numero_cheque: editPayForm.numero_cheque, statut: editPayForm.statut }
           : p
       ));
       toast.success('Paiement modifié');
@@ -1669,12 +1671,20 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
                 </>
               )}
 
-              <div className="paiement-section-label">Date</div>
+              <div className="paiement-section-label">Date du paiement</div>
               <input
                 className="izi-input"
                 type="date"
                 value={editPayForm.date}
                 onChange={e => setEditPayForm(f => ({ ...f, date: e.target.value }))}
+              />
+
+              <div className="paiement-section-label">Date d'encaissement <span style={{ fontWeight: 400, color: 'var(--text-muted)' }}>(optionnel — ex : dépôt du chèque)</span></div>
+              <input
+                className="izi-input"
+                type="date"
+                value={editPayForm.date_encaissement}
+                onChange={e => setEditPayForm(f => ({ ...f, date_encaissement: e.target.value }))}
               />
 
               <div className="paiement-section-label">Notes</div>

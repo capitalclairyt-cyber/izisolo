@@ -340,8 +340,12 @@ export default function RevenusClient({ paiements: initialPaiements }) {
         const aPercevoir = paiements.filter(p => p.statut === 'pending' || p.statut === 'overdue');
         if (aPercevoir.length === 0) return null;
         const today = new Date().toISOString().split('T')[0];
-        const overdueList = aPercevoir.filter(p => p.statut === 'overdue' || (p.statut === 'pending' && p.date < today));
-        const upcomingList = aPercevoir.filter(p => p.statut === 'pending' && p.date >= today);
+        // Tri par date CROISSANTE : les échéances les plus proches d'abord.
+        // (Les paiements arrivent en date DESC → sans ce tri, « À venir »
+        // montrait d'abord les dates les plus LOINTAINES — feedback #7.)
+        const byDateAsc = (a, b) => (a.date || '').localeCompare(b.date || '');
+        const overdueList = aPercevoir.filter(p => p.statut === 'overdue' || (p.statut === 'pending' && p.date < today)).sort(byDateAsc);
+        const upcomingList = aPercevoir.filter(p => p.statut === 'pending' && p.date >= today).sort(byDateAsc);
         const totalDu = aPercevoir.reduce((s, p) => s + parseFloat(p.montant || 0), 0);
         return (
           <div className="a-percevoir-section izi-card animate-slide-up">
