@@ -1,6 +1,6 @@
 ---
-title: "Premier cours de yoga enfant : structure type 30 minutes par âge (4-12 ans)"
-description: "Structure pédagogique détaillée d'un premier cours de yoga enfant selon l'âge : 4-5 ans, 6-9 ans, 10-12 ans. Préparation, déroulé minute par minute, erreurs à éviter, retour des parents."
+title: "Premier cours de yoga enfant : la structure type par âge"
+description: "La structure minute par minute d'un premier cours de yoga enfant selon l'âge (4-5, 6-9, 10-12 ans) : préparation, déroulé, erreurs à éviter."
 date: 2026-05-24
 updated: 2026-05-24
 author: "Colin (IziSolo)"

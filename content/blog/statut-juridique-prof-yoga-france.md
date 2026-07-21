@@ -1,6 +1,6 @@
 ---
-title: "Quel statut juridique pour prof de yoga en France en 2026 ? (Guide complet)"
-description: "Micro-entreprise, EI au réel, EURL, SASU : comparatif détaillé des statuts pour prof de yoga indépendant·e. Seuils, cotisations, impôts, protection sociale, et quand basculer d'un statut à l'autre."
+title: "Statut juridique prof de yoga : micro, EI, EURL ou SASU ?"
+description: "Micro-entreprise, EI, EURL, SASU : quel statut choisir pour prof de yoga ? Seuils, cotisations, BIC/BNC, code APE et le moment précis pour changer."
 date: 2025-09-10
 updated: 2026-05-21
 author: "Colin (IziSolo)"
