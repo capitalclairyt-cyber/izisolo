@@ -142,30 +142,17 @@ export async function POST() {
   }
   } // fin notif_abonnement_expire
 
-  // ── 5. Nouveaux clients (créés dans les dernières 48h) ───────────────────
-  if (wantInapp('nouveau_client')) {
-    const since48h = new Date(today); since48h.setHours(today.getHours() - 48);
-
-    const { data: nouveaux } = await supabase
-      .from('clients')
-      .select('id, prenom, nom, created_at, source')
-      .eq('profile_id', user.id)
-      .gte('created_at', since48h.toISOString());
-
-    // Les inscriptions via cours d'essai ont leur propre notif dédiée (évite le doublon)
-    for (const c of (nouveaux || []).filter(c => c.source !== 'Cours d\'essai')) {
-      const createdDay = c.created_at.split('T')[0];
-      toUpsert.push({
-        profile_id: user.id,
-        type:       'nouveau_client',
-        titre:      `👤 Nouvel élève ajouté — ${c.prenom} ${c.nom}`,
-        corps:      `Ajouté le ${new Date(c.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}`,
-        data:       { client_id: c.id, prenom: c.prenom, nom: c.nom },
-        ref_key:    `nouveau_client_${createdDay}_${c.id}`,
-        expires_at: new Date(today.getFullYear(), today.getMonth(), today.getDate() + 3).toISOString(),
-      });
-    }
-  }
+  // ── 5. Nouveaux clients — VOLONTAIREMENT DÉSACTIVÉ ───────────────────────
+  // Cette notif se déclenchait pour TOUT client créé dans les 48h, sans distinguer
+  // qui l'avait créé → la prof était notifiée pour les élèves qu'elle ajoutait
+  // ELLE-MÊME (pointage « nouveau client », /clients/nouveau, import). Or :
+  //   • un vrai signup self-service = réservation portail → déjà notifié
+  //     « 🎉 Nouvelle réservation » (reserver/route.js) ;
+  //   • une demande d'essai → déjà notifiée « ✨ Demande d'essai » ;
+  //   • tout le reste = action manuelle de la prof (elle le sait déjà).
+  // Donc « nouveau_client » était toujours redondant ou auto-infligé → retiré.
+  // (Le type reste dans le catalogue notif-prefs pour rétrocompat ; plus rien
+  //  ne le génère.)
 
   // ── 6. Demandes de cours d'essai EN ATTENTE (mode manuel) ────────────────
   // Filet stateful : tant qu'une demande est 'en_attente', la prof la voit dans

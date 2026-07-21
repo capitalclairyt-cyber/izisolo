@@ -221,6 +221,7 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
       const { error: e2 } = await supabase
         .from('recurrences')
         .update({
+          nom:           payload.nom,
           heure:         payload.heure,
           duree_minutes: payload.duree_minutes,
           lieu_id:       payload.lieu_id,

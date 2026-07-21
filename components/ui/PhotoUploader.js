@@ -4,7 +4,7 @@ import { useRef, useState } from 'react';
 import { Upload, Loader2, Trash2, ImageIcon } from 'lucide-react';
 
 const MAX_DIMENSION = 1024;        // px — resize côté client avant upload
-const MAX_BYTES_AVANT = 8 * 1024 * 1024; // 8 Mo (avant resize)
+const MAX_BYTES_AVANT = 10 * 1024 * 1024; // 10 Mo (avant resize)
 const QUALITY = 0.85;
 
 /**
