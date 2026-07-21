@@ -626,6 +626,37 @@ function NouveauCoursInner() {
           <input className="izi-input" value={form.nom} onChange={handleChange('nom')} placeholder="Ex : Yoga Vinyasa" required />
         </div>
 
+        {/* Décision n°1 : cours unique ou régulier (mise en avant pour éviter
+            de créer des dizaines d'occurrences à la main) */}
+        <div className="form-group">
+          <div className="mode-cours-toggle">
+            <button
+              type="button"
+              className={`mode-cours-btn ${form.frequence === 'unique' ? 'active' : ''}`}
+              onClick={() => setForm(prev => ({ ...prev, frequence: 'unique' }))}
+            >
+              <Calendar size={18} />
+              <span className="mode-cours-label">Cours unique</span>
+              <span className="mode-cours-desc">Une seule date</span>
+            </button>
+            <button
+              type="button"
+              className={`mode-cours-btn ${form.frequence !== 'unique' ? 'active' : ''}`}
+              onClick={() => setForm(prev => ({ ...prev, frequence: prev.frequence === 'unique' ? 'hebdomadaire' : prev.frequence }))}
+            >
+              <Repeat size={18} />
+              <span className="mode-cours-label">Cours régulier</span>
+              <span className="mode-cours-desc">Chaque semaine, etc.</span>
+            </button>
+          </div>
+          {form.frequence === 'unique' && (
+            <div className="rec-tip">
+              <Sparkles size={14} />
+              <span>Ce cours revient chaque semaine ? Passe en <strong>« régulier »</strong> et crée toutes les dates d'un coup — tu ne le referas plus à la main.</span>
+            </div>
+          )}
+        </div>
+
         {/* Contexte : perso ou intervention */}
         {clientsPro.length > 0 && (
           <div className="form-group">
@@ -704,11 +735,13 @@ function NouveauCoursInner() {
           )}
         </div>
 
-        {/* Récurrence */}
+        {/* Fréquence — seulement en mode régulier (le choix unique/régulier
+            est fait plus haut). On masque l'option « unique » ici. */}
+        {form.frequence !== 'unique' && (
         <div className="form-group">
-          <label className="form-label"><Repeat size={14} /> Récurrence</label>
+          <label className="form-label"><Repeat size={14} /> À quelle fréquence ?</label>
           <div className="freq-grid">
-            {FREQUENCES.map(f => (
+            {FREQUENCES.filter(f => f.value !== 'unique').map(f => (
               <button
                 key={f.value}
                 type="button"
@@ -721,6 +754,7 @@ function NouveauCoursInner() {
             ))}
           </div>
         </div>
+        )}
 
         {/* Jours de la semaine (si personnalisé) */}
         {form.frequence === 'personnalise' && (
@@ -1084,6 +1118,32 @@ function NouveauCoursInner() {
         /* Lieu */
         .lieu-select-row, .new-lieu-row { display: flex; gap: 8px; align-items: center; }
         .new-lieu-btn { min-width: 44px; min-height: 44px; padding: 0; display: flex; align-items: center; justify-content: center; }
+
+        /* Toggle unique / régulier (décision n°1) */
+        .mode-cours-toggle { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .mode-cours-btn {
+          display: flex; flex-direction: column; align-items: center; gap: 3px;
+          padding: 14px 10px; border-radius: var(--radius-md, 12px);
+          border: 1.5px solid var(--border); background: var(--bg-card);
+          color: var(--text-secondary); cursor: pointer; text-align: center;
+          transition: all var(--transition-fast);
+        }
+        .mode-cours-btn.active {
+          border-color: var(--brand); background: var(--brand-50, var(--brand-light));
+          color: var(--brand-700, var(--brand));
+        }
+        .mode-cours-btn:active { transform: scale(0.98); }
+        .mode-cours-label { font-weight: 700; font-size: 0.875rem; }
+        .mode-cours-desc { font-size: 0.6875rem; color: var(--text-muted); }
+        .mode-cours-btn.active .mode-cours-desc { color: var(--brand-700, var(--brand)); opacity: 0.8; }
+        .rec-tip {
+          display: flex; align-items: flex-start; gap: 8px;
+          margin-top: 8px; padding: 10px 12px;
+          background: var(--brand-light); border: 1px solid var(--brand-200, #f0d0d0);
+          border-radius: 10px; font-size: 0.8125rem; line-height: 1.45;
+          color: var(--brand-700, var(--brand));
+        }
+        .rec-tip svg { flex-shrink: 0; margin-top: 1px; }
 
         /* Fréquence */
         .freq-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
