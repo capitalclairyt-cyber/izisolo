@@ -625,7 +625,7 @@ export default function OffresClient({ offres, profile, planKey, limiteOffres })
         .offre-inactive { opacity: 0.55; }
         .offre-icon { width: 40px; height: 40px; border-radius: var(--radius-sm); background: var(--brand-light); color: var(--brand-700); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
         .offre-info { flex: 1; min-width: 0; }
-        .offre-nom { font-weight: 600; font-size: 0.9375rem; }
+        .offre-nom { font-weight: 600; font-size: 0.9375rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .offre-details { display: flex; gap: 6px; align-items: center; margin-top: 4px; flex-wrap: wrap; }
         .offre-seances, .offre-duree { font-size: 0.75rem; color: var(--text-muted); }
         .offre-prix { font-weight: 700; font-size: 1rem; color: var(--brand-700); white-space: nowrap; }
