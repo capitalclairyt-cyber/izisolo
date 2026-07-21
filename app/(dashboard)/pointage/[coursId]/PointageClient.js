@@ -1465,6 +1465,7 @@ export default function PointageClient({ cours, presences: initialPresences, tou
         .modal-header {
           display: flex; justify-content: space-between; align-items: center;
           padding: 16px 20px; border-bottom: 1px solid var(--border);
+          flex-shrink: 0;
         }
         .modal-header h3 {
           display: flex; align-items: center; gap: 8px;
@@ -1476,8 +1477,8 @@ export default function PointageClient({ cours, presences: initialPresences, tou
           cursor: pointer; font-size: 0.9rem; color: var(--text-secondary);
           display: flex; align-items: center; justify-content: center;
         }
-        .modal-search { margin: 12px 16px 4px; }
-        .modal-list   { overflow-y: auto; padding: 0 16px 24px; flex: 1; }
+        .modal-search { margin: 12px 16px 4px; flex-shrink: 0; }
+        .modal-list   { overflow-y: auto; padding: 0 16px 24px; flex: 1; min-height: 0; }
         .modal-empty  { text-align: center; color: var(--text-muted); padding: 24px; font-size: 0.875rem; }
         .modal-item {
           display: flex; align-items: center; gap: 12px;
@@ -1719,6 +1720,7 @@ export default function PointageClient({ cours, presences: initialPresences, tou
           display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
           padding: 10px 16px 0;
           font-size: 0.8rem;
+          flex-shrink: 0;
         }
         .add-type-label {
           font-size: 0.75rem; color: var(--text-muted); font-weight: 600;
@@ -1742,6 +1744,7 @@ export default function PointageClient({ cours, presences: initialPresences, tou
         /* ── Formulaire nouveau client ── */
         .new-client-form {
           padding: 14px 16px 0; display: flex; flex-direction: column; gap: 10px;
+          overflow-y: auto; min-height: 0;
         }
         .nc-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .nc-footer {

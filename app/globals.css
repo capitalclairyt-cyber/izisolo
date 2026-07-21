@@ -754,6 +754,9 @@ body:has(.izi-bg-decor) {
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
   position: relative;
+  /* Dans une modale flex-column à hauteur bornée, empêche la barre d'onglets
+     d'être compressée/rognée (overflow-y:hidden la clippait à ~0). */
+  flex-shrink: 0;
 }
 .subtabs-bar::-webkit-scrollbar { display: none; }
 .subtabs-bar::after {
