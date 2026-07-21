@@ -1,13 +1,14 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   ArrowLeft, Repeat, Calendar, ChevronLeft, ChevronRight, Plus, Trash2,
-  Sun, AlertTriangle, ToggleRight, ToggleLeft, X
+  Sun, AlertTriangle, ToggleRight, ToggleLeft, X, Pencil, Save
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase';
+import { getAllTypesFromCategories } from '@/lib/utils';
 import { useToast } from '@/components/ui/ToastProvider';
 import {
   estPendantVacances, estJourFerie, getPeriodeVacances, ZONES_VACANCES,
@@ -34,16 +35,76 @@ function freqLabel(rec) {
   return rec.frequence;
 }
 
-export default function RecurrencesClient({ recurrences: initialRecurrences, cours: initialCours, profile }) {
+export default function RecurrencesClient({ recurrences: initialRecurrences, cours: initialCours, profile, initialRecId = null, autoEdit = false }) {
   const router = useRouter();
   const { toast } = useToast();
   const [recurrences, setRecurrences] = useState(initialRecurrences);
   const [cours, setCours] = useState(initialCours);
-  const [selectedRecId, setSelectedRecId] = useState(initialRecurrences[0]?.id || null);
+  // Pré-sélection depuis le crayon d'une série (?rec=<id>) sinon la 1re.
+  const [selectedRecId, setSelectedRecId] = useState(
+    (initialRecId && initialRecurrences.some(r => r.id === initialRecId) ? initialRecId : initialRecurrences[0]?.id) || null
+  );
   const [monthOffset, setMonthOffset] = useState(0); // 0 = mois courant
   const [actionPending, setActionPending] = useState(null); // ISO date en cours
 
+  // Édition nom + type de la série (le crayon des cours récurrents atterrit ici
+  // quand la série n'a pas d'occurrence future → il faut pouvoir éditer d'ici).
+  const [editing, setEditing] = useState(false);
+  const [editForm, setEditForm] = useState({ nom: '', type_cours: '' });
+  const [savingEdit, setSavingEdit] = useState(false);
+  const typesCours = getAllTypesFromCategories(profile?.types_cours);
+
   const selected = recurrences.find(r => r.id === selectedRecId);
+
+  const ouvrirEdition = () => {
+    if (!selected) return;
+    setEditForm({ nom: selected.nom || '', type_cours: selected.type_cours || '' });
+    setEditing(true);
+  };
+
+  const enregistrerEdition = async () => {
+    if (!selected) return;
+    const nom = editForm.nom.trim();
+    if (!nom) { toast.error('Le nom ne peut pas être vide'); return; }
+    setSavingEdit(true);
+    const supabase = createClient();
+    const today = toISO(new Date());
+    const type_cours = editForm.type_cours || null;
+    try {
+      // 1) La récurrence elle-même
+      const { error: e1 } = await supabase
+        .from('recurrences')
+        .update({ nom, type_cours })
+        .eq('id', selected.id);
+      if (e1) throw e1;
+      // 2) Les occurrences futures (les passées restent inchangées)
+      const { error: e2 } = await supabase
+        .from('cours')
+        .update({ nom, type_cours })
+        .eq('recurrence_parent_id', selected.id)
+        .gte('date', today);
+      if (e2) throw e2;
+
+      setRecurrences(prev => prev.map(r => r.id === selected.id ? { ...r, nom, type_cours } : r));
+      setCours(prev => prev.map(c => c.recurrence_parent_id === selected.id && c.date >= today ? { ...c, nom } : c));
+      setEditing(false);
+      toast.success('Série mise à jour ✓');
+    } catch (err) {
+      toast.error('Erreur : ' + err.message);
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
+  // Ouvre l'édition directement si on arrive depuis le crayon d'une série (?edit=1).
+  useEffect(() => {
+    if (autoEdit && selected) {
+      setEditForm({ nom: selected.nom || '', type_cours: selected.type_cours || '' });
+      setEditing(true);
+    }
+    // au montage uniquement
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Cours futurs liés à la récurrence sélectionnée
   const coursDeRec = useMemo(() => {
@@ -214,26 +275,71 @@ export default function RecurrencesClient({ recurrences: initialRecurrences, cou
         <>
           {/* Header de la récurrence sélectionnée */}
           <div className="rec-detail izi-card">
-            <div className="rec-detail-top">
-              <div>
-                <div className="rec-detail-nom">{selected.nom}</div>
-                <div className="rec-detail-meta">
-                  {freqLabel(selected)}
-                  {selected.heure && ` · ${selected.heure.slice(0, 5)}`}
-                  {selected.duree_minutes && ` · ${selected.duree_minutes}min`}
+            {!editing ? (
+              <div className="rec-detail-top">
+                <div>
+                  <div className="rec-detail-nom">{selected.nom}</div>
+                  <div className="rec-detail-meta">
+                    {freqLabel(selected)}
+                    {selected.heure && ` · ${selected.heure.slice(0, 5)}`}
+                    {selected.duree_minutes && ` · ${selected.duree_minutes}min`}
+                    {selected.type_cours && ` · ${selected.type_cours}`}
+                  </div>
+                </div>
+                <div className="rec-detail-actions">
+                  <button type="button" onClick={ouvrirEdition} className="rec-icon-btn" title="Modifier le nom et le type">
+                    <Pencil size={16} />
+                  </button>
+                  <button type="button" onClick={() => toggleActif(selected)} className="rec-icon-btn" title={selected.actif ? 'Mettre en pause' : 'Réactiver'}>
+                    {selected.actif
+                      ? <ToggleRight size={22} style={{ color: '#16a34a' }} />
+                      : <ToggleLeft size={22} style={{ color: 'var(--text-muted)' }} />}
+                  </button>
+                  <button type="button" onClick={() => supprimerRecurrence(selected)} className="rec-icon-btn danger" title="Supprimer la série">
+                    <Trash2 size={16} />
+                  </button>
                 </div>
               </div>
-              <div className="rec-detail-actions">
-                <button type="button" onClick={() => toggleActif(selected)} className="rec-icon-btn" title={selected.actif ? 'Mettre en pause' : 'Réactiver'}>
-                  {selected.actif
-                    ? <ToggleRight size={22} style={{ color: '#16a34a' }} />
-                    : <ToggleLeft size={22} style={{ color: 'var(--text-muted)' }} />}
-                </button>
-                <button type="button" onClick={() => supprimerRecurrence(selected)} className="rec-icon-btn danger" title="Supprimer la série">
-                  <Trash2 size={16} />
-                </button>
+            ) : (
+              <div className="rec-edit-form">
+                <label className="rec-edit-label">Nom du cours</label>
+                <input
+                  className="izi-input"
+                  value={editForm.nom}
+                  onChange={e => setEditForm(f => ({ ...f, nom: e.target.value }))}
+                  placeholder="Ex : Yoga Vinyasa"
+                  autoFocus
+                />
+                {typesCours.length > 0 && (
+                  <>
+                    <label className="rec-edit-label">Type</label>
+                    <div className="rec-edit-chips">
+                      {typesCours.map(type => (
+                        <button
+                          key={type}
+                          type="button"
+                          className={`rec-chip-type ${editForm.type_cours === type ? 'selected' : ''}`}
+                          onClick={() => setEditForm(f => ({ ...f, type_cours: f.type_cours === type ? '' : type }))}
+                        >
+                          {type}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+                <p className="rec-edit-hint">
+                  S'applique à la série et à ses <strong>{totalCoursFuturs}</strong> cours à venir (les séances passées ne changent pas).
+                </p>
+                <div className="rec-edit-actions">
+                  <button type="button" className="izi-btn izi-btn-ghost" onClick={() => setEditing(false)} disabled={savingEdit}>
+                    Annuler
+                  </button>
+                  <button type="button" className="izi-btn izi-btn-primary" onClick={enregistrerEdition} disabled={savingEdit || !editForm.nom.trim()}>
+                    <Save size={16} /> {savingEdit ? 'Enregistrement…' : 'Enregistrer'}
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
 
             {(selected.exclure_vacances || selected.exclure_feries) && (
               <div className="rec-detail-tags">
@@ -381,6 +487,20 @@ const styleBlock = (
     .rec-detail-nom { font-size: 1.0625rem; font-weight: 700; color: var(--text-primary); }
     .rec-detail-meta { font-size: 0.8125rem; color: var(--text-secondary); margin-top: 2px; }
     .rec-detail-actions { display: flex; gap: 4px; }
+
+    /* Édition nom + type de la série */
+    .rec-edit-form { display: flex; flex-direction: column; gap: 8px; }
+    .rec-edit-label { font-size: 0.8125rem; font-weight: 600; color: var(--text-secondary); }
+    .rec-edit-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .rec-chip-type {
+      padding: 8px 14px; border-radius: var(--radius-full);
+      border: 1px solid var(--border); background: var(--bg-card);
+      color: var(--text-secondary); font-size: 0.8125rem; font-weight: 500; cursor: pointer;
+      transition: all var(--transition-fast);
+    }
+    .rec-chip-type.selected { background: var(--brand); color: white; border-color: var(--brand); }
+    .rec-edit-hint { font-size: 0.75rem; color: var(--text-muted); margin: 2px 0 0; line-height: 1.4; }
+    .rec-edit-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
     .rec-icon-btn {
       background: none; border: none; cursor: pointer;
       width: 36px; height: 36px; border-radius: var(--radius-sm);

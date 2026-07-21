@@ -585,8 +585,8 @@ function SerieCard({ serie, stats, lieuxMap }) {
   // renvoie vers le calendrier des récurrences (gestion de la série), JAMAIS
   // vers `/agenda` nu qui s'ouvrait sur aujourd'hui et paraissait vide
   // (bug « mon cours a disparu » — cf. audit 2026-07-12).
-  const href     = stats.nextCoursId ? `/cours/${stats.nextCoursId}` : `/cours/recurrences`;
-  const editHref = stats.nextCoursId ? `/cours/${stats.nextCoursId}?edit=1` : `/cours/recurrences`;
+  const href     = stats.nextCoursId ? `/cours/${stats.nextCoursId}` : `/cours/recurrences?rec=${serie.id}`;
+  const editHref = stats.nextCoursId ? `/cours/${stats.nextCoursId}?edit=1` : `/cours/recurrences?rec=${serie.id}&edit=1`;
 
   const joursLabel = useMemo(() => {
     if (!serie.jours_semaine?.length) return null;

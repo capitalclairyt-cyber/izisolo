@@ -6,10 +6,16 @@ export const metadata = {
   title: 'Mes cours récurrents',
 };
 
-export default async function RecurrencesPage() {
+export default async function RecurrencesPage({ searchParams }) {
   const supabase = await createServerClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
+
+  // Pré-sélection + ouverture directe de l'édition depuis le crayon d'une série
+  // (CoursEventsClient → /cours/recurrences?rec=<id>&edit=1).
+  const sp = await searchParams;
+  const initialRecId = sp?.rec || null;
+  const autoEdit = sp?.edit === '1';
 
   // Charger les récurrences du profil + leurs cours générés (pour compteur + calendrier)
   const today = new Date().toISOString().slice(0, 10);
@@ -23,7 +29,7 @@ export default async function RecurrencesPage() {
       .order('created_at', { ascending: false }),
     supabase
       .from('profiles')
-      .select('zone_vacances_default')
+      .select('zone_vacances_default, types_cours')
       .eq('id', user.id)
       .single(),
     supabase
@@ -41,6 +47,8 @@ export default async function RecurrencesPage() {
       recurrences={recurrences || []}
       cours={cours || []}
       profile={profile || {}}
+      initialRecId={initialRecId}
+      autoEdit={autoEdit}
     />
   );
 }
