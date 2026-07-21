@@ -750,7 +750,7 @@ function AbonnementCheckout({ currentPlan, profile }) {
       pitch: 'Tout l\'essentiel pour gérer ton studio à la main.',
       features: [
         'Jusqu\'à 40 élèves',
-        '1 lieu',
+        'Lieux illimités',
         'Cours, agenda, pointage présences',
         'Carnets / abonnements / paiements manuels',
         'Page publique studio (basique)',
@@ -768,7 +768,7 @@ function AbonnementCheckout({ currentPlan, profile }) {
       pitch: 'Encaissement en ligne + automatisations + outils marketing.',
       features: [
         'Élèves illimités',
-        'Jusqu\'à 3 lieux',
+        'Lieux illimités',
         'Tout Solo +',
         'Stripe Payment Link (1% IziSolo)',
         'Mailing campagnes par email',
@@ -791,7 +791,6 @@ function AbonnementCheckout({ currentPlan, profile }) {
       pitch: 'Vidéos de cours vendables à l\'unité ou en abonnement + white-label.',
       features: [
         'Tout Pro +',
-        'Lieux illimités',
         'Vidéos de cours : uploader, diffuser, vendre à l\'unité ou en abonnement',
         'Logo studio dans tous les emails (white-label)',
       ],
@@ -837,7 +836,7 @@ function AbonnementCheckout({ currentPlan, profile }) {
       {subStatus === 'canceled' && (
         <div className="abo-banner abo-banner-warning">
           <strong>Abonnement annulé.</strong> Tu accèdes à tes données existantes mais
-          tu es ramenée aux limites Solo (40 élèves, 1 lieu). Re-souscris quand tu veux.
+          tu es ramenée aux limites Solo (40 élèves). Re-souscris quand tu veux.
         </div>
       )}
       {(subStatus === 'active' || subStatus === 'trialing') && hasCustomerId && (

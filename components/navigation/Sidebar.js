@@ -292,7 +292,10 @@ export default function Sidebar({ studioNom = 'Mon Studio', vocabulaire = {}, il
           padding: 12px 8px;
           overflow-y: auto;
           overflow-x: hidden;
-          flex-shrink: 0;
+          /* Peut rétrécir + scroller quand l'écran est court (sinon le bas de la
+             nav — Support, Paramètres — était coupé et inaccessible sur mobile). */
+          flex: 0 1 auto;
+          min-height: 0;
         }
         .sidebar-section {
           margin-bottom: 2px;
@@ -388,6 +391,11 @@ export default function Sidebar({ studioNom = 'Mon Studio', vocabulaire = {}, il
         }
 
         /* === ILLUSTRATION === */
+        /* Décorative : on la masque sur écran court pour garantir l'accès à
+           tout le menu (Support, Paramètres) + au footer sur petits téléphones. */
+        @media (max-height: 760px) {
+          .sidebar-illustration { display: none; }
+        }
         .sidebar-illustration {
           flex: 1;
           display: flex;

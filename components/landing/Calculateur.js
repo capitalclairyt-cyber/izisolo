@@ -130,7 +130,7 @@ export default function Calculateur() {
                 <h3>Solo · 17 €/mois</h3>
                 <ul className="calc-feat-list">
                   <li>Agenda complet · cours illimités</li>
-                  <li>Jusqu'à 40 élèves · 1 lieu</li>
+                  <li>Jusqu'à 40 élèves · lieux illimités</li>
                   <li>Pointage des présences</li>
                   <li>Mini-compta (espèces, chèque, virement)</li>
                   <li>Portail public élève (PWA)</li>
@@ -141,7 +141,7 @@ export default function Calculateur() {
                 <h3>Pro · 22 €/mois</h3>
                 <ul className="calc-feat-list">
                   <li>Tout du plan Solo</li>
-                  <li>Élèves illimités · jusqu'à 3 lieux</li>
+                  <li>Élèves illimités · lieux illimités</li>
                   <li>Paiement CB en ligne (Stripe)</li>
                   <li>Mode équipe multi-utilisateurs</li>
                   <li>Mailing groupé ciblé</li>

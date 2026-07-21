@@ -671,7 +671,7 @@ export function Pricing() {
       sub: '/mois · à vie',
       desc: 'Pour démarrer simplement. Tout l\'essentiel pour gérer ta pratique solo.',
       features: [
-        'Jusqu\'à 40 élèves · 1 lieu',
+        'Jusqu\'à 40 élèves · lieux illimités',
         'Jusqu\'à 5 formules d\'abonnement',
         'Agenda complet · cours illimités',
         'Portail élève + PWA',
@@ -690,7 +690,7 @@ export function Pricing() {
       sub: '/mois · à vie',
       desc: 'Le plan complet. Auto-pilote ton studio, encaisse en ligne, accueille une équipe.',
       features: [
-        'Élèves illimités · jusqu\'à 3 lieux',
+        'Élèves illimités · lieux illimités',
         'Formules d\'abonnement illimitées',
         'Tout du plan Solo',
         'Stripe Payment Link (CB par les élèves)',
