@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   CalendarDays, Users, BarChart3, AlertTriangle, ChevronRight,
-  Clock, Plus, CheckCircle2, XCircle, Share2, Copy, ExternalLink, X, Sparkles,
+  Clock, Plus, CheckCircle2, XCircle, Share2, Copy, ExternalLink, X, Sparkles, MapPin,
   Receipt, MessageSquare, Settings as SettingsIcon, ClipboardList, Eye
 } from 'lucide-react';
 import { formatHeure, formatMontant } from '@/lib/utils';
@@ -136,7 +136,7 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
         <div className="dash-today-action">
           {prochainCours ? (
             <>
-              <span className="dash-today-next">Prochain : <strong>{prochainCours.nom}</strong>{prochainCours.heure && <> à {formatHeure(prochainCours.heure)}</>}</span>
+              <span className="dash-today-next">Prochain : <strong>{prochainCours.nom}</strong>{prochainCours.heure && <> à {formatHeure(prochainCours.heure)}</>}{prochainCours.lieu && <> · {prochainCours.lieu}</>}</span>
               <Link href={`/pointage/${prochainCours.id}`} className="izi-btn izi-btn-primary dash-today-cta">
                 <ClipboardList size={16} /> Ouvrir le prochain cours
               </Link>
@@ -416,6 +416,7 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
                         {formatHeure(cours.heure)}
                         {cours.duree_minutes && ` · ${cours.duree_minutes}min`}
                         {cours.presences?.[0]?.count > 0 && ` · ${cours.presences[0].count} inscrits`}
+                        {cours.lieu && <span className="cours-lieu"><MapPin size={13} /> {cours.lieu}</span>}
                       </div>
                     </div>
                     {cours.type_cours && (
@@ -824,11 +825,13 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
         .cours-meta {
           display: flex;
           align-items: center;
+          flex-wrap: wrap;
           gap: 4px;
           font-size: 0.8125rem;
           color: var(--text-secondary);
           margin-top: 2px;
         }
+        .cours-lieu { display: inline-flex; align-items: center; gap: 3px; }
         .cours-pointer-btn {
           display: flex;
           align-items: center;
