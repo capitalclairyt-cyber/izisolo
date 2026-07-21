@@ -23,6 +23,7 @@ const PUBLIC_ROUTES = [
   '/coachs-bien-etre', '/therapeutes', '/sophrologues',
   '/prof-yoga-',            // /prof-yoga-paris, /prof-yoga-lyon, futures villes
   '/prof-pilates-',         // /prof-pilates-paris, /prof-pilates-lyon, etc.
+  '/logiciel-gestion-prof-yoga', // page SEO catégorie « logiciel/appli de gestion yoga »
   '/blog',                  // /blog (liste) + /blog/[slug] (articles)
   '/outils',                // /outils/calculateur-revenu-prof-yoga, etc. (lead magnets HTML)
   '/calculateur',                // calculateur de frais (lead magnet)
@@ -32,6 +33,23 @@ const PUBLIC_ROUTES = [
 
 export async function proxy(request) {
   const { pathname } = request.nextUrl;
+
+  // ── Canonique SEO : izisolo.fr → www.izisolo.fr (308 permanent) ──────────
+  // Google indexait les DEUX (www + non-www) → jus de référencement splitté
+  // (cf. Search Console : le même article rankait sur les 2 URLs). On consolide
+  // sur UN seul domaine. www est le canonique (baseUrl fallback + webhook Stripe
+  // déjà sur www → non impacté). Ne cible QUE l'apex prod : les previews Vercel
+  // (*.vercel.app) et localhost ne matchent pas. 308 = préserve méthode + corps.
+  // NB : si un redirect 307 persiste après déploiement, il vient de la config
+  // domaine Vercel (edge) — mettre www en domaine primaire dans Vercel → Domains.
+  const host = request.headers.get('host');
+  if (host === 'izisolo.fr') {
+    const url = request.nextUrl.clone();
+    url.protocol = 'https:';
+    url.host = 'www.izisolo.fr';
+    url.port = '';
+    return NextResponse.redirect(url, 308);
+  }
 
   // Laisser passer les routes publiques, API, assets statiques
   if (

@@ -5,6 +5,7 @@ const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.izisolo.fr';
 
 const STATIC_PATHS = [
   { path: '/',                     changeFrequency: 'monthly',  priority: 1.0 },
+  { path: '/logiciel-gestion-prof-yoga', changeFrequency: 'monthly', priority: 0.9 },
   { path: '/profs-de-yoga',        changeFrequency: 'monthly',  priority: 0.9 },
   { path: '/profs-de-yoga-enfants', changeFrequency: 'monthly', priority: 0.9 },
   { path: '/profs-de-pilates',     changeFrequency: 'monthly',  priority: 0.9 },
