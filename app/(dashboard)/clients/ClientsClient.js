@@ -2,13 +2,16 @@
 
 import { useState, useMemo, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import { Search, Plus, User, Building2, Phone, Mail, ChevronRight, Filter, Send, SlidersHorizontal, Upload, Download } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Search, Plus, User, Building2, Phone, Mail, ChevronRight, Filter, Send, SlidersHorizontal, Upload, Download, GitMerge } from 'lucide-react';
 import { createClient } from '@/lib/supabase';
 import { getVocabulaire } from '@/lib/vocabulaire';
 import { STATUTS_CLIENT } from '@/lib/constantes';
 import { toneForClient } from '@/lib/tones';
 import { statutCompteEleve, formatDateRelative } from '@/lib/eleve-statut';
+import { trouverDoublons } from '@/lib/doublons';
 import InviteModal from './InviteModal';
+import MergeClientsModal from '@/components/clients/MergeClientsModal';
 import Pagination, { usePagination, DEFAULT_PAGE_SIZE } from '@/components/ui/Pagination';
 import EmptyState from '@/components/ui/EmptyState';
 
@@ -28,8 +31,12 @@ const FILTRES_PRIMAIRES = [
 
 export default function ClientsClient({ clients: clientsInit, profile, statutMap = {} }) {
   const vocab = getVocabulaire(profile?.metier || 'yoga', profile?.vocabulaire);
+  const router = useRouter();
   const [search, setSearch] = useState('');
   const [inviteOpen, setInviteOpen] = useState(false);
+  // Fusion de doublons : null = fermé, {a,b} = paire pré-remplie, {} = mode manuel
+  const [mergeState, setMergeState] = useState(null);
+  const [doublonsOpen, setDoublonsOpen] = useState(false);
   const [clientsList, setClientsList] = useState(clientsInit);
   const [statutDropdown, setStatutDropdown] = useState(null);
   const statutDropRef = useRef(null);
@@ -47,6 +54,15 @@ export default function ClientsClient({ clients: clientsInit, profile, statutMap
     const supabase = createClient();
     const { error } = await supabase.from('clients').update({ statut: newStatut }).eq('id', clientId);
     if (error) setClientsList(list => list.map(c => c.id === clientId ? { ...c, statut: prev } : c));
+  };
+
+  // Doublons probables (email/tél/nom normalisés) — détection auto
+  const doublons = useMemo(() => trouverDoublons(clientsList), [clientsList]);
+
+  const onMerged = ({ removedId }) => {
+    setClientsList(list => list.filter(c => c.id !== removedId));
+    setMergeState(null);
+    router.refresh(); // recharge la fiche principale (données rapatriées)
   };
 
   // Export CSV de la base élève — côté client (la liste complète est déjà
@@ -212,6 +228,14 @@ export default function ClientsClient({ clients: clientsInit, profile, statutMap
         >
           <Send size={15} /> <span className="invite-btn-label">Inviter</span>
         </button>
+        <button
+          className="izi-btn izi-btn-secondary invite-btn"
+          onClick={() => setMergeState({})}
+          type="button"
+          title="Fusionner deux fiches en double"
+        >
+          <GitMerge size={15} /> <span className="invite-btn-label">Fusionner</span>
+        </button>
       </div>
 
       <InviteModal
@@ -220,6 +244,42 @@ export default function ClientsClient({ clients: clientsInit, profile, statutMap
         profile={profile}
         clients={clientsList}
       />
+
+      {/* Bannière doublons probables (détection auto) */}
+      {doublons.length > 0 && (
+        <div className="doublons-banner animate-slide-up">
+          <button className="doublons-head" onClick={() => setDoublonsOpen(o => !o)} type="button">
+            <GitMerge size={16} />
+            <span><strong>{doublons.length}</strong> doublon{doublons.length > 1 ? 's' : ''} possible{doublons.length > 1 ? 's' : ''}</span>
+            <span className="doublons-chevron">{doublonsOpen ? '▲' : '▼'}</span>
+          </button>
+          {doublonsOpen && (
+            <div className="doublons-list">
+              {doublons.map(({ a, b, motif }) => (
+                <div key={`${a.id}|${b.id}`} className="doublon-row">
+                  <div className="doublon-info">
+                    <span className="doublon-noms">{[a.prenom, a.nom].filter(Boolean).join(' ')} ↔ {[b.prenom, b.nom].filter(Boolean).join(' ')}</span>
+                    <span className="doublon-motif">même {motif}</span>
+                  </div>
+                  <button className="izi-btn izi-btn-secondary doublon-btn" onClick={() => setMergeState({ a, b })} type="button">
+                    Fusionner
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {mergeState && (
+        <MergeClientsModal
+          allClients={clientsList}
+          initialA={mergeState.a || null}
+          initialB={mergeState.b || null}
+          onClose={() => setMergeState(null)}
+          onMerged={onMerged}
+        />
+      )}
 
       {/* Recherche sticky */}
       <div className="search-bar animate-slide-up">
@@ -445,7 +505,29 @@ export default function ClientsClient({ clients: clientsInit, profile, statutMap
           display: flex;
           align-items: center;
           gap: 10px;
+          flex-wrap: wrap;
         }
+        /* Bannière doublons probables */
+        .doublons-banner {
+          background: #fff7ed; border: 1px solid #fed7aa; border-radius: var(--radius-md);
+          overflow: hidden;
+        }
+        .doublons-head {
+          width: 100%; display: flex; align-items: center; gap: 8px;
+          padding: 10px 14px; background: none; border: none; cursor: pointer;
+          font-size: 0.875rem; font-weight: 600; color: #9a3412; text-align: left;
+        }
+        .doublons-chevron { margin-left: auto; font-size: 0.7rem; }
+        .doublons-list { display: flex; flex-direction: column; border-top: 1px solid #fed7aa; }
+        .doublon-row {
+          display: flex; align-items: center; gap: 10px; justify-content: space-between;
+          padding: 10px 14px; border-bottom: 1px solid #ffedd5;
+        }
+        .doublon-row:last-child { border-bottom: none; }
+        .doublon-info { display: flex; flex-direction: column; min-width: 0; }
+        .doublon-noms { font-size: 0.8125rem; font-weight: 600; color: var(--text-primary); }
+        .doublon-motif { font-size: 0.7rem; color: var(--text-muted); }
+        .doublon-btn { padding: 5px 12px; font-size: 0.75rem; flex-shrink: 0; }
         /* H1 page-header hérite désormais du style global (Fraunces 1.875rem)
            défini dans app/globals.css. On laisse l'override vide pour ne pas
            casser, mais idéalement vider ou supprimer le sélecteur. */

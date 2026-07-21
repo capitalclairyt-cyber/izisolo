@@ -325,11 +325,16 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
 
   const sendPortailInvite = async () => {
     if (inviting) return;
-    // Sans email, l'invitation portail est impossible → message clair au lieu
-    // d'un bouton qui ne fait rien (feedback #15).
-    if (!client.email) {
-      toast.warning(`${client.prenom || 'Cette élève'} n'a pas d'adresse email. Ajoute-en une (bouton Modifier) pour pouvoir l'inviter.`);
-      return;
+    // Sans email sur la fiche : on le demande et on le RATTACHE à cette fiche
+    // (via clientId) au lieu de créer une 2e fiche → anti-doublon.
+    let email = client.email;
+    let addedEmail = false;
+    if (!email) {
+      const saisi = window.prompt(`Email de ${client.prenom || 'cette élève'} pour l'inviter :`, '');
+      if (saisi === null) return; // annulé
+      email = saisi.trim().toLowerCase();
+      if (!email.includes('@')) { toast.warning('Adresse email invalide.'); return; }
+      addedEmail = true;
     }
     setInviting(true);
     try {
@@ -337,18 +342,20 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          email: client.email,
+          email,
           prenom: client.prenom || client.nom,
           studioSlug: profile?.studio_slug,
           studioNom: profile?.studio_nom,
           profPrenom: profile?.prenom,
+          clientId: client.id, // rattache l'invitation à CETTE fiche (anti-doublon)
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Erreur');
       setInvited(true);
-      toast.success(`Invitation envoyée à ${client.prenom || client.email} ✓`);
+      toast.success(`Invitation envoyée à ${client.prenom || email} ✓`);
       setTimeout(() => setInvited(false), 5000);
+      if (addedEmail) router.refresh(); // recharge la fiche avec le nouvel email
     } catch (err) {
       toast.error('Erreur : ' + err.message);
     } finally {
@@ -769,7 +776,7 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
             <MessageSquare size={16} />
             <span className="header-msg-label">Message</span>
           </Link>
-          {!isPro && client.email && profile?.studio_slug && (
+          {!isPro && profile?.studio_slug && (
             <button
               className={`header-invite-btn ${invited ? 'invited' : ''}`}
               onClick={sendPortailInvite}

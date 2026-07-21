@@ -17,7 +17,7 @@ import { sendPortailMagicLink } from '@/lib/portail-magic-link';
 export const POST = withRoute({ auth: 'active' }, async ({ request, auth }) => {
   const { profile } = auth;
   const body = await request.json().catch(() => ({}));
-  const { email, prenom, studioSlug, studioNom, profPrenom } = body;
+  const { email, prenom, studioSlug, studioNom, profPrenom, clientId } = body;
 
   const slug = studioSlug || profile.studio_slug;
   if (!slug) {
@@ -42,7 +42,32 @@ export const POST = withRoute({ auth: 'active' }, async ({ request, auth }) => {
   // On mémorise l'id de la fiche (existante ou créée) pour tracer l'invitation
   // APRÈS un envoi réussi (invitation_envoyee_at, v67).
   let ficheClientId = null;
-  if (studioProfile) {
+
+  // ── 0) Invitation DEPUIS une fiche existante (clientId) ──────────────────
+  // Anti-doublon : on rattache l'email à CETTE fiche au lieu d'en créer une
+  // nouvelle (cas Maude : fiche ajoutée sans email, puis invitée). Si l'email
+  // est déjà porté par une AUTRE fiche, l'update échoue (contrainte unique) →
+  // non-bloquant, l'outil de fusion s'en chargera.
+  if (clientId) {
+    const { data: fiche } = await supabaseAdmin
+      .from('clients')
+      .select('id, email')
+      .eq('id', clientId)
+      .eq('profile_id', profile.id) // sécurité : la fiche appartient bien à la prof
+      .maybeSingle();
+    if (fiche) {
+      ficheClientId = fiche.id;
+      if (!fiche.email) {
+        const { error: mailErr } = await supabaseAdmin
+          .from('clients')
+          .update({ email: cleanEmail })
+          .eq('id', fiche.id);
+        if (mailErr) console.error('[invite] rattachement email fiche (non-bloquant):', mailErr.message);
+      }
+    }
+  }
+
+  if (!ficheClientId && studioProfile) {
     const { data: existing } = await supabaseAdmin
       .from('clients')
       .select('id')

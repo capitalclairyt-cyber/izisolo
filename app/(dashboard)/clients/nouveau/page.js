@@ -554,6 +554,9 @@ export default function NouveauClient() {
               type="email"
               placeholder="marie@email.com"
             />
+            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '-2px 0 0', lineHeight: 1.4 }}>
+              💡 Recommandé : l'élève pourra accéder à son espace, et ça évite les doublons de fiche.
+            </p>
 
             <ValidatedInput
               id="nc-telephone"
