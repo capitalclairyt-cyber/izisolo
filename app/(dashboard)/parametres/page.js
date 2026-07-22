@@ -7,7 +7,7 @@ import {
   Plus, X, Trash2, Flower2, Crown, Mail, Home,
   Eye, Zap, Gift, ToggleLeft, ToggleRight, Cake,
   CreditCard, Copy, Check, ExternalLink, AlertCircle, Loader2,
-  Pencil, Image as ImageIcon,
+  Pencil, Image as ImageIcon, ChevronDown,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase';
 import { useToast } from '@/components/ui/ToastProvider';
@@ -27,6 +27,35 @@ function normalizeUrl(value) {
   if (/^https?:\/\//i.test(trimmed)) return trimmed;
   return 'https://' + trimmed;
 }
+// Section repliable — allège visuellement /parametres : l'essentiel reste
+// ouvert, les réglages « réglés une fois » sont repliés par défaut. On enveloppe
+// la section EXISTANTE sans toucher son contenu :
+//   - repliée : une barre au look .section (titre + sous-titre + chevron)
+//   - dépliée : un petit « Replier » + la section telle quelle.
+function CollapsibleSection({ icon: Icon, title, subtitle, defaultOpen = false, children }) {
+  const [open, setOpen] = useState(defaultOpen);
+  if (open) {
+    return (
+      <div className="param-collapsible-open">
+        <button type="button" className="param-collapse-toggle" onClick={() => setOpen(false)} aria-expanded="true">
+          <ChevronDown size={14} style={{ transform: 'rotate(180deg)' }} /> Replier
+        </button>
+        {children}
+      </div>
+    );
+  }
+  return (
+    <button type="button" className="section izi-card param-collapsible-bar" onClick={() => setOpen(true)} aria-expanded="false">
+      {Icon && <div className="section-icon"><Icon size={20} /></div>}
+      <div className="param-collapsible-titles">
+        <h2>{title}</h2>
+        {subtitle && <span className="param-collapsible-sub">{subtitle}</span>}
+      </div>
+      <ChevronDown size={18} className="param-collapsible-chevron" />
+    </button>
+  );
+}
+
 // ReglesTab (constructeur SI/ALORS avancé) retiré de l'UI le 2026-05-05.
 // Le composant reste sur disque (./ReglesTab) pour réintégration future.
 import ReglesMetierTab from './ReglesMetierTab';
@@ -2360,6 +2389,7 @@ export default function Parametres() {
           </div>
 
           {/* Lieux */}
+          <CollapsibleSection icon={MapPin} title="Mes lieux" subtitle="Studios, salles, domiciles" defaultOpen={false}>
           <div className="section izi-card">
             <div className="section-top"><div className="section-icon"><MapPin size={20} /></div><h2>Mes lieux</h2></div>
             <p className="section-desc">Les salles et espaces où tu donnes tes cours.</p>
@@ -2414,6 +2444,7 @@ export default function Parametres() {
               <Plus size={18} /> Ajouter un lieu
             </button>
           </div>
+          </CollapsibleSection>
 
           {/* === Modal édition lieu === */}
           {lieuEdit && (
@@ -2502,11 +2533,13 @@ export default function Parametres() {
           {/* Champs collectés sur les fiches élèves — rattaché à Profil & studio
               (2026-06-01) : c'est la config des données qu'on collecte sur ses
               élèves, naturellement liée à l'identité du studio. */}
-          <ChampsElevesSection
-            profile={profile}
-            setProfile={setProfile}
-            setDirty={setDirty}
-          />
+          <CollapsibleSection icon={User} title="Infos collectées sur tes élèves" subtitle="Champs de la fiche élève" defaultOpen={false}>
+            <ChampsElevesSection
+              profile={profile}
+              setProfile={setProfile}
+              setDirty={setDirty}
+            />
+          </CollapsibleSection>
 
           {/* Note : la page publique (PagePubliqueSection) a été déplacée vers
               l'onglet "Portail public" (2026-06-01), avec VisibiliteSection,
@@ -2534,25 +2567,31 @@ export default function Parametres() {
           />
 
           {/* Visibilité par défaut des cours */}
-          <VisibiliteSection
-            profile={profile}
-            setProfile={setProfile}
-            setDirty={setDirty}
-          />
+          <CollapsibleSection icon={Eye} title="Visibilité des cours" subtitle="Qui voit tes cours sur le portail" defaultOpen={false}>
+            <VisibiliteSection
+              profile={profile}
+              setProfile={setProfile}
+              setDirty={setDirty}
+            />
+          </CollapsibleSection>
 
           {/* Cours d'essai pour visiteurs */}
-          <CoursEssaiSection
-            profile={profile}
-            setProfile={setProfile}
-            setDirty={setDirty}
-          />
+          <CollapsibleSection icon={Gift} title="Cours d'essai" subtitle="Accueil des nouveaux visiteurs" defaultOpen={false}>
+            <CoursEssaiSection
+              profile={profile}
+              setProfile={setProfile}
+              setDirty={setDirty}
+            />
+          </CollapsibleSection>
 
           {/* Paiement en ligne (Stripe Payment Link) */}
-          <StripePaiementSection
-            profile={profile}
-            setProfile={setProfile}
-            setDirty={setDirty}
-          />
+          <CollapsibleSection icon={CreditCard} title="Paiement en ligne" subtitle="Stripe — encaisser par carte" defaultOpen={false}>
+            <StripePaiementSection
+              profile={profile}
+              setProfile={setProfile}
+              setDirty={setDirty}
+            />
+          </CollapsibleSection>
 
           <button onClick={handleSave} className="izi-btn izi-btn-primary save-btn" disabled={saving}>
             <Save size={18} /> {saving ? 'Enregistrement...' : 'Enregistrer'}
@@ -2602,6 +2641,7 @@ export default function Parametres() {
               aux élèves (cf. section "Notifications élèves auto" ci-dessous
               pour activer les canaux email/SMS).
               Déplacé ici depuis l'onglet Réglages (2026-06-01). */}
+          <CollapsibleSection icon={Bell} title="Seuils d'alerte" subtitle="Carnets, abos, paiements en retard" defaultOpen={false}>
           <div className="section izi-card">
             <div className="section-top">
               <div className="section-icon"><Bell size={20} /></div>
@@ -2681,14 +2721,17 @@ export default function Parametres() {
               </p>
             </div>
           </div>
+          </CollapsibleSection>
 
           {/* Notifications élèves automatiques — déplacé ici depuis l'onglet
               Réglages (2026-06-01). */}
-          <NotifsElevesSection
-            profile={profile}
-            setProfile={setProfile}
-            setDirty={setDirty}
-          />
+          <CollapsibleSection icon={Bell} title="Notifications élèves automatiques" subtitle="Emails/SMS envoyés à tes élèves" defaultOpen={false}>
+            <NotifsElevesSection
+              profile={profile}
+              setProfile={setProfile}
+              setDirty={setDirty}
+            />
+          </CollapsibleSection>
 
           {/* Bouton couvrant les seuils + notifs élèves ci-dessus */}
           <button onClick={handleSave} className="izi-btn izi-btn-primary save-btn" disabled={saving}>
@@ -2697,12 +2740,7 @@ export default function Parametres() {
 
           {/* Anniversaires : messages auto ENVOYÉS aux élèves — feature à part
               (≠ « Mes notifications » ci-dessus = ce que la prof reçoit). */}
-          <div className="section izi-card" style={{ marginTop: 4 }}>
-            <div className="section-top">
-              <div className="section-icon"><Cake size={20} /></div>
-              <h2>Anniversaires des élèves</h2>
-            </div>
-          </div>
+          <CollapsibleSection icon={Cake} title="Anniversaires des élèves" subtitle="Messages et cadeaux d'anniversaire" defaultOpen={false}>
 
           {/* Ancien sous-onglet « Général » (cloche) → fusionné dans le panneau
               « Mes notifications » (canal Appli). Bloc désactivé, à retirer au
@@ -2931,6 +2969,7 @@ export default function Parametres() {
               </button>
             </div>
           )}
+          </CollapsibleSection>
 
         </div>
       )}
@@ -2945,17 +2984,21 @@ export default function Parametres() {
         <div className="tab-content animate-fade-in">
           {/* Règles d'annulation — déplacé ici depuis l'onglet Réglages
               (2026-06-01). S'enregistre via handleSave (champ regles_annulation). */}
-          <ReglesAnnulationSection
-            profile={profile}
-            setProfile={setProfile}
-            setDirty={setDirty}
-          />
+          <CollapsibleSection icon={Zap} title="Règles d'annulation" subtitle="Délais et politique d'annulation" defaultOpen={false}>
+            <ReglesAnnulationSection
+              profile={profile}
+              setProfile={setProfile}
+              setDirty={setDirty}
+            />
+          </CollapsibleSection>
 
           <button onClick={handleSave} className="izi-btn izi-btn-primary save-btn" disabled={saving}>
             <Save size={18} /> {saving ? 'Enregistrement...' : 'Enregistrer'}
           </button>
 
-          <ReglesMetierTab profileId={profile.id} />
+          <CollapsibleSection icon={Zap} title="Règles métier" subtitle="Automatisations SI / ALORS (avancé)" defaultOpen={false}>
+            <ReglesMetierTab profileId={profile.id} />
+          </CollapsibleSection>
         </div>
       )}
 
@@ -3111,6 +3154,25 @@ export default function Parametres() {
         .section-top h2 { font-size: 1.0625rem; font-weight: 700; margin: 0; }
         .section-icon { width: 36px; height: 36px; border-radius: var(--radius-sm); background: var(--brand-light); color: var(--brand-700); display: flex; align-items: center; justify-content: center; }
         .section-desc { font-size: 0.8125rem; color: var(--text-muted); margin: -4px 0 4px; }
+
+        /* Section repliable */
+        .param-collapsible-bar {
+          display: flex; align-items: center; gap: 10px; width: 100%;
+          padding: 16px 20px; cursor: pointer; text-align: left;
+          transition: background var(--transition-fast);
+        }
+        .param-collapsible-bar:hover { background: var(--cream, #faf8f5); }
+        .param-collapsible-titles { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+        .param-collapsible-titles h2 { margin: 0; }
+        .param-collapsible-sub { font-size: 0.78rem; color: var(--text-muted); font-weight: 400; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .param-collapsible-chevron { color: var(--text-muted); flex-shrink: 0; }
+        .param-collapsible-open { display: flex; flex-direction: column; gap: 6px; }
+        .param-collapse-toggle {
+          align-self: flex-end; display: inline-flex; align-items: center; gap: 4px;
+          background: none; border: none; cursor: pointer;
+          font-size: 0.75rem; font-weight: 600; color: var(--text-muted); padding: 2px 4px;
+        }
+        .param-collapse-toggle:hover { color: var(--brand-700); }
         .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         .form-group { display: flex; flex-direction: column; gap: 6px; }
         .form-label { font-size: 0.8125rem; font-weight: 600; color: var(--text-secondary); }
