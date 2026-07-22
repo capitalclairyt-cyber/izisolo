@@ -1,6 +1,7 @@
 import { createServerClient } from '@/lib/supabase-server';
 import { createAdminClient } from '@/lib/supabase-admin';
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
+import { escapeIlike } from '@/lib/utils';
 
 export const runtime = 'nodejs';
 
@@ -31,7 +32,7 @@ export async function GET(request, { params }) {
     .from('clients')
     .select('id, prenom, nom, email, adresse, code_postal, ville')
     .eq('profile_id', profile.id)
-    .ilike('email', user.email)
+    .ilike('email', escapeIlike(user.email))
     .single();
   if (!client) return new Response('Client introuvable', { status: 404 });
 

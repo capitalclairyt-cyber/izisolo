@@ -3,14 +3,14 @@ import { createAdminClient } from '@/lib/supabase-admin';
 import { parseJsonBody, annulationSchema } from '@/lib/validation';
 import { checkRateLimitIP } from '@/lib/antibot';
 import { studioHasFeature } from '@/lib/plan-guard';
-import { sendEmail } from '@/lib/email';
 import { evaluerAnnulation } from '@/lib/regles-annulation';
 import { sendNotifEleve } from '@/lib/notifs-eleves';
 import { getRegle } from '@/lib/regles-metier';
 import { sendNotifElevePourRegle } from '@/lib/notif-eleve-regle';
-import { sendPushToEmail, sendPushToUser } from '@/lib/push-server';
-import { wantsNotif } from '@/lib/notif-prefs';
+import { sendPushToUser } from '@/lib/push-server';
 import { resoudreCarnetApplicable } from '@/lib/carnet-resolution';
+import { escapeIlike } from '@/lib/utils';
+import { promouvoirListeAttente } from '@/lib/promotion-liste-attente';
 
 export async function POST(request, { params }) {
   const { studioSlug } = await params;
@@ -65,7 +65,7 @@ export async function POST(request, { params }) {
     .from('clients')
     .select('id, prenom, nom, email, telephone')
     .eq('profile_id', profile.id)
-    .ilike('email', user.email)
+    .ilike('email', escapeIlike(user.email))
     .single();
 
   if (!client) {
@@ -129,7 +129,7 @@ export async function POST(request, { params }) {
     // on promeut le 1er (n°1 par created_at), on lui crée une presence et
     // on lui envoie un email de notification.
     try {
-      await promouvoirListeAttente(supabaseAdmin, profile.id, presence.cours, proEmail, studioSlug);
+      await promouvoirListeAttente(supabaseAdmin, profile.id, presence.cours, { proEmail, studioSlug });
     } catch (promErr) {
       console.error('promotion liste attente (non-blocking):', promErr);
     }
@@ -163,7 +163,7 @@ export async function POST(request, { params }) {
     }
     // Promotion liste d'attente comme pour annulation libre
     try {
-      await promouvoirListeAttente(supabaseAdmin, profile.id, presence.cours, proEmail, studioSlug);
+      await promouvoirListeAttente(supabaseAdmin, profile.id, presence.cours, { proEmail, studioSlug });
     } catch (e) { console.error('promotion (excuse): non-blocking:', e); }
     return Response.json({ ok: true, tardive: true, action: 'excusee' });
   }
@@ -197,7 +197,7 @@ export async function POST(request, { params }) {
         },
       });
     } catch (e) { console.error('annulation (manuel): cas_a_traiter non-bloquant:', e); }
-    try { await promouvoirListeAttente(supabaseAdmin, profile.id, presence.cours, proEmail, studioSlug); } catch {}
+    try { await promouvoirListeAttente(supabaseAdmin, profile.id, presence.cours, { proEmail, studioSlug }); } catch {}
     return Response.json({ ok: true, tardive: true, action: 'manuel' });
   }
 
@@ -341,130 +341,4 @@ Tu peux retrouver le détail dans ton espace personnel.
     motif,
     delaiHeures: evaluation.delaiHeures,
   });
-}
-
-// ─── Promotion automatique de la liste d'attente ────────────────────────────
-async function promouvoirListeAttente(supabaseAdmin, profileId, cours, proEmail = null, studioSlug = null) {
-  if (!cours?.id) return;
-
-  // Cherche le 1er de la liste (par position puis created_at)
-  const { data: nextRow } = await supabaseAdmin
-    .from('liste_attente')
-    .select('id, email, nom, telephone, client_id')
-    .eq('cours_id', cours.id)
-    .eq('profile_id', profileId)
-    .is('notified_at', null)
-    .order('position', { ascending: true })
-    .order('created_at', { ascending: true })
-    .limit(1)
-    .maybeSingle();
-
-  if (!nextRow) return;
-
-  // Trouver ou créer le client
-  let clientId = nextRow.client_id;
-  if (!clientId) {
-    const { data: existingClient } = await supabaseAdmin
-      .from('clients')
-      .select('id')
-      .eq('profile_id', profileId)
-      .ilike('email', nextRow.email)
-      .maybeSingle();
-    if (existingClient) {
-      clientId = existingClient.id;
-    } else {
-      const nomParts = (nextRow.nom || '').split(' ');
-      const prenom = nomParts[0] || nextRow.email.split('@')[0];
-      const clientNom = nomParts.slice(1).join(' ') || '';
-      const { data: newClient } = await supabaseAdmin
-        .from('clients')
-        .insert({
-          profile_id: profileId,
-          prenom,
-          nom: clientNom,
-          email: nextRow.email,
-          telephone: nextRow.telephone || null,
-        })
-        .select('id')
-        .single();
-      clientId = newClient?.id;
-    }
-  }
-  if (!clientId) return;
-
-  // Créer la presence (inscrit, pas pointé) — RPC v53 atomique.
-  // NB : l'ancien insert utilisait des colonnes INEXISTANTES (present,
-  // source) → il échouait systématiquement et la promotion était morte.
-  const { data: resa, error: presErr } = await supabaseAdmin
-    .rpc('reserver_place', {
-      p_profile_id: profileId,
-      p_cours_id: cours.id,
-      p_client_id: clientId,
-    });
-  if (presErr || (!resa?.ok && resa?.reason !== 'doublon')) {
-    // 'complet' = la place a été reprise entre-temps → on laisse la personne
-    // dans la file pour la prochaine libération. 'doublon' = déjà inscrite
-    // par ailleurs → on continue (marquage notifiée plus bas).
-    console.error('promotion: create presence error:', presErr?.message || resa?.reason);
-    return;
-  }
-
-  // La personne était-elle DÉJÀ inscrite (doublon) ? Alors on la sort de la
-  // file (notified_at) mais on NE lui envoie PAS l'email « une place s'est
-  // libérée » : elle a déjà sa place, ce serait trompeur.
-  const dejaInscrite = resa?.reason === 'doublon';
-
-  // Marquer la ligne comme notifiée
-  await supabaseAdmin
-    .from('liste_attente')
-    .update({ notified_at: new Date().toISOString() })
-    .eq('id', nextRow.id);
-
-  // Push « une place s'est libérée » (no-op si déjà inscrite ou pas d'abonnement)
-  if (!dejaInscrite) {
-    sendPushToEmail(nextRow.email, {
-      title: `Une place s'est libérée 🎉`,
-      body: `Ta place est réservée pour ${cours.nom || 'ton cours'}.`,
-      url: studioSlug ? `/p/${studioSlug}/espace` : '/',
-      tag: `la-${cours.id}`,
-    }, { type: 'place_liberee', profileId }).catch(() => {});
-  }
-
-  // Email de notification — pipeline central (blacklist respectée), gaté sur
-  // la pref élève place_liberee (email).
-  let promuWantsEmail = true;
-  try {
-    const { data: cp } = await supabaseAdmin.from('clients').select('notif_prefs').eq('id', clientId).maybeSingle();
-    promuWantsEmail = wantsNotif(cp?.notif_prefs, 'place_liberee', 'eleve', 'email');
-  } catch {}
-  try {
-    if (process.env.RESEND_API_KEY && !dejaInscrite && promuWantsEmail) {
-      const dateStr = cours.date
-        ? new Date(cours.date + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })
-        : 'la date prévue';
-      await sendEmail({
-        categorie: 'notification',
-        replyTo: proEmail,
-        to: nextRow.email,
-        subject: `🎉 Une place s'est libérée !`,
-        html: `
-          <div style="font-family: -apple-system, BlinkMacSystemFont, sans-serif; max-width: 560px; margin: 0 auto; padding: 24px;">
-            <h2 style="color: #d4a0a0; margin: 0 0 6px;">Bonne nouvelle !</h2>
-            <p style="color: #555; margin: 0 0 14px;">Bonjour ${(nextRow.nom || '').split(' ')[0] || ''},</p>
-            <p style="color: #555; margin: 0 0 14px;">Une place s'est libérée pour le cours auquel tu étais sur liste d'attente :</p>
-            <div style="background: #faf8f5; border-radius: 12px; padding: 16px 20px; margin: 0 0 20px;">
-              <strong style="font-size: 1.1rem; color: #1a1a2e;">${cours.nom || 'Ton cours'}</strong><br/>
-              <span style="color: #888;">📅 ${dateStr}</span>
-            </div>
-            <p style="color: #555; margin: 0 0 20px;">Ta réservation est <strong>déjà enregistrée</strong>. Tu n'as rien à faire.</p>
-            <p style="color: #aaa; font-size: 0.8rem; margin: 32px 0 0; border-top: 1px solid #eee; padding-top: 16px; text-align: center;">
-              Propulsé par <a href="https://www.izisolo.fr" style="color: #d4a0a0;">IziSolo</a>
-            </p>
-          </div>
-        `,
-      });
-    }
-  } catch (emailErr) {
-    console.error('promotion: email error (non-blocking):', emailErr);
-  }
 }

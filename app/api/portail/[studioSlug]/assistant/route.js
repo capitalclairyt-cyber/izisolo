@@ -2,6 +2,7 @@ import { createServerClient } from '@/lib/supabase-server';
 import { createAdminClient } from '@/lib/supabase-admin';
 import { checkAntiBot } from '@/lib/antibot';
 import Anthropic from '@anthropic-ai/sdk';
+import { escapeIlike } from '@/lib/utils';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -86,7 +87,7 @@ export async function POST(request, { params }) {
       .from('clients')
       .select('prenom')
       .eq('profile_id', profile.id)
-      .ilike('email', user.email)
+      .ilike('email', escapeIlike(user.email))
       .maybeSingle();
     prenom = client?.prenom || null;
   }

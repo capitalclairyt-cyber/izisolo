@@ -155,6 +155,24 @@ export default function EditClientClient({ client, lieux: lieuxInitiaux }) {
       if (!telCheck.valide) { toast.warning(telCheck.message); return; }
     }
 
+    // Changement d'email : le compte espace de l'élève (auth) est lié à son
+    // ADRESSE — il n'est pas synchronisé avec la fiche. Changer l'email ici
+    // coupe le lien : l'élève connecté avec l'ancienne adresse ne retrouvera
+    // plus ses données, et une résa avec l'ancienne adresse recréerait un
+    // doublon. On prévient, et on suggère de réinviter sur la nouvelle.
+    const oldEmail = (client.email || '').trim().toLowerCase();
+    const newEmail = (form.email || '').trim().toLowerCase();
+    if (oldEmail && newEmail !== oldEmail) {
+      const ok = confirm(
+        `Tu changes l'adresse email de cette fiche (${client.email} → ${form.email.trim() || 'aucune'}).\n\n` +
+        `Si cet·te élève utilise son espace en ligne, son accès est lié à l'ancienne adresse : ` +
+        `il/elle ne retrouvera plus ses réservations avec elle.\n\n` +
+        `Après l'enregistrement, réinvite-le/la depuis sa fiche (bouton Inviter) ` +
+        `pour recréer l'accès avec la nouvelle adresse.\n\nContinuer ?`
+      );
+      if (!ok) return;
+    }
+
     setLoading(true);
     try {
       const supabase = createClient();

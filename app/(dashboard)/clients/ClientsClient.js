@@ -34,6 +34,12 @@ export default function ClientsClient({ clients: clientsInit, profile, statutMap
   const router = useRouter();
   const [search, setSearch] = useState('');
   const [inviteOpen, setInviteOpen] = useState(false);
+  // ?inviter=1 (checklist dashboard « Invite tes élèves ») → ouvre la modale.
+  useEffect(() => {
+    if (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('inviter') === '1') {
+      setInviteOpen(true);
+    }
+  }, []);
   // Fusion de doublons : null = fermé, {a,b} = paire pré-remplie, {} = mode manuel
   const [mergeState, setMergeState] = useState(null);
   const [doublonsOpen, setDoublonsOpen] = useState(false);

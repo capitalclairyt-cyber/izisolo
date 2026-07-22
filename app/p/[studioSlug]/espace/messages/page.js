@@ -2,6 +2,7 @@ import { createServerClient } from '@/lib/supabase-server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { redirect, notFound } from 'next/navigation';
 import EspaceMessagesClient from './EspaceMessagesClient';
+import { escapeIlike } from '@/lib/utils';
 
 export const metadata = { title: 'Mes messages', robots: { index: false, follow: false } };
 
@@ -31,7 +32,7 @@ export default async function EspaceMessagesPage({ params }) {
     .from('clients')
     .select('id, prenom, nom')
     .eq('profile_id', profile.id)
-    .ilike('email', user.email)
+    .ilike('email', escapeIlike(user.email))
     .maybeSingle();
   if (!client) {
     return (

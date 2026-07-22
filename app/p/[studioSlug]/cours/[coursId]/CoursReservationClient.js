@@ -160,7 +160,6 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
   const [done, setDone]     = useState(false);
   const [magicLinkSent, setMagicLinkSent] = useState(false);
   const [error, setError]   = useState('');
-  const [paymentRequired, setPaymentRequired] = useState(null); // { message, url }
   const isConnected = !!currentUser;
 
   // Série : inscription à toutes les occurrences récurrentes jusqu'à une date.
@@ -198,7 +197,6 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
     if (!nom.trim() || !email.trim()) return;
     setLoading(true);
     setError('');
-    setPaymentRequired(null);
     try {
       const res = await fetch(`/api/portail/${studioSlug}/reserver`, {
         method: 'POST',
@@ -215,13 +213,6 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
         }),
       });
       const json = await res.json();
-      // Cours payant à l'unité (workshop) : l'API renvoie 402 + lien Stripe.
-      // On affiche le message + un bouton bien visible vers le paiement plutôt
-      // que de planter avec une erreur générique.
-      if (res.status === 402 && json.requirePayment) {
-        setPaymentRequired({ message: json.message, url: json.paymentUrl });
-        return;
-      }
       if (!res.ok) throw new Error(json.error || 'Erreur lors de la réservation');
       setMagicLinkSent(!!json.magicLinkSent);
 
@@ -572,24 +563,6 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
             {error && (
               <div style={{ background: '#fff0f0', border: '1px solid #ffcdd2', borderRadius: '8px', padding: '10px 14px', color: '#c62828', fontSize: '0.875rem', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <AlertCircle size={15} /> {error}
-              </div>
-            )}
-
-            {paymentRequired && (
-              <div style={{ background: '#fefaf5', border: '1.5px solid #fde8d0', borderRadius: '12px', padding: '14px 16px', marginBottom: '14px' }}>
-                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, color: '#7c4a03', fontSize: '0.875rem', lineHeight: 1.5, marginBottom: 12 }}>
-                  <AlertCircle size={16} style={{ flexShrink: 0, marginTop: 2, color: '#d97706' }} />
-                  <span>{paymentRequired.message}</span>
-                </div>
-                <a
-                  href={paymentRequired.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="portail-btn-primary"
-                  style={{ width: '100%', textDecoration: 'none' }}
-                >
-                  Régler ma place →
-                </a>
               </div>
             )}
 

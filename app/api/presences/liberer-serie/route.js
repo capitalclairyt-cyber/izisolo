@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { withRoute } from '@/lib/api-route';
 import { createAdminClient } from '@/lib/supabase-admin';
 import { libererSerieSchema } from '@/lib/validation';
+import { promouvoirListeAttente } from '@/lib/promotion-liste-attente';
 
 /**
  * POST /api/presences/liberer-serie
@@ -79,7 +80,7 @@ export const POST = withRoute({ auth: 'active' }, async ({ request, auth }) => {
   let promues = 0;
   for (const p of aLiberer) {
     try {
-      const promoted = await promouvoirListeAttente(supabaseAdmin, profile.id, p.cours);
+      const promoted = await promouvoirListeAttente(supabaseAdmin, profile.id, p.cours, { notifier: false });
       if (promoted) promues++;
     } catch (e) {
       console.warn('[liberer-serie] promotion non-bloquant:', e?.message);
@@ -93,73 +94,3 @@ export const POST = withRoute({ auth: 'active' }, async ({ request, auth }) => {
     skipped: 0,
   });
 });
-
-// ─── Promotion automatique de la liste d'attente (copié de annuler/route.js) ──
-async function promouvoirListeAttente(supabaseAdmin, profileId, cours) {
-  if (!cours?.id) return false;
-
-  const { data: nextRow } = await supabaseAdmin
-    .from('liste_attente')
-    .select('id, email, nom, telephone, client_id')
-    .eq('cours_id', cours.id)
-    .eq('profile_id', profileId)
-    .is('notified_at', null)
-    .order('position', { ascending: true })
-    .order('created_at', { ascending: true })
-    .limit(1)
-    .maybeSingle();
-
-  if (!nextRow) return false;
-
-  let clientId = nextRow.client_id;
-  if (!clientId) {
-    const { data: existingClient } = await supabaseAdmin
-      .from('clients')
-      .select('id')
-      .eq('profile_id', profileId)
-      .ilike('email', nextRow.email)
-      .maybeSingle();
-    if (existingClient) {
-      clientId = existingClient.id;
-    } else {
-      const nomParts = (nextRow.nom || '').split(' ');
-      const prenom = nomParts[0] || nextRow.email.split('@')[0];
-      const clientNom = nomParts.slice(1).join(' ') || '';
-      const { data: newClient } = await supabaseAdmin
-        .from('clients')
-        .insert({
-          profile_id: profileId,
-          prenom,
-          nom: clientNom,
-          email: nextRow.email,
-          telephone: nextRow.telephone || null,
-        })
-        .select('id')
-        .single();
-      clientId = newClient?.id;
-    }
-  }
-  if (!clientId) return false;
-
-  // RPC v53 atomique — l'ancien insert utilisait des colonnes INEXISTANTES
-  // (present, source) → la promotion après libération n'a jamais fonctionné.
-  const { data: resa, error: presErr } = await supabaseAdmin
-    .rpc('reserver_place', {
-      p_profile_id: profileId,
-      p_cours_id: cours.id,
-      p_client_id: clientId,
-    });
-  if (presErr || (!resa?.ok && resa?.reason !== 'doublon')) {
-    console.error('[liberer-serie] create presence error:', presErr || resa?.reason);
-    return false;
-  }
-
-  await supabaseAdmin
-    .from('liste_attente')
-    .update({ notified_at: new Date().toISOString() })
-    .eq('id', nextRow.id);
-
-  // Note : email de notification omis ici pour la promotion en masse — on
-  // pourrait l'ajouter en option si besoin.
-  return true;
-}

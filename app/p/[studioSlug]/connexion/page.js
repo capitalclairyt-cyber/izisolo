@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Mail, ArrowLeft, CheckCircle, Loader } from 'lucide-react';
@@ -15,9 +15,19 @@ export default function ConnexionPortailPage() {
   const [sent, setSent]     = useState(false);
   const [error, setError]   = useState('');
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!email.trim()) return;
+  // Lien expiré : le callback ne connaît pas l'email → on retombe sur la
+  // dernière adresse utilisée sur CE portail (localStorage) pour offrir un
+  // renvoi en 1 clic au lieu d'une re-saisie.
+  useEffect(() => {
+    if (!prefillEmail && typeof window !== 'undefined') {
+      const memo = localStorage.getItem(`izi_portail_email_${studioSlug}`);
+      if (memo) setEmail(memo);
+    }
+  }, [prefillEmail, studioSlug]);
+
+  const envoyerLien = async (adresse) => {
+    const cible = (adresse || email).trim();
+    if (!cible) return;
     setLoading(true);
     setError('');
     try {
@@ -28,16 +38,24 @@ export default function ConnexionPortailPage() {
       const res = await fetch('/api/portail-login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim().toLowerCase(), studioSlug }),
+        body: JSON.stringify({ email: cible.toLowerCase(), studioSlug }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || 'Erreur');
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(`izi_portail_email_${studioSlug}`, cible.toLowerCase());
+      }
       setSent(true);
     } catch {
       setError('Une erreur est survenue. Réessaie dans quelques instants.');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    await envoyerLien();
   };
 
   if (sent) {
@@ -92,8 +110,20 @@ export default function ConnexionPortailPage() {
 
         {erreurParam === 'expire' && (
           <div style={{ background: '#fffaf0', border: '1px solid #ffe0b2', borderRadius: 8, padding: '10px 14px', color: '#7c4a03', fontSize: '0.875rem', marginBottom: 16, lineHeight: 1.5 }}>
-            Ton lien de connexion a expiré ou a déjà été utilisé.<br />
-            Entre ton email pour en recevoir un nouveau.
+            Ton lien de connexion a expiré ou a déjà été utilisé.
+            {email.trim() ? (
+              <button
+                type="button"
+                onClick={() => envoyerLien()}
+                disabled={loading}
+                className="portail-btn-primary"
+                style={{ width: '100%', marginTop: 10 }}
+              >
+                {loading ? <Loader size={15} className="spin" /> : <>Recevoir un nouveau lien pour {email.trim()}</>}
+              </button>
+            ) : (
+              <><br />Entre ton email pour en recevoir un nouveau.</>
+            )}
           </div>
         )}
 

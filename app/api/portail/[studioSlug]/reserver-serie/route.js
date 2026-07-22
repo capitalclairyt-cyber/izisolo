@@ -4,6 +4,7 @@ import { reserverSerieSchema } from '@/lib/validation';
 import { checkRateLimitIP } from '@/lib/antibot';
 import { sendPushToUser } from '@/lib/push-server';
 import { wantsNotif } from '@/lib/notif-prefs';
+import { escapeIlike } from '@/lib/utils';
 
 /**
  * POST /api/portail/[studioSlug]/reserver-serie
@@ -51,7 +52,7 @@ export async function POST(request, { params }) {
 
   // Client lié à cet email dans ce studio
   const { data: client } = await supabaseAdmin
-    .from('clients').select('id, prenom').eq('profile_id', profile.id).ilike('email', user.email).maybeSingle();
+    .from('clients').select('id, prenom').eq('profile_id', profile.id).ilike('email', escapeIlike(user.email)).maybeSingle();
   if (!client) return Response.json({ error: 'Client introuvable' }, { status: 404 });
 
   // Cours de référence

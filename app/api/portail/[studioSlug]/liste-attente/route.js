@@ -5,6 +5,7 @@ import { studioHasFeature } from '@/lib/plan-guard';
 import { sendEmail } from '@/lib/email';
 import { sendPushToUser } from '@/lib/push-server';
 import { wantsNotif } from '@/lib/notif-prefs';
+import { escapeIlike } from '@/lib/utils';
 
 export async function POST(request, { params }) {
   const { studioSlug } = await params;
@@ -75,7 +76,7 @@ export async function POST(request, { params }) {
     .from('clients')
     .select('id')
     .eq('profile_id', profile.id)
-    .ilike('email', email)
+    .ilike('email', escapeIlike(email))
     .maybeSingle();
 
   // Bloquer si l'élève est déjà inscrit (presence) à ce cours
@@ -99,7 +100,7 @@ export async function POST(request, { params }) {
     .from('liste_attente')
     .select('id, position')
     .eq('cours_id', coursId)
-    .ilike('email', email)
+    .ilike('email', escapeIlike(email))
     .maybeSingle();
   if (dejaEnListe) {
     return Response.json({ ok: true, position: dejaEnListe.position, deja: true });

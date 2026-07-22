@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { notFound } from 'next/navigation';
 import { countUnread } from '@/lib/messagerie';
 import EspaceClient from './EspaceClient';
+import { escapeIlike } from '@/lib/utils';
 
 export const metadata = { title: 'Mon espace — IziSolo' };
 
@@ -160,7 +161,7 @@ async function getData(studioSlug, userEmail) {
       .from('clients')
       .select('id, prenom, nom, email, telephone, adresse_postale, ville')
       .eq('profile_id', profile.id)
-      .ilike('email', userEmail)
+      .ilike('email', escapeIlike(userEmail))
       .single(),
     supabase
       .from('offres')

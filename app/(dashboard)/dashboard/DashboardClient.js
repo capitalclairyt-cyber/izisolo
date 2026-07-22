@@ -15,27 +15,37 @@ import { toneForCours } from '@/lib/tones';
 import PushToggle from '@/components/push/PushToggle';
 import PushPrompt from '@/components/push/PushPrompt';
 
-export default function DashboardClient({ profile, coursDuJour, nbClients, nbCoursTotal, revenusMois, alertes, coutsMois, hasSondage = false, nbCasATraiter = 0 }) {
+export default function DashboardClient({ profile, coursDuJour, nbClients, nbCoursTotal, revenusMois, alertes, coutsMois, hasSondage = false, nbCasATraiter = 0, nbInvites = 0 }) {
   const vocab = getVocabulaire(profile?.metier || 'yoga', profile?.vocabulaire);
   const prenom = profile?.prenom || 'toi';
   const studioSlug = profile?.studio_slug;
   const router = useRouter();
   const { toast } = useToast();
 
-  // Checklist d'onboarding : visible tant que tout n'est pas fait, dismissable
+  // Checklist d'onboarding : visible tant que TOUT n'est pas fait, dismissable.
+  // (Avant : l'étape « partage » n'était jamais cochable — done:false en dur —
+  // et la checklist disparaissait dès cours+élève créés, pile avant les deux
+  // étapes d'activation qui comptent : partager le portail + inviter.)
   const [checklistDismissed, setChecklistDismissed] = useState(false);
+  const [portailPartage, setPortailPartage] = useState(false);
   useEffect(() => {
     if (typeof window !== 'undefined') {
       setChecklistDismissed(localStorage.getItem('izi_checklist_dismissed') === '1');
+      setPortailPartage(localStorage.getItem('izi_portail_partage') === '1');
     }
   }, []);
+  const marquerPortailPartage = () => {
+    if (typeof window !== 'undefined') localStorage.setItem('izi_portail_partage', '1');
+    setPortailPartage(true);
+  };
 
   const checklistItems = [
     { key: 'cours',  label: 'Crée ton premier cours',   done: nbCoursTotal > 0, href: '/cours/nouveau' },
     { key: 'eleve',  label: `Ajoute ton premier ${(vocab.client || 'élève').toLowerCase()}`, done: nbClients > 0, href: '/clients/nouveau' },
-    { key: 'portail', label: 'Partage ton portail élève', done: false, action: 'share' },
+    { key: 'portail', label: 'Partage ton portail élève', done: portailPartage, action: 'share' },
+    { key: 'invite', label: `Invite tes ${(vocab.clients || 'élèves').toLowerCase()} sur leur espace`, done: nbInvites > 0, href: '/clients?inviter=1' },
   ];
-  const allCoreDone = checklistItems[0].done && checklistItems[1].done;
+  const allCoreDone = checklistItems.every(i => i.done);
   const showChecklist = !checklistDismissed && !allCoreDone;
 
   // Path relatif uniquement pour l'affichage (= cohérent SSR + client,
@@ -51,6 +61,7 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
     try {
       await navigator.clipboard.writeText(fullUrl);
       toast.success('Lien copié — partage-le à tes élèves !');
+      marquerPortailPartage();
     } catch {
       toast.error('Impossible de copier — copie manuellement le lien');
     }
@@ -71,6 +82,7 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
         await navigator.share({
           text: `Réserve tes cours et retrouve ton carnet de séances chez ${studioNom} : ${fullUrl}`,
         });
+        marquerPortailPartage();
         return;
       } catch (e) {
         if (e?.name === 'AbortError') return; // partage annulé, ne rien faire

@@ -7,7 +7,7 @@ import {
   UserPlus, Clock, Calendar, MapPin, AlertTriangle,
   CheckCheck, Info, Plus, Lock, CreditCard, Sparkles
 } from 'lucide-react';
-import { formatHeure } from '@/lib/utils';
+import { formatHeure, escapeIlike } from '@/lib/utils';
 import { parseDate } from '@/lib/dates';
 import { getVocabulaire } from '@/lib/vocabulaire';
 import { createClient } from '@/lib/supabase';
@@ -697,24 +697,50 @@ export default function PointageClient({ cours, presences: initialPresences, tou
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
-    // 1. Créer le client
-    const { data: client, error: clientErr } = await supabase
-      .from('clients')
-      .insert({
-        profile_id: user.id,
-        prenom:     prenom.trim(),
-        nom:        nom.trim(),
-        email:      email.trim() || null,
-        telephone:  telephone.trim() || null,
-        statut:     'actif',
-      })
-      .select()
-      .single();
-
-    if (clientErr) {
-      toast.error('Erreur création client : ' + clientErr.message);
-      setAddingNew(false);
-      return;
+    // 1. Retrouver la fiche si l'email est déjà connu (dédup — seule porte de
+    // création qui n'en avait pas), sinon créer. statut 'actif' assumé : la
+    // personne est ajoutée À un cours, elle consomme (≠ prospect).
+    let client = null;
+    const emailClean = email.trim() || null;
+    if (emailClean) {
+      const { data: existing } = await supabase
+        .from('clients')
+        .select('id, prenom, nom, statut, email, telephone')
+        .eq('profile_id', user.id)
+        .ilike('email', escapeIlike(emailClean))
+        .maybeSingle();
+      if (existing) {
+        // Déjà inscrit·e à CE cours ? Rien à créer.
+        if (presences.some(p => p.client_id === existing.id)) {
+          toast.warning(`${existing.prenom || existing.nom} est déjà inscrit·e à ce cours.`);
+          setAddingNew(false);
+          fermerAddModal();
+          return;
+        }
+        client = existing;
+        toast.success(`${existing.prenom || existing.nom} existait déjà — fiche réutilisée.`);
+      }
+    }
+    if (!client) {
+      const { data: created, error: clientErr } = await supabase
+        .from('clients')
+        .insert({
+          profile_id: user.id,
+          prenom:     prenom.trim(),
+          nom:        nom.trim(),
+          email:      emailClean,
+          telephone:  telephone.trim() || null,
+          statut:     'actif',
+          source:     'Pointage',
+        })
+        .select()
+        .single();
+      if (clientErr) {
+        toast.error('Erreur création client : ' + clientErr.message);
+        setAddingNew(false);
+        return;
+      }
+      client = created;
     }
 
     // 2. Créer la présence

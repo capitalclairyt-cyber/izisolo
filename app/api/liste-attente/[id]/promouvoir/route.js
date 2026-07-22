@@ -5,6 +5,7 @@ import { sendEmail } from '@/lib/email';
 import { sendPushToEmail } from '@/lib/push-server';
 import { wantsNotif } from '@/lib/notif-prefs';
 import { infosPratiquesBlock } from '@/lib/email-helpers';
+import { escapeIlike } from '@/lib/utils';
 
 /**
  * POST /api/liste-attente/[id]/promouvoir
@@ -65,7 +66,7 @@ export const POST = withRoute({ auth: 'active' }, async ({ params, auth }) => {
       .from('clients')
       .select('id')
       .eq('profile_id', profile.id)
-      .ilike('email', entry.email)
+      .ilike('email', escapeIlike(entry.email))
       .maybeSingle();
     if (existingClient) {
       clientId = existingClient.id;
@@ -81,6 +82,8 @@ export const POST = withRoute({ auth: 'active' }, async ({ params, auth }) => {
           nom: clientNom,
           email: entry.email,
           telephone: entry.telephone || null,
+          statut: 'prospect',
+          source: 'Liste d\'attente',
         })
         .select('id')
         .single();

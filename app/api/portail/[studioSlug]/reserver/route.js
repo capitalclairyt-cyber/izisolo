@@ -110,6 +110,8 @@ export async function POST(request, { params }) {
         nom: clientNom,
         email,
         telephone: tel || null,
+        statut: 'prospect',
+        source: 'Réservation portail',
       })
       .select('id')
       .single();

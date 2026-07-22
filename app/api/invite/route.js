@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { withRoute } from '@/lib/api-route';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { sendPortailMagicLink } from '@/lib/portail-magic-link';
+import { escapeIlike } from '@/lib/utils';
 
 /**
  * POST /api/invite — La prof invite un·e élève à rejoindre son portail.
@@ -72,7 +73,7 @@ export const POST = withRoute({ auth: 'active' }, async ({ request, auth }) => {
       .from('clients')
       .select('id')
       .eq('profile_id', studioProfile.id)
-      .ilike('email', cleanEmail)
+      .ilike('email', escapeIlike(cleanEmail))
       .maybeSingle();
 
     if (existing) {

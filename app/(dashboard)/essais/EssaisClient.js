@@ -113,6 +113,7 @@ export default function EssaisClient({ profile, demandes: initialDemandes }) {
       <div className="essais-filters">
         {[
           { val: 'en_attente', label: 'En attente', count: counts.en_attente },
+          { val: 'acceptee',   label: 'Acceptées',  count: counts.acceptee },
           { val: 'finalisee',  label: 'Finalisées', count: counts.finalisee },
           { val: 'refusee',    label: 'Refusées',   count: counts.refusee },
           { val: 'all',        label: 'Toutes',     count: counts.all },

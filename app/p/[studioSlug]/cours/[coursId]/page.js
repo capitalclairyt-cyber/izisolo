@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import CoursReservationClient from './CoursReservationClient';
 import { canSeeCours, resolveClientInfo } from '@/lib/visibilite';
 import { studioHasFeature } from '@/lib/plan-guard';
+import { escapeIlike } from '@/lib/utils';
 
 async function getData(studioSlug, coursId) {
   // Contenu PUBLIC du portail (studio, cours) + données élève filtrées par
@@ -50,7 +51,7 @@ async function getData(studioSlug, coursId) {
       .from('clients')
       .select('id, prenom, nom, email, telephone')
       .eq('profile_id', profile.id)
-      .ilike('email', user.email)
+      .ilike('email', escapeIlike(user.email))
       .single();
     if (client) {
       currentUser = {

@@ -1,5 +1,6 @@
 import { requireAuth } from '@/lib/api-auth';
 import { countUnread } from '@/lib/messagerie';
+import { escapeIlike } from '@/lib/utils';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -24,7 +25,7 @@ export async function GET() {
   const { data: clients } = await supabase
     .from('clients')
     .select('id')
-    .ilike('email', user.email);
+    .ilike('email', escapeIlike(user.email));
   let total = 0;
   for (const c of (clients || [])) {
     total += await countUnread(supabase, 'eleve', c.id);

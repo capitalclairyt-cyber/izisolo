@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase-server';
+import { escapeIlike } from '@/lib/utils';
 
 /**
  * POST /api/messagerie/messages/[id]/reactions
@@ -51,7 +52,7 @@ export async function POST(request, { params }) {
     const { data: client } = await supabase
       .from('clients')
       .select('id')
-      .ilike('email', user.email || '')
+      .ilike('email', escapeIlike(user.email || ''))
       .limit(1)
       .maybeSingle();
     if (!client) return NextResponse.json({ error: 'Compte introuvable' }, { status: 403 });
@@ -134,7 +135,7 @@ export async function GET(request, { params }) {
     const { data: client } = await supabase
       .from('clients')
       .select('id')
-      .ilike('email', user.email || '')
+      .ilike('email', escapeIlike(user.email || ''))
       .limit(1)
       .maybeSingle();
     if (client) { myType = 'eleve'; myId = client.id; }

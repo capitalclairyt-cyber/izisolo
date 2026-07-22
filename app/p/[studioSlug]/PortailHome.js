@@ -96,12 +96,6 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
         body: JSON.stringify({ coursId: c.id, nom: currentClient.nom, email: currentClient.email }),
       });
       const json = await res.json().catch(() => ({}));
-      // Cours payant à l'unité → ouvrir le paiement Stripe
-      if (res.status === 402 && json.requirePayment) {
-        if (json.paymentUrl) window.open(json.paymentUrl, '_blank', 'noopener,noreferrer');
-        toast.warning('Ce cours se règle en ligne — finalise le paiement pour confirmer ta place.');
-        return;
-      }
       if (!res.ok) {
         // 409 « déjà inscrit » → on bascule quand même en « Inscrit·e »
         if (res.status === 409 && /déjà inscrit/i.test(json.error || '')) {

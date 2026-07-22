@@ -40,6 +40,13 @@ export default async function DashboardPage() {
     .select('id', { count: 'exact', head: true })
     .eq('profile_id', user.id);
 
+  // A-t-elle déjà invité au moins un·e élève ? (étape checklist « Invite tes élèves »)
+  const { count: nbInvites } = await supabase
+    .from('clients')
+    .select('id', { count: 'exact', head: true })
+    .eq('profile_id', user.id)
+    .not('invitation_envoyee_at', 'is', null);
+
   // Calculer les stats
   const revenusMois = derniersPaiements?.reduce((sum, p) => sum + parseFloat(p.montant || 0), 0) || 0;
   const fraisStripeMois = derniersPaiements?.reduce((sum, p) => sum + parseFloat(p.commission_montant || 0), 0) || 0;
@@ -96,6 +103,7 @@ export default async function DashboardPage() {
         total: totalACoutsMois,
       }}
       hasSondage={(nbSondages || 0) > 0}
+      nbInvites={nbInvites || 0}
       nbCasATraiter={nbCasOuverts || 0}
     />
   );

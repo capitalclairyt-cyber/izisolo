@@ -6,6 +6,7 @@ import { User, MessageCircle } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { ToastProvider } from '@/components/ui/ToastProvider';
 import BottomNav from '@/components/portail/BottomNav';
+import { escapeIlike } from '@/lib/utils';
 
 export default function PortailLayoutClient({ studioSlug, children }) {
   return (
@@ -34,7 +35,7 @@ function PortailLayoutInner({ studioSlug, children }) {
               .from('clients')
               .select('prenom')
               .eq('profile_id', profile.id)
-              .ilike('email', session.user.email)
+              .ilike('email', escapeIlike(session.user.email))
               .single()
               .then(({ data: client }) => {
                 setPrenom(client?.prenom || session.user.email.split('@')[0]);

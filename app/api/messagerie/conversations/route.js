@@ -4,6 +4,7 @@ import {
   getOrCreateConversationCours,
   resolveClientFromUserEmail,
 } from '@/lib/messagerie';
+import { escapeIlike } from '@/lib/utils';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -157,7 +158,7 @@ async function getEleveConversations(supabase, userEmail) {
     const { data: clients, error: clientsErr } = await supabase
       .from('clients')
       .select('id, prenom, nom, profile_id')
-      .ilike('email', userEmail);
+      .ilike('email', escapeIlike(userEmail));
     if (clientsErr) {
       console.error('[messagerie GET eleve] clients err:', clientsErr);
       return Response.json({ error: 'Une erreur est survenue.' }, { status: 500 });
@@ -293,7 +294,7 @@ export async function POST(request) {
       .from('clients')
       .select('id')
       .eq('profile_id', targetProfile.id)
-      .ilike('email', user.email)
+      .ilike('email', escapeIlike(user.email))
       .single();
     if (!client) {
       return Response.json({ error: 'Tu n\'es pas client·e de ce studio' }, { status: 403 });

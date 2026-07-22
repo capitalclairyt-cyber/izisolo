@@ -2,6 +2,7 @@ import { createServerClient } from '@/lib/supabase-server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { notFound } from 'next/navigation';
 import SondageReponseClient from './SondageReponseClient';
+import { escapeIlike } from '@/lib/utils';
 
 export async function generateMetadata({ params }) {
   const { studioSlug, sondageSlug } = await params;
@@ -65,7 +66,7 @@ export default async function SondagePublicPage({ params }) {
       .from('clients')
       .select('id, prenom, email')
       .eq('profile_id', profile.id)
-      .ilike('email', user.email)
+      .ilike('email', escapeIlike(user.email))
       .maybeSingle();
     connectedClient = client || null;
   }

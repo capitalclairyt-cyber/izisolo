@@ -2,6 +2,7 @@ import * as Sentry from '@sentry/nextjs';
 import { createAdminClient } from '@/lib/supabase-admin';
 import { verifyStripeSignature, getCheckoutSessionAmount, getCheckoutSessionEmail } from '@/lib/stripe';
 import { sendPushToUser } from '@/lib/push-server';
+import { escapeIlike } from '@/lib/utils';
 
 // Frais de fonctionnement IziSolo sur chaque paiement encaissé via le portail (Stripe).
 // Calculés et stockés en DB pour facturation SaaS mensuelle (sprint post-launch).
@@ -112,7 +113,7 @@ async function handleCheckoutCompleted(supabase, profileId, session) {
       .from('clients')
       .select('id')
       .eq('profile_id', profileId)
-      .ilike('email', email)
+      .ilike('email', escapeIlike(email))
       .maybeSingle();
     clientId = client?.id || null;
   }
