@@ -668,8 +668,9 @@ export default function NouvelleOffre() {
             </div>
             {typesCoursAutorises.length === 0 ? (
               <span className="form-hint">
-                ✓ <strong>Tous tes cours</strong> — utilisable sur n'importe quel type.
-                Sélectionne un ou plusieurs types ci-dessus seulement si tu veux le restreindre.
+                ✓ <strong>Tous tes cours</strong> — utilisable sur n'importe quel type.<br />
+                💡 Sélectionne les types couverts ci-dessus pour <strong>exclure</strong> les
+                cours que tu vends à la séance (atelier, stage, renfo…) — sinon ce {type === 'carnet' ? 'carnet' : 'abonnement'} pourra aussi les payer.
               </span>
             ) : (
               <span className="form-hint">
