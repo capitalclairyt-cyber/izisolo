@@ -6,23 +6,16 @@ import Link from 'next/link';
 import {
   Plus, Package, Ticket, CalendarCheck, Zap, Trash2,
   ToggleLeft, ToggleRight, UserPlus, X, ChevronRight,
-  Banknote, CreditCard, Landmark, FileText, Loader2,
-  Search, CreditCard as CardIcon, Crown, ArrowRight, Pencil,
+  Loader2, Search, Crown, ArrowRight, Pencil,
 } from 'lucide-react';
 import { formatMontant } from '@/lib/utils';
 import { toneForOffre } from '@/lib/tones';
 import { TYPES_OFFRE } from '@/lib/constantes';
 import { createClient } from '@/lib/supabase';
 import EmptyState from '@/components/ui/EmptyState';
+import PaiementStep from '@/components/paiements/PaiementStep';
 
 const TYPE_ICONS = { carnet: Ticket, abonnement: CalendarCheck, cours_unique: Zap };
-
-const MODES_PAIEMENT = [
-  { value: 'especes',  label: 'Espèces',  Icon: Banknote },
-  { value: 'cheque',   label: 'Chèque',   Icon: FileText },
-  { value: 'virement', label: 'Virement', Icon: Landmark },
-  { value: 'CB',       label: 'CB',       Icon: CreditCard },
-];
 
 function calcDateFin(dureeJours) {
   if (!dureeJours) return null;
@@ -31,19 +24,28 @@ function calcDateFin(dureeJours) {
   return d.toISOString().split('T')[0];
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// Modal tunnel de vente — appelé depuis OffresClient (offre déjà connue)
-// ═══════════════════════════════════════════════════════════════════════════
-function generateVersements(total, nb) {
-  const perV = Math.floor(total / nb * 100) / 100;
-  const reste = Math.round((total - perV * (nb - 1)) * 100) / 100;
+// Pro-rata abonnement (même calcul que la fiche client)
+function calcProRata(offre) {
+  if (!offre.pro_rata_actif || !offre.date_debut || !offre.date_fin || !offre.prix) return null;
   const today = new Date();
-  return Array.from({ length: nb }, (_, i) => {
-    const d = new Date(today);
-    d.setMonth(d.getMonth() + i);
-    return { montant: String(i === nb - 1 ? reste : perV), date: d.toISOString().split('T')[0] };
-  });
+  const debut = new Date(offre.date_debut);
+  const fin = new Date(offre.date_fin);
+  if (today <= debut) return null;
+  const limite = offre.pro_rata_date_limite ? new Date(offre.pro_rata_date_limite) : fin;
+  if (today > limite) return null;
+  const totalSemaines = Math.max(1, Math.round((fin - debut) / (7 * 86400000)));
+  const resteSemaines = Math.max(0, Math.round((fin - today) / (7 * 86400000)));
+  if (resteSemaines <= 0) return null;
+  return Math.round((parseFloat(offre.prix) / totalSemaines) * resteSemaines * 2) / 2;
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Modal tunnel de vente — appelé depuis OffresClient (offre déjà connue).
+// MÊME moteur que la fiche client : PaiementStep (payé / à régler plus tard /
+// échéancier) + RPC atomique vendre_offre (snapshot types_cours_autorises,
+// dates d'abonnement respectées). Avant : inserts directs divergents — pas de
+// snapshot, dates d'abonnement perdues, pas d'atomicité, pas d'impayé.
+// ═══════════════════════════════════════════════════════════════════════════
 
 function AssignerClientModal({ offre, onClose, onSuccess }) {
   const [step, setStep] = useState('client'); // 'client' | 'paiement'
@@ -51,30 +53,8 @@ function AssignerClientModal({ offre, onClose, onSuccess }) {
   const [loadingClients, setLoadingClients] = useState(true);
   const [search, setSearch] = useState('');
   const [selectedClient, setSelectedClient] = useState(null);
-  const [montant, setMontant] = useState(String(offre.prix));
-  const [modePaiement, setModePaiement] = useState('especes');
-  const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
-
-  // Multi-versement
-  const [multiVersement, setMultiVersement] = useState(false);
-  const [nbVersements, setNbVersements] = useState(2);
-  const [versements, setVersements] = useState([]);
-
-  const toggleMulti = () => {
-    if (!multiVersement) {
-      const total = parseFloat(montant) || offre.prix;
-      setVersements(generateVersements(total, nbVersements));
-    }
-    setMultiVersement(!multiVersement);
-  };
-
-  const changeNbVersements = (nb) => {
-    setNbVersements(nb);
-    const total = parseFloat(montant) || offre.prix;
-    setVersements(generateVersements(total, nb));
-  };
 
   useEffect(() => {
     const load = async () => {
@@ -112,68 +92,77 @@ function AssignerClientModal({ offre, onClose, onSuccess }) {
     setStep('paiement');
   };
 
-  const handleConfirm = async () => {
-    if (!selectedClient || !montant) return;
+  // Même construction que la fiche client (AssignerOffreModal.handleConfirm) :
+  // abonnement avec dates de l'OFFRE + snapshot types_cours_autorises, paiements
+  // paid/pending/échéancier — le tout persisté par la RPC atomique vendre_offre.
+  const handleConfirm = async ({ montant, modePaiement, notes, numeroCheque, reglement = 'paye', premierEncaisse = true, versements = [] }) => {
+    if (!selectedClient) return;
     setSubmitting(true);
     setError('');
     try {
       const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
       const today = new Date().toISOString().split('T')[0];
+      const multiVersement = reglement === 'multi';
 
-      const { data: abo, error: aboErr } = await supabase.from('abonnements').insert({
-        profile_id: user.id,
+      const abonnement = {
         client_id: selectedClient.id,
         offre_id: offre.id,
         offre_nom: offre.nom,
         type: offre.type,
-        date_debut: today,
-        date_fin: calcDateFin(offre.duree_jours),
+        date_debut: offre.date_debut || today,
+        date_fin: offre.date_fin || calcDateFin(offre.duree_jours),
         seances_total: offre.seances || null,
-        seances_utilisees: 0,
-        statut: 'actif',
-      }).select().single();
+        types_cours_autorises: offre.types_cours_autorises || null,
+      };
 
-      if (aboErr) throw aboErr;
-
-      if (multiVersement && versements.length > 0) {
+      let paiements;
+      if (multiVersement && versements.length > 1) {
         const echId = crypto.randomUUID();
-        const rows = versements.map((v, i) => ({
-          profile_id: user.id,
-          client_id: selectedClient.id,
-          offre_id: offre.id,
-          abonnement_id: abo.id,
-          echeancier_id: echId,
-          intitule: `${offre.nom} — versement ${i + 1}/${versements.length}`,
-          type: offre.type,
-          montant: parseFloat(v.montant),
-          statut: i === 0 ? 'paid' : 'pending',
-          mode: modePaiement,
-          date: v.date,
-          notes: i === 0 ? (notes.trim() || null) : null,
-        }));
-        const { error: payErr } = await supabase.from('paiements').insert(rows);
-        if (payErr) throw payErr;
+        paiements = versements.map((v, i) => {
+          const encaisse = i === 0 && premierEncaisse;
+          return {
+            client_id: selectedClient.id,
+            offre_id: offre.id,
+            echeancier_id: echId,
+            intitule: `${offre.nom} (${i + 1}/${versements.length})`,
+            type: offre.type,
+            montant: v.montant,
+            statut: encaisse ? 'paid' : 'pending',
+            mode: encaisse ? modePaiement : null,
+            date: v.date,
+            notes: encaisse ? (notes || null) : null,
+            numero_cheque: encaisse && numeroCheque ? numeroCheque : null,
+          };
+        });
       } else {
-        const { error: payErr } = await supabase.from('paiements').insert({
-          profile_id: user.id,
+        const impaye = reglement === 'aregler';
+        paiements = [{
           client_id: selectedClient.id,
           offre_id: offre.id,
-          abonnement_id: abo.id,
+          echeancier_id: null,
           intitule: offre.nom,
           type: offre.type,
-          montant: parseFloat(montant),
-          statut: 'paid',
-          mode: modePaiement,
+          montant: montant,
+          statut: impaye ? 'pending' : 'paid',
+          mode: impaye ? null : modePaiement,
           date: today,
-          notes: notes.trim() || null,
-        });
-        if (payErr) throw payErr;
+          notes: notes || null,
+          numero_cheque: impaye ? null : (numeroCheque || null),
+        }];
+      }
+
+      const { data: result, error: rpcErr } = await supabase.rpc('vendre_offre', {
+        p_abonnement: abonnement,
+        p_paiements: paiements,
+      });
+      if (rpcErr || !result?.ok) {
+        throw (rpcErr || new Error(result?.reason || 'Vente non enregistrée'));
       }
 
       onSuccess();
     } catch (err) {
-      setError(err.message);
+      console.error('[vendre_offre]', err);
+      setError(err.message || 'Erreur inconnue');
       setSubmitting(false);
     }
   };
@@ -248,148 +237,22 @@ function AssignerClientModal({ offre, onClose, onSuccess }) {
           </div>
         )}
 
-        {/* Step 2 — Paiement */}
-        {step === 'paiement' && selectedClient && (
-          <div className="modal-body">
-            {/* Récap */}
-            <div className="paiement-recap">
-              <span className="paiement-recap-nom">{offre.nom}</span>
-              <span className="paiement-recap-client">pour {displayName(selectedClient)}</span>
-            </div>
-
-            {/* Mode de paiement */}
-            <div className="paiement-section-label">Mode de règlement</div>
-            <div className="mode-grid">
-              {MODES_PAIEMENT.map(({ value, label, Icon }) => (
-                <button
-                  key={value}
-                  type="button"
-                  className={`mode-btn ${modePaiement === value ? 'active' : ''}`}
-                  onClick={() => setModePaiement(value)}
-                >
-                  <Icon size={18} />
-                  <span>{label}</span>
-                </button>
-              ))}
-              <button type="button" className="mode-btn mode-btn-soon" disabled title="Paiement en ligne — bientôt disponible">
-                <CardIcon size={18} />
-                <span>Lien CB</span>
-                <span className="soon-badge">Bientôt</span>
-              </button>
-            </div>
-
-            {/* Montant */}
-            <div className="paiement-section-label">Montant encaissé</div>
-            <div className="montant-row">
-              <input
-                className="izi-input montant-input"
-                type="number"
-                step="0.01"
-                min="0"
-                value={montant}
-                onChange={e => setMontant(e.target.value)}
-                placeholder="0.00"
+        {/* Step 2 — Paiement (composant partagé avec la fiche client) */}
+        {step === 'paiement' && selectedClient && (() => {
+          const prorata = offre.type === 'abonnement' ? calcProRata(offre) : null;
+          return (
+            <>
+              {error && <p className="error-msg" style={{ margin: '10px 16px 0' }}>{error}</p>}
+              <PaiementStep
+                offreNom={offre.nom}
+                clientNom={displayName(selectedClient)}
+                offrePrix={prorata || offre.prix}
+                onConfirm={handleConfirm}
+                submitting={submitting}
               />
-              <span className="montant-currency">€</span>
-            </div>
-            {parseFloat(montant) !== offre.prix && montant && (
-              <p className="montant-hint">Prix catalogue : {formatMontant(offre.prix)}</p>
-            )}
-
-            {/* Toggle multi-versement */}
-            <div className="paiement-section-label">Mode de paiement</div>
-            <div className="multi-toggle-row">
-              <button type="button" className={`multi-toggle-btn ${!multiVersement ? 'active' : ''}`} onClick={() => setMultiVersement(false)}>
-                Paiement unique
-              </button>
-              <button type="button" className={`multi-toggle-btn ${multiVersement ? 'active' : ''}`} onClick={toggleMulti}>
-                Plusieurs versements
-              </button>
-            </div>
-
-            {multiVersement && (
-              <div className="multi-zone">
-                <div className="multi-nb-row">
-                  <div className="paiement-section-label">Nombre de versements</div>
-                  <div className="multi-nb-chips">
-                    {[2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => (
-                      <button key={n} type="button" className={`multi-nb-chip ${nbVersements === n ? 'active' : ''}`} onClick={() => changeNbVersements(n)}>
-                        {n}x
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="multi-versements">
-                  {versements.map((v, i) => (
-                    <div key={i} className="multi-v-row">
-                      <div className="multi-v-label">
-                        Versement {i + 1}
-                        {i === 0 && <span className="multi-v-badge">Encaissé</span>}
-                        {i > 0 && <span className="multi-v-badge-pending">En attente</span>}
-                      </div>
-                      <div className="multi-v-fields">
-                        <input
-                          type="number" step="0.01" min="0"
-                          className="izi-input multi-v-input"
-                          value={v.montant}
-                          onChange={e => {
-                            const nv = [...versements];
-                            nv[i] = { ...nv[i], montant: e.target.value };
-                            setVersements(nv);
-                          }}
-                        />
-                        <input
-                          type="date"
-                          className="izi-input multi-v-input"
-                          value={v.date}
-                          onChange={e => {
-                            const nv = [...versements];
-                            nv[i] = { ...nv[i], date: e.target.value };
-                            setVersements(nv);
-                          }}
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {(() => {
-                  const sum = versements.reduce((s, v) => s + (parseFloat(v.montant) || 0), 0);
-                  const total = parseFloat(montant) || 0;
-                  const diff = Math.round((sum - total) * 100) / 100;
-                  return diff !== 0 ? (
-                    <div className="multi-total-warn">
-                      Total : {sum.toFixed(2)} € {diff > 0 ? `(+${diff.toFixed(2)} €)` : `(${diff.toFixed(2)} €)`}
-                    </div>
-                  ) : (
-                    <div className="multi-total-ok">Total : {sum.toFixed(2)} €</div>
-                  );
-                })()}
-              </div>
-            )}
-
-            <div className="paiement-section-label">Notes (optionnel)</div>
-            <input
-              className="izi-input"
-              type="text"
-              value={notes}
-              onChange={e => setNotes(e.target.value)}
-              placeholder="N° chèque, référence virement..."
-            />
-
-            {error && <p className="error-msg">{error}</p>}
-
-            <button
-              type="button"
-              className="izi-btn izi-btn-primary confirm-btn"
-              onClick={handleConfirm}
-              disabled={submitting || !montant}
-            >
-              {submitting ? <><Loader2 size={16} className="spin" /> Enregistrement...</> : <>✓ Valider le paiement</>}
-            </button>
-          </div>
-        )}
+            </>
+          );
+        })()}
       </div>
     </div>
   );
@@ -570,10 +433,10 @@ export default function OffresClient({ offres, profile, planKey, limiteOffres })
                 <Crown size={28} />
               </div>
               <p className="upgrade-title">
-                Tu as atteint la limite de {limiteOffres} formules sur le plan Solo
+                Tu as atteint la limite de {limiteOffres} offres sur le plan Solo
               </p>
               <p className="upgrade-desc">
-                Passe en Pro pour cr{'é'}er des formules illimit{'é'}es et d{'é'}bloquer toutes les fonctionnalit{'é'}s avanc{'é'}es.
+                Passe en Pro pour cr{'é'}er des offres illimit{'é'}es et d{'é'}bloquer toutes les fonctionnalit{'é'}s avanc{'é'}es.
               </p>
               <Link
                 href="/parametres?tab=abonnement"

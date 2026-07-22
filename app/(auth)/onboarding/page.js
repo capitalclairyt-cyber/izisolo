@@ -407,7 +407,7 @@ export default function OnboardingPage() {
         {etape === 2 && (
           <div className="onboarding-step animate-fade-in">
             <div className="step-header">
-              <h2>Ta formule la plus courante ?</h2>
+              <h2>Ton offre la plus courante ?</h2>
               <p className="step-hint">Tu pourras en ajouter d'autres plus tard. Tu peux aussi passer cette étape.</p>
             </div>
             <div className="step-fields">

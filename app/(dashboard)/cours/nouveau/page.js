@@ -906,7 +906,7 @@ function NouveauCoursInner() {
           <label className="form-label">💰 Cours payable à la séance (optionnel)</label>
           <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '0 0 10px', lineHeight: 1.5 }}>
             Mets un prix ici <strong>seulement si ce cours ne s'achète pas avec un carnet</strong> —
-            atelier, stage, ou cours hors formule (ex. un renfo). Il ne décomptera aucun
+            atelier, stage, ou cours hors carnet/abo (ex. un renfo). Il ne décomptera aucun
             carnet : l'élève réglera <strong>directement avec toi</strong> à la séance.
             Laisse vide pour un cours couvert par tes carnets/abos.
           </p>

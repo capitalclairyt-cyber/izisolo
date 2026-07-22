@@ -37,8 +37,8 @@ const FAQ = [
     a: "Dans Paramètres → depuis le bas de la page, tu peux exporter tes données en CSV. Pour un export complet, contacte bonjour@izisolo.fr."
   },
   {
-    q: "Comment changer de formule d'abonnement ?",
-    a: "Dans Paramètres → Abonnement → Changer de formule. Le changement prend effet immédiatement."
+    q: "Comment changer d'abonnement IziSolo ?",
+    a: "Dans Paramètres → Abonnement IziSolo. Le changement prend effet immédiatement."
   },
 ];
 

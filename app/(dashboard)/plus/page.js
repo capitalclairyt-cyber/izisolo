@@ -15,7 +15,7 @@ const MENU_SECTIONS = [
     items: [
       { href: '/offres', label: 'Offres', icon: Package, desc: 'Carnets, abonnements, cours à l\'unité' },
       { href: '/revenus', label: 'Revenus', icon: BarChart3, desc: 'Paiements et suivi financier' },
-      { href: '/abonnements', label: 'Abonnements', icon: BookOpen, desc: 'Suivi des crédits et forfaits' },
+      { href: '/abonnements', label: 'Carnets & abos', icon: BookOpen, desc: 'Les carnets et abos de tes élèves' },
       { href: '/evenements', label: 'Événements', icon: Calendar, desc: 'Stages, ateliers, événements', soon: true },
     ],
   },

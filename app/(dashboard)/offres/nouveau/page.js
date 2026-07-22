@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
-  ArrowLeft, Save, Ticket, CalendarCheck, Zap,
+  ArrowLeft, Save, Ticket, CalendarCheck,
   Percent, Info, Calculator, ToggleLeft, ToggleRight,
   Loader2,
 } from 'lucide-react';
@@ -15,10 +15,16 @@ import { PLANS } from '@/lib/constantes';
 import { effectivePlan } from '@/lib/trial';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
+// « Cours à l'unité » retiré de la création (audit cohérence 2026-07-22, spec
+// MODELE-PAIEMENTS §4.1) : ce type créait un carnet 0/1 qui passait « épuisé »
+// dès la 1re séance. La séance à l'unité se gère désormais SANS carnet :
+//   - prix sur le cours lui-même (« Cours payable à la séance ») → encaissement
+//     au pointage ;
+//   - ou « Encaisser une séance / autre » sur la fiche élève.
+// Les offres cours_unique existantes restent lisibles/attribuables (legacy).
 const TYPES = [
   { value: 'carnet',      label: 'Carnet de séances', Icon: Ticket,      desc: 'Ex : 10 cours pour 120€' },
   { value: 'abonnement',  label: 'Abonnement',         Icon: CalendarCheck, desc: 'Ex : Annuel sept.–juin' },
-  { value: 'cours_unique',label: 'Cours à l\'unité',   Icon: Zap,          desc: 'Ex : Drop-in 15€' },
 ];
 
 // Presets séances carnet
@@ -136,8 +142,6 @@ export default function NouvelleOffre() {
     if (nomModifie) return;
     if (type === 'carnet' && seances) {
       setNom(`Carnet ${seances} séances`);
-    } else if (type === 'cours_unique') {
-      setNom('Cours à l\'unité');
     }
     // Pour abonnement : ne pas auto-remplir (trop variable)
   }, [type, seances, nomModifie]);
@@ -195,7 +199,7 @@ export default function NouvelleOffre() {
     if (!nom.trim() || !prix) return;
 
     if (planLimitReached) {
-      toast.warning('Tu as atteint la limite de formules de ton plan. Passe en Pro pour en créer davantage.');
+      toast.warning('Tu as atteint la limite d\'offres de ton plan. Passe en Pro pour en créer davantage.');
       return;
     }
 
@@ -249,10 +253,6 @@ export default function NouvelleOffre() {
         payload.pro_rata_date_limite = (proRataActif && proRataDateLimite) ? proRataDateLimite : null;
       }
 
-      if (type === 'cours_unique') {
-        payload.seances = 1;
-      }
-
       if (stripePaymentLink.trim()) {
         if (!stripeLinkValid) {
           toast.warning('Lien Stripe invalide. Doit commencer par https://buy.stripe.com/');
@@ -290,8 +290,8 @@ export default function NouvelleOffre() {
         <div className="no-plan-limit-banner animate-slide-up">
           <div className="no-plan-limit-icon">&#x1F451;</div>
           <div className="no-plan-limit-text">
-            <strong>Limite atteinte</strong> — Tu as atteint la limite de formules du plan Solo.
-            Passe en Pro pour cr{'é'}er des formules illimit{'é'}es.
+            <strong>Limite atteinte</strong> — Tu as atteint la limite d'offres du plan Solo.
+            Passe en Pro pour cr{'é'}er des offres illimit{'é'}es.
           </div>
           <Link href="/parametres?tab=abonnement" className="izi-btn izi-btn-primary" style={{ whiteSpace: 'nowrap', fontSize: '0.8125rem', padding: '8px 14px' }}>
             D{'é'}couvrir Pro
@@ -320,6 +320,11 @@ export default function NouvelleOffre() {
               </button>
             ))}
           </div>
+          <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '8px 2px 0', lineHeight: 1.5 }}>
+            💡 Pour une <strong>séance à l'unité</strong> (drop-in, atelier, stage), pas besoin d'offre :
+            mets un prix directement sur le cours (« Cours payable à la séance ») — tu encaisseras
+            au pointage. Ou utilise « Encaisser une séance » depuis la fiche de l'élève.
+          </p>
         </div>
 
         {/* ══════════════════ CARNET ══════════════════ */}

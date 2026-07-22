@@ -552,7 +552,7 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
               <label className="form-label">💰 Cours payable à la séance (optionnel)</label>
               <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '0 0 10px', lineHeight: 1.5 }}>
                 Mets un prix seulement si ce cours ne s'achète pas avec un carnet (atelier,
-                stage, ou cours hors formule). Il ne décomptera aucun carnet : l'élève réglera
+                stage, ou cours hors carnet/abo). Il ne décomptera aucun carnet : l'élève réglera
                 directement avec toi à la séance. Laisse vide pour un cours couvert par tes carnets/abos.
               </p>
               <input
