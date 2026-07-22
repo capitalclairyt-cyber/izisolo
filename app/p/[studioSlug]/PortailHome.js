@@ -425,8 +425,12 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
         </Link>
       )}
 
-      {/* CTA Cours d'essai (si activé par le pro) */}
-      {profile.essai_actif && (
+      {/* CTA Cours d'essai — UNIQUEMENT pour les visiteurs SANS compte.
+          L'essai est un outil d'acquisition : un·e élève déjà connecté·e (a
+          fortiori payant·e) ne doit jamais voir « cours d'essai offert » (évite
+          l'ambiguïté + l'embarras). currentClient = fiche de l'élève connecté·e,
+          null si anonyme (ou aperçu prof → CTA visible en preview). */}
+      {profile.essai_actif && !currentClient && (
         <Link href={`/p/${studioSlug}/essai${demoQS}`} className="portail-essai-cta">
           <div className="portail-essai-cta-icon">✨</div>
           <div className="portail-essai-cta-body">
