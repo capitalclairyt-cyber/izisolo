@@ -57,12 +57,12 @@ export async function POST(request, { params }) {
   // Cours de référence
   const { data: baseCours } = await supabaseAdmin
     .from('cours')
-    .select('id, recurrence_id, date, nom, heure')
+    .select('id, recurrence_parent_id, date, nom, heure')
     .eq('id', coursId)
     .eq('profile_id', profile.id)
     .single();
   if (!baseCours) return Response.json({ error: 'Cours introuvable' }, { status: 404 });
-  if (!baseCours.recurrence_id) {
+  if (!baseCours.recurrence_parent_id) {
     return Response.json({ error: 'Ce cours n\'est pas récurrent' }, { status: 400 });
   }
 
@@ -70,11 +70,11 @@ export async function POST(request, { params }) {
     return Response.json({ error: 'La date limite doit être après le cours initial' }, { status: 400 });
   }
 
-  // Toutes les occurrences futures (même recurrence_id, date entre base et jusquAu, non annulées)
+  // Toutes les occurrences futures (même recurrence_parent_id, date entre base et jusquAu, non annulées)
   const { data: futureCourses } = await supabaseAdmin
     .from('cours')
     .select('id, date, heure, capacite_max, est_annule')
-    .eq('recurrence_id', baseCours.recurrence_id)
+    .eq('recurrence_parent_id', baseCours.recurrence_parent_id)
     .eq('profile_id', profile.id)
     .gte('date', baseCours.date)
     .lte('date', jusquAu)
@@ -134,7 +134,7 @@ export async function POST(request, { params }) {
           titre: `🎉 Inscription en série — ${client.prenom || 'un·e élève'}`,
           corps,
           data: { client_id: client.id, cours_id: baseCours.id, cours_date: booked[0].date, nb: booked.length },
-          ref_key: `serie_${baseCours.recurrence_id}_${client.id}_${booked[0].date}`,
+          ref_key: `serie_${baseCours.recurrence_parent_id}_${client.id}_${booked[0].date}`,
           expires_at: expire.toISOString(),
         }, { onConflict: 'profile_id,ref_key', ignoreDuplicates: true });
       } catch (e) { console.warn('[reserver-serie] notif cloche non-bloquant:', e?.message); }
@@ -144,7 +144,7 @@ export async function POST(request, { params }) {
       title: `Inscription en série 🎉`,
       body: `${client.prenom || 'un·e élève'} — ${corps}`,
       url: '/agenda',
-      tag: `resa-serie-${baseCours.recurrence_id}`,
+      tag: `resa-serie-${baseCours.recurrence_parent_id}`,
     }, { type: 'reservation' }).catch(() => {});
   }
 

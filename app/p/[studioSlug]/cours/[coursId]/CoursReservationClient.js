@@ -163,8 +163,10 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
   const [paymentRequired, setPaymentRequired] = useState(null); // { message, url }
   const isConnected = !!currentUser;
 
-  // Série : inscription à toutes les occurrences récurrentes jusqu'à une date
-  const hasSeries = !!cours.recurrence_id && isConnected;
+  // Série : inscription à toutes les occurrences récurrentes jusqu'à une date.
+  // ⚠️ La vraie colonne est recurrence_parent_id (recurrence_id est vestigiale,
+  // jamais peuplée → la case « séances suivantes » ne s'affichait jamais).
+  const hasSeries = !!cours.recurrence_parent_id && isConnected;
   const [serieActive, setSerieActive] = useState(false);
   const [serieJusquAu, setSerieJusquAu] = useState(() => {
     // Par défaut : 8 semaines après le cours
