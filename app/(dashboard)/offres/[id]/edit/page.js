@@ -32,10 +32,13 @@ export default function EditOffre({ params }) {
   const [dateDebut, setDateDebut] = useState('');
   const [dateFin, setDateFin] = useState('');
   const [illimite, setIllimite] = useState(true);
-  const [seancesParSemaine, setSeancesParSemaine] = useState('1');
+  const [seancesParSemaine, setSeancesParSemaine] = useState(''); // '' = pas de cap
   const [inclutVacances, setInclutVacances] = useState(true);
   const [stripePaymentLink, setStripePaymentLink] = useState('');
   const [carnetDureeJours, setCarnetDureeJours] = useState('');
+  const [prixUnitaireRef, setPrixUnitaireRef] = useState('');   // référence remise carnet
+  const [proRataActif, setProRataActif] = useState(false);      // pro-rata abonnement
+  const [proRataDateLimite, setProRataDateLimite] = useState('');
   const [typesCoursDisponibles, setTypesCoursDisponibles] = useState([]); // types existants du studio
   const [typesCoursAutorises, setTypesCoursAutorises] = useState([]);     // sélection ([] = tous)
 
@@ -61,10 +64,16 @@ export default function EditOffre({ params }) {
       setDateDebut(data.date_debut || '');
       setDateFin(data.date_fin || '');
       setIllimite(data.type === 'abonnement' ? !data.seances : true);
-      setSeancesParSemaine(data.seances_par_semaine ? String(data.seances_par_semaine) : '1');
+      // '' = pas de cap hebdo. (Avant : défaut '1' → sauvegarder ajoutait
+      // silencieusement un cap 1x/sem à un abo qui n'en avait pas, et la
+      // réservation portail bloquait les élèves au-delà.)
+      setSeancesParSemaine(data.seances_par_semaine ? String(data.seances_par_semaine) : '');
       setInclutVacances(data.inclut_vacances !== false);
       setStripePaymentLink(data.stripe_payment_link || '');
       setCarnetDureeJours(data.type === 'carnet' && data.duree_jours ? String(data.duree_jours) : '');
+      setPrixUnitaireRef(data.prix_unitaire_ref != null ? String(data.prix_unitaire_ref) : '');
+      setProRataActif(!!data.pro_rata_actif);
+      setProRataDateLimite(data.pro_rata_date_limite || '');
       setTypesCoursAutorises(data.types_cours_autorises || []);
       // Types de cours du studio (pour les chips « Vaut pour quels cours ? »)
       const { data: prof } = await supabase.from('profiles').select('types_cours').eq('id', data.profile_id).single();
@@ -102,6 +111,7 @@ export default function EditOffre({ params }) {
       if (type === 'carnet') {
         payload.seances = seances ? parseInt(seances) : null;
         payload.duree_jours = carnetDureeJours ? parseInt(carnetDureeJours) : null;
+        payload.prix_unitaire_ref = prixUnitaireRef ? parseFloat(prixUnitaireRef) : null;
       } else if (type === 'abonnement') {
         payload.date_debut = dateDebut || null;
         payload.date_fin = dateFin || null;
@@ -109,6 +119,8 @@ export default function EditOffre({ params }) {
         payload.seances = (!illimite && seances) ? parseInt(seances) : null;
         payload.seances_par_semaine = seancesParSemaine ? parseInt(seancesParSemaine) : null;
         payload.inclut_vacances = inclutVacances;
+        payload.pro_rata_actif = proRataActif;
+        payload.pro_rata_date_limite = (proRataActif && proRataDateLimite) ? proRataDateLimite : null;
       } else if (type === 'cours_unique') {
         payload.seances = 1;
       }
@@ -211,6 +223,24 @@ export default function EditOffre({ params }) {
                 onChange={e => setCarnetDureeJours(e.target.value)}
               />
             </div>
+            <div className="eo-field">
+              <label className="eo-label">
+                Prix d'une séance à l'unité <span className="eo-optional">(référence, optionnel — pour afficher l'économie du carnet)</span>
+              </label>
+              <input
+                className="izi-input"
+                type="number" step="0.01" min="0"
+                value={prixUnitaireRef}
+                onChange={e => setPrixUnitaireRef(e.target.value)}
+                placeholder="Ex : 18.00"
+                style={{ maxWidth: 220 }}
+              />
+              {prixUnitaireRef && seances && prix && (parseFloat(prixUnitaireRef) * parseInt(seances) - parseFloat(prix)) > 0 && (
+                <span className="eo-optional">
+                  💰 Économie affichée : {(parseFloat(prixUnitaireRef) * parseInt(seances) - parseFloat(prix)).toFixed(2).replace('.', ',')} € vs séances à l'unité
+                </span>
+              )}
+            </div>
           </>
         )}
 
@@ -249,12 +279,31 @@ export default function EditOffre({ params }) {
               <div className="eo-field">
                 <label className="eo-label">Séances / semaine</label>
                 <div className="eo-chips">
+                  <button type="button" className={`eo-chip ${!seancesParSemaine ? 'active' : ''}`} onClick={() => setSeancesParSemaine('')}>
+                    Libre
+                  </button>
                   {['1', '2', '3'].map(n => (
                     <button key={n} type="button" className={`eo-chip ${seancesParSemaine === n ? 'active' : ''}`} onClick={() => setSeancesParSemaine(n)}>
                       {n}x/sem
                     </button>
                   ))}
+                  <button
+                    type="button"
+                    className={`eo-chip ${seancesParSemaine && !['1', '2', '3'].includes(seancesParSemaine) ? 'active' : ''}`}
+                    onClick={() => setSeancesParSemaine('4')}
+                  >
+                    Autre
+                  </button>
                 </div>
+                {seancesParSemaine && !['1', '2', '3'].includes(seancesParSemaine) && (
+                  <input
+                    className="izi-input"
+                    type="number" min="1"
+                    value={seancesParSemaine}
+                    onChange={e => setSeancesParSemaine(e.target.value)}
+                    style={{ maxWidth: 120, marginTop: 6 }}
+                  />
+                )}
               </div>
               <div className="eo-field">
                 <label className="eo-label">Vacances scolaires</label>
@@ -265,6 +314,34 @@ export default function EditOffre({ params }) {
                   }
                 </button>
               </div>
+            </div>
+
+            <div className="eo-field">
+              <label className="eo-label">
+                Pro-rata en cours de période <span className="eo-optional">(optionnel)</span>
+              </label>
+              <button type="button" className="eo-vacances-toggle" onClick={() => setProRataActif(v => !v)}>
+                {proRataActif
+                  ? <><ToggleRight size={22} style={{ color: 'var(--brand)' }} /> Activé — prix ajusté aux semaines restantes</>
+                  : <><ToggleLeft size={22} style={{ color: 'var(--text-muted)' }} /> Désactivé — plein tarif toute la période</>
+                }
+              </button>
+              {proRataActif && (
+                <>
+                  <label className="eo-label" style={{ marginTop: 4 }}>
+                    Jusqu'à quelle date ? <span className="eo-optional">(vide = jusqu'à la fin)</span>
+                  </label>
+                  <input
+                    className="izi-input"
+                    type="date"
+                    value={proRataDateLimite}
+                    min={dateDebut || undefined}
+                    max={dateFin || undefined}
+                    onChange={e => setProRataDateLimite(e.target.value)}
+                    style={{ maxWidth: 220 }}
+                  />
+                </>
+              )}
             </div>
           </>
         )}

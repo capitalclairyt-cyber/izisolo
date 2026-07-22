@@ -103,12 +103,25 @@ function buildDemoData(profile) {
     },
   ];
 
+  // Fidèle au réel : un cas « séance sans carnet » n'a PAS de montant (le vrai
+  // code n'en écrit jamais) ; le montant chiffré vient des séances d'atelier
+  // (tarif_unitaire) dérivées des présences.
   const demoARegler = [
     {
       id: 'demo-cas-1',
       case_type: 'eleve_sans_carnet',
-      context: { choix_applique: 'paiement_sur_place', montant: 15, cours_nom: 'Pilates barre' },
+      context: { choix_applique: 'paiement_sur_place', cours_nom: 'Pilates barre' },
       cours: { nom: 'Pilates barre', date: fmt(addDays(5)), heure: '18:00' },
+    },
+  ];
+
+  const demoSeancesWorkshopDues = [
+    {
+      id: 'demo-ws-1',
+      cours_nom: 'Atelier Yoga & Sonothérapie',
+      cours_date: fmt(addDays(9)),
+      montant: 25,
+      annulationTardive: false,
     },
   ];
 
@@ -121,6 +134,7 @@ function buildDemoData(profile) {
     offresStripe: [],
     abonnements: demoAbonnements,
     aRegler: demoARegler,
+    seancesWorkshopDues: demoSeancesWorkshopDues,
   };
 }
 
@@ -230,7 +244,7 @@ async function getData(studioSlug, userEmail) {
   // résout le cas (encaissé / offert), il disparaît automatiquement d'ici.
   const { data: casOuverts } = await supabase
     .from('cas_a_traiter')
-    .select('id, case_type, context, created_at, cours:cours_id(nom, date, heure)')
+    .select('id, case_type, context, created_at, presence_id, cours:cours_id(nom, date, heure)')
     .eq('profile_id', profile.id)
     .eq('client_id', client.id)
     .is('resolu_at', null)
@@ -275,6 +289,24 @@ async function getData(studioSlug, userEmail) {
       }));
   }
 
+  // Annulations tardives « séance due » sur cours NORMAL (pas de carnet
+  // décompté, montant à la discrétion du studio) — miroir de l'email « la
+  // séance reste due ». Dédupliquées des cas dette ouverts (decompter_ou_dette)
+  // déjà listés dans aRegler.
+  const casPresenceIds = new Set((casOuverts || []).map(c => c.presence_id).filter(Boolean));
+  const annulationsDues = all
+    .filter(p =>
+      p.est_due === true
+      && !p.abonnement_id
+      && !(Number(p.cours?.tarif_unitaire) > 0)   // les tarifées sont déjà dans seancesWorkshopDues
+      && !casPresenceIds.has(p.id)
+    )
+    .map(p => ({
+      id: p.id,
+      cours_nom: p.cours?.nom || 'Séance',
+      cours_date: p.cours?.date || null,
+    }));
+
   // Compteur de messages non lus (pour la cloche de notifications de l'espace).
   let unreadMessages = 0;
   try { unreadMessages = await countUnread(supabase, 'eleve', client.id); } catch {}
@@ -287,7 +319,7 @@ async function getData(studioSlug, userEmail) {
     .from('clients').select('notif_prefs').eq('id', client.id).maybeSingle();
   if (!cpErr && cp?.notif_prefs) clientPrefs = cp.notif_prefs;
 
-  return { profile, client, aVenir, passes, paiements: paiements || [], offresStripe: offresStripe || [], abonnements: abonnements || [], aRegler, seancesWorkshopDues, unreadMessages, clientPrefs };
+  return { profile, client, aVenir, passes, paiements: paiements || [], offresStripe: offresStripe || [], abonnements: abonnements || [], aRegler, seancesWorkshopDues, annulationsDues, unreadMessages, clientPrefs };
 }
 
 export default async function EspacePage({ params, searchParams }) {
@@ -330,6 +362,7 @@ export default async function EspacePage({ params, searchParams }) {
           offresStripe={demoData.offresStripe}
           abonnements={demoData.abonnements}
           aRegler={demoData.aRegler}
+          seancesWorkshopDues={demoData.seancesWorkshopDues || []}
           studioSlug={studioSlug}
           userEmail={user.email}
           isDemo={true}
@@ -353,6 +386,7 @@ export default async function EspacePage({ params, searchParams }) {
       abonnements={data.abonnements || []}
       aRegler={data.aRegler || []}
       seancesWorkshopDues={data.seancesWorkshopDues || []}
+      annulationsDues={data.annulationsDues || []}
       unreadMessages={data.unreadMessages || 0}
       clientPrefs={data.clientPrefs || {}}
       studioSlug={studioSlug}

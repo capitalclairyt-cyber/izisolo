@@ -71,6 +71,7 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
     duree_minutes: cours.duree_minutes?.toString() || '60',
     lieu_id:       cours.lieu_id || '',
     type_cours:    cours.type_cours || '',
+    tarif_unitaire: cours.tarif_unitaire != null ? String(cours.tarif_unitaire) : '',
   });
 
   // ---- Message aux participants ----
@@ -209,6 +210,9 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
         lieu_id:       recurrenceForm.lieu_id || null,
         lieu:          lieuNom,
         type_cours:    recurrenceForm.type_cours || null,
+        // Payable à la séance — propagé aux occurrences futures uniquement
+        // (la table recurrences n'a pas la colonne, cf. cours/nouveau).
+        tarif_unitaire: recurrenceForm.tarif_unitaire ? parseFloat(recurrenceForm.tarif_unitaire) : null,
       };
 
       // 1. Mettre à jour toutes les occurrences futures
@@ -824,6 +828,23 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
                     </div>
                   </div>
                 )}
+
+                <div className="form-group">
+                  <label className="form-label">💰 Payable à la séance (optionnel)</label>
+                  <input
+                    className="izi-input"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={recurrenceForm.tarif_unitaire}
+                    onChange={e => setRecurrenceForm(p => ({ ...p, tarif_unitaire: e.target.value }))}
+                    placeholder="Prix à la séance (€) — vide = couvert par les carnets"
+                    style={{ maxWidth: 280 }}
+                  />
+                  <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'block', marginTop: 4 }}>
+                    Un prix ici = ces séances ne décomptent aucun carnet, l'élève règle à la séance.
+                  </span>
+                </div>
               </div>
 
               {/* Confirmation obligatoire */}

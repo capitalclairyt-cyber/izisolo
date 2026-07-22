@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { formatMontant, formatDate } from '@/lib/utils';
 import { STATUTS_PAIEMENT } from '@/lib/constantes';
+import { createClient } from '@/lib/supabase';
 import { useToast } from '@/components/ui/ToastProvider';
 import Pagination, { usePagination } from '@/components/ui/Pagination';
 import EmptyState from '@/components/ui/EmptyState';
@@ -60,9 +61,22 @@ function inPeriode(dateStr, periode) {
   return true;
 }
 
-export default function RevenusClient({ paiements: initialPaiements }) {
+export default function RevenusClient({ paiements: initialPaiements, seancesDues = [], annulationsDues = [] }) {
   const { toast } = useToast();
   const [paiements, setPaiements] = useState(initialPaiements);
+  // Annulations tardives « séance due » : la ligne se ferme via « Réglée »
+  // (clear presences.est_due — la prof a encaissé comme elle veut, ou excuse).
+  const [annulations, setAnnulations] = useState(annulationsDues);
+  const reglerAnnulation = async (row) => {
+    const supabase = createClient();
+    const { error } = await supabase
+      .from('presences')
+      .update({ est_due: false })
+      .eq('id', row.id);
+    if (error) { toast.error('Non enregistré, réessaie.'); return; }
+    setAnnulations(prev => prev.filter(a => a.id !== row.id));
+    toast.success('Séance marquée réglée ✓');
+  };
   const [periode, setPeriode] = useState('mois');
   const [filterMode, setFilterMode] = useState('');
   const [filterStatut, setFilterStatut] = useState('');
@@ -335,18 +349,59 @@ export default function RevenusClient({ paiements: initialPaiements }) {
         </div>
       )}
 
-      {/* Bloc "À percevoir" — paiements pending + overdue toutes périodes confondues */}
+      {/* Bloc "À percevoir" — TOUT l'argent dû (audit cohérence 2026-07-22) :
+          paiements pending/overdue + séances payables à la séance non
+          encaissées (dérivées présences+paiements liés v65) + annulations
+          tardives « séance due » sans montant fixe. */}
       {(() => {
         const aPercevoir = paiements.filter(p => p.statut === 'pending' || p.statut === 'overdue');
-        if (aPercevoir.length === 0) return null;
+        if (aPercevoir.length === 0 && seancesDues.length === 0 && annulations.length === 0) return null;
         const today = new Date().toISOString().split('T')[0];
         // Tri par date CROISSANTE : les échéances les plus proches d'abord.
         // (Les paiements arrivent en date DESC → sans ce tri, « À venir »
         // montrait d'abord les dates les plus LOINTAINES — feedback #7.)
         const byDateAsc = (a, b) => (a.date || '').localeCompare(b.date || '');
-        const overdueList = aPercevoir.filter(p => p.statut === 'overdue' || (p.statut === 'pending' && p.date < today)).sort(byDateAsc);
-        const upcomingList = aPercevoir.filter(p => p.statut === 'pending' && p.date >= today).sort(byDateAsc);
-        const totalDu = aPercevoir.reduce((s, p) => s + parseFloat(p.montant || 0), 0);
+        // Fusion paiements + séances dues, réparties retard / à venir par date.
+        const rows = [
+          ...aPercevoir.map(p => ({ kind: 'paiement', key: `p-${p.id}`, data: p, date: p.date || '', late: p.statut === 'overdue' || (p.statut === 'pending' && p.date < today) })),
+          ...seancesDues.map(s => ({ kind: 'seance', key: `s-${s.id}`, data: s, date: s.date || '', late: (s.date || '') < today })),
+        ];
+        const overdueList = rows.filter(r => r.late).sort(byDateAsc);
+        const upcomingList = rows.filter(r => !r.late).sort(byDateAsc);
+        const totalDu = aPercevoir.reduce((s, p) => s + parseFloat(p.montant || 0), 0)
+          + seancesDues.reduce((s, w) => s + (parseFloat(w.montant) || 0), 0);
+
+        const renderRow = (r) => r.kind === 'paiement' ? (
+          <div key={r.key} className={`a-percevoir-row${r.late ? ' overdue' : ''}`}>
+            <span className="a-percevoir-who">{clientName(r.data.clients) || r.data.intitule || 'Paiement'}</span>
+            <span className="a-percevoir-date">{formatDate(r.data.date)}</span>
+            <span className="a-percevoir-montant">{formatMontant(r.data.montant)}</span>
+            <button
+              className="a-percevoir-action"
+              onClick={() => openEncaisser(r.data)}
+              title="Marquer comme encaissé"
+            >
+              <CheckCircle2 size={13} /> Encaisser
+            </button>
+          </div>
+        ) : (
+          <div key={r.key} className={`a-percevoir-row${r.late ? ' overdue' : ''}`}>
+            <span className="a-percevoir-who">
+              {clientName(r.data.clients) || 'Élève'}
+              <span className="a-percevoir-sub"> · {r.data.cours_nom}{r.data.annulationTardive ? ' (annulation tardive)' : ' (à la séance)'}</span>
+            </span>
+            <span className="a-percevoir-date">{formatDate(r.data.date)}</span>
+            <span className="a-percevoir-montant">{formatMontant(r.data.montant)}</span>
+            <Link
+              className="a-percevoir-action"
+              href={`/pointage/${r.data.cours_id}`}
+              title="Encaisser depuis le pointage de la séance"
+            >
+              <CheckCircle2 size={13} /> Encaisser
+            </Link>
+          </div>
+        );
+
         return (
           <div className="a-percevoir-section izi-card animate-slide-up">
             <div className="a-percevoir-header">
@@ -357,41 +412,45 @@ export default function RevenusClient({ paiements: initialPaiements }) {
             {overdueList.length > 0 && (
               <div className="a-percevoir-group">
                 <div className="a-percevoir-group-label overdue">En retard ({overdueList.length})</div>
-                {overdueList.slice(0, 5).map(p => (
-                  <div key={p.id} className="a-percevoir-row overdue">
-                    <span className="a-percevoir-who">{clientName(p.clients) || p.intitule || 'Paiement'}</span>
-                    <span className="a-percevoir-date">{formatDate(p.date)}</span>
-                    <span className="a-percevoir-montant">{formatMontant(p.montant)}</span>
-                    <button
-                      className="a-percevoir-action"
-                      onClick={() => openEncaisser(p)}
-                      title="Marquer comme encaissé"
-                    >
-                      <CheckCircle2 size={13} /> Encaisser
-                    </button>
-                  </div>
-                ))}
+                {overdueList.slice(0, 5).map(renderRow)}
                 {overdueList.length > 5 && <div className="a-percevoir-more">+ {overdueList.length - 5} autre{overdueList.length - 5 > 1 ? 's' : ''}</div>}
               </div>
             )}
             {upcomingList.length > 0 && (
               <div className="a-percevoir-group">
                 <div className="a-percevoir-group-label upcoming">À venir ({upcomingList.length})</div>
-                {upcomingList.slice(0, 5).map(p => (
-                  <div key={p.id} className="a-percevoir-row">
-                    <span className="a-percevoir-who">{clientName(p.clients) || p.intitule || 'Paiement'}</span>
-                    <span className="a-percevoir-date">{formatDate(p.date)}</span>
-                    <span className="a-percevoir-montant">{formatMontant(p.montant)}</span>
+                {upcomingList.slice(0, 5).map(renderRow)}
+                {upcomingList.length > 5 && <div className="a-percevoir-more">+ {upcomingList.length - 5} autre{upcomingList.length - 5 > 1 ? 's' : ''}</div>}
+              </div>
+            )}
+            {annulations.length > 0 && (
+              <div className="a-percevoir-group">
+                <div className="a-percevoir-group-label upcoming">Annulations tardives — séance due ({annulations.length})</div>
+                {annulations.slice(0, 5).map(a => (
+                  <div key={`a-${a.id}`} className="a-percevoir-row">
+                    <span className="a-percevoir-who">
+                      {clientName(a.clients) || 'Élève'}
+                      <span className="a-percevoir-sub"> · {a.cours_nom}</span>
+                    </span>
+                    <span className="a-percevoir-date">{formatDate(a.date)}</span>
+                    <span className="a-percevoir-montant" style={{ color: 'var(--text-muted)' }}>montant libre</span>
+                    <Link
+                      className="a-percevoir-action"
+                      href={`/clients/${a.client_id}`}
+                      title="Encaisser depuis la fiche de l'élève (« Encaisser une séance »)"
+                    >
+                      Fiche
+                    </Link>
                     <button
                       className="a-percevoir-action"
-                      onClick={() => openEncaisser(p)}
-                      title="Marquer comme encaissé"
+                      onClick={() => reglerAnnulation(a)}
+                      title="Marquer la séance comme réglée (encaissée ou excusée)"
                     >
-                      <CheckCircle2 size={13} /> Encaisser
+                      <CheckCircle2 size={13} /> Réglée
                     </button>
                   </div>
                 ))}
-                {upcomingList.length > 5 && <div className="a-percevoir-more">+ {upcomingList.length - 5} autre{upcomingList.length - 5 > 1 ? 's' : ''}</div>}
+                {annulations.length > 5 && <div className="a-percevoir-more">+ {annulations.length - 5} autre{annulations.length - 5 > 1 ? 's' : ''}</div>}
               </div>
             )}
           </div>
@@ -840,6 +899,7 @@ export default function RevenusClient({ paiements: initialPaiements }) {
         }
         .a-percevoir-row.overdue { background: #fef2f2; }
         .a-percevoir-who { font-weight: 600; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .a-percevoir-sub { font-weight: 400; color: var(--text-muted); font-size: 0.75rem; }
         .a-percevoir-date { color: var(--text-muted); font-size: 0.75rem; flex-shrink: 0; }
         .a-percevoir-montant { font-weight: 700; flex-shrink: 0; }
         .a-percevoir-action {
@@ -848,6 +908,7 @@ export default function RevenusClient({ paiements: initialPaiements }) {
           border: 1px solid #6ee7b7; background: #ecfdf5;
           font-size: 0.6875rem; font-weight: 600; color: #065f46;
           cursor: pointer; flex-shrink: 0; transition: all 0.15s;
+          text-decoration: none; /* la version lien (séance/fiche) garde le même look */
         }
         .a-percevoir-action:hover { background: #6ee7b7; color: #064e3b; }
         .a-percevoir-more { font-size: 0.75rem; color: var(--text-muted); padding-left: 10px; }

@@ -274,7 +274,7 @@ function CoursCard({ presence, profile, studioSlug, onAnnuler, annulEnCours }) {
   );
 }
 
-export default function EspaceClient({ profile, client, aVenir, passes, paiements = [], offresStripe = [], abonnements = [], aRegler = [], seancesWorkshopDues = [], unreadMessages = 0, clientPrefs = {}, studioSlug, userEmail, isDemo = false }) {
+export default function EspaceClient({ profile, client, aVenir, passes, paiements = [], offresStripe = [], abonnements = [], aRegler = [], seancesWorkshopDues = [], annulationsDues = [], unreadMessages = 0, clientPrefs = {}, studioSlug, userEmail, isDemo = false }) {
   const router = useRouter();
   const { toast } = useToast();
   const [notifsOpen, setNotifsOpen] = useState(false);
@@ -308,7 +308,7 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
     paiementsDus.reduce((s, p) => s + (parseFloat(p.montant) || 0), 0) +
     aRegler.reduce((s, c) => s + (parseFloat(c.context?.montant ?? c.context?.tarif_unitaire ?? 0) || 0), 0) +
     seancesWorkshopDues.reduce((s, w) => s + (parseFloat(w.montant) || 0), 0);
-  const nbARegler = aRegler.length + paiementsDus.length + seancesWorkshopDues.length;
+  const nbARegler = aRegler.length + paiementsDus.length + seancesWorkshopDues.length + annulationsDues.length;
 
   // ── Notifications in-app (cloche) : agrégées côté client à partir des
   // données déjà chargées + le compteur de messages non lus (calculé serveur).
@@ -845,6 +845,26 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
                   </div>
                   <div style={{ fontWeight: 700, fontSize: '0.9375rem', color: '#b45309', flexShrink: 0 }}>
                     {Number(w.montant).toFixed(2).replace('.', ',')} €
+                  </div>
+                </div>
+              );
+            })}
+            {/* Annulations tardives « séance due » (cours normal, montant fixé
+                avec le studio) — miroir de l'email « la séance reste due » */}
+            {annulationsDues.map(a => {
+              const dateStr = a.cours_date
+                ? new Date(a.cours_date + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })
+                : null;
+              return (
+                <div key={`ad-${a.id}`} className="espace-aregler-row">
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 600, fontSize: '0.875rem', color: '#1a1a2e' }}>{a.cours_nom}</div>
+                    <div style={{ fontSize: '0.7rem', color: '#b45309', marginTop: 2 }}>
+                      Annulation tardive — séance due{dateStr ? ` · ${dateStr}` : ''}
+                    </div>
+                  </div>
+                  <div style={{ fontWeight: 700, fontSize: '0.9375rem', color: '#b45309', flexShrink: 0 }}>
+                    à régler
                   </div>
                 </div>
               );

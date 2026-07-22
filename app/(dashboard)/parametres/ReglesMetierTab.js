@@ -117,8 +117,11 @@ export default function ReglesMetierTab({ profileId }) {
           const r = regles[caseDef.id] || caseDef.defaut;
           const expanded = expandedId === caseDef.id;
           const isAuto = r.mode === 'auto';
+          // Un cas à comportement unique (ex. workshop depuis l'audit 2026-07-22)
+          // affiche ce comportement même si un ancien `choix` legacy est stocké.
           const summary = isAuto
-            ? caseDef.options.find(o => o.value === r.choix)?.label || 'Non configuré'
+            ? (caseDef.options.find(o => o.value === r.choix)?.label
+              || (caseDef.options.length === 1 ? caseDef.options[0].label : 'Non configuré'))
             : 'Géré manuellement';
 
           return (

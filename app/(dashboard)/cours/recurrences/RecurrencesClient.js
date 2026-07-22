@@ -172,6 +172,20 @@ export default function RecurrencesClient({ recurrences: initialRecurrences, cou
     setActionPending(iso);
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
+    // La table recurrences ne porte pas tarif_unitaire (payable à la séance) :
+    // on le recopie depuis le cours le plus récent de la série pour que
+    // l'occurrence ajoutée garde le même modèle de paiement.
+    let tarifUnitaire = null;
+    try {
+      const { data: frere } = await supabase
+        .from('cours')
+        .select('tarif_unitaire')
+        .eq('recurrence_parent_id', selected.id)
+        .order('date', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      tarifUnitaire = frere?.tarif_unitaire ?? null;
+    } catch { /* pas de frère : tarif null */ }
     const { data, error } = await supabase.from('cours').insert({
       profile_id: user.id,
       nom: selected.nom,
@@ -182,6 +196,7 @@ export default function RecurrencesClient({ recurrences: initialRecurrences, cou
       lieu_id: selected.lieu_id,
       capacite_max: null,
       recurrence_parent_id: selected.id,
+      tarif_unitaire: tarifUnitaire,
     }).select().single();
     if (error) {
       toast.error('Erreur : ' + error.message);

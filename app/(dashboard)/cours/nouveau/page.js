@@ -186,7 +186,6 @@ function NouveauCoursInner() {
     visibilite: '', // sera renseigné depuis profile.visibilite_default au load
     // Workshop / évènement payant à l'unité (v35)
     tarif_unitaire: '',           // ex: 30 (€) — NULL/vide = cours régulier
-    stripe_payment_link_unit: '', // URL Stripe Payment Link pour ce cours
     // Récurrence
     frequence: preFreq,
     jours_semaine: [],
@@ -394,7 +393,6 @@ function NouveauCoursInner() {
           notes: form.notes || null,
           visibilite: form.visibilite || 'public',
           tarif_unitaire: form.tarif_unitaire ? parseFloat(form.tarif_unitaire) : null,
-          stripe_payment_link_unit: form.stripe_payment_link_unit?.trim() || null,
           ...domicileFields,
         }).select('id').single();
         if (error) throw error;
@@ -449,6 +447,10 @@ function NouveauCoursInner() {
             capacite_max: form.capacite_max ? parseInt(form.capacite_max) : null,
             recurrence_parent_id: recurrence.id,
             visibilite: form.visibilite || 'public',
+            // Payable à la séance : porté par CHAQUE occurrence (la table
+            // recurrences n'a pas la colonne — « ajouter une occurrence »
+            // le recopie depuis un cours frère de la série).
+            tarif_unitaire: form.tarif_unitaire ? parseFloat(form.tarif_unitaire) : null,
             ...domicileFields,
           }));
           const { data: createdCours, error: coursErr } = await supabase.from('cours').insert(coursACreer).select('id');
@@ -897,11 +899,10 @@ function NouveauCoursInner() {
           <textarea className="izi-input" value={form.notes} onChange={handleChange('notes')} placeholder="Infos complémentaires..." rows={2} style={{ resize: 'vertical' }} />
         </div>
 
-        {/* === Évènement payant à l'unité (workshop / stage) ===
-            v35 : cours.tarif_unitaire + cours.stripe_payment_link_unit.
-            Si rempli, l'app traite ce cours comme un évènement payant
-            séparé (pas de décompte du carnet, paiement Stripe direct
-            via le Payment Link préconfiguré par la prof). */}
+        {/* === Cours payable à la séance (workshop / stage / hors carnet) ===
+            cours.tarif_unitaire — s'applique au cours unique ET à chaque
+            occurrence d'une série. Aucun carnet décompté (gate v70 au
+            pointage), l'élève règle à la séance (encaissement au pointage). */}
         <div className="form-group" style={{ background: 'var(--bg-soft, #F8F4ED)', padding: 14, borderRadius: 12, border: '1px solid var(--border)' }}>
           <label className="form-label">💰 Cours payable à la séance (optionnel)</label>
           <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '0 0 10px', lineHeight: 1.5 }}>
