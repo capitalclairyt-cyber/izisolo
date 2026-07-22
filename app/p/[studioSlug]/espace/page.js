@@ -193,22 +193,32 @@ async function getData(studioSlug, userEmail) {
     .eq('profile_id', profile.id)
     .order('created_at', { ascending: false });
 
-  const today = new Date().toISOString().slice(0, 10);
+  // « Maintenant » en heure de Paris (le studio + les horaires des cours sont en
+  // local FR). Corrige (1) le décalage UTC autour de minuit et (2) le cas d'un
+  // cours de ce matin qui restait « à venir » le soir avec un bouton Annuler
+  // trompeur — il bascule en historique une fois passé.
+  const nowParis = new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Paris' }); // "YYYY-MM-DD HH:mm:ss"
+  const today = nowParis.slice(0, 10);
+  const nowHM = nowParis.slice(11, 16);
   const all = presences || [];
 
-  // Les cours annulés DANS LE FUTUR restent dans « à venir » (avec le tag
-  // « Annulé » géré par CoursCard) : l'élève doit être alerté qu'un cours
-  // qu'elle avait réservé n'aura pas lieu, sans aller fouiller l'historique.
-  // Seuls les cours réellement passés (date < aujourd'hui) basculent en historique.
+  // Passé = date antérieure, OU aujourd'hui mais déjà commencé (heure ≤ maintenant).
+  const estPasse = (c) => {
+    if (c.date < today) return true;
+    if (c.date > today) return false;
+    return (c.heure || '23:59') <= nowHM;
+  };
+
+  // Les cours annulés FUTURS restent dans « à venir » (alerte pour l'élève).
   const aVenir = all
-    .filter(p => p.cours && p.cours.date >= today)
+    .filter(p => p.cours && !estPasse(p.cours))
     .sort((a, b) => {
       if (a.cours.date !== b.cours.date) return a.cours.date.localeCompare(b.cours.date);
       return (a.cours.heure || '').localeCompare(b.cours.heure || '');
     });
 
   const passes = all
-    .filter(p => p.cours && p.cours.date < today)
+    .filter(p => p.cours && estPasse(p.cours))
     .sort((a, b) => b.cours.date.localeCompare(a.cours.date));
 
   // Paiements à prévoir : cas ouverts (resolu_at null) impliquant une somme due

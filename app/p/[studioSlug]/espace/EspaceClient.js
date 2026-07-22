@@ -156,8 +156,13 @@ function modeLabel(mode) {
 function CoursCard({ presence, profile, studioSlug, onAnnuler, annulEnCours }) {
   const c = presence.cours;
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const today = new Date().toISOString().slice(0, 10);
-  const aVenir = c.date >= today && !c.est_annule;
+  // Heure de Paris (cohérent avec la bascule à-venir/passé côté serveur) : un
+  // cours de ce matin ne doit plus être « à venir » (ni proposer Annuler) le soir.
+  const nowParis = new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Paris' });
+  const today = nowParis.slice(0, 10);
+  const nowHM = nowParis.slice(11, 16);
+  const nonPasse = c.date > today || (c.date === today && (c.heure || '23:59') > nowHM);
+  const aVenir = nonPasse && !c.est_annule;
   // Règle d'annulation lue depuis profile.regles_annulation (fallback 24h)
   const evaluation = aVenir
     ? evaluerAnnulation(profile, c.date, c.heure, c.type_cours)
