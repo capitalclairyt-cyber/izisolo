@@ -7,7 +7,7 @@ import {
   Plus, X, Trash2, Flower2, Crown, Mail, Home,
   Eye, Zap, Gift, ToggleLeft, ToggleRight, Cake,
   CreditCard, Copy, Check, ExternalLink, AlertCircle, Loader2,
-  Pencil, Image as ImageIcon, ChevronDown,
+  Pencil, Image as ImageIcon,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase';
 import { useToast } from '@/components/ui/ToastProvider';
@@ -27,32 +27,46 @@ function normalizeUrl(value) {
   if (/^https?:\/\//i.test(trimmed)) return trimmed;
   return 'https://' + trimmed;
 }
-// Section repliable — allège visuellement /parametres : l'essentiel reste
-// ouvert, les réglages « réglés une fois » sont repliés par défaut. On enveloppe
-// la section EXISTANTE sans toucher son contenu :
-//   - repliée : une barre au look .section (titre + sous-titre + chevron)
-//   - dépliée : un petit « Replier » + la section telle quelle.
-function CollapsibleSection({ icon: Icon, title, subtitle, defaultOpen = false, children }) {
-  const [open, setOpen] = useState(defaultOpen);
-  if (open) {
-    return (
-      <div className="param-collapsible-open">
-        <button type="button" className="param-collapse-toggle" onClick={() => setOpen(false)} aria-expanded="true">
-          <ChevronDown size={14} style={{ transform: 'rotate(180deg)' }} /> Replier
-        </button>
-        {children}
-      </div>
-    );
-  }
+// Sous-onglets par onglet principal (le 1er = section essentielle, par défaut).
+const SUBTABS = {
+  profil: [
+    { id: 'profil', label: 'Profil' },
+    { id: 'activite', label: 'Activité' },
+    { id: 'lieux', label: 'Lieux' },
+    { id: 'champs', label: 'Champs élèves' },
+  ],
+  portail: [
+    { id: 'page', label: 'Ma page' },
+    { id: 'visibilite', label: 'Visibilité' },
+    { id: 'essai', label: "Cours d'essai" },
+    { id: 'paiement', label: 'Paiement' },
+  ],
+  notifications: [
+    { id: 'notifs', label: 'Mes notifs' },
+    { id: 'seuils', label: 'Seuils' },
+    { id: 'anniv', label: 'Anniversaires' },
+    { id: 'eleves', label: 'Notifs élèves' },
+  ],
+  regles: [
+    { id: 'annulation', label: 'Annulation' },
+    { id: 'metier', label: 'Règles métier' },
+  ],
+};
+
+function SubTabsBar({ items, active, onChange }) {
   return (
-    <button type="button" className="section izi-card param-collapsible-bar" onClick={() => setOpen(true)} aria-expanded="false">
-      {Icon && <div className="section-icon"><Icon size={20} /></div>}
-      <div className="param-collapsible-titles">
-        <h2>{title}</h2>
-        {subtitle && <span className="param-collapsible-sub">{subtitle}</span>}
-      </div>
-      <ChevronDown size={18} className="param-collapsible-chevron" />
-    </button>
+    <div className="subtabs-bar param-subtabs">
+      {items.map(it => (
+        <button
+          key={it.id}
+          type="button"
+          className={`subtab-btn ${active === it.id ? 'active' : ''}`}
+          onClick={() => onChange(it.id)}
+        >
+          {it.label}
+        </button>
+      ))}
+    </div>
   );
 }
 
@@ -1948,6 +1962,9 @@ export default function Parametres() {
   const [lieuEdit, setLieuEdit] = useState(null);
   const [lieuSaving, setLieuSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('profil');
+  // Sous-onglets par onglet — le 1er (essentiel) est affiché par défaut.
+  const [subTab, setSubTab] = useState({ profil: 'profil', portail: 'page', notifications: 'notifs', regles: 'annulation' });
+  const setSub = (tab, id) => setSubTab(s => ({ ...s, [tab]: id }));
   const tabsRef = useRef(null);
   const [canScrollRight, setCanScrollRight] = useState(false);
   const [canScrollLeft, setCanScrollLeft]   = useState(false);
@@ -2322,8 +2339,10 @@ export default function Parametres() {
       {/* ============================================ */}
       {activeTab === 'profil' && (
         <div className="tab-content animate-fade-in">
+          <SubTabsBar items={SUBTABS.profil} active={subTab.profil} onChange={id => setSub('profil', id)} />
 
           {/* Profil */}
+          {subTab.profil === 'profil' && (
           <div className="section izi-card">
             <div className="section-top"><div className="section-icon"><User size={20} /></div><h2>Mon profil</h2></div>
             <div className="form-row">
@@ -2349,8 +2368,10 @@ export default function Parametres() {
               <input className="izi-input" value={profile.adresse || ''} onChange={handleChange('adresse')} placeholder="Adresse postale" />
             </div>
           </div>
+          )}
 
           {/* Studio */}
+          {subTab.profil === 'activite' && (
           <div className="section izi-card">
             <div className="section-top"><div className="section-icon"><Building2 size={20} /></div><h2>Mon activité</h2></div>
             <div className="form-group">
@@ -2387,9 +2408,11 @@ export default function Parametres() {
               </div>
             )}
           </div>
+          )}
 
           {/* Lieux */}
-          <CollapsibleSection icon={MapPin} title="Mes lieux" subtitle="Studios, salles, domiciles" defaultOpen={false}>
+          {subTab.profil === 'lieux' && (
+          <>
           <div className="section izi-card">
             <div className="section-top"><div className="section-icon"><MapPin size={20} /></div><h2>Mes lieux</h2></div>
             <p className="section-desc">Les salles et espaces où tu donnes tes cours.</p>
@@ -2444,7 +2467,6 @@ export default function Parametres() {
               <Plus size={18} /> Ajouter un lieu
             </button>
           </div>
-          </CollapsibleSection>
 
           {/* === Modal édition lieu === */}
           {lieuEdit && (
@@ -2529,17 +2551,19 @@ export default function Parametres() {
               </div>
             </div>
           )}
+          </>
+          )}
 
           {/* Champs collectés sur les fiches élèves — rattaché à Profil & studio
               (2026-06-01) : c'est la config des données qu'on collecte sur ses
               élèves, naturellement liée à l'identité du studio. */}
-          <CollapsibleSection icon={User} title="Infos collectées sur tes élèves" subtitle="Champs de la fiche élève" defaultOpen={false}>
+          {subTab.profil === 'champs' && (
             <ChampsElevesSection
               profile={profile}
               setProfile={setProfile}
               setDirty={setDirty}
             />
-          </CollapsibleSection>
+          )}
 
           {/* Note : la page publique (PagePubliqueSection) a été déplacée vers
               l'onglet "Portail public" (2026-06-01), avec VisibiliteSection,
@@ -2559,39 +2583,20 @@ export default function Parametres() {
       {activeTab === 'portail' && (
         <div className="tab-content animate-fade-in">
 
-          {/* Page publique enrichie (bio, photos, FAQ, horaires…) */}
-          <PagePubliqueSection
-            profile={profile}
-            setProfile={setProfile}
-            setDirty={setDirty}
-          />
+          <SubTabsBar items={SUBTABS.portail} active={subTab.portail} onChange={id => setSub('portail', id)} />
 
-          {/* Visibilité par défaut des cours */}
-          <CollapsibleSection icon={Eye} title="Visibilité des cours" subtitle="Qui voit tes cours sur le portail" defaultOpen={false}>
-            <VisibiliteSection
-              profile={profile}
-              setProfile={setProfile}
-              setDirty={setDirty}
-            />
-          </CollapsibleSection>
-
-          {/* Cours d'essai pour visiteurs */}
-          <CollapsibleSection icon={Gift} title="Cours d'essai" subtitle="Accueil des nouveaux visiteurs" defaultOpen={false}>
-            <CoursEssaiSection
-              profile={profile}
-              setProfile={setProfile}
-              setDirty={setDirty}
-            />
-          </CollapsibleSection>
-
-          {/* Paiement en ligne (Stripe Payment Link) */}
-          <CollapsibleSection icon={CreditCard} title="Paiement en ligne" subtitle="Stripe — encaisser par carte" defaultOpen={false}>
-            <StripePaiementSection
-              profile={profile}
-              setProfile={setProfile}
-              setDirty={setDirty}
-            />
-          </CollapsibleSection>
+          {subTab.portail === 'page' && (
+            <PagePubliqueSection profile={profile} setProfile={setProfile} setDirty={setDirty} />
+          )}
+          {subTab.portail === 'visibilite' && (
+            <VisibiliteSection profile={profile} setProfile={setProfile} setDirty={setDirty} />
+          )}
+          {subTab.portail === 'essai' && (
+            <CoursEssaiSection profile={profile} setProfile={setProfile} setDirty={setDirty} />
+          )}
+          {subTab.portail === 'paiement' && (
+            <StripePaiementSection profile={profile} setProfile={setProfile} setDirty={setDirty} />
+          )}
 
           <button onClick={handleSave} className="izi-btn izi-btn-primary save-btn" disabled={saving}>
             <Save size={18} /> {saving ? 'Enregistrement...' : 'Enregistrer'}
@@ -2604,10 +2609,12 @@ export default function Parametres() {
       {/* ============================================ */}
       {activeTab === 'notifications' && (
         <div className="tab-content animate-fade-in">
+          <SubTabsBar items={SUBTABS.notifications} active={subTab.notifications} onChange={id => setSub('notifications', id)} />
 
           {/* Mes notifications — ce que LA PROF veut recevoir (push navigateur +
               choix par type). Distinct des "Notifications élèves auto" plus bas
               (= ce que l'app envoie AUX élèves). Sauvegarde immédiate au toggle. */}
+          {subTab.notifications === 'notifs' && (
           <div className="section izi-card">
             <div className="section-top">
               <div className="section-icon"><Bell size={20} /></div>
@@ -2635,13 +2642,15 @@ export default function Parametres() {
               }}
             />
           </div>
+          )}
 
           {/* Seuils d'alerte — pilotent à la fois (1) les alertes affichées
               sur le dashboard prof et (2) les notifications auto envoyées
               aux élèves (cf. section "Notifications élèves auto" ci-dessous
               pour activer les canaux email/SMS).
               Déplacé ici depuis l'onglet Réglages (2026-06-01). */}
-          <CollapsibleSection icon={Bell} title="Seuils d'alerte" subtitle="Carnets, abos, paiements en retard" defaultOpen={false}>
+          {subTab.notifications === 'seuils' && (
+          <>
           <div className="section izi-card">
             <div className="section-top">
               <div className="section-icon"><Bell size={20} /></div>
@@ -2721,26 +2730,29 @@ export default function Parametres() {
               </p>
             </div>
           </div>
-          </CollapsibleSection>
+          <button onClick={handleSave} className="izi-btn izi-btn-primary save-btn" disabled={saving}>
+            <Save size={18} /> {saving ? 'Enregistrement...' : 'Enregistrer'}
+          </button>
+          </>
+          )}
 
-          {/* Notifications élèves automatiques — déplacé ici depuis l'onglet
-              Réglages (2026-06-01). */}
-          <CollapsibleSection icon={Bell} title="Notifications élèves automatiques" subtitle="Emails/SMS envoyés à tes élèves" defaultOpen={false}>
+          {subTab.notifications === 'eleves' && (
+          <>
             <NotifsElevesSection
               profile={profile}
               setProfile={setProfile}
               setDirty={setDirty}
             />
-          </CollapsibleSection>
-
-          {/* Bouton couvrant les seuils + notifs élèves ci-dessus */}
-          <button onClick={handleSave} className="izi-btn izi-btn-primary save-btn" disabled={saving}>
-            <Save size={18} /> {saving ? 'Enregistrement...' : 'Enregistrer'}
-          </button>
+            <button onClick={handleSave} className="izi-btn izi-btn-primary save-btn" disabled={saving}>
+              <Save size={18} /> {saving ? 'Enregistrement...' : 'Enregistrer'}
+            </button>
+          </>
+          )}
 
           {/* Anniversaires : messages auto ENVOYÉS aux élèves — feature à part
               (≠ « Mes notifications » ci-dessus = ce que la prof reçoit). */}
-          <CollapsibleSection icon={Cake} title="Anniversaires des élèves" subtitle="Messages et cadeaux d'anniversaire" defaultOpen={false}>
+          {subTab.notifications === 'anniv' && (
+          <>
 
           {/* Ancien sous-onglet « Général » (cloche) → fusionné dans le panneau
               « Mes notifications » (canal Appli). Bloc désactivé, à retirer au
@@ -2969,7 +2981,8 @@ export default function Parametres() {
               </button>
             </div>
           )}
-          </CollapsibleSection>
+          </>
+          )}
 
         </div>
       )}
@@ -2982,23 +2995,24 @@ export default function Parametres() {
       {/* ============================================ */}
       {activeTab === 'regles' && (
         <div className="tab-content animate-fade-in">
-          {/* Règles d'annulation — déplacé ici depuis l'onglet Réglages
-              (2026-06-01). S'enregistre via handleSave (champ regles_annulation). */}
-          <CollapsibleSection icon={Zap} title="Règles d'annulation" subtitle="Délais et politique d'annulation" defaultOpen={false}>
-            <ReglesAnnulationSection
-              profile={profile}
-              setProfile={setProfile}
-              setDirty={setDirty}
-            />
-          </CollapsibleSection>
+          <SubTabsBar items={SUBTABS.regles} active={subTab.regles} onChange={id => setSub('regles', id)} />
 
-          <button onClick={handleSave} className="izi-btn izi-btn-primary save-btn" disabled={saving}>
-            <Save size={18} /> {saving ? 'Enregistrement...' : 'Enregistrer'}
-          </button>
+          {subTab.regles === 'annulation' && (
+            <>
+              <ReglesAnnulationSection
+                profile={profile}
+                setProfile={setProfile}
+                setDirty={setDirty}
+              />
+              <button onClick={handleSave} className="izi-btn izi-btn-primary save-btn" disabled={saving}>
+                <Save size={18} /> {saving ? 'Enregistrement...' : 'Enregistrer'}
+              </button>
+            </>
+          )}
 
-          <CollapsibleSection icon={Zap} title="Règles métier" subtitle="Automatisations SI / ALORS (avancé)" defaultOpen={false}>
+          {subTab.regles === 'metier' && (
             <ReglesMetierTab profileId={profile.id} />
-          </CollapsibleSection>
+          )}
         </div>
       )}
 
@@ -3155,24 +3169,8 @@ export default function Parametres() {
         .section-icon { width: 36px; height: 36px; border-radius: var(--radius-sm); background: var(--brand-light); color: var(--brand-700); display: flex; align-items: center; justify-content: center; }
         .section-desc { font-size: 0.8125rem; color: var(--text-muted); margin: -4px 0 4px; }
 
-        /* Section repliable */
-        .param-collapsible-bar {
-          display: flex; align-items: center; gap: 10px; width: 100%;
-          padding: 16px 20px; cursor: pointer; text-align: left;
-          transition: background var(--transition-fast);
-        }
-        .param-collapsible-bar:hover { background: var(--cream, #faf8f5); }
-        .param-collapsible-titles { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
-        .param-collapsible-titles h2 { margin: 0; }
-        .param-collapsible-sub { font-size: 0.78rem; color: var(--text-muted); font-weight: 400; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .param-collapsible-chevron { color: var(--text-muted); flex-shrink: 0; }
-        .param-collapsible-open { display: flex; flex-direction: column; gap: 6px; }
-        .param-collapse-toggle {
-          align-self: flex-end; display: inline-flex; align-items: center; gap: 4px;
-          background: none; border: none; cursor: pointer;
-          font-size: 0.75rem; font-weight: 600; color: var(--text-muted); padding: 2px 4px;
-        }
-        .param-collapse-toggle:hover { color: var(--brand-700); }
+        /* Barre de sous-onglets */
+        .param-subtabs { margin-bottom: 12px; }
         .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         .form-group { display: flex; flex-direction: column; gap: 6px; }
         .form-label { font-size: 0.8125rem; font-weight: 600; color: var(--text-secondary); }
