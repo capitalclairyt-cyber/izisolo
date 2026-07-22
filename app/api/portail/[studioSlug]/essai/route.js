@@ -88,13 +88,6 @@ export async function POST(request, { params }) {
     .neq('statut', 'refusee')
     .maybeSingle();
 
-  if (demandeMemeStudio) {
-    return Response.json({
-      error: 'Tu as déjà demandé un cours d\'essai dans ce studio. Si c\'est une erreur, contacte directement ' + (profile.studio_nom || 'le studio') + '.',
-      code: 'ALREADY_REQUESTED',
-    }, { status: 409 });
-  }
-
   const { data: clientExistant } = await supabaseAdmin
     .from('clients')
     .select('id, statut')
@@ -102,10 +95,13 @@ export async function POST(request, { params }) {
     .ilike('email', emailLower)
     .maybeSingle();
 
-  if (clientExistant) {
+  // Anti-énumération : un message UNIQUE si l'email est déjà connu (client OU
+  // demande existante) — ne révèle pas le statut (fréquentation d'un studio
+  // bien-être = donnée sensible ; sondable email par email sinon).
+  if (demandeMemeStudio || clientExistant) {
     return Response.json({
-      error: 'Tu es déjà inscrit·e dans ce studio. Connecte-toi à ton espace pour réserver.',
-      code: 'ALREADY_CLIENT',
+      error: `Cet email est déjà associé à ${profile.studio_nom || 'ce studio'}. Vérifie ta boîte mail (lien de connexion ou de confirmation), ou contacte directement le studio.`,
+      code: 'ALREADY_KNOWN',
     }, { status: 409 });
   }
 

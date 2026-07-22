@@ -93,7 +93,9 @@ export default function EssaiClient({ profile, cours, studioSlug, preselectedCou
             </>
           )}
 
-          {done.paiement === 'stripe' && done.stripePaymentLink && (
+          {/* Paiement : uniquement une fois la demande VALIDÉE. En mode manuel
+              (en_attente) on ne fait jamais payer un créneau qui peut être refusé. */}
+          {done.status !== 'en_attente' && done.paiement === 'stripe' && done.stripePaymentLink && (
             <a
               href={done.stripePaymentLink}
               target="_blank"
@@ -103,9 +105,16 @@ export default function EssaiClient({ profile, cours, studioSlug, preselectedCou
               <ExternalLink size={16} /> Régler {done.prix}€ pour confirmer
             </a>
           )}
-          {done.paiement === 'sur_place' && done.prix > 0 && (
+          {done.status !== 'en_attente' && done.paiement === 'sur_place' && done.prix > 0 && (
             <div className="essai-paiement-info">
               💰 <strong>{done.prix}€</strong> à régler sur place le jour du cours
+            </div>
+          )}
+          {done.status === 'en_attente' && done.prix > 0 && (
+            <div className="essai-paiement-info">
+              {done.paiement === 'stripe'
+                ? `Le règlement de ${done.prix}€ te sera demandé une fois ta demande validée.`
+                : `Prévois ${done.prix}€ à régler sur place, une fois ta demande validée.`}
             </div>
           )}
 
