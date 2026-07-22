@@ -61,10 +61,12 @@ export default async function PointagePage({ params }) {
     client_abos: abosParClient[p.client_id] || [],
   }));
 
-  // Charger tous les clients actifs (pour ajouter des inscrits)
+  // Charger tous les clients actifs (pour ajouter des inscrits).
+  // Les champs date_fin/pause/types_cours_autorises servent à la résolution
+  // d'affichage (client_abos) des élèves ajoutés en cours de pointage.
   const { data: clients } = await supabase
     .from('clients')
-    .select('id, prenom, nom, statut, abonnements(id, offre_nom, type, seances_total, seances_utilisees, statut)')
+    .select('id, prenom, nom, statut, abonnements(id, offre_nom, type, seances_total, seances_utilisees, statut, date_fin, date_pause_debut, date_pause_fin, types_cours_autorises)')
     .eq('profile_id', user.id)
     .in('statut', ['prospect', 'actif', 'fidele'])
     .order('prenom');

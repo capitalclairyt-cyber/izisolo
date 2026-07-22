@@ -7,7 +7,7 @@ import {
   Ticket, CalendarCheck, Zap, Search,
   CheckCircle2, XCircle, AlertTriangle, Clock,
   ChevronRight, CreditCard, TrendingUp, Users,
-  Banknote, FileText, Landmark,
+  Banknote, FileText, Landmark, PauseCircle,
 } from 'lucide-react';
 import { formatDate, formatMontant } from '@/lib/utils';
 import { toneForAbonnement } from '@/lib/tones';
@@ -27,6 +27,7 @@ const MODE_ICONES = { especes: Banknote, cheque: FileText, virement: Landmark, C
 // ─── Statuts ─────────────────────────────────────────────────────────────────
 const STATUT_CONFIG = {
   actif:   { Icon: CheckCircle2,  label: 'Actif',    bg: '#ecfdf5', color: '#059669', border: '#6ee7b7' },
+  gele:    { Icon: PauseCircle,   label: 'En pause', bg: '#eff6ff', color: '#2563eb', border: '#93c5fd' },
   epuise:  { Icon: AlertTriangle, label: 'Épuisé',   bg: '#fffbeb', color: '#d97706', border: '#fcd34d' },
   expire:  { Icon: Clock,         label: 'Expiré',   bg: '#fff7ed', color: '#ea580c', border: '#fdba74' },
   annule:  { Icon: XCircle,       label: 'Annulé',   bg: '#fef2f2', color: '#dc2626', border: '#fca5a5' },
@@ -35,6 +36,7 @@ const STATUT_CONFIG = {
 const FILTRES = [
   { id: 'tous',    label: 'Tous' },
   { id: 'actif',   label: 'Actifs' },
+  { id: 'gele',    label: 'En pause' },
   { id: 'epuise',  label: 'Épuisés' },
   { id: 'expire',  label: 'Expirés' },
   { id: 'annule',  label: 'Annulés' },

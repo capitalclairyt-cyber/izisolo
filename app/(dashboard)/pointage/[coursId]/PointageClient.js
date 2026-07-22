@@ -13,7 +13,7 @@ import { getVocabulaire } from '@/lib/vocabulaire';
 import { createClient } from '@/lib/supabase';
 import { evaluerRegles } from '@/lib/regles';
 import { getRegle } from '@/lib/regles-metier';
-import { seanceDelta } from '@/lib/pointage-delta';
+import { seanceDelta, seanceDeltaChangementType } from '@/lib/pointage-delta';
 import { resoudreCarnetApplicable } from '@/lib/carnet-resolution';
 import { useToast } from '@/components/ui/ToastProvider';
 
@@ -470,7 +470,8 @@ export default function PointageClient({ cours, presences: initialPresences, tou
     // Delta compteur séances = (nouvel état compte ?) − (ancien état comptait ?).
     // Formule unifiée (lib/pointage-delta) qui corrige les transitions quittant
     // un 'absent' déjà décompté (absent→présent, absent→excusé, présent→absent-strict).
-    const delta = seanceDelta(oldStatut, newStatut, absenceCompte);
+    // Une présence essai/offert est GRATUITE : delta toujours 0 (v70).
+    const delta = seanceDelta(oldStatut, newStatut, absenceCompte, presence.type_presence);
 
     const nowIso = new Date().toISOString();
 
@@ -480,7 +481,7 @@ export default function PointageClient({ cours, presences: initialPresences, tou
     // pas encore liée (le détail du carnet vit alors dans client_abos).
     const aboImpacteId = presence.abonnement_id
       || (delta > 0
-          ? resoudreCarnetApplicable(presence.client_abos, { type_cours: cours.type_cours, date: cours.date })?.id
+          ? resoudreCarnetApplicable(presence.client_abos, { type_cours: cours.type_cours, date: cours.date, tarif_unitaire: cours.tarif_unitaire })?.id
           : null);
     const bumpAbos = (abos, id, d) => (abos || []).map(a =>
       a.id === id ? { ...a, seances_utilisees: Math.max(0, (a.seances_utilisees || 0) + d) } : a);
@@ -581,7 +582,10 @@ export default function PointageClient({ cours, presences: initialPresences, tou
               choix: regleNoShow.choix,
               // Trace si une séance a VRAIMENT été décomptée à l'absence : c'est
               // le seul cas où « Excuser » devra la re-créditer (cf. resolve).
-              seance_decomptee: absenceCompte && !!presence.abonnement_id,
+              // Basé sur le résultat du RPC (autoritatif) : couvre le carnet
+              // RÉSOLU au pointage (pas seulement le pré-lié) et exclut les
+              // présences gratuites (essai/offert, delta 0) — v70.
+              seance_decomptee: delta > 0 && !!result?.abonnement_id,
               client_nom: `${presence.clients?.prenom || ''} ${presence.clients?.nom || ''}`.trim(),
               cours_nom: cours.nom,
               cours_date: cours.date,
@@ -620,26 +624,35 @@ export default function PointageClient({ cours, presences: initialPresences, tou
     setAddingBatch(true);
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
-    const rows = selectedToAdd.map(id => {
-      const client = tousClients.find(c => c.id === id);
-      const aboActif = client?.abonnements?.find(a => a.statut === 'actif');
-      return {
-        profile_id:      user.id,
-        cours_id:        cours.id,
-        client_id:       id,
-        abonnement_id:   aboActif?.id || null,
-        pointee:         false,
-        statut_pointage: 'inscrit',
-        type_presence:   addTypePresence,
-      };
-    });
+    // On ne pré-lie PLUS de carnet ici (avant : premier abo « actif » trouvé,
+    // sans filtre type/expiration/pause — et le RPC v64 ne re-résout jamais une
+    // présence déjà liée → mauvais carnet décompté). abonnement_id reste NULL :
+    // la résolution officielle (spécifique d'abord, expire le plus tôt, gate
+    // tarif_unitaire) se fait au pointage par le RPC.
+    const rows = selectedToAdd.map(id => ({
+      profile_id:      user.id,
+      cours_id:        cours.id,
+      client_id:       id,
+      abonnement_id:   null,
+      pointee:         false,
+      statut_pointage: 'inscrit',
+      type_presence:   addTypePresence,
+    }));
     const { data, error } = await supabase
       .from('presences')
       .insert(rows)
       .select('*, clients(id, prenom, nom, statut, email, telephone), abonnements(id, offre_nom, seances_total, seances_utilisees, statut)');
     setAddingBatch(false);
     if (error) { toast.error('Erreur lors de l\'ajout : ' + error.message); return; }
-    if (data) setPresences(prev => [...prev, ...data]);
+    if (data) {
+      // Attache les carnets actifs du client (client_abos) pour que l'affichage
+      // « sur carnet / à régler » soit correct sans recharger la page.
+      const enriched = data.map(row => {
+        const client = tousClients.find(c => c.id === row.client_id);
+        return { ...row, client_abos: (client?.abonnements || []).filter(a => a.statut === 'actif') };
+      });
+      setPresences(prev => [...prev, ...enriched]);
+    }
     fermerAddModal();
   };
 
@@ -691,18 +704,65 @@ export default function PointageClient({ cours, presences: initialPresences, tou
   };
 
   // ── Changer le type de présence ───────────────────────
+  // Symétrie de gratuité (v70) : passer une séance DÉJÀ comptée (présent, ou
+  // absent-strict) en essai/offert la re-crédite ; la repasser en normal la
+  // décompte à nouveau (via le RPC, qui résout le carnet si non liée).
   const handleTypePresence = useCallback(async (presence, newType) => {
+    const oldType = presence.type_presence || 'normal';
+    if (newType === oldType) return;
+
+    const statut = presence.statut_pointage || (presence.pointee ? 'present' : 'inscrit');
+    const regleNoShow = getRegle({ regles_metier: profile?.regles_metier }, 'no_show');
+    const absenceCompte = regleNoShow.mode === 'auto' && regleNoShow.choix === 'decompter_auto';
+    const delta = seanceDeltaChangementType(statut, oldType, newType, absenceCompte);
+
     const supabase = createClient();
     const { error } = await supabase
       .from('presences')
       .update({ type_presence: newType })
       .eq('id', presence.id);
-    if (!error) {
-      setPresences(prev => prev.map(p =>
-        p.id !== presence.id ? p : { ...p, type_presence: newType }
-      ));
+    if (error) { toast.error('Changement non enregistré, réessaie.'); return; }
+
+    if (delta !== 0) {
+      // Ajustement atomique du carnet via le même RPC que le pointage
+      // (statut/pointee/heure inchangés, seul le delta agit). Pour un +1 sur
+      // une présence non liée, le RPC résout le carnet applicable (v64/v70).
+      const { data: result, error: rpcErr } = await supabase.rpc('pointer_presence', {
+        p_presence_id: presence.id,
+        p_statut: statut,
+        p_pointee: presence.pointee,
+        p_heure: presence.heure_pointage || null,
+        p_delta: delta,
+      });
+      if (rpcErr || !result?.ok) {
+        // Rollback du type pour ne pas désynchroniser gratuité et carnet.
+        await supabase.from('presences').update({ type_presence: oldType }).eq('id', presence.id);
+        toast.error('Changement non enregistré, réessaie.');
+        return;
+      }
+      setPresences(prev => prev.map(p => {
+        if (p.id !== presence.id) return p;
+        const next = { ...p, type_presence: newType };
+        if (result.abonnement_id) {
+          next.abonnement_id = result.abonnement_id;
+          if (typeof result.seances_utilisees === 'number') {
+            if (p.abonnements) {
+              next.abonnements = { ...p.abonnements, seances_utilisees: result.seances_utilisees };
+            } else {
+              next.client_abos = (p.client_abos || []).map(a =>
+                a.id === result.abonnement_id ? { ...a, seances_utilisees: result.seances_utilisees } : a);
+            }
+          }
+        }
+        return next;
+      }));
+      return;
     }
-  }, []);
+
+    setPresences(prev => prev.map(p =>
+      p.id !== presence.id ? p : { ...p, type_presence: newType }
+    ));
+  }, [profile, toast]);
 
   // ── Payer plus tard ───────────────────────────────────
   const handlePayerPlusTard = useCallback(async (presence) => {
@@ -871,9 +931,10 @@ export default function PointageClient({ cours, presences: initialPresences, tou
         <div className="presences-list animate-slide-up">
           {sortedPresences.map(p => {
             // Carnet applicable à CE cours : lié en priorité, sinon résolu
-            // dynamiquement (mêmes règles que le RPC v64). null = pay-as-you-go.
+            // dynamiquement (mêmes règles que le RPC v64/v70). null = pay-as-you-go.
+            // Un cours payable à la séance (tarif_unitaire) ne résout jamais.
             const resolvedCarnet = p.abonnements
-              || resoudreCarnetApplicable(p.client_abos, { type_cours: cours.type_cours, date: cours.date });
+              || resoudreCarnetApplicable(p.client_abos, { type_cours: cours.type_cours, date: cours.date, tarif_unitaire: cours.tarif_unitaire });
             const typeP = p.type_presence || 'normal';
             const paye = paidIds.has(p.id);
             const estPayAsYouGo = !resolvedCarnet && typeP === 'normal';

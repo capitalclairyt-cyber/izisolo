@@ -8,7 +8,7 @@
  * Test Node pur (aucun navigateur) : on importe la fonction directement.
  */
 import { test, expect } from '@playwright/test';
-import { seanceDelta } from '../../lib/pointage-delta.js';
+import { seanceDelta, seanceDeltaChangementType } from '../../lib/pointage-delta.js';
 
 test.describe('seanceDelta — politique souple (absence ne compte pas)', () => {
   const souple = false;
@@ -43,6 +43,54 @@ test.describe('seanceDelta — politique stricte (absence décompte)', () => {
   for (const [from, to, expected] of cases) {
     test(`${from} → ${to} = ${expected}`, () => {
       expect(seanceDelta(from, to, strict)).toBe(expected);
+    });
+  }
+});
+
+// ─── Présences gratuites (essai / offert) — gate v70 ─────────────────────────
+// Une séance essai/offert ne décompte JAMAIS un carnet, quel que soit le
+// statut de pointage ou la politique no-show (MODELE-PAIEMENTS-2026.md §4.3).
+test.describe('seanceDelta — type essai/offert = toujours 0', () => {
+  const transitions = [
+    ['inscrit', 'present'], ['present', 'inscrit'],
+    ['inscrit', 'absent'], ['absent', 'excuse'], ['present', 'absent'],
+  ];
+  for (const type of ['essai', 'offert']) {
+    for (const strict of [true, false]) {
+      for (const [from, to] of transitions) {
+        test(`${type} ${from} → ${to} (strict=${strict}) = 0`, () => {
+          expect(seanceDelta(from, to, strict, type)).toBe(0);
+        });
+      }
+    }
+  }
+  test('type normal / absent → formule inchangée (rétro-compat)', () => {
+    expect(seanceDelta('inscrit', 'present', false, 'normal')).toBe(1);
+    expect(seanceDelta('inscrit', 'present', false, undefined)).toBe(1);
+    expect(seanceDelta('inscrit', 'present', false, null)).toBe(1);
+  });
+});
+
+// ─── Changement de TYPE (statut inchangé) — symétrie de gratuité ─────────────
+test.describe('seanceDeltaChangementType', () => {
+  const souple = false, strict = true;
+  const cases = [
+    // [statut, oldType, newType, absenceCompte, delta]
+    ['present', 'normal', 'offert', souple, -1],  // séance comptée → offerte : on la rend
+    ['present', 'normal', 'essai',  souple, -1],
+    ['present', 'offert', 'normal', souple, 1],   // offerte → normale : on la décompte
+    ['present', 'essai',  'normal', souple, 1],
+    ['present', 'essai',  'offert', souple, 0],   // gratuit → gratuit
+    ['inscrit', 'normal', 'offert', souple, 0],   // rien n'était compté
+    ['inscrit', 'offert', 'normal', souple, 0],
+    ['excuse',  'normal', 'offert', souple, 0],
+    ['absent',  'normal', 'offert', souple, 0],   // absence souple : rien n'était compté
+    ['absent',  'normal', 'offert', strict, -1],  // absence stricte décomptée → offerte : on la rend
+    ['absent',  'offert', 'normal', strict, 1],
+  ];
+  for (const [statut, oldT, newT, ac, expected] of cases) {
+    test(`${statut} : ${oldT} → ${newT} (strict=${ac}) = ${expected}`, () => {
+      expect(seanceDeltaChangementType(statut, oldT, newT, ac)).toBe(expected);
     });
   }
 });

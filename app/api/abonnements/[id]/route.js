@@ -2,7 +2,9 @@ import { z } from 'zod';
 import { withRoute } from '@/lib/api-route';
 
 const updateSchema = z.object({
-  statut: z.enum(['actif', 'suspendu', 'expire', 'resilie']).optional(),
+  // Vocabulaire canonique — aligné sur le CHECK DB (v45) et constantes.js.
+  // (Avant : 'suspendu'/'resilie', que la contrainte DB rejetait.)
+  statut: z.enum(['actif', 'epuise', 'expire', 'annule', 'gele']).optional(),
   date_debut: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Format YYYY-MM-DD attendu').nullable().optional(),
   date_fin: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Format YYYY-MM-DD attendu').nullable().optional(),
   seances_total: z.number().int().min(0).nullable().optional(),

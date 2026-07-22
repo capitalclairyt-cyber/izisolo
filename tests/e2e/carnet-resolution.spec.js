@@ -81,3 +81,24 @@ test('aucun carnet → null', () => {
   expect(resoudreCarnetApplicable([], COURS_YOGA)).toBeNull();
   expect(resoudreCarnetApplicable(null, COURS_YOGA)).toBeNull();
 });
+
+// ─── Cours payable à la séance (tarif_unitaire) — gate v70 ───────────────────
+// Promesse du formulaire de cours : « il ne décomptera aucun carnet ».
+// Le cas Maude : atelier « Yoga Renfo » à 15 €, élèves à carnet « tous cours ».
+
+test('cours à tarif_unitaire → AUCUN carnet résolu, même « tous cours »', () => {
+  const abos = [carnet({ id: 'all', types_cours_autorises: null })];
+  expect(resoudreCarnetApplicable(abos, { ...COURS_RENFO, tarif_unitaire: 15 })).toBeNull();
+});
+
+test('cours à tarif_unitaire → même un carnet SPÉCIFIQUE au type ne s’applique pas', () => {
+  const abos = [carnet({ id: 'renfo', types_cours_autorises: ['renfo'] })];
+  expect(resoudreCarnetApplicable(abos, { ...COURS_RENFO, tarif_unitaire: 12.5 })).toBeNull();
+});
+
+test('tarif_unitaire null / 0 / absent → résolution normale', () => {
+  const abos = [carnet({ id: 'all' })];
+  expect(resoudreCarnetApplicable(abos, { ...COURS_YOGA, tarif_unitaire: null })?.id).toBe('all');
+  expect(resoudreCarnetApplicable(abos, { ...COURS_YOGA, tarif_unitaire: 0 })?.id).toBe('all');
+  expect(resoudreCarnetApplicable(abos, COURS_YOGA)?.id).toBe('all');
+});

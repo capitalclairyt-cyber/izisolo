@@ -1512,11 +1512,14 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
 
               <div className="paiement-section-label">Statut</div>
               <div className="edit-abo-statut-chips">
+                {/* Vocabulaire canonique (= CHECK DB v45 + constantes) — les
+                    anciens « suspendu »/« resilie » étaient rejetés par la DB. */}
                 {[
                   { value: 'actif', label: 'Actif' },
-                  { value: 'suspendu', label: 'Suspendu' },
+                  { value: 'gele', label: 'En pause' },
+                  { value: 'epuise', label: 'Épuisé' },
                   { value: 'expire', label: 'Expiré' },
-                  { value: 'resilie', label: 'Résilié' },
+                  { value: 'annule', label: 'Annulé' },
                 ].map(s => (
                   <button
                     key={s.value}
