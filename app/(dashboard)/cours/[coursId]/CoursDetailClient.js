@@ -111,6 +111,7 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
     capacite_max: cours.capacite_max?.toString() || '',
     notes: cours.notes || '',
     visibilite: cours.visibilite || 'public',
+    tarif_unitaire: cours.tarif_unitaire != null ? String(cours.tarif_unitaire) : '',
   });
 
   const handleChange = (field) => (e) => {
@@ -137,6 +138,7 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
           capacite_max: form.capacite_max ? parseInt(form.capacite_max) : null,
           notes: form.notes || null,
           visibilite: form.visibilite || 'public',
+          tarif_unitaire: form.tarif_unitaire ? parseFloat(form.tarif_unitaire) : null,
         })
         .eq('id', cours.id);
 
@@ -544,6 +546,25 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
               <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginTop: 4 }}>
                 Détermine qui peut voir ce cours dans la liste publique du studio.
               </span>
+            </div>
+
+            <div className="form-group" style={{ background: 'var(--bg-soft, #F8F4ED)', padding: 14, borderRadius: 12, border: '1px solid var(--border)' }}>
+              <label className="form-label">💰 Cours payable à la séance (optionnel)</label>
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '0 0 10px', lineHeight: 1.5 }}>
+                Mets un prix seulement si ce cours ne s'achète pas avec un carnet (atelier,
+                stage, ou cours hors formule). Il ne décomptera aucun carnet : l'élève réglera
+                directement avec toi à la séance. Laisse vide pour un cours couvert par tes carnets/abos.
+              </p>
+              <input
+                className="izi-input"
+                type="number"
+                step="0.01"
+                min="0"
+                value={form.tarif_unitaire}
+                onChange={handleChange('tarif_unitaire')}
+                placeholder="Prix à la séance (€) — ex : 15.00"
+                style={{ maxWidth: 260 }}
+              />
             </div>
 
             <div className="edit-actions">

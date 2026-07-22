@@ -8,6 +8,7 @@ import {
   ToggleLeft, ToggleRight, Loader2, Info,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase';
+import { getAllTypesFromCategories } from '@/lib/utils';
 import { useToast } from '@/components/ui/ToastProvider';
 
 const TYPES = [
@@ -35,6 +36,8 @@ export default function EditOffre({ params }) {
   const [inclutVacances, setInclutVacances] = useState(true);
   const [stripePaymentLink, setStripePaymentLink] = useState('');
   const [carnetDureeJours, setCarnetDureeJours] = useState('');
+  const [typesCoursDisponibles, setTypesCoursDisponibles] = useState([]); // types existants du studio
+  const [typesCoursAutorises, setTypesCoursAutorises] = useState([]);     // sélection ([] = tous)
 
   useEffect(() => {
     async function load() {
@@ -62,6 +65,10 @@ export default function EditOffre({ params }) {
       setInclutVacances(data.inclut_vacances !== false);
       setStripePaymentLink(data.stripe_payment_link || '');
       setCarnetDureeJours(data.type === 'carnet' && data.duree_jours ? String(data.duree_jours) : '');
+      setTypesCoursAutorises(data.types_cours_autorises || []);
+      // Types de cours du studio (pour les chips « Vaut pour quels cours ? »)
+      const { data: prof } = await supabase.from('profiles').select('types_cours').eq('id', data.profile_id).single();
+      setTypesCoursDisponibles(getAllTypesFromCategories(prof?.types_cours));
       setLoading(false);
     }
     load();
@@ -104,6 +111,10 @@ export default function EditOffre({ params }) {
         payload.inclut_vacances = inclutVacances;
       } else if (type === 'cours_unique') {
         payload.seances = 1;
+      }
+
+      if (type === 'carnet' || type === 'abonnement') {
+        payload.types_cours_autorises = typesCoursAutorises.length > 0 ? typesCoursAutorises : null;
       }
 
       payload.stripe_payment_link = stripePaymentLink.trim() || null;
@@ -256,6 +267,41 @@ export default function EditOffre({ params }) {
               </div>
             </div>
           </>
+        )}
+
+        {/* Vaut pour quels cours ? (types_cours_autorises) */}
+        {(type === 'carnet' || type === 'abonnement') && typesCoursDisponibles.length > 0 && (
+          <div className="eo-field">
+            <label className="eo-label">
+              Vaut pour quels cours ?
+              <span className="eo-optional"> — décide quand ce {type === 'carnet' ? 'carnet' : 'abonnement'} se décompte</span>
+            </label>
+            <div className="eo-chips">
+              {typesCoursDisponibles.map(t => {
+                const selected = typesCoursAutorises.includes(t);
+                return (
+                  <button
+                    key={t}
+                    type="button"
+                    className={`eo-chip ${selected ? 'active' : ''}`}
+                    onClick={() => setTypesCoursAutorises(prev => selected ? prev.filter(x => x !== t) : [...prev, t])}
+                  >
+                    {t}
+                  </button>
+                );
+              })}
+            </div>
+            {typesCoursAutorises.length === 0 ? (
+              <span className="eo-optional">
+                ✓ Tous tes cours — utilisable sur n'importe quel type.<br />
+                💡 Sélectionne les types couverts pour <strong>exclure</strong> les cours vendus à la séance (atelier, stage, renfo…) — sinon ce {type === 'carnet' ? 'carnet' : 'abonnement'} pourra aussi les payer.
+              </span>
+            ) : (
+              <span className="eo-optional">
+                Restreint aux cours de type <strong>{typesCoursAutorises.join(', ')}</strong> — sur un autre type, l'élève paiera à la séance.
+              </span>
+            )}
+          </div>
         )}
 
         {/* Nom + Prix */}
