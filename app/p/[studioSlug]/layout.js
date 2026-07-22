@@ -45,8 +45,7 @@ export const viewport = {
   themeColor: '#d4a0a0',
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
+  // Zoom autorisé (accessibilité malvoyants) — on ne bloque plus le pinch-to-zoom.
 };
 
 export default async function PortailLayout({ children, params }) {

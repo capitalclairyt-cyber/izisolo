@@ -419,7 +419,9 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
               </div>
             </div>
             <span className="portail-next-cours-cta">
-              Réserver <ChevronRight size={14} />
+              {prochainCours.capacite_max && (prochainCours.capacite_max - prochainCours.nbInscrits) <= 0
+                ? <>Complet · liste d'attente <ChevronRight size={14} /></>
+                : <>Réserver <ChevronRight size={14} /></>}
             </span>
           </div>
         </Link>
