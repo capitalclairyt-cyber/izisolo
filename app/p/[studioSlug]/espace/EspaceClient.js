@@ -282,10 +282,11 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
   const [editCoords, setEditCoords] = useState(false);
   const [savingCoords, setSavingCoords] = useState(false);
 
-  // Paiements dus (statut ≠ 'paid') : affichés dans « À régler ». Les paiements
-  // réglés vont dans « Mes paiements » (avec reçu). Un versement d'échéancier
-  // en attente (echeancier_id) apparaît donc à régler tant qu'il n'est pas encaissé.
-  const paiementsDus = (paiements || []).filter(p => p.statut && p.statut !== 'paid');
+  // Paiements dus : SEULEMENT les statuts réellement à régler (pending / overdue).
+  // Liste blanche explicite — un statut parasite (remboursé/annulé/échoué) ne doit
+  // JAMAIS gonfler « À régler » (dette fantôme). Un versement d'échéancier en
+  // attente est 'pending' → il apparaît bien tant qu'il n'est pas encaissé.
+  const paiementsDus = (paiements || []).filter(p => p.statut === 'pending' || p.statut === 'overdue');
   const paiementsRegles = (paiements || []).filter(p => p.statut === 'paid');
   // Total dû = paiements en attente + dettes issues des cas (annulation tardive,
   // séance sans carnet…) quand un montant est connu. Les cas sans montant chiffré
@@ -537,6 +538,15 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
             }}
           >
             <MessageCircle size={15} /> Mes messages
+            {unreadMessages > 0 && (
+              <span style={{
+                minWidth: 18, height: 18, padding: '0 5px', borderRadius: 9,
+                background: '#d4a0a0', color: 'white', fontSize: '0.7rem', fontWeight: 700,
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                {unreadMessages > 9 ? '9+' : unreadMessages}
+              </span>
+            )}
           </Link>
         </div>
       </div>
@@ -821,7 +831,7 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
                     </div>
                   </div>
                   <div style={{ fontWeight: 700, fontSize: '0.9375rem', color: '#b45309', flexShrink: 0 }}>
-                    {montant != null ? `${montant} €` : 'à régler'}
+                    {montant != null ? `${Number(montant).toFixed(2).replace('.', ',')} €` : 'à régler'}
                   </div>
                 </div>
               );
