@@ -18,6 +18,7 @@ const draftSchema = z.object({
   annees_experience: z.number().int().min(0).max(80).nullable().optional(),
   horaires_studio: z.string().max(500).nullable().optional(),
   afficher_tarifs: z.boolean().optional(),
+  afficher_horaires: z.boolean().optional(),
   faq_publique: z.array(z.object({
     q: z.string().max(200),
     a: z.string().max(2000),

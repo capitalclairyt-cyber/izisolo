@@ -1157,6 +1157,7 @@ function PagePubliqueSection({ profile, setProfile, setDirty }) {
         annees_experience: profile?.annees_experience ? parseInt(profile.annees_experience) : null,
         horaires_studio: profile?.horaires_studio || null,
         afficher_tarifs: profile?.afficher_tarifs === true,
+        afficher_horaires: profile?.afficher_horaires === true,
         faq_publique: profile?.faq_publique || [],
         photo_url: profile?.photo_url || null,
         photo_couverture: profile?.photo_couverture || null,
@@ -1335,21 +1336,35 @@ function PagePubliqueSection({ profile, setProfile, setDirty }) {
         />
       </div>
 
-      {/* Horaires — widget structuré (refonte 2026-05-07).
-          Source de vérité : horaires_studio_jours JSONB.
-          On synchronise horaires_studio (text) au save pour la page publique. */}
-      <HorairesStudioEditor
-        horaires={profile?.horaires_studio_jours}
-        onChange={(newHoraires, newText) => {
-          // Met à jour les 2 champs en parallèle (jours + dérivé text)
-          setProfile(prev => ({
-            ...prev,
-            horaires_studio_jours: newHoraires,
-            horaires_studio: newText,
-          }));
-          setDirty(true);
-        }}
-      />
+      {/* Horaires — masqués par défaut. La prof choisit de les afficher ;
+          l'éditeur (widget structuré, source horaires_studio_jours JSONB) n'apparaît
+          que si le toggle est actif. horaires_studio (text) est dérivé au save. */}
+      <div className="form-group toggle-row">
+        <button
+          type="button"
+          onClick={toggle('afficher_horaires')}
+          className="toggle-btn"
+          aria-pressed={profile?.afficher_horaires === true}
+        >
+          {profile?.afficher_horaires ? <ToggleRight size={28} style={{ color: 'var(--brand)' }} /> : <ToggleLeft size={28} style={{ color: 'var(--text-muted)' }} />}
+          <span>Afficher les horaires du studio sur ma page publique</span>
+        </button>
+        <p className="form-hint">Désactivé par défaut. Active-le pour renseigner et publier tes horaires d'ouverture.</p>
+      </div>
+
+      {profile?.afficher_horaires && (
+        <HorairesStudioEditor
+          horaires={profile?.horaires_studio_jours}
+          onChange={(newHoraires, newText) => {
+            setProfile(prev => ({
+              ...prev,
+              horaires_studio_jours: newHoraires,
+              horaires_studio: newText,
+            }));
+            setDirty(true);
+          }}
+        />
+      )}
 
       {/* Tarifs visibles */}
       <div className="form-group toggle-row">
@@ -2240,6 +2255,7 @@ export default function Parametres() {
       horaires_studio_jours:   profile.horaires_studio_jours || null,  // structuré v40
       client_fields_config:    profile.client_fields_config || null,    // v40 — champs élèves configurables
       afficher_tarifs:         profile.afficher_tarifs === true,
+      afficher_horaires:       profile.afficher_horaires === true,      // v69 — toggle horaires page publique
       afficher_inscrits:       profile.afficher_inscrits !== false,
       faq_publique:            profile.faq_publique || [],
       // URLs : normaliser pour respecter la contrainte CHECK (must start with http(s)://)

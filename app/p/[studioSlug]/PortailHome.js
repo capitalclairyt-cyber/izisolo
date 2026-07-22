@@ -161,7 +161,8 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
   const adresseComplete = [profile.adresse, profile.code_postal, profile.ville].filter(Boolean).join(', ');
   const mapsQuery = adresseComplete ? encodeURIComponent(adresseComplete) : null;
   const hasTarifs = !!(profile.afficher_tarifs && offresPubliques.length > 0);
-  const hasInfos  = !!(adresseComplete || profile.horaires_studio || faq.length > 0 || hasSocial);
+  const horairesVisibles = !!(profile.afficher_horaires && profile.horaires_studio);
+  const hasInfos  = !!(adresseComplete || horairesVisibles || faq.length > 0 || hasSocial);
 
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState('');
@@ -741,7 +742,7 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
 
       {/* === ONGLET INFOS === */}
       {tab === 'infos' && hasInfos && <>
-        {(adresseComplete || profile.horaires_studio) && (
+        {(adresseComplete || horairesVisibles) && (
           <section className="portail-venue reveal">
             <h2 className="portail-section-title">Où nous trouver</h2>
             <div className="portail-venue-card">
@@ -763,7 +764,7 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
                   </div>
                 </div>
               )}
-              {profile.horaires_studio && (
+              {profile.afficher_horaires && profile.horaires_studio && (
                 <div className="portail-venue-row">
                   <Clock size={16} />
                   <div className="portail-venue-hours">{profile.horaires_studio}</div>
