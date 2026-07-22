@@ -248,7 +248,11 @@ export async function POST(request, { params }) {
     }
   }
 
-  if (!aboValide) {
+  // ⚠️ Les règles de carnet NE s'appliquent PAS aux workshops (tarif_unitaire) :
+  // ces cours sont payables à la séance par nature, l'absence de carnet est
+  // normale. Sinon l'élève recevait à tort l'email « achète un carnet d'avance »
+  // alors qu'aucun carnet ne couvre ce type de cours.
+  if (!cours.tarif_unitaire && !aboValide) {
     // Mode AUTO : appliquer le choix
     if (regleSansCarnet.mode === 'auto') {
       switch (regleSansCarnet.choix) {
@@ -290,9 +294,9 @@ export async function POST(request, { params }) {
         context: { mode: 'manuel' },
       };
     }
-  } else if (carnetExpireraAvant) {
+  } else if (!cours.tarif_unitaire && carnetExpireraAvant) {
     // Carnet valide aujourd'hui MAIS expirera avant la date du cours
-    // → applique la règle carnet_expire_avant_cours
+    // → applique la règle carnet_expire_avant_cours (jamais pour un workshop)
     if (regleExpireAvant.mode === 'auto') {
       switch (regleExpireAvant.choix) {
         case 'bloquer':
@@ -472,12 +476,28 @@ export async function POST(request, { params }) {
         const dateStr = cours.date
           ? new Date(cours.date + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })
           : '';
+        // Un carnet/abo est-il ACHETABLE pour CE type de cours ? Si aucun ne le
+        // couvre (ex. « Yoga Renfo » payable uniquement à la séance), on ne
+        // suggère PAS « achète un carnet d'avance » (message trompeur).
+        let carnetAchetable = true;
+        if (casATraiterAttendu.case_type === 'eleve_sans_carnet') {
+          const { data: offresVente } = await supabaseAdmin
+            .from('offres')
+            .select('type, types_cours_autorises')
+            .eq('profile_id', profile.id)
+            .eq('actif', true)
+            .in('type', ['carnet', 'abonnement']);
+          carnetAchetable = (offresVente || []).some(o => {
+            const types = o.types_cours_autorises;
+            return !types?.length || (cours.type_cours && types.includes(cours.type_cours));
+          });
+        }
         await sendNotifElevePourRegle({
           caseType: casATraiterAttendu.case_type,
           regle: regleAct,
           profile: { id: profile.id, studio_nom: profile.studio_nom },
           client: { prenom, nom, email },
-          contexte: { cours: cours.nom, date: dateStr, heure: cours.heure?.slice(0, 5).replace(':', 'h') || '' },
+          contexte: { cours: cours.nom, date: dateStr, heure: cours.heure?.slice(0, 5).replace(':', 'h') || '', carnetAchetable },
         });
       } catch (e) { console.warn('[reserver] notif élève non-bloquant:', e?.message); }
     }
@@ -568,6 +588,11 @@ export async function POST(request, { params }) {
                 Ce lien te connecte automatiquement. Il expire dans 1 heure.
               </p>
             ` : ''}
+            ${cours.tarif_unitaire ? `
+            <div style="background: #fff7ed; border: 1px solid #fed7aa; border-radius: 10px; padding: 12px 16px; margin: 0 0 16px; color: #9a3412; font-size: 0.875rem;">
+              <strong>Cours à régler à la séance</strong><br/>
+              Tarif : ${Number(cours.tarif_unitaire).toFixed(2).replace('.', ',')} € — à régler directement avec ton studio.
+            </div>` : ''}
             <div style="background: #fffaf0; border: 1px solid #ffe0b2; border-radius: 10px; padding: 12px 16px; margin: 0 0 16px; color: #7c4a03; font-size: 0.875rem;">
               ${studioHasFeature(profile, 'annulationParEleve')
                 ? `<strong>Annulation flexible</strong><br/>Tu peux annuler depuis ton espace jusqu'à ${delaiAnnulation}h avant la séance.`
