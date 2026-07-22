@@ -84,7 +84,7 @@ export async function POST(request, { params }) {
     .from('cours_essai_demandes')
     .select('id, statut, created_at')
     .eq('profile_id', profile.id)
-    .ilike('email', emailLower)
+    .ilike('email', emailLower.replace(/([%_\\])/g, '\\$1'))
     .neq('statut', 'refusee')
     .maybeSingle();
 
@@ -92,7 +92,7 @@ export async function POST(request, { params }) {
     .from('clients')
     .select('id, statut')
     .eq('profile_id', profile.id)
-    .ilike('email', emailLower)
+    .ilike('email', emailLower.replace(/([%_\\])/g, '\\$1'))
     .maybeSingle();
 
   // Anti-énumération : un message UNIQUE si l'email est déjà connu (client OU

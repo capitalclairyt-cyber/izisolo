@@ -92,7 +92,7 @@ export async function POST(request, { params }) {
     .from('clients')
     .select('id, prenom')
     .eq('profile_id', profile.id)
-    .ilike('email', email)
+    .ilike('email', email.replace(/([%_\\])/g, '\\$1')) // échappe les jokers ilike (_ %)
     .single();
 
   if (existingClient) {

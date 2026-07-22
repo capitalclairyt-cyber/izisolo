@@ -334,6 +334,12 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
           <div className="resa-detail-row"><Calendar size={15} /><span>{formatDate(cours.date)}</span></div>
           <div className="resa-detail-row"><Clock size={15} /><span>{formatHeure(cours.heure)}{cours.duree_minutes ? ` · ${cours.duree_minutes} min` : ''}</span></div>
           {cours.lieu && <div className="resa-detail-row"><MapPin size={15} /><span>{cours.lieu}</span></div>}
+          {cours.tarif_unitaire > 0 && (
+            <div className="resa-detail-row">
+              <span style={{ fontWeight: 800, fontSize: '0.95rem', width: 15, textAlign: 'center', flexShrink: 0 }}>€</span>
+              <span>Évènement payant · <strong>{Number(cours.tarif_unitaire).toFixed(2).replace('.', ',')} €</strong> — à régler auprès du studio</span>
+            </div>
+          )}
           {cours.capacite_max && (afficherInscrits || complet) && (
             <div className="resa-detail-row">
               <Users size={15} />
