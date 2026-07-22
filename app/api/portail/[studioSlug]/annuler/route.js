@@ -10,6 +10,7 @@ import { getRegle } from '@/lib/regles-metier';
 import { sendNotifElevePourRegle } from '@/lib/notif-eleve-regle';
 import { sendPushToEmail, sendPushToUser } from '@/lib/push-server';
 import { wantsNotif } from '@/lib/notif-prefs';
+import { resoudreCarnetApplicable } from '@/lib/carnet-resolution';
 
 export async function POST(request, { params }) {
   const { studioSlug } = await params;
@@ -74,7 +75,7 @@ export async function POST(request, { params }) {
   // Vérifier que la présence appartient bien à ce client dans ce studio
   const { data: presence } = await supabaseAdmin
     .from('presences')
-    .select('id, abonnement_id, cours:cours_id(id, nom, date, heure, type_cours, est_annule)')
+    .select('id, abonnement_id, cours:cours_id(id, nom, date, heure, type_cours, est_annule, tarif_unitaire)')
     .eq('id', presenceId)
     .eq('client_id', client.id)
     .eq('profile_id', profile.id)
@@ -218,13 +219,47 @@ export async function POST(request, { params }) {
     return Response.json({ error: 'Erreur lors de l\'annulation' }, { status: 500 });
   }
 
-  // Incrémenter le compteur de séances utilisées de l'abonnement (si lié)
-  // RPC v53 : incrément atomique (plus de read-modify-write)
-  if (presence.abonnement_id) {
+  // ── Décompte réel de la séance ────────────────────────────────────────────
+  // Avant : on ne décomptait que si presence.abonnement_id était déjà lié — or
+  // une réservation portail n'est JAMAIS liée (la liaison arrive au pointage)
+  // → la sanction « décompter » ne décomptait quasiment jamais rien, mais
+  // l'email affirmait « la séance a été comptée ». Désormais on RÉSOUT le
+  // carnet applicable (mêmes règles que le pointage v64/v70 : type, dates,
+  // pause, gate tarif_unitaire) et on ne dit à l'élève QUE ce qui s'est passé.
+  let seanceDecomptee = false;
+  let aboADecompter = presence.abonnement_id || null;
+  if (!aboADecompter) {
+    try {
+      const { data: abosActifs } = await supabaseAdmin
+        .from('abonnements')
+        .select('id, statut, seances_total, seances_utilisees, date_fin, date_pause_debut, date_pause_fin, types_cours_autorises')
+        .eq('client_id', client.id)
+        .eq('profile_id', profile.id)
+        .eq('statut', 'actif');
+      aboADecompter = resoudreCarnetApplicable(abosActifs, {
+        type_cours: presence.cours?.type_cours,
+        date: presence.cours?.date,
+        tarif_unitaire: presence.cours?.tarif_unitaire,
+      })?.id || null;
+    } catch (e) { console.error('annulation tardive — résolution carnet err:', e); }
+  }
+  if (aboADecompter) {
     const { error: incErr } = await supabaseAdmin
-      .rpc('ajuster_seances', { p_abo_id: presence.abonnement_id, p_delta: 1 });
-    if (incErr) console.error('annulation tardive — décompte err:', incErr);
-  } else if (choixDecompte === 'decompter_ou_dette') {
+      .rpc('ajuster_seances', { p_abo_id: aboADecompter, p_delta: 1 });
+    if (incErr) {
+      console.error('annulation tardive — décompte err:', incErr);
+    } else {
+      seanceDecomptee = true;
+      // Lier la présence au carnet décompté (symétrie : un éventuel recrédit
+      // — cours annulé par la prof, cas excusé — retrouvera le bon carnet).
+      if (!presence.abonnement_id) {
+        await supabaseAdmin.from('presences')
+          .update({ abonnement_id: aboADecompter })
+          .eq('id', presenceId);
+      }
+    }
+  }
+  if (!seanceDecomptee && choixDecompte === 'decompter_ou_dette') {
     // Pas de carnet lié → log une dette dans cas_a_traiter
     try {
       await supabaseAdmin.from('cas_a_traiter').insert({
@@ -245,12 +280,41 @@ export async function POST(request, { params }) {
     } catch (e) { console.error('annul dette: cas_a_traiter non-bloquant:', e); }
   }
 
-  // Notification : "Pour rappel, ta séance a été comptée"
+  // Notification à l'élève — le message reflète ce qui s'est RÉELLEMENT passé :
+  //   • carnet décompté → « la séance a été décomptée de ton carnet » ;
+  //   • pas de carnet applicable → « la séance reste due » (dette ou séance à
+  //     régler avec le studio), sans jamais prétendre un décompte fictif.
   try {
     const dateStr = presence.cours?.date
       ? new Date(presence.cours.date + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })
       : '';
     const heureStr = presence.cours?.heure ? presence.cours.heure.slice(0, 5).replace(':', 'h') : '';
+    const tarifStr = Number(presence.cours?.tarif_unitaire) > 0
+      ? ` (${Number(presence.cours.tarif_unitaire).toFixed(2).replace('.', ',')} €)`
+      : '';
+    const emailTpl = seanceDecomptee
+      ? {
+          sujet: `À noter : ta séance du ${dateStr} a été comptée`,
+          corps:
+`Bonjour {{prenom}},
+
+Pour rappel, l'annulation de ta séance prévue le ${dateStr}${heureStr ? ` à ${heureStr}` : ''} est intervenue moins de ${evaluation.delaiHeures}h avant le cours. Conformément à la politique d'annulation du studio, la séance a été décomptée de ton carnet.
+
+Tu peux retrouver le détail dans ton espace personnel.
+
+À très vite,`,
+        }
+      : {
+          sujet: `À noter : ta séance du ${dateStr} reste due`,
+          corps:
+`Bonjour {{prenom}},
+
+Ton annulation pour la séance du ${dateStr}${heureStr ? ` à ${heureStr}` : ''} est intervenue moins de ${evaluation.delaiHeures}h avant le cours. Conformément à la politique d'annulation du studio, la séance reste due${tarifStr} — le règlement se fera directement avec ton studio.
+
+Tu peux retrouver le détail dans ton espace personnel.
+
+À très vite,`,
+        };
     await sendNotifEleve(supabaseAdmin, {
       profile,
       client,
@@ -259,19 +323,11 @@ export async function POST(request, { params }) {
       proEmail,
       contexte: { date: dateStr, heure: heureStr },
       templates: {
-        email: {
-          sujet: `À noter : ta séance du ${dateStr} a été comptée`,
-          corps:
-`Bonjour {{prenom}},
-
-Pour rappel, l'annulation de ta séance prévue le ${dateStr}${heureStr ? ` à ${heureStr}` : ''} est intervenue moins de ${evaluation.delaiHeures}h avant le cours. Conformément à la politique d'annulation du studio, la séance a été décomptée de ton crédit.
-
-Tu peux retrouver le détail dans ton espace personnel.
-
-À très vite,`,
-        },
+        email: emailTpl,
         sms: {
-          corps: `Annulation tardive (<${evaluation.delaiHeures}h) — la seance du ${dateStr}${heureStr ? ` ${heureStr}` : ''} a ete decomptee de ton credit. — {{studio}}`,
+          corps: seanceDecomptee
+            ? `Annulation tardive (<${evaluation.delaiHeures}h) — la seance du ${dateStr}${heureStr ? ` ${heureStr}` : ''} a ete decomptee de ton carnet. — {{studio}}`
+            : `Annulation tardive (<${evaluation.delaiHeures}h) — la seance du ${dateStr}${heureStr ? ` ${heureStr}` : ''} reste due, a regler avec ton studio. — {{studio}}`,
         },
       },
     });

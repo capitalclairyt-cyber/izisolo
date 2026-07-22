@@ -599,6 +599,9 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
                         <span><Clock size={12} /> {formatHeure(c.heure)}{c.duree_minutes ? ` · ${c.duree_minutes}min` : ''}</span>
                         {c.lieu && <span><MapPin size={12} /> {c.lieu}</span>}
                         {c.type_cours && <span className={`portail-tag portail-tag-${tone}`}>{c.type_cours}</span>}
+                        {Number(c.tarif_unitaire) > 0 && (
+                          <span className="portail-tag portail-tag-amber">{Number(c.tarif_unitaire).toFixed(2).replace('.', ',').replace(',00', '')} € / séance</span>
+                        )}
                       </div>
                     </div>
                     <div className="portail-cours-right">
@@ -650,6 +653,9 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
                     <span><Clock size={12} /> {formatHeure(c.heure)}{c.duree_minutes ? ` · ${c.duree_minutes}min` : ''}</span>
                     {c.lieu && <span><MapPin size={12} /> {c.lieu}</span>}
                     {c.type_cours && <span className={`portail-tag portail-tag-${tone}`}>{c.type_cours}</span>}
+                    {Number(c.tarif_unitaire) > 0 && (
+                      <span className="portail-tag portail-tag-amber">{Number(c.tarif_unitaire).toFixed(2).replace('.', ',').replace(',00', '')} € / séance</span>
+                    )}
                   </div>
                 </div>
                 <div className="portail-cours-right">

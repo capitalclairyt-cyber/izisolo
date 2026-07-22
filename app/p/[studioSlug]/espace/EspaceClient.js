@@ -183,7 +183,13 @@ function CoursCard({ presence, profile, studioSlug, onAnnuler, annulEnCours }) {
         </div>
       </div>
       <div className="espace-cours-status">
-        {c.est_annule ? (
+        {presence.annulation_tardive ? (
+          // Annulée hors délai : plus une inscription active — la séance est
+          // décomptée (carnet lié) ou due. Pas de bouton Annuler (déjà annulée).
+          <span className="portail-tag" style={{ background: '#fef3e2', color: '#b45309' }}>
+            Annulée tardivement · séance {presence.abonnement_id ? 'décomptée' : 'due'}
+          </span>
+        ) : c.est_annule ? (
           <span className="portail-tag portail-tag-amber">Annulé</span>
         ) : aVenir ? (
           // Cours à venir : toujours « Inscrit·e » (rien n'est encore pointé).
@@ -200,13 +206,15 @@ function CoursCard({ presence, profile, studioSlug, onAnnuler, annulEnCours }) {
           null
         )}
 
-        {aVenir && !c.est_annule && (
+        {aVenir && !c.est_annule && !presence.annulation_tardive && (
           futureMaisTardive ? (
             // Annulation tardive : on PEUT toujours annuler, mais la séance sera due
             confirmOpen ? (
               <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 6, maxWidth: 220 }}>
                 <p style={{ fontSize: '0.75rem', color: '#7c4a03', margin: '0 0 4px', fontWeight: 600, lineHeight: 1.4 }}>
-                  ⚠ Annulation tardive : la séance sera décomptée de ton crédit. Confirmer ?
+                  ⚠ Annulation tardive : {Number(c.tarif_unitaire) > 0
+                    ? 'la séance restera due.'
+                    : 'la séance sera due (décomptée de ton carnet si tu en utilises un).'} Confirmer ?
                 </p>
                 <div style={{ display: 'flex', gap: 6 }}>
                   <button
@@ -266,7 +274,7 @@ function CoursCard({ presence, profile, studioSlug, onAnnuler, annulEnCours }) {
   );
 }
 
-export default function EspaceClient({ profile, client, aVenir, passes, paiements = [], offresStripe = [], abonnements = [], aRegler = [], unreadMessages = 0, clientPrefs = {}, studioSlug, userEmail, isDemo = false }) {
+export default function EspaceClient({ profile, client, aVenir, passes, paiements = [], offresStripe = [], abonnements = [], aRegler = [], seancesWorkshopDues = [], unreadMessages = 0, clientPrefs = {}, studioSlug, userEmail, isDemo = false }) {
   const router = useRouter();
   const { toast } = useToast();
   const [notifsOpen, setNotifsOpen] = useState(false);
@@ -298,8 +306,9 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
   // restent listés mais ne faussent pas le total.
   const totalDu =
     paiementsDus.reduce((s, p) => s + (parseFloat(p.montant) || 0), 0) +
-    aRegler.reduce((s, c) => s + (parseFloat(c.context?.montant ?? c.context?.tarif_unitaire ?? 0) || 0), 0);
-  const nbARegler = aRegler.length + paiementsDus.length;
+    aRegler.reduce((s, c) => s + (parseFloat(c.context?.montant ?? c.context?.tarif_unitaire ?? 0) || 0), 0) +
+    seancesWorkshopDues.reduce((s, w) => s + (parseFloat(w.montant) || 0), 0);
+  const nbARegler = aRegler.length + paiementsDus.length + seancesWorkshopDues.length;
 
   // ── Notifications in-app (cloche) : agrégées côté client à partir des
   // données déjà chargées + le compteur de messages non lus (calculé serveur).
@@ -816,6 +825,26 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
                   </div>
                   <div style={{ fontWeight: 700, fontSize: '0.9375rem', color: '#b45309', flexShrink: 0 }}>
                     {parseFloat(p.montant).toFixed(2).replace('.', ',')} €
+                  </div>
+                </div>
+              );
+            })}
+            {/* Séances payables à la séance (ateliers/stages) non réglées —
+                dérivées des présences + paiements liés (montant exact du cours) */}
+            {seancesWorkshopDues.map(w => {
+              const dateStr = w.cours_date
+                ? new Date(w.cours_date + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })
+                : null;
+              return (
+                <div key={`ws-${w.id}`} className="espace-aregler-row">
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 600, fontSize: '0.875rem', color: '#1a1a2e' }}>{w.cours_nom}</div>
+                    <div style={{ fontSize: '0.7rem', color: '#b45309', marginTop: 2 }}>
+                      {w.annulationTardive ? 'Annulation tardive — séance due' : 'Séance à régler'}{dateStr ? ` · ${dateStr}` : ''}
+                    </div>
+                  </div>
+                  <div style={{ fontWeight: 700, fontSize: '0.9375rem', color: '#b45309', flexShrink: 0 }}>
+                    {Number(w.montant).toFixed(2).replace('.', ',')} €
                   </div>
                 </div>
               );

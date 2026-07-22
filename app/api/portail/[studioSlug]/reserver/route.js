@@ -209,6 +209,21 @@ export async function POST(request, { params }) {
   });
   const carnetExpireraAvant = aboValide && !aboValideADate;
 
+  // L'élève a-t-il un carnet UTILISABLE (séances restantes, non expiré, pas en
+  // pause) mais exclu UNIQUEMENT par le type de cours ? → l'email « tu n'as pas
+  // de carnet actif » serait faux et vexant ; on enverra la variante « ton
+  // carnet ne couvre pas ce type de cours » (corpsMauvaisType).
+  const carnetInapplicable = !aboValide && (abosActifs || []).some(a => {
+    if (a.seances_total != null) {
+      const reste = (a.seances_total || 0) - (a.seances_utilisees || 0);
+      if (reste <= 0) return false;
+    }
+    if (a.date_fin && a.date_fin < todayStr) return false;
+    if (a.date_pause_debut && a.date_pause_fin
+        && a.date_pause_debut <= todayStr && a.date_pause_fin >= todayStr) return false;
+    return !aboApplicableACeCours(a); // tout est bon SAUF le type
+  });
+
   const regleSansCarnet = getRegle({ regles_metier: profile.regles_metier }, 'eleve_sans_carnet');
   const regleExpireAvant = getRegle({ regles_metier: profile.regles_metier }, 'carnet_expire_avant_cours');
 
@@ -497,7 +512,7 @@ export async function POST(request, { params }) {
           regle: regleAct,
           profile: { id: profile.id, studio_nom: profile.studio_nom },
           client: { prenom, nom, email },
-          contexte: { cours: cours.nom, date: dateStr, heure: cours.heure?.slice(0, 5).replace(':', 'h') || '', carnetAchetable },
+          contexte: { cours: cours.nom, date: dateStr, heure: cours.heure?.slice(0, 5).replace(':', 'h') || '', carnetAchetable, carnetInapplicable },
         });
       } catch (e) { console.warn('[reserver] notif élève non-bloquant:', e?.message); }
     }

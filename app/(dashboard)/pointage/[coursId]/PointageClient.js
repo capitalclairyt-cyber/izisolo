@@ -207,6 +207,32 @@ function PresenceCard({ presence, resolvedCarnet, estPayAsYouGo, paye, onMarquer
     if (newStatut === 'present' && (impaye || (estPayAsYouGo && !paye))) onPayer(presence);
   };
 
+  // ── Annulation tardive : l'élève a annulé (hors délai) — il ne viendra pas.
+  // La sanction est DÉJÀ appliquée à l'annulation (carnet décompté ou séance
+  // due). On affiche une ligne informative NON pointable : la pointer présent/
+  // absent re-déclencherait un décompte (double sanction).
+  if (presence.annulation_tardive) {
+    return (
+      <div className="pres-row pres-annulee-tardive">
+        <div className="pres-center">
+          <div className={`pres-avatar av-${client.statut || 'actif'}`} style={{ opacity: 0.5 }}>{initials}</div>
+          <div className="pres-body">
+            <div className="pres-name-row">
+              <span className="pres-name" style={{ color: '#999', textDecoration: 'line-through' }}>
+                {client.prenom} {client.nom}
+              </span>
+            </div>
+            <div className="pres-meta">
+              <span style={{ fontSize: '0.72rem', color: '#b45309', fontWeight: 600 }}>
+                ⏱ Annulée tardivement · séance {presence.abonnement_id ? 'décomptée' : 'due'}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       className={`pres-row state-${statut}${loading ? ' pres-loading' : ''}${impaye ? ' pres-impaye' : ''}${ptard ? ' pres-ptard' : ''}`}
@@ -408,12 +434,15 @@ export default function PointageClient({ cours, presences: initialPresences, tou
     : '';
 
   // ── Stats ─────────────────────────────────────────────
+  // Les annulations tardives ne comptent ni dans le total ni dans « en
+  // attente » : l'élève ne vient pas, il n'y a rien à pointer (ligne info).
   const getStatut = p => p.statut_pointage || (p.pointee ? 'present' : 'inscrit');
-  const nbPresents  = presences.filter(p => getStatut(p) === 'present').length;
-  const nbAbsents   = presences.filter(p => getStatut(p) === 'absent').length;
-  const nbExcuses   = presences.filter(p => getStatut(p) === 'excuse').length;
-  const nbEnAttente = presences.length - nbPresents - nbAbsents - nbExcuses;
-  const nbTotal     = presences.length;
+  const presActives = presences.filter(p => !p.annulation_tardive);
+  const nbPresents  = presActives.filter(p => getStatut(p) === 'present').length;
+  const nbAbsents   = presActives.filter(p => getStatut(p) === 'absent').length;
+  const nbExcuses   = presActives.filter(p => getStatut(p) === 'excuse').length;
+  const nbEnAttente = presActives.length - nbPresents - nbAbsents - nbExcuses;
+  const nbTotal     = presActives.length;
   const tousTraites = nbTotal > 0 && nbEnAttente === 0;
   const tauxPresence = nbTotal > 0 ? Math.round((nbPresents / nbTotal) * 100) : 0;
   const nbImpayes   = presences.filter(p => isImpaye(p, paidIds)).length;
@@ -436,9 +465,11 @@ export default function PointageClient({ cours, presences: initialPresences, tou
   // excuser juste après l'avoir marquée absente).
   const sortedPresences = useMemo(() => {
     const order = { inscrit: 0, present: 1, absent: 2, excuse: 2 };
+    // Annulations tardives tout en bas (lignes info, non pointables).
+    const rank = p => p.annulation_tardive ? 3 : order[getStatut(p)];
     return [...presences].sort((a, b) => {
-      const sa = getStatut(a), sb = getStatut(b);
-      if (order[sa] !== order[sb]) return order[sa] - order[sb];
+      const ra = rank(a), rb = rank(b);
+      if (ra !== rb) return ra - rb;
       return `${a.clients?.prenom} ${a.clients?.nom}`
         .localeCompare(`${b.clients?.prenom} ${b.clients?.nom}`, 'fr');
     });
@@ -599,8 +630,10 @@ export default function PointageClient({ cours, presences: initialPresences, tou
   }, [locked, profile, cours, toast]);
 
   // ── Tout marquer présent ──────────────────────────────
+  // Exclut les annulations tardives : l'élève ne vient pas, la sanction est
+  // déjà appliquée — le pointer re-décompterait (double sanction).
   const toutPresent = async () => {
-    const enAttente = presences.filter(p => getStatut(p) === 'inscrit');
+    const enAttente = presences.filter(p => getStatut(p) === 'inscrit' && !p.annulation_tardive);
     for (const p of enAttente) await handleMarquer(p, 'present');
   };
 
@@ -1320,6 +1353,12 @@ export default function PointageClient({ cours, presences: initialPresences, tou
         .pres-row.pres-impaye   { border-left: 4px solid #f59e0b; }
         .pres-row.pres-ptard    { border-left: 4px solid #fb923c; }
         .pres-row.pres-loading  { opacity: 0.55; }
+        .pres-row.pres-annulee-tardive {
+          background: rgba(250,250,250,0.85);
+          border-style: dashed;
+          min-height: 56px;
+          padding: 8px 12px;
+        }
 
         /* Mobile étroit : réduit les zones Présent/Absent pour laisser
            respirer le centre (nom + badges) sous ~375px. */

@@ -184,9 +184,13 @@ async function getData(studioSlug, userEmail) {
     .select(`
       id,
       statut_pointage,
+      type_presence,
+      annulation_tardive,
+      est_due,
+      abonnement_id,
       created_at,
       cours:cours_id (
-        id, nom, date, heure, duree_minutes, lieu, type_cours, est_annule
+        id, nom, date, heure, duree_minutes, lieu, type_cours, est_annule, tarif_unitaire
       )
     `)
     .eq('client_id', client.id)
@@ -236,6 +240,41 @@ async function getData(studioSlug, userEmail) {
     return ch === 'creer_dette' || ch === 'paiement_sur_place' || c.context?.dette_a_regler === true;
   });
 
+  // Séances « payables à la séance » (cours à tarif_unitaire) non réglées —
+  // dérivées des présences + paiements liés (v65), PAS des cas_a_traiter (le
+  // cas workshop n'est souvent même pas loggé). C'est la seule source fiable :
+  // l'élève voit « à régler · X € » dès la réservation, la ligne disparaît
+  // quand la prof encaisse (paiement lié à la présence).
+  const presWorkshop = all.filter(p =>
+    Number(p.cours?.tarif_unitaire) > 0
+    && (p.type_presence || 'normal') === 'normal'          // essai/offert = gratuit
+    && p.statut_pointage !== 'absent'
+    && p.statut_pointage !== 'excuse'
+    && !p.cours?.est_annule
+  );
+  let seancesWorkshopDues = [];
+  if (presWorkshop.length > 0) {
+    const { data: paiesLies } = await supabase
+      .from('paiements')
+      .select('presence_id, statut')
+      .eq('client_id', client.id)
+      .in('presence_id', presWorkshop.map(p => p.id));
+    // Une présence « couverte » = un paiement lié existe déjà (payé, ou en
+    // attente — déjà listé dans « À régler » via paiementsDus : pas de doublon).
+    const couvertes = new Set((paiesLies || [])
+      .filter(x => ['paid', 'pending', 'overdue'].includes(x.statut))
+      .map(x => x.presence_id));
+    seancesWorkshopDues = presWorkshop
+      .filter(p => !couvertes.has(p.id))
+      .map(p => ({
+        id: p.id,
+        cours_nom: p.cours.nom,
+        cours_date: p.cours.date,
+        montant: Number(p.cours.tarif_unitaire),
+        annulationTardive: !!p.annulation_tardive,
+      }));
+  }
+
   // Compteur de messages non lus (pour la cloche de notifications de l'espace).
   let unreadMessages = 0;
   try { unreadMessages = await countUnread(supabase, 'eleve', client.id); } catch {}
@@ -248,7 +287,7 @@ async function getData(studioSlug, userEmail) {
     .from('clients').select('notif_prefs').eq('id', client.id).maybeSingle();
   if (!cpErr && cp?.notif_prefs) clientPrefs = cp.notif_prefs;
 
-  return { profile, client, aVenir, passes, paiements: paiements || [], offresStripe: offresStripe || [], abonnements: abonnements || [], aRegler, unreadMessages, clientPrefs };
+  return { profile, client, aVenir, passes, paiements: paiements || [], offresStripe: offresStripe || [], abonnements: abonnements || [], aRegler, seancesWorkshopDues, unreadMessages, clientPrefs };
 }
 
 export default async function EspacePage({ params, searchParams }) {
@@ -313,6 +352,7 @@ export default async function EspacePage({ params, searchParams }) {
       offresStripe={data.offresStripe || []}
       abonnements={data.abonnements || []}
       aRegler={data.aRegler || []}
+      seancesWorkshopDues={data.seancesWorkshopDues || []}
       unreadMessages={data.unreadMessages || 0}
       clientPrefs={data.clientPrefs || {}}
       studioSlug={studioSlug}

@@ -389,14 +389,19 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
         const delai = getDelaiPourCours(profile, cours.type_cours);
         const eval2 = evaluerAnnulation(profile, cours.date, cours.heure, cours.type_cours);
         const limiteStr = eval2.dateLimite ? formatDateLimite(eval2.dateLimite) : null;
+        // Conséquence honnête d'une annulation tardive : sur un cours payable à
+        // la séance il n'y a pas de « crédit » à décompter — la séance reste due.
+        const consequence = Number(cours.tarif_unitaire) > 0
+          ? 'Après, la séance restera due.'
+          : 'Après, la séance sera due (décomptée de ton carnet si tu en utilises un).';
         return (
           <div className="resa-policy">
             <Shield size={15} style={{ flexShrink: 0, marginTop: 2 }} />
             <div>
               <strong style={{ display: 'block', marginBottom: 2 }}>Annulation flexible</strong>
               {limiteStr
-                ? <>Annulation libre jusqu'au <strong>{limiteStr}</strong> ({delai}h avant la séance). Après, la séance sera décomptée de ton crédit.</>
-                : <>Annulation libre jusqu'à <strong>{delai}h avant la séance</strong>. Après, la séance sera décomptée de ton crédit.</>
+                ? <>Annulation libre jusqu'au <strong>{limiteStr}</strong> ({delai}h avant la séance). {consequence}</>
+                : <>Annulation libre jusqu'à <strong>{delai}h avant la séance</strong>. {consequence}</>
               }
             </div>
           </div>
