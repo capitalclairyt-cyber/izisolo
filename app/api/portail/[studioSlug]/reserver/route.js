@@ -144,27 +144,19 @@ export async function POST(request, { params }) {
   //   manuellement OU à l'élève de revenir confirmer.
   // - Si pas de lien Stripe → on crée la presence + log un cas "à régler sur place".
   if (cours.tarif_unitaire) {
-    const regleWorkshop = getRegle({ regles_metier: profile.regles_metier }, 'workshop_vs_cours');
-    // Pour MVP : on traite tous les cours avec tarif_unitaire comme 'separe'
-    // (= paiement Stripe à l'unité, indépendant du carnet). Les autres
-    // choix (decompte_n_seances, une_seance, au_cas_par_cas) seront branchés
-    // dans une vague future avec la logique fine de décompte.
-    if (cours.stripe_payment_link_unit) {
-      return Response.json({
-        ok: false,
-        requirePayment: true,
-        paymentUrl: cours.stripe_payment_link_unit,
-        message: `Ce cours est un évènement payant à l'unité (${cours.tarif_unitaire} €). Règle ton inscription via Stripe pour confirmer ta place. Tu peux ensuite revenir vérifier ta réservation depuis ton espace.`,
-        amount: cours.tarif_unitaire,
-      }, { status: 402 });
-    }
-    // Pas de lien Stripe configuré → on accepte la résa et log un cas
+    // Workshop / cours payant à l'unité (séparé du carnet/abo régulier).
+    // ⚠️ Le paiement Stripe en ligne À LA RÉSERVATION est DÉSACTIVÉ tant qu'il
+    // n'existe pas de webhook « paiement par cours » : sinon l'élève payait sur
+    // Stripe SANS être inscrit (place non décomptée) + risque de double paiement
+    // au re-clic (cf. AUDIT-PORTAIL-ELEVE-2026 §P0). On réserve donc TOUJOURS la
+    // place et on log le montant en « à régler » (visible espace élève + côté
+    // prof, qui encaisse en 1 clic ou envoie un lien Stripe séparément).
     casATraiterAttendu = casATraiterAttendu || {
       case_type: 'workshop_vs_cours',
       context: {
-        choix_applique: 'paiement_sur_place',
+        choix_applique: 'paiement_a_regler',
         tarif_unitaire: cours.tarif_unitaire,
-        raison: 'Pas de Stripe Payment Link configuré pour ce cours',
+        raison: 'Workshop payant à l\'unité — à régler (paiement en ligne à la résa désactivé, manque webhook par cours)',
       },
     };
   }
