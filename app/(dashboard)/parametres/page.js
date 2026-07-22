@@ -1968,8 +1968,6 @@ export default function Parametres() {
   const tabsRef = useRef(null);
   const [canScrollRight, setCanScrollRight] = useState(false);
   const [canScrollLeft, setCanScrollLeft]   = useState(false);
-  // Sous-onglet notifications
-  const [notifSubTab, setNotifSubTab] = useState('general');
   // Notifications générales
   const [notifNouveauClient, setNotifNouveauClient]       = useState(true);
   const [notifPaiementRetard, setNotifPaiementRetard]     = useState(true);
@@ -2754,79 +2752,6 @@ export default function Parametres() {
           {subTab.notifications === 'anniv' && (
           <>
 
-          {/* Ancien sous-onglet « Général » (cloche) → fusionné dans le panneau
-              « Mes notifications » (canal Appli). Bloc désactivé, à retirer au
-              prochain nettoyage du fichier (S6bis). */}
-          {false && (
-            <div className="notif-general animate-fade-in">
-              <p className="param-section-desc" style={{ marginBottom: 4 }}>
-                Choisis les événements pour lesquels tu veux recevoir une notification dans l'application.
-              </p>
-
-              {[
-                {
-                  key:     'nouveau_client',
-                  state:   notifNouveauClient,
-                  setter:  setNotifNouveauClient,
-                  label:   'Nouvel élève ajouté',
-                  desc:    'Quand un élève est ajouté (manuellement ou via inscription)',
-                  emoji:   '👤',
-                },
-                {
-                  key:     'paiement_retard',
-                  state:   notifPaiementRetard,
-                  setter:  setNotifPaiementRetard,
-                  label:   'Paiement en attente',
-                  desc:    'Paiement non réglé depuis plus de 7 jours',
-                  emoji:   '💶',
-                },
-                {
-                  key:     'carnet_epuise',
-                  state:   notifCarnetEpuise,
-                  setter:  setNotifCarnetEpuise,
-                  label:   'Carnet de séances épuisé',
-                  desc:    'Quand il reste moins de 2 séances dans un carnet actif',
-                  emoji:   '📋',
-                },
-                {
-                  key:     'abonnement_expire',
-                  state:   notifAbonnementExpire,
-                  setter:  setNotifAbonnementExpire,
-                  label:   'Abonnement qui expire bientôt',
-                  desc:    'Abonnement arrivant à échéance dans moins de 14 jours',
-                  emoji:   '⏰',
-                },
-              ].map(({ key, state, setter, label, desc, emoji, soon }) => (
-                <div key={key} className="notif-row param-section">
-                  <div className="notif-row-left">
-                    <span className="notif-row-emoji">{emoji}</span>
-                    <div>
-                      <div className="notif-row-label">
-                        {label}
-                        {soon && <span className="notif-soon-badge">Bientôt</span>}
-                      </div>
-                      <div className="notif-row-desc">{desc}</div>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    className={`param-toggle-switch ${soon ? 'disabled' : ''}`}
-                    onClick={() => !soon && setter(v => !v)}
-                    disabled={soon}
-                  >
-                    {state && !soon
-                      ? <ToggleRight size={26} style={{ color: 'var(--brand)' }} />
-                      : <ToggleLeft  size={26} style={{ color: soon ? 'var(--border)' : 'var(--border)' }} />
-                    }
-                  </button>
-                </div>
-              ))}
-
-              <button className="izi-btn izi-btn-primary" onClick={handleSave} disabled={saving}>
-                <Save size={16} /> {saving ? 'Enregistrement…' : 'Enregistrer'}
-              </button>
-            </div>
-          )}
 
           {/* ══════════ ANNIVERSAIRES (toujours visible) ══════════ */}
           {true && (
