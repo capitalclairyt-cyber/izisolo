@@ -3,6 +3,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { notFound } from 'next/navigation';
 import CoursReservationClient from './CoursReservationClient';
 import { canSeeCours, resolveClientInfo } from '@/lib/visibilite';
+import { studioHasFeature } from '@/lib/plan-guard';
 
 async function getData(studioSlug, coursId) {
   // Contenu PUBLIC du portail (studio, cours) + données élève filtrées par
@@ -13,7 +14,7 @@ async function getData(studioSlug, coursId) {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('id, studio_nom, studio_slug, metier, ville, regles_annulation, afficher_inscrits, essai_actif, essai_paiement, essai_prix')
+    .select('id, studio_nom, studio_slug, metier, ville, regles_annulation, afficher_inscrits, essai_actif, essai_paiement, essai_prix, plan, trial_started_at, created_at, stripe_subscription_status, stripe_current_period_end')
     .eq('studio_slug', studioSlug)
     .single();
   if (!profile) return null;
@@ -70,7 +71,13 @@ async function getData(studioSlug, coursId) {
     }
   }
 
-  return { profile, cours, nbInscrits: nbInscrits || 0, currentUser, alreadyRegistered };
+  // Features dépendant du plan effectif du studio — pour ne PAS promettre à
+  // l'élève ce que le studio ne peut pas offrir (annulation self-service /
+  // liste d'attente = Pro). Évite les culs-de-sac et les promesses non tenues.
+  const canCancel = studioHasFeature(profile, 'annulationParEleve');
+  const canWaitlist = studioHasFeature(profile, 'listeAttente');
+
+  return { profile, cours, nbInscrits: nbInscrits || 0, currentUser, alreadyRegistered, canCancel, canWaitlist };
 }
 
 export async function generateMetadata({ params }) {
@@ -93,6 +100,8 @@ export default async function CoursDetailPortailPage({ params }) {
       studioSlug={studioSlug}
       currentUser={data.currentUser}
       alreadyRegistered={data.alreadyRegistered}
+      canCancel={data.canCancel}
+      canWaitlist={data.canWaitlist}
     />
   );
 }

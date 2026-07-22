@@ -7,6 +7,7 @@ import { sendNotifElevePourRegle } from '@/lib/notif-eleve-regle';
 import { sendPushToUser } from '@/lib/push-server';
 import { wantsNotif } from '@/lib/notif-prefs';
 import { getDelaiPourCours } from '@/lib/regles-annulation';
+import { studioHasFeature } from '@/lib/plan-guard';
 import { infosPratiquesBlock } from '@/lib/email-helpers';
 import { sendEmail } from '@/lib/email';
 
@@ -46,7 +47,7 @@ export async function POST(request, { params }) {
   // Charge aussi regles_metier pour appliquer la règle "élève sans carnet".
   const { data: profile } = await supabaseAdmin
     .from('profiles')
-    .select('id, studio_nom, regles_metier, regles_annulation, adresse, code_postal, ville, telephone, email_contact, notif_prefs')
+    .select('id, studio_nom, regles_metier, regles_annulation, adresse, code_postal, ville, telephone, email_contact, notif_prefs, plan, trial_started_at, created_at, stripe_subscription_status, stripe_current_period_end')
     .eq('studio_slug', studioSlug)
     .single();
 
@@ -576,8 +577,9 @@ export async function POST(request, { params }) {
               </p>
             ` : ''}
             <div style="background: #fffaf0; border: 1px solid #ffe0b2; border-radius: 10px; padding: 12px 16px; margin: 0 0 16px; color: #7c4a03; font-size: 0.875rem;">
-              <strong>Annulation flexible</strong><br/>
-              Tu peux annuler depuis ton espace jusqu'à ${delaiAnnulation}h avant la séance.
+              ${studioHasFeature(profile, 'annulationParEleve')
+                ? `<strong>Annulation flexible</strong><br/>Tu peux annuler depuis ton espace jusqu'à ${delaiAnnulation}h avant la séance.`
+                : `<strong>Annulation</strong><br/>Pour toute annulation, contacte directement ton studio.`}
             </div>
             ${infosBlock}
             <p style="color: #aaa; font-size: 0.8rem; margin: 32px 0 0; border-top: 1px solid #eee; padding-top: 16px; text-align: center;">

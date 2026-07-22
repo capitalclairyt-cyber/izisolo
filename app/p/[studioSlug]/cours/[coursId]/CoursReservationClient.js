@@ -150,7 +150,7 @@ function CompletAvecListeAttente({ cours, studioSlug, currentUser }) {
   );
 }
 
-export default function CoursReservationClient({ cours, profile, nbInscrits, studioSlug, currentUser, alreadyRegistered = false }) {
+export default function CoursReservationClient({ cours, profile, nbInscrits, studioSlug, currentUser, alreadyRegistered = false, canCancel = false, canWaitlist = false }) {
   const { toast } = useToast();
   const [nom, setNom]       = useState(currentUser?.nom || '');
   const [email, setEmail]   = useState(currentUser?.email || '');
@@ -294,7 +294,9 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
 
           <div style={{ background: '#fffaf0', border: '1px solid #ffe0b2', borderRadius: '10px', padding: '12px 16px', marginBottom: '20px', fontSize: '0.8125rem', color: '#7c4a03', display: 'flex', alignItems: 'flex-start', gap: '8px', textAlign: 'left' }}>
             <Shield size={15} style={{ flexShrink: 0, marginTop: 2 }} />
-            <span>Tu peux annuler depuis ton espace jusqu'à <strong>{getDelaiPourCours(profile, cours.type_cours)}h avant la séance</strong>.</span>
+            {canCancel
+              ? <span>Tu peux annuler depuis ton espace jusqu'à <strong>{getDelaiPourCours(profile, cours.type_cours)}h avant la séance</strong>.</span>
+              : <span>Pour toute annulation, <strong>contacte directement ton studio</strong>.</span>}
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -373,8 +375,9 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
         </Link>
       )}
 
-      {/* Politique d'annulation — délai lu depuis profile.regles_annulation */}
-      {!passe && !complet && !annule && (() => {
+      {/* Politique d'annulation — affichée SEULEMENT si le studio offre
+          l'annulation self-service (Pro). Sinon on ne promet pas (voir plus bas). */}
+      {!passe && !complet && !annule && canCancel && (() => {
         const delai = getDelaiPourCours(profile, cours.type_cours);
         const eval2 = evaluerAnnulation(profile, cours.date, cours.heure, cours.type_cours);
         const limiteStr = eval2.dateLimite ? formatDateLimite(eval2.dateLimite) : null;
@@ -391,6 +394,17 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
           </div>
         );
       })()}
+
+      {/* Studio sans annulation self-service (Solo) : pas de promesse intenable */}
+      {!passe && !complet && !annule && !canCancel && (
+        <div className="resa-policy">
+          <Shield size={15} style={{ flexShrink: 0, marginTop: 2 }} />
+          <div>
+            <strong style={{ display: 'block', marginBottom: 2 }}>Annulation</strong>
+            Pour annuler ou modifier ta réservation, <strong>contacte directement ton studio</strong>.
+          </div>
+        </div>
+      )}
 
       {/* Formulaire de réservation */}
       {annule ? (
@@ -425,11 +439,20 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
           </div>
         </div>
       ) : complet ? (
-        <CompletAvecListeAttente
-          cours={cours}
-          studioSlug={studioSlug}
-          currentUser={currentUser}
-        />
+        canWaitlist ? (
+          <CompletAvecListeAttente
+            cours={cours}
+            studioSlug={studioSlug}
+            currentUser={currentUser}
+          />
+        ) : (
+          <div className="portail-card" style={{ textAlign: 'center' }}>
+            <h2 style={{ fontSize: '1.0625rem', fontWeight: 700, margin: '0 0 8px', color: '#1a1a2e' }}>Cours complet</h2>
+            <p style={{ color: '#555', fontSize: '0.9rem', margin: 0 }}>
+              Pour être prévenu·e si une place se libère, <strong>contacte directement ton studio</strong>.
+            </p>
+          </div>
+        )
       ) : (
         <div className="portail-card">
           <h2 style={{ fontSize: '1.0625rem', fontWeight: 700, margin: '0 0 16px', color: '#1a1a2e' }}>Réserver ma place</h2>
