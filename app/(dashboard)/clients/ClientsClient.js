@@ -26,10 +26,12 @@ const FILTRES_PRIMAIRES = [
   { key: 'tous',         label: 'Tous'              },
   { key: 'carnet_actif', label: 'Carnet actif'      },
   { key: 'sans_carnet',  label: 'Sans carnet'       },
+  { key: 'ponctuels',    label: 'Ponctuel·les'      },
+  { key: 'jamais_venu',  label: 'Jamais venu·e'     },
   { key: 'inactifs_30j', label: 'Pas de nouvelles >30j' },
 ];
 
-export default function ClientsClient({ clients: clientsInit, profile, statutMap = {} }) {
+export default function ClientsClient({ clients: clientsInit, profile, statutMap = {}, presenceInfo = {} }) {
   const vocab = getVocabulaire(profile?.metier || 'yoga', profile?.vocabulaire);
   const router = useRouter();
   const [search, setSearch] = useState('');
@@ -124,6 +126,15 @@ export default function ClientsClient({ clients: clientsInit, profile, statutMap
 
   const hasActiveAbo = (c) => (c.abonnements || []).some(a => a.statut === 'actif');
 
+  // One-shot : ≥1 présence, TOUTES sur des cours payables à la séance
+  // (tarif_unitaire), et aucun carnet/abo (même passé). Dérivé des données —
+  // rien à cocher pour la prof ; la personne sort du segment dès qu'elle
+  // prend un carnet ou vient à un cours régulier.
+  const estPonctuel = (c) => {
+    const info = presenceInfo[c.id];
+    return !!info && info.nb > 0 && info.toutesTarifees && (c.abonnements || []).length === 0;
+  };
+
   const filtered = useMemo(() => {
     let list = clientsList;
 
@@ -145,6 +156,15 @@ export default function ClientsClient({ clients: clientsInit, profile, statutMap
       list = list.filter(hasActiveAbo);
     } else if (filtrePrimaire === 'sans_carnet') {
       list = list.filter(c => !hasActiveAbo(c));
+    } else if (filtrePrimaire === 'ponctuels') {
+      // One-shot : venu·e UNIQUEMENT à des évènements payables à la séance
+      // (pleine lune, mini-stage…), jamais de carnet/abo → à transformer en
+      // élève régulier·e (inviter, proposer un carnet).
+      list = list.filter(estPonctuel);
+    } else if (filtrePrimaire === 'jamais_venu') {
+      // Fiche sans aucune présence : prospect pur (invitation, import, résa
+      // annulée…) — à relancer ou à faire le tri.
+      list = list.filter(c => !(presenceInfo[c.id]?.nb > 0));
     } else if (filtrePrimaire === 'inactifs_30j') {
       list = list.filter(c => {
         const lastUpdate = c.updated_at ? new Date(c.updated_at).getTime() : 0;
@@ -176,7 +196,7 @@ export default function ClientsClient({ clients: clientsInit, profile, statutMap
     // tri === 'recent' : on garde l'ordre serveur (updated_at desc), pas de tri.
 
     return list;
-  }, [clientsList, search, filtrePrimaire, filtreStatut, filtreType, filtreAbo, tri]);
+  }, [clientsList, search, filtrePrimaire, filtreStatut, filtreType, filtreAbo, tri, presenceInfo]);
 
   // Pagination 8/page (cf. components/ui/Pagination.js)
   const { paginated, currentPage, totalPages, setPage } = usePagination(filtered, PAGE_SIZE);
@@ -455,6 +475,15 @@ export default function ClientsClient({ clients: clientsInit, profile, statutMap
                       {seancesRestantes !== null && (
                         <span className={`izi-badge ${seancesRestantes <= 2 ? 'izi-badge-danger' : 'izi-badge-success'}`}>
                           {seancesRestantes} séance{seancesRestantes > 1 ? 's' : ''}
+                        </span>
+                      )}
+                      {/* One-shot : venu·e uniquement à des évènements à la séance */}
+                      {estPonctuel(client) && (
+                        <span
+                          className="izi-badge izi-badge-warning"
+                          title={`Venu·e ${presenceInfo[client.id].nb > 1 ? presenceInfo[client.id].nb + ' fois' : 'une fois'} en évènement ponctuel — propose-lui un carnet ou invite-le/la`}
+                        >
+                          ☄️ {presenceInfo[client.id]?.dernier?.nom || 'Ponctuel·le'}
                         </span>
                       )}
                       {/* État de compte (v67) — actif / invité·e / pas de compte */}

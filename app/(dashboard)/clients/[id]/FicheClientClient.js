@@ -761,6 +761,20 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
 
   const hasNoActivity = abonnements.length === 0 && paiements.length === 0;
 
+  // One-shot (audit élèves 2026-07-22) : venu·e UNIQUEMENT à des évènements
+  // payables à la séance (pleine lune, mini-stage…), jamais de carnet/abo.
+  // Dérivé des données → la bannière disparaît d'elle-même dès qu'un carnet
+  // est attribué ou qu'un cours régulier est fréquenté.
+  const infoPonctuel = (() => {
+    if (isPro || abonnements.length > 0) return null;
+    const venues = (presences || []).filter(p => p.cours);
+    if (venues.length === 0) return null;
+    if (!venues.every(p => Number(p.cours?.tarif_unitaire) > 0)) return null;
+    const dernier = venues.reduce((best, p) =>
+      (!best || (p.cours.date || '') > (best.cours.date || '')) ? p : best, null);
+    return { nb: venues.length, evenement: dernier?.cours?.nom || 'un évènement', date: dernier?.cours?.date };
+  })();
+
   return (
     <div className="fiche-client">
       {/* Header */}
@@ -917,6 +931,31 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
           <span className="meta-item">Inscrit le {formatDate(client.created_at)}</span>
         </div>
       </div>
+
+      {/* One-shot → transformation en élève régulier·e */}
+      {infoPonctuel && (
+        <div className="ponctuel-banner animate-slide-up">
+          <div className="ponctuel-banner-text">
+            <span className="ponctuel-banner-title">
+              ☄️ Venu·e {infoPonctuel.nb > 1 ? `${infoPonctuel.nb} fois` : 'une fois'} en évènement ponctuel
+            </span>
+            <span className="ponctuel-banner-sub">
+              Dernier : {infoPonctuel.evenement}{infoPonctuel.date ? ` · ${formatDate(infoPonctuel.date)}` : ''}.
+              Transforme ce contact en {(vocab.client || 'élève').toLowerCase()} : propose-lui un carnet, ou invite-le/la sur son espace.
+            </span>
+          </div>
+          <div className="ponctuel-banner-actions">
+            <button type="button" className="izi-btn izi-btn-primary" onClick={() => setShowAssignerModal(true)}>
+              Proposer un carnet
+            </button>
+            {profile?.studio_slug && client.email && (
+              <button type="button" className="izi-btn izi-btn-secondary" onClick={sendPortailInvite} disabled={inviting || invited}>
+                {invited ? 'Invitation envoyée ✓' : 'Inviter sur son espace'}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Bouton cours à domicile (si l'élève a une adresse) */}
       {!isPro && client.adresse_postale && (
@@ -1907,6 +1946,17 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
         .extra-item-adresse {
           flex-direction: column; gap: 4px;
         }
+        .ponctuel-banner {
+          display: flex; flex-wrap: wrap; align-items: center; gap: 12px;
+          padding: 14px 16px; border-radius: var(--radius-md, 12px);
+          background: linear-gradient(135deg, #fff7ed 0%, #fffbeb 100%);
+          border: 1.5px solid #fcd34d;
+        }
+        .ponctuel-banner-text { flex: 1; min-width: 220px; display: flex; flex-direction: column; gap: 3px; }
+        .ponctuel-banner-title { font-weight: 700; font-size: 0.9rem; color: #92400e; }
+        .ponctuel-banner-sub { font-size: 0.78rem; color: #a16207; line-height: 1.5; }
+        .ponctuel-banner-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+        .ponctuel-banner-actions .izi-btn { font-size: 0.8125rem; padding: 8px 14px; }
         .domicile-btn {
           display: flex; align-items: center; gap: 12px;
           padding: 14px 16px; border-radius: var(--radius-md, 12px);

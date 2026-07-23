@@ -17,7 +17,7 @@ export default async function FicheClientPage({ params }) {
     supabase.from('clients').select('*').eq('id', id).eq('profile_id', user.id).single(),
     supabase.from('profiles').select('metier, vocabulaire, client_fields_config, studio_slug, studio_nom, prenom').eq('id', user.id).single(),
     supabase.from('abonnements').select('*, offre:offres(nom, type)').eq('client_id', id).eq('profile_id', user.id).order('created_at', { ascending: false }),
-    supabase.from('presences').select('*, cours_id, cours(nom, date, heure, recurrence_id)').eq('client_id', id).eq('profile_id', user.id).order('created_at', { ascending: false }).limit(50),
+    supabase.from('presences').select('*, cours_id, cours(nom, date, heure, recurrence_id, tarif_unitaire)').eq('client_id', id).eq('profile_id', user.id).order('created_at', { ascending: false }).limit(50),
     supabase.from('paiements').select('id, intitule, type, montant, statut, mode, date, date_encaissement, notes, numero_cheque, abonnement_id, echeancier_id, offre_id, abonnement:abonnements(id, offre:offres(nom))').eq('client_id', id).eq('profile_id', user.id).order('date', { ascending: false }),
   ]);
 
