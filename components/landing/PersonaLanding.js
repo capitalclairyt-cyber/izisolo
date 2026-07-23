@@ -235,7 +235,7 @@ export const PERSONAS = {
       { kw: 'Capacité', title: 'Limite tes places par cours', desc: 'Tu sais qu\'un Reformer ne tient pas 12. Définis 6 places, l\'app verrouille à 6.' },
       { kw: 'Listes d\'attente', title: 'Quand un cours est complet', desc: 'L\'élève s\'inscrit en liste d\'attente. Si une place se libère, on lui envoie un email — automatiquement.' },
       { kw: 'Tarifs lisibles', title: 'Tes carnets sans calcul', desc: 'Carnets 5/10/20 séances, abonnements mensuels, cours unitaires. L\'app calcule le restant pour chaque élève.' },
-      { kw: 'Multi-prof', title: 'Travailler en collectif', desc: 'Avec le plan Pro, ton équipe partage le même agenda — sans se marcher dessus.' },
+      { kw: 'Import express', title: 'Changer d\'outil sans douleur', desc: 'Ton fichier d\'élèves s\'importe en quelques minutes — et l\'IA sait même lire tes fiches papier.' },
     ],
     use_cases: [
       { titre: 'Vendre un carnet 10 séances en boutique', desc: 'En 1 clic depuis la fiche élève : choix de l\'offre, mode de paiement (espèces, chèque, CB), reçu PDF généré.' },

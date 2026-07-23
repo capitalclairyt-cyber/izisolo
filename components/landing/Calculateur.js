@@ -143,7 +143,7 @@ export default function Calculateur() {
                   <li>Tout du plan Solo</li>
                   <li>Élèves illimités · lieux illimités</li>
                   <li>Paiement CB en ligne (Stripe)</li>
-                  <li>Mode équipe multi-utilisateurs</li>
+                  <li>Import fiche élève par photo (IA)</li>
                   <li>Mailing groupé ciblé</li>
                   <li>Sondages planning · liste d'attente</li>
                   <li>Règles d'annulation avancées</li>

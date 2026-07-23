@@ -47,8 +47,8 @@ export const FAQ_ITEMS = [
     a: "Tu paramètres tes propres règles métier dans ton tableau de bord : recrédit du carnet, débit, contact prioritaire à l'élève, etc. IziSolo applique automatiquement, et te remonte les cas ambigus dans une inbox « À traiter » dédiée. Aucun cas ne passe à la trappe.",
   },
   {
-    q: 'Plusieurs lieux, plusieurs studios, équipe : c\'est possible ?',
-    a: "Oui à tout. Plusieurs lieux de pratique sur un seul compte (studio + salle paroissiale + visio), plusieurs studios pour les profs nomades, et plusieurs profs sur le même studio avec leurs propres droits. Les présences et les paiements restent attribués à la bonne personne.",
+    q: 'Plusieurs lieux, une équipe : c\'est possible ?',
+    a: "Les lieux, oui — illimités sur un seul compte : ton studio, la salle louée du mardi, la visio du samedi, tout reste synchro. Le mode équipe (plusieurs profs sur un même compte) n'est pas encore disponible : il est sur notre roadmap — écris-nous si c'est important pour toi, ça fait remonter la priorité.",
   },
   {
     q: 'Pourquoi pas une app sur l\'App Store ?',

@@ -427,7 +427,7 @@ function CheckIcon() {
 // Section "Plus encore" : 8 mini-cards qui rendent justice à la profondeur
 // fonctionnelle de l'app — features qui ne méritent pas chacune leur
 // FeatureRow pleine taille mais qu'il faut absolument mettre en avant.
-// Ordre choisi pour alterner ce qui touche les profs (mode équipe,
+// Ordre choisi pour alterner ce qui touche les profs (import express,
 // multi-lieux) et ce qui touche les élèves (cours d'essai, liste d'attente).
 function MoreFeatureIcon({ kind }) {
   const props = { width: 22, height: 22, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.6, strokeLinecap: 'round', strokeLinejoin: 'round' };
@@ -440,8 +440,8 @@ function MoreFeatureIcon({ kind }) {
       return <svg {...props}><path d="M3 8 a2 2 0 0 1 2 -2 h14 a2 2 0 0 1 2 2 v2 a2 2 0 0 0 0 4 v2 a2 2 0 0 1 -2 2 h-14 a2 2 0 0 1 -2 -2 v-2 a2 2 0 0 0 0 -4 z" /><path d="M9 6 v12" strokeDasharray="2 2" /></svg>;
     case 'multilocation': // pin localisation
       return <svg {...props}><path d="M12 22 s7 -7 7 -12 a7 7 0 1 0 -14 0 c0 5 7 12 7 12 z" /><circle cx="12" cy="10" r="2.5" /></svg>;
-    case 'team':        // équipe (2 personnes)
-      return <svg {...props}><circle cx="9" cy="8" r="3" /><circle cx="17" cy="9" r="2.5" /><path d="M3 20 a6 6 0 0 1 12 0" /><path d="M14 20 a5 5 0 0 1 7 -4" /></svg>;
+    case 'import':      // flèche vers plateau (import de données)
+      return <svg {...props}><path d="M12 3 v10" /><path d="M8 9 l4 4 l4 -4" /><path d="M4 15 v3 a2 2 0 0 0 2 2 h12 a2 2 0 0 0 2 -2 v-3" /></svg>;
     case 'pwa':         // smartphone + flèche download
       return <svg {...props}><rect x="6" y="2" width="12" height="20" rx="2" /><path d="M11 18 h2" /><path d="M9 11 l3 3 l3 -3" /><path d="M12 6 v8" /></svg>;
     case 'fidelity':    // cœur + courbe
@@ -480,10 +480,10 @@ export function MoreFeatures() {
       desc: 'Tu enseignes au studio le matin, à la salle paroissiale le soir, en visio le week-end ? Ajoute autant de lieux que nécessaire, tout reste synchro.',
     },
     {
-      icon: 'team',
-      eyebrow: 'Mode équipe',
-      title: 'Invite ton/ta partenaire prof',
-      desc: 'Plusieurs profs sur le même studio, chacun·e avec ses propres droits. Les paiements et les présences restent attribués à la bonne personne.',
+      icon: 'import',
+      eyebrow: 'Import express',
+      title: 'Ta base élèves arrive en 5 minutes',
+      desc: 'Importe ton fichier CSV (dédoublonné automatiquement) ou photographie une fiche papier : l\'IA remplit le formulaire pour toi. Changer d\'outil n\'a jamais coûté si peu.',
     },
     {
       icon: 'pwa',
@@ -688,13 +688,13 @@ export function Pricing() {
       price: '19',
       publicPrice: '22',
       sub: '/mois · à vie',
-      desc: 'Le plan complet. Auto-pilote ton studio, encaisse en ligne, accueille une équipe.',
+      desc: 'Le plan complet. Auto-pilote ton studio : encaissement en ligne, relances et mailing automatiques.',
       features: [
         'Élèves illimités · lieux illimités',
         'Formules d\'abonnement illimitées',
         'Tout du plan Solo',
         'Stripe Payment Link (CB par les élèves)',
-        'Multi-utilisateurs (équipe)',
+        'Import de fiche élève par photo (IA)',
         'Mailing & relances auto · anniversaires',
         'Sondages planning · liste d\'attente',
         'Cours d\'essai · règles d\'annulation avancées',
