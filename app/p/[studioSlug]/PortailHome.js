@@ -6,6 +6,7 @@ import { MapPin, Calendar, Clock, Users, ChevronRight, ChevronLeft, Search, Cred
 import { toneForCours } from '@/lib/tones';
 import ScrollReveal from '@/components/landing/ScrollReveal';
 import { useToast } from '@/components/ui/ToastProvider';
+import { matchRecherche } from '@/lib/utils';
 
 // Helpers semaine
 function getWeekStart(date) {
@@ -182,10 +183,7 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
     return cours.filter(c => {
       if (c.date < todayIso) return false;
       if (c.date === todayIso && c.heure && c.heure.slice(0, 5) <= nowHH) return false;
-      const matchSearch = !search ||
-        (c.nom || '').toLowerCase().includes(search.toLowerCase()) ||
-        (c.type_cours || '').toLowerCase().includes(search.toLowerCase()) ||
-        (c.lieu || '').toLowerCase().includes(search.toLowerCase());
+      const matchSearch = matchRecherche(search, c.nom, c.type_cours, c.lieu);
       const matchType = !filterType || c.type_cours === filterType;
       return matchSearch && matchType;
     });

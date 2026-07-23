@@ -6,6 +6,7 @@ import { ArrowLeft, MessageSquare, Megaphone, Plus, Search, X, Send, Loader2, Us
 import ConversationList from '@/components/messagerie/ConversationList';
 import ChatRoom from '@/components/messagerie/ChatRoom';
 import { useToast } from '@/components/ui/ToastProvider';
+import { matchRecherche } from '@/lib/utils';
 
 const SCOPES = [
   { value: 'tous',        label: 'Tous mes élèves',        desc: 'Tous les élèves actifs/fidèles/prospects' },
@@ -78,12 +79,8 @@ export default function MessagerieClient({ profile, clients, cours, offres }) {
   }, [cours]);
 
   const clientsFiltres = useMemo(() => {
-    const q = searchClient.toLowerCase().trim();
-    if (!q) return clients;
-    return clients.filter(c =>
-      `${c.prenom || ''} ${c.nom || ''}`.toLowerCase().includes(q) ||
-      (c.email || '').toLowerCase().includes(q)
-    );
+    if (!searchClient.trim()) return clients;
+    return clients.filter(c => matchRecherche(searchClient, c.prenom, c.nom, c.email));
   }, [clients, searchClient]);
 
   // Compteur de destinataires

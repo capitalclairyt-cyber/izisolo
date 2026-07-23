@@ -7,7 +7,7 @@ import {
   UserPlus, Clock, Calendar, MapPin, AlertTriangle,
   CheckCheck, Info, Plus, Lock, CreditCard, Sparkles
 } from 'lucide-react';
-import { formatHeure, escapeIlike } from '@/lib/utils';
+import { formatHeure, escapeIlike, matchRecherche } from '@/lib/utils';
 import { parseDate } from '@/lib/dates';
 import { getVocabulaire } from '@/lib/vocabulaire';
 import { createClient } from '@/lib/supabase';
@@ -557,7 +557,7 @@ export default function PointageClient({ cours, presences: initialPresences, tou
   const clientsInscrits = new Set(presences.map(p => p.client_id));
   const clientsFiltres  = tousClients
     .filter(c => !clientsInscrits.has(c.id))
-    .filter(c => !searchAdd || `${c.prenom} ${c.nom}`.toLowerCase().includes(searchAdd.toLowerCase()));
+    .filter(c => matchRecherche(searchAdd, c.prenom, c.nom));
 
   // ── Tri : en attente → présents → absents/excusés ─────
   // absent ET excusé partagent le rang 2 : basculer de l'un à l'autre ne
@@ -1199,9 +1199,24 @@ export default function PointageClient({ cours, presences: initialPresences, tou
                 />
                 <div className="modal-list">
                   {clientsFiltres.length === 0 ? (
-                    <p className="modal-empty">
-                      {searchAdd ? 'Aucun résultat' : 'Tous les élèves sont déjà inscrits'}
-                    </p>
+                    <div className="modal-empty">
+                      <p style={{ margin: '0 0 12px' }}>
+                        {searchAdd ? <>Aucun résultat pour « {searchAdd.trim()} »</> : 'Tous les élèves sont déjà inscrits'}
+                      </p>
+                      {searchAdd.trim() && (
+                        <button
+                          type="button"
+                          className="izi-btn izi-btn-secondary"
+                          onClick={() => {
+                            const parts = searchAdd.trim().split(/\s+/);
+                            setNewClientForm(f => ({ ...f, prenom: parts[0] || '', nom: parts.slice(1).join(' ') }));
+                            setAddMode('new');
+                          }}
+                        >
+                          <Plus size={15} /> Créer la fiche « {searchAdd.trim()} »
+                        </button>
+                      )}
+                    </div>
                   ) : (
                     clientsFiltres.map(c => {
                       const sel = selectedToAdd.includes(c.id);
@@ -1732,7 +1747,12 @@ export default function PointageClient({ cours, presences: initialPresences, tou
         .add-modal {
           background: var(--bg-card);
           border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-          width: 100%; max-width: 520px; max-height: 80vh;
+          width: 100%; max-width: 520px;
+          /* Hauteur STABLE (et non max-height seul) : la feuille ne « colle »
+             plus au bas de l'écran quand il y a peu de résultats — le champ de
+             recherche et le message « aucun résultat » restent visibles sans
+             scroller (retour Maude 2026-07-23). */
+          height: min(78vh, 640px);
           display: flex; flex-direction: column;
           animation: slideUp 0.25s ease;
         }

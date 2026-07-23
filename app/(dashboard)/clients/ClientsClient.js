@@ -14,6 +14,7 @@ import InviteModal from './InviteModal';
 import MergeClientsModal from '@/components/clients/MergeClientsModal';
 import Pagination, { usePagination, DEFAULT_PAGE_SIZE } from '@/components/ui/Pagination';
 import EmptyState from '@/components/ui/EmptyState';
+import { matchRecherche } from '@/lib/utils';
 
 const PAGE_SIZE = DEFAULT_PAGE_SIZE;
 const INACTIF_DAYS_THRESHOLD = 30;
@@ -77,8 +78,29 @@ export default function ClientsClient({ clients: clientsInit, profile, statutMap
     if (error) setClientsList(list => list.map(c => c.id === clientId ? { ...c, statut: prev } : c));
   };
 
-  // Doublons probables (email/tél/nom normalisés) — détection auto
-  const doublons = useMemo(() => trouverDoublons(clientsList), [clientsList]);
+  // Doublons probables (email/tél/nom normalisés) — détection auto.
+  // Paires IGNORÉES par la prof (ex. mère + fille qui partagent un téléphone :
+  // ce n'est PAS un doublon) : persistées en localStorage, ne réapparaissent plus.
+  const [pairesIgnorees, setPairesIgnorees] = useState(() => new Set());
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('izi_doublons_ignores');
+      if (raw) setPairesIgnorees(new Set(JSON.parse(raw)));
+    } catch { /* stockage indisponible : la détection reste complète */ }
+  }, []);
+  const clePaire = (a, b) => [a.id, b.id].sort().join('~');
+  const ignorerPaire = (a, b) => {
+    setPairesIgnorees(prev => {
+      const next = new Set(prev);
+      next.add(clePaire(a, b));
+      try { localStorage.setItem('izi_doublons_ignores', JSON.stringify([...next])); } catch {}
+      return next;
+    });
+  };
+  const doublons = useMemo(
+    () => trouverDoublons(clientsList).filter(({ a, b }) => !pairesIgnorees.has(clePaire(a, b))),
+    [clientsList, pairesIgnorees]
+  );
 
   const onMerged = ({ removedId }) => {
     setClientsList(list => list.filter(c => c.id !== removedId));
@@ -151,15 +173,10 @@ export default function ClientsClient({ clients: clientsInit, profile, statutMap
   const filtered = useMemo(() => {
     let list = clientsList;
 
-    // 1. Recherche texte
+    // 1. Recherche texte — tolérante (espace final, accents, multi-termes)
     if (search) {
-      const q = search.toLowerCase();
       list = list.filter(c =>
-        (c.nom || '').toLowerCase().includes(q) ||
-        (c.prenom || '').toLowerCase().includes(q) ||
-        (c.nom_structure || '').toLowerCase().includes(q) ||
-        (c.email || '').toLowerCase().includes(q) ||
-        (c.telephone || '').includes(q)
+        matchRecherche(search, c.prenom, c.nom, c.nom_structure, c.email, c.telephone)
       );
     }
 
@@ -300,9 +317,19 @@ export default function ClientsClient({ clients: clientsInit, profile, statutMap
                     <span className="doublon-noms">{[a.prenom, a.nom].filter(Boolean).join(' ')} ↔ {[b.prenom, b.nom].filter(Boolean).join(' ')}</span>
                     <span className="doublon-motif">même {motif}</span>
                   </div>
-                  <button className="izi-btn izi-btn-secondary doublon-btn" onClick={() => setMergeState({ a, b })} type="button">
-                    Fusionner
-                  </button>
+                  <div className="doublon-actions">
+                    <button className="izi-btn izi-btn-secondary doublon-btn" onClick={() => setMergeState({ a, b })} type="button">
+                      Fusionner
+                    </button>
+                    <button
+                      className="izi-btn izi-btn-ghost doublon-btn"
+                      onClick={() => ignorerPaire(a, b)}
+                      type="button"
+                      title="Ce n'est pas un doublon (ex. deux personnes qui partagent un téléphone) — ne plus proposer cette paire"
+                    >
+                      Ignorer
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -576,6 +603,7 @@ export default function ClientsClient({ clients: clientsInit, profile, statutMap
         .doublon-noms { font-size: 0.8125rem; font-weight: 600; color: var(--text-primary); }
         .doublon-motif { font-size: 0.7rem; color: var(--text-muted); }
         .doublon-btn { padding: 5px 12px; font-size: 0.75rem; flex-shrink: 0; }
+        .doublon-actions { display: flex; gap: 6px; flex-shrink: 0; }
         /* H1 page-header hérite désormais du style global (Fraunces 1.875rem)
            défini dans app/globals.css. On laisse l'override vide pour ne pas
            casser, mais idéalement vider ou supprimer le sélecteur. */

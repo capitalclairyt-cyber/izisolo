@@ -162,10 +162,51 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
   };
 
   // Supprimer cours
+  // ⚠️ Garde-fou (incident Maude 2026-07-23) : supprimer un cours emporte ses
+  // présences EN CASCADE — y compris des séances déjà pointées/payées (les
+  // paiements liés deviennent orphelins). Une suppression « et les suivantes »
+  // depuis une vieille occurrence avait effacé un cours pointé + 6 paiements
+  // sans un mot. On compte désormais l'historique concerné et on prévient.
   const handleDelete = async () => {
     setLoading(true);
     try {
       const supabase = createClient();
+
+      // Périmètre exact de la suppression → cours concernés
+      let coursIdsQuery = supabase.from('cours').select('id');
+      if (deleteScope === 'single') {
+        coursIdsQuery = coursIdsQuery.eq('id', cours.id);
+      } else if (deleteScope === 'future' && cours.recurrence_parent_id) {
+        coursIdsQuery = coursIdsQuery.eq('recurrence_parent_id', cours.recurrence_parent_id).gte('date', cours.date);
+      } else if (deleteScope === 'all' && cours.recurrence_parent_id) {
+        coursIdsQuery = coursIdsQuery.eq('recurrence_parent_id', cours.recurrence_parent_id);
+      }
+      const { data: coursConcernes, error: qErr } = await coursIdsQuery;
+      if (qErr) throw qErr;
+      const ids = (coursConcernes || []).map(c => c.id);
+
+      // Présences POINTÉES (présent/absent/excusé) dans le périmètre = historique réel
+      let nbPointees = 0;
+      if (ids.length > 0) {
+        const { count } = await supabase
+          .from('presences')
+          .select('id', { count: 'exact', head: true })
+          .in('cours_id', ids)
+          .in('statut_pointage', ['present', 'absent', 'excuse']);
+        nbPointees = count || 0;
+      }
+
+      if (nbPointees > 0) {
+        const ok = confirm(
+          `⚠️ Attention : ${deleteScope === 'single' ? 'ce cours contient' : `ces ${ids.length} cours contiennent`} ` +
+          `${nbPointees} présence${nbPointees > 1 ? 's' : ''} déjà pointée${nbPointees > 1 ? 's' : ''}.\n\n` +
+          `Supprimer efface DÉFINITIVEMENT cet historique (présences, statistiques des élèves), ` +
+          `et les paiements encaissés sur ces séances perdront leur rattachement.\n\n` +
+          `Si le cours n'a pas eu lieu, préfère « Annuler le cours » (qui prévient les inscrits et recrédite les carnets).\n\n` +
+          `Supprimer quand même ?`
+        );
+        if (!ok) { setLoading(false); return; }
+      }
 
       if (deleteScope === 'single') {
         await supabase.from('cours').delete().eq('id', cours.id);

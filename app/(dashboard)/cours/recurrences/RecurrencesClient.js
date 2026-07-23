@@ -219,6 +219,23 @@ export default function RecurrencesClient({ recurrences: initialRecurrences, cou
   const supprimerRecurrence = async (rec) => {
     if (!confirm(`Supprimer la récurrence "${rec.nom}" ET tous ses ${coursDeRec.length} cours futurs ?`)) return;
     const supabase = createClient();
+    // Garde-fou : des présences déjà pointées dans le périmètre (ex. cours du
+    // jour déjà pointé) seraient effacées en cascade avec leur historique.
+    const { data: coursCibles } = await supabase
+      .from('cours').select('id')
+      .eq('recurrence_parent_id', rec.id).gte('date', toISO(new Date()));
+    const ids = (coursCibles || []).map(c => c.id);
+    if (ids.length > 0) {
+      const { count } = await supabase
+        .from('presences')
+        .select('id', { count: 'exact', head: true })
+        .in('cours_id', ids)
+        .in('statut_pointage', ['present', 'absent', 'excuse']);
+      if ((count || 0) > 0 && !confirm(
+        `⚠️ ${count} présence${count > 1 ? 's' : ''} déjà pointée${count > 1 ? 's' : ''} sur ces cours ` +
+        `— la suppression efface définitivement cet historique et détache les paiements liés.\n\nSupprimer quand même ?`
+      )) return;
+    }
     // Supprime d'abord les cours futurs liés
     await supabase.from('cours').delete().eq('recurrence_parent_id', rec.id).gte('date', toISO(new Date()));
     // Puis la récurrence

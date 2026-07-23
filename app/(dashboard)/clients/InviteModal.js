@@ -11,6 +11,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { X, Copy, Check, Mail, Link as LinkIcon, User, Search, UserPlus, Send, Loader2, Share2 } from 'lucide-react';
 import { useToast } from '@/components/ui/ToastProvider';
+import { matchRecherche } from '@/lib/utils';
 
 export default function InviteModal({ open, onClose, profile, clients = [] }) {
   const { toast } = useToast();
@@ -64,12 +65,7 @@ Le lien se génère au moment de l'envoi (valable 1 heure).
   // Filtrage des clients
   const clientsFiltres = useMemo(() => {
     if (!search.trim()) return clients.slice(0, 8);
-    const q = search.toLowerCase();
-    return clients.filter(c =>
-      (c.prenom || '').toLowerCase().includes(q) ||
-      (c.nom || '').toLowerCase().includes(q) ||
-      (c.email || '').toLowerCase().includes(q)
-    ).slice(0, 8);
+    return clients.filter(c => matchRecherche(search, c.prenom, c.nom, c.email)).slice(0, 8);
   }, [clients, search]);
 
   // Reset au close

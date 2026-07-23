@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { Search, Filter, ChevronDown, Check, X, Pencil } from 'lucide-react';
+import { matchRecherche } from '@/lib/utils';
 
 // `studio` retiré de l'admin (plan obsolète, jamais finalisé). Si des
 // utilisateurs ont encore plan='studio' en BDD historique, l'UI les affichera
@@ -21,11 +22,7 @@ export default function AdminUsersClient({ initialUsers }) {
 
   const filtered = useMemo(() => {
     return users.filter(u => {
-      const matchSearch = !search ||
-        (u.prenom || '').toLowerCase().includes(search.toLowerCase()) ||
-        (u.studio_nom || '').toLowerCase().includes(search.toLowerCase()) ||
-        (u.email || '').toLowerCase().includes(search.toLowerCase()) ||
-        (u.metier || '').toLowerCase().includes(search.toLowerCase());
+      const matchSearch = matchRecherche(search, u.prenom, u.studio_nom, u.email, u.metier);
       const matchPlan = !filterPlan || (u.plan || 'free') === filterPlan;
       return matchSearch && matchPlan;
     });

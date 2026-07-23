@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase';
 import { useToast } from '@/components/ui/ToastProvider';
-import { formatMontant } from '@/lib/utils';
+import { formatMontant, matchRecherche } from '@/lib/utils';
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
 const MODES_PAIEMENT = [
@@ -110,7 +110,7 @@ export default function NouveauPaiement() {
 
   // Client
   const filteredClients = clients.filter(c =>
-    displayName(c).toLowerCase().includes(clientSearch.toLowerCase())
+    matchRecherche(clientSearch, displayName(c))
   );
 
   const selectClient = (c) => {

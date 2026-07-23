@@ -8,7 +8,7 @@ import {
   ToggleLeft, ToggleRight, UserPlus, X, ChevronRight,
   Loader2, Search, Crown, ArrowRight, Pencil,
 } from 'lucide-react';
-import { formatMontant } from '@/lib/utils';
+import { formatMontant, matchRecherche } from '@/lib/utils';
 import { toneForOffre } from '@/lib/tones';
 import { TYPES_OFFRE } from '@/lib/constantes';
 import { createClient } from '@/lib/supabase';
@@ -75,10 +75,9 @@ function AssignerClientModal({ offre, onClose, onSuccess }) {
     load();
   }, []);
 
-  const filtered = clients.filter(c => {
-    const name = [c.prenom, c.nom_structure || c.nom].filter(Boolean).join(' ').toLowerCase();
-    return name.includes(search.toLowerCase());
-  });
+  const filtered = clients.filter(c =>
+    matchRecherche(search, c.prenom, c.nom_structure || c.nom)
+  );
 
   const displayName = (c) => {
     const isPro = c.type_client && c.type_client !== 'particulier';
