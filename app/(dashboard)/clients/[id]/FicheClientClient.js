@@ -374,6 +374,16 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
 
   const changeStatut = async (newStatut) => {
     if (newStatut === clientStatut) { setStatutOpen(false); return; }
+    // Archiver = geste dur (masqué de la liste, inajoutable aux cours) →
+    // confirmation explicite (retour Maude 2026-07-23).
+    if (newStatut === 'archive') {
+      const ok = confirm(
+        `Archiver ${displayName} ?\n\n` +
+        `La fiche sera masquée de la liste et ne pourra plus être ajoutée à un cours. ` +
+        `Tu pourras la retrouver via le filtre « Archivé » et la réactiver à tout moment.`
+      );
+      if (!ok) { setStatutOpen(false); return; }
+    }
     const prev = clientStatut;
     setClientStatut(newStatut);
     setStatutOpen(false);

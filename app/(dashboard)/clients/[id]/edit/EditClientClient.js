@@ -155,6 +155,17 @@ export default function EditClientClient({ client, lieux: lieuxInitiaux }) {
       if (!telCheck.valide) { toast.warning(telCheck.message); return; }
     }
 
+    // Archiver = geste dur (masqué de la liste, inajoutable aux cours) →
+    // confirmation explicite (retour Maude 2026-07-23).
+    if (form.statut === 'archive' && client.statut !== 'archive') {
+      const ok = confirm(
+        'Archiver cette fiche ?\n\n' +
+        'Elle sera masquée de la liste des élèves et ne pourra plus être ajoutée à un cours. ' +
+        'Tu pourras la retrouver via le filtre « Archivé » et la réactiver à tout moment.'
+      );
+      if (!ok) return;
+    }
+
     // Changement d'email : le compte espace de l'élève (auth) est lié à son
     // ADRESSE — il n'est pas synchronisé avec la fiche. Changer l'email ici
     // coupe le lien : l'élève connecté avec l'ancienne adresse ne retrouvera

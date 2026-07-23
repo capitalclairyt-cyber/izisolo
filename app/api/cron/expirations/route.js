@@ -63,7 +63,6 @@ export async function GET(request) {
 
   // ── Auto-statut clients ──────────────────────────────────────────────────
   let promoCount = 0;
-  let archiveCount = 0;
 
   // prospect → actif : dès qu'il y a au moins 1 paiement 'paid'
   const { data: prospects } = await supabaseAdmin
@@ -90,40 +89,21 @@ export async function GET(request) {
     }
   }
 
-  // actif/fidele → archive : aucune activité depuis 10 mois
-  const il10mois = new Date(Date.now() - 300 * 86400000).toISOString().split('T')[0];
-  const { data: candidats } = await supabaseAdmin
-    .from('clients')
-    .select('id')
-    .in('statut', ['actif', 'fidele']);
-
-  if (candidats?.length) {
-    const candidatIds = candidats.map(c => c.id);
-
-    const [{ data: recentPresences }, { data: recentPaiements }, { data: activeAbos }] = await Promise.all([
-      // presences n'a pas de colonne `date` (la date est sur `cours`) — on filtre
-      // sur created_at, qui date la création de la présence ≈ activité de l'élève.
-      supabaseAdmin.from('presences').select('client_id').gte('created_at', il10mois).in('client_id', candidatIds),
-      supabaseAdmin.from('paiements').select('client_id').gte('date', il10mois).in('client_id', candidatIds),
-      supabaseAdmin.from('abonnements').select('client_id').eq('statut', 'actif').in('client_id', candidatIds),
-    ]);
-
-    const activeIds = new Set([
-      ...(recentPresences || []).map(p => p.client_id),
-      ...(recentPaiements || []).map(p => p.client_id),
-      ...(activeAbos || []).map(a => a.client_id),
-    ]);
-
-    const toArchive = candidatIds.filter(id => !activeIds.has(id));
-    if (toArchive.length) {
-      const { data: archived } = await supabaseAdmin
-        .from('clients')
-        .update({ statut: 'archive' })
-        .in('id', toArchive)
-        .select('id');
-      archiveCount = archived?.length || 0;
-    }
-  }
+  // ⛔ ARCHIVAGE AUTOMATIQUE SUPPRIMÉ (2026-07-23, retour terrain Maude).
+  // L'ancien bloc « actif/fidele → archive après 300j sans activité » archivait
+  // des élèves ACTIFS en silence, pour trois raisons cumulées :
+  //   1. aucun plancher sur clients.created_at → une fiche « actif » créée la
+  //      veille sans présence/paiement était « inactive depuis 10 mois » par
+  //      vacuité → archivée la nuit même ;
+  //   2. les requêtes d'activité (globales, tous studios) plafonnaient à la
+  //      limite PostgREST de 1000 lignes → élèves actifs invisibles au hasard
+  //      du volume ;
+  //   3. erreurs de requête non vérifiées (data null → « personne n'est
+  //      actif » → archivage de masse possible).
+  // Décision produit : l'archivage est désormais un geste MANUEL de la prof,
+  // avec confirmation (liste/fiche/édition). Aucun statut n'est plus écrit
+  // automatiquement vers 'archive'. Fiches archivées à tort : réparation SQL
+  // one-shot dans fix-desarchivage-fantome.sql.
 
   // ── Relance de fin d'essai SaaS (J-3 / J-1) ───────────────────────────────
   // Email transactionnel au prof dont l'essai 14j se termine bientôt (conversion
@@ -192,7 +172,7 @@ export async function GET(request) {
     expires: data?.length || 0,
     epuises: epuises?.length || 0,
     promoActif: promoCount,
-    autoArchive: archiveCount,
+    autoArchive: 0, // archivage auto supprimé (2026-07-23) — geste manuel avec confirmation
     listeAttentePurgee,
     trialJ3,
     trialJ1,

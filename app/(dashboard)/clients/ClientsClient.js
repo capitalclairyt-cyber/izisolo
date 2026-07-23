@@ -57,7 +57,20 @@ export default function ClientsClient({ clients: clientsInit, profile, statutMap
 
   const changeClientStatut = async (clientId, newStatut) => {
     setStatutDropdown(null);
-    const prev = clientsList.find(c => c.id === clientId)?.statut;
+    const client = clientsList.find(c => c.id === clientId);
+    const prev = client?.statut;
+    // Archiver = geste DUR (la fiche disparaît de la liste et ne peut plus être
+    // ajoutée à un cours) → confirmation explicite. Retour Maude 2026-07-23 :
+    // des élèves archivés sans le savoir étaient introuvables.
+    if (newStatut === 'archive' && prev !== 'archive') {
+      const nom = [client?.prenom, client?.nom].filter(Boolean).join(' ') || 'cette fiche';
+      const ok = confirm(
+        `Archiver ${nom} ?\n\n` +
+        `La fiche sera masquée de la liste et ne pourra plus être ajoutée à un cours. ` +
+        `Tu pourras la retrouver via le filtre « Archivé » ou la recherche, et la réactiver à tout moment.`
+      );
+      if (!ok) return;
+    }
     setClientsList(list => list.map(c => c.id === clientId ? { ...c, statut: newStatut } : c));
     const supabase = createClient();
     const { error } = await supabase.from('clients').update({ statut: newStatut }).eq('id', clientId);
