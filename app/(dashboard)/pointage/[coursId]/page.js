@@ -42,18 +42,21 @@ export default async function PointagePage({ params }) {
   }
 
   // Paiements à la séance déjà encaissés (liés à une présence de ce cours).
+  // Lignes COMPLÈTES (id, montant, mode) : le pointage affiche le mode après
+  // validation et permet de le corriger (retour Maude 2026-07-23 — elle avait
+  // mis CB au lieu d'espèces sans pouvoir ni le voir ni le changer).
   // presence_id existe à partir de v65 ; sans la migration, la requête dégrade
   // proprement (data null → aucun « déjà payé » pré-coché).
   const presenceIds = (presences || []).map(p => p.id);
-  let paidPresenceIds = [];
+  let paiementsSeance = [];
   if (presenceIds.length > 0) {
     const { data: paies } = await supabase
       .from('paiements')
-      .select('presence_id')
+      .select('id, presence_id, montant, mode, statut')
       .eq('profile_id', user.id)
       .eq('statut', 'paid')
       .in('presence_id', presenceIds);
-    paidPresenceIds = [...new Set((paies || []).map(x => x.presence_id).filter(Boolean))];
+    paiementsSeance = (paies || []).filter(x => x.presence_id);
   }
 
   const presencesEnrichies = (presences || []).map(p => ({
@@ -105,7 +108,7 @@ export default async function PointagePage({ params }) {
       profile={profile}
       dettesParClient={dettesParClient}
       regles={regles || []}
-      initialPaidPresenceIds={paidPresenceIds}
+      initialPaiementsSeance={paiementsSeance}
     />
   );
 }

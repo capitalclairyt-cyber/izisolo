@@ -40,12 +40,17 @@ function isPtard(presence, paidIds) {
 // ─────────────────────────────────────────────────────────
 //  Modal paiement rapide
 // ─────────────────────────────────────────────────────────
-function PaymentModal({ presence, coursNom, coursDate, montantDefaut = '', onClose, onSaved, onPayerPlusTard, ptardAuto = false, ptardAutoNom = '' }) {
+function PaymentModal({ presence, coursNom, coursDate, montantDefaut = '', paiementExistant = null, onClose, onSaved, onDeleted, onPayerPlusTard, ptardAuto = false, ptardAutoNom = '' }) {
   const client  = presence.clients || {};
   const abo     = presence.abonnements;
+  const isEdit  = !!paiementExistant; // correction d'un encaissement déjà validé
   const { toast } = useToast();
-  const [montant, setMontant]   = useState(montantDefaut ? String(montantDefaut) : '');
-  const [mode, setMode]         = useState('CB');
+  const [montant, setMontant]   = useState(
+    isEdit ? String(paiementExistant.montant ?? '') : (montantDefaut ? String(montantDefaut) : '')
+  );
+  // Espèces par défaut : c'est le mode réel du terrain (retour Maude — CB en
+  // dur lui faisait enregistrer de faux paiements carte).
+  const [mode, setMode]         = useState(paiementExistant?.mode || 'Espèces');
   const [saving, setSaving]     = useState(false);
   const [confirming, setConfirming] = useState(false); // étape confirmation "payer plus tard"
 
@@ -62,19 +67,49 @@ function PaymentModal({ presence, coursNom, coursDate, montantDefaut = '', onClo
     setSaving(true);
     try {
       const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      await supabase.from('paiements').insert({
-        profile_id:  user.id,
-        client_id:   presence.client_id,
-        presence_id: presence.id, // paiement à la séance (v65)
-        intitule:    `${coursNom} — ${coursDate}`,
-        montant:     val,
-        statut:      'paid',
-        mode,
-        date:        new Date().toISOString().split('T')[0],
-        notes:       'Encaissement rapide depuis le pointage',
-      });
-      onSaved(presence.id);
+      if (isEdit) {
+        // Correction d'un encaissement (montant / mode) — même ligne paiements.
+        const { error } = await supabase
+          .from('paiements')
+          .update({ montant: val, mode })
+          .eq('id', paiementExistant.id);
+        if (error) throw error;
+        onSaved({ id: paiementExistant.id, presence_id: presence.id, montant: val, mode });
+      } else {
+        const { data: { user } } = await supabase.auth.getUser();
+        const { data: created, error } = await supabase.from('paiements').insert({
+          profile_id:  user.id,
+          client_id:   presence.client_id,
+          presence_id: presence.id, // paiement à la séance (v65)
+          intitule:    `${coursNom} — ${coursDate}`,
+          montant:     val,
+          statut:      'paid',
+          mode,
+          date:        new Date().toISOString().split('T')[0],
+          notes:       'Encaissement rapide depuis le pointage',
+        }).select('id').single();
+        if (error) throw error;
+        onSaved({ id: created?.id, presence_id: presence.id, montant: val, mode });
+      }
+      onClose();
+    } catch (err) {
+      toast.error('Erreur : ' + err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Annuler l'encaissement : supprime la ligne paiement → la séance redevient
+  // « À régler » (symétrie complète du geste d'encaissement).
+  const handleDelete = async () => {
+    if (!isEdit) return;
+    if (!confirm(`Annuler l'encaissement de ${parseFloat(paiementExistant.montant).toFixed(2)} € ? La séance repassera « à régler ».`)) return;
+    setSaving(true);
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.from('paiements').delete().eq('id', paiementExistant.id);
+      if (error) throw error;
+      onDeleted?.(presence.id);
       onClose();
     } catch (err) {
       toast.error('Erreur : ' + err.message);
@@ -115,7 +150,7 @@ function PaymentModal({ presence, coursNom, coursDate, montantDefaut = '', onClo
               </div>
 
               <div className="pm-modes">
-                {['CB', 'Espèces', 'Chèque', 'Virement'].map(m => (
+                {['Espèces', 'CB', 'Chèque', 'Virement'].map(m => (
                   <button key={m} className={`pm-mode-btn ${mode === m ? 'selected' : ''}`} onClick={() => setMode(m)}>
                     {m === 'CB'       && <CreditCard size={13} />}
                     {m === 'Espèces'  && <span>💶</span>}
@@ -128,20 +163,33 @@ function PaymentModal({ presence, coursNom, coursDate, montantDefaut = '', onClo
             </div>
 
             <div className="pm-footer">
-              <button
-                className={`izi-btn pm-ptard-btn ${ptardAuto ? 'pm-ptard-auto' : 'izi-btn-ghost'}`}
-                onClick={() => ptardAuto ? handleConfirmPtard() : setConfirming(true)}
-                title={ptardAuto ? `Accordé automatiquement — règle : "${ptardAutoNom}"` : undefined}
-              >
-                ⏰ Payer plus tard{ptardAuto && <span className="pm-auto-badge">auto</span>}
-              </button>
+              {isEdit ? (
+                <button
+                  className="izi-btn izi-btn-ghost pm-delete-btn"
+                  onClick={handleDelete}
+                  disabled={saving}
+                  title="Supprime le paiement — la séance repasse « à régler »"
+                >
+                  🗑 Annuler l'encaissement
+                </button>
+              ) : (
+                <button
+                  className={`izi-btn pm-ptard-btn ${ptardAuto ? 'pm-ptard-auto' : 'izi-btn-ghost'}`}
+                  onClick={() => ptardAuto ? handleConfirmPtard() : setConfirming(true)}
+                  title={ptardAuto ? `Accordé automatiquement — règle : "${ptardAutoNom}"` : undefined}
+                >
+                  ⏰ Payer plus tard{ptardAuto && <span className="pm-auto-badge">auto</span>}
+                </button>
+              )}
               <button
                 className="izi-btn pm-save-btn"
                 onClick={handleSave}
                 disabled={saving || !montant || parseFloat(montant) <= 0}
               >
                 <Check size={15} />
-                {saving ? 'Enregistrement…' : `Encaisser ${montant ? parseFloat(montant).toFixed(2) + ' €' : ''}`}
+                {saving ? 'Enregistrement…' : isEdit
+                  ? 'Enregistrer la correction'
+                  : `Encaisser ${montant ? parseFloat(montant).toFixed(2) + ' €' : ''}`}
               </button>
             </div>
           </>
@@ -173,7 +221,7 @@ function PaymentModal({ presence, coursNom, coursDate, montantDefaut = '', onClo
 // ─────────────────────────────────────────────────────────
 //  Carte de présence (split cell)
 // ─────────────────────────────────────────────────────────
-function PresenceCard({ presence, resolvedCarnet, estPayAsYouGo, paye, onMarquer, onPayer, onTypePresence, loading, locked, impaye, ptard, nbDettes, essaisRestants }) {
+function PresenceCard({ presence, resolvedCarnet, estPayAsYouGo, paye, paiement, onMarquer, onPayer, onTypePresence, loading, locked, impaye, ptard, nbDettes, essaisRestants }) {
   const [showTypeMenu, setShowTypeMenu] = useState(false);
 
   // Fermer le menu au premier clic en dehors
@@ -281,10 +329,23 @@ function PresenceCard({ presence, resolvedCarnet, estPayAsYouGo, paye, onMarquer
                 )}
               </span>
             )}
-            {/* Séance à l'unité (aucun carnet applicable) : payé ou à régler */}
+            {/* Séance à l'unité (aucun carnet applicable) : payé ou à régler.
+                Le badge payé AFFICHE montant + mode et se TAPE pour corriger
+                (retour Maude : CB saisi au lieu d'espèces, invisible et
+                immuable après validation). */}
             {estPayAsYouGo && !ptard && (
               paye
-                ? <span className="pres-paye">✓ Payé</span>
+                ? (
+                  <button
+                    className="pres-paye-btn"
+                    onClick={e => { e.stopPropagation(); onPayer(presence); }}
+                    title="Voir / corriger le règlement (montant, mode de paiement)"
+                  >
+                    ✓ {paiement?.montant != null
+                      ? `${Number(paiement.montant).toFixed(2).replace('.', ',').replace(',00', '')} €`
+                      : 'Payé'}{paiement?.mode ? ` · ${paiement.mode}` : ''}
+                  </button>
+                )
                 : <span className="pres-aregler">À régler</span>
             )}
             {typeP !== 'normal' && (
@@ -366,7 +427,7 @@ function PresenceCard({ presence, resolvedCarnet, estPayAsYouGo, paye, onMarquer
 // ─────────────────────────────────────────────────────────
 //  Composant principal
 // ─────────────────────────────────────────────────────────
-export default function PointageClient({ cours, presences: initialPresences, tousClients, profile, dettesParClient = {}, regles = [], initialPaidPresenceIds = [] }) {
+export default function PointageClient({ cours, presences: initialPresences, tousClients, profile, dettesParClient = {}, regles = [], initialPaiementsSeance = [] }) {
   const vocab = getVocabulaire(profile?.metier || 'yoga', profile?.vocabulaire);
   const { toast } = useToast();
 
@@ -375,7 +436,14 @@ export default function PointageClient({ cours, presences: initialPresences, tou
   const [searchAdd, setSearchAdd]         = useState('');
   const [actionLoading, setActionLoading] = useState(null);
   const [paymentTarget, setPaymentTarget] = useState(null);
-  const [paidIds, setPaidIds]             = useState(() => new Set(initialPaidPresenceIds));
+  // Paiements à la séance par présence : Map presence_id → { id, montant, mode }.
+  // Permet d'AFFICHER le mode après validation et de le CORRIGER (retour Maude).
+  const [paiementsSeance, setPaiementsSeance] = useState(() => {
+    const m = new Map();
+    for (const p of initialPaiementsSeance) m.set(p.presence_id, p);
+    return m;
+  });
+  const paidIds = useMemo(() => new Set(paiementsSeance.keys()), [paiementsSeance]);
   const [now, setNow]                     = useState(() => new Date());
 
   // ── Ajout modal : mode search / new ──────────────────
@@ -447,6 +515,38 @@ export default function PointageClient({ cours, presences: initialPresences, tou
   const tauxPresence = nbTotal > 0 ? Math.round((nbPresents / nbTotal) * 100) : 0;
   const nbImpayes   = presences.filter(p => isImpaye(p, paidIds)).length;
   const nbPtards    = presences.filter(p => isPtard(p, paidIds)).length;
+
+  // ── Récap financier de la séance (retour Maude 2026-07-23) ──────────────
+  // « Réel encaissé vs prévisionnel avec le nombre d'inscrits. »
+  // Par présence active de type normal (hors excusés) :
+  //   - paiement lié → encaissé ;
+  //   - carnet lié/résolu → séance prépayée (« sur carnet ») ;
+  //   - sinon pay-as-you-go non réglé → attendu (tarif_unitaire si connu).
+  const recapFinancier = useMemo(() => {
+    const actives = presences.filter(p =>
+      !p.annulation_tardive
+      && (p.type_presence || 'normal') === 'normal'
+      && getStatut(p) !== 'excuse'
+    );
+    let surCarnet = 0, payes = 0, aRegler = 0, encaisse = 0, attendu = 0, attenduInconnu = 0;
+    for (const p of actives) {
+      const paie = paiementsSeance.get(p.id);
+      if (paie) {
+        payes++;
+        encaisse += parseFloat(paie.montant) || 0;
+        attendu  += parseFloat(paie.montant) || 0;
+        continue;
+      }
+      const carnet = p.abonnements
+        || resoudreCarnetApplicable(p.client_abos, { type_cours: cours.type_cours, date: cours.date, tarif_unitaire: cours.tarif_unitaire });
+      if (carnet) { surCarnet++; continue; }
+      aRegler++;
+      if (Number(cours.tarif_unitaire) > 0) attendu += Number(cours.tarif_unitaire);
+      else attenduInconnu++;
+    }
+    const gratuits = presences.filter(p => !p.annulation_tardive && (p.type_presence || 'normal') !== 'normal').length;
+    return { surCarnet, payes, aRegler, encaisse, attendu, attenduInconnu, gratuits };
+  }, [presences, paiementsSeance, cours]);
 
   // ── Compteur essais ───────────────────────────────────
   const essaisParDefaut   = profile?.essais_par_defaut ?? 1;
@@ -905,6 +1005,30 @@ export default function PointageClient({ cours, presences: initialPresences, tou
         </div>
       )}
 
+      {/* ─── Récap financier de la séance ─── */}
+      {(recapFinancier.payes > 0 || recapFinancier.aRegler > 0 || recapFinancier.surCarnet > 0) && (
+        <div className="recap-fi animate-slide-up">
+          <span className="recap-fi-icon">💰</span>
+          <div className="recap-fi-body">
+            <span className="recap-fi-main">
+              Encaissé <strong>{recapFinancier.encaisse.toFixed(2).replace('.', ',').replace(',00', '')} €</strong>
+              {recapFinancier.attendu > recapFinancier.encaisse && (
+                <> / prévu <strong>{recapFinancier.attendu.toFixed(2).replace('.', ',').replace(',00', '')} €{recapFinancier.attenduInconnu > 0 ? '+' : ''}</strong></>
+              )}
+              {(recapFinancier.payes > 0 || recapFinancier.aRegler > 0) && (
+                <> · {recapFinancier.payes}/{recapFinancier.payes + recapFinancier.aRegler} réglé{recapFinancier.payes > 1 ? 's' : ''}</>
+              )}
+            </span>
+            <span className="recap-fi-sub">
+              {nbTotal} inscrit{nbTotal > 1 ? 's' : ''}
+              {recapFinancier.surCarnet > 0 && <> · {recapFinancier.surCarnet} sur carnet (prépayé)</>}
+              {recapFinancier.gratuits > 0 && <> · {recapFinancier.gratuits} essai/offert</>}
+              {recapFinancier.attenduInconnu > 0 && <> · {recapFinancier.attenduInconnu} à régler sans tarif fixé</>}
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* ─── Alerte impayes ─── */}
       {nbImpayes > 0 && (
         <div className="impaye-banner animate-slide-up">
@@ -996,6 +1120,7 @@ export default function PointageClient({ cours, presences: initialPresences, tou
               || resoudreCarnetApplicable(p.client_abos, { type_cours: cours.type_cours, date: cours.date, tarif_unitaire: cours.tarif_unitaire });
             const typeP = p.type_presence || 'normal';
             const paye = paidIds.has(p.id);
+            const paiementSeance = paiementsSeance.get(p.id) || null;
             const estPayAsYouGo = !resolvedCarnet && typeP === 'normal';
             return (
               <PresenceCard
@@ -1004,6 +1129,7 @@ export default function PointageClient({ cours, presences: initialPresences, tou
                 resolvedCarnet={resolvedCarnet}
                 estPayAsYouGo={estPayAsYouGo}
                 paye={paye}
+                paiement={paiementSeance}
                 onMarquer={handleMarquer}
                 onPayer={setPaymentTarget}
                 onTypePresence={handleTypePresence}
@@ -1191,8 +1317,18 @@ export default function PointageClient({ cours, presences: initialPresences, tou
             coursNom={cours.nom}
             coursDate={dateLisible}
             montantDefaut={cours.tarif_unitaire || ''}
+            paiementExistant={paiementsSeance.get(paymentTarget.id) || null}
             onClose={() => setPaymentTarget(null)}
-            onSaved={id => setPaidIds(prev => new Set([...prev, id]))}
+            onSaved={paie => setPaiementsSeance(prev => {
+              const m = new Map(prev);
+              m.set(paie.presence_id, paie);
+              return m;
+            })}
+            onDeleted={presenceId => setPaiementsSeance(prev => {
+              const m = new Map(prev);
+              m.delete(presenceId);
+              return m;
+            })}
             onPayerPlusTard={handlePayerPlusTard}
             ptardAuto={!!actionsRegles.payer_plus_tard_auto}
             ptardAutoNom={actionsRegles.payer_plus_tard_auto?.regle_nom}
@@ -1524,6 +1660,22 @@ export default function PointageClient({ cours, presences: initialPresences, tou
         .pres-heure    { font-size: 0.7rem; color: #15803d; font-weight: 600; }
         /* Séance à l'unité (pay-as-you-go) : payé = vert calme, à régler = ambre doux */
         .pres-paye    { font-size: 0.7rem; color: #15803d; font-weight: 600; }
+        .pres-paye-btn {
+          font-size: 0.7rem; color: #15803d; font-weight: 600;
+          background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px;
+          padding: 0 6px; cursor: pointer;
+        }
+        .pres-paye-btn:hover { background: #dcfce7; }
+        .pm-delete-btn { color: #b91c1c; }
+        .recap-fi {
+          display: flex; align-items: flex-start; gap: 10px;
+          background: rgba(240,253,244,0.85); border: 1.5px solid #bbf7d0;
+          border-radius: var(--radius-md); padding: 10px 14px;
+        }
+        .recap-fi-icon { font-size: 1.1rem; line-height: 1.4; }
+        .recap-fi-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+        .recap-fi-main { font-size: 0.875rem; color: #14532d; }
+        .recap-fi-sub  { font-size: 0.72rem; color: #4d7c5f; }
         .pres-aregler { font-size: 0.7rem; color: #b45309; font-weight: 600;
                         background: #fff7ed; border: 1px solid #fed7aa;
                         border-radius: 6px; padding: 0 6px; }
