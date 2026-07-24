@@ -29,6 +29,7 @@ export default async function AdminLayout({ children }) {
           <Link href="/admin/plans" className="admin-nav-item">💳 Plans & abonnements</Link>
           <Link href="/admin/stats" className="admin-nav-item">📈 Statistiques</Link>
           <Link href="/admin/support-tickets" className="admin-nav-item">🎫 Tickets support</Link>
+          <Link href="/admin/erreurs" className="admin-nav-item">🚨 Erreurs</Link>
         </nav>
 
         <div className="admin-sidebar-footer">

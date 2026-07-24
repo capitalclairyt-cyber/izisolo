@@ -62,6 +62,17 @@ export async function GET(request) {
     reportError('[cron/expirations] purge liste_attente:', e?.message);
   }
 
+  // ── Purge du journal d'erreurs (v71) ─────────────────────────────────────
+  // erreurs_app garde 30 jours glissants — au-delà, plus personne ne les lit.
+  // console.error volontaire (PAS reportError : si la purge échoue parce que
+  // la table n'existe pas, reportError re-tenterait d'y écrire → boucle).
+  try {
+    const il30jours = new Date(Date.now() - 30 * 86400000).toISOString();
+    await supabaseAdmin.from('erreurs_app').delete().lt('created_at', il30jours);
+  } catch (e) {
+    console.error('[cron/expirations] purge erreurs_app:', e?.message);
+  }
+
   // ── Auto-statut clients ──────────────────────────────────────────────────
   let promoCount = 0;
 
