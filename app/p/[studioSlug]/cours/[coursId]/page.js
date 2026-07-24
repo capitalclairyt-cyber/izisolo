@@ -37,7 +37,18 @@ async function getData(studioSlug, coursId) {
   // ── Vérification visibilité — si le cours n'est pas accessible au viewer, on
   // retourne null (déclenche notFound() côté page) ──
   const clientInfo = user ? await resolveClientInfo(supabase, profile.id, user.email) : null;
-  if (!canSeeCours(cours.visibilite, clientInfo)) return null;
+  let visible = canSeeCours(cours.visibilite, clientInfo);
+  // Cours privé (v73) : la SEULE exception — l'élève déjà inscrit·e dessus
+  // (invité·e par la prof) peut ouvrir la page depuis son espace.
+  if (!visible && cours.visibilite === 'prive' && clientInfo) {
+    const { count } = await supabase
+      .from('presences')
+      .select('id', { count: 'exact', head: true })
+      .eq('cours_id', coursId)
+      .eq('client_id', clientInfo.client_id);
+    visible = (count || 0) > 0;
+  }
+  if (!visible) return null;
 
   const { count: nbInscrits } = await supabase
     .from('presences')

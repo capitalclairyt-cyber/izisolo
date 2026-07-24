@@ -933,9 +933,12 @@ function NouveauCoursInner() {
             <option value="inscrits">Élèves inscrits seulement</option>
             <option value="abonnes">Détenteurs d'abonnement actif</option>
             <option value="fideles">Élèves fidèles</option>
+            <option value="prive">🔒 Privé — sur invitation</option>
           </select>
           <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginTop: 4 }}>
-            Détermine qui peut voir ce cours sur ton portail public.
+            {form.visibilite === 'prive'
+              ? 'Parfait pour un cours individuel : invisible sur ton portail. Après création, ajoute ton élève depuis la fiche du cours — il/elle le verra dans son espace, personne d\'autre.'
+              : 'Détermine qui peut voir ce cours sur ton portail public.'}
           </span>
         </div>
 

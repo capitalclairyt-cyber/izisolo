@@ -7,6 +7,7 @@ import { checkAntiBot, ipFromRequest } from '@/lib/antibot';
 import { essaiSchema } from '@/lib/validation';
 import { studioHasFeature } from '@/lib/plan-guard';
 import { reportError } from '@/lib/report';
+import { canSeeCours, resolveClientInfo } from '@/lib/visibilite';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -109,13 +110,26 @@ export async function POST(request, { params }) {
   // 2. Cours
   const { data: cours } = await supabaseAdmin
     .from('cours')
-    .select('id, nom, date, heure, lieu, est_annule, profile_id')
+    .select('id, nom, date, heure, lieu, est_annule, profile_id, visibilite')
     .eq('id', coursId)
     .eq('profile_id', profile.id)
     .single();
 
   if (!cours) return Response.json({ error: 'Cours introuvable' }, { status: 404 });
   if (cours.est_annule) return Response.json({ error: 'Ce cours est annulé' }, { status: 400 });
+
+  // ── Visibilité (v73) : le formulaire d'essai filtre déjà la liste, l'API
+  // doit refuser pareil (un cours privé/restreint n'accueille pas d'essai
+  // libre — la prof ajoute elle-même ses invité·es).
+  if (cours.visibilite && cours.visibilite !== 'public') {
+    if (cours.visibilite === 'prive') {
+      return Response.json({ error: 'Ce cours est sur invitation.' }, { status: 403 });
+    }
+    const clientInfo = await resolveClientInfo(supabaseAdmin, profile.id, email);
+    if (!canSeeCours(cours.visibilite, clientInfo)) {
+      return Response.json({ error: 'Ce cours est réservé à certain·es élèves du studio.' }, { status: 403 });
+    }
+  }
   // Vérif date+heure
   const todayIso = new Date().toISOString().slice(0, 10);
   if (cours.date < todayIso) return Response.json({ error: 'Ce cours est passé' }, { status: 400 });

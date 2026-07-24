@@ -11,6 +11,7 @@ import { studioHasFeature } from '@/lib/plan-guard';
 import { infosPratiquesBlock } from '@/lib/email-helpers';
 import { sendEmail } from '@/lib/email';
 import { reportError } from '@/lib/report';
+import { canSeeCours, resolveClientInfo } from '@/lib/visibilite';
 
 export async function POST(request, { params }) {
   const { studioSlug } = await params;
@@ -56,7 +57,7 @@ export async function POST(request, { params }) {
 
   const { data: cours } = await supabaseAdmin
     .from('cours')
-    .select('id, nom, date, heure, lieu, capacite_max, est_annule, profile_id, tarif_unitaire, stripe_payment_link_unit, type_cours')
+    .select('id, nom, date, heure, lieu, capacite_max, est_annule, profile_id, tarif_unitaire, stripe_payment_link_unit, type_cours, visibilite')
     .eq('id', coursId)
     .eq('profile_id', profile.id)
     .single();
@@ -73,6 +74,21 @@ export async function POST(request, { params }) {
     : cours.date < nowParis.slice(0, 10);
   if (dejaCommence) {
     return Response.json({ error: 'Ce cours a déjà commencé' }, { status: 400 });
+  }
+
+  // ── Visibilité (v73) : l'API applique les mêmes règles que l'UI ──────────
+  // Avant, seule la liste était filtrée : avec l'id d'un cours restreint on
+  // pouvait réserver par l'API. Un cours privé ne se réserve JAMAIS ici (la
+  // prof ajoute elle-même ses invité·es) ; les autres niveaux exigent le bon
+  // statut côté studio, résolu par l'email du demandeur.
+  if (cours.visibilite && cours.visibilite !== 'public') {
+    if (cours.visibilite === 'prive') {
+      return Response.json({ error: 'Ce cours est sur invitation.' }, { status: 403 });
+    }
+    const clientInfo = await resolveClientInfo(supabaseAdmin, profile.id, email);
+    if (!canSeeCours(cours.visibilite, clientInfo)) {
+      return Response.json({ error: 'Ce cours est réservé à certain·es élèves du studio.' }, { status: 403 });
+    }
   }
 
   // Vérifier la capacité

@@ -30,6 +30,30 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
     ? Math.max(0, cours.capacite_max - presences.length)
     : null;
 
+  // ---- Cours privé : prévenir les invité·es par email (dédupé serveur) ----
+  const [notifying, setNotifying] = useState(false);
+  const prevenirInvites = async () => {
+    setNotifying(true);
+    try {
+      const res = await fetch('/api/cours/inviter', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ coursId: cours.id }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Erreur');
+      const bouts = [];
+      if (json.envoyes > 0) bouts.push(`${json.envoyes} email${json.envoyes > 1 ? 's' : ''} envoyé${json.envoyes > 1 ? 's' : ''} ✓`);
+      if (json.dejaPrevenus > 0) bouts.push(`${json.dejaPrevenus} déjà prévenu·e${json.dejaPrevenus > 1 ? 's' : ''}`);
+      if (json.sansEmail > 0) bouts.push(`${json.sansEmail} sans email`);
+      toast.success(bouts.length ? bouts.join(' · ') : 'Personne à prévenir pour l\'instant');
+    } catch (e) {
+      toast.error(e.message);
+    } finally {
+      setNotifying(false);
+    }
+  };
+
   const promouvoirEntree = async (entryId) => {
     setPromotingId(entryId);
     try {
@@ -587,9 +611,12 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
                 <option value="inscrits">Élèves inscrits seulement</option>
                 <option value="abonnes">Détenteurs d'abonnement actif</option>
                 <option value="fideles">Élèves fidèles</option>
+                <option value="prive">🔒 Privé — sur invitation</option>
               </select>
               <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginTop: 4 }}>
-                Détermine qui peut voir ce cours dans la liste publique du studio.
+                {form.visibilite === 'prive'
+                  ? 'Invisible sur ton portail. Seul·es les élèves ajoutés à ce cours le voient, dans leur espace.'
+                  : 'Détermine qui peut voir ce cours dans la liste publique du studio.'}
               </span>
             </div>
 
@@ -637,6 +664,17 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
             <Link href={`/pointage/${cours.id}`} className="izi-btn btn-sm izi-btn-secondary">
               <UserPlus size={16} /> Ajouter des élèves
             </Link>
+            {cours.visibilite === 'prive' && presences.length > 0 && (
+              <button
+                type="button"
+                onClick={prevenirInvites}
+                disabled={notifying}
+                className="izi-btn btn-sm izi-btn-secondary"
+                title="Envoie à chaque inscrit·e un email avec la date, l'heure et un lien direct vers son espace (jamais deux fois le même email)."
+              >
+                ✉️ {notifying ? 'Envoi…' : 'Prévenir par email'}
+              </button>
+            )}
             <Link
               href={`/pointage/${cours.id}`}
               className={`izi-btn btn-sm ${nbPointes > 0 ? 'izi-btn-ghost btn-modifier-pointage' : 'izi-btn-secondary'}`}
@@ -657,9 +695,17 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
           </div>
         )}
 
+        {cours.visibilite === 'prive' && (
+          <div style={{ background: 'var(--bg-soft, #F8F4ED)', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 14px', margin: '0 0 12px', fontSize: '0.8125rem', color: 'var(--text-muted)', lineHeight: 1.55 }}>
+            🔒 <strong>Cours privé</strong> — invisible sur ton portail.
+            {presences.length === 0
+              ? ' Ajoute ton élève (inscrit·e ou non : tu peux créer sa fiche à la volée), puis préviens-le/la par email.'
+              : ' Les personnes ci-dessous le voient dans leur espace ; personne d\'autre.'}
+          </div>
+        )}
         {presences.length === 0 ? (
           <div className="empty-inscrits">
-            <p className="empty-text">Aucun inscrit pour le moment</p>
+            <p className="empty-text">{cours.visibilite === 'prive' ? 'Aucun·e invité·e pour le moment' : 'Aucun inscrit pour le moment'}</p>
             <Link href={`/pointage/${cours.id}`} className="izi-btn btn-sm izi-btn-primary">
               <UserPlus size={16} /> Ajouter des élèves
             </Link>

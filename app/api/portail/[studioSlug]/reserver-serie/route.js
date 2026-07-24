@@ -6,6 +6,7 @@ import { sendPushToUser } from '@/lib/push-server';
 import { wantsNotif } from '@/lib/notif-prefs';
 import { escapeIlike } from '@/lib/utils';
 import { reportError } from '@/lib/report';
+import { canSeeCours, resolveClientInfo } from '@/lib/visibilite';
 
 /**
  * POST /api/portail/[studioSlug]/reserver-serie
@@ -59,13 +60,26 @@ export async function POST(request, { params }) {
   // Cours de référence
   const { data: baseCours } = await supabaseAdmin
     .from('cours')
-    .select('id, recurrence_parent_id, date, nom, heure')
+    .select('id, recurrence_parent_id, date, nom, heure, visibilite')
     .eq('id', coursId)
     .eq('profile_id', profile.id)
     .single();
   if (!baseCours) return Response.json({ error: 'Cours introuvable' }, { status: 404 });
   if (!baseCours.recurrence_parent_id) {
     return Response.json({ error: 'Ce cours n\'est pas récurrent' }, { status: 400 });
+  }
+
+  // ── Visibilité (v73) : mêmes règles que l'UI, appliquées à la série ──────
+  // (les occurrences d'une même série partagent la visibilité du cours de
+  // référence). Un cours privé ne se réserve jamais côté élève.
+  if (baseCours.visibilite && baseCours.visibilite !== 'public') {
+    if (baseCours.visibilite === 'prive') {
+      return Response.json({ error: 'Ce cours est sur invitation.' }, { status: 403 });
+    }
+    const clientInfo = await resolveClientInfo(supabaseAdmin, profile.id, user.email);
+    if (!canSeeCours(baseCours.visibilite, clientInfo)) {
+      return Response.json({ error: 'Ce cours est réservé à certain·es élèves du studio.' }, { status: 403 });
+    }
   }
 
   if (jusquAu < baseCours.date) {
