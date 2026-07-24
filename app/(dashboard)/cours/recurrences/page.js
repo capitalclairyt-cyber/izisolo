@@ -24,7 +24,7 @@ export default async function RecurrencesPage({ searchParams }) {
   const [{ data: recurrences }, { data: profile }, { data: cours }] = await Promise.all([
     supabase
       .from('recurrences')
-      .select('id, nom, type_cours, heure, duree_minutes, lieu_id, frequence, jours_semaine, intervalle, date_debut, date_fin, nb_occurrences, exclure_vacances, exclure_feries, zone_vacances, actif, created_at')
+      .select('id, nom, type_cours, heure, duree_minutes, lieu_id, capacite_max, frequence, jours_semaine, intervalle, date_debut, date_fin, nb_occurrences, exclure_vacances, exclure_feries, zone_vacances, actif, created_at')
       .eq('profile_id', user.id)
       .order('created_at', { ascending: false }),
     supabase

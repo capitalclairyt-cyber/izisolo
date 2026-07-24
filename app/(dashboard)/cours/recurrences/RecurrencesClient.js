@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   ArrowLeft, Repeat, Calendar, ChevronLeft, ChevronRight, Plus, Trash2,
-  Sun, AlertTriangle, ToggleRight, ToggleLeft, X, Pencil, Save
+  Sun, AlertTriangle, ToggleRight, ToggleLeft, X, Pencil, Save, CalendarPlus,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase';
 import { getAllTypesFromCategories } from '@/lib/utils';
@@ -53,6 +53,18 @@ export default function RecurrencesClient({ recurrences: initialRecurrences, cou
   const [editForm, setEditForm] = useState({ nom: '', type_cours: '' });
   const [savingEdit, setSavingEdit] = useState(false);
   const typesCours = getAllTypesFromCategories(profile?.types_cours);
+
+  // ── Prolonger la série (retour Maude 2026-07-23 : ses séries finissaient le
+  // 3 juillet et elle recréait chaque cours À LA MAIN — il manquait le geste).
+  const [prolonger, setProlonger] = useState(false);
+  const [prolongerFin, setProlongerFin] = useState('');
+  const [prolongeant, setProlongeant] = useState(false);
+  // Une série « hors vacances » prolongée sur l'été donnerait 0 séance (été =
+  // 04/07→31/08 dans le référentiel). Or c'est exactement le cas d'usage de
+  // Maude : des cours d'été. Cette case permet d'outrepasser l'exclusion POUR
+  // CETTE prolongation, sans toucher la config de la série.
+  const [prolongerInclureVacances, setProlongerInclureVacances] = useState(false);
+  useEffect(() => { setProlonger(false); }, [selectedRecId]);
 
   const selected = recurrences.find(r => r.id === selectedRecId);
 
@@ -248,6 +260,129 @@ export default function RecurrencesClient({ recurrences: initialRecurrences, cou
     }
   };
 
+  // ── Prolonger la série ────────────────────────────────────────────────────
+  // Génère les occurrences manquantes jusqu'à la nouvelle date de fin, avec
+  // EXACTEMENT les règles de la création (cours/nouveau calculerDates) :
+  // jour ancré sur date_debut, parité bimensuelle ancrée sur date_debut,
+  // jours fériés / vacances scolaires exclus selon la config de la série.
+  const genererDatesProlongation = (rec, depuisISO, finISO, dejaPris, inclureVacances = false) => {
+    const incluses = [], exclues = [];
+    if (!rec?.date_debut) return { incluses, exclues };
+    const anchor = new Date(rec.date_debut + 'T12:00:00');
+    const startDay = anchor.getDay() === 0 ? 7 : anchor.getDay();
+    const cursor = new Date(depuisISO + 'T12:00:00');
+    const limite = new Date(finISO + 'T12:00:00');
+    let safety = 0;
+    while (cursor <= limite && safety < 800) {
+      safety++;
+      const day = cursor.getDay() === 0 ? 7 : cursor.getDay();
+      let include = false;
+      if (rec.frequence === 'quotidien') include = true;
+      else if (rec.frequence === 'hebdomadaire') include = day === startDay;
+      else if (rec.frequence === 'bimensuel') {
+        const weeks = Math.floor((cursor - anchor) / (7 * 86400000));
+        include = day === startDay && weeks % 2 === 0;
+      } else if (rec.frequence === 'mensuel') include = cursor.getDate() === anchor.getDate();
+      else if (rec.frequence === 'personnalise') include = (rec.jours_semaine || []).includes(day);
+
+      if (include) {
+        const iso = toISO(cursor);
+        if (dejaPris?.has(iso)) {
+          // occurrence déjà existante → on ne double pas
+        } else if (rec.exclure_feries && estJourFerie(iso)) {
+          exclues.push({ iso, raison: 'férié' });
+        } else if (!inclureVacances && rec.exclure_vacances && rec.zone_vacances && getPeriodeVacances(iso, rec.zone_vacances)) {
+          exclues.push({ iso, raison: 'vacances' });
+        } else {
+          incluses.push(iso);
+        }
+      }
+      cursor.setDate(cursor.getDate() + 1);
+    }
+    return { incluses, exclues };
+  };
+
+  const previewProlongation = useMemo(() => {
+    if (!prolonger || !selected || !prolongerFin) return null;
+    const today = toISO(new Date());
+    const dernieres = coursDeRec.map(c => c.date).sort();
+    const derniere = dernieres[dernieres.length - 1] || null;
+    let depuis = today;
+    if (derniere && derniere >= today) {
+      const d = new Date(derniere + 'T12:00:00');
+      d.setDate(d.getDate() + 1);
+      depuis = toISO(d);
+    }
+    if (prolongerFin < depuis) return { incluses: [], exclues: [], depuis };
+    const dejaPris = new Set(coursDeRec.map(c => c.date));
+    return { ...genererDatesProlongation(selected, depuis, prolongerFin, dejaPris, prolongerInclureVacances), depuis };
+  }, [prolonger, selected, prolongerFin, coursDeRec, prolongerInclureVacances]);
+
+  const ouvrirProlonger = () => {
+    if (!selected) return;
+    // Suggestion par défaut : +8 semaines à partir d'aujourd'hui.
+    const d = new Date();
+    d.setDate(d.getDate() + 7 * 8);
+    setProlongerFin(toISO(d));
+    setProlongerInclureVacances(false);
+    setProlonger(true);
+  };
+
+  const prolongerSerie = async () => {
+    if (!selected || !previewProlongation || previewProlongation.incluses.length === 0) return;
+    setProlongeant(true);
+    const supabase = createClient();
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      // Champs portés par les COURS (pas par la récurrence) : recopiés du
+      // cours le plus récent de la série (lieu texte, visibilité, tarif à la
+      // séance) — même logique que l'ajout d'occurrence manuel.
+      const { data: frere } = await supabase
+        .from('cours')
+        .select('lieu, visibilite, tarif_unitaire')
+        .eq('recurrence_parent_id', selected.id)
+        .order('date', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      const rows = previewProlongation.incluses.map(iso => ({
+        profile_id: user.id,
+        nom: selected.nom,
+        type_cours: selected.type_cours || null,
+        date: iso,
+        heure: selected.heure || null,
+        duree_minutes: selected.duree_minutes || 60,
+        lieu_id: selected.lieu_id || null,
+        lieu: frere?.lieu ?? null,
+        capacite_max: selected.capacite_max ?? null,
+        recurrence_parent_id: selected.id,
+        visibilite: frere?.visibilite || 'public',
+        tarif_unitaire: frere?.tarif_unitaire ?? null,
+      }));
+
+      const { data: crees, error } = await supabase
+        .from('cours')
+        .insert(rows)
+        .select('id, nom, date, heure, recurrence_parent_id, est_annule');
+      if (error) throw error;
+
+      const { error: recErr } = await supabase
+        .from('recurrences')
+        .update({ date_fin: prolongerFin })
+        .eq('id', selected.id);
+      if (recErr) throw recErr;
+
+      setCours(prev => [...prev, ...(crees || [])].sort((a, b) => a.date.localeCompare(b.date)));
+      setRecurrences(prev => prev.map(r => r.id === selected.id ? { ...r, date_fin: prolongerFin } : r));
+      setProlonger(false);
+      toast.success(`Série prolongée : ${crees?.length || 0} séance${(crees?.length || 0) > 1 ? 's' : ''} créée${(crees?.length || 0) > 1 ? 's' : ''} jusqu'au ${new Date(prolongerFin + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })} ✓`);
+    } catch (err) {
+      toast.error('Erreur : ' + err.message);
+    } finally {
+      setProlongeant(false);
+    }
+  };
+
   // ─── Render ──────────────────────────────────────────────────────────────
   if (recurrences.length === 0) {
     return (
@@ -319,6 +454,9 @@ export default function RecurrencesClient({ recurrences: initialRecurrences, cou
                   </div>
                 </div>
                 <div className="rec-detail-actions">
+                  <button type="button" onClick={ouvrirProlonger} className="rec-icon-btn rec-prolonger-btn" title="Prolonger la série (générer les prochaines séances)">
+                    <CalendarPlus size={16} />
+                  </button>
                   <button type="button" onClick={ouvrirEdition} className="rec-icon-btn" title="Modifier le nom et le type">
                     <Pencil size={16} />
                   </button>
@@ -368,6 +506,70 @@ export default function RecurrencesClient({ recurrences: initialRecurrences, cou
                   </button>
                   <button type="button" className="izi-btn izi-btn-primary" onClick={enregistrerEdition} disabled={savingEdit || !editForm.nom.trim()}>
                     <Save size={16} /> {savingEdit ? 'Enregistrement…' : 'Enregistrer'}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* ── Prolonger la série ── */}
+            {prolonger && !editing && (
+              <div className="rec-prolonger-panel">
+                <div className="rec-edit-label" style={{ marginBottom: 6 }}>
+                  <CalendarPlus size={14} style={{ verticalAlign: '-2px' }} /> Prolonger la série jusqu'au…
+                </div>
+                {selected.date_fin && (
+                  <p className="rec-prolonger-info">
+                    Fin actuelle : <strong>{new Date(selected.date_fin + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</strong>
+                  </p>
+                )}
+                <input
+                  type="date"
+                  className="izi-input"
+                  value={prolongerFin}
+                  min={previewProlongation?.depuis || undefined}
+                  onChange={e => setProlongerFin(e.target.value)}
+                  style={{ maxWidth: 220 }}
+                />
+                {selected.exclure_vacances && selected.zone_vacances && (
+                  <label className="rec-prolonger-vacances">
+                    <input
+                      type="checkbox"
+                      checked={prolongerInclureVacances}
+                      onChange={e => setProlongerInclureVacances(e.target.checked)}
+                    />
+                    <span>
+                      Créer aussi pendant les vacances scolaires (zone {selected.zone_vacances})
+                      <em> — la série les exclut d'habitude ; utile pour des cours d'été, sans changer sa config.</em>
+                    </span>
+                  </label>
+                )}
+                {previewProlongation && (
+                  <p className="rec-prolonger-preview">
+                    {previewProlongation.incluses.length > 0 ? (
+                      <>
+                        <strong>{previewProlongation.incluses.length} séance{previewProlongation.incluses.length > 1 ? 's' : ''}</strong> ser{previewProlongation.incluses.length > 1 ? 'ont' : 'a'} créée{previewProlongation.incluses.length > 1 ? 's' : ''}
+                        {' '}({freqLabel(selected)}{selected.heure ? ` à ${selected.heure.slice(0, 5)}` : ''})
+                        {previewProlongation.exclues.length > 0 && (
+                          <> — {previewProlongation.exclues.length} exclue{previewProlongation.exclues.length > 1 ? 's' : ''} ({[...new Set(previewProlongation.exclues.map(e => e.raison))].join(' + ')})</>
+                        )}
+                        .
+                      </>
+                    ) : (
+                      <>Aucune séance à créer sur cette période{previewProlongation.exclues.length > 0 ? ` (${previewProlongation.exclues.length} date${previewProlongation.exclues.length > 1 ? 's' : ''} exclue${previewProlongation.exclues.length > 1 ? 's' : ''} : vacances/fériés)` : ''}.</>
+                    )}
+                  </p>
+                )}
+                <div className="rec-edit-actions">
+                  <button type="button" className="izi-btn izi-btn-ghost" onClick={() => setProlonger(false)} disabled={prolongeant}>
+                    Annuler
+                  </button>
+                  <button
+                    type="button"
+                    className="izi-btn izi-btn-primary"
+                    onClick={prolongerSerie}
+                    disabled={prolongeant || !previewProlongation || previewProlongation.incluses.length === 0}
+                  >
+                    <CalendarPlus size={16} /> {prolongeant ? 'Création…' : `Créer ${previewProlongation?.incluses.length || 0} séance${(previewProlongation?.incluses.length || 0) > 1 ? 's' : ''}`}
                   </button>
                 </div>
               </div>
@@ -522,6 +724,21 @@ const styleBlock = (
 
     /* Édition nom + type de la série */
     .rec-edit-form { display: flex; flex-direction: column; gap: 8px; }
+    .rec-prolonger-btn { color: var(--brand, #b45309); }
+    .rec-prolonger-panel {
+      margin-top: 12px; padding: 14px;
+      background: var(--brand-light, #fdf6ee); border: 1.5px solid var(--border);
+      border-radius: var(--radius-md, 12px);
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .rec-prolonger-info { font-size: 0.78rem; color: var(--text-muted); margin: 0; }
+    .rec-prolonger-preview { font-size: 0.8125rem; color: var(--text-secondary); margin: 4px 0 0; line-height: 1.5; }
+    .rec-prolonger-vacances {
+      display: flex; align-items: flex-start; gap: 8px;
+      font-size: 0.8125rem; color: var(--text-secondary); cursor: pointer;
+    }
+    .rec-prolonger-vacances input { margin-top: 3px; }
+    .rec-prolonger-vacances em { display: block; font-style: normal; font-size: 0.72rem; color: var(--text-muted); }
     .rec-edit-label { font-size: 0.8125rem; font-weight: 600; color: var(--text-secondary); }
     .rec-edit-chips { display: flex; flex-wrap: wrap; gap: 6px; }
     .rec-chip-type {
