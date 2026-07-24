@@ -190,15 +190,19 @@ export default function AdminUsersClient({ initialUsers }) {
               ) : filtered.map(u => (
                 <tr key={u.id}>
                   <td>
-                    <div style={{ fontWeight: 600, color: '#e2e8f0' }}>
-                      {u.prenom || '—'}
-                      {u.est_test && <span className="admin-test-badge">TEST</span>}
-                    </div>
-                    {u.email && <div style={{ fontSize: '0.75rem', color: '#475569', marginTop: '2px' }}>{u.email}</div>}
+                    <Link href={`/admin/studios/${u.id}`} style={{ textDecoration: 'none', display: 'block' }}>
+                      <div style={{ fontWeight: 600, color: '#e2e8f0' }}>
+                        {u.prenom || '—'}
+                        {u.est_test && <span className="admin-test-badge">TEST</span>}
+                      </div>
+                      {u.email && <div style={{ fontSize: '0.75rem', color: '#475569', marginTop: '2px' }}>{u.email}</div>}
+                    </Link>
                   </td>
                   <td style={{ color: '#94a3b8' }}>
-                    {u.studio_nom || '—'}
-                    {u.metier && <div style={{ fontSize: '0.7rem', color: '#475569', marginTop: '2px' }}>{u.metier}</div>}
+                    <Link href={`/admin/studios/${u.id}`} style={{ textDecoration: 'none', color: '#94a3b8', display: 'block' }}>
+                      {u.studio_nom || '—'} <span style={{ color: '#475569' }}>→</span>
+                      {u.metier && <div style={{ fontSize: '0.7rem', color: '#475569', marginTop: '2px' }}>{u.metier}</div>}
+                    </Link>
                   </td>
                   <td>
                     <span className={`admin-statut-badge ${STATUTS_COMPTE[u.compte_statut]?.cls || ''}`}>

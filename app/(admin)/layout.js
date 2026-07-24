@@ -12,6 +12,17 @@ export default async function AdminLayout({ children }) {
     redirect('/dashboard');
   }
 
+  // Compteur de feedbacks non triés (badge nav) — jamais bloquant.
+  let nbFeedbacksNew = 0;
+  try {
+    const { createAdminClient } = await import('@/lib/supabase-admin');
+    const { count, error } = await createAdminClient()
+      .from('feedback')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'new');
+    if (!error && count) nbFeedbacksNew = count;
+  } catch { /* table absente ou env manquante : badge à 0 */ }
+
   return (
     <div className="admin-layout">
       <aside className="admin-sidebar">
@@ -29,6 +40,14 @@ export default async function AdminLayout({ children }) {
           <Link href="/admin/plans" className="admin-nav-item">💳 Plans & abonnements</Link>
           <Link href="/admin/stats" className="admin-nav-item">📈 Statistiques</Link>
           <Link href="/admin/support-tickets" className="admin-nav-item">🎫 Tickets support</Link>
+          <Link href="/admin/feedbacks" className="admin-nav-item">
+            💬 Feedbacks
+            {nbFeedbacksNew > 0 && (
+              <span style={{ marginLeft: '6px', background: '#1e3a5f', color: '#60a5fa', borderRadius: '999px', padding: '1px 7px', fontSize: '0.7rem', fontWeight: 700 }}>
+                {nbFeedbacksNew}
+              </span>
+            )}
+          </Link>
           <Link href="/admin/erreurs" className="admin-nav-item">🚨 Erreurs</Link>
         </nav>
 
