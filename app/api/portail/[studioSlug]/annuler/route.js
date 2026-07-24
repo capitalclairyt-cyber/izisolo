@@ -37,7 +37,10 @@ export async function POST(request, { params }) {
   // Vérifier que le studio existe + récupérer ses règles + config notifs
   const { data: profile } = await supabaseAdmin
     .from('profiles')
-    .select('id, studio_nom, regles_annulation, regles_metier, notifs_eleves, twilio_account_sid, twilio_auth_token, twilio_phone_number, plan, trial_started_at, stripe_subscription_status')
+    // ⚠️ Ne JAMAIS re-sélectionner twilio_* : colonnes SUPPRIMÉES par v21 →
+    // 42703 → profile null → « Studio introuvable » pour TOUTES les annulations
+    // élève (bug muet depuis v21, découvert par Manon/Soleya le 2026-07-24).
+    .select('id, studio_nom, regles_annulation, regles_metier, notifs_eleves, plan, trial_started_at, stripe_subscription_status')
     .eq('studio_slug', studioSlug)
     .single();
 

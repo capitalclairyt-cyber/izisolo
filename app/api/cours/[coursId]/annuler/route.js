@@ -36,10 +36,12 @@ export const POST = withRoute({ auth: 'active' }, async ({ request, params, auth
   if (!cours) return Response.json({ error: 'Cours introuvable' }, { status: 404 });
   if (cours.est_annule) return Response.json({ error: 'Cours déjà annulé' }, { status: 409 });
 
-  // Profile complet (pour twilio + notifs_eleves + règles métier)
+  // Profile (notifs_eleves + règles métier). ⚠️ Ne JAMAIS re-sélectionner
+  // twilio_* : colonnes SUPPRIMÉES par v21 → 42703 → profile null → la route
+  // tournait à vide (annulation prof sans notifications) depuis v21.
   const { data: profile } = await supabaseAdmin
     .from('profiles')
-    .select('id, studio_nom, studio_slug, notifs_eleves, regles_metier, twilio_account_sid, twilio_auth_token, twilio_phone_number')
+    .select('id, studio_nom, studio_slug, notifs_eleves, regles_metier')
     .eq('id', user.id)
     .single();
 

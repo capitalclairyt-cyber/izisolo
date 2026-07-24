@@ -23,7 +23,9 @@ async function getStats(supabase) {
     { data: allClients },
   ] = await Promise.all([
     supabase.from('profiles').select('id, plan, created_at, metier'),
-    supabase.from('cours').select('id, created_at, date, type_cours'),
+    // ⚠️ cours.created_at N'EXISTE PAS (42703 → data null → graphe vide en
+    // silence depuis toujours) — on suit les séances PROGRAMMÉES via `date`.
+    supabase.from('cours').select('id, date, type_cours'),
     supabase.from('clients').select('id, created_at'),
   ]);
 
@@ -35,11 +37,11 @@ async function getStats(supabase) {
     ).length,
   }));
 
-  // Cours créés par mois
+  // Séances programmées par mois (cours.date — created_at n'existe pas)
   const coursByMonth = months.map(m => ({
     ...m,
     count: (allCours || []).filter(c =>
-      c.created_at >= m.start && c.created_at < m.end
+      c.date >= m.start.slice(0, 10) && c.date < m.end.slice(0, 10)
     ).length,
   }));
 
@@ -214,7 +216,7 @@ export default async function AdminStatsPage() {
           </div>
         </div>
         <div className="admin-stat">
-          <div className="admin-stat-label">Cours créés</div>
+          <div className="admin-stat-label">Séances programmées</div>
           <div className="admin-stat-value">{stats.totalCours}</div>
           <div className="admin-stat-sub">{stats.upcomingCours} dans les 30 prochains jours</div>
         </div>
@@ -279,7 +281,7 @@ export default async function AdminStatsPage() {
         </div>
 
         <div className="admin-card">
-          <div className="admin-subtitle" style={{ marginBottom: '16px' }}>Cours créés (12 mois)</div>
+          <div className="admin-subtitle" style={{ marginBottom: '16px' }}>Séances programmées (12 mois)</div>
           <MiniBarChart data={stats.coursByMonth} color="#4ade80" />
           <div style={{ marginTop: '12px', display: 'flex', gap: '16px' }}>
             {[...stats.coursByMonth].reverse().slice(0, 3).reverse().map((m, i) => (

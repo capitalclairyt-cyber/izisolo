@@ -28,9 +28,12 @@ export async function GET(request, { params }) {
   if (!profile) return new Response('Studio introuvable', { status: 404 });
 
   // Client lié à cet user dans ce studio
+  // ⚠️ `clients.code_postal` N'EXISTE PAS (l'adresse d'un particulier vit dans
+  // `adresse_postale`) — l'ancien select → 42703 → client null → « Client
+  // introuvable » pour TOUS les reçus PDF (bug muet, découvert par Manon).
   const { data: client } = await supabaseAdmin
     .from('clients')
-    .select('id, prenom, nom, email, adresse, code_postal, ville')
+    .select('id, prenom, nom, email, adresse, adresse_postale, ville')
     .eq('profile_id', profile.id)
     .ilike('email', escapeIlike(user.email))
     .single();
@@ -87,8 +90,11 @@ export async function GET(request, { params }) {
   page.drawText([client.prenom, client.nom].filter(Boolean).join(' '), { x: left, y, size: 12, font: fontBold, color: black });
   y -= 14;
   if (client.email) { page.drawText(client.email, { x: left, y, size: 10, font, color: grey }); y -= 14; }
-  if (client.adresse) { page.drawText(client.adresse, { x: left, y, size: 10, font, color: grey }); y -= 14; }
-  const cpClient = [client.code_postal, client.ville].filter(Boolean).join(' ');
+  // Particulier : l'adresse vit dans adresse_postale (texte libre, on prend la
+  // 1re ligne) ; `adresse` = champ des clients PRO. Pas de code_postal côté clients.
+  const adresseClient = ((client.adresse_postale || client.adresse || '').split('\n')[0] || '').trim();
+  if (adresseClient) { page.drawText(adresseClient, { x: left, y, size: 10, font, color: grey }); y -= 14; }
+  const cpClient = [client.ville].filter(Boolean).join(' ');
   if (cpClient) { page.drawText(cpClient, { x: left, y, size: 10, font, color: grey }); y -= 14; }
 
   // ── Détail
