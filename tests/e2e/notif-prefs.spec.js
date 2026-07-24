@@ -32,8 +32,12 @@ test.describe('wantsNotif — canaux', () => {
     expect(wantsNotif({}, 'essai_demande', 'prof', 'inapp')).toBe(true);
     expect(wantsNotif({}, 'essai_demande', 'prof', 'push')).toBe(true);
     expect(wantsNotif({}, 'essai_demande', 'prof', 'email')).toBe(true);
-    // reservation : push seul → pas de cloche
-    expect(wantsNotif({}, 'reservation', 'prof', 'inapp')).toBe(false);
+    // reservation : cloche + push depuis le wiring v63 (« 🎉 Nouvelle
+    // réservation » dans la cloche, vérifié en prod) — le test encodait
+    // l'ancien design « push seul », corrigé 2026-07-24.
+    expect(wantsNotif({}, 'reservation', 'prof', 'inapp')).toBe(true);
+    // ...mais désactivable par la pref
+    expect(wantsNotif({ reservation: { inapp: false } }, 'reservation', 'prof', 'inapp')).toBe(false);
   });
 
   test('rétrocompat : ancien booléen s\'applique à tous les canaux', () => {

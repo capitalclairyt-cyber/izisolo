@@ -21,8 +21,9 @@ test('modale attribution offre : 3 modes de règlement', async ({ page }) => {
   await page.click('button[type="submit"]');
   await page.waitForURL(/\/dashboard|\/onboarding/, { timeout: 20_000 });
 
-  // Ouvrir la première fiche élève
-  await page.goto('/clients');
+  // Ouvrir la première fiche élève (45s : la 1re compilation dev de /clients
+  // à froid dépasse les 15s par défaut — ce spec passe en tête d'alphabet)
+  await page.goto('/clients', { timeout: 45_000 });
   const ficheLink = page.locator('a[href^="/clients/"]').filter({ hasNotText: 'importer' }).first();
   await ficheLink.click();
   await page.waitForURL(/\/clients\/[0-9a-f-]{10,}$/, { timeout: 15_000 });
