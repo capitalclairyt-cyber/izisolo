@@ -5,6 +5,7 @@ import { finaliserDemande, emailConfirmationVisiteur } from '@/lib/essai';
 import { buildPortailMagicLink } from '@/lib/portail-magic-link';
 import { sendPushToEmail } from '@/lib/push-server';
 import { sendEmail } from '@/lib/email';
+import { reportError } from '@/lib/report';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -85,7 +86,7 @@ export async function POST(request, { params }) {
 
       return Response.json({ ok: true, client_id, presence_id });
     } catch (err) {
-      console.error('[admin/essai] valider err:', err);
+      reportError('[admin/essai] valider err:', err);
       return Response.json({ error: 'Erreur lors de la validation : ' + err.message }, { status: 500 });
     }
   }
@@ -126,7 +127,7 @@ export async function POST(request, { params }) {
         `,
       });
     } catch (err) {
-      console.error('[admin/essai] email refus err:', err);
+      reportError('[admin/essai] email refus err:', err);
     }
   }
 

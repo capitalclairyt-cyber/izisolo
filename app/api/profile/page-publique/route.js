@@ -1,5 +1,6 @@
 import { requireAuth } from '@/lib/api-auth';
 import { z } from 'zod';
+import { reportError } from '@/lib/report';
 
 export const runtime = 'nodejs';
 
@@ -50,7 +51,7 @@ export async function PATCH(request) {
     .eq('id', user.id);
 
   if (error) {
-    console.error('[page-publique] save draft error:', error);
+    reportError('[page-publique] save draft error:', error);
     return Response.json({ error: 'Erreur sauvegarde brouillon' }, { status: 500 });
   }
   return Response.json({ ok: true });
@@ -88,7 +89,7 @@ export async function POST(request) {
       })
       .eq('id', user.id);
     if (error) {
-      console.error('[page-publique] publish error:', error);
+      reportError('[page-publique] publish error:', error);
       return Response.json({ error: 'Erreur publication' }, { status: 500 });
     }
     return Response.json({ ok: true, publishedAt: new Date().toISOString() });

@@ -3,6 +3,7 @@ import { createServerClient } from '@/lib/supabase-server';
 import { parseJsonBody, sondageReponseSchema } from '@/lib/validation';
 import { createHash } from 'crypto';
 import { escapeIlike } from '@/lib/utils';
+import { reportError } from '@/lib/report';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -166,7 +167,7 @@ export async function POST(request, { params }) {
     .insert(rows);
 
   if (insErr) {
-    console.error('[sondage/repondre] insert err:', insErr);
+    reportError('[sondage/repondre] insert err:', insErr);
     return Response.json({ error: 'Erreur enregistrement' }, { status: 500 });
   }
 

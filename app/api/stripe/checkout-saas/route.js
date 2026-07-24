@@ -3,6 +3,7 @@ import { createServerClient } from '@/lib/supabase-server';
 import { TRIAL_DAYS } from '@/lib/constantes';
 import { getTrialStatus } from '@/lib/trial';
 import Stripe from 'stripe';
+import { reportError } from '@/lib/report';
 
 export const runtime = 'nodejs';
 
@@ -125,7 +126,7 @@ export async function POST(request) {
   } catch (err) {
     // Détail conservé côté serveur uniquement ; on ne fuite pas le message
     // brut Stripe au client (peut révéler des infos internes).
-    console.error('[checkout-saas] error:', err);
+    reportError('[checkout-saas] error:', err);
     return Response.json({ error: 'Une erreur est survenue, réessaie.' }, { status: 500 });
   }
 }

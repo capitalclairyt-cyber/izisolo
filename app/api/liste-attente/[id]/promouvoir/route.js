@@ -6,6 +6,7 @@ import { sendPushToEmail } from '@/lib/push-server';
 import { wantsNotif } from '@/lib/notif-prefs';
 import { infosPratiquesBlock } from '@/lib/email-helpers';
 import { escapeIlike } from '@/lib/utils';
+import { reportError } from '@/lib/report';
 
 /**
  * POST /api/liste-attente/[id]/promouvoir
@@ -109,7 +110,7 @@ export const POST = withRoute({ auth: 'active' }, async ({ params, auth }) => {
     if (resa?.reason === 'complet') {
       return NextResponse.json({ error: 'Le cours est complet — la place a été reprise entre-temps.' }, { status: 409 });
     }
-    console.error('[promouvoir] presence err:', presErr || resa?.reason);
+    reportError('[promouvoir] presence err:', presErr || resa?.reason);
     return NextResponse.json({ error: 'Erreur lors de la création de la place' }, { status: 500 });
   }
   const newPresence = { id: resa.presence_id };
@@ -194,7 +195,7 @@ export const DELETE = withRoute({ auth: 'active' }, async ({ params, auth }) => 
     .eq('profile_id', profile.id);
 
   if (error) {
-    console.error('[liste-attente DELETE] err:', error);
+    reportError('[liste-attente DELETE] err:', error);
     return NextResponse.json({ error: 'Une erreur est survenue.' }, { status: 500 });
   }
   return NextResponse.json({ ok: true });

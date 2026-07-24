@@ -1,6 +1,7 @@
 import { withRoute } from '@/lib/api-route';
 import { announce } from '@/lib/messagerie';
 import { messagerieAnnounceSchema } from '@/lib/validation';
+import { reportError } from '@/lib/report';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -164,7 +165,7 @@ export const POST = withRoute({ auth: 'active', schema: messagerieAnnounceSchema
     });
     return Response.json({ batch_id: batchId, count });
   } catch (err) {
-    console.error('[messagerie] announce err:', err);
+    reportError('[messagerie] announce err:', err);
     return Response.json({ error: 'Erreur diffusion : ' + err.message }, { status: 500 });
   }
 });

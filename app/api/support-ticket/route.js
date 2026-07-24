@@ -1,5 +1,6 @@
 import { createServerClient } from '@/lib/supabase-server';
 import { parseJsonBody, supportTicketSchema } from '@/lib/validation';
+import { reportError } from '@/lib/report';
 
 export async function POST(request) {
   const supabase = await createServerClient();
@@ -20,7 +21,7 @@ export async function POST(request) {
   });
 
   if (error) {
-    console.error('create ticket error:', error);
+    reportError('create ticket error:', error);
     return new Response('Server error', { status: 500 });
   }
 

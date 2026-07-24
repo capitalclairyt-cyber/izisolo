@@ -5,6 +5,7 @@ import { checkRateLimitIP } from '@/lib/antibot';
 import { sendPushToUser } from '@/lib/push-server';
 import { wantsNotif } from '@/lib/notif-prefs';
 import { escapeIlike } from '@/lib/utils';
+import { reportError } from '@/lib/report';
 
 /**
  * POST /api/portail/[studioSlug]/reserver-serie
@@ -100,7 +101,7 @@ export async function POST(request, { params }) {
       });
 
     if (pErr) {
-      console.error('[reserver-serie] rpc err:', pErr);
+      reportError('[reserver-serie] rpc err:', pErr);
       skipped.push({ coursId: c.id, date: c.date, reason: 'Erreur' });
       continue;
     }

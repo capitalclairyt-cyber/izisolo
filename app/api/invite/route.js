@@ -3,6 +3,7 @@ import { withRoute } from '@/lib/api-route';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { sendPortailMagicLink } from '@/lib/portail-magic-link';
 import { escapeIlike } from '@/lib/utils';
+import { reportError } from '@/lib/report';
 
 /**
  * POST /api/invite — La prof invite un·e élève à rejoindre son portail.
@@ -63,7 +64,7 @@ export const POST = withRoute({ auth: 'active' }, async ({ request, auth }) => {
           .from('clients')
           .update({ email: cleanEmail })
           .eq('id', fiche.id);
-        if (mailErr) console.error('[invite] rattachement email fiche (non-bloquant):', mailErr.message);
+        if (mailErr) reportError('[invite] rattachement email fiche (non-bloquant):', mailErr.message);
       }
     }
   }
@@ -97,7 +98,7 @@ export const POST = withRoute({ auth: 'active' }, async ({ request, auth }) => {
         .maybeSingle();
       // Non bloquant : si la création de fiche échoue, on envoie quand même
       // l'invitation (l'élève sera fiché·e au plus tard à sa 1ʳᵉ réservation).
-      if (ficheErr) console.error('[invite] création fiche prospect (non-bloquant):', ficheErr);
+      if (ficheErr) reportError('[invite] création fiche prospect (non-bloquant):', ficheErr);
       else ficheClientId = inserted?.id || null;
     }
   }
@@ -122,7 +123,7 @@ export const POST = withRoute({ auth: 'active' }, async ({ request, auth }) => {
       .update({ invitation_envoyee_at: new Date().toISOString() })
       .eq('id', ficheClientId);
     // Non bloquant : la migration v67 peut ne pas être encore appliquée.
-    if (majErr) console.error('[invite] maj invitation_envoyee_at (non-bloquant):', majErr);
+    if (majErr) reportError('[invite] maj invitation_envoyee_at (non-bloquant):', majErr);
   }
 
   return NextResponse.json({ ok: true });

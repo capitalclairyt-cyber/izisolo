@@ -5,6 +5,7 @@ import {
   resolveClientFromUserEmail,
 } from '@/lib/messagerie';
 import { escapeIlike } from '@/lib/utils';
+import { reportError } from '@/lib/report';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -46,7 +47,7 @@ async function getProConversations(supabase, profileId) {
       .order('last_message_at', { ascending: false })
       .limit(100);
     if (convsErr) {
-      console.error('[messagerie GET] convs err:', convsErr);
+      reportError('[messagerie GET] convs err:', convsErr);
       return Response.json({ error: 'Une erreur est survenue.' }, { status: 500 });
     }
     if (!convs || convs.length === 0) {
@@ -147,7 +148,7 @@ async function getProConversations(supabase, profileId) {
 
     return Response.json({ conversations, viewer: 'pro' });
   } catch (err) {
-    console.error('[messagerie GET] unexpected err:', err);
+    reportError('[messagerie GET] unexpected err:', err);
     return Response.json({ error: 'Une erreur est survenue.' }, { status: 500 });
   }
 }
@@ -160,7 +161,7 @@ async function getEleveConversations(supabase, userEmail) {
       .select('id, prenom, nom, profile_id')
       .ilike('email', escapeIlike(userEmail));
     if (clientsErr) {
-      console.error('[messagerie GET eleve] clients err:', clientsErr);
+      reportError('[messagerie GET eleve] clients err:', clientsErr);
       return Response.json({ error: 'Une erreur est survenue.' }, { status: 500 });
     }
     if (!clients || clients.length === 0) {
@@ -182,7 +183,7 @@ async function getEleveConversations(supabase, userEmail) {
       .select('conversation_id, last_read_at, client_id')
       .in('client_id', clientIds);
     if (memErr) {
-      console.error('[messagerie GET eleve] members err:', memErr);
+      reportError('[messagerie GET eleve] members err:', memErr);
       return Response.json({ error: 'Une erreur est survenue.' }, { status: 500 });
     }
     if (!members || members.length === 0) {
@@ -250,7 +251,7 @@ async function getEleveConversations(supabase, userEmail) {
       viewer: 'eleve',
     });
   } catch (err) {
-    console.error('[messagerie GET eleve] unexpected err:', err);
+    reportError('[messagerie GET eleve] unexpected err:', err);
     return Response.json({ error: 'Une erreur est survenue.' }, { status: 500 });
   }
 }

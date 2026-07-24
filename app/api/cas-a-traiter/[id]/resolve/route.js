@@ -29,6 +29,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 // requireActiveAccount : écriture métier → bloquée si compte gelé (402)
 import { requireActiveAccount } from '@/lib/api-auth';
+import { reportError } from '@/lib/report';
 
 const ResolveBodySchema = z.object({
   action: z.string().min(1).max(50),
@@ -138,7 +139,7 @@ export async function POST(request, { params }) {
     .single();
 
   if (updErr) {
-    console.error('[cas-a-traiter resolve] update err:', updErr);
+    reportError('[cas-a-traiter resolve] update err:', updErr);
     return NextResponse.json({ error: 'Une erreur est survenue.' }, { status: 500 });
   }
 
@@ -233,7 +234,7 @@ async function applyDirectEffect({ supabase, cas, action, userId }) {
       .from('presences')
       .update({ statut_pointage: newStatut })
       .eq('id', cas.presence_id);
-    if (updErr) { console.error('[cas resolve applyDirectEffect]', updErr); return { error: 'Une erreur est survenue.', status: 500 }; }
+    if (updErr) { reportError('[cas resolve applyDirectEffect]', updErr); return { error: 'Une erreur est survenue.', status: 500 }; }
 
     // Si décompte ET abonnement lié → incrément seances_utilisees (idempotent
     // via comparaison statut avant/après). RPC v53 atomique — et l'échec
@@ -243,7 +244,7 @@ async function applyDirectEffect({ supabase, cas, action, userId }) {
       const { error: incErr } = await supabase
         .rpc('ajuster_seances', { p_abo_id: presence.abonnement_id, p_delta: 1 });
       if (incErr) {
-        console.error('[cas resolve] décompte carnet échoué:', incErr);
+        reportError('[cas resolve] décompte carnet échoué:', incErr);
         return { error: 'Le décompte de la séance a échoué.', status: 500 };
       }
     }
@@ -258,7 +259,7 @@ async function applyDirectEffect({ supabase, cas, action, userId }) {
       const { error: credErr } = await supabase
         .rpc('ajuster_seances', { p_abo_id: presence.abonnement_id, p_delta: -1 });
       if (credErr) {
-        console.error('[cas resolve] re-crédit excuse échoué:', credErr);
+        reportError('[cas resolve] re-crédit excuse échoué:', credErr);
         return { error: 'La restitution de la séance a échoué.', status: 500 };
       }
       recredited = true;
@@ -288,7 +289,7 @@ async function applyDirectEffect({ supabase, cas, action, userId }) {
     // RPC v53 : décrément atomique (borné à 0 côté SQL)
     const { error: updErr } = await supabase
       .rpc('ajuster_seances', { p_abo_id: aboId, p_delta: -1 });
-    if (updErr) { console.error('[cas resolve applyDirectEffect]', updErr); return { error: 'Une erreur est survenue.', status: 500 }; }
+    if (updErr) { reportError('[cas resolve applyDirectEffect]', updErr); return { error: 'Une erreur est survenue.', status: 500 }; }
 
     return {
       beforeState: { abonnement_id: aboId, ...before },
@@ -315,7 +316,7 @@ async function applyDirectEffect({ supabase, cas, action, userId }) {
       .from('abonnements')
       .update({ date_fin: newDateFin })
       .eq('id', aboId);
-    if (updErr) { console.error('[cas resolve applyDirectEffect]', updErr); return { error: 'Une erreur est survenue.', status: 500 }; }
+    if (updErr) { reportError('[cas resolve applyDirectEffect]', updErr); return { error: 'Une erreur est survenue.', status: 500 }; }
 
     return {
       beforeState: { abonnement_id: aboId, ...before },
@@ -341,7 +342,7 @@ async function applyDirectEffect({ supabase, cas, action, userId }) {
       .from('presences')
       .update({ cours_id: newCoursId })
       .eq('id', cas.presence_id);
-    if (updErr) { console.error('[cas resolve applyDirectEffect]', updErr); return { error: 'Une erreur est survenue.', status: 500 }; }
+    if (updErr) { reportError('[cas resolve applyDirectEffect]', updErr); return { error: 'Une erreur est survenue.', status: 500 }; }
 
     return {
       beforeState: { presence_id: cas.presence_id, ...before },

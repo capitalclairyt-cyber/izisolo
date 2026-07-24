@@ -1,5 +1,6 @@
 import { createServerClient } from '@/lib/supabase-server';
 import { NextResponse } from 'next/server';
+import { reportError } from '@/lib/report';
 
 /**
  * GET /api/unsubscribe?email=xxx
@@ -31,7 +32,7 @@ export async function GET(request) {
       );
 
     if (error) {
-      console.error('unsubscribe insert error:', error);
+      reportError('unsubscribe insert error:', error);
       return NextResponse.redirect(
         new URL('/unsubscribe?error=server', request.url)
       );
@@ -41,7 +42,7 @@ export async function GET(request) {
       new URL('/unsubscribe/confirm', request.url)
     );
   } catch (err) {
-    console.error('unsubscribe unexpected error:', err);
+    reportError('unsubscribe unexpected error:', err);
     return NextResponse.redirect(
       new URL('/unsubscribe?error=server', request.url)
     );
@@ -77,13 +78,13 @@ export async function POST(request) {
       );
 
     if (error) {
-      console.error('unsubscribe insert error:', error);
+      reportError('unsubscribe insert error:', error);
       return Response.json({ error: 'Erreur serveur' }, { status: 500 });
     }
 
     return Response.json({ ok: true });
   } catch (err) {
-    console.error('unsubscribe unexpected error:', err);
+    reportError('unsubscribe unexpected error:', err);
     return Response.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }

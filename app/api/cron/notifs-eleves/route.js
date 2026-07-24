@@ -4,6 +4,7 @@ import { sendNotifEleve } from '@/lib/notifs-eleves';
 import { sendPushToEmail, claimCronPush } from '@/lib/push-server';
 import { wantsNotif } from '@/lib/notif-prefs';
 import { evaluerReglesAll } from '@/lib/regles';
+import { reportError } from '@/lib/report';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -123,7 +124,7 @@ Pour ne pas être pris·e de court, n'hésite pas à renouveler dès que possibl
               }
             }
           } catch (e) {
-            console.error('[cron notifs] credits_faibles err', e);
+            reportError('[cron notifs] credits_faibles err', e);
             totalErrors++;
           }
         }
@@ -177,7 +178,7 @@ Pour assurer la continuité de tes cours, pense à le renouveler avant cette dat
             }
           }
         } catch (e) {
-          console.error('[cron notifs] expiration_abo err', e);
+          reportError('[cron notifs] expiration_abo err', e);
           totalErrors++;
         }
       }
@@ -306,7 +307,7 @@ Pour assurer la continuité de tes cours, pense à le renouveler avant cette dat
             }, () => { /* ignore si table absente ou doublon */ });
           }
         } catch (e) {
-          console.error('[cron notifs] regle err', regle.id, e);
+          reportError('[cron notifs] regle err', regle.id, e);
           totalErrors++;
         }
       }

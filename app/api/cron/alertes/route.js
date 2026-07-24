@@ -4,6 +4,7 @@ import { requireCronAuth } from '@/lib/api-auth';
 import { sendNotifEleve } from '@/lib/notifs-eleves';
 import { sendPushToEmail, sendPushToUser, claimCronPush } from '@/lib/push-server';
 import { wantsNotif } from '@/lib/notif-prefs';
+import { reportError } from '@/lib/report';
 
 // Durée max explicite (fluid compute : 300 s = plafond Hobby)
 export const maxDuration = 300;
@@ -124,7 +125,7 @@ Petit rappel : tu es inscrit·e à la séance ${cours.nom} demain ${dateStr}${he
         }
       }
     } catch (e) {
-      console.error('[cron alertes] rappel err', p.id, e?.message);
+      reportError('[cron alertes] rappel err', p.id, e?.message);
     }
   }
 
@@ -175,7 +176,7 @@ Petit rappel : tu es inscrit·e à la séance ${cours.nom} demain ${dateStr}${he
       }
     }
   } catch (e) {
-    console.error('[cron alertes] pointage rappel:', e?.message);
+    reportError('[cron alertes] pointage rappel:', e?.message);
   }
 
   return NextResponse.json({

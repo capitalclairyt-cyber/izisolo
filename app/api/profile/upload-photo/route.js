@@ -1,5 +1,6 @@
 import { put, del } from '@vercel/blob';
 import { requireAuth } from '@/lib/api-auth';
+import { reportError } from '@/lib/report';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -67,7 +68,7 @@ export async function POST(request) {
       cacheControlMaxAge: 31536000, // 1 an
     });
   } catch (err) {
-    console.error('[upload-photo] blob put error:', err);
+    reportError('[upload-photo] blob put error:', err);
     return Response.json({ error: 'Erreur lors du téléversement' }, { status: 500 });
   }
 
@@ -84,7 +85,7 @@ export async function POST(request) {
     .eq('id', user.id);
 
   if (updateErr) {
-    console.error('[upload-photo] update profile error:', updateErr);
+    reportError('[upload-photo] update profile error:', updateErr);
     return Response.json({ error: 'Erreur lors de la mise à jour du profil' }, { status: 500 });
   }
 

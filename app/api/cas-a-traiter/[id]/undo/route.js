@@ -19,6 +19,7 @@
 import { NextResponse } from 'next/server';
 // requireActiveAccount : écriture métier → bloquée si compte gelé (402)
 import { requireActiveAccount } from '@/lib/api-auth';
+import { reportError } from '@/lib/report';
 
 const UNDO_WINDOW_DAYS = 7;
 
@@ -104,7 +105,7 @@ export async function POST(request, { params }) {
     .single();
 
   if (updErr) {
-    console.error('[cas-a-traiter undo] update err:', updErr);
+    reportError('[cas-a-traiter undo] update err:', updErr);
     return NextResponse.json({ error: 'Une erreur est survenue.' }, { status: 500 });
   }
 

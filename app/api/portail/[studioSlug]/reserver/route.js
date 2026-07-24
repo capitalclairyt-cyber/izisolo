@@ -10,6 +10,7 @@ import { getDelaiPourCours } from '@/lib/regles-annulation';
 import { studioHasFeature } from '@/lib/plan-guard';
 import { infosPratiquesBlock } from '@/lib/email-helpers';
 import { sendEmail } from '@/lib/email';
+import { reportError } from '@/lib/report';
 
 export async function POST(request, { params }) {
   const { studioSlug } = await params;
@@ -116,7 +117,7 @@ export async function POST(request, { params }) {
       .select('id')
       .single();
     if (clientErr) {
-      console.error('create client error:', clientErr);
+      reportError('create client error:', clientErr);
       return Response.json({ error: 'Erreur lors de la création du profil' }, { status: 500 });
     }
     clientId = newClient.id;
@@ -372,7 +373,7 @@ export async function POST(request, { params }) {
     });
 
   if (presenceErr) {
-    console.error('create presence error:', presenceErr);
+    reportError('create presence error:', presenceErr);
     return Response.json({ error: 'Erreur lors de la réservation : ' + presenceErr.message }, { status: 500 });
   }
   if (!resa?.ok) {
@@ -548,12 +549,12 @@ export async function POST(request, { params }) {
         email,
       });
       if (linkErr) {
-        console.error('magic link error (non-blocking):', linkErr);
+        reportError('magic link error (non-blocking):', linkErr);
       } else if (linkData?.properties?.hashed_token) {
         magicLink = `${appUrl}/p/${studioSlug}/connecte?token_hash=${encodeURIComponent(linkData.properties.hashed_token)}&type=magiclink`;
       }
     } catch (linkErr) {
-      console.error('magic link exception (non-blocking):', linkErr);
+      reportError('magic link exception (non-blocking):', linkErr);
     }
   }
 
@@ -624,7 +625,7 @@ export async function POST(request, { params }) {
       });
     }
   } catch (emailErr) {
-    console.error('email confirmation error (non-blocking):', emailErr);
+    reportError('email confirmation error (non-blocking):', emailErr);
     // On ne fait pas échouer la réservation si l'email plante
   }
 

@@ -1,6 +1,7 @@
 import { requireAuth } from '@/lib/api-auth';
 import { sendMessage, resolveClientFromUserEmail } from '@/lib/messagerie';
 import { sendPushToUser, sendPushToEmail } from '@/lib/push-server';
+import { reportError } from '@/lib/report';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -47,7 +48,7 @@ export async function GET(request, { params }) {
 
   const { data: messages, error } = await q;
   if (error) {
-    console.error('[messagerie] GET messages err:', error);
+    reportError('[messagerie] GET messages err:', error);
     return Response.json({ error: 'Erreur lecture messages' }, { status: 500 });
   }
 
@@ -115,7 +116,7 @@ export async function POST(request, { params }) {
       }
       return Response.json({ message: msg });
     } catch (err) {
-      console.error('[messagerie] pro send err:', err);
+      reportError('[messagerie] pro send err:', err);
       return Response.json({ error: 'Erreur envoi' }, { status: 500 });
     }
   }
@@ -156,7 +157,7 @@ export async function POST(request, { params }) {
     }, { type: 'message' }).catch(() => {});
     return Response.json({ message: msg });
   } catch (err) {
-    console.error('[messagerie] eleve send err:', err);
+    reportError('[messagerie] eleve send err:', err);
     return Response.json({ error: 'Erreur envoi' }, { status: 500 });
   }
 }

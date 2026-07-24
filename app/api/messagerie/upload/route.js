@@ -1,5 +1,6 @@
 import { put } from '@vercel/blob';
 import { requireAuth } from '@/lib/api-auth';
+import { reportError } from '@/lib/report';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -59,7 +60,7 @@ export async function POST(request) {
       cacheControlMaxAge: 31536000,
     });
   } catch (err) {
-    console.error('[messagerie/upload] blob put err:', err);
+    reportError('[messagerie/upload] blob put err:', err);
     return Response.json({ error: 'Erreur téléversement' }, { status: 500 });
   }
 

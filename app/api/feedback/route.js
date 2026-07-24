@@ -1,5 +1,6 @@
 import { requireAuth } from '@/lib/api-auth';
 import { createAdminClient } from '@/lib/supabase-admin';
+import { reportError } from '@/lib/report';
 
 export async function POST(request) {
   let profile;
@@ -34,7 +35,7 @@ export async function POST(request) {
   });
 
   if (error) {
-    console.error('[feedback] insert error:', error);
+    reportError('[feedback] insert error:', error);
     return Response.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 

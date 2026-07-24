@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { withRoute } from '@/lib/api-route';
 import { sendPushToEmail } from '@/lib/push-server';
+import { reportError } from '@/lib/report';
 
 const encaisserSchema = z.object({
   mode: z.enum(['especes', 'cheque', 'virement', 'CB']),
@@ -50,7 +51,7 @@ export const POST = withRoute({ auth: 'active', schema: encaisserSchema }, async
     .eq('profile_id', user.id);
 
   if (updateErr) {
-    console.error('encaisser error:', updateErr);
+    reportError('encaisser error:', updateErr);
     return Response.json({ error: 'Erreur lors de l\'encaissement' }, { status: 500 });
   }
 

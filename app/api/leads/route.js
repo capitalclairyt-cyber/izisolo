@@ -22,6 +22,7 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase-admin';
 import crypto from 'node:crypto';
+import { reportError } from '@/lib/report';
 
 const DISPOSABLE_DOMAINS = new Set([
   'mailinator.com', 'tempmail.com', 'tempmail.io', 'temp-mail.org',
@@ -122,7 +123,7 @@ export async function POST(request) {
       .gte('created_at', oneHourAgo);
 
     if (rateLimitErr) {
-      console.error('[leads] rate-limit query failed:', rateLimitErr.message);
+      reportError('[leads] rate-limit query failed:', rateLimitErr.message);
       // On laisse passer (fail open) plutôt que de bloquer un humain à cause d'un bug DB
     } else if (recentCount >= 5) {
       console.log('[leads] Rate limit hit:', { ipHash, recentCount });
@@ -147,7 +148,7 @@ export async function POST(request) {
       });
 
     if (insertErr) {
-      console.error('[leads] insert failed:', insertErr.message);
+      reportError('[leads] insert failed:', insertErr.message);
       // On reste poli côté UX — l'utilisateur aurait juste à réessayer
       return NextResponse.json({ ok: false, error: 'save_failed' }, { status: 500 });
     }
@@ -157,7 +158,7 @@ export async function POST(request) {
 
     return NextResponse.json({ ok: true });
   } catch (err) {
-    console.error('[leads] unexpected error:', err);
+    reportError('[leads] unexpected error:', err);
     return NextResponse.json({ ok: false, error: 'server_error' }, { status: 500 });
   }
 }

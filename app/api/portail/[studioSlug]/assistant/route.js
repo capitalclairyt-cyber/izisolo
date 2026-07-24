@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase-admin';
 import { checkAntiBot } from '@/lib/antibot';
 import Anthropic from '@anthropic-ai/sdk';
 import { escapeIlike } from '@/lib/utils';
+import { reportError } from '@/lib/report';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -144,7 +145,7 @@ ${JSON.stringify(coursContexte, null, 2)}`;
 
     return Response.json({ message: text });
   } catch (err) {
-    console.error('[assistant] error:', err);
+    reportError('[assistant] error:', err);
     return Response.json({ error: 'Assistant temporairement indisponible.' }, { status: 500 });
   }
 }

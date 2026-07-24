@@ -1,4 +1,5 @@
 import { requireAuth } from '@/lib/api-auth';
+import { reportError } from '@/lib/report';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -23,7 +24,7 @@ export async function GET(_request, { params }) {
     .eq('id', conversationId)
     .maybeSingle();
   if (error) {
-    console.error('[messagerie GET conversation]', error);
+    reportError('[messagerie GET conversation]', error);
     return Response.json({ error: 'Une erreur est survenue.' }, { status: 500 });
   }
   if (!conv) return Response.json({ error: 'Conversation introuvable' }, { status: 404 });
@@ -120,7 +121,7 @@ export async function PATCH(request, { params }) {
     .maybeSingle();
 
   if (error) {
-    console.error('[messagerie PATCH] err:', error);
+    reportError('[messagerie PATCH] err:', error);
     return Response.json({ error: 'Une erreur est survenue.' }, { status: 500 });
   }
   if (!data) {

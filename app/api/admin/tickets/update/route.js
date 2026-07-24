@@ -2,6 +2,7 @@ import { createServerClient } from '@/lib/supabase-server';
 import { createAdminClient } from '@/lib/supabase-admin';
 import { parseJsonBody, adminTicketUpdateSchema } from '@/lib/validation';
 import { isAdminEmail } from '@/lib/admin';
+import { reportError } from '@/lib/report';
 
 export async function POST(request) {
   const supabase = await createServerClient();
@@ -31,7 +32,7 @@ export async function POST(request) {
     .select('id');
 
   if (error) {
-    console.error('update ticket error:', error);
+    reportError('update ticket error:', error);
     return new Response('Server error', { status: 500 });
   }
   if (!updated?.length) {

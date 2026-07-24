@@ -1,4 +1,5 @@
 import { requireAuth } from '@/lib/api-auth';
+import { reportError } from '@/lib/report';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -47,7 +48,7 @@ export async function POST(request) {
     }, { onConflict: 'endpoint' });
 
   if (error) {
-    console.error('[push/subscribe] upsert error:', error.message);
+    reportError('[push/subscribe] upsert error:', error.message);
     return Response.json({ error: 'Erreur serveur' }, { status: 500 });
   }
   return Response.json({ ok: true });

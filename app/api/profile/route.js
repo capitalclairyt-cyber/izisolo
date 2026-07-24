@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/api-auth';
 import { sanitizePrefs } from '@/lib/notif-prefs';
+import { reportError } from '@/lib/report';
 
 // GET /api/profile — Récupérer le profil courant
 export async function GET() {
@@ -46,7 +47,7 @@ export async function PUT(request) {
       .single();
 
     if (error) {
-      console.error('[profile PUT] update err:', error);
+      reportError('[profile PUT] update err:', error);
       return NextResponse.json({ error: 'Une erreur est survenue.' }, { status: 400 });
     }
 

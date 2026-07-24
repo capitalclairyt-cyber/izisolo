@@ -3,6 +3,7 @@ import { requireActiveAccount } from '@/lib/api-auth';
 import { effectivePlan } from '@/lib/plan-guard';
 import { askClaude } from '@/lib/claude';
 import { z } from 'zod';
+import { reportError } from '@/lib/report';
 
 export const runtime = 'nodejs';
 
@@ -82,7 +83,7 @@ export async function POST(request) {
       // Fail-open volontaire : un souci de compteur ne doit pas casser la
       // feature. Le coût d'un appel isolé est négligeable ; un plafond de
       // dépense dans la Console Anthropic reste le filet ultime à 100%.
-      console.error('[extract-photo] usage gate error (fail-open):', gateErr.message);
+      reportError('[extract-photo] usage gate error (fail-open):', gateErr.message);
     } else if (gate && gate.allowed === false) {
       if (gate.reason === 'monthly') {
         return Response.json(
@@ -96,7 +97,7 @@ export async function POST(request) {
       );
     }
   } catch (e) {
-    console.error('[extract-photo] usage gate exception (fail-open):', e?.message);
+    reportError('[extract-photo] usage gate exception (fail-open):', e?.message);
   }
 
   const systemPrompt = `Tu extrais les coordonnées d'UN seul contact (un·e élève) depuis une image fournie par une prof de yoga/pilates/bien-être : carte de visite, fiche d'inscription papier, capture d'écran d'un message, ou note manuscrite.
@@ -126,7 +127,7 @@ Règles strictes :
     // laisser de la place à un éventuel "thinking" avant le JSON.
     raw = await askClaude(systemPrompt, messages, { model: 'claude-opus-4-8', maxTokens: 1500 });
   } catch (err) {
-    console.error('[extract-photo] claude error:', err);
+    reportError('[extract-photo] claude error:', err);
     return Response.json({ error: 'Lecture de la photo impossible pour le moment, réessaie.' }, { status: 502 });
   }
 
@@ -135,7 +136,7 @@ Règles strictes :
     const jsonStr = String(raw).replace(/```json|```/g, '').trim();
     parsed = extractSchema.parse(JSON.parse(jsonStr));
   } catch {
-    console.error('[extract-photo] parse failed, raw:', String(raw).slice(0, 200));
+    reportError('[extract-photo] parse failed, raw:', String(raw).slice(0, 200));
     return Response.json(
       { error: "Je n'ai pas réussi à lire les infos sur cette photo. Réessaie avec une image plus nette." },
       { status: 422 }

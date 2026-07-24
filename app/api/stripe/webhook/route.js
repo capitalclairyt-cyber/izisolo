@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase-admin';
 import { verifyStripeSignature, getCheckoutSessionAmount, getCheckoutSessionEmail } from '@/lib/stripe';
 import { sendPushToUser } from '@/lib/push-server';
 import { escapeIlike } from '@/lib/utils';
+import { reportError } from '@/lib/report';
 
 // Frais de fonctionnement IziSolo sur chaque paiement encaissé via le portail (Stripe).
 // Calculés et stockés en DB pour facturation SaaS mensuelle (sprint post-launch).
@@ -51,7 +52,7 @@ export async function POST(request) {
   try {
     event = verifyStripeSignature(rawBody, signature, profile.stripe_webhook_secret);
   } catch (err) {
-    console.error('[stripe/webhook] signature verification failed:', err.message);
+    reportError('[stripe/webhook] signature verification failed:', err.message);
     return new Response(`Webhook signature verification failed: ${err.message}`, { status: 400 });
   }
 
@@ -65,7 +66,7 @@ export async function POST(request) {
     // Autres événements : on accepte sans traiter (Stripe attend un 200).
     return Response.json({ received: true });
   } catch (err) {
-    console.error('[stripe/webhook] handler error:', err);
+    reportError('[stripe/webhook] handler error:', err);
     Sentry.captureException(err);
     return new Response(`Handler error: ${err.message}`, { status: 500 });
   }
@@ -143,7 +144,7 @@ async function handleCheckoutCompleted(supabase, profileId, session) {
   });
 
   if (insertErr) {
-    console.error('[stripe/webhook] insert paiement error:', insertErr);
+    reportError('[stripe/webhook] insert paiement error:', insertErr);
     throw new Error('Failed to create paiement: ' + insertErr.message);
   }
 
@@ -201,7 +202,7 @@ async function handleChargeRefunded(supabase, profileId, charge) {
       .eq('profile_id', profileId)
       .eq('stripe_payment_intent', paymentIntent)
       .select('id');
-    if (error) console.error('[stripe/webhook] refund update (pi) error:', error);
+    if (error) reportError('[stripe/webhook] refund update (pi) error:', error);
     else touched = data?.length || 0;
   }
 
@@ -214,13 +215,13 @@ async function handleChargeRefunded(supabase, profileId, charge) {
       .eq('profile_id', profileId)
       .eq('stripe_session_id', sessionId)
       .select('id');
-    if (error) console.error('[stripe/webhook] refund update (session) error:', error);
+    if (error) reportError('[stripe/webhook] refund update (session) error:', error);
     else touched = data?.length || 0;
   }
 
   if (!touched) {
     // Remboursement orphelin : visible dans Sentry au lieu de disparaître
-    console.error('[stripe/webhook] refund non rattaché à un paiement:', charge.id);
+    reportError('[stripe/webhook] refund non rattaché à un paiement:', charge.id);
     Sentry.captureMessage(`[stripe/webhook] refund non rattaché : charge ${charge.id} (profile ${profileId})`);
   }
 }

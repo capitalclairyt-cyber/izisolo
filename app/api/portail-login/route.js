@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { sendPortailMagicLink } from '@/lib/portail-magic-link';
 import { checkRateLimitIP } from '@/lib/antibot';
+import { reportError } from '@/lib/report';
 
 /**
  * POST /api/portail-login — Demande de lien de connexion ÉLÈVE (self-service).
@@ -57,7 +58,7 @@ export async function POST(req) {
 
     return NextResponse.json({ ok: true });
   } catch (err) {
-    console.error('[portail-login] error:', err);
+    reportError('[portail-login] error:', err);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }

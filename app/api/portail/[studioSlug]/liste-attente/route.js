@@ -6,6 +6,7 @@ import { sendEmail } from '@/lib/email';
 import { sendPushToUser } from '@/lib/push-server';
 import { wantsNotif } from '@/lib/notif-prefs';
 import { escapeIlike } from '@/lib/utils';
+import { reportError } from '@/lib/report';
 
 export async function POST(request, { params }) {
   const { studioSlug } = await params;
@@ -133,7 +134,7 @@ export async function POST(request, { params }) {
     if (insertErr.code === '23505') {
       return Response.json({ ok: true, position, deja: true });
     }
-    console.error('liste-attente insert error:', insertErr);
+    reportError('liste-attente insert error:', insertErr);
     return Response.json({ error: 'Erreur lors de l\'inscription' }, { status: 500 });
   }
 
@@ -177,7 +178,7 @@ export async function POST(request, { params }) {
         </div>
       `,
     });
-  } catch (e) { console.error('[liste-attente] email confirmation non-bloquant:', e?.message); }
+  } catch (e) { reportError('[liste-attente] email confirmation non-bloquant:', e?.message); }
 
   // Notification cloche côté prof (non bloquant, gaté sur pref Appli).
   if (wantsNotif(profile.notif_prefs, 'liste_attente', 'prof', 'inapp')) {
@@ -190,7 +191,7 @@ export async function POST(request, { params }) {
         data: { cours_id: coursId, email },
         lu: false,
       });
-    } catch (e) { console.error('[liste-attente] notif prof non-bloquant:', e?.message); }
+    } catch (e) { reportError('[liste-attente] notif prof non-bloquant:', e?.message); }
   }
 
   // Push prof (gaté sur pref liste_attente ; no-op sans abonnement)

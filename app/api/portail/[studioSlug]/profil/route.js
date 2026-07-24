@@ -2,6 +2,7 @@ import { createServerClient } from '@/lib/supabase-server';
 import { createAdminClient } from '@/lib/supabase-admin';
 import { sanitizePrefs } from '@/lib/notif-prefs';
 import { escapeIlike } from '@/lib/utils';
+import { reportError } from '@/lib/report';
 
 /**
  * PATCH /api/portail/[studioSlug]/profil
@@ -61,7 +62,7 @@ export async function PATCH(request, { params }) {
     .update(update)
     .eq('id', client.id);
   if (error) {
-    console.error('[profil] update error:', error);
+    reportError('[profil] update error:', error);
     return Response.json({ error: 'Erreur lors de la mise à jour' }, { status: 500 });
   }
 

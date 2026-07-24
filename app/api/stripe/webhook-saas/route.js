@@ -1,6 +1,7 @@
 import * as Sentry from '@sentry/nextjs';
 import { createAdminClient } from '@/lib/supabase-admin';
 import Stripe from 'stripe';
+import { reportError } from '@/lib/report';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -40,7 +41,7 @@ export async function POST(request) {
   try {
     event = stripe.webhooks.constructEvent(rawBody, signature, process.env.STRIPE_WEBHOOK_SECRET_SAAS);
   } catch (err) {
-    console.error('[webhook-saas] signature failed:', err.message);
+    reportError('[webhook-saas] signature failed:', err.message);
     return new Response(`Signature failed: ${err.message}`, { status: 400 });
   }
 
@@ -73,7 +74,7 @@ export async function POST(request) {
         if (!profileId) {
           // Un paiement SaaS encaissé qui n'active aucun plan = grave et
           // invisible avant ce sprint (break muet + 200). Alerte Sentry.
-          console.error('[webhook-saas] checkout.session.completed SANS profile_id:', session.id);
+          reportError('[webhook-saas] checkout.session.completed SANS profile_id:', session.id);
           Sentry.captureMessage(`[webhook-saas] checkout sans profile_id : ${session.id}`);
           break;
         }
@@ -164,7 +165,7 @@ export async function POST(request) {
     // On garde le 500 pour que Stripe rejoue l'event, mais on ne renvoie pas
     // le détail de l'erreur (le message brut peut fuiter des infos internes).
     // Le détail reste loggé côté serveur.
-    console.error('[webhook-saas] handler error:', err);
+    reportError('[webhook-saas] handler error:', err);
     Sentry.captureException(err);
     return new Response('Handler error', { status: 500 });
   }

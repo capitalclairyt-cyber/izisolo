@@ -1,5 +1,6 @@
 import { withRoute } from '@/lib/api-route';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { reportError } from '@/lib/report';
 
 /**
  * /api/eleve/compte — Compte élève (Sprint E, cf. AUDIT-REPRISE-2026-07.md §2).
@@ -36,7 +37,7 @@ export const GET = withRoute(
       .ilike('email', escapeIlike(email));
 
     if (error) {
-      console.error('[eleve/compte] GET error:', error.message);
+      reportError('[eleve/compte] GET error:', error.message);
       return Response.json({ portails: [] });
     }
 
@@ -69,7 +70,7 @@ export const POST = withRoute(
       user_metadata: { role: 'prof' },
     });
     if (metaErr) {
-      console.error('[eleve/compte] updateUserById error:', metaErr.message);
+      reportError('[eleve/compte] updateUserById error:', metaErr.message);
       return Response.json({ error: 'Erreur serveur', code: 'INTERNAL' }, { status: 500 });
     }
 
@@ -83,7 +84,7 @@ export const POST = withRoute(
       });
       // 23505 = le profil existe déjà (course) : non bloquant.
       if (insertErr && insertErr.code !== '23505') {
-        console.error('[eleve/compte] insert profil error:', insertErr.message);
+        reportError('[eleve/compte] insert profil error:', insertErr.message);
         return Response.json({ error: 'Erreur serveur', code: 'INTERNAL' }, { status: 500 });
       }
     }

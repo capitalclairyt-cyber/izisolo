@@ -4,6 +4,7 @@ import { sendNotifEleve } from '@/lib/notifs-eleves';
 import { sendPushToEmail } from '@/lib/push-server';
 import { wantsNotif } from '@/lib/notif-prefs';
 import { getRegle } from '@/lib/regles-metier';
+import { reportError } from '@/lib/report';
 
 export const runtime = 'nodejs';
 
@@ -55,7 +56,7 @@ export const POST = withRoute({ auth: 'active' }, async ({ request, params, auth
     .eq('profile_id', user.id);
 
   if (updateErr) {
-    console.error('[cours/annuler] update error:', updateErr);
+    reportError('[cours/annuler] update error:', updateErr);
     return Response.json({ error: 'Erreur lors de l\'annulation' }, { status: 500 });
   }
 

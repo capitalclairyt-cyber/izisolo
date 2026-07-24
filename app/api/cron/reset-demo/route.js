@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { requireCronAuth } from '@/lib/api-auth';
+import { reportError } from '@/lib/report';
 
 // Durée max explicite (le re-seed touche plusieurs tables).
 export const maxDuration = 300;
@@ -19,7 +20,7 @@ export async function GET(request) {
 
   const { error } = await supabaseAdmin.rpc('reset_demo_data');
   if (error) {
-    console.error('[cron/reset-demo]', error);
+    reportError('[cron/reset-demo]', error);
     return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
   }
   return NextResponse.json({ ok: true, reset: 'demo', timestamp: new Date().toISOString() });

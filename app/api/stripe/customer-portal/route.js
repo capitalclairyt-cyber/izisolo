@@ -15,6 +15,7 @@
 
 import { createServerClient } from '@/lib/supabase-server';
 import Stripe from 'stripe';
+import { reportError } from '@/lib/report';
 
 export const runtime = 'nodejs';
 
@@ -61,7 +62,7 @@ export async function POST() {
     });
     return Response.json({ url: session.url });
   } catch (err) {
-    console.error('[customer-portal] error:', err);
+    reportError('[customer-portal] error:', err);
     // Erreur typique : "No configuration provided" si Customer Portal pas
     // activé dans dashboard.stripe.com → message d'aide à la prof.
     if (err.message?.includes('No configuration')) {

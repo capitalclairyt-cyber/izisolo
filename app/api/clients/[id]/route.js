@@ -1,4 +1,5 @@
 import { withRoute } from '@/lib/api-route';
+import { reportError } from '@/lib/report';
 
 /**
  * DELETE /api/clients/[id] — Supprime une fiche client.
@@ -37,7 +38,7 @@ export const DELETE = withRoute({ auth: 'active' }, async ({ params, auth }) => 
     // On remonte le message réel : toutes les FK client_id sont censées être en
     // CASCADE/SET NULL (donc la suppression doit passer) ; si ça échoue quand
     // même, le message aide à diagnostiquer (contrainte oubliée, trigger…).
-    console.error('[clients DELETE] error:', deleteErr);
+    reportError('[clients DELETE] error:', deleteErr);
     return Response.json({ error: 'Erreur lors de la suppression : ' + (deleteErr.message || 'inconnue') }, { status: 500 });
   }
 

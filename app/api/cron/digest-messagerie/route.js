@@ -1,6 +1,7 @@
 import { requireCronAuth } from '@/lib/api-auth';
 import { createAdminClient } from '@/lib/supabase-admin';
 import { sendEmail } from '@/lib/email';
+import { reportError } from '@/lib/report';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -223,7 +224,7 @@ async function envoyerDigest({ to, prenom, nbRecus, url, contexte, studioNom }) 
     });
     return r.ok;
   } catch (err) {
-    console.error('[cron digest] envoi err:', err);
+    reportError('[cron digest] envoi err:', err);
     return false;
   }
 }

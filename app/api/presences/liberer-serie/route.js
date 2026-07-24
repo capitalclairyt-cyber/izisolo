@@ -3,6 +3,7 @@ import { withRoute } from '@/lib/api-route';
 import { createAdminClient } from '@/lib/supabase-admin';
 import { libererSerieSchema } from '@/lib/validation';
 import { promouvoirListeAttente } from '@/lib/promotion-liste-attente';
+import { reportError } from '@/lib/report';
 
 /**
  * POST /api/presences/liberer-serie
@@ -72,7 +73,7 @@ export const POST = withRoute({ auth: 'active' }, async ({ request, auth }) => {
     .in('id', ids);
 
   if (delErr) {
-    console.error('[liberer-serie] delete err:', delErr);
+    reportError('[liberer-serie] delete err:', delErr);
     return NextResponse.json({ error: 'Erreur lors de la libération' }, { status: 500 });
   }
 

@@ -11,6 +11,7 @@ import { sendPushToUser } from '@/lib/push-server';
 import { resoudreCarnetApplicable } from '@/lib/carnet-resolution';
 import { escapeIlike } from '@/lib/utils';
 import { promouvoirListeAttente } from '@/lib/promotion-liste-attente';
+import { reportError } from '@/lib/report';
 
 export async function POST(request, { params }) {
   const { studioSlug } = await params;
@@ -124,7 +125,7 @@ export async function POST(request, { params }) {
       .eq('id', presenceId);
 
     if (deleteErr) {
-      console.error('annulation libre — delete error:', deleteErr);
+      reportError('annulation libre — delete error:', deleteErr);
       return Response.json({ error: 'Erreur lors de l\'annulation' }, { status: 500 });
     }
 
@@ -134,7 +135,7 @@ export async function POST(request, { params }) {
     try {
       await promouvoirListeAttente(supabaseAdmin, profile.id, presence.cours, { proEmail, studioSlug });
     } catch (promErr) {
-      console.error('promotion liste attente (non-blocking):', promErr);
+      reportError('promotion liste attente (non-blocking):', promErr);
     }
 
     return Response.json({ ok: true, tardive: false });
@@ -161,13 +162,13 @@ export async function POST(request, { params }) {
       .delete()
       .eq('id', presenceId);
     if (deleteErr) {
-      console.error('annulation tardive (excusee) — delete error:', deleteErr);
+      reportError('annulation tardive (excusee) — delete error:', deleteErr);
       return Response.json({ error: 'Erreur lors de l\'annulation' }, { status: 500 });
     }
     // Promotion liste d'attente comme pour annulation libre
     try {
       await promouvoirListeAttente(supabaseAdmin, profile.id, presence.cours, { proEmail, studioSlug });
-    } catch (e) { console.error('promotion (excuse): non-blocking:', e); }
+    } catch (e) { reportError('promotion (excuse): non-blocking:', e); }
     return Response.json({ ok: true, tardive: true, action: 'excusee' });
   }
 
@@ -179,7 +180,7 @@ export async function POST(request, { params }) {
       .delete()
       .eq('id', presenceId);
     if (deleteErr) {
-      console.error('annulation tardive (manuel) — delete error:', deleteErr);
+      reportError('annulation tardive (manuel) — delete error:', deleteErr);
       return Response.json({ error: 'Erreur lors de l\'annulation' }, { status: 500 });
     }
     try {
@@ -199,7 +200,7 @@ export async function POST(request, { params }) {
           presence_id: presenceId, // pour ref historique même si supprimée
         },
       });
-    } catch (e) { console.error('annulation (manuel): cas_a_traiter non-bloquant:', e); }
+    } catch (e) { reportError('annulation (manuel): cas_a_traiter non-bloquant:', e); }
     try { await promouvoirListeAttente(supabaseAdmin, profile.id, presence.cours, { proEmail, studioSlug }); } catch {}
     return Response.json({ ok: true, tardive: true, action: 'manuel' });
   }
@@ -218,7 +219,7 @@ export async function POST(request, { params }) {
     .eq('id', presenceId);
 
   if (updateErr) {
-    console.error('annulation tardive — update error:', updateErr);
+    reportError('annulation tardive — update error:', updateErr);
     return Response.json({ error: 'Erreur lors de l\'annulation' }, { status: 500 });
   }
 
@@ -244,13 +245,13 @@ export async function POST(request, { params }) {
         date: presence.cours?.date,
         tarif_unitaire: presence.cours?.tarif_unitaire,
       })?.id || null;
-    } catch (e) { console.error('annulation tardive — résolution carnet err:', e); }
+    } catch (e) { reportError('annulation tardive — résolution carnet err:', e); }
   }
   if (aboADecompter) {
     const { error: incErr } = await supabaseAdmin
       .rpc('ajuster_seances', { p_abo_id: aboADecompter, p_delta: 1 });
     if (incErr) {
-      console.error('annulation tardive — décompte err:', incErr);
+      reportError('annulation tardive — décompte err:', incErr);
     } else {
       seanceDecomptee = true;
       // Lier la présence au carnet décompté (symétrie : un éventuel recrédit
@@ -280,7 +281,7 @@ export async function POST(request, { params }) {
           cours_date: presence.cours?.date,
         },
       });
-    } catch (e) { console.error('annul dette: cas_a_traiter non-bloquant:', e); }
+    } catch (e) { reportError('annul dette: cas_a_traiter non-bloquant:', e); }
   }
 
   // Notification à l'élève — le message reflète ce qui s'est RÉELLEMENT passé :
@@ -335,7 +336,7 @@ Tu peux retrouver le détail dans ton espace personnel.
       },
     });
   } catch (notifErr) {
-    console.error('annulation tardive — notif (non-blocking):', notifErr);
+    reportError('annulation tardive — notif (non-blocking):', notifErr);
   }
 
   return Response.json({

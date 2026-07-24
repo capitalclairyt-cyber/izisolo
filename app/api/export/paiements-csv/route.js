@@ -1,4 +1,5 @@
 import { withRoute } from '@/lib/api-route';
+import { reportError } from '@/lib/report';
 
 const PERIODE_TO_RANGE = (periode) => {
   const now = new Date();
@@ -81,7 +82,7 @@ export const GET = withRoute({ auth: 'user', plan: 'export_compta' }, async ({ r
   const { data: paiements, error } = await query;
 
   if (error) {
-    console.error('export csv error:', error);
+    reportError('export csv error:', error);
     return Response.json({ error: 'Erreur lors de la génération du CSV' }, { status: 500 });
   }
 

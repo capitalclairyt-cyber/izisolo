@@ -3,6 +3,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { requireCronAuth } from '@/lib/api-auth';
 import { getTrialStatus } from '@/lib/trial';
 import { sendEmail } from '@/lib/email';
+import { reportError } from '@/lib/report';
 
 // Durée max explicite (fluid compute : 300 s = plafond Hobby)
 export const maxDuration = 300;
@@ -27,7 +28,7 @@ export async function GET(request) {
     .select('id');
 
   if (error) {
-    console.error('[cron/expirations]', error);
+    reportError('[cron/expirations]', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
@@ -58,7 +59,7 @@ export async function GET(request) {
       listeAttentePurgee += del?.length || 0;
     }
   } catch (e) {
-    console.error('[cron/expirations] purge liste_attente:', e?.message);
+    reportError('[cron/expirations] purge liste_attente:', e?.message);
   }
 
   // ── Auto-statut clients ──────────────────────────────────────────────────
@@ -161,11 +162,11 @@ export async function GET(request) {
           .eq('id', prof.id);
         if (isJ1) trialJ1++; else trialJ3++;
       } catch (e) {
-        console.error('[cron/expirations] trial reminder err', prof.id, e?.message);
+        reportError('[cron/expirations] trial reminder err', prof.id, e?.message);
       }
     }
   } catch (e) {
-    console.error('[cron/expirations] trial reminders section:', e?.message);
+    reportError('[cron/expirations] trial reminders section:', e?.message);
   }
 
   return NextResponse.json({

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { withRoute } from '@/lib/api-route';
+import { reportError } from '@/lib/report';
 
 /**
  * POST /api/abonnements/[id]/pause
@@ -49,7 +50,7 @@ export const POST = withRoute({ auth: 'active' }, async ({ request, params, auth
       .eq('id', id);
 
     if (error) {
-      console.error('[abonnements pause] update err:', error);
+      reportError('[abonnements pause] update err:', error);
       return NextResponse.json({ error: 'Une erreur est survenue.' }, { status: 500 });
     }
     return NextResponse.json({ ok: true });
@@ -67,7 +68,7 @@ export const POST = withRoute({ auth: 'active' }, async ({ request, params, auth
       .eq('id', id);
 
     if (error) {
-      console.error('[abonnements pause] reprendre err:', error);
+      reportError('[abonnements pause] reprendre err:', error);
       return NextResponse.json({ error: 'Une erreur est survenue.' }, { status: 500 });
     }
     return NextResponse.json({ ok: true });

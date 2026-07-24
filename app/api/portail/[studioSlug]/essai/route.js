@@ -6,6 +6,7 @@ import { wantsNotif } from '@/lib/notif-prefs';
 import { checkAntiBot, ipFromRequest } from '@/lib/antibot';
 import { essaiSchema } from '@/lib/validation';
 import { studioHasFeature } from '@/lib/plan-guard';
+import { reportError } from '@/lib/report';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -137,7 +138,7 @@ export async function POST(request, { params }) {
     .single();
 
   if (demandeErr) {
-    console.error('[essai] insert demande err:', demandeErr);
+    reportError('[essai] insert demande err:', demandeErr);
     return Response.json({ error: 'Erreur lors de la création de la demande' }, { status: 500 });
   }
 
@@ -149,7 +150,7 @@ export async function POST(request, { params }) {
     try {
       await finaliserDemande(supabaseAdmin, demande);
     } catch (err) {
-      console.error('[essai] finaliserDemande err:', err);
+      reportError('[essai] finaliserDemande err:', err);
       return Response.json({ error: 'Erreur lors de la finalisation : ' + err.message }, { status: 500 });
     }
   }
