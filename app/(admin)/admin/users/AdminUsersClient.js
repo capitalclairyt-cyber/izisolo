@@ -12,21 +12,52 @@ import { matchRecherche } from '@/lib/utils';
 const PLANS = ['free', 'solo', 'pro', 'premium'];
 const PLAN_COLORS = { free: 'free', solo: 'solo', pro: 'pro', premium: 'premium' };
 
+// Statuts de compte (calculés serveur via lib/trial getAccountStatus)
+const STATUTS_COMPTE = {
+  subscribed:    { label: 'Abonné',        cls: 'st-subscribed' },
+  trial_active:  { label: 'Essai',         cls: 'st-trial' },
+  trial_expired: { label: 'Essai expiré',  cls: 'st-expired' },
+  past_due:      { label: 'Impayé ⚠️',     cls: 'st-pastdue' },
+  canceled:      { label: 'Résilié',       cls: 'st-canceled' },
+  free:          { label: 'Free (interne)', cls: 'st-free' },
+};
+
+function relatif(dateStr) {
+  if (!dateStr) return null;
+  const j = Math.floor((Date.now() - new Date(dateStr).getTime()) / 86400000);
+  if (j <= 0) return "aujourd'hui";
+  if (j === 1) return 'hier';
+  if (j < 30) return `il y a ${j} j`;
+  return `le ${new Date(dateStr).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}`;
+}
+
 export default function AdminUsersClient({ initialUsers }) {
   const [users, setUsers] = useState(initialUsers);
   const [search, setSearch] = useState('');
   const [filterPlan, setFilterPlan] = useState('');
+  const [filterStatut, setFilterStatut] = useState('');
+  const [masquerTests, setMasquerTests] = useState(true);
   const [editingPlan, setEditingPlan] = useState(null); // { userId, currentPlan }
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
 
   const filtered = useMemo(() => {
     return users.filter(u => {
+      if (masquerTests && u.est_test) return false;
       const matchSearch = matchRecherche(search, u.prenom, u.studio_nom, u.email, u.metier);
       const matchPlan = !filterPlan || (u.plan || 'free') === filterPlan;
-      return matchSearch && matchPlan;
+      const matchStatut = !filterStatut || u.compte_statut === filterStatut;
+      return matchSearch && matchPlan && matchStatut;
     });
-  }, [users, search, filterPlan]);
+  }, [users, search, filterPlan, filterStatut, masquerTests]);
+
+  const statutCount = useMemo(() => {
+    const base = users.filter(u => !(masquerTests && u.est_test));
+    return Object.keys(STATUTS_COMPTE).reduce((acc, s) => {
+      acc[s] = base.filter(u => u.compte_statut === s).length;
+      return acc;
+    }, {});
+  }, [users, masquerTests]);
 
   const handleChangePlan = async (userId, newPlan) => {
     const target = users.find(u => u.id === userId);
@@ -90,6 +121,23 @@ export default function AdminUsersClient({ initialUsers }) {
         ))}
       </div>
 
+      {/* Statut de compte + comptes de test */}
+      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+        {Object.entries(STATUTS_COMPTE).map(([s, cfg]) => (
+          <button
+            key={s}
+            onClick={() => setFilterStatut(filterStatut === s ? '' : s)}
+            className={`admin-filter-pill ${filterStatut === s ? 'active' : ''}`}
+          >
+            {cfg.label} ({statutCount[s] || 0})
+          </button>
+        ))}
+        <label style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#64748b', fontSize: '0.8125rem', cursor: 'pointer', marginLeft: 'auto' }}>
+          <input type="checkbox" checked={masquerTests} onChange={e => setMasquerTests(e.target.checked)} />
+          Masquer les comptes test ({users.filter(u => u.est_test).length})
+        </label>
+      </div>
+
       {/* Search bar */}
       <div className="admin-card" style={{ padding: '14px 16px' }}>
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
@@ -126,7 +174,8 @@ export default function AdminUsersClient({ initialUsers }) {
               <tr>
                 <th>Utilisateur</th>
                 <th>Studio</th>
-                <th>Métier</th>
+                <th>Statut</th>
+                <th>Activité</th>
                 <th>Plan</th>
                 <th>Inscrit le</th>
               </tr>
@@ -134,18 +183,44 @@ export default function AdminUsersClient({ initialUsers }) {
             <tbody>
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={5} style={{ textAlign: 'center', color: '#475569', padding: '32px' }}>
+                  <td colSpan={6} style={{ textAlign: 'center', color: '#475569', padding: '32px' }}>
                     Aucun utilisateur trouvé
                   </td>
                 </tr>
               ) : filtered.map(u => (
                 <tr key={u.id}>
                   <td>
-                    <div style={{ fontWeight: 600, color: '#e2e8f0' }}>{u.prenom || '—'}</div>
+                    <div style={{ fontWeight: 600, color: '#e2e8f0' }}>
+                      {u.prenom || '—'}
+                      {u.est_test && <span className="admin-test-badge">TEST</span>}
+                    </div>
                     {u.email && <div style={{ fontSize: '0.75rem', color: '#475569', marginTop: '2px' }}>{u.email}</div>}
                   </td>
-                  <td style={{ color: '#94a3b8' }}>{u.studio_nom || '—'}</td>
-                  <td style={{ color: '#64748b', fontSize: '0.8125rem' }}>{u.metier || '—'}</td>
+                  <td style={{ color: '#94a3b8' }}>
+                    {u.studio_nom || '—'}
+                    {u.metier && <div style={{ fontSize: '0.7rem', color: '#475569', marginTop: '2px' }}>{u.metier}</div>}
+                  </td>
+                  <td>
+                    <span className={`admin-statut-badge ${STATUTS_COMPTE[u.compte_statut]?.cls || ''}`}>
+                      {STATUTS_COMPTE[u.compte_statut]?.label || u.compte_statut}
+                      {u.compte_statut === 'trial_active' && ` · J-${u.trial_jours_restants}`}
+                    </span>
+                    {u.last_sign_in_at && (
+                      <div style={{ fontSize: '0.7rem', color: '#475569', marginTop: '3px' }}>
+                        vu {relatif(u.last_sign_in_at)}
+                      </div>
+                    )}
+                  </td>
+                  <td style={{ fontSize: '0.78rem', color: '#94a3b8', lineHeight: 1.6 }}>
+                    {u.nb_clients} élève{u.nb_clients > 1 ? 's' : ''} · {u.nb_cours} cours
+                    <div style={{ fontSize: '0.7rem', color: u.nb_paiements_30j > 0 ? '#4ade80' : '#475569' }}>
+                      {u.nb_paiements_30j > 0
+                        ? `${u.nb_paiements_30j} encaissement${u.nb_paiements_30j > 1 ? 's' : ''} /30j`
+                        : u.dernier_paiement
+                          ? `dernier encaissement ${relatif(u.dernier_paiement)}`
+                          : 'aucun encaissement'}
+                    </div>
+                  </td>
                   <td>
                     {editingPlan?.userId === u.id ? (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '120px' }}>
@@ -221,6 +296,21 @@ export default function AdminUsersClient({ initialUsers }) {
         .admin-filter-pill.plan-pro.active { border-color: #4ade80; color: #4ade80; background: #1c3a2e; }
         .admin-filter-pill.plan-studio.active { border-color: #c084fc; color: #c084fc; background: #2d1f3f; }
         .admin-filter-pill.plan-premium.active { border-color: #fb923c; color: #fb923c; background: #3f2d1f; }
+        .admin-test-badge {
+          margin-left: 6px; padding: 1px 6px; border-radius: 4px;
+          background: #3f2d1f; color: #fb923c; font-size: 0.6rem; font-weight: 700;
+          vertical-align: middle; letter-spacing: 0.5px;
+        }
+        .admin-statut-badge {
+          display: inline-block; padding: 2px 8px; border-radius: 6px;
+          font-size: 0.72rem; font-weight: 600; white-space: nowrap;
+        }
+        .admin-statut-badge.st-subscribed { background: #1c3a2e; color: #4ade80; }
+        .admin-statut-badge.st-trial      { background: #1e3a5f; color: #60a5fa; }
+        .admin-statut-badge.st-expired    { background: #3f2d1f; color: #fb923c; }
+        .admin-statut-badge.st-pastdue    { background: #3f1f1f; color: #f87171; }
+        .admin-statut-badge.st-canceled   { background: #2a2a35; color: #94a3b8; }
+        .admin-statut-badge.st-free       { background: #1e293b; color: #94a3b8; }
       `}</style>
     </div>
   );
