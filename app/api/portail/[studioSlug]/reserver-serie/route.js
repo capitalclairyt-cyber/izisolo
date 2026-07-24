@@ -24,7 +24,7 @@ export async function POST(request, { params }) {
 
   // Rate-limit IP : route d'écriture qui boucle sur N occurrences — on borne
   // le volume par IP (10/h), compteur isolé du reste via le scope.
-  const rl = checkRateLimitIP(request, { max: 10, scope: 'reserver-serie' });
+  const rl = await checkRateLimitIP(request, { max: 10, scope: 'reserver-serie' });
   if (!rl.ok) return Response.json({ error: rl.reason }, { status: 429 });
 
   let body;

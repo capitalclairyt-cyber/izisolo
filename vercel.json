@@ -15,10 +15,6 @@
     {
       "path": "/api/cron/digest-messagerie",
       "schedule": "0 16 * * *"
-    },
-    {
-      "path": "/api/cron/reset-demo",
-      "schedule": "0 2 * * *"
     }
   ],
 

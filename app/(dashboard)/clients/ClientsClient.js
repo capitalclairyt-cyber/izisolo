@@ -166,7 +166,7 @@ export default function ClientsClient({ clients: clientsInit, profile, statutMap
   // rien à cocher pour la prof ; la personne sort du segment dès qu'elle
   // prend un carnet ou vient à un cours régulier.
   const estPonctuel = (c) => {
-    const info = presenceInfo[c.id];
+    const info = presenceInfo?.[c.id];
     return !!info && info.nb > 0 && info.toutesTarifees && (c.abonnements || []).length === 0;
   };
 
@@ -191,7 +191,7 @@ export default function ClientsClient({ clients: clientsInit, profile, statutMap
       // (pleine lune, mini-stage…), jamais de carnet/abo → à transformer en
       // élève régulier·e (inviter, proposer un carnet).
       list = list.filter(estPonctuel);
-    } else if (filtrePrimaire === 'jamais_venu') {
+    } else if (filtrePrimaire === 'jamais_venu' && presenceInfo) {
       // Fiche sans aucune présence : prospect pur (invitation, import, résa
       // annulée…) — à relancer ou à faire le tri.
       list = list.filter(c => !(presenceInfo[c.id]?.nb > 0));
@@ -378,9 +378,11 @@ export default function ClientsClient({ clients: clientsInit, profile, statutMap
         </button>
       </div>
 
-      {/* Filtres primaires — orientés action ("qui dois-je relancer ?") */}
+      {/* Filtres primaires — orientés action ("qui dois-je relancer ?").
+          presenceInfo null (RPC v72 absente) → les 2 segments basés sur les
+          présences sont masqués plutôt que de mentir. */}
       <div className="filters animate-slide-up">
-        {FILTRES_PRIMAIRES.map(f => (
+        {FILTRES_PRIMAIRES.filter(f => presenceInfo || !['ponctuels', 'jamais_venu'].includes(f.key)).map(f => (
           <button
             key={f.key}
             className={`filter-btn ${filtrePrimaire === f.key ? 'active' : ''}`}

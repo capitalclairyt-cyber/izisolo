@@ -37,7 +37,7 @@ export async function POST(request) {
 
   // Rate-limit : endpoint LLM (coût Anthropic) — 30 req/h/IP, aligné sur
   // l'assistant portail, compteur isolé via le scope.
-  const rl = checkRateLimitIP(request, { max: 30, scope: 'support' });
+  const rl = await checkRateLimitIP(request, { max: 30, scope: 'support' });
   if (!rl.ok) return Response.json({ error: rl.reason }, { status: 429 });
 
   const { messages } = await request.json();

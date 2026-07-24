@@ -73,6 +73,15 @@ export async function GET(request) {
     console.error('[cron/expirations] purge erreurs_app:', e?.message);
   }
 
+  // ── Purge des compteurs de rate-limit (v72) ──────────────────────────────
+  // Les fenêtres font 1h max : une ligne de plus de 2 jours est morte.
+  try {
+    const il2jours = new Date(Date.now() - 2 * 86400000).toISOString();
+    await supabaseAdmin.from('rate_limits').delete().lt('fenetre_debut', il2jours);
+  } catch (e) {
+    reportError('[cron/expirations] purge rate_limits:', e?.message);
+  }
+
   // ── Auto-statut clients ──────────────────────────────────────────────────
   let promoCount = 0;
 

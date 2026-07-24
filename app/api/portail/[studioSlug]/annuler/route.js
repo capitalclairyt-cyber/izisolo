@@ -18,7 +18,7 @@ export async function POST(request, { params }) {
 
   // Rate-limit IP : route publique d'écriture destructrice (delete presences)
   // — on borne les annulations automatisées (10/h/IP).
-  const rl = checkRateLimitIP(request, { max: 10, scope: 'portail-annuler' });
+  const rl = await checkRateLimitIP(request, { max: 10, scope: 'portail-annuler' });
   if (!rl.ok) return Response.json({ error: rl.reason }, { status: 429 });
 
   const { data, errorResponse } = await parseJsonBody(request, annulationSchema);

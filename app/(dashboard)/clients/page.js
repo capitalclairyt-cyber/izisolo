@@ -9,7 +9,7 @@ export default async function ClientsPage() {
     { data: profile },
     { data: clients },
     { data: statuts },
-    { data: presences },
+    { data: segments, error: segmentsError },
   ] = await Promise.all([
     supabase.from('profiles').select('metier, vocabulaire, niveaux, sources, studio_slug, studio_nom, prenom').eq('id', user.id).single(),
     supabase.from('clients').select('*, abonnements(id, type, offre_nom, seances_total, seances_utilisees, statut, date_fin)')
@@ -18,30 +18,31 @@ export default async function ClientsPage() {
     // Statut de compte (RPC v67) — dégrade proprement si la migration n'est pas
     // appliquée (rpc renvoie une erreur → statuts null → aucun badge « actif »).
     supabase.rpc('eleves_statut_compte'),
-    // Présences (légères) — pour dériver les segments « Ponctuel·les » (venu·es
-    // uniquement à des évènements payables à la séance : pleine lune, stage…)
-    // et « Jamais venu·e » (fiche sans aucune présence).
-    supabase.from('presences').select('client_id, cours:cours_id(nom, date, tarif_unitaire)')
-      .eq('profile_id', user.id),
+    // Segments « Ponctuel·les » / « Jamais venu·e » — agrégat serveur (RPC v72).
+    // Avant : chargement de TOUTES les présences du studio + jointure cours à
+    // chaque affichage — et FAUX au-delà de 1000 présences (plafond PostgREST
+    // silencieux). L'agrégat renvoie une ligne par élève, borné par nature.
+    supabase.rpc('presences_par_eleve'),
   ]);
 
   // Map client_id → { has_account, last_sign_in_at }
   const statutMap = {};
   for (const s of statuts || []) statutMap[s.client_id] = s;
 
-  // Map client_id → { nb, toutesTarifees, dernier: {nom, date} } — agrégé
-  // serveur pour ne passer qu'un petit objet au client.
-  const presenceInfo = {};
-  for (const p of presences || []) {
-    if (!p.client_id) continue;
-    const info = presenceInfo[p.client_id] || (presenceInfo[p.client_id] = { nb: 0, toutesTarifees: true, dernier: null });
-    info.nb++;
-    if (Number(p.cours?.tarif_unitaire) > 0) {
-      if (!info.dernier || (p.cours?.date || '') > (info.dernier.date || '')) {
-        info.dernier = { nom: p.cours?.nom || 'Évènement', date: p.cours?.date || null };
-      }
-    } else {
-      info.toutesTarifees = false;
+  // Map client_id → { nb, toutesTarifees, dernier: {nom, date} }.
+  // v72 pas appliquée → null : ClientsClient masque alors les segments basés
+  // sur les présences (plutôt que d'afficher tout le monde en « Jamais venu·e »).
+  let presenceInfo = null;
+  if (!segmentsError) {
+    presenceInfo = {};
+    for (const s of segments || []) {
+      presenceInfo[s.client_id] = {
+        nb: s.nb,
+        toutesTarifees: !!s.toutes_tarifees,
+        dernier: s.dernier_date || s.dernier_nom
+          ? { nom: s.dernier_nom || 'Évènement', date: s.dernier_date || null }
+          : null,
+      };
     }
   }
 

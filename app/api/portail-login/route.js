@@ -31,7 +31,7 @@ export async function POST(req) {
     // Rate-limit IP : route publique qui déclenche un email signé du studio
     // (+ createUser idempotent) — borne anti-spam. 15/h et pas 5 : plusieurs
     // élèves peuvent partager l'IP du studio (wifi) avant un cours.
-    const rl = checkRateLimitIP(req, { max: 15, scope: 'portail-login' });
+    const rl = await checkRateLimitIP(req, { max: 15, scope: 'portail-login' });
     if (!rl.ok) return NextResponse.json({ error: rl.reason }, { status: 429 });
 
     // Vérifie que le studio existe (et récupère son nom pour l'email)
