@@ -58,7 +58,8 @@ export default function NouveauClient() {
 
   // Configuration des champs élèves (depuis profiles.client_fields_config)
   // Détermine quels champs prédéfinis afficher + les champs perso à rendre.
-  // Cf. lib/client-fields.js + section "Infos collectées" dans /parametres.
+  // Cf. section "Infos collectées" dans /parametres (lib/client-fields.js
+  // supprimé en B2d : jamais importé, la config vit dans le JSONB).
   const [fieldsConfig, setFieldsConfig] = useState({
     predefined: { date_naissance: true, adresse: true, niveau: true, source: true, notes: true },
     custom: [],
