@@ -40,9 +40,10 @@ jobs:
           # Vérifié localement : 67/67 en 2s avec browsers path vide.
           E2E_BASE_URL: http://unused.invalid
 
+      # BLOQUANT depuis B0b (campagne 2026-07-25) : 0 erreur ESLint tolérée.
+      # Les warnings ne cassent pas la CI (ratchet no-unused-vars → batch B2d).
       - name: Lint
         run: npm run lint --if-present
-        continue-on-error: true
 
       - name: Build
         run: npm run build

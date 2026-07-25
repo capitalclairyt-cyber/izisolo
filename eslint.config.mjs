@@ -70,6 +70,9 @@ export default [
         CustomEvent: 'readonly',
         MessageChannel: 'readonly',
         structuredClone: 'readonly',
+        Notification: 'readonly',
+        atob: 'readonly',
+        btoa: 'readonly',
         __dirname: 'readonly',
         __filename: 'readonly',
         global: 'readonly',
@@ -84,6 +87,23 @@ export default [
       'no-debugger': 'error',
       'no-console': ['warn', { allow: ['warn', 'error'] }],
     },
+  },
+  {
+    // Service worker custom (bundlé par next-pwa en public/worker-*.js).
+    files: ['worker/**/*.js'],
+    languageOptions: {
+      globals: {
+        self: 'readonly',
+        caches: 'readonly',
+        clients: 'readonly',
+        registration: 'readonly',
+      },
+    },
+  },
+  {
+    // CLIs et specs : la sortie console EST le produit.
+    files: ['scripts/**/*.{js,mjs}', 'tests/**/*.js'],
+    rules: { 'no-console': 'off' },
   },
   {
     // Sprint 2 audit : la clé service_role ne s'instancie QUE dans

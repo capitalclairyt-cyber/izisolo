@@ -115,7 +115,6 @@ export default function RecurrencesClient({ recurrences: initialRecurrences, cou
       setEditing(true);
     }
     // au montage uniquement
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Cours futurs liés à la récurrence sélectionnée
