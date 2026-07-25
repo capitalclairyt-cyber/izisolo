@@ -20,7 +20,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { CheckCircle2, Clock, AlertCircle, Loader2, Inbox, RotateCcw } from 'lucide-react';
 import { createClient } from '@/lib/supabase';
 import { useToast } from '@/components/ui/ToastProvider';
-import { CASES } from '@/lib/regles-metier';
+import { CASES, getChoixLabel } from '@/lib/regles-metier';
 import ResolveCasModal from '@/components/cas-a-traiter/ResolveCasModal';
 import Pagination, { usePagination } from '@/components/ui/Pagination';
 import EmptyState from '@/components/ui/EmptyState';
@@ -56,11 +56,8 @@ const ACTIONS_PAR_CAS = {
     { value: 'annule',         label: 'Réservation annulée',       desc: 'On retire l\'inscription.' },
     { value: 'ignore',         label: 'Ignorer',                   desc: 'Marquer le cas comme vu, sans aucune action.' },
   ],
-  liste_attente: [
-    { value: 'place_donnee', label: 'Place attribuée',             desc: 'L\'élève a confirmé son inscription.' },
-    { value: 'declinee',     label: 'Place déclinée',              desc: 'L\'élève n\'a pas confirmé / pas pris la place.' },
-    { value: 'ignore',       label: 'Ignorer',                     desc: 'Marquer le cas comme vu, sans aucune action.' },
-  ],
+  // NB : pas d'entrée 'liste_attente' — aucun cas de ce type n'est jamais créé
+  // (la promotion est automatique ou manuelle via /liste-attente, audit 2026-07-25).
   workshop_vs_cours: [
     { value: 'paye_stripe',  label: 'Paiement Stripe reçu',        desc: 'L\'élève a réglé via le lien Stripe.' },
     { value: 'paye_place',   label: 'Paiement sur place',          desc: 'Cash / chèque / virement reçu.' },
@@ -237,7 +234,9 @@ export default function CasATraiterClient({ casOuverts, casResolus }) {
 
                     {ctx.choix_applique && (
                       <div className="cas-card-context">
-                        Action auto appliquée : <strong>{ctx.choix_applique}</strong>
+                        {/* getChoixLabel : « Paiement sur place » plutôt que le
+                            jargon brut « paiement_sur_place » (audit 2026-07-25) */}
+                        Action auto appliquée : <strong>{getChoixLabel(item.case_type, ctx.choix_applique) || ctx.choix_applique}</strong>
                         {ctx.dette_a_regler && <span className="cas-card-tag">💰 Dette à régler</span>}
                       </div>
                     )}

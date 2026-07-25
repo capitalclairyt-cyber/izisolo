@@ -206,14 +206,28 @@ export default function ReglesMetierTab({ profileId }) {
                         {r.notifProf ? <ToggleRight size={24} style={{ color: 'var(--brand)' }} /> : <ToggleLeft size={24} style={{ color: 'var(--text-muted)' }} />}
                         <span>Alerte sur mon dashboard</span>
                       </button>
-                      <button
-                        type="button"
-                        className="rm-toggle-row"
-                        onClick={() => updateRegle(caseDef.id, { notifEleveEmail: !r.notifEleveEmail })}
-                      >
-                        {r.notifEleveEmail ? <ToggleRight size={24} style={{ color: 'var(--brand)' }} /> : <ToggleLeft size={24} style={{ color: 'var(--text-muted)' }} />}
-                        <span>Email automatique à l'élève</span>
-                      </button>
+                      {/* Audit 2026-07-25 : pour l'annulation tardive et le cours
+                          annulé, l'email élève réel est gouverné par la section
+                          « Notifications élèves » (notifs_eleves) — ce toggle-ci
+                          et son message custom n'étaient JAMAIS lus pour ces cas.
+                          Deux interrupteurs pour la même lampe, dont un factice :
+                          on pointe vers le vrai au lieu de mentir. */}
+                      {['annulation_hors_delai', 'cours_annule_prof'].includes(caseDef.id) ? (
+                        <div className="rm-toggle-row" style={{ cursor: 'default', opacity: 0.85 }}>
+                          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                            📧 L'email à l'élève se règle dans <strong>Notifications élèves</strong> (plus bas dans Paramètres).
+                          </span>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          className="rm-toggle-row"
+                          onClick={() => updateRegle(caseDef.id, { notifEleveEmail: !r.notifEleveEmail })}
+                        >
+                          {r.notifEleveEmail ? <ToggleRight size={24} style={{ color: 'var(--brand)' }} /> : <ToggleLeft size={24} style={{ color: 'var(--text-muted)' }} />}
+                          <span>Email automatique à l'élève</span>
+                        </button>
+                      )}
                       <button
                         type="button"
                         className="rm-toggle-row rm-toggle-disabled"
@@ -226,8 +240,9 @@ export default function ReglesMetierTab({ profileId }) {
                     </div>
                   </div>
 
-                  {/* Message custom (optionnel) */}
-                  {r.notifEleveEmail && (
+                  {/* Message custom (optionnel) — masqué pour les cas dont
+                      l'email passe par « Notifications élèves » (jamais lu). */}
+                  {r.notifEleveEmail && !['annulation_hors_delai', 'cours_annule_prof'].includes(caseDef.id) && (
                     <div className="rm-block">
                       <div className="rm-block-title">
                         Message custom à l'élève (optionnel)

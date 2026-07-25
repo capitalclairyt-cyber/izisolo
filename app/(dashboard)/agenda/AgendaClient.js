@@ -594,7 +594,7 @@ function CoursCard({ cours: c, todayStr, onCoursMaj, nbEnAttente = 0 }) {
             {!c.est_annule && (
               confirmAnnul ? (
                 <div className="cancel-confirm" onClick={e => { e.preventDefault(); e.stopPropagation(); }}>
-                  <span className="cancel-label">Annuler ce cours ?</span>
+                  <span className="cancel-label">Annuler cette séance ?</span>
                   <button className="cancel-oui" onClick={handleAnnuler} disabled={annulant}>
                     {annulant ? '…' : 'Oui'}
                   </button>
