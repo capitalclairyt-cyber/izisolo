@@ -1,4 +1,5 @@
 import * as Sentry from '@sentry/nextjs';
+import { withRoute } from '@/lib/api-route';
 import { createAdminClient } from '@/lib/supabase-admin';
 import { verifyStripeSignature, getCheckoutSessionAmount, getCheckoutSessionEmail } from '@/lib/stripe';
 import { sendPushToUser } from '@/lib/push-server';
@@ -18,7 +19,9 @@ function adminClient() {
   return createAdminClient();
 }
 
-export async function POST(request) {
+// auth:'public' : l'authentification est la SIGNATURE Stripe, vérifiée dans
+// le handler sur le body brut (que le wrapper ne consomme jamais sans schema).
+export const POST = withRoute({ auth: 'public' }, async ({ request }) => {
   // Le profile_id du pro est passé en query param dans l'URL configurée sur Stripe.
   const url = new URL(request.url);
   const profileId = url.searchParams.get('profile');
@@ -70,7 +73,7 @@ export async function POST(request) {
     Sentry.captureException(err);
     return new Response(`Handler error: ${err.message}`, { status: 500 });
   }
-}
+});
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Handlers d'événements

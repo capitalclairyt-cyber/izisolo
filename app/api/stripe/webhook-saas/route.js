@@ -1,4 +1,5 @@
 import * as Sentry from '@sentry/nextjs';
+import { withRoute } from '@/lib/api-route';
 import { createAdminClient } from '@/lib/supabase-admin';
 import Stripe from 'stripe';
 import { reportError } from '@/lib/report';
@@ -27,7 +28,9 @@ function adminClient() {
   return createAdminClient();
 }
 
-export async function POST(request) {
+// auth:'public' : l'authentification est la SIGNATURE Stripe, vérifiée dans
+// le handler sur le body brut (que le wrapper ne consomme jamais sans schema).
+export const POST = withRoute({ auth: 'public' }, async ({ request }) => {
   if (!process.env.STRIPE_SECRET_KEY || !process.env.STRIPE_WEBHOOK_SECRET_SAAS) {
     return new Response('Stripe SaaS not configured', { status: 503 });
   }
@@ -169,4 +172,4 @@ export async function POST(request) {
     Sentry.captureException(err);
     return new Response('Handler error', { status: 500 });
   }
-}
+});

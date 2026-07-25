@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { createServerClient } from '@/lib/supabase-server';
+import { withRoute } from '@/lib/api-route';
 import { TRIAL_DAYS } from '@/lib/constantes';
 import { getTrialStatus } from '@/lib/trial';
 import Stripe from 'stripe';
@@ -42,11 +42,8 @@ const PRICE_IDS = {
   },
 };
 
-export async function POST(request) {
-  // Auth
-  const supabase = await createServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return Response.json({ error: 'Non authentifié' }, { status: 401 });
+export const POST = withRoute({ auth: 'user' }, async ({ request, auth }) => {
+  const { user, supabase } = auth;
 
   // Validation
   let body;
@@ -129,4 +126,4 @@ export async function POST(request) {
     reportError('[checkout-saas] error:', err);
     return Response.json({ error: 'Une erreur est survenue, réessaie.' }, { status: 500 });
   }
-}
+});

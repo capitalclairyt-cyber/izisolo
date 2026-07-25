@@ -24,13 +24,9 @@ import path from 'path';
 const ROOT = path.resolve(process.cwd());
 
 // ─── Loi 1 : routes hors withRoute (NE PEUT QUE RÉTRÉCIR) ──────────────────
-const SANS_WRAPPER = [
-  'app/api/stripe/checkout-saas/route.js',
-  'app/api/stripe/customer-portal/route.js',
-  'app/api/stripe/webhook-saas/route.js',
-  'app/api/stripe/webhook/route.js',
-  'app/api/support/route.js',
-];
+// VIDE depuis B2c (2026-07-25) : 59/59 routes passent par withRoute.
+// Y remettre une entrée = régression consciente à justifier en review.
+const SANS_WRAPPER = [];
 
 // ─── Loi 2 : catchs strictement vides par fichier (NE PEUT QUE RÉTRÉCIR) ───
 // clé = chemin relatif, valeur = nombre exact toléré.

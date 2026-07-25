@@ -1,5 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { createServerClient } from '@/lib/supabase-server';
+import { withRoute } from '@/lib/api-route';
 import { checkRateLimitIP } from '@/lib/antibot';
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -29,11 +29,10 @@ Si une demande est complexe ou nécessite une intervention humaine, invite l'uti
 
 Réponds toujours en français, de façon claire, concise et bienveillante. Utilise des listes courtes quand c'est utile.`;
 
-export async function POST(request) {
-  // Vérifier l'authentification
-  const supabase = await createServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return new Response('Unauthorized', { status: 401 });
+// Streaming : le handler retourne une Response(ReadableStream) — le wrapper
+// la laisse passer telle quelle (il n'y touche qu'en cas de throw AVANT).
+export const POST = withRoute({ auth: 'user' }, async ({ request, auth }) => {
+  const { user, supabase } = auth;
 
   // Rate-limit : endpoint LLM (coût Anthropic) — 30 req/h/IP, aligné sur
   // l'assistant portail, compteur isolé via le scope.
@@ -79,4 +78,4 @@ export async function POST(request) {
   return new Response(readable, {
     headers: { 'Content-Type': 'text/plain; charset=utf-8' },
   });
-}
+});

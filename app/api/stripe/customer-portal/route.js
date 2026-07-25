@@ -13,18 +13,14 @@
  * Réponse : { url: string } (URL à laquelle rediriger la prof)
  */
 
-import { createServerClient } from '@/lib/supabase-server';
+import { withRoute } from '@/lib/api-route';
 import Stripe from 'stripe';
 import { reportError } from '@/lib/report';
 
 export const runtime = 'nodejs';
 
-export async function POST() {
-  const supabase = await createServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    return Response.json({ error: 'Non authentifié' }, { status: 401 });
-  }
+export const POST = withRoute({ auth: 'user' }, async ({ auth }) => {
+  const { user, supabase } = auth;
 
   if (!process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET_KEY.startsWith('sk_dummy')) {
     return Response.json(
@@ -80,4 +76,4 @@ export async function POST() {
       { status: 500 }
     );
   }
-}
+});
