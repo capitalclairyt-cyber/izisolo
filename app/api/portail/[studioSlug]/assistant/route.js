@@ -1,3 +1,4 @@
+import { withRoute } from '@/lib/api-route';
 import { createServerClient } from '@/lib/supabase-server';
 import { createAdminClient } from '@/lib/supabase-admin';
 import { checkAntiBot } from '@/lib/antibot';
@@ -17,8 +18,8 @@ export const dynamic = 'force-dynamic';
  * Le contexte (élève, planning) est injecté côté serveur dans le prompt système.
  */
 
-export async function POST(request, { params }) {
-  const { studioSlug } = await params;
+export const POST = withRoute({ auth: 'public' }, async ({ request, params }) => {
+  const { studioSlug } = params;
 
   if (!process.env.ANTHROPIC_API_KEY) {
     return Response.json({ error: 'Assistant non disponible (clé API manquante).' }, { status: 503 });
@@ -151,4 +152,4 @@ ${JSON.stringify(coursContexte, null, 2)}`;
     reportError('[assistant] error:', err);
     return Response.json({ error: 'Assistant temporairement indisponible.' }, { status: 500 });
   }
-}
+});

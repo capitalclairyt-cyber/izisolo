@@ -2,6 +2,7 @@ import { createServerClient } from '@/lib/supabase-server';
 import { createAdminClient } from '@/lib/supabase-admin';
 import { parseJsonBody, reservationSchema } from '@/lib/validation';
 import { checkAntiBot, ipFromRequest } from '@/lib/antibot';
+import { withRoute } from '@/lib/api-route';
 import { getRegle, getDelaiPourCours } from '@/lib/regles-metier';
 import { sendNotifElevePourRegle } from '@/lib/notif-eleve-regle';
 import { sendPushToUser } from '@/lib/push-server';
@@ -13,8 +14,8 @@ import { reportError } from '@/lib/report';
 import { canSeeCours, resolveClientInfo } from '@/lib/visibilite';
 import { coursDejaCommence } from '@/lib/dates';
 
-export async function POST(request, { params }) {
-  const { studioSlug } = await params;
+export const POST = withRoute({ auth: 'public' }, async ({ request, params }) => {
+  const { studioSlug } = params;
   // Lire le body brut une seule fois (request.json() n'est consommable qu'une fois)
   const rawBody = await request.json().catch(() => null);
   if (!rawBody) return Response.json({ error: 'JSON invalide' }, { status: 400 });
@@ -644,4 +645,4 @@ export async function POST(request, { params }) {
   }
 
   return Response.json({ ok: true, magicLinkSent });
-}
+});

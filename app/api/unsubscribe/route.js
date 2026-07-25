@@ -1,5 +1,6 @@
 import { createServerClient } from '@/lib/supabase-server';
 import { NextResponse } from 'next/server';
+import { withRoute } from '@/lib/api-route';
 import { reportError } from '@/lib/report';
 
 /**
@@ -9,7 +10,7 @@ import { reportError } from '@/lib/report';
  * puis redirige vers /unsubscribe/confirm.
  * Le RLS autorise l'insert anonyme sur email_blacklist.
  */
-export async function GET(request) {
+export const GET = withRoute({ auth: 'public' }, async ({ request }) => {
   const { searchParams } = new URL(request.url);
   const email = searchParams.get('email')?.trim()?.toLowerCase();
 
@@ -47,14 +48,14 @@ export async function GET(request) {
       new URL('/unsubscribe?error=server', request.url)
     );
   }
-}
+});
 
 /**
  * POST /api/unsubscribe  { email }
  *
  * Alternative POST pour le formulaire (fetch côté client).
  */
-export async function POST(request) {
+export const POST = withRoute({ auth: 'public' }, async ({ request }) => {
   let body;
   try {
     body = await request.json();
@@ -87,4 +88,4 @@ export async function POST(request) {
     reportError('unsubscribe unexpected error:', err);
     return Response.json({ error: 'Erreur serveur' }, { status: 500 });
   }
-}
+});

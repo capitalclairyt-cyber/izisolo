@@ -1,3 +1,4 @@
+import { withRoute } from '@/lib/api-route';
 import { createServerClient } from '@/lib/supabase-server';
 import { createAdminClient } from '@/lib/supabase-admin';
 import { parseJsonBody, annulationSchema } from '@/lib/validation';
@@ -13,8 +14,8 @@ import { escapeIlike } from '@/lib/utils';
 import { promouvoirListeAttente } from '@/lib/promotion-liste-attente';
 import { reportError } from '@/lib/report';
 
-export async function POST(request, { params }) {
-  const { studioSlug } = await params;
+export const POST = withRoute({ auth: 'public' }, async ({ request, params }) => {
+  const { studioSlug } = params;
 
   // Rate-limit IP : route publique d'écriture destructrice (delete presences)
   // — on borne les annulations automatisées (10/h/IP).
@@ -412,4 +413,4 @@ Tu peux retrouver le détail dans ton espace personnel.
     motif,
     delaiHeures: evaluation.delaiHeures,
   });
-}
+});

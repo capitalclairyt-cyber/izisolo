@@ -1,3 +1,4 @@
+import { withRoute } from '@/lib/api-route';
 import { createServerClient } from '@/lib/supabase-server';
 import { createAdminClient } from '@/lib/supabase-admin';
 import { sanitizePrefs } from '@/lib/notif-prefs';
@@ -12,8 +13,8 @@ import { reportError } from '@/lib/report';
  * ne s'affichait jamais ET le badge messages non lus (gaté dessus) était
  * mort depuis toujours.
  */
-export async function GET(request, { params }) {
-  const { studioSlug } = await params;
+export const GET = withRoute({ auth: 'public' }, async ({ request, params }) => {
+  const { studioSlug } = params;
   const supabase = await createServerClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return Response.json({ error: 'Non authentifié' }, { status: 401 });
@@ -35,7 +36,7 @@ export async function GET(request, { params }) {
   if (clientErr) reportError('[portail/profil GET] client err:', clientErr, { route: `/api/portail/${studioSlug}/profil` });
 
   return Response.json({ prenom: client?.prenom || null });
-}
+});
 
 /**
  * PATCH /api/portail/[studioSlug]/profil
@@ -44,8 +45,8 @@ export async function GET(request, { params }) {
  * connecté. Seuls des champs non sensibles sont modifiables — jamais l'email,
  * le nom, le statut, les notes ou quoi que ce soit côté CRM du studio.
  */
-export async function PATCH(request, { params }) {
-  const { studioSlug } = await params;
+export const PATCH = withRoute({ auth: 'public' }, async ({ request, params }) => {
+  const { studioSlug } = params;
   const body = await request.json().catch(() => null);
   if (!body) return Response.json({ error: 'JSON invalide' }, { status: 400 });
 
@@ -100,4 +101,4 @@ export async function PATCH(request, { params }) {
   }
 
   return Response.json({ ok: true, ...update });
-}
+});

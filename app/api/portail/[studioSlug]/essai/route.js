@@ -1,3 +1,4 @@
+import { withRoute } from '@/lib/api-route';
 import { createAdminClient } from '@/lib/supabase-admin';
 import { finaliserDemande, emailConfirmationVisiteur, emailEnAttenteVisiteur, emailNotifPro } from '@/lib/essai';
 import { buildPortailMagicLink } from '@/lib/portail-magic-link';
@@ -39,8 +40,8 @@ export const dynamic = 'force-dynamic';
  * Réponse :
  *   { ok: true, status: 'finalisee'|'en_attente', stripePaymentLink?: string }
  */
-export async function POST(request, { params }) {
-  const { studioSlug } = await params;
+export const POST = withRoute({ auth: 'public' }, async ({ request, params }) => {
+  const { studioSlug } = params;
 
   let body;
   try { body = await request.json(); } catch { return Response.json({ error: 'JSON invalide' }, { status: 400 }); }
@@ -241,4 +242,4 @@ export async function POST(request, { params }) {
     stripePaymentLink: stripeLink,
     message: profile.essai_message,
   });
-}
+});

@@ -1,3 +1,4 @@
+import { withRoute } from '@/lib/api-route';
 import { createServerClient } from '@/lib/supabase-server';
 import { createAdminClient } from '@/lib/supabase-admin';
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
@@ -10,8 +11,8 @@ export const runtime = 'nodejs';
  * Génère une facture PDF pour un paiement donné, accessible par l'élève authentifié
  * (uniquement ses propres paiements).
  */
-export async function GET(request, { params }) {
-  const { studioSlug, paiementId } = await params;
+export const GET = withRoute({ auth: 'public' }, async ({ request, params }) => {
+  const { studioSlug, paiementId } = params;
 
   // Auth
   const supabase = await createServerClient();
@@ -160,7 +161,7 @@ export async function GET(request, { params }) {
     reportError('[facture pdf] génération err:', err, { route: `/api/portail/${studioSlug}/facture` });
     return new Response('Le reçu n\'a pas pu être généré — réessaie, ou contacte ton studio.', { status: 500 });
   }
-}
+});
 
 function formatMode(mode) {
   const map = { especes: 'Espèces', cheque: 'Chèque', virement: 'Virement', CB: 'CB' };

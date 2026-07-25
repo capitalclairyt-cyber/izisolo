@@ -30,6 +30,7 @@
  */
 
 import { ImageResponse } from 'next/og';
+import { withRoute } from '@/lib/api-route';
 
 export const runtime = 'nodejs'; // edge plante avec @sentry/nextjs sur certains setups
 
@@ -66,7 +67,7 @@ const PALETTES = {
   },
 };
 
-export async function GET(request) {
+export const GET = withRoute({ auth: 'public' }, async ({ request }) => {
   const { searchParams } = new URL(request.url);
   const title    = searchParams.get('title')    || 'Moins d\'admin. Plus de présence.';
   const subtitle = searchParams.get('subtitle') || 'L\'outil de gestion calme et beau pour les indépendant·e·s du bien-être.';
@@ -206,4 +207,4 @@ export async function GET(request) {
       },
     }
   );
-}
+});

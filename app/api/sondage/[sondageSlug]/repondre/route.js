@@ -1,3 +1,4 @@
+import { withRoute } from '@/lib/api-route';
 import { createAdminClient } from '@/lib/supabase-admin';
 import { createServerClient } from '@/lib/supabase-server';
 import { parseJsonBody, sondageReponseSchema } from '@/lib/validation';
@@ -38,8 +39,8 @@ function hashIp(req) {
   return createHash('sha256').update(ip + HASH_SECRET).digest('hex').slice(0, 32);
 }
 
-export async function POST(request, { params }) {
-  const { sondageSlug } = await params;
+export const POST = withRoute({ auth: 'public' }, async ({ request, params }) => {
+  const { sondageSlug } = params;
 
   const { data: body, errorResponse } = await parseJsonBody(request, sondageReponseSchema);
   if (errorResponse) return errorResponse;
@@ -193,4 +194,4 @@ export async function POST(request, { params }) {
   }
 
   return Response.json({ ok: true, enregistrees: rows.length });
-}
+});

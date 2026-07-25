@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { withRoute } from '@/lib/api-route';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { sendPortailMagicLink } from '@/lib/portail-magic-link';
 import { checkRateLimitIP } from '@/lib/antibot';
@@ -17,7 +18,7 @@ import { reportError } from '@/lib/report';
  *   - vérifie que le studioSlug existe vraiment (évite l'envoi d'emails dans le
  *     vide / le spam vers des studios inexistants)
  */
-export async function POST(req) {
+export const POST = withRoute({ auth: 'public' }, async ({ request: req }) => {
   try {
     const { email, studioSlug } = await req.json();
 
@@ -61,4 +62,4 @@ export async function POST(req) {
     reportError('[portail-login] error:', err);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
-}
+});

@@ -1,3 +1,4 @@
+import { withRoute } from '@/lib/api-route';
 import { createAdminClient } from '@/lib/supabase-admin';
 import { listeAttenteSchema } from '@/lib/validation';
 import { checkAntiBot, ipFromRequest } from '@/lib/antibot';
@@ -10,8 +11,8 @@ import { reportError } from '@/lib/report';
 import { canSeeCours, resolveClientInfo } from '@/lib/visibilite';
 import { coursDejaCommence } from '@/lib/dates';
 
-export async function POST(request, { params }) {
-  const { studioSlug } = await params;
+export const POST = withRoute({ auth: 'public' }, async ({ request, params }) => {
+  const { studioSlug } = params;
   // Body brut lu une seule fois : website/turnstileToken sont hors schéma zod.
   const rawBody = await request.json().catch(() => null);
   if (!rawBody) return Response.json({ error: 'Body JSON invalide' }, { status: 400 });
@@ -230,4 +231,4 @@ export async function POST(request, { params }) {
   }, { type: 'liste_attente' }).catch(() => {});
 
   return Response.json({ ok: true, position: finalPosition });
-}
+});

@@ -1,3 +1,4 @@
+import { withRoute } from '@/lib/api-route';
 import { createServerClient } from '@/lib/supabase-server';
 import { createAdminClient } from '@/lib/supabase-admin';
 import { reserverSerieSchema } from '@/lib/validation';
@@ -24,8 +25,8 @@ import { buildPortailMagicLink } from '@/lib/portail-magic-link';
  *   - booked : { coursId, date, heure } pour chaque inscription créée
  *   - skipped : { coursId, date, reason } pour chaque skip
  */
-export async function POST(request, { params }) {
-  const { studioSlug } = await params;
+export const POST = withRoute({ auth: 'public' }, async ({ request, params }) => {
+  const { studioSlug } = params;
 
   // Rate-limit IP : route d'écriture qui boucle sur N occurrences — on borne
   // le volume par IP (10/h), compteur isolé du reste via le scope.
@@ -291,4 +292,4 @@ export async function POST(request, { params }) {
     booked,
     skipped,
   });
-}
+});

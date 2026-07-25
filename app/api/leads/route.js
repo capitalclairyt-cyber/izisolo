@@ -20,6 +20,7 @@
  */
 
 import { NextResponse } from 'next/server';
+import { withRoute } from '@/lib/api-route';
 import { createAdminClient } from '@/lib/supabase-admin';
 import crypto from 'node:crypto';
 import { reportError } from '@/lib/report';
@@ -63,7 +64,7 @@ async function verifyTurnstile(token, ip) {
   }
 }
 
-export async function POST(request) {
+export const POST = withRoute({ auth: 'public' }, async ({ request }) => {
   try {
     const body = await request.json();
     const {
@@ -161,4 +162,4 @@ export async function POST(request) {
     reportError('[leads] unexpected error:', err);
     return NextResponse.json({ ok: false, error: 'server_error' }, { status: 500 });
   }
-}
+});

@@ -25,18 +25,6 @@ const ROOT = path.resolve(process.cwd());
 
 // ─── Loi 1 : routes hors withRoute (NE PEUT QUE RÉTRÉCIR) ──────────────────
 const SANS_WRAPPER = [
-  'app/api/leads/route.js',
-  'app/api/og/route.js',
-  'app/api/portail-login/route.js',
-  'app/api/portail/[studioSlug]/annuler/route.js',
-  'app/api/portail/[studioSlug]/assistant/route.js',
-  'app/api/portail/[studioSlug]/essai/route.js',
-  'app/api/portail/[studioSlug]/facture/[paiementId]/route.js',
-  'app/api/portail/[studioSlug]/liste-attente/route.js',
-  'app/api/portail/[studioSlug]/profil/route.js',
-  'app/api/portail/[studioSlug]/reserver-serie/route.js',
-  'app/api/portail/[studioSlug]/reserver/route.js',
-  'app/api/sondage/[sondageSlug]/repondre/route.js',
   'app/api/stripe/checkout-saas/route.js',
   'app/api/stripe/customer-portal/route.js',
   'app/api/stripe/webhook-saas/route.js',
