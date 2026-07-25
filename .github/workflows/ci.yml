@@ -41,9 +41,10 @@ jobs:
           E2E_BASE_URL: http://unused.invalid
 
       # BLOQUANT depuis B0b (campagne 2026-07-25) : 0 erreur ESLint tolérée.
-      # Les warnings ne cassent pas la CI (ratchet no-unused-vars → batch B2d).
+      # Ratchet warnings (B2d 2026-07-25) : 1033 au moment de la pose — un
+      # warning DE PLUS casse la CI ; en dessous, ABAISSER le plafond ici.
       - name: Lint
-        run: npm run lint --if-present
+        run: npm run lint --if-present -- --max-warnings=1033
 
       - name: Build
         run: npm run build
