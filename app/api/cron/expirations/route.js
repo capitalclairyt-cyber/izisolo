@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
-import { requireCronAuth } from '@/lib/api-auth';
+import { withRoute } from '@/lib/api-route';
 import { getTrialStatus } from '@/lib/trial';
 import { sendEmail } from '@/lib/email';
 import { reportError } from '@/lib/report';
@@ -9,13 +9,7 @@ import { reportError } from '@/lib/report';
 export const maxDuration = 300;
 
 // Cron quotidien : marquer les abonnements expirés
-export async function GET(request) {
-  try {
-    requireCronAuth(request);
-  } catch (res) {
-    return res;
-  }
-
+export const GET = withRoute({ auth: 'cron' }, async () => {
   const today = new Date().toISOString().split('T')[0];
 
   // Marquer comme expiré les abonnements dont la date_fin est dépassée
@@ -253,4 +247,4 @@ export async function GET(request) {
     trialJ1,
     timestamp: new Date().toISOString(),
   });
-}
+});

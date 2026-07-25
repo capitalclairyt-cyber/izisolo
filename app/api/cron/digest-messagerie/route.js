@@ -1,4 +1,4 @@
-import { requireCronAuth } from '@/lib/api-auth';
+import { withRoute } from '@/lib/api-route';
 import { createAdminClient } from '@/lib/supabase-admin';
 import { sendEmail } from '@/lib/email';
 import { wantsNotif } from '@/lib/notif-prefs';
@@ -23,13 +23,7 @@ export const maxDuration = 300;
  * Variable d'env requise : RESEND_API_KEY
  */
 
-export async function GET(request) {
-  try {
-    requireCronAuth(request);
-  } catch (res) {
-    return res;
-  }
-
+export const GET = withRoute({ auth: 'cron' }, async () => {
   const supabase = createAdminClient();
 
   const il24h = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
@@ -157,7 +151,7 @@ export async function GET(request) {
     errors: totalErrors,
     timestamp: new Date().toISOString(),
   });
-}
+});
 
 // ─── Dédup des envois (table emails_envoyes, migration v52) ─────────────────
 // Fail-open : si la table n'existe pas encore (migration non appliquée), on

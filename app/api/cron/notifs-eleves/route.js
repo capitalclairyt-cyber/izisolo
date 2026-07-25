@@ -1,4 +1,4 @@
-import { requireCronAuth } from '@/lib/api-auth';
+import { withRoute } from '@/lib/api-route';
 import { createAdminClient } from '@/lib/supabase-admin';
 import { sendNotifEleve } from '@/lib/notifs-eleves';
 import { sendPushToEmail, claimCronPush } from '@/lib/push-server';
@@ -31,13 +31,7 @@ export const maxDuration = 300;
  *   - regles.actif (règles custom)
  */
 
-export async function GET(request) {
-  try {
-    requireCronAuth(request);
-  } catch (res) {
-    return res;
-  }
-
+export const GET = withRoute({ auth: 'cron' }, async () => {
   const supabase = createAdminClient();
 
   const today = new Date().toISOString().slice(0, 10);
@@ -349,4 +343,4 @@ Pour assurer la continuité de tes cours, pense à le renouveler avant cette dat
     errors: totalErrors,
     timestamp: new Date().toISOString(),
   });
-}
+});

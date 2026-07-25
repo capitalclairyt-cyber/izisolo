@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
-import { requireCronAuth } from '@/lib/api-auth';
+import { withRoute } from '@/lib/api-route';
 import { sendNotifEleve } from '@/lib/notifs-eleves';
 import { sendPushToEmail, sendPushToUser, claimCronPush } from '@/lib/push-server';
 import { wantsNotif } from '@/lib/notif-prefs';
@@ -19,13 +19,7 @@ export const maxDuration = 300;
  * Dédup : sendNotifEleve insère dans notifications_eleves avec UNIQUE
  * (client_id, type, related_id, channel) → un rappel par réservation, jamais 2.
  */
-export async function GET(request) {
-  try {
-    requireCronAuth(request);
-  } catch (res) {
-    return res;
-  }
-
+export const GET = withRoute({ auth: 'cron' }, async () => {
   // « Demain » en heure de Paris (le serveur Vercel tourne en UTC).
   const parisDate = new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Paris' }).slice(0, 10);
   const d = new Date(parisDate + 'T12:00:00Z');
@@ -218,4 +212,4 @@ Petit rappel : tu es inscrit·e à la séance ${cours.nom} demain ${dateStr}${he
     demain,
     timestamp: new Date().toISOString(),
   });
-}
+});
