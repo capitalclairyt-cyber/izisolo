@@ -65,7 +65,6 @@ export default function MentionsLegalesPage() {
         <li><strong>Stripe Payments Europe Ltd.</strong> — paiement en ligne</li>
         <li><strong>Resend Inc.</strong> — envoi d'emails transactionnels</li>
         <li><strong>Anthropic, PBC</strong> — assistant conversationnel (Claude)</li>
-        <li><strong>Sentry</strong> — monitoring d'erreurs (anonymisé)</li>
       </ul>
 
       <h2>5. Propriété intellectuelle</h2>

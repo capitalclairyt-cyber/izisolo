@@ -136,19 +136,13 @@ export default function RGPDPage() {
             <td>États-Unis</td>
             <td>Clauses contractuelles types, données non utilisées pour l'entraînement</td>
           </tr>
-          <tr>
-            <td>Sentry</td>
-            <td>Monitoring d'erreurs (anonymisé)</td>
-            <td>UE / États-Unis</td>
-            <td>Données techniques uniquement, pas de PII</td>
-          </tr>
         </tbody>
       </table>
 
       <h2>5. Transferts hors Union européenne</h2>
       <p>
         Certains de nos sous-traitants peuvent traiter des données aux États-Unis
-        (Vercel, Resend, Anthropic, Sentry partiellement). Ces transferts sont encadrés
+        (Vercel, Resend, Anthropic). Ces transferts sont encadrés
         par les clauses contractuelles types adoptées par la Commission européenne ou
         par toute autre garantie appropriée au sens des articles 44 à 49 du RGPD.
       </p>
