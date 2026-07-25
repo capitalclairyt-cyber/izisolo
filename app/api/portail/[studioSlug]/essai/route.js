@@ -8,6 +8,7 @@ import { essaiSchema } from '@/lib/validation';
 import { studioHasFeature } from '@/lib/plan-guard';
 import { reportError } from '@/lib/report';
 import { canSeeCours, resolveClientInfo } from '@/lib/visibilite';
+import { coursDejaCommence } from '@/lib/dates';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -130,9 +131,9 @@ export async function POST(request, { params }) {
       return Response.json({ error: 'Ce cours est réservé à certain·es élèves du studio.' }, { status: 403 });
     }
   }
-  // Vérif date+heure
-  const todayIso = new Date().toISOString().slice(0, 10);
-  if (cours.date < todayIso) return Response.json({ error: 'Ce cours est passé' }, { status: 400 });
+  // Vérif date+heure — à la minute, heure de Paris (avant : jour UTC → un
+  // cours du soir restait demandable jusqu'au lendemain).
+  if (coursDejaCommence(cours)) return Response.json({ error: 'Ce cours a déjà commencé' }, { status: 400 });
 
   // 3. Insérer la demande
   const initialStatut = profile.essai_mode === 'manuel' ? 'en_attente' : 'acceptee';
@@ -164,6 +165,15 @@ export async function POST(request, { params }) {
     try {
       await finaliserDemande(supabaseAdmin, demande);
     } catch (err) {
+      // Refus métier de la RPC (complet sous verrou, annulé) → message propre
+      // au visiteur, la demande reste réutilisable. Complet → on suggère la
+      // liste d'attente (la porte prévue pour ça).
+      if (err?.code === 'complet') {
+        return Response.json({ error: 'Ce cours vient de se remplir — tu peux t\'inscrire en liste d\'attente depuis la page du cours.' }, { status: 409 });
+      }
+      if (['annule', 'introuvable'].includes(err?.code)) {
+        return Response.json({ error: err.message }, { status: 409 });
+      }
       reportError('[essai] finaliserDemande err:', err);
       return Response.json({ error: 'Erreur lors de la finalisation : ' + err.message }, { status: 500 });
     }

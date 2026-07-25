@@ -12,6 +12,7 @@ import { infosPratiquesBlock } from '@/lib/email-helpers';
 import { sendEmail } from '@/lib/email';
 import { reportError } from '@/lib/report';
 import { canSeeCours, resolveClientInfo } from '@/lib/visibilite';
+import { coursDejaCommence } from '@/lib/dates';
 
 export async function POST(request, { params }) {
   const { studioSlug } = await params;
@@ -65,14 +66,9 @@ export async function POST(request, { params }) {
   if (!cours) return Response.json({ error: 'Cours introuvable' }, { status: 404 });
   if (cours.est_annule) return Response.json({ error: 'Ce cours est annulé' }, { status: 400 });
 
-  // Refuse un cours passé ou déjà commencé. Compare date+heure en heure de
-  // Paris (le serveur Vercel tourne en UTC) ; 'sv-SE' → 'YYYY-MM-DD HH:MM:SS'.
-  // Sans heure renseignée : on ne bloque qu'à partir du lendemain (jour révolu).
-  const nowParis = new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Paris' });
-  const dejaCommence = cours.heure
-    ? `${cours.date} ${cours.heure.slice(0, 5)}` <= nowParis.slice(0, 16)
-    : cours.date < nowParis.slice(0, 10);
-  if (dejaCommence) {
+  // Refuse un cours passé ou déjà commencé — helper commun heure de Paris
+  // (l'horloge unique du portail depuis l'audit 2026-07-25).
+  if (coursDejaCommence(cours)) {
     return Response.json({ error: 'Ce cours a déjà commencé' }, { status: 400 });
   }
 

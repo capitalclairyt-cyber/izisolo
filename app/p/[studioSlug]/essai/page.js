@@ -42,7 +42,25 @@ async function getData(studioSlug) {
   const ssrClient = await createServerClient();
   const { data: { user } } = await ssrClient.auth.getUser();
   const clientInfo = user ? await resolveClientInfo(supabase, profile.id, user.email) : null;
-  const cours = filterCoursVisibles(coursRaw || [], clientInfo);
+  let cours = filterCoursVisibles(coursRaw || [], clientInfo);
+
+  // Cours COMPLETS masqués (audit 2026-07-25) : le sélecteur chargeait
+  // capacite_max sans jamais compter les inscrits → on proposait des cours
+  // pleins à l'essai (et la finalisation sur-réservait, aucune porte ne
+  // vérifiant). La RPC re-vérifie sous verrou à la finalisation ; ici on
+  // évite juste de proposer l'impossible.
+  const avecJauge = cours.filter(c => c.capacite_max != null).map(c => c.id);
+  if (avecJauge.length > 0) {
+    const { data: presRows, error: presErr } = await supabase
+      .from('presences')
+      .select('cours_id')
+      .in('cours_id', avecJauge);
+    if (!presErr) {
+      const compte = {};
+      for (const p of presRows || []) compte[p.cours_id] = (compte[p.cours_id] || 0) + 1;
+      cours = cours.filter(c => c.capacite_max == null || (compte[c.id] || 0) < c.capacite_max);
+    }
+  }
 
   return { profile, cours };
 }

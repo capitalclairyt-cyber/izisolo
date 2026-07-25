@@ -6,6 +6,7 @@ import { sendPushToEmail } from '@/lib/push-server';
 import { wantsNotif } from '@/lib/notif-prefs';
 import { infosPratiquesBlock } from '@/lib/email-helpers';
 import { escapeIlike } from '@/lib/utils';
+import { coursDejaCommence } from '@/lib/dates';
 import { reportError } from '@/lib/report';
 
 /**
@@ -42,8 +43,8 @@ export const POST = withRoute({ auth: 'active' }, async ({ params, auth }) => {
   if (!cours) return NextResponse.json({ error: 'Cours introuvable' }, { status: 404 });
   if (cours.est_annule) return NextResponse.json({ error: 'Ce cours est annulé' }, { status: 400 });
 
-  const today = new Date().toISOString().slice(0, 10);
-  if (cours.date < today) return NextResponse.json({ error: 'Ce cours est passé' }, { status: 400 });
+  // Horloge Paris à la minute (audit 2026-07-25 — l'horloge unique du portail).
+  if (coursDejaCommence(cours)) return NextResponse.json({ error: 'Cette séance a déjà commencé' }, { status: 400 });
 
   const supabaseAdmin = createAdminClient();
 

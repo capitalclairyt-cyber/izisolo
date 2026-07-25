@@ -8,6 +8,7 @@ import { wantsNotif } from '@/lib/notif-prefs';
 import { escapeIlike } from '@/lib/utils';
 import { reportError } from '@/lib/report';
 import { canSeeCours, resolveClientInfo } from '@/lib/visibilite';
+import { coursDejaCommence } from '@/lib/dates';
 
 export async function POST(request, { params }) {
   const { studioSlug } = await params;
@@ -70,8 +71,8 @@ export async function POST(request, { params }) {
     }
   }
 
-  const today = new Date().toISOString().slice(0, 10);
-  if (cours.date < today) return Response.json({ error: 'Ce cours est passé' }, { status: 400 });
+  // Horloge Paris à la minute (avant : jour UTC — incohérent avec reserver).
+  if (coursDejaCommence(cours)) return Response.json({ error: 'Ce cours a déjà commencé' }, { status: 400 });
 
   // Vérifier que le cours est BIEN complet (sécurité : pas la peine d'inscrire en LA si une place est libre)
   if (!cours.capacite_max) {

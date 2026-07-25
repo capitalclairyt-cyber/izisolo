@@ -147,7 +147,11 @@ export default function EssaisClient({ profile, demandes: initialDemandes }) {
             const tone = d.cours ? toneForCours(d.cours.type_cours) : 'sand';
             const isPending = pendingId === d.id;
             const isRefusing = refusingId === d.id;
-            const canAct = d.statut === 'en_attente';
+            // 'acceptee' = finalisation qui a planté à mi-chemin : l'API
+            // accepte de re-valider, l'UI doit donc le proposer aussi
+            // (avant : demande visible dans son filtre, aucune action).
+            const canAct = d.statut === 'en_attente' || d.statut === 'acceptee';
+            const seancePassee = d.cours?.date && d.cours.date < new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Paris' });
             return (
               <div key={d.id} className={`essai-card essai-card--${tone}`}>
                 <div className="essai-card-head">
@@ -166,6 +170,11 @@ export default function EssaisClient({ profile, demandes: initialDemandes }) {
                       <Clock size={12} /> {formatHeure(d.cours.heure)}
                       {d.cours.lieu && <><MapPin size={12} /> {d.cours.lieu}</>}
                     </span>
+                    {seancePassee && canAct && (
+                      <span style={{ display: 'inline-block', marginTop: 4, fontSize: '0.72rem', fontWeight: 600, color: '#b45309', background: '#fef3e2', borderRadius: 6, padding: '1px 8px' }}>
+                        ⏳ Séance passée — valider est impossible, propose un autre créneau
+                      </span>
+                    )}
                   </div>
                 )}
 

@@ -5,6 +5,7 @@ import { finaliserDemande, emailConfirmationVisiteur } from '@/lib/essai';
 import { buildPortailMagicLink } from '@/lib/portail-magic-link';
 import { sendPushToEmail } from '@/lib/push-server';
 import { sendEmail } from '@/lib/email';
+import { coursDejaCommence } from '@/lib/dates';
 import { reportError } from '@/lib/report';
 
 export const runtime = 'nodejs';
@@ -53,6 +54,22 @@ export async function POST(request, { params }) {
   const supabaseAdmin = createAdminClient();
 
   if (action === 'valider') {
+    // Re-vérification AVANT de finaliser (audit 2026-07-25) : la validation
+    // manuelle peut arriver des jours après la demande — le cours a pu être
+    // annulé ou passer entre-temps. (Complet/annulé sont aussi re-vérifiés
+    // sous verrou par la RPC dans finaliserDemande — ceci donne un message
+    // clair sans rien écrire.)
+    const { data: coursCheck } = await supabaseAdmin
+      .from('cours')
+      .select('id, date, heure, est_annule')
+      .eq('id', demande.cours_id)
+      .single();
+    if (!coursCheck) return Response.json({ error: 'Ce cours n\'existe plus.' }, { status: 409 });
+    if (coursCheck.est_annule) return Response.json({ error: 'Ce cours a été annulé — impossible de valider l\'essai dessus.' }, { status: 409 });
+    if (coursDejaCommence(coursCheck)) {
+      return Response.json({ error: 'Cette séance est déjà passée — propose-lui un autre créneau (ou refuse avec un mot gentil).' }, { status: 409 });
+    }
+
     try {
       const { client_id, presence_id } = await finaliserDemande(supabaseAdmin, demande);
 
@@ -86,6 +103,11 @@ export async function POST(request, { params }) {
 
       return Response.json({ ok: true, client_id, presence_id });
     } catch (err) {
+      // Refus métier de la RPC (complet/annulé) → 409 avec le message propre,
+      // pas un 500 (la demande reste en_attente/acceptee, re-tentable).
+      if (['complet', 'annule', 'introuvable'].includes(err?.code)) {
+        return Response.json({ error: err.message }, { status: 409 });
+      }
       reportError('[admin/essai] valider err:', err);
       return Response.json({ error: 'Erreur lors de la validation : ' + err.message }, { status: 500 });
     }
