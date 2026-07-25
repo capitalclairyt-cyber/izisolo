@@ -30,7 +30,6 @@ const SANS_WRAPPER = [
   'app/api/stripe/webhook-saas/route.js',
   'app/api/stripe/webhook/route.js',
   'app/api/support/route.js',
-  'app/api/unsubscribe/route.js',
 ];
 
 // ─── Loi 2 : catchs strictement vides par fichier (NE PEUT QUE RÉTRÉCIR) ───
