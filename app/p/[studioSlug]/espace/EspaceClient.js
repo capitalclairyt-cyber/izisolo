@@ -195,6 +195,11 @@ function CoursCard({ presence, profile, studioSlug, onAnnuler, annulEnCours }) {
           </span>
         ) : c.est_annule ? (
           <span className="portail-tag portail-tag-amber">Annulé</span>
+        ) : ['annule', 'declinee'].includes(presence.statut_pointage) ? (
+          // Résa résolue « annulée »/« déclinée » côté studio : plus une
+          // inscription (B1b, rouge : elle s'affichait « Inscrit·e » avec un
+          // bouton Annuler actif qui SANCTIONNAIT l'élève < 24 h).
+          <span className="portail-tag" style={{ background: '#f5f5f5', color: '#999' }}>Annulée</span>
         ) : aVenir ? (
           // Cours à venir : toujours « Inscrit·e » (rien n'est encore pointé).
           <span className="portail-tag portail-tag-blue">Inscrit·e</span>
@@ -210,7 +215,7 @@ function CoursCard({ presence, profile, studioSlug, onAnnuler, annulEnCours }) {
           null
         )}
 
-        {aVenir && !c.est_annule && !presence.annulation_tardive && (
+        {aVenir && !c.est_annule && !presence.annulation_tardive && !['annule', 'declinee'].includes(presence.statut_pointage) && (
           futureMaisTardive ? (
             // Annulation tardive : on PEUT toujours annuler, mais la séance sera due
             confirmOpen ? (

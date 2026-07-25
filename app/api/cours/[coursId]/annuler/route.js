@@ -90,6 +90,9 @@ export const POST = withRoute({ auth: 'active' }, async ({ request, params, auth
   for (const row of (presences || [])) {
     const client = row.client;
     if (!client?.id) continue;
+    // Une résa résolue « annulée »/« déclinée » n'attend rien de cette séance :
+    // pas d'email « ta séance est annulée » (les tardives, SI : recrédit) — B1b.
+    if (['annule', 'declinee'].includes(row.statut_pointage)) { skippedTotal++; continue; }
     clientsNotifies++;
 
     // 1) Restitution du crédit si rendre_seances + abonnement lié ET séance

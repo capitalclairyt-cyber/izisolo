@@ -5,8 +5,9 @@ export default async function CoursPage() {
   const supabase = await createServerClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  const now = new Date();
-  const todayStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+  // Heure de PARIS (serveur Vercel en UTC : entre minuit et 2 h l'été,
+  // « à venir » incluait hier — B1b).
+  const todayStr = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Paris' });
 
   const [
     { data: profile },
@@ -24,9 +25,10 @@ export default async function CoursPage() {
       .eq('profile_id', user.id)
       .order('created_at', { ascending: false }),
 
-    // Cours ponctuels à venir (sans série)
+    // Cours ponctuels à venir (sans série) — presences en LIGNES (statut +
+    // tardive) : le count brut comptait les sièges fantômes v74 (B1b).
     supabase.from('cours')
-      .select('*, presences(count)')
+      .select('*, presences(statut_pointage, annulation_tardive)')
       .eq('profile_id', user.id)
       .is('recurrence_parent_id', null)
       .gte('date', todayStr)
@@ -41,9 +43,9 @@ export default async function CoursPage() {
       .eq('actif', true)
       .order('ordre'),
 
-    // Prochaines séances des séries (pour stats)
+    // Prochaines séances des séries (pour stats) — même règle v74
     supabase.from('cours')
-      .select('id, recurrence_parent_id, date, heure, presences(count)')
+      .select('id, recurrence_parent_id, date, heure, presences(statut_pointage, annulation_tardive)')
       .eq('profile_id', user.id)
       .not('recurrence_parent_id', 'is', null)
       .gte('date', todayStr)

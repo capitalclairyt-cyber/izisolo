@@ -513,10 +513,13 @@ export default function PointageClient({ cours, presences: initialPresences, tou
     ? Math.round((coursDateTime - now) / 60_000)
     : -999;
 
-  // Bloqué si > 15 min avant le cours
-  const locked = minutesAvant > 15;
+  // Bloqué si > 15 min avant le cours — ou si la séance est ANNULÉE (B1b,
+  // rouge : une séance annulée restait 100 % pointable → un « présent »
+  // re-décomptait les carnets d'un cours qui n'a pas eu lieu).
+  const estAnnule = !!cours.est_annule;
+  const locked = estAnnule || minutesAvant > 15;
   // "Live" si dans la fenêtre [-15min, +120min]
-  const isLive = minutesAvant <= 15 && minutesAvant > -120;
+  const isLive = !estAnnule && minutesAvant <= 15 && minutesAvant > -120;
 
   const lockLabel = minutesAvant > 60
     ? `Disponible dans ${Math.floor(minutesAvant / 60)}h${minutesAvant % 60 > 0 ? String(minutesAvant % 60).padStart(2, '0') : ''}`
@@ -542,9 +545,13 @@ export default function PointageClient({ cours, presences: initialPresences, tou
   // Les annulations tardives ne comptent ni dans le total ni dans « en
   // attente » : l'élève ne vient pas, il n'y a rien à pointer (ligne info).
   const getStatut = p => p.statut_pointage || (p.pointee ? 'present' : 'inscrit');
-  const presActives = presences.filter(p => !p.annulation_tardive);
+  // annule/declinee = lignes info (comme les tardives) : les compter en
+  // « attente » bloquait « Pointage terminé 🎉 » à vie ; absent_compte est
+  // un état TRAITÉ (absence décomptée), rangé avec les absents (B1b).
+  const presActives = presences.filter(p =>
+    !p.annulation_tardive && !['annule', 'declinee'].includes(p.statut_pointage));
   const nbPresents  = presActives.filter(p => getStatut(p) === 'present').length;
-  const nbAbsents   = presActives.filter(p => getStatut(p) === 'absent').length;
+  const nbAbsents   = presActives.filter(p => ['absent', 'absent_compte'].includes(getStatut(p))).length;
   const nbExcuses   = presActives.filter(p => getStatut(p) === 'excuse').length;
   const nbEnAttente = presActives.length - nbPresents - nbAbsents - nbExcuses;
   const nbTotal     = presActives.length;
@@ -1053,8 +1060,18 @@ export default function PointageClient({ cours, presences: initialPresences, tou
         {isLive && <span className="live-badge">EN COURS</span>}
       </div>
 
+      {/* ─── Verrou séance annulée ─── */}
+      {estAnnule && (
+        <div className="lock-banner animate-fade-in">
+          <Lock size={16} />
+          <div>
+            <strong>Séance annulée</strong>
+            <span>Le pointage est verrouillé — les crédits ont été restitués selon ta règle « Cours annulé ».</span>
+          </div>
+        </div>
+      )}
       {/* ─── Verrou temporel ─── */}
-      {locked && (
+      {locked && !estAnnule && (
         <div className="lock-banner animate-fade-in">
           <Lock size={16} />
           <div>

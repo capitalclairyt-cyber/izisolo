@@ -16,7 +16,10 @@ export default async function AgendaPage({ searchParams }) {
   // un agenda vide de la date visée (cf. audit 2026-07-12).
   const sp = (await searchParams) || {};
   const dateParam = typeof sp.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(sp.date) ? sp.date : null;
-  const now = dateParam ? new Date(dateParam + 'T12:00:00') : new Date();
+  // « Aujourd'hui » en heure de PARIS (serveur UTC : entre minuit et 2 h
+  // l'été, l'agenda s'ouvrait sur hier — B1b).
+  const parisToday = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Paris' });
+  const now = new Date((dateParam || parisToday) + 'T12:00:00');
   const y = now.getFullYear();
   const m = now.getMonth();
   const debut = new Date(y, m - 1, 1); // mois précédent
@@ -28,7 +31,9 @@ export default async function AgendaPage({ searchParams }) {
   const [{ data: cours }, { data: laEntries }] = await Promise.all([
     supabase
       .from('cours')
-      .select('*, presences(pointee)')
+      // statut + tardive : les compteurs 👥 et « Déjà pointé (x/y) »
+      // comptaient les sièges fantômes v74 (B1b).
+      .select('*, presences(pointee, statut_pointage, annulation_tardive)')
       .eq('profile_id', user.id)
       .gte('date', debutStr)
       .lte('date', finStr)
@@ -47,8 +52,8 @@ export default async function AgendaPage({ searchParams }) {
     laByCours[e.cours_id] = (laByCours[e.cours_id] || 0) + 1;
   }
 
-  // Date du jour en local
-  const todayStr = `${y}-${String(m + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  // Date initiale de l'agenda : la date demandée, sinon aujourd'hui (Paris)
+  const todayStr = dateParam || parisToday;
 
   return (
     <AgendaClient

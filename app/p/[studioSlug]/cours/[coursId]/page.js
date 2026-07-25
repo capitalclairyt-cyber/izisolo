@@ -5,6 +5,7 @@ import CoursReservationClient from './CoursReservationClient';
 import { canSeeCours, resolveClientInfo } from '@/lib/visibilite';
 import { studioHasFeature } from '@/lib/plan-guard';
 import { escapeIlike } from '@/lib/utils';
+import { compterPlacesOccupees } from '@/lib/presences';
 
 async function getData(studioSlug, coursId) {
   // Contenu PUBLIC du portail (studio, cours) + données élève filtrées par
@@ -50,10 +51,15 @@ async function getData(studioSlug, coursId) {
   }
   if (!visible) return null;
 
-  const { count: nbInscrits } = await supabase
+  // Formule v74 : sans elle, la page affichait « Cours complet » (formulaire
+  // remplacé par la liste d'attente) pour des places que la route /reserver
+  // aurait acceptées — l'élève s'inscrivait en file pour une place LIBRE et
+  // n'était jamais promu (B1b, rouge).
+  const { data: presencesCours } = await supabase
     .from('presences')
-    .select('id', { count: 'exact', head: true })
+    .select('statut_pointage, annulation_tardive')
     .eq('cours_id', coursId);
+  const nbInscrits = compterPlacesOccupees(presencesCours);
 
   let currentUser = null;
   let alreadyRegistered = false;

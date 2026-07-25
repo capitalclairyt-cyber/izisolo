@@ -15,6 +15,8 @@ import {
 } from '@/lib/dates';
 import { createClient } from '@/lib/supabase';
 import EmptyState from '@/components/ui/EmptyState';
+import { compterPlacesOccupees } from '@/lib/presences';
+import { useToast } from '@/components/ui/ToastProvider';
 
 // ============================================
 // Constantes
@@ -124,7 +126,7 @@ export default function AgendaClient({ cours: initialCours, profile, initialDate
       if (!user) { setLoading(false); return; }
       const { data, error } = await supabase
         .from('cours')
-        .select('*, presences(pointee)')
+        .select('*, presences(pointee, statut_pointage, annulation_tardive)')
         .eq('profile_id', user.id)
         .gte('date', plage.debut)
         .lte('date', plage.fin)
@@ -532,11 +534,13 @@ function CoursChip({ cours: c, todayStr }) {
 // CARTE complète (vue jour)
 // ============================================
 function CoursCard({ cours: c, todayStr, onCoursMaj, nbEnAttente = 0 }) {
+  const { toast } = useToast();
   const [confirmAnnul, setConfirmAnnul] = useState(false);
   const [annulant, setAnnulant]         = useState(false);
 
   const isPast    = todayStr && c.date < todayStr && !c.est_annule;
-  const nbInscrits = (c.presences || []).length;
+  // Formule v74 : les annulés/tardifs ne comptent plus dans 👥 (B1b).
+  const nbInscrits = compterPlacesOccupees(c.presences);
   const nbPointes  = (c.presences || []).filter(p => p.pointee).length;
   const isPointe   = !c.est_annule && nbPointes > 0;
 
@@ -545,11 +549,21 @@ function CoursCard({ cours: c, todayStr, onCoursMaj, nbEnAttente = 0 }) {
     e.stopPropagation();
     setAnnulant(true);
     try {
-      // Passe par /api/cours/[id]/annuler pour déclencher email/SMS auto aux inscrits
+      // Même contrat que le détail du cours (B1b : ici, un échec était 100 %
+      // silencieux — la prof croyait la séance annulée, personne n'était prévenu).
       const res = await fetch(`/api/cours/${c.id}/annuler`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
-      if (res.ok) onCoursMaj?.({ id: c.id, est_annule: true });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json.error || `Erreur ${res.status}`);
+      onCoursMaj?.({ id: c.id, est_annule: true });
+      const bouts = ['Séance annulée'];
+      if (json.notifications?.envoyees > 0) bouts.push(`${json.notifications.envoyees} email${json.notifications.envoyees > 1 ? 's' : ''} envoyé${json.notifications.envoyees > 1 ? 's' : ''}`);
+      if (json.credits_restitues > 0) bouts.push(`${json.credits_restitues} crédit${json.credits_restitues > 1 ? 's' : ''} restitué${json.credits_restitues > 1 ? 's' : ''}`);
+      toast.success(bouts.join(' · ') + ' ✓');
+      if (json.paiements_seance_payes > 0) {
+        toast.warning(`⚠️ ${json.paiements_seance_payes} paiement${json.paiements_seance_payes > 1 ? 's' : ''} déjà encaissé${json.paiements_seance_payes > 1 ? 's' : ''} sur cette séance — pense au remboursement (Revenus).`);
+      }
     } catch (err) {
-      console.error('Erreur annulation:', err);
+      toast.error('Annulation impossible : ' + err.message);
     } finally {
       setAnnulant(false);
       setConfirmAnnul(false);

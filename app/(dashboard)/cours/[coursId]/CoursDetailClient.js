@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { formatHeure, getAllTypesFromCategories } from '@/lib/utils';
 import { parseDate } from '@/lib/dates';
+import { compterPlacesOccupees, presenceOccupePlace, presenceEstReservationActive } from '@/lib/presences';
 import { createClient } from '@/lib/supabase';
 import { useToast } from '@/components/ui/ToastProvider';
 import HeureSelect from '@/components/ui/HeureSelect';
@@ -25,9 +26,13 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
   const [deleteScope, setDeleteScope]             = useState('single');
   const [promotingId, setPromotingId]             = useState(null);
 
-  // Places disponibles pour proposer la promotion depuis la liste d'attente
+  // Places disponibles pour proposer la promotion depuis la liste d'attente.
+  // Formule v74 : compter TOUTES les presences gonflait l'effectif → après
+  // une annulation tardive sur un cours plein, « Promouvoir » restait caché
+  // alors que la place était vendable (B1b).
+  const nbOccupees = compterPlacesOccupees(presences);
   const placesDispos = cours.capacite_max != null
-    ? Math.max(0, cours.capacite_max - presences.length)
+    ? Math.max(0, cours.capacite_max - nbOccupees)
     : null;
 
   // ---- Cours privé : prévenir les invité·es par email (dédupé serveur) ----
@@ -230,21 +235,36 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
       if (qErr) throw qErr;
       const ids = (coursConcernes || []).map(c => c.id);
 
-      // Présences POINTÉES (présent/absent/excusé) dans le périmètre = historique réel
+      // Présences du périmètre en LIGNES : historique pointé ET réservations
+      // actives (B1b : le count-only ignorait son erreur → garde-fou muet, et
+      // les réservations non pointées partaient en cascade sans un mot).
       let nbPointees = 0;
+      let nbResas = 0;
+      let lectureIncertaine = false;
       if (ids.length > 0) {
-        const { count } = await supabase
+        const { data: presRows, error: presReadErr } = await supabase
           .from('presences')
-          .select('id', { count: 'exact', head: true })
-          .in('cours_id', ids)
+          .select('statut_pointage, annulation_tardive')
+          .in('cours_id', ids);
+        if (presReadErr) {
+          lectureIncertaine = true; // fail-closed : confirmation forte
+        } else {
           // absent_compte (cas résolu) et annulations tardives décomptées font
           // partie de l'historique réel — les rater = effacer des preuves de
           // décompte sans recrédit (audit 2026-07-25).
-          .or('statut_pointage.in.(present,absent,excuse,absent_compte),annulation_tardive.eq.true');
-        nbPointees = count || 0;
+          nbPointees = (presRows || []).filter(p =>
+            ['present', 'absent', 'excuse', 'absent_compte'].includes(p.statut_pointage) || p.annulation_tardive
+          ).length;
+          nbResas = (presRows || []).filter(presenceEstReservationActive).length;
+        }
       }
 
-      if (nbPointees > 0) {
+      if (lectureIncertaine) {
+        const ok = confirm(
+          '⚠️ Impossible de vérifier les présences liées — la suppression peut effacer de l\'historique pointé ou des réservations actives.\n\nSupprimer quand même ?'
+        );
+        if (!ok) { setLoading(false); return; }
+      } else if (nbPointees > 0) {
         const ok = confirm(
           `⚠️ Attention : ${deleteScope === 'single' ? 'ce cours contient' : `ces ${ids.length} cours contiennent`} ` +
           `${nbPointees} présence${nbPointees > 1 ? 's' : ''} déjà pointée${nbPointees > 1 ? 's' : ''}.\n\n` +
@@ -255,24 +275,39 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
         );
         if (!ok) { setLoading(false); return; }
       }
+      if (!lectureIncertaine && nbResas > 0) {
+        const ok = confirm(
+          `⚠️ ${nbResas} réservation${nbResas > 1 ? 's' : ''} active${nbResas > 1 ? 's' : ''} sur ${deleteScope === 'single' ? 'cette séance' : 'ces séances'} — ` +
+          `supprimer les efface SANS prévenir les élèves (les listes d'attente disparaissent aussi).\n\n` +
+          `Préfère « Annuler le cours » : les inscrit·es reçoivent un email et les carnets sont recrédités.\n\n` +
+          `Supprimer quand même ?`
+        );
+        if (!ok) { setLoading(false); return; }
+      }
 
+      // Deletes VÉRIFIÉS (B1b : un delete en échec redirigeait quand même —
+      // la prof croyait la série supprimée, elle réapparaissait).
       if (deleteScope === 'single') {
-        await supabase.from('cours').delete().eq('id', cours.id);
+        const { error: delErr } = await supabase.from('cours').delete().eq('id', cours.id);
+        if (delErr) throw delErr;
       } else if (deleteScope === 'future' && cours.recurrence_parent_id) {
-        await supabase
+        const { error: delErr } = await supabase
           .from('cours')
           .delete()
           .eq('recurrence_parent_id', cours.recurrence_parent_id)
           .gte('date', cours.date);
+        if (delErr) throw delErr;
       } else if (deleteScope === 'all' && cours.recurrence_parent_id) {
-        await supabase
+        const { error: delErr } = await supabase
           .from('cours')
           .delete()
           .eq('recurrence_parent_id', cours.recurrence_parent_id);
-        await supabase
+        if (delErr) throw delErr;
+        const { error: delRecErr } = await supabase
           .from('recurrences')
           .delete()
           .eq('id', cours.recurrence_parent_id);
+        if (delRecErr) throw new Error('Séances supprimées, mais la série reste listée : ' + delRecErr.message);
       }
 
       router.push(cours.date ? `/agenda?date=${cours.date}` : '/agenda');
@@ -553,7 +588,7 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
                 <Users size={16} />
                 <div>
                   <div className="detail-label">Capacité</div>
-                  <div className="detail-value">{presences.length} / {cours.capacite_max} places</div>
+                  <div className="detail-value">{nbOccupees} / {cours.capacite_max} places</div>
                 </div>
               </div>
             )}
@@ -684,10 +719,14 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
           <h2><Users size={18} /> Inscrits ({presences.length})</h2>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             {/* Inscrire des élèves à tout moment (avant / pendant / après le
-                cours) — le pointage accepte l'ajout hors de la fenêtre horaire. */}
+                cours) — le pointage accepte l'ajout hors de la fenêtre horaire.
+                SAUF séance annulée (B1b, rouge) : pointer/ajouter sur une
+                séance annulée re-décomptait des carnets. */}
+            {!cours.est_annule && (
             <Link href={`/pointage/${cours.id}`} className="izi-btn btn-sm izi-btn-secondary">
               <UserPlus size={16} /> Ajouter des élèves
             </Link>
+            )}
             {cours.visibilite === 'prive' && presences.length > 0 && (
               <button
                 type="button"
@@ -699,6 +738,7 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
                 ✉️ {notifying ? 'Envoi…' : 'Prévenir par email'}
               </button>
             )}
+            {!cours.est_annule && (
             <Link
               href={`/pointage/${cours.id}`}
               className={`izi-btn btn-sm ${nbPointes > 0 ? 'izi-btn-ghost btn-modifier-pointage' : 'izi-btn-secondary'}`}
@@ -706,8 +746,16 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
               <CheckCircle2 size={16} />
               {nbPointes > 0 ? 'Modifier le pointage' : 'Pointer'}
             </Link>
+            )}
           </div>
         </div>
+
+        {cours.est_annule && (
+          <div className="pointage-banner" style={{ background: 'var(--bg-soft, #F8F4ED)' }}>
+            <Lock size={16} />
+            <span>Séance annulée — pointage et ajouts verrouillés (crédits restitués selon ta règle « Cours annulé »).</span>
+          </div>
+        )}
 
         {/* Bannière pointage effectué */}
         {nbPointes > 0 && (
@@ -730,9 +778,11 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
         {presences.length === 0 ? (
           <div className="empty-inscrits">
             <p className="empty-text">{cours.visibilite === 'prive' ? 'Aucun·e invité·e pour le moment' : 'Aucun inscrit pour le moment'}</p>
+            {!cours.est_annule && (
             <Link href={`/pointage/${cours.id}`} className="izi-btn btn-sm izi-btn-primary">
               <UserPlus size={16} /> Ajouter des élèves
             </Link>
+            )}
           </div>
         ) : (
           <div className="inscrits-list">
@@ -770,7 +820,7 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
             <Clock size={18} /> Liste d'attente ({listeAttente.length})
           </h2>
           <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', margin: '6px 0 12px' }}>
-            Personnes notifiées automatiquement (par email) si une place se libère, dans l'ordre.
+            Notifiées automatiquement (par email), dans l'ordre, quand une place se libère par une annulation d'élève ou une résolution de cas. Tu peux aussi promouvoir à la main dès qu'une place est libre.
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             {listeAttente.map((entry, idx) => (
@@ -1007,7 +1057,9 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
             <div className="msg-to">
               <span className="msg-to-label">À</span>
               <div className="msg-to-list">
-                {presences.map(p => (
+                {/* Le serveur announce filtre déjà les annulés — les afficher
+                    ici promettait des envois qui ne partaient pas (B1b). */}
+                {presences.filter(presenceOccupePlace).map(p => (
                   <span key={p.id} className={`msg-to-chip ${p.clients?.email ? '' : 'no-email'}`}>
                     {p.clients?.prenom} {p.clients?.nom}
                     {!p.clients?.email && <span className="no-email-hint"> (pas d'email)</span>}
@@ -1099,7 +1151,9 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
             <div className="sms-to">
               <span className="sms-to-label">À</span>
               <div className="sms-to-list">
-                {presences.map(p => (
+                {/* Un SMS partirait VRAIMENT aux annulés (payload brut) —
+                    dormant tant que SMS_ENABLED=false, filtré quand même (B1b). */}
+                {presences.filter(presenceOccupePlace).map(p => (
                   <span key={p.id} className={`sms-to-chip ${p.clients?.telephone ? 'has-phone' : 'no-phone'}`}>
                     {p.clients?.prenom} {p.clients?.nom}
                     {p.clients?.telephone

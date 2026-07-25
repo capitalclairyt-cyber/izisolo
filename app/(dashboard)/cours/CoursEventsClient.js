@@ -11,6 +11,7 @@ import { createClient } from '@/lib/supabase';
 import { formatHeure } from '@/lib/utils';
 import { normalizeTypesCours } from '@/lib/utils';
 import { parseDate } from '@/lib/dates';
+import { compterPlacesOccupees } from '@/lib/presences';
 import { useToast } from '@/components/ui/ToastProvider';
 import { toneForCours } from '@/lib/tones';
 import Pagination, { usePagination } from '@/components/ui/Pagination';
@@ -61,7 +62,7 @@ export default function CoursEventsClient({
       const rid = c.recurrence_parent_id;
       if (!m[rid]) m[rid] = { nextDate: null, nextCoursId: null, nbSeances: 0, nbInscrits: 0 };
       m[rid].nbSeances++;
-      m[rid].nbInscrits += c.presences?.[0]?.count || 0;
+      m[rid].nbInscrits += compterPlacesOccupees(c.presences);
       if (!m[rid].nextDate || c.date < m[rid].nextDate) {
         m[rid].nextDate    = c.date;
         m[rid].nextCoursId = c.id;
@@ -666,7 +667,7 @@ function SerieCard({ serie, stats, lieuxMap }) {
 // ═══════════════════════════════════════════════════
 function PonctuelCard({ cours: c, lieuxMap, nbEnAttente = 0 }) {
   const lieuNom    = c.lieu_id ? lieuxMap[c.lieu_id] : c.lieu;
-  const nbInscrits = c.presences?.[0]?.count || 0;
+  const nbInscrits = compterPlacesOccupees(c.presences);
 
   return (
     <div className={`ce-card izi-card ce-card--${toneForCours(c.type_cours)}`}>

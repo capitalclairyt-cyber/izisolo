@@ -4,6 +4,9 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import PortailHome from './PortailHome';
 import { resolveClientInfo, filterCoursVisibles } from '@/lib/visibilite';
+import { presenceOccupePlace } from '@/lib/presences';
+import { coursDejaCommence } from '@/lib/dates';
+import { reportError } from '@/lib/report';
 
 export async function generateMetadata({ params }) {
   const { studioSlug } = await params;
@@ -28,8 +31,10 @@ async function getStudioData(studioSlug) {
   // les RLS bloquent les utilisateur·ices authenticated (un élève connecté
   // n'est pas le prof). Tous les select sont publics, pas de secrets.
   const supabase = supabaseAdmin;
-  const today = new Date().toISOString().slice(0, 10);
-  const in60 = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  // Heure de PARIS (le serveur Vercel est en UTC : entre minuit et 2 h l'été,
+  // « aujourd'hui » était hier — B1b).
+  const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Paris' });
+  const in60 = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toLocaleDateString('sv-SE', { timeZone: 'Europe/Paris' });
 
   const { data: profile } = await supabase
     .from('profiles')
@@ -78,7 +83,9 @@ async function getStudioData(studioSlug) {
       .lte('date', in60)
       .order('date', { ascending: true })
       .order('heure', { ascending: true })
-      .limit(60),
+      // 240 (≈4 séances/jour sur 60 j) : la limite 60 coupait les semaines
+      // LOINTAINES en silence dès ~10 séances/semaine (B1b).
+      .limit(240),
     supabase
       .from('offres')
       .select('id, nom, type, prix, seances, duree_jours, stripe_payment_link')
@@ -107,39 +114,34 @@ async function getStudioData(studioSlug) {
   if (clientInfo?.client_id) {
     const [{ data: cli }, { data: pres }] = await Promise.all([
       supabase.from('clients').select('prenom, nom, email').eq('id', clientInfo.client_id).single(),
-      supabase.from('presences').select('cours_id').eq('client_id', clientInfo.client_id).eq('profile_id', profile.id),
+      supabase.from('presences').select('cours_id, statut_pointage, annulation_tardive').eq('client_id', clientInfo.client_id).eq('profile_id', profile.id),
     ]);
     if (cli) currentClient = { nom: [cli.prenom, cli.nom].filter(Boolean).join(' ') || cli.email, email: cli.email };
-    reservedCoursIds = (pres || []).map(p => p.cours_id);
+    // Une résa annulée (tardive ou résolue annule/declinee) ne doit plus
+    // afficher « ✓ Inscrit·e » sur la carte du cours (B1b).
+    reservedCoursIds = (pres || []).filter(presenceOccupePlace).map(p => p.cours_id);
   }
 
   // Count presences per cours
   const coursIds = (cours || []).map(c => c.id);
   let presencesCounts = {};
   if (coursIds.length > 0) {
-    const { data: presences } = await supabase
+    const { data: presences, error: presErr } = await supabase
       .from('presences')
-      .select('cours_id')
+      .select('cours_id, statut_pointage, annulation_tardive')
       .in('cours_id', coursIds);
-    (presences || []).forEach(p => {
+    if (presErr) reportError('[portail] lecture presences err:', presErr, { route: `/p/${studioSlug}` });
+    // Formule v74 : les annulations tardives / annule / declinee ne comptent
+    // plus — avant, le portail affichait « Complet » (et cachait le bouton
+    // Réserver) pour des places que la route aurait acceptées (B1b, rouge).
+    (presences || []).filter(presenceOccupePlace).forEach(p => {
       presencesCounts[p.cours_id] = (presencesCounts[p.cours_id] || 0) + 1;
     });
   }
 
-  // Filtrer les cours du jour dont l'heure est déjà passée
-  // (ex : à 18h, ne pas afficher le cours de 9h ce matin)
-  const now = new Date();
-  const todayStr = now.toISOString().slice(0, 10);
-  const coursFutur = (cours || []).filter(c => {
-    if (c.date > todayStr) return true;
-    if (c.date < todayStr) return false;
-    // Aujourd'hui : compare l'heure
-    if (!c.heure) return true; // pas d'heure → on garde
-    const [hh, mm] = c.heure.split(':').map(Number);
-    const coursDateTime = new Date(now);
-    coursDateTime.setHours(hh, mm, 0, 0);
-    return coursDateTime > now;
-  });
+  // Filtrer les cours du jour dont l'heure est déjà passée — horloge unique
+  // Paris (lib/dates), le calcul local serveur UTC gardait ~2 h de trop.
+  const coursFutur = (cours || []).filter(c => !coursDejaCommence(c));
 
   return {
     profile,

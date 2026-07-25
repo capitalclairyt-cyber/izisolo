@@ -321,6 +321,35 @@ async function applyDirectEffect({ supabase, cas, action, userId }) {
       .eq('id', cas.presence_id);
     if (updErr) { reportError('[cas resolve applyDirectEffect]', updErr); return { error: 'Une erreur est survenue.', status: 500 }; }
 
+    // ── Place libérée (annule/declinee) → promotion liste d'attente ────────
+    // Le détail du cours promet « notifiées automatiquement si une place se
+    // libère » : c'était vrai pour l'annulation élève, FAUX pour la
+    // résolution de cas — la file attendait un email qui ne venait jamais
+    // (B1b). Fire-and-forget : la résolution n'échoue pas si la promotion rate.
+    if (['annule', 'declinee'].includes(action) && cas.cours_id) {
+      try {
+        const { createAdminClient } = await import('@/lib/supabase-admin');
+        const admin = createAdminClient();
+        const { data: coursRow } = await admin
+          .from('cours')
+          .select('id, nom, date, heure, est_annule, capacite_max')
+          .eq('id', cas.cours_id)
+          .maybeSingle();
+        const todayParis = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Paris' });
+        if (coursRow && !coursRow.est_annule && coursRow.date >= todayParis) {
+          const { data: prof } = await admin
+            .from('profiles').select('studio_slug').eq('id', cas.profile_id).maybeSingle();
+          const { promouvoirListeAttente } = await import('@/lib/promotion-liste-attente');
+          await promouvoirListeAttente(admin, cas.profile_id, coursRow, {
+            studioSlug: prof?.studio_slug || null,
+            notifier: true,
+          });
+        }
+      } catch (promErr) {
+        reportError('[cas resolve] promotion liste d\'attente échouée:', promErr);
+      }
+    }
+
     // Excuse d'une absence qui avait DÉJÀ été décomptée (no-show strict) → on
     // rend la séance. Le flag context.seance_decomptee, posé à la création du
     // cas par le pointage, est le seul signal fiable (le statut 'absent' seul

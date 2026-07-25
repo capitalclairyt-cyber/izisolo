@@ -80,7 +80,7 @@ export async function POST(request, { params }) {
   // Vérifier que la présence appartient bien à ce client dans ce studio
   const { data: presence } = await supabaseAdmin
     .from('presences')
-    .select('id, abonnement_id, annulation_tardive, cours:cours_id(id, nom, date, heure, type_cours, est_annule, tarif_unitaire)')
+    .select('id, abonnement_id, annulation_tardive, statut_pointage, cours:cours_id(id, nom, date, heure, type_cours, est_annule, tarif_unitaire)')
     .eq('id', presenceId)
     .eq('client_id', client.id)
     .eq('profile_id', profile.id)
@@ -96,6 +96,12 @@ export async function POST(request, { params }) {
   // prof n'a pas de sens (aucune sanction ne doit s'appliquer).
   if (presence.annulation_tardive) {
     return Response.json({ error: 'Cette réservation est déjà annulée.' }, { status: 409 });
+  }
+  // Une présence résolue « annulée »/« déclinée » (cas traité par la prof)
+  // n'est plus une inscription active : sans ce garde, la route SANCTIONNAIT
+  // une résa déjà annulée (< 24 h : est_due + décompte carnet) — B1b, rouge.
+  if (['annule', 'declinee'].includes(presence.statut_pointage)) {
+    return Response.json({ error: 'Cette réservation a déjà été annulée côté studio — rien à faire de ton côté.' }, { status: 409 });
   }
   if (presence.cours?.est_annule) {
     return Response.json({ error: 'Ce cours a été annulé par ton studio — rien à faire de ton côté.' }, { status: 409 });
