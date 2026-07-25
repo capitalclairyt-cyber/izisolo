@@ -9,12 +9,23 @@ import { Sparkles, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 const ERROR_MESSAGES = {
   auth_callback: 'Le lien de connexion est invalide ou a expiré. Demande un nouveau lien ci-dessous.',
   session_expired: 'Ta session a expiré. Reconnecte-toi pour continuer.',
+  confirmed_login_needed: 'Ce lien a déjà servi ou vient d\'un autre appareil. Si tu viens de confirmer ton email : c\'est tout bon, connecte-toi ci-dessous.',
 };
+
+// Même garde anti open-redirect que /auth/callback : `?redirect=` était poussé
+// TEL QUEL dans router.push après login — phishing possible via un lien
+// izisolo.fr légitime qui expédiait ensuite vers un site pirate (B1d).
+function safeRedirect(raw) {
+  if (!raw || typeof raw !== 'string') return '/dashboard';
+  if (!raw.startsWith('/') || raw.startsWith('//') || raw.startsWith('/\\')) return '/dashboard';
+  if (/[\x00-\x1f\x7f]/.test(raw)) return '/dashboard';
+  return raw;
+}
 
 function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirect = searchParams.get('redirect') || '/dashboard';
+  const redirect = safeRedirect(searchParams.get('redirect'));
   const errorParam = searchParams.get('error');
 
   const [email, setEmail] = useState('');
@@ -38,6 +49,10 @@ function LoginContent() {
       console.error('[login] error:', authError);
       if (authError.message?.includes('rate') || authError.status === 429) {
         setError('Trop de tentatives. Attends quelques minutes.');
+      } else if (authError.message?.toLowerCase().includes('not confirmed')) {
+        // B1d : « mot de passe incorrect » pour un email non confirmé =
+        // reset de mot de passe inutile + abandon au jour 1.
+        setError('Ton email n\'est pas encore confirmé — clique le lien reçu par email (vérifie tes spams), puis reviens te connecter.');
       } else {
         setError('Email ou mot de passe incorrect');
       }
@@ -59,13 +74,21 @@ function LoginContent() {
 
     const { error: authError } = await supabase.auth.signInWithOtp({
       email: email.trim().toLowerCase(),
-      options: { emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirect)}` },
+      options: {
+        emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirect)}`,
+        // B1d : sans ce flag, un email INCONNU tapé ici créait un compte auth
+        // neuf sans metadata → handle_new_user (v33/v57) fabriquait un profil
+        // PROF fantôme en trial — la porte que v57/v58 venaient de fermer.
+        shouldCreateUser: false,
+      },
     });
 
     if (authError) {
       console.error('[login] magic link error:', authError);
       if (authError.message?.includes('rate') || authError.status === 429) {
         setError('Trop de tentatives. Attends quelques minutes avant de réessayer.');
+      } else if (authError.message?.toLowerCase().includes('signups not allowed')) {
+        setError('Aucun compte avec cet email. Vérifie l\'orthographe, ou crée ton studio via « Créer mon studio ».');
       } else {
         setError(authError.message || 'Erreur lors de l\'envoi du lien. Réessaie dans quelques instants.');
       }

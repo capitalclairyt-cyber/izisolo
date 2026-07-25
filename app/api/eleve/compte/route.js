@@ -65,17 +65,11 @@ export const POST = withRoute(
       );
     }
 
-    // 1. Le role passe à 'prof' (merge shallow : les autres clés restent).
-    const { error: metaErr } = await supabaseAdmin.auth.admin.updateUserById(user.id, {
-      user_metadata: { role: 'prof' },
-    });
-    if (metaErr) {
-      reportError('[eleve/compte] updateUserById error:', metaErr.message);
-      return Response.json({ error: 'Erreur serveur', code: 'INTERNAL' }, { status: 500 });
-    }
-
-    // 2. Créer le profil prof s'il n'existe pas. L'insert déclenche le
-    //    trigger v33 → trial_started_at = NOW() → essai 14 jours neuf.
+    // 1. Créer le profil prof s'il n'existe pas — AVANT de flipper le role
+    //    (B1d : dans l'ordre inverse, un échec d'insert laissait un compte
+    //    prof SANS profil → onboarding « réussi » factice → boucle infinie
+    //    dashboard↔wizard). L'insert déclenche le trigger v33 →
+    //    trial_started_at = NOW() → essai 14 jours neuf.
     if (!profile) {
       const { error: insertErr } = await supabaseAdmin.from('profiles').insert({
         id: user.id,
@@ -87,6 +81,17 @@ export const POST = withRoute(
         reportError('[eleve/compte] insert profil error:', insertErr.message);
         return Response.json({ error: 'Erreur serveur', code: 'INTERNAL' }, { status: 500 });
       }
+    }
+
+    // 2. Le role passe à 'prof' (merge shallow : les autres clés restent).
+    //    En cas d'échec ici, le compte reste élève avec un profil déjà créé :
+    //    un nouveau clic sur « Ouvrir mon studio » ne refait que ce flip.
+    const { error: metaErr } = await supabaseAdmin.auth.admin.updateUserById(user.id, {
+      user_metadata: { role: 'prof' },
+    });
+    if (metaErr) {
+      reportError('[eleve/compte] updateUserById error:', metaErr.message);
+      return Response.json({ error: 'Erreur serveur', code: 'INTERNAL' }, { status: 500 });
     }
 
     return Response.json({ ok: true });

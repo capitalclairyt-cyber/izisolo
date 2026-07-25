@@ -41,9 +41,18 @@ export default function RegisterPage() {
     });
 
     if (authError) {
-      setError(authError.message === 'User already registered'
-        ? 'Cet email est déjà utilisé'
-        : 'Erreur lors de l\'inscription');
+      const msg = authError.message || '';
+      if (msg === 'User already registered') {
+        setError('Cet email est déjà utilisé');
+      } else if (msg.includes('rate') || authError.status === 429) {
+        setError('Trop de tentatives — attends quelques minutes puis réessaie.');
+      } else if (/password/i.test(msg)) {
+        setError('Mot de passe refusé par le serveur : ' + msg);
+      } else {
+        // B1d : le générique « Erreur lors de l'inscription » laissait la
+        // prof réessayer en boucle sans savoir quoi corriger.
+        setError('Erreur lors de l\'inscription : ' + (msg || 'réessaie dans un instant.'));
+      }
       setLoading(false);
       return;
     }

@@ -143,7 +143,16 @@ export async function GET(request) {
     for (const prof of (trialProfiles || [])) {
       const st = getTrialStatus(prof);
       if (!st.active) continue;
-      const to = prof.email_contact;
+      // email_contact = champ « contact PUBLIC » modifiable/vidable dans les
+      // paramètres : fallback sur l'email de connexion (B1d — sinon la prof
+      // qui a mis l'email du studio, ou l'a vidé, n'était JAMAIS relancée).
+      let to = prof.email_contact;
+      if (!to) {
+        try {
+          const { data: { user: authUser } } = await supabaseAdmin.auth.admin.getUserById(prof.id);
+          to = authUser?.email || null;
+        } catch { /* compte auth introuvable : on skip proprement */ }
+      }
       if (!to) continue;
 
       const isJ1 = st.daysLeft <= 1 && !prof.trial_reminder_sent_j1;
@@ -151,7 +160,14 @@ export async function GET(request) {
       if (!isJ1 && !isJ3) continue;
 
       const jours = st.daysLeft;
-      const sujet = jours <= 1 ? `Ton essai IziSolo se termine demain` : `Ton essai IziSolo se termine dans ${jours} jours`;
+      // « demain » mentait : daysLeft=1 (ceil) peut signifier « expire dans
+      // 4 h » (cron à 3 h) — on donne la date réelle (B1d).
+      const finLe = st.endsAt
+        ? new Date(st.endsAt).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Europe/Paris' })
+        : null;
+      const sujet = jours <= 1
+        ? `Ton essai IziSolo se termine ${finLe ? `le ${finLe}` : 'très bientôt'}`
+        : `Ton essai IziSolo se termine dans ${jours} jours`;
       try {
         await sendEmail({
           categorie: 'transactionnel',

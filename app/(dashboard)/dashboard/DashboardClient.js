@@ -177,7 +177,7 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
           </button>
           <div className="dash-checklist-header">
             <Sparkles size={16} style={{ color: 'var(--brand)' }} />
-            <span>Démarre ton studio en 3 étapes</span>
+            <span>Démarre ton studio en 4 étapes</span>
           </div>
           <div className="dash-checklist-items">
             {checklistItems.map(item => {

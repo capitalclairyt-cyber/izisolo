@@ -30,15 +30,11 @@ export default async function DashboardLayout({ children }) {
   // renseignées, on force l'utilisateur à passer par /onboarding avant de
   // pouvoir accéder à l'app. Évite que des profs débarquent sur un dashboard
   // vide sans comprendre quoi configurer.
-  //   - profile manquant      → /onboarding (cas rare, post-signup raté)
-  //   - studio_nom manquant   → /onboarding
-  //   - studio_nom == défaut  → /onboarding (legacy : ancien défaut "Mon Studio")
-  //   - metier manquant       → /onboarding
-  const onboardingComplet =
-    profile &&
-    profile.studio_nom &&
-    profile.studio_nom !== 'Mon Studio' &&
-    profile.metier;
+  // Le marqueur fiable est studio_slug (posé UNIQUEMENT par handleFinish —
+  // c'est aussi le critère v58). L'ancien test `studio_nom !== 'Mon Studio'`
+  // renvoyait au wizard À VIE une prof qui nomme réellement son studio
+  // « Mon Studio » — avec offre dupliquée à chaque re-complétion (B1d).
+  const onboardingComplet = profile && profile.studio_slug;
 
   if (!onboardingComplet) {
     redirect('/onboarding');

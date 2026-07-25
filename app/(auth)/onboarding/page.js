@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { METIERS, TYPES_COURS_DEFAUT } from '@/lib/constantes';
 import { getVocabulaire } from '@/lib/vocabulaire';
-import { slugify } from '@/lib/utils';
+import { genererSlugStudioUnique } from '@/lib/slug-studio';
 import { Sparkles, ArrowRight, ArrowLeft, Check, Copy, ExternalLink, PartyPopper, Upload } from 'lucide-react';
 
 const ETAPES = ['metier', 'studio', 'offre', 'portail'];
@@ -62,9 +62,16 @@ export default function OnboardingPage() {
         // revient à mi-onboarding), on pré-remplit les champs.
         const { data: prof } = await supabase
           .from('profiles')
-          .select('prenom, nom, ville, telephone, adresse, studio_nom, metier')
+          .select('prenom, nom, ville, telephone, adresse, studio_nom, metier, studio_slug')
           .eq('id', user.id)
           .maybeSingle();
+        // Déjà onboardée (studio_slug posé) : re-dérouler le wizard
+        // REGÉNÉRAIT le slug (tous les liens portail partagés → 404 chez les
+        // élèves) et dupliquait l'offre du template (B1d).
+        if (prof?.studio_slug) {
+          router.replace('/dashboard');
+          return;
+        }
         if (prof) {
           if (prof.prenom && !prenom) setPrenom(prof.prenom);
           if (prof.nom) setNom(prof.nom);
@@ -72,7 +79,9 @@ export default function OnboardingPage() {
           if (prof.telephone) setTelephone(prof.telephone);
           if (prof.adresse) setAdresse(prof.adresse);
           if (prof.studio_nom && prof.studio_nom !== 'Mon Studio') setStudioNom(prof.studio_nom);
-          if (prof.metier) setMetier(prof.metier);
+          // PAS de préremplissage metier : le schéma v1 pose DEFAULT 'yoga'
+          // sur TOUS les profils → « Yoga » pré-coché se validait sans être
+          // vu par une prof de pilates pressée (B1d).
         }
       }
     })();
@@ -97,7 +106,10 @@ export default function OnboardingPage() {
     }
   }, [metier]);
 
-  async function handleFinish() {
+  const [offreWarning, setOffreWarning] = useState(false);
+
+  async function handleFinish(options = {}) {
+    const skipOffre = options?.skipOffre === true;
     setLoading(true);
     setErreur('');
 
@@ -111,40 +123,72 @@ export default function OnboardingPage() {
     const vocabulaire = getVocabulaire(metier);
     const typesCours = TYPES_COURS_DEFAUT[metier] || TYPES_COURS_DEFAUT.autre;
     const couleur = METIERS[metier]?.couleurDefaut || 'rose';
-    const slug = slugify(studioNom || 'mon-studio');
+
+    // Slug UNIQUE (B1d, rouge) : studio_slug est UNIQUE en DB — un slug brut
+    // bloquait À VIE la 2e « Studio Yoga » de France sur un message
+    // « vérifie ta connexion ». Même logique que Paramètres (lib partagée).
+    let slug;
+    try {
+      slug = await genererSlugStudioUnique(supabase, studioNom, user.id);
+    } catch (e) {
+      console.error('Erreur slug:', e);
+      setErreur('Impossible de vérifier la disponibilité du nom du studio — réessaie dans un instant.');
+      setLoading(false);
+      return;
+    }
 
     // Mise à jour du profil — on enregistre TOUTES les infos collectées
     // pendant l'onboarding (studio + coordonnées). On active aussi le portail
     // public d'office (portail_actif=true) pour que /p/{slug} soit accessible
     // dès la fin de l'onboarding sans manip supplémentaire.
-    const { error: profileError } = await supabase
+    const profilData = {
+      studio_nom: studioNom || 'Mon Studio',
+      studio_slug: slug,
+      metier,
+      prenom: prenom || null,
+      nom: nom || null,
+      ville: ville || null,
+      telephone: telephone || null,
+      adresse: adresse || null,
+      ui_couleur: couleur,
+      types_cours: typesCours,
+      vocabulaire,
+      portail_actif: true,
+    };
+    const { data: updated, error: profileError } = await supabase
       .from('profiles')
-      .update({
-        studio_nom: studioNom || 'Mon Studio',
-        studio_slug: slug,
-        metier,
-        prenom: prenom || null,
-        nom: nom || null,
-        ville: ville || null,
-        telephone: telephone || null,
-        adresse: adresse || null,
-        ui_couleur: couleur,
-        types_cours: typesCours,
-        vocabulaire,
-        portail_actif: true,
-      })
-      .eq('id', user.id);
+      .update(profilData)
+      .eq('id', user.id)
+      .select('id');
 
     if (profileError) {
       console.error('Erreur profil:', profileError);
-      setErreur("Oups, on n'a pas réussi à enregistrer ton studio. Vérifie ta connexion et réessaie.");
+      setErreur(profileError.code === '23505'
+        ? 'Ce nom de studio est déjà pris — modifie-le légèrement et réessaie.'
+        : "Oups, on n'a pas réussi à enregistrer ton studio. Vérifie ta connexion et réessaie.");
       setLoading(false);
       return;
     }
+    // UPDATE sur 0 ligne = compte SANS ligne profiles (ex : bascule
+    // élève→prof interrompue) : avant, l'écran « Bravo ! » était factice et
+    // le dashboard rebouclait sur l'onboarding à l'infini (B1d).
+    if (!updated || updated.length === 0) {
+      const { error: insertErr } = await supabase
+        .from('profiles')
+        .insert({ id: user.id, ...profilData });
+      if (insertErr && insertErr.code !== '23505') {
+        console.error('Erreur création profil:', insertErr);
+        setErreur("Ton profil n'a pas pu être créé — déconnecte-toi puis reconnecte-toi, ou écris-nous via le bouton d'aide.");
+        setLoading(false);
+        return;
+      }
+    }
 
-    // Créer la première offre si renseignée
-    if (offreNom && offrePrix) {
-      await supabase.from('offres').insert({
+    // Première offre — SAUF « Passer cette étape » (avant : le skip créait
+    // QUAND MÊME l'offre du template, prix inventé compris — B1d), et
+    // erreur LUE (un échec silencieux laissait un catalogue vide surprise).
+    if (!skipOffre && offreNom && offrePrix) {
+      const { error: offreErr } = await supabase.from('offres').insert({
         profile_id: user.id,
         nom: offreNom,
         type: 'carnet',
@@ -153,6 +197,10 @@ export default function OnboardingPage() {
         actif: true,
         ordre: 0,
       });
+      if (offreErr) {
+        console.error('Erreur offre onboarding:', offreErr);
+        setOffreWarning(true); // non bloquant : affiché sur l'écran final
+      }
     }
 
     setCreatedSlug(slug);
@@ -457,7 +505,7 @@ export default function OnboardingPage() {
               </button>
               <button
                 className="izi-btn izi-btn-primary"
-                onClick={handleFinish}
+                onClick={() => handleFinish()}
                 disabled={loading}
               >
                 {loading ? 'Création...' : 'C\'est parti !'} <Check size={18} />
@@ -466,7 +514,7 @@ export default function OnboardingPage() {
             <button
               type="button"
               className="izi-btn izi-btn-ghost skip-btn"
-              onClick={handleFinish}
+              onClick={() => handleFinish({ skipOffre: true })}
               disabled={loading}
             >
               Passer cette étape
@@ -497,6 +545,12 @@ export default function OnboardingPage() {
                 {copied ? <><Check size={14} /> Copié !</> : <><Copy size={14} /> Copier le lien</>}
               </button>
             </div>
+
+            {offreWarning && (
+              <p style={{ background: '#fef3e2', color: '#b45309', borderRadius: 10, padding: '10px 14px', fontSize: '0.8125rem', margin: '0 0 16px' }}>
+                ⚠️ Ta première offre n'a pas pu être créée — tu pourras la refaire en une minute dans « Offres ».
+              </p>
+            )}
 
             {/* Levier d'activation : importer sa base dès la 1re minute. */}
             <div className="welcome-import-card">

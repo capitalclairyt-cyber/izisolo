@@ -57,6 +57,11 @@ export async function GET(request) {
       }
       return NextResponse.redirect(`${origin}${next}`);
     }
+    // Échec d'exchange PKCE avec un code présent : cas ultra-courant = lien
+    // de confirmation ouvert sur un AUTRE appareil que l'inscription
+    // (verifier absent). L'email EST confirmé côté GoTrue — on le dit, au
+    // lieu du générique « lien invalide » comme premier contact (B1d).
+    return NextResponse.redirect(`${origin}/login?error=confirmed_login_needed`);
   }
 
   // ─── 2) OTP server-side (`?token_hash=...&type=...`) ──────────────────
