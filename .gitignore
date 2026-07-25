@@ -39,6 +39,8 @@ public/sw.js
 public/workbox-*.js
 public/sw.js.map
 public/workbox-*.js.map
+public/worker-*.js
+public/worker-*.js.map
 .babelrc
 
 # Prospection (PII : ~4000 emails de profs, hors repo)
@@ -46,7 +48,13 @@ prospection/
 
 # Scripts/seeds demo locaux (mots de passe en clair, batch helpers)
 seed-demo-bonjour.sql
+seed-mockup-camille.sql
 scripts/set-demo-password.sql
 lancer-capture.bat
-.claude/ 
+.claude/
 test-results/
+
+# Docs & ressources perso de Colin (hors campagne, comme prospection/)
+bible/
+ressources/
+izisolo-audit-strategique-2026.pdf
