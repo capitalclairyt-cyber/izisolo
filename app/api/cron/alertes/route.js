@@ -48,9 +48,15 @@ export async function GET(request) {
   // 2. Présences sur ces cours (on exclut absent/excusé/annulé).
   const { data: presences } = await supabaseAdmin
     .from('presences')
-    .select('id, cours_id, client_id, statut_pointage')
+    .select('id, cours_id, client_id, statut_pointage, annulation_tardive')
     .in('cours_id', coursIds);
-  const pres = (presences || []).filter(p => p.client_id && !['absent', 'excuse', 'annule'].includes(p.statut_pointage));
+  // annulation_tardive : l'élève a annulé (et payé la sanction) — lui rappeler
+  // « tu es inscrit·e demain ! » était vexant (audit 2026-07-25). Idem
+  // absent_compte/declinee (statuts posés par la résolution de cas).
+  const pres = (presences || []).filter(p =>
+    p.client_id
+    && !p.annulation_tardive
+    && !['absent', 'excuse', 'annule', 'absent_compte', 'declinee'].includes(p.statut_pointage));
   if (pres.length === 0) {
     return NextResponse.json({ rappels: 0, sent: 0, demain });
   }

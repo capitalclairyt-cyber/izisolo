@@ -28,7 +28,9 @@ export default async function ListeAttentePage() {
     const { data: pres } = await supabase
       .from('presences')
       .select('cours_id')
-      .in('cours_id', coursIds);
+      .in('cours_id', coursIds)
+      .not('annulation_tardive', 'is', true)
+      .not('statut_pointage', 'in', '(annule,declinee)'); // v74 : sièges fantômes exclus
     for (const p of (pres || [])) {
       presencesByCours[p.cours_id] = (presencesByCours[p.cours_id] || 0) + 1;
     }

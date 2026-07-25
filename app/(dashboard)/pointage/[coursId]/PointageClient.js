@@ -272,7 +272,7 @@ function PresenceCard({ presence, resolvedCarnet, estPayAsYouGo, paye, paiement,
             </div>
             <div className="pres-meta">
               <span style={{ fontSize: '0.72rem', color: '#b45309', fontWeight: 600 }}>
-                ⏱ Annulée tardivement · séance {presence.abonnement_id ? 'décomptée' : 'due'}
+                ⏱ Annulée tardivement · {presence.abonnement_id ? 'séance décomptée' : presence.est_due ? 'séance due' : 'à trancher (Cas à traiter)'}
               </span>
             </div>
           </div>

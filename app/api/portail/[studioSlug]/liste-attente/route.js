@@ -81,7 +81,9 @@ export async function POST(request, { params }) {
   const { count: nbInscrits } = await supabaseAdmin
     .from('presences')
     .select('id', { count: 'exact', head: true })
-    .eq('cours_id', coursId);
+    .eq('cours_id', coursId)
+    .not('annulation_tardive', 'is', true)
+    .not('statut_pointage', 'in', '(annule,declinee)'); // v74 : sièges fantômes exclus
   if ((nbInscrits || 0) < cours.capacite_max) {
     return Response.json({ error: 'Ce cours a encore des places — réserve directement.' }, { status: 400 });
   }

@@ -187,7 +187,11 @@ function CoursCard({ presence, profile, studioSlug, onAnnuler, annulEnCours }) {
           // Annulée hors délai : plus une inscription active — la séance est
           // décomptée (carnet lié) ou due. Pas de bouton Annuler (déjà annulée).
           <span className="portail-tag" style={{ background: '#fef3e2', color: '#b45309' }}>
-            Annulée tardivement · séance {presence.abonnement_id ? 'décomptée' : 'due'}
+            {presence.abonnement_id
+              ? 'Annulée tardivement · séance décomptée'
+              : presence.est_due
+                ? 'Annulée tardivement · séance due'
+                : 'Annulée tardivement'}
           </span>
         ) : c.est_annule ? (
           <span className="portail-tag portail-tag-amber">Annulé</span>
@@ -377,7 +381,14 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Erreur');
       setAnnuleIds(prev => [...prev, presenceId]);
-      if (json.tardive) {
+      // Le message reflète ce qui s'est RÉELLEMENT passé (audit 2026-07-25 :
+      // « la séance a été comptée » s'affichait même quand la règle du studio
+      // excusait tout ou laissait la prof décider).
+      if (json.tardive && json.action === 'excusee') {
+        toast.success('Annulation enregistrée — ton studio ne compte pas cette séance. 🌿');
+      } else if (json.tardive && json.action === 'manuel') {
+        toast.warning('Annulation tardive enregistrée — ton studio revient vers toi pour la suite.');
+      } else if (json.tardive) {
         toast.warning('Annulation enregistrée — la séance a été comptée (annulation tardive).');
       } else {
         toast.success('Réservation annulée. On t\'attend la prochaine fois 🌿');

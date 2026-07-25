@@ -1,6 +1,7 @@
 import { withRoute } from '@/lib/api-route';
 import { createAdminClient } from '@/lib/supabase-admin';
 import { sendNotifEleve } from '@/lib/notifs-eleves';
+import { sendEmail } from '@/lib/email';
 import { sendPushToEmail } from '@/lib/push-server';
 import { wantsNotif } from '@/lib/notif-prefs';
 import { getRegle } from '@/lib/regles-metier';
@@ -72,22 +73,7 @@ export const POST = withRoute({ auth: 'active' }, async ({ request, params, auth
     : 'la date prévue';
   const heureStr = cours.heure ? cours.heure.slice(0, 5).replace(':', 'h') : '';
 
-  const sujet = `Cours annulé — ${cours.nom}`;
-  const corpsBase =
-`Bonjour {{prenom}},
-
-Le cours « ${cours.nom} » du ${dateStr}${heureStr ? ` à ${heureStr}` : ''} est annulé.${raison ? `\n\nMotif : ${raison}` : ''}
-
-Si tu utilisais un crédit pour ce cours, il sera bien restitué automatiquement (rien à faire).
-
-Désolé·e pour le désagrément, à très vite.`;
-
-  const corpsSms = `Cours annule : « ${cours.nom} » du ${dateStr}${heureStr ? ` ${heureStr}` : ''}. ${raison ? raison + ' ' : ''}Ton credit est restitue. — ${profile?.studio_nom || 'Studio'}`;
-
-  const templates = {
-    email: { sujet, corps: corpsBase },
-    sms: { corps: corpsSms },
-  };
+  const sujet = `Séance annulée — ${cours.nom}`;
 
   // Application de la règle cours_annule_prof :
   //   • mode='auto' + choix='rendre_seances' → recréditer les abos (decrémenter
@@ -119,6 +105,33 @@ Désolé·e pour le désagrément, à très vite.`;
       if (decErr) console.warn('[annuler] credit non-restitue:', decErr.message);
       else creditsRestitues++;
     }
+
+    // Email honnête par élève (audit 2026-07-25) : l'ancien texte promettait
+    // « ton crédit sera restitué automatiquement » même en mode manuel (rien
+    // n'était restitué) et pour les élèves sans carnet. La promesse suit ce
+    // qui s'est RÉELLEMENT passé pour CETTE personne.
+    const creditRestitue = isAutoRendre && row.abonnement_id && reellementDecomptee;
+    const ligneCredit = creditRestitue
+      ? 'Ta séance est bien re-créditée sur ton carnet automatiquement (rien à faire).'
+      : (regleAnnul.mode === 'manuel' || regleAnnul.choix === 'eleve_choisit')
+        ? `${profile?.studio_nom || 'Ton studio'} revient vers toi pour la suite (report ou crédit).`
+        : 'Si tu avais réglé cette séance, rapproche-toi de ton studio pour la suite.';
+    const templates = {
+      email: {
+        sujet,
+        corps:
+`Bonjour {{prenom}},
+
+La séance « ${cours.nom} » du ${dateStr}${heureStr ? ` à ${heureStr}` : ''} est annulée.${raison ? `\n\nMotif : ${raison}` : ''}
+
+${ligneCredit}
+
+Désolé·e pour le désagrément, à très vite.`,
+      },
+      sms: {
+        corps: `Seance annulee : « ${cours.nom} » du ${dateStr}${heureStr ? ` ${heureStr}` : ''}. ${raison ? raison + ' ' : ''}${creditRestitue ? 'Ton credit est restitue.' : ''} — ${profile?.studio_nom || 'Studio'}`,
+      },
+    };
 
     // 2) Log dans cas_a_traiter pour modes 'eleve_choisit' ou 'manuel'
     //    (la prof devra valider la décision pour cet élève)
@@ -170,6 +183,58 @@ Désolé·e pour le désagrément, à très vite.`;
     }
   }
 
+  // ── Liste d'attente : prévenir puis purger (audit 2026-07-25) ────────────
+  // Avant : les personnes en file restaient en attente d'un cours mort (la
+  // purge n'arrivait que 60 j plus tard via le cron), sans jamais être
+  // prévenues.
+  let listeAttentePrevenues = 0;
+  try {
+    const { data: enAttente } = await supabaseAdmin
+      .from('liste_attente')
+      .select('id, email, nom')
+      .eq('cours_id', coursId)
+      .eq('profile_id', user.id);
+    for (const entry of enAttente || []) {
+      if (entry.email && process.env.RESEND_API_KEY) {
+        try {
+          await sendEmail({
+            categorie: 'notification',
+            to: entry.email,
+            subject: sujet,
+            html: `
+              <div style="font-family:-apple-system,BlinkMacSystemFont,sans-serif;max-width:560px;margin:0 auto;padding:24px;">
+                <p style="color:#555;margin:0 0 12px;">Bonjour ${(entry.nom || '').split(' ')[0] || ''},</p>
+                <p style="color:#555;margin:0 0 12px;">
+                  Tu étais en liste d'attente pour « <strong>${cours.nom}</strong> » du ${dateStr}${heureStr ? ` à ${heureStr}` : ''} —
+                  cette séance est finalement <strong>annulée</strong>.${raison ? `<br/><em style="color:#888;">${raison}</em>` : ''}
+                </p>
+                <p style="color:#555;margin:0 0 12px;">Ta place en liste d'attente est retirée, rien à faire de ton côté.</p>
+              </div>
+            `,
+          });
+          listeAttentePrevenues++;
+        } catch (e) { reportError('[annuler] email liste attente (non-bloquant):', e?.message); }
+      }
+    }
+    if ((enAttente || []).length > 0) {
+      await supabaseAdmin.from('liste_attente').delete().eq('cours_id', coursId).eq('profile_id', user.id);
+    }
+  } catch (e) { reportError('[annuler] purge liste attente (non-bloquant):', e?.message); }
+
+  // ── Paiements à la séance déjà encaissés (v65) : signaler à la prof ──────
+  let paiementsSeancePayes = 0;
+  try {
+    const presenceIds = (presences || []).map(r => r.id);
+    if (presenceIds.length > 0) {
+      const { count } = await supabaseAdmin
+        .from('paiements')
+        .select('id', { count: 'exact', head: true })
+        .in('presence_id', presenceIds)
+        .eq('statut', 'paid');
+      paiementsSeancePayes = count || 0;
+    }
+  } catch (e) { reportError('[annuler] comptage paiements séance (non-bloquant):', e?.message); }
+
   // ── Nettoyage des dettes du cours (audit 2026-07-25) ─────────────────────
   // Une séance annulée par la prof ne peut plus être « due » : on cleare
   // est_due sur les présences (sinon « À percevoir » réclamait l'argent d'un
@@ -199,6 +264,8 @@ Désolé·e pour le désagrément, à très vite.`;
     notifications: { envoyees: sentTotal, ignorees: skippedTotal, clients: clientsNotifies },
     credits_restitues: creditsRestitues,
     cas_loggés: casLoggés,
+    liste_attente_prevenues: listeAttentePrevenues,
+    paiements_seance_payes: paiementsSeancePayes,
     regle_appliquée: regleAnnul.mode === 'auto' ? regleAnnul.choix : 'manuel',
   });
 });

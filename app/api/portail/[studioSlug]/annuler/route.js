@@ -8,6 +8,7 @@ import { sendNotifEleve } from '@/lib/notifs-eleves';
 import { getRegle } from '@/lib/regles-metier';
 import { sendNotifElevePourRegle } from '@/lib/notif-eleve-regle';
 import { sendPushToUser } from '@/lib/push-server';
+import { wantsNotif } from '@/lib/notif-prefs';
 import { resoudreCarnetApplicable } from '@/lib/carnet-resolution';
 import { escapeIlike } from '@/lib/utils';
 import { promouvoirListeAttente } from '@/lib/promotion-liste-attente';
@@ -41,7 +42,7 @@ export async function POST(request, { params }) {
     // ⚠️ Ne JAMAIS re-sélectionner twilio_* : colonnes SUPPRIMÉES par v21 →
     // 42703 → profile null → « Studio introuvable » pour TOUTES les annulations
     // élève (bug muet depuis v21, découvert par Manon/Soleya le 2026-07-24).
-    .select('id, studio_nom, regles_annulation, regles_metier, notifs_eleves, plan, trial_started_at, stripe_subscription_status')
+    .select('id, studio_nom, regles_annulation, regles_metier, notifs_eleves, notif_prefs, plan, trial_started_at, stripe_subscription_status')
     .eq('studio_slug', studioSlug)
     .single();
 
@@ -79,7 +80,7 @@ export async function POST(request, { params }) {
   // Vérifier que la présence appartient bien à ce client dans ce studio
   const { data: presence } = await supabaseAdmin
     .from('presences')
-    .select('id, abonnement_id, cours:cours_id(id, nom, date, heure, type_cours, est_annule, tarif_unitaire)')
+    .select('id, abonnement_id, annulation_tardive, cours:cours_id(id, nom, date, heure, type_cours, est_annule, tarif_unitaire)')
     .eq('id', presenceId)
     .eq('client_id', client.id)
     .eq('profile_id', profile.id)
@@ -87,6 +88,17 @@ export async function POST(request, { params }) {
 
   if (!presence) {
     return Response.json({ error: 'Réservation introuvable' }, { status: 404 });
+  }
+
+  // Anti-rejeu (audit 2026-07-25) : la branche « décompter » conservait la
+  // présence et la route ne vérifiait rien → chaque POST répété re-décomptait
+  // une séance et renvoyait l'email. Et annuler un cours déjà annulé par la
+  // prof n'a pas de sens (aucune sanction ne doit s'appliquer).
+  if (presence.annulation_tardive) {
+    return Response.json({ error: 'Cette réservation est déjà annulée.' }, { status: 409 });
+  }
+  if (presence.cours?.est_annule) {
+    return Response.json({ error: 'Ce cours a été annulé par ton studio — rien à faire de ton côté.' }, { status: 409 });
   }
 
   // Vérifier que le cours n'est pas déjà passé
@@ -103,8 +115,10 @@ export async function POST(request, { params }) {
     presence.cours?.type_cours
   );
 
-  // Push prof « annulation » (gaté sur sa pref ; no-op sans abonnement).
-  // Posé ici : quelle que soit la branche ci-dessous, l'élève annule bien.
+  // Push + CLOCHE prof « annulation » (gatés sur ses prefs).
+  // Audit 2026-07-25 : le type était push-only → une prof sans push web
+  // (iOS hors PWA, desktop) n'apprenait JAMAIS une annulation. La cloche
+  // (ref_key par présence, dédupée) est le filet permanent.
   {
     const dStr = presence.cours?.date
       ? new Date(presence.cours.date + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })
@@ -115,6 +129,21 @@ export async function POST(request, { params }) {
       url: '/agenda',
       tag: `annul-${presenceId}`,
     }, { type: 'annulation' }).catch(() => {});
+    try {
+      if (wantsNotif(profile.notif_prefs, 'annulation', 'prof', 'inapp')) {
+        await supabaseAdmin.from('notifications').upsert({
+          profile_id: profile.id,
+          type: 'annulation',
+          titre: evaluation.annulable
+            ? `↩️ Annulation — ${client.prenom || client.email}`
+            : `⏱ Annulation tardive — ${client.prenom || client.email}`,
+          corps: `${presence.cours?.nom || 'Séance'}${dStr ? ` · ${dStr}` : ''}${evaluation.annulable ? '' : ` (moins de ${evaluation.delaiHeures}h avant)`}`,
+          data: { client_id: client.id, cours_id: presence.cours?.id || null, date: presence.cours?.date || null },
+          ref_key: `annul_${presenceId}`,
+          expires_at: new Date(Date.now() + 7 * 86400000).toISOString(),
+        }, { onConflict: 'profile_id,ref_key', ignoreDuplicates: true });
+      }
+    } catch (e) { reportError('[annuler] cloche prof (non-bloquant):', e?.message); }
   }
 
   // ── Cas 1 : Annulation libre (dans les délais) → suppression de la presence
@@ -172,15 +201,19 @@ export async function POST(request, { params }) {
     return Response.json({ ok: true, tardive: true, action: 'excusee' });
   }
 
-  // Si mode manuel → on accepte l'annulation côté élève (delete presence) mais
-  // on log le cas pour que la prof décide en aval (décompter / excuser / dette)
+  // Si mode manuel → l'annulation est actée côté élève, mais la présence est
+  // CONSERVÉE, marquée tardive SANS sanction (est_due=false), pour que le cas
+  // reste actionnable (audit 2026-07-25 : l'ancien delete rendait « Séance
+  // décomptée »/« Excusé » impossibles — message d'erreur trompeur — et la
+  // « dette » choisie n'existait nulle part). La prof tranche via le cas :
+  // excuse (clear flags), décompte (résolution carnet) ou dette (est_due).
   if (regleAnnul.mode === 'manuel') {
-    const { error: deleteErr } = await supabaseAdmin
+    const { error: updErr } = await supabaseAdmin
       .from('presences')
-      .delete()
+      .update({ annulation_tardive: true, est_due: false, motif_due: null })
       .eq('id', presenceId);
-    if (deleteErr) {
-      reportError('annulation tardive (manuel) — delete error:', deleteErr);
+    if (updErr) {
+      reportError('annulation tardive (manuel) — update error:', updErr);
       return Response.json({ error: 'Erreur lors de l\'annulation' }, { status: 500 });
     }
     try {
@@ -189,7 +222,7 @@ export async function POST(request, { params }) {
         case_type: 'annulation_hors_delai',
         client_id: client.id,
         cours_id: presence.cours?.id || null,
-        presence_id: null, // presence supprimée
+        presence_id: presenceId,
         context: {
           mode: 'manuel',
           delai_h: evaluation.delaiHeures,
@@ -197,10 +230,10 @@ export async function POST(request, { params }) {
           client_email: client.email,
           cours_date: presence.cours?.date,
           cours_heure: presence.cours?.heure,
-          presence_id: presenceId, // pour ref historique même si supprimée
         },
       });
     } catch (e) { reportError('annulation (manuel): cas_a_traiter non-bloquant:', e); }
+    // La place est libérée (v74 : la capacité ignore les annulations tardives)
     try { await promouvoirListeAttente(supabaseAdmin, profile.id, presence.cours, { proEmail, studioSlug }); } catch {}
     return Response.json({ ok: true, tardive: true, action: 'manuel' });
   }
@@ -263,6 +296,12 @@ export async function POST(request, { params }) {
       }
     }
   }
+  // La place est libérée (v74 : la capacité ignore les annulations tardives)
+  // → on promeut la liste d'attente, la séance annulée reste facturée.
+  try { await promouvoirListeAttente(supabaseAdmin, profile.id, presence.cours, { proEmail, studioSlug }); } catch (e) {
+    reportError('promotion (tardive décomptée) non-bloquant:', e);
+  }
+
   if (!seanceDecomptee && choixDecompte === 'decompter_ou_dette') {
     // Pas de carnet lié → log une dette dans cas_a_traiter
     try {

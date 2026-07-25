@@ -177,12 +177,33 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
     }
   };
 
-  // Annuler un cours
+  // Annuler une séance — confirmation + feedback (audit 2026-07-25 : le clic
+  // partait direct, sans confirm ni vérification du résultat — un mis-clic
+  // emailait tous les inscrits, irréversible).
+  const [cancelling, setCancelling] = useState(false);
   const handleCancel = async () => {
-    const supabase = createClient();
-    // Passe par l'API pour déclencher les notifications email/SMS aux inscrits
-    await fetch(`/api/cours/${cours.id}/annuler`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
-    router.refresh();
+    const n = presences.length;
+    if (!confirm(
+      `Annuler cette séance ?${n > 0 ? `\n\nLes ${n} inscrit·e${n > 1 ? 's' : ''} seront prévenu·es par email, et les crédits restitués selon ta règle « Cours annulé ».` : ''}\n\nCette action est définitive (pas de ré-activation).`
+    )) return;
+    setCancelling(true);
+    try {
+      const res = await fetch(`/api/cours/${cours.id}/annuler`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json.error || `Erreur ${res.status}`);
+      const bouts = [`Séance annulée`];
+      if (json.notifications?.envoyees > 0) bouts.push(`${json.notifications.envoyees} email${json.notifications.envoyees > 1 ? 's' : ''} envoyé${json.notifications.envoyees > 1 ? 's' : ''}`);
+      if (json.credits_restitues > 0) bouts.push(`${json.credits_restitues} crédit${json.credits_restitues > 1 ? 's' : ''} restitué${json.credits_restitues > 1 ? 's' : ''}`);
+      toast.success(bouts.join(' · ') + ' ✓');
+      if (json.paiements_seance_payes > 0) {
+        toast.warning(`⚠️ ${json.paiements_seance_payes} paiement${json.paiements_seance_payes > 1 ? 's' : ''} déjà encaissé${json.paiements_seance_payes > 1 ? 's' : ''} sur cette séance — pense au remboursement (Revenus).`);
+      }
+      router.refresh();
+    } catch (e) {
+      toast.error('Annulation impossible : ' + e.message);
+    } finally {
+      setCancelling(false);
+    }
   };
 
   // Supprimer cours

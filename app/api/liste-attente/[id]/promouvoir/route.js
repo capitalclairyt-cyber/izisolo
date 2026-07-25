@@ -48,12 +48,14 @@ export const POST = withRoute({ auth: 'active' }, async ({ params, auth }) => {
 
   const supabaseAdmin = createAdminClient();
 
-  // Vérifier qu'il y a bien une place dispo
+  // Vérifier qu'il y a bien une place dispo (v74 : sièges fantômes exclus)
   if (cours.capacite_max) {
     const { count } = await supabaseAdmin
       .from('presences')
       .select('id', { count: 'exact', head: true })
-      .eq('cours_id', cours.id);
+      .eq('cours_id', cours.id)
+      .not('annulation_tardive', 'is', true)
+      .not('statut_pointage', 'in', '(annule,declinee)');
     if ((count || 0) >= cours.capacite_max) {
       return NextResponse.json({
         error: 'Aucune place disponible — le cours est encore complet. Attends une annulation ou augmente la capacité.',

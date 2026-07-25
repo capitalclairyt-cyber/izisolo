@@ -249,7 +249,7 @@ export default function ResolveCasModal({ item, action, actionLabel, onClose, on
 
         {missingPresence && (
           <div className="resolve-error">
-            <AlertCircle size={14} /> Pas de présence liée à ce cas — l'action "{actionLabel}" est impossible. Le cas a peut-être été créé avant la refonte du pointage.
+            <AlertCircle size={14} /> La réservation liée à ce cas a été supprimée — "{actionLabel}" n'a plus de support. Il reste « Ignorer » (et la fiche de l'élève pour un geste manuel). Les nouveaux cas gardent désormais leur réservation.
           </div>
         )}
 

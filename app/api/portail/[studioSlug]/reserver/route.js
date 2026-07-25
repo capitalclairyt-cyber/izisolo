@@ -87,12 +87,15 @@ export async function POST(request, { params }) {
     }
   }
 
-  // Vérifier la capacité
+  // Vérifier la capacité — sans les sièges fantômes (v74 : annulations
+  // tardives et statuts annule/declinee ne bloquent plus une place).
   if (cours.capacite_max) {
     const { count } = await supabaseAdmin
       .from('presences')
       .select('id', { count: 'exact', head: true })
-      .eq('cours_id', coursId);
+      .eq('cours_id', coursId)
+      .not('annulation_tardive', 'is', true)
+      .not('statut_pointage', 'in', '(annule,declinee)');
     if ((count || 0) >= cours.capacite_max) {
       return Response.json({ error: 'Ce cours est complet' }, { status: 409 });
     }
