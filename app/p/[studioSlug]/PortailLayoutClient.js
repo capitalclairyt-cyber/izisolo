@@ -23,24 +23,14 @@ function PortailLayoutInner({ studioSlug, children }) {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
-        // Récupérer le prénom du client dans ce studio
-        supabase
-          .from('profiles')
-          .select('id')
-          .eq('studio_slug', studioSlug)
-          .single()
-          .then(({ data: profile }) => {
-            if (!profile) { setPrenom(''); return; }
-            supabase
-              .from('clients')
-              .select('prenom')
-              .eq('profile_id', profile.id)
-              .ilike('email', escapeIlike(session.user.email))
-              .single()
-              .then(({ data: client }) => {
-                setPrenom(client?.prenom || session.user.email.split('@')[0]);
-              });
-          });
+        // Prénom via la route serveur (B1e, trouvé par le walkthrough live) :
+        // interroger `profiles` depuis le navigateur avec le JWT élève = 406
+        // RLS silencieux → le header ne saluait JAMAIS l'élève connectée, et
+        // le badge messages non lus — gaté sur prenom — était mort avec.
+        fetch(`/api/portail/${studioSlug}/profil`)
+          .then(r => (r.ok ? r.json() : null))
+          .then(j => setPrenom(j?.prenom || session.user.email.split('@')[0]))
+          .catch(() => setPrenom(session.user.email.split('@')[0]));
       } else {
         setPrenom('');
       }

@@ -5,6 +5,39 @@ import { escapeIlike } from '@/lib/utils';
 import { reportError } from '@/lib/report';
 
 /**
+ * GET /api/portail/[studioSlug]/profil
+ * Identité MINIMALE de l'élève connectée dans ce studio ({ prenom }) — pour
+ * le header du portail. Ajoutée en B1e : le layout interrogeait `profiles`
+ * depuis le NAVIGATEUR avec le JWT élève → 406 RLS silencieux → le prénom
+ * ne s'affichait jamais ET le badge messages non lus (gaté dessus) était
+ * mort depuis toujours.
+ */
+export async function GET(request, { params }) {
+  const { studioSlug } = await params;
+  const supabase = await createServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return Response.json({ error: 'Non authentifié' }, { status: 401 });
+
+  const supabaseAdmin = createAdminClient();
+  const { data: profile } = await supabaseAdmin
+    .from('profiles')
+    .select('id')
+    .eq('studio_slug', studioSlug)
+    .maybeSingle();
+  if (!profile) return Response.json({ error: 'Studio introuvable' }, { status: 404 });
+
+  const { data: client, error: clientErr } = await supabaseAdmin
+    .from('clients')
+    .select('prenom')
+    .eq('profile_id', profile.id)
+    .ilike('email', escapeIlike(user.email))
+    .maybeSingle();
+  if (clientErr) reportError('[portail/profil GET] client err:', clientErr, { route: `/api/portail/${studioSlug}/profil` });
+
+  return Response.json({ prenom: client?.prenom || null });
+}
+
+/**
  * PATCH /api/portail/[studioSlug]/profil
  * L'élève met à jour SES coordonnées (téléphone / adresse / ville) depuis son
  * espace. Auth par session : on retrouve la fiche client par l'email du compte

@@ -49,6 +49,7 @@ prospection/
 # Scripts/seeds demo locaux (mots de passe en clair, batch helpers)
 seed-demo-bonjour.sql
 seed-mockup-camille.sql
+scripts/.b1e-fixtures.json
 scripts/set-demo-password.sql
 lancer-capture.bat
 .claude/
