@@ -1,18 +1,10 @@
-import { createServerClient } from '@/lib/supabase-server';
+import { withRoute } from '@/lib/api-route';
 import { createAdminClient } from '@/lib/supabase-admin';
 import { parseJsonBody, adminFeedbackUpdateSchema } from '@/lib/validation';
-import { isAdminEmail } from '@/lib/admin';
 import { reportError } from '@/lib/report';
 
 // Triage des feedbacks bêta depuis /admin/feedbacks (statut + note interne).
-export async function POST(request) {
-  const supabase = await createServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user || !isAdminEmail(user.email)) {
-    return new Response('Forbidden', { status: 403 });
-  }
-
+export const POST = withRoute({ auth: 'admin' }, async ({ request }) => {
   const { data, errorResponse } = await parseJsonBody(request, adminFeedbackUpdateSchema);
   if (errorResponse) return errorResponse;
   const { feedbackId, status, admin_note } = data;
@@ -48,4 +40,4 @@ export async function POST(request) {
   }
 
   return Response.json({ ok: true });
-}
+});

@@ -1,17 +1,9 @@
-import { createServerClient } from '@/lib/supabase-server';
+import { withRoute } from '@/lib/api-route';
 import { createAdminClient } from '@/lib/supabase-admin';
 import { parseJsonBody, adminUpdatePlanSchema } from '@/lib/validation';
-import { isAdminEmail } from '@/lib/admin';
 import { reportError } from '@/lib/report';
 
-export async function POST(request) {
-  const supabase = await createServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user || !isAdminEmail(user.email)) {
-    return new Response('Forbidden', { status: 403 });
-  }
-
+export const POST = withRoute({ auth: 'admin' }, async ({ request }) => {
   const { data, errorResponse } = await parseJsonBody(request, adminUpdatePlanSchema);
   if (errorResponse) return errorResponse;
   const { userId, plan } = data;
@@ -37,4 +29,4 @@ export async function POST(request) {
   return new Response(JSON.stringify({ ok: true }), {
     headers: { 'Content-Type': 'application/json' },
   });
-}
+});

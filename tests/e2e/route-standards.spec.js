@@ -25,10 +25,6 @@ const ROOT = path.resolve(process.cwd());
 
 // ─── Loi 1 : routes hors withRoute (NE PEUT QUE RÉTRÉCIR) ──────────────────
 const SANS_WRAPPER = [
-  'app/api/admin/essais/[id]/route.js',
-  'app/api/admin/feedbacks/update/route.js',
-  'app/api/admin/tickets/update/route.js',
-  'app/api/admin/users/update-plan/route.js',
   'app/api/cron/alertes/route.js',
   'app/api/cron/digest-messagerie/route.js',
   'app/api/cron/expirations/route.js',

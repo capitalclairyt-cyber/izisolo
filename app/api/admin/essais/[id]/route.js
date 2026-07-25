@@ -1,5 +1,7 @@
-// requireActiveAccount : écriture métier → bloquée si compte gelé (402)
-import { requireActiveAccount } from '@/lib/api-auth';
+// ⚠️ Malgré le chemin /api/admin/, cette route est celle du PRO (validation
+// de SES demandes d'essai) — auth:'active', pas 'admin'. Écriture métier →
+// bloquée si compte gelé (402).
+import { withRoute } from '@/lib/api-route';
 import { createAdminClient } from '@/lib/supabase-admin';
 import { finaliserDemande, emailConfirmationVisiteur } from '@/lib/essai';
 import { buildPortailMagicLink } from '@/lib/portail-magic-link';
@@ -20,17 +22,14 @@ export const dynamic = 'force-dynamic';
  *
  * Réservé au pro propriétaire (RLS).
  */
-export async function POST(request, { params }) {
-  let profile, supabase, user;
-  try {
-    ({ profile, supabase, user } = await requireActiveAccount());
-  } catch (res) { return res; }
+export const POST = withRoute({ auth: 'active' }, async ({ request, params, auth }) => {
+  const { profile, supabase, user } = auth;
 
   if (!profile?.studio_slug) {
     return Response.json({ error: 'Réservé aux pros' }, { status: 403 });
   }
 
-  const { id } = await params;
+  const { id } = params;
 
   let body;
   try { body = await request.json(); } catch { return Response.json({ error: 'JSON invalide' }, { status: 400 }); }
@@ -113,8 +112,9 @@ export async function POST(request, { params }) {
     }
   }
 
-  // refuser
-  await supabaseAdmin
+  // refuser — erreur vérifiée (B2c) : un refus qui échouait laissait la
+  // demande « en attente » côté DB pendant que l'UI confirmait le refus.
+  const { error: refusErr } = await supabaseAdmin
     .from('cours_essai_demandes')
     .update({
       statut: 'refusee',
@@ -122,6 +122,10 @@ export async function POST(request, { params }) {
       decided_at: new Date().toISOString(),
     })
     .eq('id', id);
+  if (refusErr) {
+    reportError('[admin/essai] refus update err:', refusErr);
+    return Response.json({ error: 'Erreur lors du refus' }, { status: 500 });
+  }
 
   // Email refus au visiteur
   if (process.env.RESEND_API_KEY) {
@@ -162,4 +166,4 @@ export async function POST(request, { params }) {
   }, { type: 'essai', profileId: profile.id }).catch(() => {});
 
   return Response.json({ ok: true });
-}
+});
