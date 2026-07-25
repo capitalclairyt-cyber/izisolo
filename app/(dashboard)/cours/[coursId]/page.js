@@ -38,7 +38,7 @@ export default async function CoursDetailPage({ params, searchParams }) {
       .order('position', { ascending: true })
       .order('created_at', { ascending: true });
     listeAttente = la || [];
-  } catch {}
+  } catch { /* fail-open : le détail du cours s'affiche sans la liste d'attente */ }
 
   // Charger les lieux
   const { data: lieux } = await supabase

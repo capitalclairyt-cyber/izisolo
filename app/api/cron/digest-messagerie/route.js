@@ -181,7 +181,7 @@ async function releaseEnvoi(supabase, destinataire, refDate) {
       .from('emails_envoyes')
       .delete()
       .match({ type: 'digest_messagerie', destinataire: destinataire.toLowerCase(), ref: refDate });
-  } catch {}
+  } catch { /* release raté : le claim 'failed' sera re-clamé au prochain run (B1g) */ }
 }
 
 async function envoyerDigest({ to, prenom, nbRecus, url, contexte, studioNom }) {

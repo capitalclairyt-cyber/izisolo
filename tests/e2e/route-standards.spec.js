@@ -30,23 +30,10 @@ const SANS_WRAPPER = [];
 
 // ─── Loi 2 : catchs strictement vides par fichier (NE PEUT QUE RÉTRÉCIR) ───
 // clé = chemin relatif, valeur = nombre exact toléré.
-const CATCHS_VIDES = {
-  'app/(auth)/onboarding/page.js': 3,
-  'app/(dashboard)/clients/ClientsClient.js': 1,
-  'app/(dashboard)/cours/[coursId]/page.js': 1,
-  'app/(dashboard)/layout.js': 2,
-  'app/(dashboard)/parametres/page.js': 1,
-  'app/api/cours/[coursId]/annuler/route.js': 1,
-  'app/api/cron/digest-messagerie/route.js': 1,
-  'app/api/liste-attente/[id]/promouvoir/route.js': 1,
-  'app/api/portail/[studioSlug]/annuler/route.js': 2,
-  'app/api/portail/[studioSlug]/liste-attente/route.js': 1,
-  'app/api/portail/[studioSlug]/reserver/route.js': 1,
-  'app/api/stripe/webhook-saas/route.js': 1,
-  'app/p/[studioSlug]/espace/page.js': 1,
-  'lib/api-route.js': 2,
-  'lib/promotion-liste-attente.js': 1,
-};
+// VIDE depuis B2c (2026-07-25) : chaque catch survivant porte un commentaire
+// d'intention (fail-open déclaré) ou un reportError. Un `catch {}` nu qui
+// réapparaît ici = un bug futur qui se cache — le test le refuse.
+const CATCHS_VIDES = {};
 
 // ─── Scan helpers ───────────────────────────────────────────────────────────
 function listFiles(dir, out = []) {

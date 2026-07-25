@@ -578,7 +578,7 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
   try {
     const { data: { user: proUser } } = await supabaseAdmin.auth.admin.getUserById(profile.id);
     proEmail = proUser?.email || null;
-  } catch {}
+  } catch { /* replyTo de confort : sans lui l'email part quand même */ }
 
   // Envoyer email de confirmation (si Resend configuré)
   let magicLinkSent = false;

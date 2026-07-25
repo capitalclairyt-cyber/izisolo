@@ -22,7 +22,7 @@ export const POST = withRoute({ auth: 'active' }, async ({ request, params, auth
   const { user } = auth;
   const { coursId } = params;
   let body = {};
-  try { body = await request.json(); } catch {}
+  try { body = await request.json(); } catch { /* body optionnel : annulation sans motif */ }
   const raison = (body.raison || '').toString().trim().slice(0, 500);
 
   const supabaseAdmin = createAdminClient();

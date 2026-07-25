@@ -171,7 +171,7 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
   try {
     const { data: { user: proUser } } = await supabaseAdmin.auth.admin.getUserById(profile.id);
     proEmail = proUser?.email || null;
-  } catch {}
+  } catch { /* replyTo de confort : sans lui l'email part quand même */ }
 
   const dateStr = cours.date
     ? new Date(cours.date + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })

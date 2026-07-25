@@ -1535,7 +1535,7 @@ function StripePaiementSection({ profile, setProfile, setDirty }) {
       await navigator.clipboard.writeText(webhookUrl);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    } catch {}
+    } catch { /* clipboard refusé (permissions navigateur) — l'URL reste copiable à la main */ }
   };
 
   const handleSecretChange = (e) => {

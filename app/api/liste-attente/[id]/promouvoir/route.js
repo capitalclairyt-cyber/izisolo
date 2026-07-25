@@ -129,7 +129,7 @@ export const POST = withRoute({ auth: 'active' }, async ({ params, auth }) => {
   try {
     const { data: cp } = await supabaseAdmin.from('clients').select('notif_prefs').eq('id', clientId).maybeSingle();
     promuWantsEmail = wantsNotif(cp?.notif_prefs, 'place_liberee', 'eleve', 'email');
-  } catch {}
+  } catch { /* fail-open : au doute on prévient (mieux qu'une promotion silencieuse) */ }
   try {
     if (process.env.RESEND_API_KEY && promuWantsEmail) {
       const dateStr = cours.date

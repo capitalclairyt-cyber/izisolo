@@ -53,7 +53,7 @@ export default function OnboardingPage() {
             const res = await fetch('/api/eleve/compte');
             const data = await res.json().catch(() => ({}));
             if (res.ok && Array.isArray(data.portails)) setPortails(data.portails);
-          } catch {}
+          } catch { /* fail-open : l'écran élève s'affiche sans la liste des portails */ }
           return;
         }
         const metaPrenom = user.user_metadata?.prenom;
@@ -215,7 +215,7 @@ export default function OnboardingPage() {
       await navigator.clipboard.writeText(url);
       setCopied(true);
       setTimeout(() => setCopied(false), 2400);
-    } catch {}
+    } catch { /* clipboard refusé (permissions navigateur) — le lien reste copiable à la main */ }
   }
 
   function goToDashboard() {
@@ -248,7 +248,7 @@ export default function OnboardingPage() {
   // Porte de sortie : un compte coincé sur l'onboarding (mauvais compte,
   // envie de changer d'utilisateur) doit toujours pouvoir se déconnecter.
   async function handleLogout() {
-    try { await supabase.auth.signOut(); } catch {}
+    try { await supabase.auth.signOut(); } catch { /* peu importe : on redirige vers /login dans tous les cas */ }
     router.push('/login');
     router.refresh();
   }

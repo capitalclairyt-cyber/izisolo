@@ -161,7 +161,11 @@ export const POST = withRoute({ auth: 'public' }, async ({ request }) => {
       await supabase
         .from('stripe_events_processed')
         .insert({ event_id: event.id, event_type: event.type });
-    } catch {}
+    } catch (e) {
+      // Marqueur d'idempotence raté = l'event pourrait être retraité au
+      // retry Stripe. Non-bloquant, mais on veut le VOIR dans erreurs_app.
+      reportError('[webhook-saas] insert stripe_events_processed:', e);
+    }
 
     return Response.json({ received: true });
   } catch (err) {

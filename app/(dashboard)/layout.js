@@ -60,7 +60,7 @@ export default async function DashboardLayout({ children }) {
       .eq('profile_id', user.id)
       .is('resolu_at', null);
     nbCasATraiter = count || 0;
-  } catch {}
+  } catch { /* badge décoratif : le layout ne doit jamais tomber pour un compteur */ }
 
   // Demandes d'essai EN ATTENTE (mode manuel) = actions à trancher → badge nav.
   let nbEssais = 0;
@@ -71,7 +71,7 @@ export default async function DashboardLayout({ children }) {
       .eq('profile_id', user.id)
       .eq('statut', 'en_attente');
     nbEssais = count || 0;
-  } catch {}
+  } catch { /* badge décoratif : idem */ }
 
   return (
     <DashboardLayoutClient profile={profile} trial={trial} nbCasATraiter={nbCasATraiter} nbEssais={nbEssais}>

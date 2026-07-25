@@ -51,7 +51,7 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
   try {
     const { data: { user: proUser } } = await supabaseAdmin.auth.admin.getUserById(profile?.id);
     proEmail = proUser?.email || null;
-  } catch {}
+  } catch { /* replyTo de confort : sans lui l'email part quand même */ }
 
   if (!profile) {
     return Response.json({ error: 'Studio introuvable' }, { status: 404 });
@@ -263,7 +263,7 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
       });
     } catch (e) { reportError('annulation (manuel): cas_a_traiter non-bloquant:', e); }
     // La place est libérée (v74 : la capacité ignore les annulations tardives)
-    try { await promouvoirListeAttente(supabaseAdmin, profile.id, presence.cours, { proEmail, studioSlug }); } catch {}
+    try { await promouvoirListeAttente(supabaseAdmin, profile.id, presence.cours, { proEmail, studioSlug }); } catch (e) { reportError('annulation: promotion liste d\'attente non-bloquante:', e); }
     return Response.json({ ok: true, tardive: true, action: 'manuel' });
   }
 

@@ -311,7 +311,7 @@ async function getData(studioSlug, userEmail) {
 
   // Compteur de messages non lus (pour la cloche de notifications de l'espace).
   let unreadMessages = 0;
-  try { unreadMessages = await countUnread(supabase, 'eleve', client.id); } catch {}
+  try { unreadMessages = await countUnread(supabase, 'eleve', client.id); } catch { /* badge décoratif : l'espace s'affiche sans le compteur */ }
 
   // Préférences de notif — requête SÉPARÉE et défensive : si la colonne
   // notif_prefs n'existe pas encore (migration v60 pas appliquée), on retombe

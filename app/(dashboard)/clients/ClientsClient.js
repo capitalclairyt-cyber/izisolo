@@ -93,7 +93,7 @@ export default function ClientsClient({ clients: clientsInit, profile, statutMap
     setPairesIgnorees(prev => {
       const next = new Set(prev);
       next.add(clePaire(a, b));
-      try { localStorage.setItem('izi_doublons_ignores', JSON.stringify([...next])); } catch {}
+      try { localStorage.setItem('izi_doublons_ignores', JSON.stringify([...next])); } catch { /* stockage local plein/bloqué : l'ignore vaut pour la session en cours */ }
       return next;
     });
   };
