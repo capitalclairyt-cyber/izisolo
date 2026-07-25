@@ -216,7 +216,10 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
           .from('presences')
           .select('id', { count: 'exact', head: true })
           .in('cours_id', ids)
-          .in('statut_pointage', ['present', 'absent', 'excuse']);
+          // absent_compte (cas résolu) et annulations tardives décomptées font
+          // partie de l'historique réel — les rater = effacer des preuves de
+          // décompte sans recrédit (audit 2026-07-25).
+          .or('statut_pointage.in.(present,absent,excuse,absent_compte),annulation_tardive.eq.true');
         nbPointees = count || 0;
       }
 

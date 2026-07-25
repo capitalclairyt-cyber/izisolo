@@ -63,7 +63,7 @@ export const POST = withRoute({ auth: 'active' }, async ({ request, params, auth
   // Envoyer notifications aux inscrits + restituer crédits selon règle
   const { data: presences } = await supabaseAdmin
     .from('presences')
-    .select('id, abonnement_id, client:client_id(id, prenom, nom, email, telephone, notif_prefs)')
+    .select('id, abonnement_id, statut_pointage, annulation_tardive, est_due, client:client_id(id, prenom, nom, email, telephone, notif_prefs)')
     .eq('cours_id', coursId)
     .eq('profile_id', user.id);
 
@@ -106,9 +106,14 @@ Désolé·e pour le désagrément, à très vite.`;
     if (!client?.id) continue;
     clientsNotifies++;
 
-    // 1) Restitution du crédit si rendre_seances + abonnement lié
-    //    RPC v53 : décrément atomique borné à 0 (plus de read-modify-write)
-    if (isAutoRendre && row.abonnement_id) {
+    // 1) Restitution du crédit si rendre_seances + abonnement lié ET séance
+    //    réellement décomptée (fix audit 2026-07-25 : une présence LIÉE mais
+    //    jamais décomptée existe — batch-add pré-Lot A, présent dé-pointé,
+    //    absent-strict excusé — et l'ancien recrédit aveugle OFFRAIT une
+    //    séance à chacune). Décomptée = pointée comptante (present /
+    //    absent_compte) ou annulation tardive sanctionnée (liée en décomptant).
+    const reellementDecomptee = ['present', 'absent_compte'].includes(row.statut_pointage) || row.annulation_tardive;
+    if (isAutoRendre && row.abonnement_id && reellementDecomptee) {
       const { error: decErr } = await supabaseAdmin
         .rpc('ajuster_seances', { p_abo_id: row.abonnement_id, p_delta: -1 });
       if (decErr) console.warn('[annuler] credit non-restitue:', decErr.message);
@@ -164,6 +169,30 @@ Désolé·e pour le désagrément, à très vite.`;
       }, { type: 'cours_annule', profileId: user.id }).catch(() => {});
     }
   }
+
+  // ── Nettoyage des dettes du cours (audit 2026-07-25) ─────────────────────
+  // Une séance annulée par la prof ne peut plus être « due » : on cleare
+  // est_due sur les présences (sinon « À percevoir » réclamait l'argent d'un
+  // cours annulé — l'espace élève, lui, l'excluait déjà) et on ferme les cas
+  // d'annulation tardive encore ouverts sur ce cours.
+  try {
+    await supabaseAdmin
+      .from('presences')
+      .update({ est_due: false, motif_due: null })
+      .eq('cours_id', coursId)
+      .eq('est_due', true);
+    await supabaseAdmin
+      .from('cas_a_traiter')
+      .update({
+        resolu_at: new Date().toISOString(),
+        resolu_action: 'annule_cours_prof',
+        resolu_notes: 'Fermé automatiquement : la séance a été annulée par la prof.',
+      })
+      .eq('cours_id', coursId)
+      .eq('profile_id', user.id)
+      .eq('case_type', 'annulation_hors_delai')
+      .is('resolu_at', null);
+  } catch (e) { reportError('[annuler] nettoyage dettes (non-bloquant):', e?.message); }
 
   return Response.json({
     ok: true,

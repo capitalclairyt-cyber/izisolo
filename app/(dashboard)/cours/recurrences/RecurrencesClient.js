@@ -167,14 +167,26 @@ export default function RecurrencesClient({ recurrences: initialRecurrences, cou
 
   // ─── Actions ─────────────────────────────────────────────────────────────
   const supprimerCours = async (coursId, iso) => {
-    setActionPending(iso);
     const supabase = createClient();
+    // Garde-fou (audit 2026-07-25) : la corbeille de la grille supprimait sans
+    // AUCUNE confirmation — présences et réservations effacées en cascade.
+    const { count } = await supabase
+      .from('presences')
+      .select('id', { count: 'exact', head: true })
+      .eq('cours_id', coursId)
+      .or('statut_pointage.in.(present,absent,excuse,absent_compte),annulation_tardive.eq.true');
+    const nbHisto = count || 0;
+    const ok = confirm(nbHisto > 0
+      ? `⚠️ Cette séance a ${nbHisto} présence${nbHisto > 1 ? 's' : ''} pointée${nbHisto > 1 ? 's' : ''} ou sanctionnée${nbHisto > 1 ? 's' : ''} — la supprimer efface définitivement cet historique (sans recréditer les carnets).\n\nSi la séance n'a pas lieu, préfère « Annuler » (prévient les élèves et recrédite).\n\nSupprimer quand même ?`
+      : `Supprimer la séance du ${iso.split('-').reverse().join('/')} ? Les réservations éventuelles seront effacées.`);
+    if (!ok) return;
+    setActionPending(iso);
     const { error } = await supabase.from('cours').delete().eq('id', coursId);
     if (error) {
       toast.error('Erreur : ' + error.message);
     } else {
       setCours(prev => prev.filter(c => c.id !== coursId));
-      toast.success('Cours supprimé');
+      toast.success('Séance supprimée');
     }
     setActionPending(null);
   };
@@ -188,16 +200,22 @@ export default function RecurrencesClient({ recurrences: initialRecurrences, cou
     // on le recopie depuis le cours le plus récent de la série pour que
     // l'occurrence ajoutée garde le même modèle de paiement.
     let tarifUnitaire = null;
+    let visibilite = null;
     try {
       const { data: frere } = await supabase
         .from('cours')
-        .select('tarif_unitaire')
+        .select('tarif_unitaire, visibilite')
         .eq('recurrence_parent_id', selected.id)
         .order('date', { ascending: false })
         .limit(1)
         .maybeSingle();
       tarifUnitaire = frere?.tarif_unitaire ?? null;
-    } catch { /* pas de frère : tarif null */ }
+      visibilite = frere?.visibilite ?? null;
+    } catch { /* pas de frère : défauts */ }
+    // Audit 2026-07-25 : l'occurrence ajoutée perdait la capacité (null codé en
+    // dur) ET la visibilité (défaut DB 'public') → une occurrence d'une série
+    // « réservé abonnés, 8 places » devenait publique et sans jauge. On recopie
+    // tout, y compris les champs domicile (v44) portés par la récurrence.
     const { data, error } = await supabase.from('cours').insert({
       profile_id: user.id,
       nom: selected.nom,
@@ -206,15 +224,31 @@ export default function RecurrencesClient({ recurrences: initialRecurrences, cou
       heure: selected.heure,
       duree_minutes: selected.duree_minutes,
       lieu_id: selected.lieu_id,
-      capacite_max: null,
+      capacite_max: selected.capacite_max ?? null,
+      visibilite: visibilite || 'public',
       recurrence_parent_id: selected.id,
       tarif_unitaire: tarifUnitaire,
+      ...(selected.domicile ? {
+        domicile: true,
+        client_id: selected.client_id || null,
+        frais_deplacement: selected.frais_deplacement ?? null,
+      } : {}),
     }).select().single();
     if (error) {
       toast.error('Erreur : ' + error.message);
     } else {
+      // Cours à domicile : l'élève du cours est inscrite d'office (comme à la
+      // création de série) — erreur LUE (les inserts muets ont assez sévi).
+      if (selected.domicile && selected.client_id && data) {
+        const { error: presErr } = await supabase.from('presences').insert({
+          profile_id: user.id,
+          cours_id: data.id,
+          client_id: selected.client_id,
+        });
+        if (presErr) toast.warning('Séance créée, mais l\'inscription de l\'élève a échoué : ' + presErr.message);
+      }
       setCours(prev => [...prev, data]);
-      toast.success('Cours ajouté');
+      toast.success('Séance ajoutée');
     }
     setActionPending(null);
   };
@@ -242,7 +276,7 @@ export default function RecurrencesClient({ recurrences: initialRecurrences, cou
         .from('presences')
         .select('id', { count: 'exact', head: true })
         .in('cours_id', ids)
-        .in('statut_pointage', ['present', 'absent', 'excuse']);
+        .or('statut_pointage.in.(present,absent,excuse,absent_compte),annulation_tardive.eq.true');
       if ((count || 0) > 0 && !confirm(
         `⚠️ ${count} présence${count > 1 ? 's' : ''} déjà pointée${count > 1 ? 's' : ''} sur ces cours ` +
         `— la suppression efface définitivement cet historique et détache les paiements liés.\n\nSupprimer quand même ?`

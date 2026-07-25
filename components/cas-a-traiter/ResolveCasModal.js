@@ -89,7 +89,7 @@ export default function ResolveCasModal({ item, action, actionLabel, onClose, on
     const fetcher = resourceConfig.type === 'paiement'
       ? supabase
           .from('paiements')
-          .select('id, montant, mode_paiement, created_at')
+          .select('id, montant, mode, created_at')
           .eq('client_id', item.client_id)
           .order('created_at', { ascending: false })
           .limit(10)
@@ -149,7 +149,7 @@ export default function ResolveCasModal({ item, action, actionLabel, onClose, on
 
   const fmtPaiement = (p) => {
     const d = new Date(p.created_at).toLocaleDateString('fr-FR');
-    return `${p.montant} € · ${p.mode_paiement || '?'} · ${d}`;
+    return `${p.montant} € · ${p.mode || '?'} · ${d}`;
   };
   const fmtAbo = (a) => {
     const reste = (a.seances_total || 0) - (a.seances_utilisees || 0);

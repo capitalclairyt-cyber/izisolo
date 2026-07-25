@@ -29,6 +29,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 // requireActiveAccount : écriture métier → bloquée si compte gelé (402)
 import { requireActiveAccount } from '@/lib/api-auth';
+import { resoudreCarnetApplicable } from '@/lib/carnet-resolution';
 import { reportError } from '@/lib/report';
 
 const ResolveBodySchema = z.object({
@@ -63,7 +64,7 @@ export async function POST(request, { params }) {
   // Charger le cas pour avoir le contexte (case_type, client_id, cours_id)
   const { data: cas, error: fetchErr } = await supabase
     .from('cas_a_traiter')
-    .select('*, clients(prenom, nom, id), cours(nom, date, id)')
+    .select('*, clients(prenom, nom, id), cours(nom, date, id, type_cours, tarif_unitaire)')
     .eq('id', id)
     .eq('profile_id', user.id)
     .single();
@@ -200,8 +201,29 @@ function computeRedirect(cas, action) {
  */
 async function applyDirectEffect({ supabase, cas, action, userId }) {
   // ── Aucun effet DB nécessaire ──────────────────────────────────────────
-  if (['offert', 'ignore', 'dette_creee'].includes(action)) {
+  if (['offert', 'ignore'].includes(action)) {
     return { beforeState: null, ressource: null };
+  }
+
+  // ── Dette créée : rendre la dette VISIBLE (audit 2026-07-25) ───────────
+  // Avant : aucun effet DB → la « dette » n'existait nulle part (ni Revenus
+  // ni espace élève). Désormais : est_due sur la présence si elle existe
+  // (c'est ce que lisent « À percevoir » et « À régler »).
+  if (action === 'dette_creee') {
+    if (!cas.presence_id) return { beforeState: null, ressource: null }; // présence supprimée : le cas résolu reste la seule trace
+    const { data: presence } = await supabase
+      .from('presences')
+      .select('id, est_due, motif_due')
+      .eq('id', cas.presence_id)
+      .maybeSingle();
+    if (!presence) return { beforeState: null, ressource: null };
+    const before = { presence_id: cas.presence_id, est_due: presence.est_due, motif_due: presence.motif_due };
+    const { error: updErr } = await supabase
+      .from('presences')
+      .update({ est_due: true, motif_due: presence.motif_due || 'Dette actée par la prof (cas résolu)' })
+      .eq('id', cas.presence_id);
+    if (updErr) { reportError('[cas resolve dette_creee]', updErr); return { error: 'Une erreur est survenue.', status: 500 }; }
+    return { beforeState: before, ressource: { type: 'presence', id: cas.presence_id } };
   }
 
   // ── Décompte / Excuse / Annulé / Place donnée/déclinée → presence.statut
@@ -213,13 +235,59 @@ async function applyDirectEffect({ supabase, cas, action, userId }) {
     // inexistante que l'ancien code sélectionnait → 404 systématique).
     const { data: presence, error: pErr } = await supabase
       .from('presences')
-      .select('id, statut_pointage, abonnement_id')
+      .select('id, statut_pointage, abonnement_id, est_due, annulation_tardive, motif_due')
       .eq('id', cas.presence_id)
       .single();
     if (pErr || !presence) {
       return { error: 'Présence introuvable', status: 404 };
     }
     const before = { statut: presence.statut_pointage };
+
+    // ── Décompte RÉEL, une seule fois (fix audit 2026-07-25) ─────────────
+    // AVANT le changement de statut, pour qu'un échec laisse tout intact.
+    //   1) Jamais deux fois : si le pointage a DÉJÀ décompté (no-show strict →
+    //      context.seance_decomptee, ou statut déjà absent_compte), on ne
+    //      retouche pas le carnet (l'ancien code re-décomptait → 2 séances
+    //      pour 1 absence, l'undo n'en rendait qu'une).
+    //   2) Toujours une fois : une résa portail n'est jamais liée à un carnet
+    //      → l'ancien garde `presence.abonnement_id` sautait le décompte EN
+    //      SILENCE (statut « décompté », carnet intact). On résout désormais
+    //      le carnet applicable, comme le pointage (v64) et l'annulation
+    //      tardive.
+    let decompteApplique = false;
+    let aboDecompte = presence.abonnement_id || null;
+    if (action === 'decompte') {
+      const dejaDecomptee = !!cas.context?.seance_decomptee || before.statut === 'absent_compte';
+      if (!dejaDecomptee) {
+        if (!aboDecompte && cas.client_id) {
+          const { data: abosActifs, error: abosErr } = await supabase
+            .from('abonnements')
+            .select('id, statut, seances_total, seances_utilisees, date_fin, date_pause_debut, date_pause_fin, types_cours_autorises')
+            .eq('client_id', cas.client_id)
+            .eq('profile_id', cas.profile_id)
+            .eq('statut', 'actif');
+          if (abosErr) { reportError('[cas resolve] abos:', abosErr); return { error: 'Une erreur est survenue.', status: 500 }; }
+          aboDecompte = resoudreCarnetApplicable(abosActifs, {
+            type_cours: cas.cours?.type_cours,
+            date: cas.cours?.date || cas.context?.cours_date,
+            tarif_unitaire: cas.cours?.tarif_unitaire,
+          })?.id || null;
+        }
+        if (!aboDecompte) {
+          return {
+            error: 'Aucun carnet applicable à décompter pour cet·te élève — choisis plutôt « Excusé » ou « Dette créée ».',
+            status: 400,
+          };
+        }
+        const { error: incErr } = await supabase
+          .rpc('ajuster_seances', { p_abo_id: aboDecompte, p_delta: 1 });
+        if (incErr) {
+          reportError('[cas resolve] décompte carnet échoué:', incErr);
+          return { error: 'Le décompte de la séance a échoué.', status: 500 };
+        }
+        decompteApplique = true;
+      }
+    }
 
     const newStatut = (
       action === 'decompte' ? 'absent_compte'
@@ -230,24 +298,28 @@ async function applyDirectEffect({ supabase, cas, action, userId }) {
       : presence.statut_pointage
     );
 
+    const updatePresence = { statut_pointage: newStatut };
+    // Décompte via carnet résolu → lier la présence (symétrie recrédit/undo).
+    if (action === 'decompte' && decompteApplique && !presence.abonnement_id) {
+      updatePresence.abonnement_id = aboDecompte;
+    }
+    // Excuse = pardon complet : une annulation tardive excusée ne doit plus
+    // être « due » nulle part (avant : est_due survivait → la dette
+    // réapparaissait dans Revenus ET l'espace élève après l'excuse).
+    if (action === 'excuse' && (presence.est_due || presence.annulation_tardive)) {
+      before.est_due = presence.est_due;
+      before.annulation_tardive = presence.annulation_tardive;
+      before.motif_due = presence.motif_due;
+      updatePresence.est_due = false;
+      updatePresence.annulation_tardive = false;
+      updatePresence.motif_due = null;
+    }
+
     const { error: updErr } = await supabase
       .from('presences')
-      .update({ statut_pointage: newStatut })
+      .update(updatePresence)
       .eq('id', cas.presence_id);
     if (updErr) { reportError('[cas resolve applyDirectEffect]', updErr); return { error: 'Une erreur est survenue.', status: 500 }; }
-
-    // Si décompte ET abonnement lié → incrément seances_utilisees (idempotent
-    // via comparaison statut avant/après). RPC v53 atomique — et l'échec
-    // n'est PLUS avalé (avant : .catch(() => {}) sur une RPC inexistante,
-    // le décompte ne s'appliquait jamais).
-    if (action === 'decompte' && presence.abonnement_id && before.statut !== 'absent_compte') {
-      const { error: incErr } = await supabase
-        .rpc('ajuster_seances', { p_abo_id: presence.abonnement_id, p_delta: 1 });
-      if (incErr) {
-        reportError('[cas resolve] décompte carnet échoué:', incErr);
-        return { error: 'Le décompte de la séance a échoué.', status: 500 };
-      }
-    }
 
     // Excuse d'une absence qui avait DÉJÀ été décomptée (no-show strict) → on
     // rend la séance. Le flag context.seance_decomptee, posé à la création du
@@ -266,7 +338,12 @@ async function applyDirectEffect({ supabase, cas, action, userId }) {
     }
 
     return {
-      beforeState: { presence_id: cas.presence_id, ...before, ...(recredited && { recredited: true }) },
+      beforeState: {
+        presence_id: cas.presence_id,
+        ...before,
+        ...(recredited && { recredited: true }),
+        ...(action === 'decompte' && { decompte_applique: decompteApplique }),
+      },
       ressource: { type: 'presence', id: cas.presence_id },
     };
   }

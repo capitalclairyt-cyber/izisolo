@@ -135,6 +135,10 @@ async function restoreBeforeState({ supabase, cas, before, action }) {
         // depuis statut_pointage — l'ancienne colonne `statut` n'existe pas).
         ...(before.statut !== undefined && { statut_pointage: before.statut }),
         ...(before.cours_id !== undefined && { cours_id: before.cours_id }),
+        // Excuse/dette : restaurer les flags de dette nettoyés/posés par resolve.
+        ...(before.est_due !== undefined && { est_due: before.est_due }),
+        ...(before.annulation_tardive !== undefined && { annulation_tardive: before.annulation_tardive }),
+        ...(before.motif_due !== undefined && { motif_due: before.motif_due }),
       })
       .eq('id', before.presence_id);
     if (error) return error.message;
@@ -142,7 +146,9 @@ async function restoreBeforeState({ supabase, cas, before, action }) {
     // Si l'action était "decompte" et qu'on avait incrémenté seances_utilisees,
     // on décrémente pour rétablir. Symétriquement, si "excuse" avait re-crédité
     // une séance (before.recredited), on la re-décompte.
-    if (action === 'decompte' || (action === 'excuse' && before.recredited)) {
+    // `decompte_applique: false` (resolve post-audit 2026-07-25) = le carnet
+    // n'a PAS été touché (déjà décompté au pointage) → ne rien rendre.
+    if ((action === 'decompte' && before.decompte_applique !== false) || (action === 'excuse' && before.recredited)) {
       const { data: presence } = await supabase
         .from('presences')
         .select('abonnement_id')

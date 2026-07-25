@@ -221,7 +221,7 @@ function PaymentModal({ presence, coursNom, coursDate, montantDefaut = '', paiem
 // ─────────────────────────────────────────────────────────
 //  Carte de présence (split cell)
 // ─────────────────────────────────────────────────────────
-function PresenceCard({ presence, resolvedCarnet, estPayAsYouGo, paye, paiement, onMarquer, onPayer, onTypePresence, loading, locked, impaye, ptard, nbDettes, essaisRestants }) {
+function PresenceCard({ presence, resolvedCarnet, estPayAsYouGo, paye, paiement, onMarquer, onPayer, onTypePresence, onExcuserTardive, loading, locked, impaye, ptard, nbDettes, essaisRestants }) {
   const [showTypeMenu, setShowTypeMenu] = useState(false);
 
   // Fermer le menu au premier clic en dehors
@@ -274,6 +274,43 @@ function PresenceCard({ presence, resolvedCarnet, estPayAsYouGo, paye, paiement,
               <span style={{ fontSize: '0.72rem', color: '#b45309', fontWeight: 600 }}>
                 ⏱ Annulée tardivement · séance {presence.abonnement_id ? 'décomptée' : 'due'}
               </span>
+            </div>
+          </div>
+          {/* Le geste inverse de la sanction (audit 2026-07-25) : recrédite si
+              décomptée, efface la dette — fini le SQL à la main. */}
+          <button
+            type="button"
+            className="izi-btn btn-sm izi-btn-ghost"
+            disabled={loading}
+            onClick={e => { e.stopPropagation(); onExcuserTardive(presence); }}
+            style={{ flexShrink: 0, fontSize: '0.75rem', color: '#b45309' }}
+          >
+            {loading ? '…' : 'Excuser'}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Statuts posés par la résolution d'un cas (audit 2026-07-25) : lignes
+  // informatives NON pointables — re-pointer re-déclencherait un décompte.
+  const STATUTS_RESOLUS = {
+    absent_compte: { emoji: '✔️', txt: 'Absent·e · séance décomptée (cas résolu)', couleur: '#b45309' },
+    annule:        { emoji: '🚫', txt: 'Réservation annulée (cas résolu)',          couleur: '#999' },
+    declinee:      { emoji: '↩️', txt: 'Place proposée puis déclinée',              couleur: '#999' },
+  };
+  if (STATUTS_RESOLUS[statut]) {
+    const cfg = STATUTS_RESOLUS[statut];
+    return (
+      <div className="pres-row pres-annulee-tardive">
+        <div className="pres-center">
+          <div className={`pres-avatar av-${client.statut || 'actif'}`} style={{ opacity: 0.5 }}>{initials}</div>
+          <div className="pres-body">
+            <div className="pres-name-row">
+              <span className="pres-name" style={{ color: '#999' }}>{client.prenom} {client.nom}</span>
+            </div>
+            <div className="pres-meta">
+              <span style={{ fontSize: '0.72rem', color: cfg.couleur, fontWeight: 600 }}>{cfg.emoji} {cfg.txt}</span>
             </div>
           </div>
         </div>
@@ -575,6 +612,46 @@ export default function PointageClient({ cours, presences: initialPresences, tou
     });
   }, [presences]);
 
+  // ── Excuser une annulation tardive (audit 2026-07-25) ────────────────────
+  // Le geste inverse de la sanction, enfin dans l'UI : recrédite le carnet si
+  // la séance avait été décomptée, efface la dette (est_due), classe « excusée ».
+  const handleExcuserTardive = useCallback(async (presence) => {
+    const decomptee = !!presence.abonnement_id;
+    if (!confirm(decomptee
+      ? 'Excuser cette annulation tardive ?\nLa séance sera re-créditée sur son carnet.'
+      : 'Excuser cette annulation tardive ?\nLa séance ne sera plus due.')) return;
+    setActionLoading(presence.id);
+    const supabase = createClient();
+    try {
+      const { error: updErr } = await supabase
+        .from('presences')
+        .update({ annulation_tardive: false, est_due: false, motif_due: null, statut_pointage: 'excuse' })
+        .eq('id', presence.id);
+      if (updErr) throw updErr;
+      if (decomptee) {
+        const { error: credErr } = await supabase
+          .rpc('ajuster_seances', { p_abo_id: presence.abonnement_id, p_delta: -1 });
+        if (credErr) throw credErr;
+      }
+      setPresences(prev => prev.map(p => {
+        if (p.id !== presence.id) return p;
+        const next = { ...p, annulation_tardive: false, est_due: false, motif_due: null, statut_pointage: 'excuse' };
+        if (decomptee && p.abonnements) {
+          next.abonnements = { ...p.abonnements, seances_utilisees: Math.max(0, (p.abonnements.seances_utilisees || 0) - 1) };
+        } else if (decomptee) {
+          next.client_abos = (p.client_abos || []).map(a =>
+            a.id === presence.abonnement_id ? { ...a, seances_utilisees: Math.max(0, (a.seances_utilisees || 0) - 1) } : a);
+        }
+        return next;
+      }));
+      toast.success(decomptee ? 'Annulation excusée — séance re-créditée ✓' : 'Annulation excusée ✓');
+    } catch (e) {
+      toast.error('Impossible d\'excuser : ' + (e?.message || 'erreur'));
+    } finally {
+      setActionLoading(null);
+    }
+  }, [toast]);
+
   // ── Marquer un élève (optimiste) ──────────────────────
   // L'UI se met à jour IMMÉDIATEMENT (statut + compteur séances), puis on
   // persiste. En cas d'échec réseau on rétablit la ligne et on prévient via toast.
@@ -857,7 +934,21 @@ export default function PointageClient({ cours, presences: initialPresences, tou
       .select('*, clients(id, prenom, nom, statut, email, telephone), abonnements(id, offre_nom, seances_total, seances_utilisees, statut)')
       .single();
 
-    if (!presErr && pres) setPresences(prev => [...prev, pres]);
+    // Audit 2026-07-25 : l'échec était SILENCIEUX (fiche créée, élève pas
+    // inscrite, modale fermée — la prof croyait que si).
+    if (presErr || !pres) {
+      toast.error('La fiche est prête mais l\'inscription à la séance a échoué : ' + (presErr?.message || 'erreur'));
+      setAddingNew(false);
+      return;
+    }
+    // Fiche RÉUTILISÉE : récupérer ses carnets depuis la liste déjà chargée
+    // (sinon un élève à carnet s'affiche « À régler » et le tap Présent ouvre
+    // l'encaissement alors que le RPC décompte son carnet → double paiement).
+    const connu = tousClients.find(c => c.id === client.id);
+    if (connu && !pres.abonnements) {
+      pres.client_abos = (connu.abonnements || []).filter(a => a.statut === 'actif');
+    }
+    setPresences(prev => [...prev, pres]);
     setAddingNew(false);
     fermerAddModal();
   };
@@ -1133,6 +1224,7 @@ export default function PointageClient({ cours, presences: initialPresences, tou
                 onMarquer={handleMarquer}
                 onPayer={setPaymentTarget}
                 onTypePresence={handleTypePresence}
+                onExcuserTardive={handleExcuserTardive}
                 loading={actionLoading === p.id}
                 locked={locked}
                 impaye={isImpaye(p, paidIds)}
