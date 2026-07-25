@@ -73,6 +73,7 @@ export default function EspaceMessagesClient({ profile, studioSlug, client }) {
           <ConversationList
             onSelect={setSelectedConvId}
             selectedId={selectedConvId}
+            studioSlug={studioSlug}
           />
         </div>
       )}
@@ -81,7 +82,9 @@ export default function EspaceMessagesClient({ profile, studioSlug, client }) {
         .esp-msg-page {
           max-width: 720px; margin: 0 auto; padding: 16px;
           display: flex; flex-direction: column;
-          height: 100vh; min-height: 0;
+          /* 100dvh : la barre d'URL iOS masquait la barre de saisie en 100vh
+             (même fix que côté pro, MessagerieClient). */
+          height: 100dvh; min-height: 0;
         }
         .esp-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
         .esp-back {

@@ -31,6 +31,22 @@ function formatTime(iso) {
     : d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 }
 
+// Un media peut être une simple URL (historique) ou {url, kind, name}.
+// Sans kind, on devine sur l'extension — un PDF envoyé hier ne doit plus
+// s'afficher comme une image cassée.
+const IMG_RX = /\.(jpe?g|png|gif|webp|heic|avif)(\?|#|$)/i;
+function normalizeMedia(entry) {
+  const m = typeof entry === 'string' ? { url: entry } : (entry || {});
+  if (!m.url) return null;
+  const isImage = m.kind ? m.kind === 'photo' : IMG_RX.test(m.url);
+  let name = m.name;
+  if (!name) {
+    try { name = decodeURIComponent(m.url.split('/').pop().split('?')[0]) || 'Fichier'; }
+    catch { name = 'Fichier'; }
+  }
+  return { url: m.url, isImage, name };
+}
+
 export function DateSeparator({ date }) {
   const d = new Date(date);
   const label = d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
@@ -114,23 +130,34 @@ export default function MessageBubble({ message, viewerKind, showAvatar = false,
           <div className="msg-content">{message.content}</div>
         )}
 
-        {message.media_url && (
-          <div className="msg-media">
-            <a href={message.media_url} target="_blank" rel="noopener noreferrer">
-              <img src={message.media_url} alt="Pièce jointe" loading="lazy" />
-            </a>
-          </div>
-        )}
-
-        {message.media_urls && message.media_urls.length > 0 && (
-          <div className="msg-media-grid">
-            {message.media_urls.map((url, i) => (
-              <a key={i} href={url} target="_blank" rel="noopener noreferrer">
-                <img src={url} alt={`Photo ${i + 1}`} loading="lazy" />
-              </a>
-            ))}
-          </div>
-        )}
+        {(() => {
+          const medias = [
+            ...(message.media_url ? [message.media_url] : []),
+            ...(Array.isArray(message.media_urls) ? message.media_urls : []),
+          ].map(normalizeMedia).filter(Boolean);
+          if (!medias.length) return null;
+          const images = medias.filter(m => m.isImage);
+          const fichiers = medias.filter(m => !m.isImage);
+          return (
+            <>
+              {images.length > 0 && (
+                <div className={images.length > 1 ? 'msg-media-grid' : 'msg-media'}>
+                  {images.map((m, i) => (
+                    <a key={i} href={m.url} target="_blank" rel="noopener noreferrer">
+                      <img src={m.url} alt={m.name || `Photo ${i + 1}`} loading="lazy" />
+                    </a>
+                  ))}
+                </div>
+              )}
+              {fichiers.map((m, i) => (
+                <a key={i} href={m.url} target="_blank" rel="noopener noreferrer" className="msg-file">
+                  <FileText size={14} />
+                  <span className="msg-file-name">{m.name}</span>
+                </a>
+              ))}
+            </>
+          );
+        })()}
 
         {message.shared_ref_type && message.shared_ref_id && Icon && (
           <div className="msg-shared">
@@ -260,6 +287,19 @@ export default function MessageBubble({ message, viewerKind, showAvatar = false,
         }
         .msg-media-grid img { max-width: 100%; max-height: 140px; }
 
+        .msg-file {
+          display: flex; align-items: center; gap: 6px;
+          margin-top: 6px; padding: 8px 10px;
+          border-radius: 10px; text-decoration: none;
+          background: rgba(0,0,0,0.06); color: inherit;
+          font-size: 0.8125rem; max-width: 260px;
+        }
+        .msg-bubble.own .msg-file { background: rgba(255,255,255,0.18); color: white; }
+        .msg-file:hover { text-decoration: underline; }
+        .msg-file-name {
+          overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        }
+
         .msg-shared {
           display: inline-flex; align-items: center; gap: 4px;
           font-size: 0.6875rem; font-weight: 600;
@@ -310,6 +350,7 @@ export default function MessageBubble({ message, viewerKind, showAvatar = false,
         .msg-row.own .msg-react-btn  { left: -36px; }
         .msg-row.other .msg-react-btn { right: -36px; }
         .msg-bubble:hover .msg-react-btn { opacity: 1; }
+        .msg-react-btn:focus-visible { opacity: 1; outline: 2px solid var(--brand); }
         .msg-react-btn:hover { color: var(--brand); transform: translateY(-50%) scale(1.1); }
 
         /* Quick picker */

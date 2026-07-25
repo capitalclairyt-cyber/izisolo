@@ -52,8 +52,12 @@ export async function POST(request, { params }) {
   const supabaseAdmin = createAdminClient();
 
   // Studio
+  // ⚠️ regles_metier DOIT être chargé : la ligne 115 lit profile.regles_metier
+  // pour la règle « élève sans carnet ». Sans lui, getRegle() retombait sur le
+  // défaut → une résa EN SÉRIE n'était jamais bloquée même si le studio avait
+  // choisi « Bloquer » (divergence série vs unitaire, audit 2026-07-25).
   const { data: profile } = await supabaseAdmin
-    .from('profiles').select('id, studio_nom, notif_prefs').eq('studio_slug', studioSlug).single();
+    .from('profiles').select('id, studio_nom, notif_prefs, regles_metier').eq('studio_slug', studioSlug).single();
   if (!profile) return Response.json({ error: 'Studio introuvable' }, { status: 404 });
 
   // Client lié à cet email dans ce studio

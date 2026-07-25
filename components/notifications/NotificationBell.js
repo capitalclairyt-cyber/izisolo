@@ -47,9 +47,12 @@ export default function NotificationBell() {
     if (!silent) setLoading(true);
     try {
       const res = await fetch('/api/notifications/check', { method: 'POST' });
+      // 500 transitoire : on garde les notifs affichées (avant : panneau vidé
+      // → « Tout est à jour ! » rassurant et faux).
+      if (!res.ok) return;
       const { notifications } = await res.json();
-      setNotifs(notifications || []);
-    } catch { /* silencieux */ }
+      if (Array.isArray(notifications)) setNotifs(notifications);
+    } catch { /* réseau : état précédent conservé */ }
     finally { setLoading(false); }
   }, []);
 
@@ -73,22 +76,32 @@ export default function NotificationBell() {
   }, [open]);
 
   // ── Marquer comme lu ─────────────────────────────────────────────────────
+  // Optimiste + rollback : si le serveur refuse, la notif redevient non-lue
+  // tout de suite (avant : elle « revenait » sans explication au poll suivant).
   const markRead = async (id) => {
+    const avant = notifs;
     setNotifs(prev => prev.map(n => n.id === id ? { ...n, lu: true } : n));
-    await fetch('/api/notifications/mark-read', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id }),
-    });
+    try {
+      const res = await fetch('/api/notifications/mark-read', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      });
+      if (!res.ok) setNotifs(avant);
+    } catch { setNotifs(avant); }
   };
 
   const markAllRead = async () => {
+    const avant = notifs;
     setNotifs(prev => prev.map(n => ({ ...n, lu: true })));
-    await fetch('/api/notifications/mark-read', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ all: true }),
-    });
+    try {
+      const res = await fetch('/api/notifications/mark-read', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ all: true }),
+      });
+      if (!res.ok) setNotifs(avant);
+    } catch { setNotifs(avant); }
   };
 
   // ── Actions par type — chaque notif renvoie au CONTEXTE PRÉCIS ─────────

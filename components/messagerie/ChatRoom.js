@@ -36,6 +36,14 @@ export default function ChatRoom({ conversationId, viewerKind, onMessageSent, in
   const [savingTitle, setSavingTitle] = useState(false);
   const scrollRef = useRef(null);
   const lastFetchAt = useRef(null);
+  const nearBottomRef = useRef(true);   // auto-scroll seulement si on est déjà en bas
+  const lastMarkedAtRef = useRef(null); // created_at couvert par le dernier read réussi
+  const reactionsSigRef = useRef('');   // signature d'ids — évite la tempête de GET réactions
+  const lastReactionsAtRef = useRef(0);
+  const messagesRef = useRef([]);
+  const convRef = useRef(null);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingOlder, setLoadingOlder] = useState(false);
 
   const fetchConv = useCallback(async () => {
     try {
@@ -46,6 +54,8 @@ export default function ChatRoom({ conversationId, viewerKind, onMessageSent, in
   }, [conversationId]);
 
   useEffect(() => { fetchConv(); }, [fetchConv]);
+  useEffect(() => { convRef.current = conv; }, [conv]);
+  useEffect(() => { messagesRef.current = messages; }, [messages]);
 
   const handleSaveTitle = async () => {
     setSavingTitle(true);
@@ -72,7 +82,23 @@ export default function ChatRoom({ conversationId, viewerKind, onMessageSent, in
       const res = await fetch(`/api/messagerie/conversations/${conversationId}/messages?limit=100`);
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Erreur');
-      setMessages(json.messages || []);
+      const fresh = json.messages || [];
+      // Union par id : le poll ne renvoie que la dernière fenêtre de 100 —
+      // on conserve l'historique chargé via « Messages précédents », et on
+      // renvoie la même référence si rien n'a changé (évite les re-renders
+      // en cascade toutes les 5 s).
+      setMessages(prev => {
+        const byId = new Map(prev.map(m => [m.id, m]));
+        let changed = false;
+        for (const m of fresh) {
+          if (!byId.has(m.id)) changed = true;
+          byId.set(m.id, m);
+        }
+        if (!changed) return prev;
+        return [...byId.values()].sort((a, b) =>
+          (a.created_at || '').localeCompare(b.created_at || ''));
+      });
+      if (fresh.length >= 100) setHasMore(true);
       setError(null);
       lastFetchAt.current = Date.now();
     } catch (err) {
@@ -81,6 +107,42 @@ export default function ChatRoom({ conversationId, viewerKind, onMessageSent, in
       setLoading(false);
     }
   }, [conversationId]);
+
+  // Charge la page précédente de l'historique (la route supporte ?before=).
+  const fetchOlder = useCallback(async () => {
+    const oldest = messagesRef.current[0];
+    if (!oldest?.created_at || loadingOlder) return;
+    setLoadingOlder(true);
+    const el = scrollRef.current;
+    const prevHeight = el ? el.scrollHeight : 0;
+    const prevTop = el ? el.scrollTop : 0;
+    try {
+      const res = await fetch(
+        `/api/messagerie/conversations/${conversationId}/messages?limit=100&before=${encodeURIComponent(oldest.created_at)}`
+      );
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Erreur');
+      const older = json.messages || [];
+      if (older.length < 100) setHasMore(false);
+      if (older.length) {
+        setMessages(prev => {
+          const byId = new Map();
+          for (const m of [...older, ...prev]) byId.set(m.id, m);
+          return [...byId.values()].sort((a, b) =>
+            (a.created_at || '').localeCompare(b.created_at || ''));
+        });
+        // Restaure la position de lecture après l'insertion en haut
+        requestAnimationFrame(() => {
+          const el2 = scrollRef.current;
+          if (el2) el2.scrollTop = el2.scrollHeight - prevHeight + prevTop;
+        });
+      }
+    } catch (err) {
+      toast.error('Impossible de charger les messages précédents : ' + err.message);
+    } finally {
+      setLoadingOlder(false);
+    }
+  }, [conversationId, loadingOlder, toast]);
 
   // Fetch les réactions de chaque message en parallèle (best effort, non-bloquant)
   const fetchReactions = useCallback(async (msgIds) => {
@@ -100,11 +162,21 @@ export default function ChatRoom({ conversationId, viewerKind, onMessageSent, in
     } catch { /* silencieux */ }
   }, []);
 
-  // Refetch réactions quand la liste de messages change
-  useEffect(() => {
-    const ids = messages.map(m => m.id).filter(Boolean);
-    if (ids.length) fetchReactions(ids);
-  }, [messages, fetchReactions]);
+  // Refetch réactions : seulement si la liste de messages a changé, ou toutes
+  // les 30 s (réactions posées par l'autre sur d'anciens messages). Avant :
+  // ~100 GET en parallèle toutes les 5 s par conversation ouverte.
+  const maybeFetchReactions = useCallback(() => {
+    const ids = messagesRef.current.map(m => m.id).filter(Boolean);
+    if (!ids.length) return;
+    const sig = ids.join(',');
+    const now = Date.now();
+    if (sig === reactionsSigRef.current && now - lastReactionsAtRef.current < 30000) return;
+    reactionsSigRef.current = sig;
+    lastReactionsAtRef.current = now;
+    fetchReactions(ids);
+  }, [fetchReactions]);
+
+  useEffect(() => { maybeFetchReactions(); }, [messages, maybeFetchReactions]);
 
   const handleReact = async (messageId, emoji) => {
     // Snapshot avant pour rollback éventuel
@@ -151,17 +223,35 @@ export default function ChatRoom({ conversationId, viewerKind, onMessageSent, in
     }
   };
 
-  // Initial load + mark as read
-  useEffect(() => {
-    fetchMessages();
-    fetch(`/api/messagerie/conversations/${conversationId}/read`, { method: 'POST' }).catch(() => {});
-  }, [conversationId, fetchMessages]);
+  // Marquage lu — au chargement ET quand de nouveaux messages arrivent alors
+  // que la conversation est OUVERTE (avant : au mount uniquement → le badge
+  // « non lu » continuait de grimper pendant qu'on lisait). res.ok vérifié :
+  // un échec est retenté au prochain message ou au prochain poll.
+  const markReadUpTo = useCallback(() => {
+    const msgs = messagesRef.current;
+    const last = msgs[msgs.length - 1];
+    if (!last?.created_at) return;
+    if (lastMarkedAtRef.current && last.created_at <= lastMarkedAtRef.current) return;
+    const upTo = last.created_at;
+    fetch(`/api/messagerie/conversations/${conversationId}/read`, { method: 'POST' })
+      .then(res => { if (res.ok) lastMarkedAtRef.current = upTo; })
+      .catch(() => {});
+  }, [conversationId]);
 
-  // Polling
+  // Initial load
+  useEffect(() => { fetchMessages(); }, [conversationId, fetchMessages]);
+  useEffect(() => { markReadUpTo(); }, [messages, markReadUpTo]);
+
+  // Polling — messages + réactions (throttlées) + retry read + header raté
   useEffect(() => {
-    const interval = setInterval(fetchMessages, POLL_INTERVAL);
+    const interval = setInterval(() => {
+      fetchMessages();
+      maybeFetchReactions();
+      markReadUpTo();
+      if (!convRef.current) fetchConv();
+    }, POLL_INTERVAL);
     return () => clearInterval(interval);
-  }, [fetchMessages]);
+  }, [fetchMessages, maybeFetchReactions, markReadUpTo, fetchConv]);
 
   // Realtime via Supabase (en plus du polling)
   useEffect(() => {
@@ -180,22 +270,32 @@ export default function ChatRoom({ conversationId, viewerKind, onMessageSent, in
     return () => { supabase.removeChannel(channel); };
   }, [conversationId, fetchMessages]);
 
-  // Auto-scroll vers le bas à chaque nouveau message
+  // Auto-scroll vers le bas — seulement si on était déjà en bas (sinon un
+  // message arrivé pendant la lecture de l'historique téléportait l'écran).
+  const handleScroll = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    nearBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 150;
+  };
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
+    const el = scrollRef.current;
+    if (el && nearBottomRef.current) el.scrollTop = el.scrollHeight;
   }, [messages.length]);
 
   const handleSend = async ({ content, mediaUrls }) => {
-    const isPhoto = mediaUrls && mediaUrls.length > 0;
+    const medias = mediaUrls || [];
+    // Un PDF n'est pas une « photo » : les aperçus (liste, digest) s'appuient
+    // sur message_type. Même heuristique que MessageBubble/lib/messagerie.
+    const imgRx = /\.(jpe?g|png|gif|webp|heic|avif)(\?|#|$)/i;
+    const messageType = medias.length === 0 ? 'text'
+      : medias.every(u => imgRx.test(typeof u === 'string' ? u : (u?.url || ''))) ? 'photo' : 'file';
     const res = await fetch(`/api/messagerie/conversations/${conversationId}/messages`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         content,
-        message_type: isPhoto ? 'photo' : 'text',
-        media_urls: mediaUrls || [],
+        message_type: messageType,
+        media_urls: medias,
       }),
     });
     const json = await res.json();
@@ -277,7 +377,12 @@ export default function ChatRoom({ conversationId, viewerKind, onMessageSent, in
         </div>
       )}
 
-      <div ref={scrollRef} className={`cr-scroll ${messages.length === 0 ? 'is-empty' : ''}`}>
+      <div ref={scrollRef} onScroll={handleScroll} className={`cr-scroll ${messages.length === 0 ? 'is-empty' : ''}`}>
+        {hasMore && messages.length > 0 && (
+          <button type="button" className="cr-older" onClick={fetchOlder} disabled={loadingOlder}>
+            {loadingOlder ? 'Chargement…' : '↑ Messages précédents'}
+          </button>
+        )}
         {messages.length === 0 ? (
           <EmptyState
             title="Aucun message pour le moment."
@@ -374,6 +479,14 @@ export default function ChatRoom({ conversationId, viewerKind, onMessageSent, in
           background: #fee2e2; color: #991b1b;
           font-size: 0.8125rem; border-top: 1px solid #fecaca;
         }
+        .cr-older {
+          display: block; margin: 0 auto 10px;
+          padding: 6px 14px; border-radius: 99px;
+          background: white; border: 1px solid var(--border);
+          font-size: 0.75rem; color: var(--text-secondary); cursor: pointer;
+        }
+        .cr-older:hover:not(:disabled) { color: var(--brand); border-color: var(--brand); }
+        .cr-older:disabled { opacity: 0.6; cursor: default; }
       `}</style>
     </div>
   );

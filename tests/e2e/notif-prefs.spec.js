@@ -14,9 +14,13 @@ test.describe('wantsNotif — canaux', () => {
   });
 
   test('canal non pertinent pour le type → toujours false', () => {
-    // "message" (élève) n'émet que du push → pas d'email
-    expect(wantsNotif({}, 'message', 'eleve', 'email')).toBe(false);
-    expect(wantsNotif({}, 'message', 'eleve', 'push')).toBe(true); // défaut push ON
+    // "paiement" (élève) n'émet que du push → pas d'email
+    expect(wantsNotif({}, 'paiement', 'eleve', 'email')).toBe(false);
+    expect(wantsNotif({}, 'paiement', 'eleve', 'push')).toBe(true); // défaut push ON
+    // "message" émet email + push depuis l'unification du digest sur
+    // notif_prefs (audit messagerie 2026-07-25) — email digest ON par défaut.
+    expect(wantsNotif({}, 'message', 'eleve', 'email')).toBe(true);
+    expect(wantsNotif({ message: { email: false } }, 'message', 'eleve', 'email')).toBe(false);
   });
 
   test('défaut du catalogue quand la clé est absente', () => {
@@ -59,12 +63,12 @@ test.describe('sanitizePrefs', () => {
     const dirty = {
       rappel_cours: { email: false, push: true, sms: true /* inconnu */ },
       inconnu: { push: true },
-      message: { email: true /* canal N/A pour message */, push: false },
+      paiement: { email: true /* canal N/A pour paiement */, push: false },
     };
     const clean = sanitizePrefs(dirty, 'eleve');
     expect(clean.rappel_cours).toEqual({ email: false, push: true });
     expect(clean.inconnu).toBeUndefined();
-    expect(clean.message).toEqual({ push: false }); // email retiré (non émis)
+    expect(clean.paiement).toEqual({ push: false }); // email retiré (non émis)
   });
 
   test('migre un ancien booléen vers les canaux du type', () => {
@@ -75,6 +79,7 @@ test.describe('sanitizePrefs', () => {
 
 test('effectivePrefs remplit les défauts par canal', () => {
   const eff = effectivePrefs({ rappel_cours: { push: false } }, 'eleve');
-  expect(eff.rappel_cours).toEqual({ email: true, push: false }); // email défaut ON
-  expect(eff.message).toEqual({ push: true });                    // 1 seul canal
+  expect(eff.rappel_cours).toEqual({ email: true, push: false });  // email défaut ON
+  expect(eff.message).toEqual({ email: true, push: true });        // digest + push (2026-07-25)
+  expect(eff.paiement).toEqual({ push: true });                    // 1 seul canal
 });

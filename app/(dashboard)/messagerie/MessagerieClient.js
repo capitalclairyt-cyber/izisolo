@@ -46,13 +46,15 @@ export default function MessagerieClient({ profile, clients, cours, offres }) {
     const isBirthday = searchParams.get('birthday') === '1';
     if (withClient) {
       (async () => {
+        try {
         const res = await fetch('/api/messagerie/conversations', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ type: 'client', client_id: withClient }),
         });
-        const json = await res.json();
-        if (res.ok && json.conversation) {
+        const json = await res.json().catch(() => ({}));
+        if (!res.ok || !json.conversation) throw new Error(json.error || 'Erreur serveur');
+        {
           setSelectedConvId(json.conversation.id);
           setTab('conversations');
 
@@ -69,6 +71,11 @@ export default function MessagerieClient({ profile, clients, cours, offres }) {
               .replace(/\{\s*nom\s*\}/g, client?.nom || '');
             setBirthdayText(interpolated);
           }
+        }
+        } catch (err) {
+          // Avant : échec 100 % silencieux — la messagerie s'ouvrait sur la
+          // liste et le flux « Envoyer un message » depuis la fiche se perdait.
+          toast.error('Impossible d\'ouvrir la conversation : ' + (err?.message || 'erreur réseau'));
         }
       })();
     }
@@ -119,10 +126,17 @@ export default function MessagerieClient({ profile, clients, cours, offres }) {
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Erreur');
-      toast.success(`Envoyé à ${json.count} conversation${json.count > 1 ? 's' : ''} !`);
-      setContent('');
-      setClientIds(new Set());
-      setTab('conversations');
+      if (json.failed > 0) {
+        // Envoi partiel : on CONSERVE le texte et on dit la vérité (avant :
+        // un échec au milieu du fan-out affichait « Erreur » alors que N
+        // messages étaient déjà partis, et re-cliquer doublait ces N-là).
+        toast.error(`Envoyé à ${json.count} destinataire${json.count > 1 ? 's' : ''}, mais ${json.failed} en échec. Ton texte est conservé — attention : re-envoyer créera des doublons chez les ${json.count} déjà servis.`);
+      } else {
+        toast.success(`Envoyé à ${json.count} conversation${json.count > 1 ? 's' : ''} !`);
+        setContent('');
+        setClientIds(new Set());
+        setTab('conversations');
+      }
     } catch (err) {
       toast.error('Erreur : ' + err.message);
     } finally {
@@ -271,9 +285,12 @@ export default function MessagerieClient({ profile, clients, cours, offres }) {
             disabled={!canAnnounce || sending}
           >
             {sending ? <Loader2 size={16} className="spin" /> : <Send size={16} />}
-            {sending ? 'Envoi…' : nbDestinataires !== null
-              ? `Envoyer à ${nbDestinataires} destinataire${nbDestinataires > 1 ? 's' : ''}`
-              : 'Envoyer'}
+            {sending ? 'Envoi…'
+              : (scope === 'cours' && mode === 'groupe' && coursId)
+                ? 'Envoyer au groupe du cours'
+                : nbDestinataires !== null
+                  ? `Envoyer à ${nbDestinataires} destinataire${nbDestinataires > 1 ? 's' : ''}`
+                  : 'Envoyer'}
           </button>
         </div>
       )}
@@ -467,8 +484,10 @@ function ClientsChipsPicker({ clients, clientsFiltres, clientIds, setClientIds, 
       // Backspace dans input vide → retire la dernière chip
       e.preventDefault();
       removeClient(selected[selected.length - 1].id);
-    } else if (e.key === 'Enter' && suggestions.length > 0) {
-      // Enter ajoute la première suggestion
+    } else if (e.key === 'Enter' && open && searchClient.trim() && suggestions.length > 0) {
+      // Enter ajoute la 1re suggestion — seulement si on est en train de
+      // CHERCHER (avant : un Enter réflexe, dropdown fermée et champ vide,
+      // ajoutait le 1er élève de la liste alphabétique sans qu'on le voie).
       e.preventDefault();
       addClient(suggestions[0].id);
     } else if (e.key === 'Escape') {

@@ -16,8 +16,9 @@ import EmptyState from '@/components/ui/EmptyState';
  *   onSelect(conversationId) — callback au click sur une conversation
  *   selectedId — id de la conv actuellement sélectionnée (highlight)
  *   onCounts(counts) — callback {total, unread} pour afficher dans la nav
+ *   studioSlug — côté élève : ne liste QUE les conversations de ce studio
  */
-export default function ConversationList({ onSelect, selectedId, onCounts }) {
+export default function ConversationList({ onSelect, selectedId, onCounts, studioSlug = null }) {
   const [conversations, setConversations] = useState([]);
   const [viewer, setViewer] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -26,18 +27,24 @@ export default function ConversationList({ onSelect, selectedId, onCounts }) {
   const fetchConvs = useCallback(async () => {
     try {
       const res = await fetch('/api/messagerie/conversations');
+      // 500/401 transitoire : on GARDE l'état affiché (avant : la liste était
+      // vidée et l'écran basculait sur « Aucune conversation »).
+      if (!res.ok) return;
       const json = await res.json();
-      const convs = json.conversations || [];
+      let convs = json.conversations || [];
+      // Élève multi-studios : la route renvoie TOUS ses fils — sans filtre,
+      // le portail du studio A affichait les conversations du studio B.
+      if (studioSlug) convs = convs.filter(c => !c.studio_slug || c.studio_slug === studioSlug);
       setConversations(convs);
       setViewer(json.viewer || null);
       const unread = convs.reduce((sum, c) => sum + (c.unread_count || 0), 0);
       onCounts?.({ total: convs.length, unread });
     } catch {
-      // ignore
+      // ignore (réseau) : état précédent conservé
     } finally {
       setLoading(false);
     }
-  }, [onCounts]);
+  }, [onCounts, studioSlug]);
 
   useEffect(() => {
     fetchConvs();
@@ -134,6 +141,7 @@ export default function ConversationList({ onSelect, selectedId, onCounts }) {
                 type="button"
                 onClick={() => toggleGroup(g.batch_id)}
                 className="conv-item conv-group-header"
+                aria-expanded={expanded}
               >
                 <div className="conv-avatar conv-avatar-announce">
                   <Megaphone size={18} />

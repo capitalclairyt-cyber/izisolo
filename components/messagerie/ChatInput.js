@@ -2,6 +2,11 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { Send, Paperclip, X, Loader2, Image as ImageIcon, Smile } from 'lucide-react';
+import { useToast } from '@/components/ui/ToastProvider';
+
+// Miroir de la limite serveur (app/api/messagerie/upload) : on refuse AVANT
+// d'uploader 8 Mo sur la 4G pour recevoir un 413.
+const MAX_FILE_MB = 5;
 
 // Emojis curatés (~80) organisés par catégorie pour un picker léger sans dépendance
 const EMOJI_CATEGORIES = [
@@ -36,6 +41,7 @@ const EMOJI_CATEGORIES = [
  *   placeholder
  */
 export default function ChatInput({ onSend, disabled = false, placeholder = "Écrire un message…", initialText = '' }) {
+  const { toast } = useToast();
   const [text, setText] = useState(initialText);
   const [attachments, setAttachments] = useState([]); // [{ url, kind, name }]
   const [uploading, setUploading] = useState(false);
@@ -93,18 +99,22 @@ export default function ChatInput({ onSend, disabled = false, placeholder = "Éc
     setUploading(true);
     try {
       for (const file of files) {
+        if (file.size > MAX_FILE_MB * 1024 * 1024) {
+          toast.error(`« ${file.name} » dépasse ${MAX_FILE_MB} Mo — réduis-le avant de l'envoyer.`);
+          continue;
+        }
         const fd = new FormData();
         fd.append('file', file);
         const res = await fetch('/api/messagerie/upload', { method: 'POST', body: fd });
-        const json = await res.json();
+        const json = await res.json().catch(() => ({}));
         if (res.ok && json.url) {
           setAttachments(prev => [...prev, { url: json.url, kind: json.kind, name: json.name }]);
         } else {
-          alert(json.error || 'Erreur upload');
+          toast.error(json.error || `Échec de l'envoi de « ${file.name} »`);
         }
       }
     } catch (err) {
-      alert('Erreur upload : ' + err.message);
+      toast.error('Erreur upload : ' + err.message);
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -127,7 +137,7 @@ export default function ChatInput({ onSend, disabled = false, placeholder = "Éc
       setAttachments([]);
       if (taRef.current) taRef.current.style.height = 'auto';
     } catch (err) {
-      alert('Erreur envoi : ' + err.message);
+      toast.error('Erreur envoi : ' + err.message);
     } finally {
       setSending(false);
     }

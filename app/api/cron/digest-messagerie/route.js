@@ -1,6 +1,7 @@
 import { requireCronAuth } from '@/lib/api-auth';
 import { createAdminClient } from '@/lib/supabase-admin';
 import { sendEmail } from '@/lib/email';
+import { wantsNotif } from '@/lib/notif-prefs';
 import { reportError } from '@/lib/report';
 
 export const runtime = 'nodejs';
@@ -9,16 +10,15 @@ export const dynamic = 'force-dynamic';
 export const maxDuration = 300;
 
 /**
- * Cron quotidien (16h UTC = 18h Paris) qui envoie un digest des messages
- * non lus aux utilisateurs ayant la pref `notif_messagerie_canal='digest'`.
+ * Cron quotidien (16h UTC = 18h Paris) : digest email des messages reçus la
+ * veille, pour les pros et les élèves.
  *
- * Pour chaque utilisateur (pro ou élève) :
- *   - On compte ses messages non lus depuis la dernière exécution du digest
- *   - On envoie un email récap si count > 0
- *
- * Les utilisateurs en 'instant' reçoivent un email dès le push d'un message
- * (à câbler côté API messages dans une V2 — pour l'instant ils ne reçoivent
- * que le digest comme tout le monde).
+ * Préférence : notif_prefs.message.email (catalogue lib/notif-prefs, défaut
+ * ON) — le MÊME toggle « Messages » que le push, dans les réglages de notifs.
+ * Audit 2026-07-25 : l'ancienne colonne `notif_messagerie_canal` n'avait ni
+ * UI ni writer (promesse fantôme dans le pied de mail), et sa branche
+ * 'instant' skippait l'utilisateur alors qu'aucun envoi instantané n'existe.
+ * La colonne reste en DB, vestigiale.
  *
  * Variable d'env requise : RESEND_API_KEY
  */
@@ -41,17 +41,16 @@ export async function GET(request) {
   let totalSkipped = 0;
 
   // ─── Pros : récupérer ceux qui ont reçu au moins 1 message hier
-  const { data: pros } = await supabase
+  const { data: pros, error: prosErr } = await supabase
     .from('profiles')
-    .select('id, prenom, studio_nom, notif_messagerie_canal')
-    .neq('notif_messagerie_canal', 'off');
+    .select('id, prenom, studio_nom, notif_prefs');
+  if (prosErr) {
+    reportError('[cron digest] lecture profiles err:', prosErr, { route: '/api/cron/digest-messagerie' });
+    return Response.json({ error: 'Lecture profiles impossible' }, { status: 500 });
+  }
 
   for (const pro of (pros || [])) {
-    if (pro.notif_messagerie_canal === 'instant') {
-      // V2 : envoi instantané déjà géré ailleurs. On skip.
-      totalSkipped++;
-      continue;
-    }
+    if (!wantsNotif(pro.notif_prefs, 'message', 'prof', 'email')) { totalSkipped++; continue; }
 
     // Compter messages reçus hier dans ses conversations, où l'expéditeur est un élève
     const { data: convIds } = await supabase
@@ -118,19 +117,22 @@ export async function GET(request) {
   for (const [clientId, count] of eleveCount.entries()) {
     const { data: client } = await supabase
       .from('clients')
-      .select('id, prenom, email, notif_messagerie_canal, profiles(studio_nom, studio_slug)')
+      .select('id, prenom, email, notif_prefs, profile_id, profiles(studio_nom, studio_slug)')
       .eq('id', clientId)
       .maybeSingle();
     if (!client || !client.email) continue;
-    if (client.notif_messagerie_canal === 'off') { totalSkipped++; continue; }
-    if (client.notif_messagerie_canal === 'instant') { totalSkipped++; continue; }
+    if (!wantsNotif(client.notif_prefs, 'message', 'eleve', 'email')) { totalSkipped++; continue; }
 
     const studioNom = client.profiles?.studio_nom || 'Ton studio';
     const studioSlug = client.profiles?.studio_slug || '';
     const url = `${process.env.NEXT_PUBLIC_APP_URL || 'https://www.izisolo.fr'}/p/${studioSlug}/espace/messages`;
 
     // Dédup : claim avant envoi — un re-run du cron ne double-envoie pas.
-    const claim = await claimEnvoi(supabase, client.email, refDate);
+    // Le ref inclut le STUDIO : une élève inscrite dans 2 studios qui lui ont
+    // écrit le même jour reçoit bien un digest PAR studio (avant : le 2e
+    // studio était silencieusement perdu ce jour-là).
+    const refEleve = `${refDate}:${client.profile_id || 'solo'}`;
+    const claim = await claimEnvoi(supabase, client.email, refEleve);
     if (!claim.claimed) { totalSkipped++; continue; }
 
     const success = await envoyerDigest({
@@ -144,7 +146,7 @@ export async function GET(request) {
     if (success) totalSent++;
     else {
       totalErrors++;
-      if (claim.persisted) await releaseEnvoi(supabase, client.email, refDate);
+      if (claim.persisted) await releaseEnvoi(supabase, client.email, refEleve);
     }
   }
 
@@ -216,7 +218,7 @@ async function envoyerDigest({ to, prenom, nbRecus, url, contexte, studioNom }) 
             </a>
           </p>
           <p style="color: #aaa; font-size: 0.8rem; margin: 32px 0 0; border-top: 1px solid #eee; padding-top: 16px; text-align: center;">
-            Tu reçois ce digest 1×/jour. Tu peux changer ta préférence (instantané, digest ou off) dans tes paramètres.
+            Tu reçois ce récap au maximum une fois par jour. Tu peux le désactiver dans tes réglages de notifications (section « Messages »).
             <br/>Propulsé par <a href="https://www.izisolo.fr" style="color: #d4a0a0;">IziSolo</a>
           </p>
         </div>

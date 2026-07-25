@@ -100,7 +100,7 @@ export async function POST(request, { params }) {
         sharedRefType: body.shared_ref_type || null,
         sharedRefId: body.shared_ref_id || null,
       });
-      // Push à l'élève (conversations 1-à-1 uniquement ; no-op sans abonnement)
+      // Push à l'élève (1-à-1) — no-op sans abonnement push
       if (conv.type === 'client' && conv.client_id) {
         (async () => {
           const { data: c } = await supabase.from('clients').select('email').eq('id', conv.client_id).maybeSingle();
@@ -112,6 +112,29 @@ export async function POST(request, { params }) {
               tag: `msg-${conversationId}`,
             }, { type: 'message', profileId: profile.id });
           }
+        })().catch(() => {});
+      }
+      // Push aux membres d'un GROUPE-COURS (audit 2026-07-25 : avant, un
+      // message de groupe ne déclenchait AUCUN canal — ni push ni digest —
+      // l'élève ne l'apprenait qu'en ouvrant l'app par hasard).
+      else if (conv.type === 'cours') {
+        (async () => {
+          const { data: membres } = await supabase
+            .from('conversation_members')
+            .select('client_id')
+            .eq('conversation_id', conversationId)
+            .not('client_id', 'is', null);
+          const ids = [...new Set((membres || []).map(m => m.client_id).filter(Boolean))];
+          if (!ids.length) return;
+          const { data: cls } = await supabase.from('clients').select('email').in('id', ids);
+          await Promise.all((cls || []).filter(c => c.email).map(c =>
+            sendPushToEmail(c.email, {
+              title: `${profile.studio_nom || 'Ton studio'} — message au groupe`,
+              body: (body.content || '').slice(0, 120) || 'Nouveau message',
+              url: profile.studio_slug ? `/p/${profile.studio_slug}/espace/messages` : '/',
+              tag: `msg-${conversationId}`,
+            }, { type: 'message', profileId: profile.id })
+          ));
         })().catch(() => {});
       }
       return Response.json({ message: msg });

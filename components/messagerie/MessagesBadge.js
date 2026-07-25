@@ -16,10 +16,11 @@ export default function MessagesBadge() {
     const fetchCount = async () => {
       try {
         const res = await fetch('/api/messagerie/unread');
+        if (!res.ok) return; // erreur serveur : on garde le compteur affiché
         const json = await res.json();
-        if (!cancelled) setCount(json.count || 0);
+        if (!cancelled && typeof json.count === 'number') setCount(json.count);
       } catch {
-        // ignore
+        // réseau : compteur précédent conservé
       }
     };
     fetchCount();

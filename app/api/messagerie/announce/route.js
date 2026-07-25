@@ -27,7 +27,13 @@ export const dynamic = 'force-dynamic';
  * Réponse : { batch_id, count }
  */
 
-export const POST = withRoute({ auth: 'active', schema: messagerieAnnounceSchema, plan: 'mailing' }, async ({ auth, body }) => {
+export const POST = withRoute({
+  auth: 'active',
+  schema: messagerieAnnounceSchema,
+  plan: 'mailing',
+  // Fan-out jusqu'à 500 messages par appel → on borne la cadence.
+  rateLimit: { max: 20, windowSeconds: 3600, scope: 'messagerie-announce' },
+}, async ({ auth, body }) => {
   const { profile, supabase } = auth;
   // Vrai pro = a un studio_slug (le trigger Supabase crée un profil pour tout user)
   if (!profile?.studio_slug) return Response.json({ error: 'Réservé aux pros' }, { status: 403 });
@@ -70,12 +76,15 @@ export const POST = withRoute({ auth: 'active', schema: messagerieAnnounceSchema
       // 1 seule conversation de groupe
       targets = [{ type: 'cours', id: body.cours_id }];
     } else {
-      // Fan-out individuel : 1 conv par inscrit du cours
+      // Fan-out individuel : 1 conv par inscrit VIVANT du cours — les
+      // annulations (annule/declinee/tardive) ne reçoivent plus le rappel.
       const { data: presences } = await supabase
         .from('presences')
-        .select('client_id')
+        .select('client_id, statut_pointage, annulation_tardive')
         .eq('cours_id', body.cours_id);
-      targets = (presences || []).map(p => ({ type: 'client', id: p.client_id }));
+      targets = (presences || [])
+        .filter(p => !['annule', 'declinee'].includes(p.statut_pointage) && !p.annulation_tardive)
+        .map(p => ({ type: 'client', id: p.client_id }));
     }
   }
 
@@ -92,9 +101,11 @@ export const POST = withRoute({ auth: 'active', schema: messagerieAnnounceSchema
     if (coursIds.length > 0) {
       const { data: presences } = await supabase
         .from('presences')
-        .select('client_id')
+        .select('client_id, statut_pointage, annulation_tardive')
         .in('cours_id', coursIds);
-      const clientIds = [...new Set((presences || []).map(p => p.client_id))];
+      const clientIds = [...new Set((presences || [])
+        .filter(p => !['annule', 'declinee'].includes(p.statut_pointage) && !p.annulation_tardive)
+        .map(p => p.client_id))];
       targets = clientIds.map(id => ({ type: 'client', id }));
     }
   }
@@ -155,7 +166,7 @@ export const POST = withRoute({ auth: 'active', schema: messagerieAnnounceSchema
   }
 
   try {
-    const { batchId, count } = await announce(supabase, {
+    const { batchId, count, echecs } = await announce(supabase, {
       profileId: profile.id,
       targets,
       content,
@@ -163,7 +174,11 @@ export const POST = withRoute({ auth: 'active', schema: messagerieAnnounceSchema
       sharedRefType,
       sharedRefId,
     });
-    return Response.json({ batch_id: batchId, count });
+    if (echecs?.length) {
+      reportError(`[messagerie] announce partiel : ${count} ok, ${echecs.length} échec(s) —`,
+        echecs[0]?.message, { route: '/api/messagerie/announce' });
+    }
+    return Response.json({ batch_id: batchId, count, failed: echecs?.length || 0 });
   } catch (err) {
     reportError('[messagerie] announce err:', err);
     return Response.json({ error: 'Erreur diffusion : ' + err.message }, { status: 500 });

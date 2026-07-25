@@ -108,7 +108,7 @@ async function getProConversations(supabase, profileId) {
           .order('created_at', { ascending: false })
           .limit(1)
           .maybeSingle();
-        last_message_preview = lastMsg?.content?.slice(0, 80) || (lastMsg?.message_type === 'photo' ? '📷 Photo' : '');
+        last_message_preview = lastMsg?.content?.slice(0, 80) || (lastMsg?.message_type === 'photo' ? '📷 Photo' : (lastMsg?.message_type === 'file' ? '📎 Fichier' : ''));
         last_message_from = lastMsg?.sender_type || null;
         // Si le dernier msg est un announce du pro ET qu'aucun élève n'a répondu
         // depuis (i.e. pas d'autre msg eleve plus récent), la conv reste dans le
@@ -194,8 +194,9 @@ async function getEleveConversations(supabase, userEmail) {
     const convIds = [...new Set(members.map(m => m.conversation_id))];
     const { data: convs } = await supabase
       .from('conversations')
-      .select('id, type, titre, profile_id, cours_id, last_message_at')
-      .in('id', convIds);
+      .select('id, type, titre, profile_id, cours_id, last_message_at, archived')
+      .in('id', convIds)
+      .eq('archived', false); // aligné sur le côté pro : une conv archivée sort aussi de la liste élève
     const convById = new Map((convs || []).map(c => [c.id, c]));
 
     // 5. Hydrater chaque membre → conversation enrichie
@@ -228,7 +229,7 @@ async function getEleveConversations(supabase, userEmail) {
           .order('created_at', { ascending: false })
           .limit(1)
           .maybeSingle();
-        last_message_preview = lastMsg?.content?.slice(0, 80) || (lastMsg?.message_type === 'photo' ? '📷 Photo' : '');
+        last_message_preview = lastMsg?.content?.slice(0, 80) || (lastMsg?.message_type === 'photo' ? '📷 Photo' : (lastMsg?.message_type === 'file' ? '📎 Fichier' : ''));
         last_message_from = lastMsg?.sender_type || null;
       } catch (e) { console.warn('[messagerie GET eleve] last msg err:', e?.message); }
 
