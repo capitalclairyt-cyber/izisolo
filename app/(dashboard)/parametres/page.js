@@ -1985,11 +1985,10 @@ export default function Parametres() {
   const tabsRef = useRef(null);
   const [canScrollRight, setCanScrollRight] = useState(false);
   const [canScrollLeft, setCanScrollLeft]   = useState(false);
-  // Notifications générales
-  const [notifNouveauClient, setNotifNouveauClient]       = useState(true);
-  const [notifPaiementRetard, setNotifPaiementRetard]     = useState(true);
-  const [notifCarnetEpuise, setNotifCarnetEpuise]         = useState(true);
-  const [notifAbonnementExpire, setNotifAbonnementExpire] = useState(true);
+  // Les 4 anciens toggles « Notifications générales » (notif_nouveau_client…)
+  // ont disparu avec v61 : la cloche se règle dans « Mes notifications »
+  // (notif_prefs, canal inapp). Tuyauterie morte purgée en B2b — les colonnes
+  // DB restent, vestigiales (0 lecteur, 0 writer).
   // Anniversaires
   const [annivMode, setAnnivMode] = useState('semi');
   const [annivMessage, setAnnivMessage] = useState('');
@@ -2014,11 +2013,6 @@ export default function Parametres() {
       setLieux(lieuxData || []);
       setOffresDisponibles(offresData || []);
 
-      // Notifs générales
-      setNotifNouveauClient(prof?.notif_nouveau_client !== false);
-      setNotifPaiementRetard(prof?.notif_paiement_retard !== false);
-      setNotifCarnetEpuise(prof?.notif_carnet_epuise !== false);
-      setNotifAbonnementExpire(prof?.notif_abonnement_expire !== false);
       // Anniversaires
       setAnnivMode(prof?.anniversaire_mode || 'semi');
       setAnnivMessage(prof?.anniversaire_message || 'Joyeux anniversaire {prenom} ! 🎂 En ce jour spécial, toute l\'équipe du studio te souhaite une magnifique journée. À très bientôt sur le tapis !');
@@ -2080,11 +2074,7 @@ export default function Parametres() {
     const { data: prof } = await supabase.from('profiles').select('*').eq('id', user.id).single();
     if (prof) {
       setProfile(prof);
-      // Reset les états notif/anniv qui ne sont pas dans `profile`
-      setNotifNouveauClient(prof.notif_nouveau_client !== false);
-      setNotifPaiementRetard(prof.notif_paiement_retard !== false);
-      setNotifCarnetEpuise(prof.notif_carnet_epuise !== false);
-      setNotifAbonnementExpire(prof.notif_abonnement_expire !== false);
+      // Reset les états anniv qui ne sont pas dans `profile`
       setAnnivMode(prof.anniversaire_mode || 'semi');
       setAnnivMessage(prof.anniversaire_message || '');
       setAnnivCadeauActif(prof.anniversaire_cadeau_actif || false);
@@ -2235,10 +2225,6 @@ export default function Parametres() {
       anniversaire_cadeau_offre_id: annivCadeauOffreId || null,
       anniversaire_cadeau_type:     annivCadeauType,
       anniversaire_cadeau_remise_pct: parseInt(annivCadeauRemisePct) || 20,
-      notif_nouveau_client:    notifNouveauClient,
-      notif_paiement_retard:   notifPaiementRetard,
-      notif_carnet_epuise:     notifCarnetEpuise,
-      notif_abonnement_expire: notifAbonnementExpire,
       stripe_webhook_secret:   profile.stripe_webhook_secret || null,
       // Règles d'annulation (v5 + v15)
       regles_annulation:       profile.regles_annulation || null,
@@ -3413,8 +3399,8 @@ export default function Parametres() {
           box-shadow: 0 1px 4px rgba(0,0,0,0.07);
         }
 
-        /* Général notif rows */
-        .notif-general, .notif-anniv { display: flex; flex-direction: column; gap: 10px; }
+        /* Anniversaires */
+        .notif-anniv { display: flex; flex-direction: column; gap: 10px; }
         .notif-row {
           display: flex; align-items: center;
           justify-content: space-between; gap: 12px; flex-direction: row !important;
