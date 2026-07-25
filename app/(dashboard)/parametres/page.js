@@ -14,6 +14,7 @@ import { useToast } from '@/components/ui/ToastProvider';
 import { METIERS, PLANS, SMS_ENABLED, SMS_PRIX_UNITAIRE } from '@/lib/constantes';
 import { getTrialStatus, effectivePlan as effectivePlanFromTrial } from '@/lib/trial';
 import { slugify } from '@/lib/utils';
+import { getReglesAnnulation } from '@/lib/regles-metier';
 // import BackgroundDecor — retiré, plus utilisé (apparences supprimées)
 
 // Normalise une URL utilisateur :
@@ -1016,9 +1017,10 @@ const DELAIS_PRESETS = [
 ];
 
 function ReglesAnnulationSection({ profile, setProfile, setDirty }) {
-  const regles = profile?.regles_annulation || {};
-  const delai = typeof regles.delai_heures === 'number' ? regles.delai_heures : 24;
-  const message = regles.message || '';
+  // Délai effectif via la loi unique (B2a) — le champ message reste lu brut :
+  // l'input doit montrer vide quand rien n'est saisi, pas le défaut affiché élève.
+  const delai = getReglesAnnulation(profile).delai_heures;
+  const message = profile?.regles_annulation?.message || '';
 
   const updateRegles = (patch) => {
     setProfile(prev => ({

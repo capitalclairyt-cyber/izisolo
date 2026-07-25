@@ -4,6 +4,7 @@ import { checkAntiBot } from '@/lib/antibot';
 import Anthropic from '@anthropic-ai/sdk';
 import { escapeIlike } from '@/lib/utils';
 import { reportError } from '@/lib/report';
+import { getReglesAnnulation } from '@/lib/regles-metier';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -106,7 +107,9 @@ export async function POST(request, { params }) {
     url: `/p/${studioSlug}/cours/${c.id}`,
   }));
 
-  const delaiH = profile?.regles_annulation?.delai_heures || 24;
+  // Une seule loi (B2a) : le helper respecte un délai 0 (l'ancien `|| 24`
+  // aurait annoncé « 24 h » à un studio en annulation libre).
+  const delaiH = getReglesAnnulation(profile).delai_heures;
 
   const systemPrompt = `Tu es l'assistant de réservation du studio "${profile.studio_nom}" (${profile.metier || 'bien-être'}${profile.ville ? `, ${profile.ville}` : ''}).
 Tu aides les élèves à choisir et réserver un cours dans les 14 prochains jours.

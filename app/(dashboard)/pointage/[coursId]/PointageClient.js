@@ -12,7 +12,7 @@ import { parseDate } from '@/lib/dates';
 import { getVocabulaire } from '@/lib/vocabulaire';
 import { createClient } from '@/lib/supabase';
 import { evaluerRegles } from '@/lib/regles';
-import { getRegle } from '@/lib/regles-metier';
+import { getRegle, getDelaiPourCours } from '@/lib/regles-metier';
 import { seanceDelta, seanceDeltaChangementType } from '@/lib/pointage-delta';
 import { resoudreCarnetApplicable } from '@/lib/carnet-resolution';
 import { useToast } from '@/components/ui/ToastProvider';
@@ -526,15 +526,12 @@ export default function PointageClient({ cours, presences: initialPresences, tou
     : `Disponible dans ${minutesAvant} min`;
 
   // ── Règles d'annulation ────────────────────────────────
-  const reglesAnnulation = useMemo(() => {
-    const g = profile?.regles_annulation || { delai_heures: 24 };
-    const parType = g.regles_par_type || {};
-    const specific = cours.type_cours && parType[cours.type_cours];
-    return specific ? { ...g, ...specific } : g;
-  }, [profile, cours]);
-
-  const regleMessage = reglesAnnulation.message
-    || `Annulation acceptée jusqu'à ${reglesAnnulation.delai_heures}h avant la séance`;
+  // Une seule loi (B2a) : délai résolu par le module partagé (défauts +
+  // règles par type). L'ancienne lecture brute affichait « undefinedh »
+  // quand le JSONB ne contenait que le message custom (aucun preset cliqué).
+  const delaiAnnulation = getDelaiPourCours(profile, cours.type_cours);
+  const regleMessage = profile?.regles_annulation?.message
+    || `Annulation acceptée jusqu'à ${delaiAnnulation}h avant la séance`;
 
   // ── Date lisible ──────────────────────────────────────
   const dateLisible = cours.date
@@ -1167,7 +1164,7 @@ export default function PointageClient({ cours, presences: initialPresences, tou
       )}
 
       {/* ─── Règle d'annulation ─── */}
-      {!locked && reglesAnnulation.delai_heures && (
+      {!locked && delaiAnnulation > 0 && (
         <div className="regles-banner animate-slide-up">
           <Info size={13} />
           <span>{regleMessage}</span>
