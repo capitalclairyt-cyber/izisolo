@@ -17,21 +17,15 @@
  */
 
 import { NextResponse } from 'next/server';
-// requireActiveAccount : écriture métier → bloquée si compte gelé (402)
-import { requireActiveAccount } from '@/lib/api-auth';
+// auth:'active' : écriture métier → bloquée si compte gelé (402)
+import { withRoute } from '@/lib/api-route';
 import { reportError } from '@/lib/report';
 
 const UNDO_WINDOW_DAYS = 7;
 
-export async function POST(request, { params }) {
-  let auth;
-  try {
-    auth = await requireActiveAccount();
-  } catch (res) {
-    return res;
-  }
+export const POST = withRoute({ auth: 'active' }, async ({ params, auth }) => {
   const { user, supabase } = auth;
-  const { id } = await params;
+  const { id } = params;
 
   // Charger le cas
   const { data: cas, error: fetchErr } = await supabase
@@ -114,7 +108,7 @@ export async function POST(request, { params }) {
     cas: updated,
     ...(ressourceWarning && { ressource_warning: ressourceWarning }),
   });
-}
+});
 
 /* ════════════════════════════════════════════════════════════════════════
  * Helpers

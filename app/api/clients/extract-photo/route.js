@@ -1,5 +1,5 @@
-// requireActiveAccount : feature payante (IA) → bloquée si compte gelé (402)
-import { requireActiveAccount } from '@/lib/api-auth';
+// auth:'active' : feature payante (IA) → bloquée si compte gelé (402)
+import { withRoute } from '@/lib/api-route';
 import { effectivePlan } from '@/lib/plan-guard';
 import { askClaude } from '@/lib/claude';
 import { z } from 'zod';
@@ -39,9 +39,7 @@ const extractSchema = z.object({
   notes: z.string().max(1000).nullable().optional(),
 });
 
-export async function POST(request) {
-  let auth;
-  try { auth = await requireActiveAccount(); } catch (res) { return res; }
+export const POST = withRoute({ auth: 'active' }, async ({ request, auth }) => {
   const { profile, supabase } = auth;
 
   // Réservé Pro+ (essai inclus, donc dispo pour les nouvelles utilisatrices)
@@ -145,4 +143,4 @@ Règles strictes :
 
   // Image traitée puis jetée : on ne renvoie que les champs extraits.
   return Response.json({ extracted: parsed });
-}
+});

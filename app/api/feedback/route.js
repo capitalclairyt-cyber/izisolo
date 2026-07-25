@@ -1,12 +1,9 @@
-import { requireAuth } from '@/lib/api-auth';
+import { withRoute } from '@/lib/api-route';
 import { createAdminClient } from '@/lib/supabase-admin';
 import { reportError } from '@/lib/report';
 
-export async function POST(request) {
-  let profile;
-  try {
-    ({ profile } = await requireAuth());
-  } catch (res) { return res; }
+export const POST = withRoute({ auth: 'user' }, async ({ request, auth }) => {
+  const { profile } = auth;
 
   let body;
   try { body = await request.json(); } catch {
@@ -40,4 +37,4 @@ export async function POST(request) {
   }
 
   return Response.json({ ok: true });
-}
+});

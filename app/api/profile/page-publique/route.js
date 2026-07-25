@@ -1,4 +1,4 @@
-import { requireAuth } from '@/lib/api-auth';
+import { withRoute } from '@/lib/api-route';
 import { z } from 'zod';
 import { reportError } from '@/lib/report';
 
@@ -31,13 +31,8 @@ const draftSchema = z.object({
   website_url: z.string().url().nullable().optional(),
 });
 
-export async function PATCH(request) {
-  let user, supabase;
-  try {
-    ({ user, supabase } = await requireAuth());
-  } catch (res) {
-    return res;
-  }
+export const PATCH = withRoute({ auth: 'user' }, async ({ request, auth }) => {
+  const { user, supabase } = auth;
   let body;
   try { body = await request.json(); } catch { return Response.json({ error: 'JSON invalide' }, { status: 400 }); }
   const parsed = draftSchema.safeParse(body);
@@ -55,15 +50,10 @@ export async function PATCH(request) {
     return Response.json({ error: 'Erreur sauvegarde brouillon' }, { status: 500 });
   }
   return Response.json({ ok: true });
-}
+});
 
-export async function POST(request) {
-  let user, supabase;
-  try {
-    ({ user, supabase } = await requireAuth());
-  } catch (res) {
-    return res;
-  }
+export const POST = withRoute({ auth: 'user' }, async ({ request, auth }) => {
+  const { user, supabase } = auth;
   const url = new URL(request.url);
   const action = url.searchParams.get('action');
 
@@ -105,4 +95,4 @@ export async function POST(request) {
   }
 
   return Response.json({ error: 'action requise (publish | discard)' }, { status: 400 });
-}
+});

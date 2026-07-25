@@ -1,12 +1,9 @@
-import { createServerClient } from '@/lib/supabase-server';
+import { withRoute } from '@/lib/api-route';
 import { parseJsonBody, supportTicketSchema } from '@/lib/validation';
 import { reportError } from '@/lib/report';
 
-export async function POST(request) {
-  const supabase = await createServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) return new Response('Unauthorized', { status: 401 });
+export const POST = withRoute({ auth: 'user' }, async ({ request, auth }) => {
+  const { user, supabase } = auth;
 
   const { data, errorResponse } = await parseJsonBody(request, supportTicketSchema);
   if (errorResponse) return errorResponse;
@@ -28,4 +25,4 @@ export async function POST(request) {
   return new Response(JSON.stringify({ ok: true }), {
     headers: { 'Content-Type': 'application/json' },
   });
-}
+});

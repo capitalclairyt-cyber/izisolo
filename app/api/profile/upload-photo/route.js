@@ -1,5 +1,5 @@
 import { put, del } from '@vercel/blob';
-import { requireAuth } from '@/lib/api-auth';
+import { withRoute } from '@/lib/api-route';
 import { reportError } from '@/lib/report';
 
 export const runtime = 'nodejs';
@@ -16,13 +16,8 @@ const KIND_FIELDS = { profil: 'photo_url', couverture: 'photo_couverture' };
  *
  * Variable d'env requise : BLOB_READ_WRITE_TOKEN (Vercel Dashboard → Storage → Blob)
  */
-export async function POST(request) {
-  let user, profile, supabase;
-  try {
-    ({ user, profile, supabase } = await requireAuth());
-  } catch (res) {
-    return res;
-  }
+export const POST = withRoute({ auth: 'user' }, async ({ request, auth }) => {
+  const { user, profile, supabase } = auth;
 
   if (!process.env.BLOB_READ_WRITE_TOKEN) {
     return Response.json({
@@ -90,4 +85,4 @@ export async function POST(request) {
   }
 
   return Response.json({ ok: true, url: blob.url, field: targetField });
-}
+});

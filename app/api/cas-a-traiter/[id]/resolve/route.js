@@ -27,8 +27,8 @@
 
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-// requireActiveAccount : écriture métier → bloquée si compte gelé (402)
-import { requireActiveAccount } from '@/lib/api-auth';
+// auth:'active' : écriture métier → bloquée si compte gelé (402)
+import { withRoute } from '@/lib/api-route';
 import { resoudreCarnetApplicable } from '@/lib/carnet-resolution';
 import { reportError } from '@/lib/report';
 
@@ -40,15 +40,9 @@ const ResolveBodySchema = z.object({
   ressource_type: z.enum(['paiement', 'abonnement', 'presence']).optional().nullable(),
 });
 
-export async function POST(request, { params }) {
-  let auth;
-  try {
-    auth = await requireActiveAccount();
-  } catch (res) {
-    return res;
-  }
+export const POST = withRoute({ auth: 'active' }, async ({ request, params, auth }) => {
   const { user, supabase } = auth;
-  const { id } = await params;
+  const { id } = params;
 
   // Validation body
   let body;
@@ -145,7 +139,7 @@ export async function POST(request, { params }) {
   }
 
   return NextResponse.json({ ok: true, mode: body.mode, cas: updated });
-}
+});
 
 /* ════════════════════════════════════════════════════════════════════════
  * Helpers
