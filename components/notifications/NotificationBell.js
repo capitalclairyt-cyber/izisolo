@@ -13,6 +13,11 @@ const TYPE_CONFIG = {
   nouveau_client:   { color: '#0891b2', bg: '#ecfeff', border: '#a5f3fc' },
   reservation:      { color: '#059669', bg: '#ecfdf5', border: '#a7f3d0' },
   essai_demande:    { color: '#c2410c', bg: '#fff7ed', border: '#fed7aa' },
+  // Types qui existaient sans style ni action (audit 2026-07-25)
+  liste_attente:    { color: '#0d9488', bg: '#f0fdfa', border: '#99f6e4' },
+  pointage_rappel:  { color: '#4f46e5', bg: '#eef2ff', border: '#c7d2fe' },
+  annulation:       { color: '#be123c', bg: '#fff1f2', border: '#fecdd3' },
+  regle_match:      { color: '#a16207', bg: '#fefce8', border: '#fde047' },
 };
 
 function timeAgo(dateStr) {
@@ -168,6 +173,31 @@ export default function NotificationBell() {
       return;
     }
 
+    // Liste d'attente (inscription ou promotion) — la page dédiée.
+    if (notif.type === 'liste_attente') {
+      router.push('/liste-attente');
+      return;
+    }
+
+    // Rappel de pointage — la séance d'hier à pointer.
+    if (notif.type === 'pointage_rappel') {
+      router.push(data.cours_id ? `/pointage/${data.cours_id}` : '/agenda');
+      return;
+    }
+
+    // Annulation élève — l'agenda du jour concerné.
+    if (notif.type === 'annulation') {
+      const d = data.date || data.cours_date;
+      router.push(d ? `/agenda?date=${d}` : '/agenda');
+      return;
+    }
+
+    // Règle SI/ALORS déclenchée — la fiche de l'élève concernée.
+    if (notif.type === 'regle_match') {
+      router.push(clientId ? `/clients/${clientId}` : '/clients');
+      return;
+    }
+
     // Fallback — au moins on quitte le panneau
     router.push('/dashboard');
   };
@@ -217,6 +247,24 @@ export default function NotificationBell() {
             <button className="nb-action-btn secondary"
                     onClick={() => handleAction(notif, 'voir')}>
               <ExternalLink size={12} /> Voir la demande
+            </button>
+          )}
+          {notif.type === 'liste_attente' && (
+            <button className="nb-action-btn secondary"
+                    onClick={() => handleAction(notif, 'voir')}>
+              <ExternalLink size={12} /> Liste d'attente
+            </button>
+          )}
+          {notif.type === 'pointage_rappel' && (
+            <button className="nb-action-btn primary"
+                    onClick={() => handleAction(notif, 'voir')}>
+              <ExternalLink size={12} /> Pointer
+            </button>
+          )}
+          {(notif.type === 'annulation' || notif.type === 'regle_match') && (
+            <button className="nb-action-btn secondary"
+                    onClick={() => handleAction(notif, 'voir')}>
+              <ExternalLink size={12} /> Voir
             </button>
           )}
           {/* Marquer lu */}

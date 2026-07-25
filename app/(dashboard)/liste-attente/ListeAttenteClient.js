@@ -112,24 +112,33 @@ export default function ListeAttenteClient({ groupes: groupesInit }) {
                           : 'Complet'}
                     </span>
                     <span className="la-stat la-stat-waiting">
-                      <Clock size={12} /> {g.enAttente.length} en attente
+                      <Clock size={12} /> {g.enAttente.filter(e => !e.notified_at).length} en attente
                     </span>
                   </div>
                 </div>
 
                 <div className="la-entries">
-                  {g.enAttente.map((entry, idx) => (
-                    <div key={entry.id} className="la-entry">
-                      <div className="la-entry-rank">{idx + 1}</div>
+                  {[...g.enAttente].sort((a, b) => (a.notified_at ? 1 : 0) - (b.notified_at ? 1 : 0)).map((entry, idx) => (
+                    <div key={entry.id} className="la-entry" style={entry.notified_at ? { opacity: 0.55 } : undefined}>
+                      <div className="la-entry-rank">{entry.notified_at ? '✓' : idx + 1}</div>
                       <div className="la-entry-info">
-                        <span className="la-entry-nom">{entry.nom || '(sans nom)'}</span>
+                        <span className="la-entry-nom">
+                          {entry.nom || '(sans nom)'}
+                          {entry.notified_at && (
+                            <span style={{ marginLeft: 6, fontSize: '0.7rem', fontWeight: 700, color: 'var(--c-sage-ink, #4a7c59)', background: 'var(--c-bg-sage, #eef4ee)', borderRadius: 6, padding: '1px 7px' }}>
+                              Promu·e ✓
+                            </span>
+                          )}
+                        </span>
                         <span className="la-entry-contact">
                           <a href={`mailto:${entry.email}`}>{entry.email}</a>
                           {entry.telephone && <> · <a href={`tel:${entry.telephone}`}>{entry.telephone}</a></>}
                         </span>
                       </div>
                       <div className="la-entry-actions">
-                        {(g.placesDispos === null || g.placesDispos > 0) ? (
+                        {entry.notified_at ? (
+                          <span className="la-stat-tag" title={`Place attribuée le ${new Date(entry.notified_at).toLocaleDateString('fr-FR')}`}>Place attribuée</span>
+                        ) : (g.placesDispos === null || g.placesDispos > 0) ? (
                           <button
                             type="button"
                             className="la-btn la-btn-primary"
@@ -144,16 +153,18 @@ export default function ListeAttenteClient({ groupes: groupesInit }) {
                         ) : (
                           <span className="la-stat-tag">En attente d'une place</span>
                         )}
-                        <button
-                          type="button"
-                          className="la-btn la-btn-ghost"
-                          onClick={() => retirer(entry.id, entry.nom)}
-                          disabled={submittingId === entry.id}
-                          title="Retirer de la liste d'attente"
-                          aria-label="Retirer de la liste d'attente"
-                        >
-                          <Trash2 size={13} />
-                        </button>
+                        {!entry.notified_at && (
+                          <button
+                            type="button"
+                            className="la-btn la-btn-ghost"
+                            onClick={() => retirer(entry.id, entry.nom)}
+                            disabled={submittingId === entry.id}
+                            title="Retirer de la liste d'attente"
+                            aria-label="Retirer de la liste d'attente"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        )}
                       </div>
                     </div>
                   ))}

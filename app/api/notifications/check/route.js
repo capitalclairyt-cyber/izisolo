@@ -75,8 +75,12 @@ export async function POST() {
       titre:      `💶 Paiement en attente — ${p.clients?.prenom} ${p.clients?.nom}`,
       corps:      `${p.intitule} · ${p.montant} € · en attente depuis ${jours} jour(s)`,
       data:       { paiement_id: p.id, client_id: p.client_id, montant: p.montant, jours },
-      ref_key:    `paiement_retard_${todayStr}_${p.id}`,
-      expires_at: null,
+      // ref_key STABLE (audit 2026-07-25) : l'ancien ref journalier créait une
+      // notif non-lue DE PLUS chaque jour pour le même impayé (badges « 9+ »
+      // permanents). Stable + expiration 48 h = 1 seule notif, ré-armée en
+      // douceur tant que l'impayé persiste (la purge ci-dessous fait le ménage).
+      ref_key:    `paiement_retard_${p.id}`,
+      expires_at: new Date(Date.now() + 48 * 3600 * 1000).toISOString(),
     });
   }
   } // fin notif_paiement_retard
@@ -108,8 +112,8 @@ export async function POST() {
       corps:      `${ab.offres?.nom || 'Carnet'} · ${Math.max(0, reste)} séance(s) restante(s) — proposer la suite ?`,
       data:       { abonnement_id: ab.id, client_id: ab.client_id,
                     seances_restantes: Math.max(0, reste) },
-      ref_key:    `carnet_epuise_${todayStr}_${ab.id}`,
-      expires_at: null,
+      ref_key:    `carnet_epuise_${ab.id}`, // stable (cf. paiement_retard)
+      expires_at: new Date(Date.now() + 48 * 3600 * 1000).toISOString(),
     });
   }
   } // fin notif_carnet_epuise
@@ -136,7 +140,7 @@ export async function POST() {
       corps:      `${ab.offres?.nom} · expire dans ${jours} jour(s)`,
       data:       { abonnement_id: ab.id, client_id: ab.client_id,
                     date_fin: ab.date_fin, jours },
-      ref_key:    `abo_expire_${todayStr}_${ab.id}`,
+      ref_key:    `abo_expire_${ab.id}`, // stable (cf. paiement_retard)
       expires_at: new Date(ab.date_fin).toISOString(),
     });
   }

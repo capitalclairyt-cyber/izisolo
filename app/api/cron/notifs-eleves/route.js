@@ -45,7 +45,9 @@ export async function GET(request) {
   // Charger tous les profils (avec préférences notifs)
   const { data: profiles } = await supabase
     .from('profiles')
-    .select('id, studio_nom, notifs_eleves, alerte_seances_seuil, alerte_expiration_jours, sms_seuil_mois');
+    // studio_slug : indispensable aux URLs des push (sans lui, tous les push
+    // carnet/expiration pointaient sur « / » — audit 2026-07-25).
+    .select('id, studio_nom, studio_slug, notifs_eleves, alerte_seances_seuil, alerte_expiration_jours, sms_seuil_mois');
 
   let totalSent = 0, totalSkipped = 0, totalErrors = 0, totalReglesDeclenchees = 0, profilsTraites = 0;
 
@@ -294,17 +296,19 @@ Pour assurer la continuité de tes cours, pense à le renouveler avant cette dat
           }
 
           if (regle.action_type === 'creer_alerte_pro') {
-            // Insertion dans la table notifications (alertes côté pro, v10) si elle existe
-            await supabase.from('notifications').insert({
+            // ⚠️ Colonnes réelles v10 = titre/corps/data (l'ancien insert
+            // visait message/client_id, inexistantes → 42703 avalé : l'action
+            // « Créer une alerte pro » n'a JAMAIS rien créé — audit 2026-07-25).
+            const { error: alerteErr } = await supabase.from('notifications').insert({
               profile_id: profile.id,
               type: 'regle_match',
               titre: regle.nom || 'Règle déclenchée',
-              message: `${client.prenom || ''} ${client.nom || ''} — ${params.message || regle.nom || ''}`.trim(),
-              client_id: client.id,
+              corps: `${client.prenom || ''} ${client.nom || ''} — ${params.message || regle.nom || ''}`.trim(),
+              data: { client_id: client.id },
               lu: false,
-            }).then(() => {
-              totalReglesDeclenchees++;
-            }, () => { /* ignore si table absente ou doublon */ });
+            });
+            if (alerteErr) reportError('[cron notifs] alerte pro:', alerteErr.message);
+            else totalReglesDeclenchees++;
           }
         } catch (e) {
           reportError('[cron notifs] regle err', regle.id, e);

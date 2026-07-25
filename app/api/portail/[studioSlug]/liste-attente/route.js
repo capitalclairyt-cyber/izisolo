@@ -113,11 +113,22 @@ export async function POST(request, { params }) {
   // envoi) et sans re-notifier (pas de spam prof/élève).
   const { data: dejaEnListe } = await supabaseAdmin
     .from('liste_attente')
-    .select('id, position')
+    .select('id, position, notified_at')
     .eq('cours_id', coursId)
     .ilike('email', escapeIlike(email))
     .maybeSingle();
   if (dejaEnListe) {
+    // Entrée déjà PROMUE (notified_at posé) : la promotion ne regarde que les
+    // lignes non-notifiées → sans reset, l'élève croyait attendre et n'était
+    // JAMAIS re-promue (audit 2026-07-25 : cas « promue puis a annulé »).
+    if (dejaEnListe.notified_at) {
+      const { error: resetErr } = await supabaseAdmin
+        .from('liste_attente')
+        .update({ notified_at: null, created_at: new Date().toISOString() })
+        .eq('id', dejaEnListe.id);
+      if (resetErr) reportError('[liste-attente] reset re-inscription:', resetErr.message);
+      return Response.json({ ok: true, position: dejaEnListe.position, deja: false });
+    }
     return Response.json({ ok: true, position: dejaEnListe.position, deja: true });
   }
 
