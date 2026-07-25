@@ -20,6 +20,7 @@ export const PUT = withRoute({ auth: 'user' }, async ({ request, auth }) => {
     'ui_couleur', 'types_cours', 'niveaux', 'sources', 'modes_paiement', 'vocabulaire',
     'portail_actif', 'portail_message',
     'alerte_seances_seuil', 'alerte_expiration_jours', 'alerte_paiement_attente_jours',
+    'checklist_masquee', // v79 — masquage durable de la checklist de démarrage
   ];
 
   const updates = {};

@@ -26,11 +26,14 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
   // (Avant : l'étape « partage » n'était jamais cochable — done:false en dur —
   // et la checklist disparaissait dès cours+élève créés, pile avant les deux
   // étapes d'activation qui comptent : partager le portail + inviter.)
-  const [checklistDismissed, setChecklistDismissed] = useState(false);
+  // Masquage DURABLE (retour Colin 2026-07-25) : profiles.checklist_masquee
+  // (v79, cross-device) EN PLUS du localStorage historique (couvre l'appareil
+  // même tant que la migration n'est pas appliquée — dégradation propre).
+  const [checklistDismissed, setChecklistDismissed] = useState(profile?.checklist_masquee === true);
   const [portailPartage, setPortailPartage] = useState(false);
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      setChecklistDismissed(localStorage.getItem('izi_checklist_dismissed') === '1');
+      if (localStorage.getItem('izi_checklist_dismissed') === '1') setChecklistDismissed(true);
       setPortailPartage(localStorage.getItem('izi_portail_partage') === '1');
     }
   }, []);
@@ -97,6 +100,14 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
       localStorage.setItem('izi_checklist_dismissed', '1');
     }
     setChecklistDismissed(true);
+    // Persistance cross-device (v79). Fire-and-forget : tant que la migration
+    // n'est pas appliquée la route renvoie 400 en silence, le localStorage
+    // couvre cet appareil.
+    fetch('/api/profile', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ checklist_masquee: true }),
+    }).catch(() => { /* réseau : le masquage local reste effectif */ });
   };
 
   // Date du jour formatée
@@ -170,10 +181,10 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
           <button
             className="dash-checklist-close"
             onClick={dismissChecklist}
-            aria-label="Masquer la checklist"
-            title="Masquer"
+            aria-label="Masquer la checklist de démarrage"
+            title="Masquer définitivement"
           >
-            <X size={14} />
+            <X size={16} />
           </button>
           <div className="dash-checklist-header">
             <Sparkles size={16} style={{ color: 'var(--brand)' }} />
@@ -873,10 +884,16 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
           padding: 16px 18px 14px;
         }
         .dash-checklist-close {
-          position: absolute; top: 10px; right: 10px;
+          position: absolute; top: 8px; right: 8px;
           background: none; border: none; cursor: pointer;
-          color: var(--text-muted); padding: 4px;
+          color: var(--text-muted); padding: 6px;
           border-radius: 50%; transition: background 0.15s;
+          /* z-index OBLIGATOIRE : le header (position:relative) vient APRÈS
+             dans le DOM → à z-index auto il peignait PAR-DESSUS la croix et
+             interceptait tous les clics. La croix n'a jamais été cliquable
+             en prod avant ce fix (repro Playwright 2026-07-25). */
+          z-index: 1;
+          display: inline-flex; align-items: center; justify-content: center;
         }
         .dash-checklist-close:hover { background: rgba(0,0,0,0.05); color: var(--text-secondary); }
         .dash-checklist-header {
