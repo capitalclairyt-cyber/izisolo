@@ -1,8 +1,8 @@
-@import "tailwindcss";
-
 /* ============================================
    IziSolo — Design System
    Personnalité : chaleureux, doux, mobile-first
+   (Tailwind retiré en B2d 2026-07-25 : ~0 classe utilitaire utilisée,
+    le reset universel maison plus bas couvre box-sizing/margins.)
    ============================================ */
 
 :root {
@@ -256,6 +256,20 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+}
+
+/* Sous-ensemble du preflight Tailwind CONSERVÉ après son retrait (B2d
+   2026-07-25, preuve par captures avant/après) : sans ces 2 règles, les
+   h1-h6 non stylés repassaient en gras/taille navigateur (« Frais Stripe »
+   du calculateur) et les inputs perdaient la fonte héritée (points du mot
+   de passe du login). Spécificité minimale : tout style explicite gagne. */
+h1, h2, h3, h4, h5, h6 {
+  font-size: inherit;
+  font-weight: inherit;
+}
+button, input, optgroup, select, textarea {
+  font: inherit;
+  color: inherit;
 }
 
 html {
