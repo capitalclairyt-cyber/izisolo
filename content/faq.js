@@ -28,7 +28,7 @@ export const FAQ_ITEMS = [
   },
   {
     q: 'Je peux envoyer des mails ciblés à mes élèves ?',
-    a: "Oui, à tous les niveaux. Un message à un élève précis, à tous les inscrits d'un cours, à tous les détenteurs d'un type d'abonnement (les illimités, les carnets de 10…), à tous ceux d'un créneau particulier. Tu peux aussi programmer des relances auto pour les paiements en attente, des rappels avant cours, des messages d'anniversaire.",
+    a: "Oui, à tous les niveaux. Un message à un élève précis, à tous les inscrits d'un cours, à tous les détenteurs d'un type d'abonnement (les illimités, les carnets de 10…), ou à une sélection libre d'élèves. Tu peux aussi programmer des relances auto pour les paiements en attente, des rappels avant cours, des messages d'anniversaire.",
   },
   {
     q: 'Et si je veux arrêter ?',

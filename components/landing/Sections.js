@@ -352,8 +352,8 @@ export function Features() {
         <FeatureRow
           eyebrow="Messagerie & mailing"
           title="Une messagerie complète, ciblée à tous les niveaux"
-          desc="Une vraie boîte mail intégrée, plus seulement des notifs. Envoie un mail à un élève précis, à tous les inscrits d'un cours, à tous les détenteurs d'un type d'abonnement, ou à ton créneau du jeudi soir — en deux clics."
-          bullets={['Conversations 1-à-1 + canaux par cours', 'Mailing groupé par type d\'abonnement, cours ou créneau', 'Relances impayés et rappels automatiques']}
+          desc="Une vraie boîte mail intégrée, plus seulement des notifs. Envoie un message à un élève précis, à tous les inscrits d'un cours, à tous les détenteurs d'un type d'abonnement, ou à ta sélection d'élèves — en deux clics."
+          bullets={['Conversations 1-à-1 + canaux par cours', 'Message groupé par type d\'abonnement, cours ou sélection libre', 'Relances impayés et rappels automatiques']}
           mockupTab="messagerie"
           flip={false}
         />
