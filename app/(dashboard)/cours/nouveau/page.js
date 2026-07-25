@@ -2,9 +2,12 @@
 
 import { useState, useEffect, useMemo, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { parseDate, toDateStr } from '@/lib/dates';
+import { parseDate, toDateStr, semainesEntre } from '@/lib/dates';
 import { getAllTypesFromCategories, normalizeTypesCours } from '@/lib/utils';
-import { estJourFerie, getPeriodeVacances, ZONES_VACANCES } from '@/lib/vacances-scolaires';
+import {
+  estJourFerie, getPeriodeVacances, ZONES_VACANCES,
+  VACANCES_COUVERTURE_MAX, FERIES_COUVERTURE_MAX,
+} from '@/lib/vacances-scolaires';
 import Link from 'next/link';
 import {
   ArrowLeft, Save, Calendar, Clock, MapPin, Users, Repeat,
@@ -45,25 +48,36 @@ function calculerDates(form) {
   if (!start || isNaN(start.getTime())) return { incluses, exclues };
 
   const mode = form.mode_fin || 'count';
-  const limite = mode === 'count'
+  let limite = mode === 'count'
     ? new Date(start.getFullYear() + 1, start.getMonth(), start.getDate()) // garde-fou 1 an
     : (form.date_fin ? parseDate(form.date_fin) : new Date(start.getFullYear(), start.getMonth(), start.getDate() + 7 * 12));
-  if (!limite || limite < start) return { incluses, exclues };
+  if (!limite || limite < start) return { incluses, exclues, borne: false };
 
-  const cible = mode === 'count' ? Math.max(1, parseInt(form.nb_occurrences) || 12) : 999;
+  // Borne dure 24 mois, PARTAGÉE aperçu/insertion et REMONTÉE (flag `borne`)
+  // pour être affichée. Avant : le scan s'arrêtait à ~500 jours EN SILENCE
+  // alors que l'input acceptait n'importe quelle échéance — la prof
+  // découvrait le trou un an plus tard (B1b 2026-07-25).
+  const limiteMax = new Date(start.getFullYear() + 2, start.getMonth(), start.getDate());
+  const borne = limite > limiteMax;
+  if (borne) limite = limiteMax;
+
+  const cible = mode === 'count' ? Math.min(100, Math.max(1, parseInt(form.nb_occurrences) || 12)) : 999;
   const cursor = new Date(start);
   const startDay = start.getDay() === 0 ? 7 : start.getDay();
   let safety = 0;
 
-  while (cursor <= limite && incluses.length < cible && safety < 500) {
+  while (cursor <= limite && incluses.length < cible && safety < 800) {
     safety++;
     const day = cursor.getDay() === 0 ? 7 : cursor.getDay();
     let include = false;
     if (form.frequence === 'quotidien') include = true;
     else if (form.frequence === 'hebdomadaire') include = day === startDay;
     else if (form.frequence === 'bimensuel') {
-      const weeks = Math.floor((cursor - start) / (7 * 86400000));
-      include = day === startDay && weeks % 2 === 0;
+      // semainesEntre = jours civils via Date.UTC : le calcul en millisecondes
+      // locales perdait 1 h à l'heure d'été et flippait la parité — série
+      // « 1 sem./2 » qui saute 3 semaines fin mars puis vit sur la mauvaise
+      // semaine (B1b, prouvé par exécution).
+      include = day === startDay && semainesEntre(start, cursor) % 2 === 0;
     }
     else if (form.frequence === 'mensuel') include = cursor.getDate() === start.getDate();
     else if (form.frequence === 'personnalise') include = (form.jours_semaine || []).includes(day);
@@ -86,12 +100,12 @@ function calculerDates(form) {
     cursor.setDate(cursor.getDate() + 1);
   }
 
-  return { incluses, exclues };
+  return { incluses, exclues, borne };
 }
 
 // Preview enrichi : compteur + 8 premières dates incluses + alerte si exclusions
 function RecurrencePreview({ form }) {
-  const { incluses, exclues } = useMemo(() => calculerDates(form), [
+  const { incluses, exclues, borne } = useMemo(() => calculerDates(form), [
     form.date, form.date_fin, form.mode_fin, form.nb_occurrences,
     form.frequence, form.jours_semaine, form.exclure_vacances,
     form.exclure_feries, form.zone_vacances
@@ -141,6 +155,30 @@ function RecurrencePreview({ form }) {
           {exclues.length > 3 && <span className="rec-preview-skip-more">+{exclues.length - 3} autres</span>}
         </div>
       )}
+      {(() => {
+        // Avertissements honnêtes (B1b) : borne 24 mois, référentiel
+        // vacances/fériés qui expire, mensuel ancré après le 28.
+        const derniereIncluse = incluses.length ? toDateStr(incluses[incluses.length - 1]) : null;
+        const warns = [];
+        if (borne) warns.push('La génération est bornée à 24 mois — prolonge la série plus tard pour la suite.');
+        if (form.exclure_vacances && form.zone_vacances && derniereIncluse && derniereIncluse > VACANCES_COUVERTURE_MAX) {
+          warns.push(`Le calendrier des vacances scolaires est connu jusqu'au ${VACANCES_COUVERTURE_MAX.split('-').reverse().join('/')} — au-delà, aucune date ne sera sautée.`);
+        }
+        if (form.exclure_feries && derniereIncluse && derniereIncluse > FERIES_COUVERTURE_MAX) {
+          warns.push(`Les jours fériés sont connus jusqu'au ${FERIES_COUVERTURE_MAX.split('-').reverse().join('/')} — au-delà, aucun férié ne sera sauté.`);
+        }
+        if (form.frequence === 'mensuel' && parseDate(form.date).getDate() > 28) {
+          warns.push('Série mensuelle ancrée après le 28 : les mois sans ce jour (février…) seront sautés.');
+        }
+        if (!warns.length) return null;
+        return (
+          <div className="rec-preview-exclusions">
+            {warns.map((w, i) => (
+              <span key={i} className="rec-preview-skip">⚠ {w}</span>
+            ))}
+          </div>
+        );
+      })()}
     </div>
   );
 }
@@ -255,7 +293,7 @@ function NouveauCoursInner() {
       if (fromId) {
         const { data: source } = await supabase
           .from('cours')
-          .select('nom, type_cours, heure, duree_minutes, lieu_id, capacite_max, client_pro_id, notes')
+          .select('nom, type_cours, heure, duree_minutes, lieu_id, capacite_max, client_pro_id, notes, tarif_unitaire, visibilite, domicile')
           .eq('id', fromId)
           .eq('profile_id', user.id)
           .maybeSingle();
@@ -270,9 +308,19 @@ function NouveauCoursInner() {
             capacite_max: source.capacite_max ? String(source.capacite_max) : '',
             client_pro_id: source.client_pro_id || '',
             notes: source.notes || '',
+            // B1b (rouge) : dupliquer SANS ces 2 champs transformait un
+            // atelier à 25 €/séance en cours « sur carnet » (les carnets des
+            // élèves étaient décomptés au lieu de créer « à régler 25 € »)
+            // et un cours 🔒 privé en cours PUBLIC listé sur le portail.
+            tarif_unitaire: source.tarif_unitaire != null ? String(source.tarif_unitaire) : (prev.tarif_unitaire || ''),
+            visibilite: source.visibilite || prev.visibilite || 'public',
             // date reste à dateInitiale (aujourd'hui ou ?date=...) — le prof choisit la nouvelle date
           }));
-          toast.info('Cours dupliqué — choisis une nouvelle date.');
+          if (source.domicile) {
+            toast.info('Cours dupliqué (le cours source est à domicile : la copie ne reprend ni l\'élève ni l\'adresse — passe par sa fiche pour un vrai cours à domicile).');
+          } else {
+            toast.info('Cours dupliqué — choisis une nouvelle date.');
+          }
         }
       }
     };
@@ -409,6 +457,10 @@ function NouveauCoursInner() {
         }
       } else {
         const { incluses } = calculerDates(form);
+        // Une série sans aucune occurrence = série fantôme dans /recurrences.
+        if (incluses.length === 0) {
+          throw new Error('Aucune date à générer avec ces réglages — vérifie la récurrence (l\'aperçu doit montrer au moins une séance).');
+        }
         // Bornes effectives pour la table recurrences (info, pas utilisée pour la génération)
         const dateFinEffective = form.mode_fin === 'date_fin'
           ? (form.date_fin || null)
@@ -454,10 +506,18 @@ function NouveauCoursInner() {
             // recurrences n'a pas la colonne — « ajouter une occurrence »
             // le recopie depuis un cours frère de la série).
             tarif_unitaire: form.tarif_unitaire ? parseFloat(form.tarif_unitaire) : null,
+            // La note du formulaire était posée sur le cours unique mais
+            // silencieusement JETÉE pour les séries (B1b).
+            notes: form.notes || null,
             ...domicileFields,
           }));
           const { data: createdCours, error: coursErr } = await supabase.from('cours').insert(coursACreer).select('id');
-          if (coursErr) throw coursErr;
+          if (coursErr) {
+            // Compensation : sans elle, une série fantôme « 0 séance » restait
+            // visible et le retry créait une 2e récurrence (B1b).
+            await supabase.from('recurrences').delete().eq('id', recurrence.id);
+            throw coursErr;
+          }
 
           if (isDomicile && createdCours?.length > 0) {
             const { error: presErr } = await supabase.from('presences').insert(

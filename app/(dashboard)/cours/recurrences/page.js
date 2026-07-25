@@ -24,7 +24,12 @@ export default async function RecurrencesPage({ searchParams }) {
   const [{ data: recurrences }, { data: profile }, { data: cours }] = await Promise.all([
     supabase
       .from('recurrences')
-      .select('id, nom, type_cours, heure, duree_minutes, lieu_id, capacite_max, frequence, jours_semaine, intervalle, date_debut, date_fin, nb_occurrences, exclure_vacances, exclure_feries, zone_vacances, actif, created_at')
+      // ⚠️ domicile/client_id/frais_deplacement/client_pro_id DOIVENT être
+      // chargés : l'ajout d'occurrence et la prolongation les recopient sur
+      // chaque cours créé. Sans eux, `selected.domicile` était undefined →
+      // le spread conditionnel ne posait RIEN, en silence (séances à domicile
+      // prolongées sans l'élève inscrite — audit B1b 2026-07-25).
+      .select('id, nom, type_cours, heure, duree_minutes, lieu_id, capacite_max, frequence, jours_semaine, intervalle, date_debut, date_fin, nb_occurrences, exclure_vacances, exclure_feries, zone_vacances, actif, created_at, domicile, client_id, frais_deplacement, client_pro_id')
       .eq('profile_id', user.id)
       .order('created_at', { ascending: false }),
     supabase

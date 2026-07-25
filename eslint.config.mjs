@@ -7,6 +7,7 @@ export default [
       'node_modules/**',
       'public/sw.js',
       'public/workbox-*.js',
+      'public/worker-*.js',
       'public/fallback-*.js',
       '.vercel/**',
       'playwright-report/**',

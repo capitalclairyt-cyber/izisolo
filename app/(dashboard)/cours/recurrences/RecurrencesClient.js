@@ -9,9 +9,12 @@ import {
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase';
 import { getAllTypesFromCategories } from '@/lib/utils';
+import { semainesEntre } from '@/lib/dates';
+import { presenceEstReservationActive } from '@/lib/presences';
 import { useToast } from '@/components/ui/ToastProvider';
 import {
   estPendantVacances, estJourFerie, getPeriodeVacances, ZONES_VACANCES,
+  VACANCES_COUVERTURE_MAX, FERIES_COUVERTURE_MAX,
 } from '@/lib/vacances-scolaires';
 
 const JOURS_LABEL = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
@@ -59,6 +62,10 @@ export default function RecurrencesClient({ recurrences: initialRecurrences, cou
   const [prolonger, setProlonger] = useState(false);
   const [prolongerFin, setProlongerFin] = useState('');
   const [prolongeant, setProlongeant] = useState(false);
+  // Dates RÉELLES de la série (fetch à l'ouverture du panneau) : la fenêtre
+  // serveur (+365 j, cap PostgREST 1000) pouvait manquer des occurrences →
+  // la dédup laissait passer des doublons à la prolongation (B1b).
+  const [prolongerExistantes, setProlongerExistantes] = useState(null);
   // Une série « hors vacances » prolongée sur l'été donnerait 0 séance (été =
   // 04/07→31/08 dans le référentiel). Or c'est exactement le cas d'usage de
   // Maude : des cours d'été. Cette case permet d'outrepasser l'exclusion POUR
@@ -167,17 +174,25 @@ export default function RecurrencesClient({ recurrences: initialRecurrences, cou
   // ─── Actions ─────────────────────────────────────────────────────────────
   const supprimerCours = async (coursId, iso) => {
     const supabase = createClient();
-    // Garde-fou (audit 2026-07-25) : la corbeille de la grille supprimait sans
-    // AUCUNE confirmation — présences et réservations effacées en cascade.
-    const { count } = await supabase
+    // Garde-fou (audits 2026-07-25) : historique pointé ET réservations
+    // actives (statut NULL) comptés — avant, 8 réservations partaient en
+    // cascade sans qu'aucun élève ne soit prévenu. Erreur de lecture →
+    // confirmation forte par défaut (fail-closed).
+    const { data: presRows, error: presReadErr } = await supabase
       .from('presences')
-      .select('id', { count: 'exact', head: true })
-      .eq('cours_id', coursId)
-      .or('statut_pointage.in.(present,absent,excuse,absent_compte),annulation_tardive.eq.true');
-    const nbHisto = count || 0;
+      .select('statut_pointage, annulation_tardive')
+      .eq('cours_id', coursId);
+    const rows = presRows || [];
+    const nbHisto = presReadErr ? 1 : rows.filter(p =>
+      ['present', 'absent', 'excuse', 'absent_compte'].includes(p.statut_pointage) || p.annulation_tardive
+    ).length;
+    // Réservation active = statut 'inscrit' (DEFAULT v5 — jamais NULL en prod).
+    const nbResas = presReadErr ? 0 : rows.filter(presenceEstReservationActive).length;
     const ok = confirm(nbHisto > 0
       ? `⚠️ Cette séance a ${nbHisto} présence${nbHisto > 1 ? 's' : ''} pointée${nbHisto > 1 ? 's' : ''} ou sanctionnée${nbHisto > 1 ? 's' : ''} — la supprimer efface définitivement cet historique (sans recréditer les carnets).\n\nSi la séance n'a pas lieu, préfère « Annuler » (prévient les élèves et recrédite).\n\nSupprimer quand même ?`
-      : `Supprimer la séance du ${iso.split('-').reverse().join('/')} ? Les réservations éventuelles seront effacées.`);
+      : nbResas > 0
+        ? `⚠️ ${nbResas} élève${nbResas > 1 ? 's ont' : ' a'} RÉSERVÉ cette séance — la supprimer efface ${nbResas > 1 ? 'leurs réservations' : 'sa réservation'} SANS prévenir personne.\n\nPréfère « Annuler la séance » (depuis le détail du cours) : les élèves reçoivent un email et les carnets sont recrédités.\n\nSupprimer quand même ?`
+        : `Supprimer la séance du ${iso.split('-').reverse().join('/')} ?`);
     if (!ok) return;
     setActionPending(iso);
     const { error } = await supabase.from('cours').delete().eq('id', coursId);
@@ -200,16 +215,18 @@ export default function RecurrencesClient({ recurrences: initialRecurrences, cou
     // l'occurrence ajoutée garde le même modèle de paiement.
     let tarifUnitaire = null;
     let visibilite = null;
+    let lieuTexte = null;
     try {
       const { data: frere } = await supabase
         .from('cours')
-        .select('tarif_unitaire, visibilite')
+        .select('tarif_unitaire, visibilite, lieu')
         .eq('recurrence_parent_id', selected.id)
         .order('date', { ascending: false })
         .limit(1)
         .maybeSingle();
       tarifUnitaire = frere?.tarif_unitaire ?? null;
       visibilite = frere?.visibilite ?? null;
+      lieuTexte = frere?.lieu ?? null;
     } catch { /* pas de frère : défauts */ }
     // Audit 2026-07-25 : l'occurrence ajoutée perdait la capacité (null codé en
     // dur) ET la visibilité (défaut DB 'public') → une occurrence d'une série
@@ -223,10 +240,14 @@ export default function RecurrencesClient({ recurrences: initialRecurrences, cou
       heure: selected.heure,
       duree_minutes: selected.duree_minutes,
       lieu_id: selected.lieu_id,
+      // `lieu` (texte) est ce qu'affichent portail + espace élève : sans lui,
+      // l'occurrence ajoutée apparaissait SANS lieu chez les élèves (B1b).
+      lieu: lieuTexte,
       capacite_max: selected.capacite_max ?? null,
       visibilite: visibilite || 'public',
       recurrence_parent_id: selected.id,
       tarif_unitaire: tarifUnitaire,
+      client_pro_id: selected.client_pro_id || null,
       ...(selected.domicile ? {
         domicile: true,
         client_id: selected.client_id || null,
@@ -255,10 +276,16 @@ export default function RecurrencesClient({ recurrences: initialRecurrences, cou
   const toggleActif = async (rec) => {
     const supabase = createClient();
     const { error } = await supabase.from('recurrences').update({ actif: !rec.actif }).eq('id', rec.id);
-    if (!error) {
-      setRecurrences(prev => prev.map(r => r.id === rec.id ? { ...r, actif: !r.actif } : r));
-      toast.success(rec.actif ? 'Récurrence mise en pause' : 'Récurrence réactivée');
+    if (error) {
+      toast.error('Erreur : ' + error.message);
+      return;
     }
+    setRecurrences(prev => prev.map(r => r.id === rec.id ? { ...r, actif: !r.actif } : r));
+    // Honnêteté (B1b) : `actif` n'est lu par AUCUN générateur — rien ne crée
+    // de séances en continu. La pause est un repère visuel, on le dit.
+    toast.success(rec.actif
+      ? 'Série mise en pause (repère visuel — les séances déjà créées restent en place)'
+      : 'Série réactivée');
   };
 
   const supprimerRecurrence = async (rec) => {
@@ -271,24 +298,45 @@ export default function RecurrencesClient({ recurrences: initialRecurrences, cou
       .eq('recurrence_parent_id', rec.id).gte('date', toISO(new Date()));
     const ids = (coursCibles || []).map(c => c.id);
     if (ids.length > 0) {
-      const { count } = await supabase
+      // Historique pointé ET réservations actives — erreur de lecture =
+      // confirmation forte (fail-closed), plus jamais de fail-open muet.
+      const { data: presRows, error: presReadErr } = await supabase
         .from('presences')
-        .select('id', { count: 'exact', head: true })
-        .in('cours_id', ids)
-        .or('statut_pointage.in.(present,absent,excuse,absent_compte),annulation_tardive.eq.true');
-      if ((count || 0) > 0 && !confirm(
-        `⚠️ ${count} présence${count > 1 ? 's' : ''} déjà pointée${count > 1 ? 's' : ''} sur ces cours ` +
+        .select('statut_pointage, annulation_tardive')
+        .in('cours_id', ids);
+      const rows = presRows || [];
+      const nbHisto = presReadErr ? 1 : rows.filter(p =>
+        ['present', 'absent', 'excuse', 'absent_compte'].includes(p.statut_pointage) || p.annulation_tardive
+      ).length;
+      const nbResas = presReadErr ? 0 : rows.filter(presenceEstReservationActive).length;
+      if (nbHisto > 0 && !confirm(
+        `⚠️ ${nbHisto} présence${nbHisto > 1 ? 's' : ''} déjà pointée${nbHisto > 1 ? 's' : ''} sur ces cours ` +
         `— la suppression efface définitivement cet historique et détache les paiements liés.\n\nSupprimer quand même ?`
       )) return;
+      if (nbResas > 0 && !confirm(
+        `⚠️ ${nbResas} réservation${nbResas > 1 ? 's' : ''} active${nbResas > 1 ? 's' : ''} sur les séances à venir — ` +
+        `la suppression les efface SANS prévenir les élèves.\n\nPréfère « Annuler » chaque séance concernée (les élèves reçoivent un email et les carnets sont recrédités).\n\nSupprimer quand même ?`
+      )) return;
     }
-    // Supprime d'abord les cours futurs liés
-    await supabase.from('cours').delete().eq('recurrence_parent_id', rec.id).gte('date', toISO(new Date()));
+    // Supprime d'abord les cours futurs liés — et s'arrête si ça échoue
+    // (avant : la récurrence était supprimée quand même → cours orphelins
+    // toujours à l'agenda avec un toast « Récurrence supprimée »).
+    const { error: delCoursErr } = await supabase
+      .from('cours').delete()
+      .eq('recurrence_parent_id', rec.id).gte('date', toISO(new Date()));
+    if (delCoursErr) {
+      toast.error('Suppression des séances échouée : ' + delCoursErr.message);
+      return;
+    }
     // Puis la récurrence
     const { error } = await supabase.from('recurrences').delete().eq('id', rec.id);
-    if (!error) {
+    if (error) {
+      toast.error('Séances supprimées, mais la série reste listée : ' + error.message);
+    } else {
+      const restantes = recurrences.filter(r => r.id !== rec.id);
       setRecurrences(prev => prev.filter(r => r.id !== rec.id));
       setCours(prev => prev.filter(c => c.recurrence_parent_id !== rec.id));
-      setSelectedRecId(recurrences[0]?.id || null);
+      setSelectedRecId(restantes[0]?.id || null);
       toast.success('Récurrence supprimée');
     }
   };
@@ -313,8 +361,10 @@ export default function RecurrencesClient({ recurrences: initialRecurrences, cou
       if (rec.frequence === 'quotidien') include = true;
       else if (rec.frequence === 'hebdomadaire') include = day === startDay;
       else if (rec.frequence === 'bimensuel') {
-        const weeks = Math.floor((cursor - anchor) / (7 * 86400000));
-        include = day === startDay && weeks % 2 === 0;
+        // Jours civils via Date.UTC : le calcul en millisecondes locales
+        // perdait 1 h à l'heure d'été → parité décalée d'une semaine sur
+        // toute prolongation estivale d'une série ancrée en hiver (B1b).
+        include = day === startDay && semainesEntre(anchor, cursor) % 2 === 0;
       } else if (rec.frequence === 'mensuel') include = cursor.getDate() === anchor.getDate();
       else if (rec.frequence === 'personnalise') include = (rec.jours_semaine || []).includes(day);
 
@@ -338,7 +388,12 @@ export default function RecurrencesClient({ recurrences: initialRecurrences, cou
   const previewProlongation = useMemo(() => {
     if (!prolonger || !selected || !prolongerFin) return null;
     const today = toISO(new Date());
-    const dernieres = coursDeRec.map(c => c.date).sort();
+    // Source des dates existantes : le fetch complet de la série si dispo
+    // (sinon la fenêtre serveur, en attendant qu'il arrive).
+    const datesExistantes = prolongerExistantes
+      ? [...prolongerExistantes]
+      : coursDeRec.map(c => c.date);
+    const dernieres = [...datesExistantes].sort();
     const derniere = dernieres[dernieres.length - 1] || null;
     let depuis = today;
     if (derniere && derniere >= today) {
@@ -347,22 +402,34 @@ export default function RecurrencesClient({ recurrences: initialRecurrences, cou
       depuis = toISO(d);
     }
     if (prolongerFin < depuis) return { incluses: [], exclues: [], depuis };
-    const dejaPris = new Set(coursDeRec.map(c => c.date));
+    const dejaPris = new Set(datesExistantes);
     return { ...genererDatesProlongation(selected, depuis, prolongerFin, dejaPris, prolongerInclureVacances), depuis };
-  }, [prolonger, selected, prolongerFin, coursDeRec, prolongerInclureVacances]);
+  }, [prolonger, selected, prolongerFin, coursDeRec, prolongerInclureVacances, prolongerExistantes]);
 
-  const ouvrirProlonger = () => {
+  const ouvrirProlonger = async () => {
     if (!selected) return;
     // Suggestion par défaut : +8 semaines à partir d'aujourd'hui.
     const d = new Date();
     d.setDate(d.getDate() + 7 * 8);
     setProlongerFin(toISO(d));
     setProlongerInclureVacances(false);
+    setProlongerExistantes(null);
     setProlonger(true);
+    // Dédup sur les dates RÉELLES de la série, sans fenêtre ni cap.
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from('cours')
+      .select('date')
+      .eq('recurrence_parent_id', selected.id);
+    if (!error && data) setProlongerExistantes(new Set(data.map(c => c.date)));
+    else if (error) toast.error('Lecture des séances existantes impossible : ' + error.message);
   };
 
   const prolongerSerie = async () => {
     if (!selected || !previewProlongation || previewProlongation.incluses.length === 0) return;
+    // Pas d'insertion tant que la dédup complète n'est pas chargée (le fetch
+    // de l'ouverture du panneau prend < 1 s ; en cas d'échec, un toast l'a dit).
+    if (!prolongerExistantes) { toast.error('Un instant — vérification des séances existantes…'); return; }
     setProlongeant(true);
     const supabase = createClient();
     try {
@@ -391,6 +458,7 @@ export default function RecurrencesClient({ recurrences: initialRecurrences, cou
         recurrence_parent_id: selected.id,
         visibilite: frere?.visibilite || 'public',
         tarif_unitaire: frere?.tarif_unitaire ?? null,
+        client_pro_id: selected.client_pro_id || null,
         // Série à domicile (v44) : recopiée depuis la récurrence (audit
         // 2026-07-25 : prolonger oubliait le domicile → occurrences sans
         // l'élève, invisibles dans son espace).
@@ -416,14 +484,25 @@ export default function RecurrencesClient({ recurrences: initialRecurrences, cou
         if (presErr) toast.warning('Séances créées, mais inscription de l\'élève échouée : ' + presErr.message);
       }
 
+      // L'état local est mis à jour DÈS l'insert réussi : si l'update de
+      // date_fin échoue ensuite, un re-clic ne peut plus dupliquer (la dédup
+      // voit les nouvelles dates) — avant : « Erreur » + re-clic = doublons.
+      setCours(prev => [...prev, ...(crees || [])].sort((a, b) => a.date.localeCompare(b.date)));
+      setProlongerExistantes(prev => {
+        const s = new Set(prev || []);
+        for (const c of (crees || [])) s.add(c.date);
+        return s;
+      });
+
       const { error: recErr } = await supabase
         .from('recurrences')
         .update({ date_fin: prolongerFin })
         .eq('id', selected.id);
-      if (recErr) throw recErr;
-
-      setCours(prev => [...prev, ...(crees || [])].sort((a, b) => a.date.localeCompare(b.date)));
-      setRecurrences(prev => prev.map(r => r.id === selected.id ? { ...r, date_fin: prolongerFin } : r));
+      if (recErr) {
+        toast.warning(`Séances créées, mais la date de fin de la série n'a pas pu être enregistrée (${recErr.message}).`);
+      } else {
+        setRecurrences(prev => prev.map(r => r.id === selected.id ? { ...r, date_fin: prolongerFin } : r));
+      }
       setProlonger(false);
       toast.success(`Série prolongée : ${crees?.length || 0} séance${(crees?.length || 0) > 1 ? 's' : ''} créée${(crees?.length || 0) > 1 ? 's' : ''} jusqu'au ${new Date(prolongerFin + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })} ✓`);
     } catch (err) {
@@ -510,7 +589,7 @@ export default function RecurrencesClient({ recurrences: initialRecurrences, cou
                   <button type="button" onClick={ouvrirEdition} className="rec-icon-btn" title="Modifier le nom et le type">
                     <Pencil size={16} />
                   </button>
-                  <button type="button" onClick={() => toggleActif(selected)} className="rec-icon-btn" title={selected.actif ? 'Mettre en pause' : 'Réactiver'}>
+                  <button type="button" onClick={() => toggleActif(selected)} className="rec-icon-btn" title={selected.actif ? 'Mettre en pause (repère visuel — ne supprime ni ne crée aucune séance)' : 'Réactiver'}>
                     {selected.actif
                       ? <ToggleRight size={22} style={{ color: '#16a34a' }} />
                       : <ToggleLeft size={22} style={{ color: 'var(--text-muted)' }} />}
