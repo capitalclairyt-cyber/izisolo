@@ -1,4 +1,3 @@
-import * as Sentry from '@sentry/nextjs';
 import { withRoute } from '@/lib/api-route';
 import { createAdminClient } from '@/lib/supabase-admin';
 import { verifyStripeSignature, getCheckoutSessionAmount, getCheckoutSessionEmail } from '@/lib/stripe';
@@ -70,7 +69,6 @@ export const POST = withRoute({ auth: 'public' }, async ({ request }) => {
     return Response.json({ received: true });
   } catch (err) {
     reportError('[stripe/webhook] handler error:', err);
-    Sentry.captureException(err);
     return new Response(`Handler error: ${err.message}`, { status: 500 });
   }
 });
@@ -239,8 +237,7 @@ async function handleChargeRefunded(supabase, profileId, charge) {
   }
 
   if (!touched) {
-    // Remboursement orphelin : visible dans Sentry au lieu de disparaître
-    reportError('[stripe/webhook] refund non rattaché à un paiement:', charge.id);
-    Sentry.captureMessage(`[stripe/webhook] refund non rattaché : charge ${charge.id} (profile ${profileId})`);
+    // Remboursement orphelin : visible dans erreurs_app au lieu de disparaître
+    reportError('[stripe/webhook] refund non rattaché à un paiement:', charge.id, { profileId });
   }
 }

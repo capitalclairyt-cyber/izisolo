@@ -32,7 +32,7 @@
 import { ImageResponse } from 'next/og';
 import { withRoute } from '@/lib/api-route';
 
-export const runtime = 'nodejs'; // edge plante avec @sentry/nextjs sur certains setups
+export const runtime = 'nodejs'; // choisi à l'époque Sentry (edge plantait) — conservé tel quel, changer de runtime = hors périmètre purge
 
 // Palettes alignées sur celles de la landing (data-palette).
 // On hardcode les valeurs RGB car Satori ne supporte pas les CSS vars.

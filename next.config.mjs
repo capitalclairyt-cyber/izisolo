@@ -1,5 +1,4 @@
 import withPWA from 'next-pwa';
-import { withSentryConfig } from '@sentry/nextjs';
 
 const pwaConfig = withPWA({
   dest: 'public',
@@ -35,17 +34,6 @@ const nextConfig = {
   },
 };
 
-const sentryEnabled = !!process.env.SENTRY_DSN || !!process.env.NEXT_PUBLIC_SENTRY_DSN;
-
-const sentryOptions = {
-  silent: true,
-  org: process.env.SENTRY_ORG,
-  project: process.env.SENTRY_PROJECT,
-  widenClientFileUpload: true,
-  hideSourceMaps: true,
-  disableLogger: true,
-};
-
-const baseConfig = pwaConfig(nextConfig);
-
-export default sentryEnabled ? withSentryConfig(baseConfig, sentryOptions) : baseConfig;
+// SDK Sentry retiré en B2d (2026-07-25, décision D4) : le monitoring vit
+// dans reportError → erreurs_app → /admin/erreurs.
+export default pwaConfig(nextConfig);
