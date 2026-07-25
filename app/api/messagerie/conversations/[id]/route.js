@@ -1,4 +1,4 @@
-import { requireAuth } from '@/lib/api-auth';
+import { withRoute } from '@/lib/api-route';
 import { reportError } from '@/lib/report';
 
 export const runtime = 'nodejs';
@@ -9,14 +9,9 @@ export const dynamic = 'force-dynamic';
  * Retourne les métadonnées d'une conversation (pour afficher en header de
  * ChatRoom : titre, peer_label, etc.).
  */
-export async function GET(_request, { params }) {
-  let user, profile, supabase;
-  try {
-    ({ user, profile, supabase } = await requireAuth());
-  } catch (res) {
-    return res;
-  }
-  const { id: conversationId } = await params;
+export const GET = withRoute({ auth: 'user' }, async ({ params, auth }) => {
+  const { profile, supabase } = auth;
+  const { id: conversationId } = params;
 
   const { data: conv, error } = await supabase
     .from('conversations')
@@ -73,7 +68,7 @@ export async function GET(_request, { params }) {
       is_owner_pro,
     },
   });
-}
+});
 
 /**
  * PATCH /api/messagerie/conversations/[id]
@@ -84,15 +79,9 @@ export async function GET(_request, { params }) {
  *
  * Auth : seul le pro owner peut renommer (vérifié via profile_id = auth.uid()).
  */
-export async function PATCH(request, { params }) {
-  let supabase;
-  try {
-    ({ supabase } = await requireAuth());
-  } catch (res) {
-    return res;
-  }
-
-  const { id: conversationId } = await params;
+export const PATCH = withRoute({ auth: 'user' }, async ({ request, params, auth }) => {
+  const { supabase } = auth;
+  const { id: conversationId } = params;
 
   let body;
   try { body = await request.json(); } catch { return Response.json({ error: 'JSON invalide' }, { status: 400 }); }
@@ -129,4 +118,4 @@ export async function PATCH(request, { params }) {
   }
 
   return Response.json({ conversation: data });
-}
+});

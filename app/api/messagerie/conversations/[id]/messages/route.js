@@ -1,4 +1,4 @@
-import { requireAuth } from '@/lib/api-auth';
+import { withRoute } from '@/lib/api-route';
 import { sendMessage, resolveClientFromUserEmail } from '@/lib/messagerie';
 import { sendPushToUser, sendPushToEmail } from '@/lib/push-server';
 import { reportError } from '@/lib/report';
@@ -16,13 +16,9 @@ export const dynamic = 'force-dynamic';
  *   - Élève envoie en sender_type='eleve' (vérifie qu'il est membre + email match)
  */
 
-export async function GET(request, { params }) {
-  let user, profile, supabase;
-  try {
-    ({ user, profile, supabase } = await requireAuth());
-  } catch (res) { return res; }
-
-  const { id: conversationId } = await params;
+export const GET = withRoute({ auth: 'user' }, async ({ request, params, auth }) => {
+  const { supabase } = auth;
+  const { id: conversationId } = params;
   const url = new URL(request.url);
   const limit = Math.min(parseInt(url.searchParams.get('limit') || '50'), 200);
   const before = url.searchParams.get('before');
@@ -54,15 +50,11 @@ export async function GET(request, { params }) {
 
   // Asc pour affichage (oldest → newest)
   return Response.json({ messages: (messages || []).reverse() });
-}
+});
 
-export async function POST(request, { params }) {
-  let user, profile, supabase;
-  try {
-    ({ user, profile, supabase } = await requireAuth());
-  } catch (res) { return res; }
-
-  const { id: conversationId } = await params;
+export const POST = withRoute({ auth: 'user' }, async ({ request, params, auth }) => {
+  const { user, profile, supabase } = auth;
+  const { id: conversationId } = params;
 
   let body;
   try { body = await request.json(); } catch { return Response.json({ error: 'JSON invalide' }, { status: 400 }); }
@@ -183,4 +175,4 @@ export async function POST(request, { params }) {
     reportError('[messagerie] eleve send err:', err);
     return Response.json({ error: 'Erreur envoi' }, { status: 500 });
   }
-}
+});

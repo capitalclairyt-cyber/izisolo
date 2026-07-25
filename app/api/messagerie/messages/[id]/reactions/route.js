@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createServerClient } from '@/lib/supabase-server';
+import { withRoute } from '@/lib/api-route';
 import { escapeIlike } from '@/lib/utils';
 
 /**
@@ -11,11 +11,9 @@ import { escapeIlike } from '@/lib/utils';
  *
  * Auth : user doit être membre de la conversation du message.
  */
-export async function POST(request, { params }) {
-  const { id: messageId } = await params;
-  const supabase = await createServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
+export const POST = withRoute({ auth: 'user' }, async ({ request, params, auth }) => {
+  const { id: messageId } = params;
+  const { user, profile, supabase } = auth;
 
   let body;
   try { body = await request.json(); } catch { return NextResponse.json({ error: 'JSON invalide' }, { status: 400 }); }
@@ -32,23 +30,15 @@ export async function POST(request, { params }) {
     .single();
   if (!message) return NextResponse.json({ error: 'Message introuvable' }, { status: 404 });
 
-  // Déterminer le user_type + user_id du caller
-  // Si profile existe avec id = auth.uid() → pro
-  // Sinon, check clients table avec lower(email) = lower(auth.email()) → eleve
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('id')
-    .eq('id', user.id)
-    .maybeSingle();
-
+  // Déterminer le user_type + user_id du caller : profile chargé par
+  // requireAuth (null pour un élève post-v57) → pro, sinon fiche client
+  // par email (pas d'auth_user_id sur clients).
   let userType, userId;
   if (profile) {
     userType = 'pro';
     userId = profile.id;
   } else {
-    // L'élève est identifié via son email (pas via auth_user_id qui n'existe pas
-    // sur la table clients dans IziSolo). On prend le 1er match si plusieurs
-    // studios partagent le même email (cas rare).
+    // On prend le 1er match si plusieurs studios partagent le même email (cas rare).
     const { data: client } = await supabase
       .from('clients')
       .select('id')
@@ -89,7 +79,7 @@ export async function POST(request, { params }) {
   }
 
   return NextResponse.json({ ok: true, action: 'added' });
-}
+});
 
 // Transforme les erreurs Postgres techniques en messages parlants
 function humanizeReactionError(err) {
@@ -110,24 +100,16 @@ function humanizeReactionError(err) {
  * GET /api/messagerie/messages/[id]/reactions
  * Liste les réactions sur un message + indique si l'user courant les a posées.
  */
-export async function GET(request, { params }) {
-  const { id: messageId } = await params;
-  const supabase = await createServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
+export const GET = withRoute({ auth: 'user' }, async ({ params, auth }) => {
+  const { id: messageId } = params;
+  const { user, profile, supabase } = auth;
 
   const { data: reactions } = await supabase
     .from('messages_reactions')
     .select('emoji, user_type, user_id')
     .eq('message_id', messageId);
 
-  // Détecter celles du caller
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('id')
-    .eq('id', user.id)
-    .maybeSingle();
-
+  // Détecter celles du caller (profile = pro, cf. POST)
   let myType, myId;
   if (profile) {
     myType = 'pro'; myId = profile.id;
@@ -147,4 +129,4 @@ export async function GET(request, { params }) {
   }));
 
   return NextResponse.json({ reactions: decorated });
-}
+});

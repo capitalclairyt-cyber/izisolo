@@ -1,4 +1,4 @@
-import { requireAuth } from '@/lib/api-auth';
+import { withRoute } from '@/lib/api-route';
 import {
   getOrCreateConversationClient,
   getOrCreateConversationCours,
@@ -19,13 +19,8 @@ export const dynamic = 'force-dynamic';
  * Réponse :
  *   { conversations: [ {id, type, titre, last_message_at, unread_count, peer_label, peer_avatar } ] }
  */
-export async function GET(request) {
-  let user, profile, supabase;
-  try {
-    ({ user, profile, supabase } = await requireAuth());
-  } catch (res) {
-    return res;
-  }
+export const GET = withRoute({ auth: 'user' }, async ({ auth }) => {
+  const { user, profile, supabase } = auth;
 
   // Détecter pro vs élève. Note : le trigger Supabase crée un profile pour
   // chaque user (donc profile?.id est truthy même pour un élève). On distingue
@@ -34,7 +29,7 @@ export async function GET(request) {
     return getProConversations(supabase, profile.id);
   }
   return getEleveConversations(supabase, user.email);
-}
+});
 
 async function getProConversations(supabase, profileId) {
   try {
@@ -128,7 +123,7 @@ async function getProConversations(supabase, profileId) {
           .not('client_id', 'is', null)
           .maybeSingle()).data;
         eleve_last_read_at = eleveMember?.last_read_at || null;
-      } catch (_) {}
+      } catch { /* décoratif (état lu/non lu des annonces) — fail-open, la liste s'affiche sans */ }
 
       return {
         id: c.id,
@@ -269,13 +264,8 @@ async function getEleveConversations(supabase, userEmail) {
  *   Crée ou retrouve la conversation 1-to-1 entre l'élève (résolu via auth.email)
  *   et le pro de ce studio.
  */
-export async function POST(request) {
-  let user, profile, supabase;
-  try {
-    ({ user, profile, supabase } = await requireAuth());
-  } catch (res) {
-    return res;
-  }
+export const POST = withRoute({ auth: 'user' }, async ({ request, auth }) => {
+  const { user, profile, supabase } = auth;
 
   let body;
   try { body = await request.json(); } catch { return Response.json({ error: 'JSON invalide' }, { status: 400 }); }
@@ -323,4 +313,4 @@ export async function POST(request) {
   }
 
   return Response.json({ error: 'Requête invalide' }, { status: 400 });
-}
+});

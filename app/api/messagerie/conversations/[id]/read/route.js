@@ -1,4 +1,4 @@
-import { requireAuth } from '@/lib/api-auth';
+import { withRoute } from '@/lib/api-route';
 import { markRead, resolveClientFromUserEmail } from '@/lib/messagerie';
 
 export const runtime = 'nodejs';
@@ -8,13 +8,9 @@ export const dynamic = 'force-dynamic';
  * POST /api/messagerie/conversations/[id]/read
  * Marque la conversation comme lue par le viewer (pro ou élève).
  */
-export async function POST(_request, { params }) {
-  let user, profile, supabase;
-  try {
-    ({ user, profile, supabase } = await requireAuth());
-  } catch (res) { return res; }
-
-  const { id: conversationId } = await params;
+export const POST = withRoute({ auth: 'user' }, async ({ params, auth }) => {
+  const { user, profile, supabase } = auth;
+  const { id: conversationId } = params;
 
   const { data: conv } = await supabase
     .from('conversations')
@@ -33,4 +29,4 @@ export async function POST(_request, { params }) {
 
   await markRead(supabase, conversationId, 'eleve', client.id);
   return Response.json({ ok: true });
-}
+});

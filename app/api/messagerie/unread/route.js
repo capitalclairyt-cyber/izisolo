@@ -1,4 +1,4 @@
-import { requireAuth } from '@/lib/api-auth';
+import { withRoute } from '@/lib/api-route';
 import { countUnread } from '@/lib/messagerie';
 import { escapeIlike } from '@/lib/utils';
 
@@ -9,11 +9,8 @@ export const dynamic = 'force-dynamic';
  * GET /api/messagerie/unread
  * Retourne le compteur global de messages non lus pour le viewer.
  */
-export async function GET() {
-  let user, profile, supabase;
-  try {
-    ({ user, profile, supabase } = await requireAuth());
-  } catch (res) { return res; }
+export const GET = withRoute({ auth: 'user' }, async ({ auth }) => {
+  const { user, profile, supabase } = auth;
 
   // Pro = a un studio_slug configuré. Sinon élève.
   if (profile?.studio_slug) {
@@ -31,4 +28,4 @@ export async function GET() {
     total += await countUnread(supabase, 'eleve', c.id);
   }
   return Response.json({ count: total });
-}
+});

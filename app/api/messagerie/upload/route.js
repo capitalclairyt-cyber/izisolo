@@ -1,5 +1,5 @@
 import { put } from '@vercel/blob';
-import { requireAuth } from '@/lib/api-auth';
+import { withRoute } from '@/lib/api-route';
 import { checkRateLimitIP } from '@/lib/antibot';
 import { reportError } from '@/lib/report';
 
@@ -18,14 +18,12 @@ const ALLOWED = [...ALLOWED_IMAGES, ...ALLOWED_FILES];
  *
  * Variable d'env requise : BLOB_READ_WRITE_TOKEN
  */
-export async function POST(request) {
-  let user, supabase;
-  try {
-    ({ user, supabase } = await requireAuth());
-  } catch (res) { return res; }
+export const POST = withRoute({ auth: 'user' }, async ({ request, auth }) => {
+  const { user } = auth;
 
   // Un blob = jusqu'à 5 Mo sur le store partagé → on borne la cadence
   // (30 pièces jointes / heure / IP, largement au-dessus d'un usage réel).
+  // Rate-limit gardé en interne : message d'erreur dédié (≠ générique wrapper).
   const rl = await checkRateLimitIP(request, { max: 30, windowSeconds: 3600, scope: 'messagerie-upload' });
   if (!rl.ok) {
     return Response.json({ error: 'Trop d\'envois de fichiers — réessaie dans un moment.' }, { status: 429 });
@@ -82,4 +80,4 @@ export async function POST(request) {
     size: file.size,
     type: file.type,
   });
-}
+});

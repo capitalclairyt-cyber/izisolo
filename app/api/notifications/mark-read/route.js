@@ -1,27 +1,32 @@
 import { NextResponse } from 'next/server';
-import { createServerClient } from '@/lib/supabase-server';
+import { withRoute } from '@/lib/api-route';
+import { reportError } from '@/lib/report';
 
 // Marquer une notif ou toutes comme lues
-export async function POST(request) {
-  const supabase = await createServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
-
+export const POST = withRoute({ auth: 'user' }, async ({ request, auth }) => {
+  const { user, supabase } = auth;
   const { id, all } = await request.json();
 
+  // Erreurs vérifiées (B2c) : un update muet laissait le badge « non lu »
+  // ré-apparaître sans aucun signal ni côté prof ni dans erreurs_app.
+  let error = null;
   if (all) {
-    await supabase
+    ({ error } = await supabase
       .from('notifications')
       .update({ lu: true })
       .eq('profile_id', user.id)
-      .eq('lu', false);
+      .eq('lu', false));
   } else if (id) {
-    await supabase
+    ({ error } = await supabase
       .from('notifications')
       .update({ lu: true })
       .eq('id', id)
-      .eq('profile_id', user.id);
+      .eq('profile_id', user.id));
+  }
+  if (error) {
+    reportError('[notifications/mark-read]', error);
+    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 
   return NextResponse.json({ ok: true });
-}
+});

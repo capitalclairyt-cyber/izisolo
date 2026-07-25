@@ -1,18 +1,13 @@
 import { NextResponse } from 'next/server';
-import { createServerClient } from '@/lib/supabase-server';
+import { withRoute } from '@/lib/api-route';
 import { wantsNotif } from '@/lib/notif-prefs';
 
-export async function POST() {
-  const supabase = await createServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+export const POST = withRoute({ auth: 'user' }, async ({ auth }) => {
+  const { user, supabase } = auth;
 
-  // Préférences unifiées (canal 'inapp' = cloche) + anniversaire (feature à part)
-  const { data: prof } = await supabase
-    .from('profiles')
-    .select('notif_prefs, anniversaire_mode')
-    .eq('id', user.id)
-    .single();
+  // Préférences unifiées (canal 'inapp' = cloche) + anniversaire (feature à
+  // part) — profil déjà chargé par requireAuth (select *), pas de re-requête.
+  const prof = auth.profile;
   const prefs = prof?.notif_prefs;
   const wantInapp = (type) => wantsNotif(prefs, type, 'prof', 'inapp');
 
@@ -212,4 +207,4 @@ export async function POST() {
     .order('created_at', { ascending: false });
 
   return NextResponse.json({ notifications: unread || [] });
-}
+});
