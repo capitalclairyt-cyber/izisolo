@@ -45,11 +45,22 @@ export async function GET(request) {
   const coursIds = coursDemain.map(c => c.id);
   const profileIds = [...new Set(coursDemain.map(c => c.profile_id))];
 
-  // 2. Présences sur ces cours (on exclut absent/excusé/annulé).
-  const { data: presences } = await supabaseAdmin
-    .from('presences')
-    .select('id, cours_id, client_id, statut_pointage, annulation_tardive')
-    .in('cours_id', coursIds);
+  // 2. Présences sur ces cours — par LOTS de 200 ids (limite d'URL
+  // PostgREST : au-delà de ~200 cours/jour tous studios, la requête cassait
+  // → zéro rappel J-1 ce jour-là, en silence — B1g) + erreurs lues.
+  const presences = [];
+  for (let i = 0; i < coursIds.length; i += 200) {
+    const lot = coursIds.slice(i, i + 200);
+    const { data: lotPres, error: presErr } = await supabaseAdmin
+      .from('presences')
+      .select('id, cours_id, client_id, statut_pointage, annulation_tardive')
+      .in('cours_id', lot);
+    if (presErr) {
+      reportError('[cron/alertes] presences err:', presErr, { route: '/api/cron/alertes' });
+      continue;
+    }
+    presences.push(...(lotPres || []));
+  }
   // annulation_tardive : l'élève a annulé (et payé la sanction) — lui rappeler
   // « tu es inscrit·e demain ! » était vexant (audit 2026-07-25). Idem
   // absent_compte/declinee (statuts posés par la résolution de cas).
@@ -63,11 +74,20 @@ export async function GET(request) {
 
   // 3. Clients + profils en batch (pas de N+1).
   const clientIds = [...new Set(pres.map(p => p.client_id))];
-  const { data: clients } = await supabaseAdmin
-    .from('clients')
-    .select('id, prenom, nom, email, telephone, notif_prefs')
-    .in('id', clientIds);
-  const clientById = Object.fromEntries((clients || []).map(c => [c.id, c]));
+  const clients = [];
+  for (let i = 0; i < clientIds.length; i += 200) {
+    const lot = clientIds.slice(i, i + 200);
+    const { data: lotClients, error: cliErr } = await supabaseAdmin
+      .from('clients')
+      .select('id, prenom, nom, email, telephone, notif_prefs')
+      .in('id', lot);
+    if (cliErr) {
+      reportError('[cron/alertes] clients err:', cliErr, { route: '/api/cron/alertes' });
+      continue;
+    }
+    clients.push(...(lotClients || []));
+  }
+  const clientById = Object.fromEntries(clients.map(c => [c.id, c]));
 
   const { data: profiles } = await supabaseAdmin
     .from('profiles')
@@ -100,6 +120,10 @@ export async function GET(request) {
           profile, client,
           type: 'rappel_cours',
           relatedId: p.id,
+          // replyTo = la PROF : une élève qui répond « je ne pourrai pas
+          // venir » écrivait chez IziSolo, le message se perdait (B1g —
+          // la plomberie replyTo existait, aucun appelant ne la remplissait).
+          proEmail: profile.email_contact || null,
           prefsOverride: { email: true, sms: false },
           contexte: { cours_nom: cours.nom, date: dateStr, heure: heureStr },
           templates: {

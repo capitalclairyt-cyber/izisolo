@@ -69,7 +69,7 @@ export async function GET(request) {
       .from('abonnements')
       .select(`
         id, offre_nom, type, seances_total, seances_utilisees, date_fin, statut,
-        clients(id, prenom, nom, email, telephone, niveau, statut)
+        clients(id, prenom, nom, email, telephone, niveau, statut, notif_prefs)
       `)
       .eq('profile_id', profile.id);
 
@@ -198,7 +198,9 @@ Pour assurer la continuité de tes cours, pense à le renouveler avant cette dat
     const clientsMap = new Map();
     for (const abo of (abos || [])) {
       const c = abo.clients;
-      if (!c?.id) continue;
+      // Une fiche ARCHIVÉE avec un vieil abo entrait en PASS 2 et recevait
+      // les emails automatiques du studio (B1g) — alignée sur clientsSeuls.
+      if (!c?.id || c.statut === 'archive') continue;
       if (!clientsMap.has(c.id)) clientsMap.set(c.id, { client: c, abos: [] });
       clientsMap.get(c.id).abos.push(abo);
     }
@@ -213,32 +215,44 @@ Pour assurer la continuité de tes cours, pense à le renouveler avant cette dat
       if (!clientsMap.has(c.id)) clientsMap.set(c.id, { client: c, abos: [] });
     }
 
-    // Pour les conditions "derniere_visite_jours" et "nb_reservations_30j_min",
-    // on charge le contexte par client (présences récentes).
+    // Contexte présences pour "derniere_visite_jours" / "nb_reservations_30j" :
+    // UNE fenêtre bornée à 365 j, jointure !inner, paginée avec erreurs lues.
+    // L'ancien couple de requêtes était doublement faux (B1g) : le filtre
+    // 30 j SANS !inner ne filtrait pas les lignes parentes (cap 1000 →
+    // échantillon arbitraire → règles « Régulier » mortes dès ~1000
+    // présences), et « dernière visite » était triée par UUID ALÉATOIRE
+    // (limit 2000 plafonné à 1000) → emails « tu nous manques » envoyés à
+    // des habituées — chaque jour, grâce au dédup NULL (autre rouge B1g).
+    // Au-delà de 365 j sans venir = traité comme « jamais venue » (même
+    // matching pour tout seuil d'inactivité raisonnable).
     const il30j = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
-    const { data: presences30j } = await supabase
-      .from('presences')
-      .select('client_id, cours:cours_id (date)')
-      .eq('profile_id', profile.id)
-      .gte('cours.date', il30j);
-
-    const ctxByClient = new Map();
-    for (const p of (presences30j || [])) {
-      if (!p.client_id || !p.cours?.date) continue;
-      const c = ctxByClient.get(p.client_id) || { dates: [] };
-      c.dates.push(p.cours.date);
-      ctxByClient.set(p.client_id, c);
+    const horizon = new Date(Date.now() - 365 * 86400000).toISOString().slice(0, 10);
+    const presWindow = [];
+    for (let page = 0; page < 5; page++) {
+      const { data: lot, error: presErr } = await supabase
+        .from('presences')
+        .select('client_id, cours:cours_id!inner(date)')
+        .eq('profile_id', profile.id)
+        .gte('cours.date', horizon)
+        .order('created_at', { ascending: false })
+        .range(page * 1000, page * 1000 + 999);
+      if (presErr) {
+        reportError('[cron notifs] presences fenêtre err:', presErr, { route: '/api/cron/notifs-eleves' });
+        totalErrors++;
+        break;
+      }
+      presWindow.push(...(lot || []));
+      if (!lot || lot.length < 1000) break;
     }
-    // Charger aussi la dernière présence de chaque client (pour derniere_visite_jours)
-    const { data: dernieresPresences } = await supabase
-      .from('presences')
-      .select('client_id, cours:cours_id (date)')
-      .eq('profile_id', profile.id)
-      .order('id', { ascending: false })
-      .limit(2000);
+    const ctxByClient = new Map();
     const lastByClient = new Map();
-    for (const p of (dernieresPresences || [])) {
+    for (const p of presWindow) {
       if (!p.client_id || !p.cours?.date) continue;
+      if (p.cours.date >= il30j && p.cours.date <= today) {
+        const c = ctxByClient.get(p.client_id) || { dates: [] };
+        c.dates.push(p.cours.date);
+        ctxByClient.set(p.client_id, c);
+      }
       if (!lastByClient.has(p.client_id) || lastByClient.get(p.client_id) < p.cours.date) {
         lastByClient.set(p.client_id, p.cours.date);
       }
@@ -262,7 +276,11 @@ Pour assurer la continuité de tes cours, pense à le renouveler avant cette dat
             const r = await sendNotifEleve(supabase, {
               profile, client,
               type: typeNotif,
-              relatedId: null,
+              // relatedId NON NULL obligatoire (B1g, rouge) : l'index UNIQUE
+              // (client, type, related_id, channel) considère les NULL comme
+              // DISTINCTS → « une seule fois par règle » devenait un email
+              // par JOUR tant que la condition restait vraie.
+              relatedId: regle.id,
               contexte: {},
               prefsOverride: { email: true, sms: false },
               templates: {
@@ -281,7 +299,7 @@ Pour assurer la continuité de tes cours, pense à le renouveler avant cette dat
             const r = await sendNotifEleve(supabase, {
               profile, client,
               type: typeNotif,
-              relatedId: null,
+              relatedId: regle.id, // même dédup NON NULL que l'email (B1g)
               contexte: {},
               prefsOverride: { email: false, sms: true },
               templates: {
@@ -299,14 +317,18 @@ Pour assurer la continuité de tes cours, pense à le renouveler avant cette dat
             // ⚠️ Colonnes réelles v10 = titre/corps/data (l'ancien insert
             // visait message/client_id, inexistantes → 42703 avalé : l'action
             // « Créer une alerte pro » n'a JAMAIS rien créé — audit 2026-07-25).
-            const { error: alerteErr } = await supabase.from('notifications').insert({
+            // ref_key = dédup par (règle, client) : l'insert nu empilait une
+            // cloche NEUVE par client matché et par jour de cron (B1g) —
+            // même patron que le rappel de pointage (alertes).
+            const { error: alerteErr } = await supabase.from('notifications').upsert({
               profile_id: profile.id,
               type: 'regle_match',
+              ref_key: `regle_${regle.id}_${client.id}`,
               titre: regle.nom || 'Règle déclenchée',
               corps: `${client.prenom || ''} ${client.nom || ''} — ${params.message || regle.nom || ''}`.trim(),
               data: { client_id: client.id },
               lu: false,
-            });
+            }, { onConflict: 'profile_id,ref_key', ignoreDuplicates: true });
             if (alerteErr) reportError('[cron notifs] alerte pro:', alerteErr.message);
             else totalReglesDeclenchees++;
           }

@@ -145,7 +145,7 @@ function RegleBuilderModal({ onClose, onSave, editingRegle }) {
                 onChange={e => handleActionChange(e.target.value)}
               >
                 {ACTIONS.map(a => (
-                  <option key={a.type} value={a.type}>
+                  <option key={a.type} value={a.type} disabled={a.bientot}>
                     {a.label}{a.bientot ? ' ✦ bientôt' : ''}
                   </option>
                 ))}

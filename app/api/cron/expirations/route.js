@@ -43,11 +43,24 @@ export async function GET(request) {
   let listeAttentePurgee = 0;
   try {
     const il60jours = new Date(Date.now() - 60 * 86400000).toISOString().split('T')[0];
-    const { data: coursVieux } = await supabaseAdmin
-      .from('cours')
-      .select('id')
-      .lt('date', il60jours);
-    const vieuxIds = (coursVieux || []).map(c => c.id);
+    // Paginé (B1g) : sans .range, le cap PostgREST 1000 renvoyait les MÊMES
+    // 1000 vieux cours chaque nuit (jamais supprimés) → la purge stagnait et
+    // liste_attente s'accumulait sur les cours 1001+.
+    const vieuxIds = [];
+    for (let page = 0; page < 5; page++) {
+      const { data: coursVieux, error: vieuxErr } = await supabaseAdmin
+        .from('cours')
+        .select('id')
+        .lt('date', il60jours)
+        .order('date', { ascending: true })
+        .range(page * 1000, page * 1000 + 999);
+      if (vieuxErr) {
+        reportError('[cron/expirations] cours vieux err:', vieuxErr, { route: '/api/cron/expirations' });
+        break;
+      }
+      vieuxIds.push(...(coursVieux || []).map(c => c.id));
+      if (!coursVieux || coursVieux.length < 1000) break;
+    }
     // Supprime par lots de 200 ids pour rester sous la limite d'URL PostgREST.
     for (let i = 0; i < vieuxIds.length; i += 200) {
       const lot = vieuxIds.slice(i, i + 200);
@@ -85,28 +98,42 @@ export async function GET(request) {
   // ── Auto-statut clients ──────────────────────────────────────────────────
   let promoCount = 0;
 
-  // prospect → actif : dès qu'il y a au moins 1 paiement 'paid'
-  const { data: prospects } = await supabaseAdmin
+  // prospect → actif : dès qu'il y a au moins 1 paiement 'paid'.
+  // Batché par 200 (limite d'URL PostgREST) + erreurs LUES : le .in() non
+  // batché cassait au-delà de ~200 prospects → paidClientIds null → plus
+  // AUCUNE promotion, toutes les nuits, sans un log (B1g).
+  const { data: prospects, error: prospErr } = await supabaseAdmin
     .from('clients')
     .select('id')
     .eq('statut', 'prospect');
+  if (prospErr) reportError('[cron/expirations] prospects err:', prospErr, { route: '/api/cron/expirations' });
 
   if (prospects?.length) {
-    const { data: paidClientIds } = await supabaseAdmin
-      .from('paiements')
-      .select('client_id')
-      .eq('statut', 'paid')
-      .in('client_id', prospects.map(c => c.id));
-
-    const toActivate = [...new Set((paidClientIds || []).map(p => p.client_id))];
-    if (toActivate.length) {
-      const { data: activated } = await supabaseAdmin
+    const toActivateSet = new Set();
+    for (let i = 0; i < prospects.length; i += 200) {
+      const lot = prospects.slice(i, i + 200).map(c => c.id);
+      const { data: paidClientIds, error: paidErr } = await supabaseAdmin
+        .from('paiements')
+        .select('client_id')
+        .eq('statut', 'paid')
+        .in('client_id', lot);
+      if (paidErr) {
+        reportError('[cron/expirations] paiements prospects err:', paidErr, { route: '/api/cron/expirations' });
+        continue;
+      }
+      for (const p of (paidClientIds || [])) toActivateSet.add(p.client_id);
+    }
+    const toActivate = [...toActivateSet];
+    for (let i = 0; i < toActivate.length; i += 200) {
+      const lot = toActivate.slice(i, i + 200);
+      const { data: activated, error: actErr } = await supabaseAdmin
         .from('clients')
         .update({ statut: 'actif' })
-        .in('id', toActivate)
+        .in('id', lot)
         .eq('statut', 'prospect')
         .select('id');
-      promoCount = activated?.length || 0;
+      if (actErr) reportError('[cron/expirations] promotion err:', actErr, { route: '/api/cron/expirations' });
+      promoCount += activated?.length || 0;
     }
   }
 
@@ -169,7 +196,7 @@ export async function GET(request) {
         ? `Ton essai IziSolo se termine ${finLe ? `le ${finLe}` : 'très bientôt'}`
         : `Ton essai IziSolo se termine dans ${jours} jours`;
       try {
-        await sendEmail({
+        const r = await sendEmail({
           categorie: 'transactionnel',
           to,
           subject: sujet,
@@ -178,7 +205,7 @@ export async function GET(request) {
               <h2 style="color:#b87333;margin:0 0 6px;">Ton essai touche à sa fin</h2>
               <p style="color:#555;margin:0 0 14px;">Bonjour ${prof.prenom || ''},</p>
               <p style="color:#555;margin:0 0 14px;">
-                Ton essai gratuit de 14 jours se termine ${jours <= 1 ? 'demain' : `dans ${jours} jours`}.
+                Ton essai gratuit de 14 jours se termine ${jours <= 1 ? (finLe ? `le ${finLe}` : 'très bientôt') : `dans ${jours} jours`}.
                 Pour continuer à gérer ton studio sans interruption, choisis ton plan dès maintenant.
               </p>
               <div style="text-align:center;margin:24px 0;">
@@ -192,10 +219,21 @@ export async function GET(request) {
             </div>
           `,
         });
-        await supabaseAdmin
+        // Échec d'envoi = PAS de flag (B1g) : le flag posé sur un envoi raté
+        // signifiait « la prof ne sera JAMAIS relancée », conversion perdue
+        // en silence. Et l'update du flag est lui aussi vérifié.
+        if (!r.ok) {
+          reportError('[cron/expirations] trial reminder envoi échoué:', String(r.error || r.skipped || 'send failed'), { route: '/api/cron/expirations' });
+          continue;
+        }
+        const { error: flagErr } = await supabaseAdmin
           .from('profiles')
           .update(isJ1 ? { trial_reminder_sent_j1: true } : { trial_reminder_sent_j3: true })
           .eq('id', prof.id);
+        if (flagErr) {
+          reportError('[cron/expirations] flag trial err:', flagErr, { route: '/api/cron/expirations' });
+          continue;
+        }
         if (isJ1) trialJ1++; else trialJ3++;
       } catch (e) {
         reportError('[cron/expirations] trial reminder err', prof.id, e?.message);
