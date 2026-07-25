@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { Clock, MapPin, Calendar, Users, ArrowLeft, CheckCircle, AlertCircle, Loader, Mail, Shield } from 'lucide-react';
 import { useToast } from '@/components/ui/ToastProvider';
-import { getDelaiPourCours, evaluerAnnulation, formatDateLimite } from '@/lib/regles-annulation';
+import { getDelaiPourCours, evaluerAnnulation, formatDateLimite } from '@/lib/regles-metier';
 
 const MOIS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
 const JOURS = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];

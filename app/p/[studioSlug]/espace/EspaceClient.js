@@ -9,7 +9,7 @@ import PushPrompt from '@/components/push/PushPrompt';
 import NotifPrefsPanel from '@/components/push/NotifPrefsPanel';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/components/ui/ToastProvider';
-import { evaluerAnnulation, formatDateLimite } from '@/lib/regles-annulation';
+import { evaluerAnnulation, formatDateLimite } from '@/lib/regles-metier';
 import { toneForCours, toneForPaiement } from '@/lib/tones';
 
 const STRIPE_TYPE_ICONS = { carnet: Ticket, abonnement: CalendarCheck, cours_unique: Zap };

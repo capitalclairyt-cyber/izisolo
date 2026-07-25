@@ -14,8 +14,10 @@
  * pour être déterministes quel que soit le fuseau de la machine de test.
  */
 import { test, expect } from '@playwright/test';
-import { evaluerAnnulation, formatDateLimite, getReglesAnnulation, getDelaiPourCours } from '../../lib/regles-annulation.js';
-import { getRegle, defaultRegles, shouldAutoApply, getChoixLabel, CASES } from '../../lib/regles-metier.js';
+import {
+  evaluerAnnulation, formatDateLimite, getReglesAnnulation, getDelaiPourCours,
+  getRegle, defaultRegles, shouldAutoApply, getChoixLabel, CASES,
+} from '../../lib/regles-metier.js';
 
 const PROFILE_24H = { regles_annulation: { delai_heures: 24 } };
 
