@@ -263,8 +263,9 @@ async function getData(studioSlug, userEmail) {
   const presWorkshop = all.filter(p =>
     Number(p.cours?.tarif_unitaire) > 0
     && (p.type_presence || 'normal') === 'normal'          // essai/offert = gratuit
-    && p.statut_pointage !== 'absent'
-    && p.statut_pointage !== 'excuse'
+    // annule/declinee = résa annulée côté studio : plus rien à régler
+    // (miroir du fix Revenus — B1f).
+    && !['absent', 'excuse', 'annule', 'declinee'].includes(p.statut_pointage)
     && !p.cours?.est_annule
   );
   let seancesWorkshopDues = [];

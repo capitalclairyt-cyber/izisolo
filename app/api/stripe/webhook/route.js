@@ -189,34 +189,50 @@ async function handleChargeRefunded(supabase, profileId, charge) {
   // dans stripe_session_id (cs_…) → AUCUN remboursement n'était jamais
   // répercuté. On matche désormais sur stripe_payment_intent (stocké à
   // l'encaissement depuis v55), avec fallback legacy sur la session.
-  const notesRembourse = `[REMBOURSÉ ${new Date().toISOString().slice(0, 10)}] Stripe charge: ${charge.id}`;
+  // B1f : un remboursement PARTIEL (5 € sur 50 €) basculait TOUT le paiement
+  // « overdue » → gonflait « à encaisser » chez la prof ET « À régler » chez
+  // l'élève (contraire à la promesse du code espace) ; et les notes (trace
+  // « Stripe · email ») étaient ÉCRASÉES. Désormais : partiel = note ajoutée,
+  // statut intact ; complet = overdue (sémantique existante) + note AJOUTÉE.
+  const totalRefund = Number(charge.amount_refunded || 0);
+  const totalCharge = Number(charge.amount || 0);
+  const remboursementComplet = totalCharge > 0 && totalRefund >= totalCharge;
+  const montantStr = (totalRefund / 100).toFixed(2).replace('.', ',');
+  const noteAjout = `[${remboursementComplet ? 'REMBOURSÉ' : `REMBOURSEMENT PARTIEL ${montantStr} €`} ${new Date().toISOString().slice(0, 10)}] Stripe charge: ${charge.id}`;
   const ID_FORMAT = /^[a-zA-Z0-9_]+$/; // ids Stripe : pas d'injection PostgREST
 
   let touched = 0;
 
+  const majPaiements = async (col, val) => {
+    const { data: rows, error: selErr } = await supabase
+      .from('paiements')
+      .select('id, notes')
+      .eq('profile_id', profileId)
+      .eq(col, val);
+    if (selErr) {
+      reportError(`[stripe/webhook] refund select (${col}) error:`, selErr);
+      return 0;
+    }
+    let n = 0;
+    for (const row of (rows || [])) {
+      const notes = [row.notes, noteAjout].filter(Boolean).join('\n');
+      const patch = remboursementComplet ? { statut: 'overdue', notes } : { notes };
+      const { error } = await supabase.from('paiements').update(patch).eq('id', row.id);
+      if (error) reportError(`[stripe/webhook] refund update (${col}) error:`, error);
+      else n++;
+    }
+    return n;
+  };
+
   const paymentIntent = typeof charge.payment_intent === 'string' ? charge.payment_intent : null;
   if (paymentIntent && ID_FORMAT.test(paymentIntent)) {
-    const { data, error } = await supabase
-      .from('paiements')
-      .update({ statut: 'overdue', notes: notesRembourse })
-      .eq('profile_id', profileId)
-      .eq('stripe_payment_intent', paymentIntent)
-      .select('id');
-    if (error) reportError('[stripe/webhook] refund update (pi) error:', error);
-    else touched = data?.length || 0;
+    touched = await majPaiements('stripe_payment_intent', paymentIntent);
   }
 
   // Fallback : metadata.session_id (paiements antérieurs à v55)
   const sessionId = charge.metadata?.session_id || null;
   if (!touched && sessionId && ID_FORMAT.test(sessionId)) {
-    const { data, error } = await supabase
-      .from('paiements')
-      .update({ statut: 'overdue', notes: notesRembourse })
-      .eq('profile_id', profileId)
-      .eq('stripe_session_id', sessionId)
-      .select('id');
-    if (error) reportError('[stripe/webhook] refund update (session) error:', error);
-    else touched = data?.length || 0;
+    touched = await majPaiements('stripe_session_id', sessionId);
   }
 
   if (!touched) {

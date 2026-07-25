@@ -567,11 +567,18 @@ export default function PointageClient({ cours, presences: initialPresences, tou
   //   - carnet lié/résolu → séance prépayée (« sur carnet ») ;
   //   - sinon pay-as-you-go non réglé → attendu (tarif_unitaire si connu).
   const recapFinancier = useMemo(() => {
-    const actives = presences.filter(p =>
-      !p.annulation_tardive
-      && (p.type_presence || 'normal') === 'normal'
-      && getStatut(p) !== 'excuse'
-    );
+    const actives = presences.filter(p => {
+      if (p.annulation_tardive) return false;
+      if ((p.type_presence || 'normal') !== 'normal') return false;
+      const st = getStatut(p);
+      // annule/declinee = résas annulées (lignes info) ; absent « souple »
+      // (non décompté, non réglé) ne doit rien — le prévisionnel 💰 affichait
+      // de l'argent qui ne viendrait jamais (B1f). Un absent qui avait DÉJÀ
+      // réglé sa séance reste compté (l'encaissé est réel).
+      if (['excuse', 'annule', 'declinee'].includes(st)) return false;
+      if (st === 'absent' && !paiementsSeance.get(p.id)) return false;
+      return true;
+    });
     let surCarnet = 0, payes = 0, aRegler = 0, encaisse = 0, attendu = 0, attenduInconnu = 0;
     for (const p of actives) {
       const paie = paiementsSeance.get(p.id);

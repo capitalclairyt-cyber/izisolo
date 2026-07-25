@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { withRoute } from '@/lib/api-route';
+import { reportError } from '@/lib/report';
 
 const updateSchema = z.object({
   montant: z.number().positive().optional(),
@@ -58,13 +59,23 @@ export const DELETE = withRoute({ auth: 'active' }, async ({ params, auth }) => 
 
   const { data: paiement, error: fetchErr } = await supabase
     .from('paiements')
-    .select('id')
+    .select('id, statut, abonnement_id, echeancier_id')
     .eq('id', id)
     .eq('profile_id', user.id)
     .single();
 
   if (fetchErr || !paiement) {
     return Response.json({ error: 'Paiement introuvable' }, { status: 404 });
+  }
+
+  // B1f : supprimer un paiement ENCAISSÉ rattaché à un carnet/échéancier
+  // effaçait de l'argent de la compta en silence (l'abo restait « payé »
+  // sans trace, l'échéancier perdait un versement).
+  if (paiement.statut === 'paid' && (paiement.abonnement_id || paiement.echeancier_id)) {
+    return Response.json({
+      error: 'Ce paiement encaissé est rattaché à un carnet ou un échéancier — modifie-le plutôt que de le supprimer (la suppression fausserait ta compta).',
+      code: 'PAIEMENT_LIE',
+    }, { status: 409 });
   }
 
   const { error: deleteErr } = await supabase
@@ -74,6 +85,7 @@ export const DELETE = withRoute({ auth: 'active' }, async ({ params, auth }) => 
     .eq('profile_id', user.id);
 
   if (deleteErr) {
+    reportError('[paiements DELETE] err:', deleteErr, { route: '/api/paiements/[id]' });
     return Response.json({ error: "Erreur lors de la suppression" }, { status: 500 });
   }
 

@@ -57,8 +57,9 @@ export default function NouveauPaiement() {
   const [showDropdown, setShowDropdown]     = useState(false);
   const [selectedOffre, setSelectedOffre]   = useState(null); // null | offre | OFFRE_LIBRE
 
-  // Form
-  const today = new Date().toISOString().split('T')[0];
+  // Form — date du jour en heure de PARIS (l'UTC pré-remplissait la veille
+  // entre minuit et 2 h — B1f)
+  const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Paris' });
   const [intitule, setIntitule] = useState('');
   const [montant, setMontant]   = useState('');
   const [mode, setMode]         = useState('especes');
@@ -74,7 +75,10 @@ export default function NouveauPaiement() {
         supabase
           .from('clients')
           .select('id, prenom, nom, nom_structure, type_client, statut')
-          .in('statut', ['actif', 'prospect'])
+          // B1f : le filtre ['actif','prospect'] rendait INTROUVABLE une
+          // fiche « Fidèle » ou « Inactif » (statuts posables à la main) —
+          // impossible d'enregistrer l'espèces de sa meilleure élève.
+          .neq('statut', 'archive')
           .order('nom'),
         supabase
           .from('offres')
@@ -167,6 +171,9 @@ export default function NouveauPaiement() {
         montant:    parseFloat(montant),
         mode,
         date,
+        // Sans elle, la colonne « Date encaissement » du CSV comptable était
+        // quasi toujours vide pour les saisies manuelles (B1f).
+        date_encaissement: date,
         statut:     'paid',
         notes:      notes.trim() || null,
       }).select('id').single();

@@ -146,12 +146,16 @@ export default function RevenusClient({ paiements: initialPaiements, seancesDues
   // Total dû, TOUTES périodes confondues (l'argent qu'on te doit n'est pas
   // mensuel) — alimente les tuiles d'en-tête « à encaisser » / « en retard ».
   const outstanding = useMemo(() => {
-    const today = new Date().toISOString().split('T')[0];
+    // Heure de Paris (le « aujourd'hui » UTC classait mal la nuit) — et MÊME
+    // ASSIETTE que le bloc « À percevoir » : la tuile ignorait les séances à
+    // l'unité impayées → deux totaux différents sur le même écran (B1f).
+    const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Paris' });
     const du = paiements.filter(p => p.statut === 'pending' || p.statut === 'overdue');
     const enRetard = du.filter(p => p.statut === 'overdue' || (p.statut === 'pending' && p.date < today));
     const sum = arr => arr.reduce((s, p) => s + parseFloat(p.montant || 0), 0);
-    return { aEncaisser: sum(du), retards: sum(enRetard), retardCount: enRetard.length };
-  }, [paiements]);
+    const duSeances = seancesDues.reduce((s, w) => s + (parseFloat(w.montant) || 0), 0);
+    return { aEncaisser: sum(du) + duSeances, retards: sum(enRetard), retardCount: enRetard.length };
+  }, [paiements, seancesDues]);
 
   // Variation vs période précédente (uniquement pour 'mois')
   const variation = useMemo(() => {
@@ -258,7 +262,30 @@ export default function RevenusClient({ paiements: initialPaiements, seancesDues
       ...(filterMode ? { mode: filterMode } : {}),
       ...(filterStatut ? { statut: filterStatut } : {}),
     });
-    window.location.href = `/api/export/paiements-csv?${params.toString()}`;
+    // fetch + blob (B1f) : la navigation directe affichait le JSON brut du
+    // 403 en PLEIN ÉCRAN pour une prof Solo (« Export CSV pour ton
+    // comptable » visible mais feature Pro).
+    (async () => {
+      try {
+        const res = await fetch(`/api/export/paiements-csv?${params.toString()}`);
+        if (!res.ok) {
+          const j = await res.json().catch(() => ({}));
+          toast.error(j.error || 'L\'export comptable est réservé au plan Pro.');
+          return;
+        }
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `izisolo-paiements-${new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Paris' })}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      } catch (e) {
+        toast.error('Export impossible : ' + e.message);
+      }
+    })();
   };
 
   const periodeLabel = PERIODES.find(p => p.value === periode)?.label || '';

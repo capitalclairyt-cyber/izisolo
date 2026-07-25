@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { withRoute } from '@/lib/api-route';
+import { reportError } from '@/lib/report';
 
 const updateSchema = z.object({
   // Vocabulaire canonique — aligné sur le CHECK DB (v45) et constantes.js.
@@ -67,6 +68,21 @@ export const DELETE = withRoute({ auth: 'active' }, async ({ params, auth }) => 
     return Response.json({ error: 'Abonnement introuvable' }, { status: 404 });
   }
 
+  // B1f : supprimer l'abo emportait AUSSI ses paiements 'paid' — l'encaissé
+  // annuel et le CSV comptable changeaient RÉTROACTIVEMENT (150 € disparus
+  // pour un carnet épuisé nettoyé 8 mois après). On DÉTACHE l'argent encaissé
+  // (il reste dans la compta), on ne supprime que les pending/overdue.
+  const { error: detachErr } = await supabase
+    .from('paiements')
+    .update({ abonnement_id: null })
+    .eq('abonnement_id', id)
+    .eq('profile_id', user.id)
+    .eq('statut', 'paid');
+  if (detachErr) {
+    reportError('[abonnements DELETE] détachement paiements err:', detachErr, { route: '/api/abonnements/[id]' });
+    return Response.json({ error: 'Erreur préparation suppression' }, { status: 500 });
+  }
+
   const { error: payErr } = await supabase
     .from('paiements')
     .delete()
@@ -74,6 +90,7 @@ export const DELETE = withRoute({ auth: 'active' }, async ({ params, auth }) => 
     .eq('profile_id', user.id);
 
   if (payErr) {
+    reportError('[abonnements DELETE] paiements liés err:', payErr, { route: '/api/abonnements/[id]' });
     return Response.json({ error: 'Erreur suppression paiements liés' }, { status: 500 });
   }
 

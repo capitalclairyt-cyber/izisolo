@@ -154,6 +154,29 @@ export async function POST(request, { params }) {
 
   // ── Cas 1 : Annulation libre (dans les délais) → suppression de la presence
   if (evaluation.annulable) {
+    // Séance à l'unité DÉJÀ ENCAISSÉE (v65) : la présence part, le paiement
+    // 'paid' devient orphelin (SET NULL) — sans signal, personne ne pensait
+    // au remboursement (B1f). Cloche dédiée à la prof, dédupée.
+    try {
+      const { data: paieSeance } = await supabaseAdmin
+        .from('paiements')
+        .select('id, montant')
+        .eq('presence_id', presenceId)
+        .eq('statut', 'paid')
+        .maybeSingle();
+      if (paieSeance) {
+        await supabaseAdmin.from('notifications').upsert({
+          profile_id: profile.id,
+          type: 'remboursement',
+          ref_key: `refund_${presenceId}`,
+          titre: 'Séance annulée — déjà réglée',
+          corps: `${client.prenom || ''} ${client.nom || ''} avait déjà réglé ${paieSeance.montant} € pour « ${presence.cours?.nom || 'la séance'} » — pense au remboursement (Revenus).`.trim(),
+          data: { paiement_id: paieSeance.id },
+          lu: false,
+        }, { onConflict: 'profile_id,ref_key', ignoreDuplicates: true });
+      }
+    } catch (e) { reportError('[annuler] check paiement séance (non-bloquant):', e?.message); }
+
     const { error: deleteErr } = await supabaseAdmin
       .from('presences')
       .delete()

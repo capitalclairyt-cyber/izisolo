@@ -2,6 +2,7 @@ import { createServerClient } from '@/lib/supabase-server';
 import { createAdminClient } from '@/lib/supabase-admin';
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 import { escapeIlike } from '@/lib/utils';
+import { reportError } from '@/lib/report';
 
 export const runtime = 'nodejs';
 
@@ -49,6 +50,21 @@ export async function GET(request, { params }) {
     .single();
   if (!paiement) return new Response('Facture introuvable', { status: 404 });
 
+  // B1f (rouge) : le garde « paid seulement » était UI-only — en forgeant
+  // l'URL, une élève obtenait un « REÇU DE PAIEMENT » officiel pour un
+  // paiement jamais effectué (pending/overdue), opposable à la prof.
+  if (paiement.statut !== 'paid') {
+    return new Response('Ce paiement n\'est pas encore réglé — le reçu sera disponible après encaissement.', { status: 403 });
+  }
+
+  // WinAnsi uniquement (B1f) : un emoji dans « Carnet 10 ✨ » ou le nom du
+  // studio faisait THROW pdf-lib → 500 brut. On nettoie les champs affichés.
+  const winAnsi = (s) => String(s ?? '').replace(/[^\x20-\x7E\xA0-\xFF€]/g, '').trim();
+  for (const k of ['studio_nom', 'adresse', 'ville', 'telephone', 'email_contact', 'code_postal']) profile[k] = winAnsi(profile[k]);
+  for (const k of ['prenom', 'nom', 'email', 'adresse', 'adresse_postale', 'ville']) client[k] = winAnsi(client[k]);
+  paiement.intitule = winAnsi(paiement.intitule);
+
+  try {
   // Génération PDF avec pdf-lib
   const pdf = await PDFDocument.create();
   const page = pdf.addPage([595, 842]); // A4
@@ -140,6 +156,10 @@ export async function GET(request, { params }) {
       'Cache-Control': 'private, no-store',
     },
   });
+  } catch (err) {
+    reportError('[facture pdf] génération err:', err, { route: `/api/portail/${studioSlug}/facture` });
+    return new Response('Le reçu n\'a pas pu être généré — réessaie, ou contacte ton studio.', { status: 500 });
+  }
 }
 
 function formatMode(mode) {
