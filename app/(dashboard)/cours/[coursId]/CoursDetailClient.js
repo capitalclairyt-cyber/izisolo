@@ -1,23 +1,24 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   ArrowLeft, Save, Calendar, Clock, MapPin, Users, Repeat, UserPlus,
   Trash2, AlertTriangle, CheckCircle2, Edit3, X, Copy,
   ChevronDown, ChevronUp, Mail, Send, ShieldAlert, Smartphone, CheckCheck, Lock,
-  Home, Navigation,
+  Home, Navigation, Euro,
 } from 'lucide-react';
 import { formatHeure, getAllTypesFromCategories } from '@/lib/utils';
 import { parseDate } from '@/lib/dates';
 import { compterPlacesOccupees, presenceOccupePlace, presenceEstReservationActive } from '@/lib/presences';
+import { resoudreCarnetApplicable } from '@/lib/carnet-resolution';
 import { createClient } from '@/lib/supabase';
 import { useToast } from '@/components/ui/ToastProvider';
 import HeureSelect from '@/components/ui/HeureSelect';
 import { SMS_ENABLED } from '@/lib/constantes';
 
-export default function CoursDetailClient({ cours, presences, lieux, profile, nbOccurrences, autoEdit, listeAttente = [] }) {
+export default function CoursDetailClient({ cours, presences, lieux, profile, nbOccurrences, autoEdit, listeAttente = [], abosParClient = {}, paiementsSeance = [] }) {
   const router = useRouter();
   const { toast } = useToast();
   const [editing, setEditing] = useState(autoEdit || false);
@@ -34,6 +35,38 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
   const placesDispos = cours.capacite_max != null
     ? Math.max(0, cours.capacite_max - nbOccupees)
     : null;
+
+  // ── Régime tarifaire & prévisionnel (retour Maude 2026-07-25) ─────────────
+  // Miroir EXACT du récap financier du pointage : carnet LIÉ prioritaire
+  // (p.abonnements), sinon résolution d'affichage (lib/carnet-resolution) ;
+  // cours à tarif_unitaire = payée/à régler via paiements v65. Les lignes qui
+  // n'occupent pas de place (annulées, tardives, déclinées) n'ont pas de badge.
+  const argent = useMemo(() => {
+    const paidByPresence = {};
+    for (const pay of paiementsSeance) {
+      if (pay.presence_id && pay.statut === 'paid') paidByPresence[pay.presence_id] = pay;
+    }
+    const tarif = Number(cours.tarif_unitaire) > 0 ? Number(cours.tarif_unitaire) : null;
+    const parPresence = {};
+    let surCarnet = 0, sansCarnet = 0, payes = 0, aRegler = 0, encaisse = 0, gratuits = 0;
+    for (const p of presences) {
+      if (!presenceOccupePlace(p)) continue;
+      const tp = p.type_presence || 'normal';
+      if (tp === 'essai')  { gratuits++; parPresence[p.id] = { kind: 'essai' };  continue; }
+      if (tp === 'offert') { gratuits++; parPresence[p.id] = { kind: 'offert' }; continue; }
+      if (tarif) {
+        const pay = paidByPresence[p.id];
+        if (pay) { payes++; encaisse += Number(pay.montant) || 0; parPresence[p.id] = { kind: 'paye' }; }
+        else { aRegler++; parPresence[p.id] = { kind: 'du', montant: tarif }; }
+      } else {
+        const carnet = p.abonnements
+          || resoudreCarnetApplicable(abosParClient[p.client_id] || [], { type_cours: cours.type_cours, date: cours.date, tarif_unitaire: cours.tarif_unitaire });
+        if (carnet) { surCarnet++; parPresence[p.id] = { kind: 'carnet', nom: carnet.offre_nom || 'Carnet' }; }
+        else { sansCarnet++; parPresence[p.id] = { kind: 'sans' }; }
+      }
+    }
+    return { tarif, parPresence, surCarnet, sansCarnet, payes, aRegler, encaisse, gratuits, attendu: tarif ? aRegler * tarif : 0 };
+  }, [presences, abosParClient, paiementsSeance, cours]);
 
   // ---- Cours privé : prévenir les invité·es par email (dédupé serveur) ----
   const [notifying, setNotifying] = useState(false);
@@ -593,6 +626,18 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
               </div>
             )}
 
+            <div className="detail-row">
+              <Euro size={16} />
+              <div>
+                <div className="detail-label">Tarif</div>
+                <div className="detail-value">
+                  {argent.tarif
+                    ? `${argent.tarif} € à la séance — ne décompte aucun carnet`
+                    : 'Couvert par les carnets / abonnements'}
+                </div>
+              </div>
+            </div>
+
             {cours.notes && (
               <div className="detail-row notes-row">
                 <div className="detail-label">Notes</div>
@@ -775,6 +820,25 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
               : ' Les personnes ci-dessous le voient dans leur espace ; personne d\'autre.'}
           </div>
         )}
+        {/* Prévisionnel de la séance (retour Maude) — mêmes chiffres que le
+            récap du pointage, visibles AVANT la séance. */}
+        {!cours.est_annule && presences.length > 0 && (
+          <div className="argent-previsionnel">
+            {argent.tarif ? (
+              <>
+                💶 <strong>Prévisionnel : {(argent.encaisse + argent.attendu).toFixed(2).replace('.', ',').replace(',00', '')} €</strong>
+                {' — '}{argent.payes} payée{argent.payes > 1 ? 's' : ''} ({argent.encaisse.toFixed(2).replace('.', ',').replace(',00', '')} € encaissés) · {argent.aRegler} à régler ({argent.attendu.toFixed(2).replace('.', ',').replace(',00', '')} €)
+                {argent.gratuits > 0 && <> · {argent.gratuits} essai/offert</>}
+              </>
+            ) : (
+              <>
+                🎟️ <strong>{argent.surCarnet} sur carnet/abo</strong>
+                {argent.sansCarnet > 0 && <> · <strong className="argent-sans">{argent.sansCarnet} sans carnet applicable</strong> (à régler ou à traiter selon ta règle)</>}
+                {argent.gratuits > 0 && <> · {argent.gratuits} essai/offert</>}
+              </>
+            )}
+          </div>
+        )}
         {presences.length === 0 ? (
           <div className="empty-inscrits">
             <p className="empty-text">{cours.visibilite === 'prive' ? 'Aucun·e invité·e pour le moment' : 'Aucun inscrit pour le moment'}</p>
@@ -791,6 +855,24 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
                 <div className="inscrit-info">
                   <span className="inscrit-nom">{p.clients?.prenom} {p.clients?.nom}</span>
                   <span className="inscrit-statut">{p.clients?.statut}</span>
+                  {argent.parPresence[p.id]?.kind === 'carnet' && (
+                    <span className="argent-chip chip-carnet" title="Cette séance sera décomptée de ce carnet/abo au pointage">🎟️ {argent.parPresence[p.id].nom}</span>
+                  )}
+                  {argent.parPresence[p.id]?.kind === 'sans' && (
+                    <span className="argent-chip chip-sans" title="Aucun carnet/abo actif ne couvre ce cours — à régler ou à traiter selon ta règle « élève sans carnet »">Sans carnet</span>
+                  )}
+                  {argent.parPresence[p.id]?.kind === 'paye' && (
+                    <span className="argent-chip chip-paye">✓ Payée</span>
+                  )}
+                  {argent.parPresence[p.id]?.kind === 'du' && (
+                    <span className="argent-chip chip-du">À régler · {argent.parPresence[p.id].montant} €</span>
+                  )}
+                  {argent.parPresence[p.id]?.kind === 'essai' && (
+                    <span className="argent-chip chip-gratuit">Essai</span>
+                  )}
+                  {argent.parPresence[p.id]?.kind === 'offert' && (
+                    <span className="argent-chip chip-gratuit">Offert</span>
+                  )}
                 </div>
                 {p.pointee && (
                   <span className="pointe-badge"><CheckCircle2 size={14} /> Pointé</span>
@@ -1590,6 +1672,33 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
           font-weight: 600;
           font-size: 0.875rem;
         }
+        .argent-previsionnel {
+          padding: 10px 14px;
+          margin: 0 0 12px;
+          background: var(--bg-soft, #F8F4ED);
+          border: 1px dashed var(--border);
+          border-radius: 10px;
+          font-size: 0.8125rem;
+          color: var(--text-secondary);
+          line-height: 1.5;
+        }
+        .argent-previsionnel strong { color: var(--text-primary); }
+        .argent-previsionnel .argent-sans { color: var(--hot, #E8722A); }
+        .argent-chip {
+          display: inline-flex;
+          align-items: center;
+          gap: 3px;
+          font-size: 0.7rem;
+          font-weight: 600;
+          padding: 2px 8px;
+          border-radius: 999px;
+          white-space: nowrap;
+        }
+        .chip-carnet  { background: var(--sage-light, #E5EBE5); color: var(--sage-deep, #2C3935); }
+        .chip-sans    { background: var(--hot-light, #FCE8DA);  color: var(--hot, #E8722A); }
+        .chip-paye    { background: var(--success-light, #E2EDDE); color: var(--success, #6B9A6B); }
+        .chip-du      { background: var(--warning-light, #F5EBD2); color: #854d0e; }
+        .chip-gratuit { background: var(--info-light, #DEE8EE);  color: var(--info, #5A8AA8); }
         .inscrit-statut {
           font-size: 0.75rem;
           color: var(--text-muted);

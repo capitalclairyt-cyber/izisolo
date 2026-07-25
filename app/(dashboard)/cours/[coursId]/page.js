@@ -18,12 +18,41 @@ export default async function CoursDetailPage({ params, searchParams }) {
 
   if (!cours) notFound();
 
-  // Charger les présences (inscrits)
+  // Charger les présences (inscrits) — avec le carnet LIÉ (override explicite,
+  // prioritaire sur la résolution auto, même contrat que le pointage).
   const { data: presences } = await supabase
     .from('presences')
-    .select('*, clients(id, prenom, nom, statut, email, telephone)')
+    .select('*, clients(id, prenom, nom, statut, email, telephone), abonnements(id, offre_nom, seances_total, seances_utilisees)')
     .eq('cours_id', coursId)
     .eq('profile_id', user.id);
+
+  // Régime tarifaire de la séance (retour Maude 2026-07-25 : « le prix du
+  // cours, s'il est pris sur un abonnement ou non, et le prévisionnel ») :
+  //  - cours couvert par carnets → carnets actifs des inscrit·es pour la
+  //    résolution d'affichage (miroir exact du pointage, lib/carnet-resolution) ;
+  //  - cours à tarif_unitaire → paiements à la séance (v65) déjà encaissés.
+  const abosParClient = {};
+  let paiementsSeance = [];
+  const clientIds = [...new Set((presences || []).map(p => p.client_id).filter(Boolean))];
+  if (clientIds.length > 0 && !(Number(cours.tarif_unitaire) > 0)) {
+    const { data: abos } = await supabase
+      .from('abonnements')
+      .select('id, client_id, offre_nom, type, seances_total, seances_utilisees, statut, date_fin, date_pause_debut, date_pause_fin, types_cours_autorises')
+      .eq('profile_id', user.id)
+      .eq('statut', 'actif')
+      .in('client_id', clientIds);
+    (abos || []).forEach(a => {
+      (abosParClient[a.client_id] = abosParClient[a.client_id] || []).push(a);
+    });
+  }
+  if (Number(cours.tarif_unitaire) > 0 && (presences || []).length > 0) {
+    const { data: pays } = await supabase
+      .from('paiements')
+      .select('id, presence_id, statut, montant')
+      .eq('profile_id', user.id)
+      .in('presence_id', presences.map(p => p.id));
+    paiementsSeance = pays || [];
+  }
 
   // Charger la liste d'attente (table v16, RLS profile_id = auth.uid())
   // Try/catch silencieux : si la table n'existe pas (compte legacy avant v16),
@@ -76,6 +105,8 @@ export default async function CoursDetailPage({ params, searchParams }) {
       nbOccurrences={nbOccurrences}
       autoEdit={edit === '1'}
       listeAttente={listeAttente}
+      abosParClient={abosParClient}
+      paiementsSeance={paiementsSeance}
     />
   );
 }
