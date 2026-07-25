@@ -98,20 +98,26 @@ export default function ResultatsSondageClient({ sondage: initialSondage, crenea
         closed_at: sondage.actif ? new Date().toISOString() : null,
       })
       .eq('id', sondage.id);
-    if (!error) {
-      setSondage(prev => ({ ...prev, actif: !prev.actif }));
-      toast.success(sondage.actif ? 'Sondage clos' : 'Sondage rouvert');
+    if (error) {
+      // B1c : l'échec était muet — la prof croyait le sondage clos alors que
+      // le lien partagé continuait de recevoir des votes.
+      toast.error('Erreur : ' + error.message);
+      return;
     }
+    setSondage(prev => ({ ...prev, actif: !prev.actif }));
+    toast.success(sondage.actif ? 'Sondage clos' : 'Sondage rouvert');
   };
 
   const supprimerSondage = async () => {
     if (!confirm('Supprimer ce sondage et toutes ses réponses ? (irréversible)')) return;
     const supabase = createClient();
     const { error } = await supabase.from('sondages_planning').delete().eq('id', sondage.id);
-    if (!error) {
-      toast.success('Sondage supprimé');
-      router.push('/sondages');
+    if (error) {
+      toast.error('Erreur : ' + error.message);
+      return;
     }
+    toast.success('Sondage supprimé');
+    router.push('/sondages');
   };
 
   // Conversion 1-clic : ouvrir /cours/nouveau pré-rempli avec le créneau
@@ -121,8 +127,14 @@ export default function ResultatsSondageClient({ sondage: initialSondage, crenea
     const todayDay = today.getDay() === 0 ? 7 : today.getDay();
     let delta = c.jour_semaine - todayDay;
     if (delta <= 0) delta += 7;
-    const nextDate = new Date(today.getTime() + delta * 86400000);
-    const dateStr = nextDate.toISOString().slice(0, 10);
+    // Date en LOCAL — toISOString() rendait la date UTC : entre minuit et 2 h
+    // (Paris, été), la date préremplie était LA VEILLE et la série hebdo
+    // entière se générait le mauvais jour de la semaine (B1c, rouge).
+    // setDate (pas +N×86400000 ms) : l'ajout en millisecondes glisse d'une
+    // heure aux changements d'heure.
+    const nextDate = new Date(today);
+    nextDate.setDate(today.getDate() + delta);
+    const dateStr = `${nextDate.getFullYear()}-${String(nextDate.getMonth() + 1).padStart(2, '0')}-${String(nextDate.getDate()).padStart(2, '0')}`;
 
     const params = new URLSearchParams({
       date: dateStr,

@@ -80,7 +80,12 @@ export default function NouveauSondageClient({ typesCours, studioSlug }) {
         ordre,
       }));
       const { error: cErr } = await supabase.from('sondages_creneaux').insert(creneauxRows);
-      if (cErr) throw cErr;
+      if (cErr) {
+        // Compensation (B1c) : sans elle, un sondage ACTIF à 0 créneau restait
+        // visible en liste, irréparable (aucune page d'édition n'existe).
+        await supabase.from('sondages_planning').delete().eq('id', sondage.id);
+        throw cErr;
+      }
 
       toast.success('Sondage créé !');
       router.push(`/sondages/${sondage.id}`);

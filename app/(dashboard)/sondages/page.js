@@ -14,15 +14,22 @@ export default async function SondagesPage() {
 
   const { data: sondages } = await supabase
     .from('sondages_planning')
-    .select('id, slug, titre, message, date_fin, visibilite, actif, created_at, sondages_creneaux(id, sondages_reponses(id))')
+    .select('id, slug, titre, message, date_fin, visibilite, actif, created_at, sondages_creneaux(id, sondages_reponses(client_id, email))')
     .eq('profile_id', user.id)
     .order('created_at', { ascending: false });
 
-  // Compteurs : nb créneaux + nb réponses uniques par sondage
+  // Compteurs : nb créneaux + RÉPONDANTS DISTINCTS (B1c : la liste sommait
+  // les votes — « 30 réponses » pour 5 élèves × 6 créneaux — pendant que le
+  // détail affichait 5 répondants ; même métrique partout désormais).
   const sondagesAvecStats = (sondages || []).map(s => {
     const creneaux = s.sondages_creneaux || [];
-    const totalReponses = creneaux.reduce((sum, c) => sum + (c.sondages_reponses?.length || 0), 0);
-    return { ...s, nbCreneaux: creneaux.length, nbReponses: totalReponses };
+    const repondants = new Set();
+    for (const c of creneaux) {
+      for (const r of (c.sondages_reponses || [])) {
+        repondants.add(r.client_id || `e:${(r.email || '').toLowerCase()}`);
+      }
+    }
+    return { ...s, nbCreneaux: creneaux.length, nbReponses: repondants.size };
   });
 
   return (

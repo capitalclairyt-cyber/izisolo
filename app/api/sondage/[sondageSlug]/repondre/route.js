@@ -24,11 +24,11 @@ export const dynamic = 'force-dynamic';
  *   - Si l'utilisateur est connecté ET trouvé dans clients du studio → réponse rattachée client_id
  *   - Sinon visiteur anonyme : email obligatoire (sondage.visibilite ∈ {mixte, public})
  *   - Honeypot website non vide → 422 spam
- *   - Rate limit léger : max 3 réponses par hash IP par sondage par heure
- *   - Idempotent : on UPSERT par (creneau_id, client_id) ou (creneau_id, email)
+ *   - Rate limit : max N SOUMISSIONS par hash IP par heure (RPC v72, borne fixe)
+ *   - Re-vote = remplacement complet du bulletin (tous les créneaux du sondage)
  */
 
-const RATE_LIMIT_PAR_HEURE = 3;
+const RATE_LIMIT_PAR_HEURE = 5;
 const HASH_SECRET = process.env.RATE_LIMIT_SECRET || 'izisolo-default-salt-change-me';
 
 function hashIp(req) {
@@ -66,7 +66,10 @@ export async function POST(request, { params }) {
     .maybeSingle();
 
   if (!sondage) return Response.json({ error: 'Sondage introuvable' }, { status: 404 });
-  if (!sondage.actif || (sondage.date_fin && sondage.date_fin < new Date().toISOString().slice(0, 10))) {
+  // Clôture en heure de PARIS (serveur UTC : un sondage fini le 25 acceptait
+  // des votes jusqu'au 26 à 2 h du matin — B1c).
+  const todayParis = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Paris' });
+  if (!sondage.actif || (sondage.date_fin && sondage.date_fin < todayParis)) {
     return Response.json({ error: 'Sondage clos' }, { status: 410 });
   }
 
@@ -83,6 +86,7 @@ export async function POST(request, { params }) {
 
   // Identifier le répondant : élève connecté du studio OU email anonyme
   let clientId = null;
+  let clientEmail = null;
   let email = null;
   let prenom = body.prenom || null;
 
@@ -99,6 +103,7 @@ export async function POST(request, { params }) {
         .maybeSingle();
       if (client) {
         clientId = client.id;
+        clientEmail = client.email || user.email || null;
         prenom = prenom || client.prenom || null;
       } else if (sondage.visibilite !== 'public') {
         // Visibilité 'inscrits' : refuser si pas dans la liste clients
@@ -125,31 +130,47 @@ export async function POST(request, { params }) {
 
   const ipHash = hashIp(request);
 
-  // Rate limit : max N réponses par IP/heure pour ce sondage (évite spam basique)
-  const ilUneHeure = new Date(Date.now() - 3600 * 1000).toISOString();
-  const { count: nbRecent } = await supabase
-    .from('sondages_reponses')
-    .select('id', { count: 'exact', head: true })
-    .eq('ip_hash', ipHash)
-    .gte('created_at', ilUneHeure)
-    .in('creneau_id', [...creneauxValides]);
+  // Rate limit : borne FIXE par soumission via la RPC partagée v72 (avant :
+  // le seuil scalait avec la taille de la requête — « max 3/h » promis,
+  // 4 bulletins complets passaient). Fail-open si la RPC manque.
+  try {
+    const { data: ok, error: rlErr } = await supabase
+      .rpc('check_rate_limit', { p_cle: `sondage-vote:${ipHash}`, p_max: RATE_LIMIT_PAR_HEURE, p_fenetre_secondes: 3600 });
+    if (!rlErr && ok === false) {
+      return Response.json({ error: 'Trop de réponses récemment, réessaye plus tard' }, { status: 429 });
+    }
+  } catch { /* fail-open */ }
 
-  if ((nbRecent || 0) > repFiltrees.length * RATE_LIMIT_PAR_HEURE) {
-    return Response.json({ error: 'Trop de réponses récemment, réessaye plus tard' }, { status: 429 });
-  }
-
-  // Préparer les rows à upsert. UPSERT par (creneau_id, client_id) OU (creneau_id, email)
-  // → on supprime d'abord les réponses existantes pour les mêmes (creneau, répondant) puis on insère.
-  const creneauIds = repFiltrees.map(([cid]) => cid);
+  // Re-vote = remplacement COMPLET du bulletin sur TOUS les créneaux du
+  // sondage (B1c : avant, seuls les créneaux re-soumis étaient nettoyés →
+  // les anciens votes persistaient ailleurs, impossible d'effacer un vote).
+  // Et la même personne ne compte plus double : au vote connecté, on purge
+  // aussi ses anciens bulletins anonymes (email prouvé par la session).
+  const tousCreneaux = [...creneauxValides];
   if (clientId) {
-    await supabase.from('sondages_reponses').delete()
-      .in('creneau_id', creneauIds)
+    const { error: delErr } = await supabase.from('sondages_reponses').delete()
+      .in('creneau_id', tousCreneaux)
       .eq('client_id', clientId);
+    if (delErr) {
+      reportError('[sondage/repondre] purge client err:', delErr);
+      return Response.json({ error: 'Erreur enregistrement' }, { status: 500 });
+    }
+    if (clientEmail) {
+      const { error: delErr2 } = await supabase.from('sondages_reponses').delete()
+        .in('creneau_id', tousCreneaux)
+        .ilike('email', escapeIlike(clientEmail))
+        .is('client_id', null);
+      if (delErr2) reportError('[sondage/repondre] purge email-anonyme err:', delErr2);
+    }
   } else if (email) {
-    await supabase.from('sondages_reponses').delete()
-      .in('creneau_id', creneauIds)
+    const { error: delErr } = await supabase.from('sondages_reponses').delete()
+      .in('creneau_id', tousCreneaux)
       .eq('email', email)
       .is('client_id', null);
+    if (delErr) {
+      reportError('[sondage/repondre] purge anonyme err:', delErr);
+      return Response.json({ error: 'Erreur enregistrement' }, { status: 500 });
+    }
   }
 
   const rows = repFiltrees.map(([creneau_id, valeur]) => ({
