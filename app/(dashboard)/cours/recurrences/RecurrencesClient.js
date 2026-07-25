@@ -392,6 +392,14 @@ export default function RecurrencesClient({ recurrences: initialRecurrences, cou
         recurrence_parent_id: selected.id,
         visibilite: frere?.visibilite || 'public',
         tarif_unitaire: frere?.tarif_unitaire ?? null,
+        // Série à domicile (v44) : recopiée depuis la récurrence (audit
+        // 2026-07-25 : prolonger oubliait le domicile → occurrences sans
+        // l'élève, invisibles dans son espace).
+        ...(selected.domicile ? {
+          domicile: true,
+          client_id: selected.client_id || null,
+          frais_deplacement: selected.frais_deplacement ?? null,
+        } : {}),
       }));
 
       const { data: crees, error } = await supabase
@@ -399,6 +407,15 @@ export default function RecurrencesClient({ recurrences: initialRecurrences, cou
         .insert(rows)
         .select('id, nom, date, heure, recurrence_parent_id, est_annule');
       if (error) throw error;
+
+      // Domicile : inscrire l'élève d'office sur chaque nouvelle occurrence
+      // (comme à la création de la série) — erreur LUE.
+      if (selected.domicile && selected.client_id && crees?.length > 0) {
+        const { error: presErr } = await supabase.from('presences').insert(
+          crees.map(c => ({ profile_id: user.id, cours_id: c.id, client_id: selected.client_id }))
+        );
+        if (presErr) toast.warning('Séances créées, mais inscription de l\'élève échouée : ' + presErr.message);
+      }
 
       const { error: recErr } = await supabase
         .from('recurrences')

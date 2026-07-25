@@ -676,10 +676,10 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
   // Grouper les présences futures par recurrence_id pour proposer la libération en série
   const presencesFuturesParSerie = (() => {
     const today = new Date().toISOString().slice(0, 10);
-    const futures = presences.filter(p => p.cours?.date >= today && p.cours?.recurrence_id);
+    const futures = presences.filter(p => p.cours?.date >= today && p.cours?.recurrence_parent_id);
     const groupes = {};
     for (const p of futures) {
-      const k = p.cours.recurrence_id;
+      const k = p.cours.recurrence_parent_id;
       if (!groupes[k]) groupes[k] = { recurrence_id: k, coursNom: p.cours.nom, heure: p.cours.heure, presences: [] };
       groupes[k].presences.push(p);
     }

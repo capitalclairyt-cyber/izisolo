@@ -398,11 +398,14 @@ function NouveauCoursInner() {
         if (error) throw error;
 
         if (isDomicile && newCours) {
-          await supabase.from('presences').insert({
+          // Erreur LUE (audit 2026-07-25 : l'insert muet créait le cours SANS
+          // l'élève, en silence — invisible dans son espace, v65 mort).
+          const { error: presErr } = await supabase.from('presences').insert({
             profile_id: user.id,
             cours_id: newCours.id,
             client_id: domicileClient.id,
           });
+          if (presErr) throw new Error('Cours créé, mais inscription de l\'élève échouée : ' + presErr.message);
         }
       } else {
         const { incluses } = calculerDates(form);
@@ -457,13 +460,14 @@ function NouveauCoursInner() {
           if (coursErr) throw coursErr;
 
           if (isDomicile && createdCours?.length > 0) {
-            await supabase.from('presences').insert(
+            const { error: presErr } = await supabase.from('presences').insert(
               createdCours.map(c => ({
                 profile_id: user.id,
                 cours_id: c.id,
                 client_id: domicileClient.id,
               }))
             );
+            if (presErr) throw new Error('Série créée, mais inscription de l\'élève échouée : ' + presErr.message);
           }
         }
 
