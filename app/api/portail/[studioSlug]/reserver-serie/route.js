@@ -81,7 +81,7 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
   // Cours de référence
   const { data: baseCours } = await supabaseAdmin
     .from('cours')
-    .select('id, recurrence_parent_id, date, nom, heure, visibilite')
+    .select('id, recurrence_parent_id, date, nom, heure, visibilite, tarif_unitaire')
     .eq('id', coursId)
     .eq('profile_id', profile.id)
     .single();
@@ -129,8 +129,13 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
   const aboCap = Math.max(0, ...(abosActifs || []).map(a => a.offre?.seances_par_semaine || 0));
 
   // Sans AUCUN abo actif : la règle eleve_sans_carnet s'applique à la série.
+  // ⚠️ SAUF cours payable à la séance (tarif_unitaire — atelier ou mixte v82) :
+  // l'absence de carnet y est normale, l'élève règle à la séance. L'unitaire
+  // (reserver) avait cette exemption depuis v70, la série JAMAIS — une élève
+  // sans carnet était bloquée sur un atelier récurrent qu'elle aurait payé
+  // à l'unité (B2f).
   const regleSansCarnet = getRegle({ regles_metier: profile.regles_metier }, 'eleve_sans_carnet');
-  if ((abosActifs || []).length === 0) {
+  if ((abosActifs || []).length === 0 && !(Number(baseCours.tarif_unitaire) > 0)) {
     if (regleSansCarnet.mode === 'auto' && regleSansCarnet.choix === 'bloquer') {
       return Response.json({
         error: 'Tu dois avoir un carnet ou un abonnement actif pour réserver. Contacte ton studio pour acheter un carnet.',

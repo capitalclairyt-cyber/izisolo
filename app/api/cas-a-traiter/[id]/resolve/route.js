@@ -58,7 +58,7 @@ export const POST = withRoute({ auth: 'active' }, async ({ request, params, auth
   // Charger le cas pour avoir le contexte (case_type, client_id, cours_id)
   const { data: cas, error: fetchErr } = await supabase
     .from('cas_a_traiter')
-    .select('*, clients(prenom, nom, id), cours(nom, date, id, type_cours, tarif_unitaire)')
+    .select('*, clients(prenom, nom, id), cours(nom, date, id, type_cours, tarif_unitaire, carnets_acceptes)')
     .eq('id', id)
     .eq('profile_id', user.id)
     .single();
@@ -265,6 +265,7 @@ async function applyDirectEffect({ supabase, cas, action, userId }) {
             type_cours: cas.cours?.type_cours,
             date: cas.cours?.date || cas.context?.cours_date,
             tarif_unitaire: cas.cours?.tarif_unitaire,
+            carnets_acceptes: cas.cours?.carnets_acceptes, // mixte v82
           })?.id || null;
         }
         if (!aboDecompte) {

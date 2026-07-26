@@ -102,3 +102,37 @@ test('tarif_unitaire null / 0 / absent → résolution normale', () => {
   expect(resoudreCarnetApplicable(abos, { ...COURS_YOGA, tarif_unitaire: 0 })?.id).toBe('all');
   expect(resoudreCarnetApplicable(abos, COURS_YOGA)?.id).toBe('all');
 });
+
+// ─── Cours MIXTE (carnets_acceptes — v82, MODELE-COURS-CARNETS-2026.md R1) ───
+// Le tarif à l'unité devient un FILET : carnet applicable → décompte ;
+// sinon → « à régler X € ». La case décochée (ou absente : cours d'avant
+// v82, select sans la colonne) = comportement v70 strict, verrouillé par
+// les 2 tests ci-dessus qui passent un cours SANS carnets_acceptes.
+
+test('mixte : tarif + carnets_acceptes → le carnet applicable décompte (le cas Colin)', () => {
+  const abos = [carnet({ id: 'all', types_cours_autorises: null })];
+  expect(resoudreCarnetApplicable(abos, { ...COURS_RENFO, tarif_unitaire: 20, carnets_acceptes: true })?.id).toBe('all');
+  const specifique = [carnet({ id: 'renfo', types_cours_autorises: ['renfo'] })];
+  expect(resoudreCarnetApplicable(specifique, { ...COURS_RENFO, tarif_unitaire: 20, carnets_acceptes: true })?.id).toBe('renfo');
+});
+
+test('mixte : carnet du MAUVAIS type → null (l\'élève paiera les 20 €)', () => {
+  const abos = [carnet({ id: 'yoga10', types_cours_autorises: ['yoga'] })];
+  expect(resoudreCarnetApplicable(abos, { ...COURS_RENFO, tarif_unitaire: 20, carnets_acceptes: true })).toBeNull();
+});
+
+test('mixte : la priorité multi-carnets reste identique (restreint d\'abord, expire tôt)', () => {
+  const abos = [
+    carnet({ id: 'all',  types_cours_autorises: null, date_fin: '2026-08-10' }),
+    carnet({ id: 'renfo', types_cours_autorises: ['renfo'], date_fin: '2026-12-31' }),
+  ];
+  expect(resoudreCarnetApplicable(abos, { ...COURS_RENFO, tarif_unitaire: 20, carnets_acceptes: true })?.id).toBe('renfo');
+});
+
+test('carnets_acceptes explicitement false / sans tarif → aucun effet', () => {
+  const abos = [carnet({ id: 'all' })];
+  // false = atelier pur, gate v70 intact
+  expect(resoudreCarnetApplicable(abos, { ...COURS_RENFO, tarif_unitaire: 15, carnets_acceptes: false })).toBeNull();
+  // flag posé sans tarif (combinaison sans objet) → résolution normale
+  expect(resoudreCarnetApplicable(abos, { ...COURS_YOGA, carnets_acceptes: true })?.id).toBe('all');
+});

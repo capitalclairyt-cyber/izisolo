@@ -80,7 +80,7 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
   // Vérifier que la présence appartient bien à ce client dans ce studio
   const { data: presence } = await supabaseAdmin
     .from('presences')
-    .select('id, abonnement_id, annulation_tardive, statut_pointage, cours:cours_id(id, nom, date, heure, type_cours, est_annule, tarif_unitaire)')
+    .select('id, abonnement_id, annulation_tardive, statut_pointage, cours:cours_id(id, nom, date, heure, type_cours, est_annule, tarif_unitaire, carnets_acceptes)')
     .eq('id', presenceId)
     .eq('client_id', client.id)
     .eq('profile_id', profile.id)
@@ -306,6 +306,7 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
         type_cours: presence.cours?.type_cours,
         date: presence.cours?.date,
         tarif_unitaire: presence.cours?.tarif_unitaire,
+        carnets_acceptes: presence.cours?.carnets_acceptes, // mixte v82
       })?.id || null;
     } catch (e) { reportError('annulation tardive — résolution carnet err:', e); }
   }

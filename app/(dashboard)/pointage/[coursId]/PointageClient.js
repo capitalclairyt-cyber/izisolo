@@ -586,7 +586,7 @@ export default function PointageClient({ cours, presences: initialPresences, tou
         continue;
       }
       const carnet = p.abonnements
-        || resoudreCarnetApplicable(p.client_abos, { type_cours: cours.type_cours, date: cours.date, tarif_unitaire: cours.tarif_unitaire });
+        || resoudreCarnetApplicable(p.client_abos, { type_cours: cours.type_cours, date: cours.date, tarif_unitaire: cours.tarif_unitaire, carnets_acceptes: cours.carnets_acceptes });
       if (carnet) { surCarnet++; continue; }
       aRegler++;
       if (Number(cours.tarif_unitaire) > 0) attendu += Number(cours.tarif_unitaire);
@@ -700,7 +700,7 @@ export default function PointageClient({ cours, presences: initialPresences, tou
     // pas encore liée (le détail du carnet vit alors dans client_abos).
     const aboImpacteId = presence.abonnement_id
       || (delta > 0
-          ? resoudreCarnetApplicable(presence.client_abos, { type_cours: cours.type_cours, date: cours.date, tarif_unitaire: cours.tarif_unitaire })?.id
+          ? resoudreCarnetApplicable(presence.client_abos, { type_cours: cours.type_cours, date: cours.date, tarif_unitaire: cours.tarif_unitaire, carnets_acceptes: cours.carnets_acceptes })?.id
           : null);
     const bumpAbos = (abos, id, d) => (abos || []).map(a =>
       a.id === id ? { ...a, seances_utilisees: Math.max(0, (a.seances_utilisees || 0) + d) } : a);
@@ -1226,10 +1226,12 @@ export default function PointageClient({ cours, presences: initialPresences, tou
         <div className="presences-list animate-slide-up">
           {sortedPresences.map(p => {
             // Carnet applicable à CE cours : lié en priorité, sinon résolu
-            // dynamiquement (mêmes règles que le RPC v64/v70). null = pay-as-you-go.
-            // Un cours payable à la séance (tarif_unitaire) ne résout jamais.
+            // dynamiquement (mêmes règles que le RPC v64/v70/v82). null = pay-as-you-go.
+            // Atelier pur (tarif sans carnets_acceptes) : ne résout jamais.
+            // Cours MIXTE (carnets_acceptes) : carnet compatible résolu, les
+            // autres paient le tarif — v82.
             const resolvedCarnet = p.abonnements
-              || resoudreCarnetApplicable(p.client_abos, { type_cours: cours.type_cours, date: cours.date, tarif_unitaire: cours.tarif_unitaire });
+              || resoudreCarnetApplicable(p.client_abos, { type_cours: cours.type_cours, date: cours.date, tarif_unitaire: cours.tarif_unitaire, carnets_acceptes: cours.carnets_acceptes });
             const typeP = p.type_presence || 'normal';
             const paye = paidIds.has(p.id);
             const paiementSeance = paiementsSeance.get(p.id) || null;

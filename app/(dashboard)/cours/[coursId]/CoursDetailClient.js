@@ -55,15 +55,20 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
       const tp = p.type_presence || 'normal';
       if (tp === 'essai')  { gratuits++; parPresence[p.id] = { kind: 'essai' };  continue; }
       if (tp === 'offert') { gratuits++; parPresence[p.id] = { kind: 'offert' }; continue; }
-      if (tarif) {
+      // Carnet D'ABORD : lié (override compris — avant, un atelier affichait
+      // « à régler » même pour une présence décomptée d'un carnet lié) ou
+      // résoluble. Sur un cours MIXTE (carnets_acceptes, v82) la résolution
+      // marche ; sur un atelier pur elle renvoie null (v70) → filet tarif.
+      const carnet = p.abonnements
+        || resoudreCarnetApplicable(abosParClient[p.client_id] || [], { type_cours: cours.type_cours, date: cours.date, tarif_unitaire: cours.tarif_unitaire, carnets_acceptes: cours.carnets_acceptes });
+      if (carnet) {
+        surCarnet++; parPresence[p.id] = { kind: 'carnet', nom: carnet.offre_nom || 'Carnet' };
+      } else if (tarif) {
         const pay = paidByPresence[p.id];
         if (pay) { payes++; encaisse += Number(pay.montant) || 0; parPresence[p.id] = { kind: 'paye' }; }
         else { aRegler++; parPresence[p.id] = { kind: 'du', montant: tarif }; }
       } else {
-        const carnet = p.abonnements
-          || resoudreCarnetApplicable(abosParClient[p.client_id] || [], { type_cours: cours.type_cours, date: cours.date, tarif_unitaire: cours.tarif_unitaire });
-        if (carnet) { surCarnet++; parPresence[p.id] = { kind: 'carnet', nom: carnet.offre_nom || 'Carnet' }; }
-        else { sansCarnet++; parPresence[p.id] = { kind: 'sans' }; }
+        sansCarnet++; parPresence[p.id] = { kind: 'sans' };
       }
     }
     return { tarif, parPresence, surCarnet, sansCarnet, payes, aRegler, encaisse, gratuits, attendu: tarif ? aRegler * tarif : 0 };
@@ -135,6 +140,7 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
     lieu_id:       cours.lieu_id || '',
     type_cours:    cours.type_cours || '',
     tarif_unitaire: cours.tarif_unitaire != null ? String(cours.tarif_unitaire) : '',
+    carnets_acceptes: cours.carnets_acceptes === true,
   });
 
   // ---- Message aux participants ----
@@ -176,6 +182,7 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
     notes: cours.notes || '',
     visibilite: cours.visibilite || 'public',
     tarif_unitaire: cours.tarif_unitaire != null ? String(cours.tarif_unitaire) : '',
+    carnets_acceptes: cours.carnets_acceptes === true,
   });
 
   const handleChange = (field) => (e) => {
@@ -203,6 +210,7 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
           notes: form.notes || null,
           visibilite: form.visibilite || 'public',
           tarif_unitaire: form.tarif_unitaire ? parseFloat(form.tarif_unitaire) : null,
+          carnets_acceptes: form.tarif_unitaire ? form.carnets_acceptes === true : false,
         })
         .eq('id', cours.id);
 
@@ -371,6 +379,7 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
         // Payable à la séance — propagé aux occurrences futures uniquement
         // (la table recurrences n'a pas la colonne, cf. cours/nouveau).
         tarif_unitaire: recurrenceForm.tarif_unitaire ? parseFloat(recurrenceForm.tarif_unitaire) : null,
+        carnets_acceptes: recurrenceForm.tarif_unitaire ? recurrenceForm.carnets_acceptes === true : false,
       };
 
       // 1. Mettre à jour toutes les occurrences futures
@@ -741,6 +750,24 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
                 placeholder="Prix à la séance (€) — ex : 15.00"
                 style={{ maxWidth: 260 }}
               />
+              {form.tarif_unitaire && (
+                <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, cursor: 'pointer', fontSize: '0.8125rem', marginTop: 8 }}>
+                  <input
+                    type="checkbox"
+                    checked={form.carnets_acceptes === true}
+                    onChange={e => setForm(prev => ({ ...prev, carnets_acceptes: e.target.checked }))}
+                    style={{ marginTop: 2, accentColor: 'var(--brand)' }}
+                  />
+                  <span>
+                    <strong>Accepter aussi les carnets/abos compatibles</strong>
+                    <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 2 }}>
+                      {form.carnets_acceptes
+                        ? 'Cours mixte : carnet compatible = séance décomptée, sinon paiement à la séance.'
+                        : 'Décochée : personne ne décompte — tout le monde règle à la séance.'}
+                    </span>
+                  </span>
+                </label>
+              )}
             </div>
 
             <div className="edit-actions">
@@ -1084,9 +1111,28 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
                     placeholder="Prix à la séance (€) — vide = couvert par les carnets"
                     style={{ maxWidth: 280 }}
                   />
-                  <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'block', marginTop: 4 }}>
-                    Un prix ici = ces séances ne décomptent aucun carnet, l'élève règle à la séance.
-                  </span>
+                  {recurrenceForm.tarif_unitaire ? (
+                    <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, cursor: 'pointer', fontSize: '0.78rem', marginTop: 6 }}>
+                      <input
+                        type="checkbox"
+                        checked={recurrenceForm.carnets_acceptes === true}
+                        onChange={e => setRecurrenceForm(p => ({ ...p, carnets_acceptes: e.target.checked }))}
+                        style={{ marginTop: 2, accentColor: 'var(--brand)' }}
+                      />
+                      <span>
+                        Accepter aussi les carnets/abos compatibles
+                        <span style={{ display: 'block', fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                          {recurrenceForm.carnets_acceptes
+                            ? 'Mixte : carnet compatible = décompté, sinon paiement à la séance.'
+                            : 'Décochée : personne ne décompte, tout le monde règle à la séance.'}
+                        </span>
+                      </span>
+                    </label>
+                  ) : (
+                    <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'block', marginTop: 4 }}>
+                      Vide = ces séances sont couvertes par les carnets/abos.
+                    </span>
+                  )}
                 </div>
               </div>
 

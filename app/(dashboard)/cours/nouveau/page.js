@@ -224,6 +224,7 @@ function NouveauCoursInner() {
     visibilite: '', // sera renseigné depuis profile.visibilite_default au load
     // Workshop / évènement payant à l'unité (v35)
     tarif_unitaire: '',           // ex: 30 (€) — NULL/vide = cours régulier
+    carnets_acceptes: false,      // v82 — cours MIXTE : tarif = filet, carnets compatibles décomptent
     // Récurrence
     frequence: preFreq,
     jours_semaine: [],
@@ -293,7 +294,7 @@ function NouveauCoursInner() {
       if (fromId) {
         const { data: source } = await supabase
           .from('cours')
-          .select('nom, type_cours, heure, duree_minutes, lieu_id, capacite_max, client_pro_id, notes, tarif_unitaire, visibilite, domicile')
+          .select('nom, type_cours, heure, duree_minutes, lieu_id, capacite_max, client_pro_id, notes, tarif_unitaire, carnets_acceptes, visibilite, domicile')
           .eq('id', fromId)
           .eq('profile_id', user.id)
           .maybeSingle();
@@ -313,6 +314,7 @@ function NouveauCoursInner() {
             // élèves étaient décomptés au lieu de créer « à régler 25 € »)
             // et un cours 🔒 privé en cours PUBLIC listé sur le portail.
             tarif_unitaire: source.tarif_unitaire != null ? String(source.tarif_unitaire) : (prev.tarif_unitaire || ''),
+            carnets_acceptes: source.carnets_acceptes === true,
             visibilite: source.visibilite || prev.visibilite || 'public',
             // date reste à dateInitiale (aujourd'hui ou ?date=...) — le prof choisit la nouvelle date
           }));
@@ -441,6 +443,8 @@ function NouveauCoursInner() {
           notes: form.notes || null,
           visibilite: form.visibilite || 'public',
           tarif_unitaire: form.tarif_unitaire ? parseFloat(form.tarif_unitaire) : null,
+          // Mixte (v82) : seulement pertinent avec un tarif — sans tarif, false.
+          carnets_acceptes: form.tarif_unitaire ? form.carnets_acceptes === true : false,
           ...domicileFields,
         }).select('id').single();
         if (error) throw error;
@@ -506,6 +510,7 @@ function NouveauCoursInner() {
             // recurrences n'a pas la colonne — « ajouter une occurrence »
             // le recopie depuis un cours frère de la série).
             tarif_unitaire: form.tarif_unitaire ? parseFloat(form.tarif_unitaire) : null,
+            carnets_acceptes: form.tarif_unitaire ? form.carnets_acceptes === true : false,
             // La note du formulaire était posée sur le cours unique mais
             // silencieusement JETÉE pour les séries (B1b).
             notes: form.notes || null,
@@ -963,17 +968,17 @@ function NouveauCoursInner() {
           <textarea className="izi-input" value={form.notes} onChange={handleChange('notes')} placeholder="Infos complémentaires..." rows={2} style={{ resize: 'vertical' }} />
         </div>
 
-        {/* === Cours payable à la séance (workshop / stage / hors carnet) ===
+        {/* === Cours payable à la séance (workshop / stage / drop-in) ===
             cours.tarif_unitaire — s'applique au cours unique ET à chaque
-            occurrence d'une série. Aucun carnet décompté (gate v70 au
-            pointage), l'élève règle à la séance (encaissement au pointage). */}
+            occurrence d'une série. Sans la case « carnets acceptés » : aucun
+            carnet décompté (atelier pur, gate v70). Avec (cours MIXTE, v82) :
+            les carnets compatibles décomptent, les autres paient le tarif. */}
         <div className="form-group" style={{ background: 'var(--bg-soft, #F8F4ED)', padding: 14, borderRadius: 12, border: '1px solid var(--border)' }}>
-          <label className="form-label">💰 Cours payable à la séance (optionnel)</label>
+          <label className="form-label">💰 Prix à la séance (optionnel)</label>
           <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '0 0 10px', lineHeight: 1.5 }}>
-            Mets un prix ici <strong>seulement si ce cours ne s'achète pas avec un carnet</strong> —
-            atelier, stage, ou cours hors carnet/abo (ex. un renfo). Il ne décomptera aucun
-            carnet : l'élève réglera <strong>directement avec toi</strong> à la séance.
-            Laisse vide pour un cours couvert par tes carnets/abos.
+            Mets un prix ici pour un cours qui se règle <strong>à la séance</strong> —
+            atelier, stage, ou cours ouvert aux élèves de passage.
+            Laisse vide pour un cours couvert uniquement par tes carnets/abos.
           </p>
           <div className="form-group" style={{ background: 'transparent', padding: 0, border: 'none', maxWidth: 220 }}>
             <label className="form-label" style={{ fontSize: '0.75rem' }}>Prix à la séance (€)</label>
@@ -987,6 +992,24 @@ function NouveauCoursInner() {
               placeholder="ex : 15.00"
             />
           </div>
+          {form.tarif_unitaire && (
+            <div style={{ marginTop: 10 }}>
+              <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, cursor: 'pointer', fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                <input
+                  type="checkbox"
+                  checked={form.carnets_acceptes === true}
+                  onChange={e => setForm(prev => ({ ...prev, carnets_acceptes: e.target.checked }))}
+                  style={{ marginTop: 2, accentColor: 'var(--brand)' }}
+                />
+                <span>Accepter aussi les carnets/abos compatibles</span>
+              </label>
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '6px 0 0 24px', lineHeight: 1.5 }}>
+                {form.carnets_acceptes
+                  ? <>Cours <strong>mixte</strong> : les élèves dont le carnet couvre ce type de cours décomptent une séance, les autres (nouvelles, carnet d'un autre type) paient {form.tarif_unitaire} € à la séance.</>
+                  : <>Décochée : <strong>personne</strong> ne décompte de carnet — tout le monde règle {form.tarif_unitaire} € à la séance (atelier classique).</>}
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Visibilité publique */}
