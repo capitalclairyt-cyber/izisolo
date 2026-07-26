@@ -23,7 +23,7 @@
   var origin;
   try {
     origin = new URL(script.src).origin;
-  } catch (_e) {
+  } catch {
     origin = 'https://www.izisolo.fr';
   }
 
