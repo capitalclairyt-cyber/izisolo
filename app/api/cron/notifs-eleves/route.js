@@ -4,6 +4,7 @@ import { sendNotifEleve } from '@/lib/notifs-eleves';
 import { sendPushToEmail, claimCronPush } from '@/lib/push-server';
 import { wantsNotif } from '@/lib/notif-prefs';
 import { evaluerReglesAll } from '@/lib/regles';
+import { can } from '@/lib/plan-guard';
 import { reportError } from '@/lib/report';
 
 export const runtime = 'nodejs';
@@ -36,16 +37,21 @@ export const GET = withRoute({ auth: 'cron' }, async () => {
 
   const today = new Date().toISOString().slice(0, 10);
 
-  // Charger tous les profils (avec préférences notifs)
+  // Charger tous les profils (avec préférences notifs + champs plan pour le
+  // gate capacité — sans eux, can() lirait undefined → tout le monde gâté).
   const { data: profiles } = await supabase
     .from('profiles')
     // studio_slug : indispensable aux URLs des push (sans lui, tous les push
     // carnet/expiration pointaient sur « / » — audit 2026-07-25).
-    .select('id, studio_nom, studio_slug, notifs_eleves, alerte_seances_seuil, alerte_expiration_jours, sms_seuil_mois');
+    .select('id, studio_nom, studio_slug, notifs_eleves, alerte_seances_seuil, alerte_expiration_jours, sms_seuil_mois, plan, trial_started_at, stripe_subscription_status');
 
-  let totalSent = 0, totalSkipped = 0, totalErrors = 0, totalReglesDeclenchees = 0, profilsTraites = 0;
+  let totalSent = 0, totalSkipped = 0, totalErrors = 0, totalReglesDeclenchees = 0, profilsTraites = 0, profilsGates = 0;
 
   for (const profile of (profiles || [])) {
+    // Gate capacité (B3b — fuite connue depuis B1g) : les notifs auto élèves
+    // sont une capacité Complet. Un studio Essentiel ne déclenche RIEN ici —
+    // avant, la feature Pro tournait gratuitement pour tous les plans.
+    if (!can(profile, 'notifs_eleves_auto')) { profilsGates++; continue; }
     profilsTraites++;
     const seuilSeances = profile.alerte_seances_seuil || 2;
     const seuilJoursExp = profile.alerte_expiration_jours || 7;
@@ -339,6 +345,7 @@ Pour assurer la continuité de tes cours, pense à le renouveler avant cette dat
     profils: profilsTraites,
     sent: totalSent,
     skipped: totalSkipped,
+    profils_gates_plan: profilsGates,
     regles_declenchees: totalReglesDeclenchees,
     errors: totalErrors,
     timestamp: new Date().toISOString(),

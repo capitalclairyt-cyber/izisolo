@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeft, Save, User, Building2, MapPin, Plus, Trash2, Sparkles, AlertTriangle, Camera, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase';
+import { can } from '@/lib/plan-guard';
 import { validerEmail, validerTelephone, formaterTelephone, validerSiret, formaterSiret } from '@/lib/validation';
 import { messageErreurClient } from '@/lib/client-errors';
 import { useToast } from '@/components/ui/ToastProvider';
@@ -31,6 +32,10 @@ export default function NouveauClient() {
   const [prefilled, setPrefilled] = useState(false); // animation quand prérempli
   const [doublonsSuggeres, setDoublonsSuggeres] = useState([]); // clients similaires détectés
   const [extracting, setExtracting] = useState(false); // lecture photo en cours
+  // Row profil (plan + champs trial) pour can() — undefined = pas encore
+  // chargé : on montre le bouton photo normal en attendant (pas de flash
+  // « grisé » pour les Pro), l'upsell ne s'affiche qu'une fois le plan SU.
+  const [profilRow, setProfilRow] = useState(undefined);
   // Incrémenté à chaque préremplissage photo pour forcer le remount de
   // DateNaissanceInput / AdresseInput (ils ne resynchronisent pas leur état
   // interne sur un changement externe de `value`).
@@ -75,9 +80,10 @@ export default function NouveauClient() {
       if (!user) return;
       const { data } = await supabase
         .from('profiles')
-        .select('client_fields_config')
+        .select('client_fields_config, plan, trial_started_at, stripe_subscription_status')
         .eq('id', user.id)
         .single();
+      setProfilRow(data || null);
       if (data?.client_fields_config) setFieldsConfig({
         predefined: { date_naissance: true, adresse: false, niveau: true, source: true, notes: true, ...(data.client_fields_config.predefined || {}) },
         custom: Array.isArray(data.client_fields_config.custom) ? data.client_fields_config.custom : [],
@@ -515,19 +521,33 @@ export default function NouveauClient() {
                 onChange={handlePhotoSelect}
                 hidden
               />
-              <button
-                type="button"
-                className="izi-btn izi-btn-ghost photo-import-btn"
-                onClick={() => photoInputRef.current?.click()}
-                disabled={extracting}
-              >
-                {extracting
-                  ? <><Loader2 size={16} className="spin" /> Lecture de la photo…</>
-                  : <><Camera size={16} /> Remplir depuis une photo</>}
-              </button>
-              <p className="photo-import-hint">
-                Carte de visite, fiche papier ou capture d'écran — l'IA pré-remplit, tu vérifies.
-              </p>
+              {/* Upsell visible (B3b, validé Colin) : pour les non-Complet le
+                  bouton est grisé avec un hint « passe en Pro » — avant, il
+                  s'affichait normal et l'API renvoyait un 403 surprise. */}
+              {(() => {
+                const photoDispo = profilRow === undefined ? true : can(profilRow, 'photo_import');
+                return (
+                  <>
+                    <button
+                      type="button"
+                      className="izi-btn izi-btn-ghost photo-import-btn"
+                      onClick={() => photoDispo && photoInputRef.current?.click()}
+                      disabled={extracting || !photoDispo}
+                      style={!photoDispo ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
+                      title={!photoDispo ? 'Réservé au plan Pro' : undefined}
+                    >
+                      {extracting
+                        ? <><Loader2 size={16} className="spin" /> Lecture de la photo…</>
+                        : <><Camera size={16} /> Remplir depuis une photo</>}
+                    </button>
+                    <p className="photo-import-hint">
+                      {photoDispo
+                        ? <>Carte de visite, fiche papier ou capture d'écran — l'IA pré-remplit, tu vérifies.</>
+                        : <>✨ Réservé au plan Pro — <a href="/parametres?tab=abonnement" style={{ fontWeight: 600 }}>passe en Pro</a> pour pré-remplir les fiches depuis une photo.</>}
+                    </p>
+                  </>
+                );
+              })()}
               {prefilled && (
                 <div className="prefill-badge">
                   <Sparkles size={14} /> Informations préremplies

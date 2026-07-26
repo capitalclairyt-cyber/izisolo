@@ -4,6 +4,7 @@ import { withRoute } from '@/lib/api-route';
 import { sendNotifEleve } from '@/lib/notifs-eleves';
 import { sendPushToEmail, sendPushToUser, claimCronPush } from '@/lib/push-server';
 import { wantsNotif } from '@/lib/notif-prefs';
+import { can } from '@/lib/plan-guard';
 import { reportError } from '@/lib/report';
 
 // Durée max explicite (fluid compute : 300 s = plafond Hobby)
@@ -85,19 +86,24 @@ export const GET = withRoute({ auth: 'cron' }, async () => {
 
   const { data: profiles } = await supabaseAdmin
     .from('profiles')
-    .select('id, studio_nom, studio_slug, email_contact, notifs_eleves')
+    // plan + champs trial : le rappel J-1 est une capacité Complet (matrice
+    // B3a, « espace élève connecté … rappels J-1 ») — sans ces champs, can()
+    // lirait undefined et gâterait tout le monde.
+    .select('id, studio_nom, studio_slug, email_contact, notifs_eleves, plan, trial_started_at, stripe_subscription_status')
     .in('id', profileIds);
   const profileById = Object.fromEntries((profiles || []).map(p => [p.id, p]));
 
   const dateStr = new Date(demain + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
 
-  // 4. Envoi (email dédupé + push), gaté sur la pref élève rappel_cours.
-  let sent = 0, skipped = 0, prefOff = 0;
+  // 4. Envoi (email dédupé + push), gaté sur la pref élève rappel_cours
+  //    ET sur la capacité du studio (B3b : rappels J-1 = Complet).
+  let sent = 0, skipped = 0, prefOff = 0, plansGates = 0;
   for (const p of pres) {
     const client = clientById[p.client_id];
     const cours = coursById[p.cours_id];
     const profile = cours ? profileById[cours.profile_id] : null;
     if (!client || !cours || !profile) continue;
+    if (!can(profile, 'espace_eleve')) { plansGates++; continue; }
 
     const prefs = client.notif_prefs;
     const wantEmail = wantsNotif(prefs, 'rappel_cours', 'eleve', 'email');
@@ -208,6 +214,7 @@ Petit rappel : tu es inscrit·e à la séance ${cours.nom} demain ${dateStr}${he
     sent,
     skipped,
     prefOff,
+    plans_gates: plansGates,
     pointageRappels,
     demain,
     timestamp: new Date().toISOString(),
