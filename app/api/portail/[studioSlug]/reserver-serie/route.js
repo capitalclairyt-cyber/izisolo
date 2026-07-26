@@ -1,4 +1,5 @@
 import { withRoute } from '@/lib/api-route';
+import { studioCan } from '@/lib/plan-guard';
 import { createServerClient } from '@/lib/supabase-server';
 import { createAdminClient } from '@/lib/supabase-admin';
 import { reserverSerieSchema } from '@/lib/validation';
@@ -57,9 +58,20 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
   // pour la règle « élève sans carnet ». Sans lui, getRegle() retombait sur le
   // défaut → une résa EN SÉRIE n'était jamais bloquée même si le studio avait
   // choisi « Bloquer » (divergence série vs unitaire, audit 2026-07-25).
+  // plan + champs trial DANS le select : can() lit plan/trial_started_at/
+  // stripe_subscription_status — sans eux, undefined → 'solo' → gate fermé
+  // à tort pour un studio Pro (piège colonne fantôme, bible §12).
   const { data: profile } = await supabaseAdmin
-    .from('profiles').select('id, studio_nom, notif_prefs, regles_metier').eq('studio_slug', studioSlug).single();
+    .from('profiles').select('id, studio_nom, notif_prefs, regles_metier, plan, trial_started_at, stripe_subscription_status').eq('studio_slug', studioSlug).single();
   if (!profile) return Response.json({ error: 'Studio introuvable' }, { status: 404 });
+
+  // Matrice B3a : même gate que la résa unitaire (capacité Complet).
+  if (!studioCan(profile, 'reservation_en_ligne')) {
+    return Response.json(
+      { error: 'La réservation en ligne n\'est pas activée pour ce studio — contacte-le directement.' },
+      { status: 403 }
+    );
+  }
 
   // Client lié à cet email dans ce studio
   const { data: client } = await supabaseAdmin

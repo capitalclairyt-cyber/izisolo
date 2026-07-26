@@ -13,6 +13,7 @@ import { formatHeure, getAllTypesFromCategories } from '@/lib/utils';
 import { parseDate } from '@/lib/dates';
 import { compterPlacesOccupees, presenceOccupePlace, presenceEstReservationActive } from '@/lib/presences';
 import { resoudreCarnetApplicable } from '@/lib/carnet-resolution';
+import { can } from '@/lib/plan-guard';
 import { createClient } from '@/lib/supabase';
 import { useToast } from '@/components/ui/ToastProvider';
 import HeureSelect from '@/components/ui/HeureSelect';
@@ -452,8 +453,7 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
   // Kill-switch global SMS_ENABLED dans lib/constantes.js (false pour le
   // moment, en attendant validation OctoPush en prod). `free` inclus pour
   // comptes internes/exemptés (Colin, Maude).
-  const SMS_PLANS_LOCAL = ['pro', 'premium', 'free'];
-  const canUseSms = SMS_ENABLED && SMS_PLANS_LOCAL.includes(profile?.plan);
+  const canUseSms = SMS_ENABLED && can(profile, 'sms');
   const participantsWithPhone = presences.filter(p => p.clients?.telephone);
 
   const handleSendSms = async () => {

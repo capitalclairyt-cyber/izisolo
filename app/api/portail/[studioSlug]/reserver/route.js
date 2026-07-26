@@ -7,7 +7,7 @@ import { getRegle, getDelaiPourCours } from '@/lib/regles-metier';
 import { sendNotifElevePourRegle } from '@/lib/notif-eleve-regle';
 import { sendPushToUser } from '@/lib/push-server';
 import { wantsNotif } from '@/lib/notif-prefs';
-import { studioHasFeature } from '@/lib/plan-guard';
+import { studioCan } from '@/lib/plan-guard';
 import { infosPratiquesBlock } from '@/lib/email-helpers';
 import { sendEmail } from '@/lib/email';
 import { reportError } from '@/lib/report';
@@ -65,6 +65,16 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
 
   if (!cours) return Response.json({ error: 'Cours introuvable' }, { status: 404 });
   if (cours.est_annule) return Response.json({ error: 'Ce cours est annulé' }, { status: 400 });
+
+  // Matrice B3a : la réservation en ligne est une capacité Complet. Gate API
+  // nouveau (aucun studio Essentiel payant n'existe encore — Stripe SaaS pas
+  // branché) ; l'UX « portail vitrine » côté élève arrive en B3c.
+  if (!studioCan(profile, 'reservation_en_ligne')) {
+    return Response.json(
+      { error: 'La réservation en ligne n\'est pas activée pour ce studio — contacte-le directement.' },
+      { status: 403 }
+    );
+  }
 
   // Refuse un cours passé ou déjà commencé — helper commun heure de Paris
   // (l'horloge unique du portail depuis l'audit 2026-07-25).
@@ -627,7 +637,7 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
               Tarif : ${Number(cours.tarif_unitaire).toFixed(2).replace('.', ',')} € — à régler directement avec ton studio.
             </div>` : ''}
             <div style="background: #fffaf0; border: 1px solid #ffe0b2; border-radius: 10px; padding: 12px 16px; margin: 0 0 16px; color: #7c4a03; font-size: 0.875rem;">
-              ${studioHasFeature(profile, 'annulationParEleve')
+              ${studioCan(profile, 'reservation_en_ligne')
                 ? `<strong>Annulation flexible</strong><br/>Tu peux annuler depuis ton espace jusqu'à ${delaiAnnulation}h avant la séance.`
                 : `<strong>Annulation</strong><br/>Pour toute annulation, contacte directement ton studio.`}
             </div>

@@ -3,7 +3,7 @@ import { createServerClient } from '@/lib/supabase-server';
 import { createAdminClient } from '@/lib/supabase-admin';
 import { parseJsonBody, annulationSchema } from '@/lib/validation';
 import { checkRateLimitIP } from '@/lib/antibot';
-import { studioHasFeature } from '@/lib/plan-guard';
+import { studioCan } from '@/lib/plan-guard';
 import { evaluerAnnulation, getRegle } from '@/lib/regles-metier';
 import { sendNotifEleve } from '@/lib/notifs-eleves';
 import { sendNotifElevePourRegle } from '@/lib/notif-eleve-regle';
@@ -59,7 +59,7 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
 
   // Gate plan (Sprint 3) : l'annulation en ligne par l'élève est une feature
   // Pro du STUDIO. En Solo, l'élève contacte directement sa prof.
-  if (!studioHasFeature(profile, 'annulationParEleve')) {
+  if (!studioCan(profile, 'reservation_en_ligne')) {
     return Response.json({
       error: 'L\'annulation en ligne n\'est pas activée pour ce studio. Contacte directement ton studio pour annuler.',
     }, { status: 403 });

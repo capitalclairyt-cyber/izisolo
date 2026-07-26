@@ -80,7 +80,7 @@ export default async function CoursDetailPage({ params, searchParams }) {
   // Charger le profil (types de cours, vocabulaire)
   const { data: profile } = await supabase
     .from('profiles')
-    .select('metier, vocabulaire, types_cours, plan')
+    .select('metier, vocabulaire, types_cours, plan, trial_started_at, stripe_subscription_status')
     .eq('id', user.id)
     .single();
 

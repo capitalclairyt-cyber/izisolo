@@ -1,6 +1,6 @@
 // auth:'active' : feature payante (IA) → bloquée si compte gelé (402)
 import { withRoute } from '@/lib/api-route';
-import { effectivePlan } from '@/lib/plan-guard';
+import { can } from '@/lib/plan-guard';
 import { askClaude } from '@/lib/claude';
 import { z } from 'zod';
 import { reportError } from '@/lib/report';
@@ -42,9 +42,8 @@ const extractSchema = z.object({
 export const POST = withRoute({ auth: 'active' }, async ({ request, auth }) => {
   const { profile, supabase } = auth;
 
-  // Réservé Pro+ (essai inclus, donc dispo pour les nouvelles utilisatrices)
-  const plan = effectivePlan(profile);
-  if (plan !== 'pro' && plan !== 'premium') {
+  // Capacité Complet (essai inclus, donc dispo pour les nouvelles utilisatrices)
+  if (!can(profile, 'photo_import')) {
     return Response.json(
       { error: "L'import par photo est réservé au plan Pro." },
       { status: 403 }

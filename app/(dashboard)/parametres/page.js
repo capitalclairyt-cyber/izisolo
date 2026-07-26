@@ -13,6 +13,7 @@ import { createClient } from '@/lib/supabase';
 import { useToast } from '@/components/ui/ToastProvider';
 import { METIERS, PLANS, SMS_ENABLED, SMS_PRIX_UNITAIRE } from '@/lib/constantes';
 import { getTrialStatus, effectivePlan as effectivePlanFromTrial } from '@/lib/trial';
+import { can } from '@/lib/plan-guard';
 import { slugify } from '@/lib/utils';
 import { getReglesAnnulation } from '@/lib/regles-metier';
 // import BackgroundDecor — retiré, plus utilisé (apparences supprimées)
@@ -1125,38 +1126,23 @@ export default function Parametres() {
           {/* Plan actuel — dynamique selon le plan EFFECTIF (incluant trial) */}
           {(() => {
             const trial = getTrialStatus(profile);
-            const realPlanKey = profile?.plan || 'solo';
             const currentPlanKey = effectivePlanFromTrial(profile);
             const currentPlan = PLANS[currentPlanKey] || PLANS.solo;
             const isFree = currentPlanKey === 'free';
-            const isPremium = currentPlanKey === 'premium';
             const isTrialActive = trial.active;
-            // Liste des features à afficher avec leur statut selon le plan
-            // (label visible + clé dans l'objet PLANS pour vérif inclusion)
+            // Matrice B3a (§5 plan de bataille) : chaque ligne = une capacité
+            // testée par can() — LA source unique, plus de flags par plan.
             const featuresList = [
-              {
-                label: currentPlan.limiteClients == null
-                  ? 'Élèves illimités'
-                  : `Jusqu'à ${currentPlan.limiteClients} élèves`,
-                included: true,
-              },
-              {
-                label: currentPlan.limiteLieux == null
-                  ? 'Lieux illimités'
-                  : currentPlan.limiteLieux === 1 ? '1 lieu' : `Jusqu'à ${currentPlan.limiteLieux} lieux`,
-                included: true,
-              },
-              { label: 'Cours, agenda, pointage présences', included: true },
-              { label: 'Carnets / abonnements / paiements manuels', included: true },
-              { label: 'Stripe Payment Link (encaissement en ligne)', included: currentPlan.stripePaymentLink },
-              { label: 'Mailing campagnes par email', included: currentPlan.mailing },
-              { label: 'Notifications auto élèves (rappels, expirations)', included: currentPlan.notifsElevesAuto },
-              { label: 'Sondages planning + cours d\'essai', included: currentPlan.sondages },
-              { label: 'Page publique enrichie (bio, FAQ, philosophie)', included: currentPlan.portailEnrichi },
-              { label: 'Annulation par l\'élève + dette tardive', included: currentPlan.annulationParEleve },
-              { label: 'Export comptabilité', included: currentPlan.exportCompta },
-              { label: 'Vidéos de cours vendables à l\'unité ou en abonnement (Studio)', included: currentPlan.videos === true },
-              { label: 'Logo studio dans emails / white-label (Studio)', included: currentPlan.brandingEmail },
+              { label: 'Élèves illimités · fiches · import/export CSV', included: true },
+              { label: 'Cours, agenda, récurrences, lieux illimités', included: true },
+              { label: 'Pointage 1-clic + carnets/abos gérés à la main', included: true },
+              { label: 'Mini-compta : encaissements, « à percevoir », export comptable', included: true },
+              { label: 'Réservation en ligne + annulation élève + règles d\'annulation', included: can(profile, 'reservation_en_ligne') },
+              { label: 'Espace élève connecté (compte, historique, rappels J-1)', included: can(profile, 'espace_eleve') },
+              { label: 'Cours d\'essai en ligne, liste d\'attente, cours privés', included: can(profile, 'cours_essai') },
+              { label: 'Messagerie, mailing groupé, sondages planning', included: can(profile, 'messagerie') },
+              { label: 'Paiement en ligne élèves (Stripe Payment Link)', included: can(profile, 'paiement_en_ligne') },
+              { label: 'Import fiche par photo (IA)', included: can(profile, 'photo_import') },
             ];
             return (
               <div className="section izi-card">
@@ -1201,7 +1187,7 @@ export default function Parametres() {
                   ))}
                 </div>
 
-                {!isPremium && !isFree && (
+                {currentPlanKey !== 'pro' && !isFree && (
                   <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', marginTop: 12 }}>
                     Tu peux upgrader ton plan ci-dessous pour débloquer plus de fonctionnalités.
                   </p>
@@ -1468,7 +1454,6 @@ export default function Parametres() {
 
         /* Plans */
         .plans-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 4px; }
-        .plans-grid-3 { grid-template-columns: 1fr 1fr 1fr; }
         .plan-card {
           display: flex; flex-direction: column; gap: 8px;
           padding: 20px; border-radius: var(--radius-md);
@@ -1532,7 +1517,6 @@ export default function Parametres() {
         .plan-cta { margin-top: 8px; width: 100%; justify-content: center; }
 
         @media (max-width: 768px) {
-          .plans-grid-3 { grid-template-columns: 1fr; }
         }
         @media (max-width: 480px) {
           .plans-grid { grid-template-columns: 1fr; }

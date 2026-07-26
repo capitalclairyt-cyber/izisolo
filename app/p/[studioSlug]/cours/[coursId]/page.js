@@ -3,7 +3,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { notFound } from 'next/navigation';
 import CoursReservationClient from './CoursReservationClient';
 import { canSeeCours, resolveClientInfo } from '@/lib/visibilite';
-import { studioHasFeature } from '@/lib/plan-guard';
+import { studioCan } from '@/lib/plan-guard';
 import { escapeIlike } from '@/lib/utils';
 import { compterPlacesOccupees } from '@/lib/presences';
 
@@ -92,8 +92,8 @@ async function getData(studioSlug, coursId) {
   // Features dépendant du plan effectif du studio — pour ne PAS promettre à
   // l'élève ce que le studio ne peut pas offrir (annulation self-service /
   // liste d'attente = Pro). Évite les culs-de-sac et les promesses non tenues.
-  const canCancel = studioHasFeature(profile, 'annulationParEleve');
-  const canWaitlist = studioHasFeature(profile, 'listeAttente');
+  const canCancel = studioCan(profile, 'reservation_en_ligne');
+  const canWaitlist = studioCan(profile, 'liste_attente');
 
   return { profile, cours, nbInscrits: nbInscrits || 0, currentUser, alreadyRegistered, canCancel, canWaitlist };
 }

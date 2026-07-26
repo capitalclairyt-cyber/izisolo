@@ -2,7 +2,7 @@
  * POST /api/sms/send
  *
  * Envoie un SMS à une liste de numéros via l'API REST Twilio (sans dépendance npm).
- * Réservé aux plans activant le SMS (voir SMS_PLANS ci-dessous).
+ * Réservé à la capacité `sms` (matrice B3a — Complet).
  *
  * Variables d'environnement requises dans .env.local :
  *   TWILIO_ACCOUNT_SID   → Account SID Twilio (commence par "AC…")
@@ -20,11 +20,8 @@
  */
 
 import { withRoute } from '@/lib/api-route';
+import { can } from '@/lib/plan-guard';
 import { SMS_ENABLED } from '@/lib/constantes';
-
-// Plans autorisés à envoyer des SMS. `free` inclus pour comptes internes
-// (Colin, Maude — exemptés full access). `studio` retiré (obsolète).
-const SMS_PLANS = ['pro', 'premium', 'free'];
 
 // Normalise un numéro FR vers le format E.164 (+33XXXXXXXXX)
 function normalizePhone(telephone) {
@@ -45,18 +42,13 @@ export const POST = withRoute({ auth: 'active' }, async ({ request, auth }) => {
     );
   }
 
-  const { user, supabase } = auth;
+  const { profile } = auth;
 
-  // 2. Vérification du plan
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('plan')
-    .eq('id', user.id)
-    .single();
-
-  if (!SMS_PLANS.includes(profile?.plan)) {
+  // 2. Vérification du plan — capacité B3a sur le profil déjà chargé par
+  // l'auth (l'ancien re-fetch de `plan` seul ignorait le trial).
+  if (!can(profile, 'sms')) {
     return Response.json(
-      { error: `L'envoi SMS nécessite un plan Pro ou supérieur. Plan actuel : "${profile?.plan || 'inconnu'}".` },
+      { error: 'L\'envoi SMS nécessite le plan Pro.' },
       { status: 403 }
     );
   }

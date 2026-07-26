@@ -6,7 +6,7 @@ import { sendPushToUser } from '@/lib/push-server';
 import { wantsNotif } from '@/lib/notif-prefs';
 import { checkAntiBot, ipFromRequest } from '@/lib/antibot';
 import { essaiSchema } from '@/lib/validation';
-import { studioHasFeature } from '@/lib/plan-guard';
+import { studioCan } from '@/lib/plan-guard';
 import { reportError } from '@/lib/report';
 import { canSeeCours, resolveClientInfo } from '@/lib/visibilite';
 import { coursDejaCommence } from '@/lib/dates';
@@ -79,7 +79,7 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
 
   // Gate plan (Sprint 3) : le cours d'essai est une feature Pro du STUDIO
   // (essai_actif peut rester true après un downgrade — le plan prime).
-  if (!studioHasFeature(profile, 'coursEssai')) {
+  if (!studioCan(profile, 'cours_essai')) {
     return Response.json({ error: 'Les cours d\'essai ne sont pas activés sur ce studio' }, { status: 403 });
   }
 

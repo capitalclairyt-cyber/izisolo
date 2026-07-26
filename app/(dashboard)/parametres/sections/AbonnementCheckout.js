@@ -34,60 +34,41 @@ export default function AbonnementCheckout({ currentPlan, profile }) {
     }
   };
 
+  // 2 plans depuis B3a (matrice §5) : « Essentiel = ton cahier, en mieux.
+  // Complet = tes élèves entrent dans la boucle. » Studio (premium) retiré —
+  // plus jamais vendu, vidéos/white-label au backlog sans carte grisée.
+  // Noms/prix provisoires : les définitifs se décident en P4.
   const PLANS_PUB = [
     {
       id: 'solo',
       nom: 'Solo',
       prixMensuel: 17,
-      tagline: 'Pour démarrer en autonomie',
-      pitch: 'Tout l\'essentiel pour gérer ton studio à la main.',
+      tagline: 'Ton cahier, en mieux',
+      pitch: 'Tout ce que tu gères seule : élèves, agenda, carnets, compta.',
       features: [
-        'Jusqu\'à 40 élèves',
-        'Lieux illimités',
-        'Cours, agenda, pointage présences',
-        'Carnets / abonnements / paiements manuels',
-        'Page publique studio (basique)',
-        'Réservation en ligne pour élèves',
-        'Messagerie chat élèves',
+        'Élèves illimités · import/export CSV',
+        'Cours, agenda, récurrences, lieux illimités',
+        'Pointage 1-clic + carnets/abos gérés à la main',
+        'Mini-compta : encaissements, « à percevoir », export comptable',
+        'Page publique vitrine (planning affiché, PWA)',
       ],
-      limits: 'Pas d\'encaissement Stripe, pas de mailing, pas d\'automatisations.',
+      limits: 'Tes élèves ne font rien en ligne : pas de résa, pas d\'espace élève, pas de paiement en ligne.',
     },
     {
       id: 'pro',
       nom: 'Pro',
       recommended: true,
       prixMensuel: 22,
-      tagline: 'Ton studio devient une machine',
-      pitch: 'Encaissement en ligne + automatisations + outils marketing.',
+      tagline: 'Tes élèves entrent dans la boucle',
+      pitch: 'Tout Solo + tes élèves réservent, annulent, paient et te parlent en ligne.',
       features: [
-        'Élèves illimités',
-        'Lieux illimités',
-        'Tout Solo +',
-        'Stripe Payment Link (1% IziSolo)',
-        'Mailing campagnes par email',
-        'Notifications auto élèves (rappels, carnets)',
-        'Sondages planning',
-        'Cours d\'essai pour visiteurs',
-        'Templates communication + anniversaires auto',
-        'Page publique enrichie + page brouillon',
-        'Annulation par l\'élève',
-        'Export comptabilité',
-        'Liste d\'attente + dette annulation tardive',
+        'Réservation en ligne + annulation élève + règles d\'annulation',
+        'Espace élève connecté (compte, historique, rappels J-1)',
+        'Cours d\'essai en ligne, liste d\'attente, cours privés',
+        'Messagerie, mailing groupé, sondages planning',
+        'Paiement en ligne élèves (Stripe Payment Link, 1 % IziSolo)',
+        'Import fiche par photo (IA)',
       ],
-    },
-    {
-      id: 'premium',
-      nom: 'Studio',
-      prixMensuel: 79,
-      comingSoon: true,
-      tagline: 'Pour les studios matures',
-      pitch: 'Vidéos de cours vendables à l\'unité ou en abonnement + white-label.',
-      features: [
-        'Tout Pro +',
-        'Vidéos de cours : uploader, diffuser, vendre à l\'unité ou en abonnement',
-        'Logo studio dans tous les emails (white-label)',
-      ],
-      bonus: 'En cours de finalisation — disponible bientôt. Inscris-toi en Pro maintenant, tu pourras upgrader d\'un clic.',
     },
   ];
 
@@ -182,7 +163,7 @@ export default function AbonnementCheckout({ currentPlan, profile }) {
         .abo-banner-cta:disabled { opacity: 0.6; cursor: wait; }
       `}</style>
 
-      <div className="plans-grid plans-grid-3">
+      <div className="plans-grid">
         {PLANS_PUB.map(p => {
           const isCurrent = currentPlan === p.id;
           const isDisabled = p.comingSoon === true;

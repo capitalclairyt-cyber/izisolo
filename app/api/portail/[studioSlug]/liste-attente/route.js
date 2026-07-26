@@ -2,7 +2,7 @@ import { withRoute } from '@/lib/api-route';
 import { createAdminClient } from '@/lib/supabase-admin';
 import { listeAttenteSchema } from '@/lib/validation';
 import { checkAntiBot, ipFromRequest } from '@/lib/antibot';
-import { studioHasFeature } from '@/lib/plan-guard';
+import { studioCan } from '@/lib/plan-guard';
 import { sendEmail } from '@/lib/email';
 import { sendPushToUser } from '@/lib/push-server';
 import { wantsNotif } from '@/lib/notif-prefs';
@@ -45,7 +45,7 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
   if (!profile) return Response.json({ error: 'Studio introuvable' }, { status: 404 });
 
   // Gate plan (Sprint 3) : la liste d'attente est une feature Pro du STUDIO
-  if (!studioHasFeature(profile, 'listeAttente')) {
+  if (!studioCan(profile, 'liste_attente')) {
     return Response.json({
       error: 'La liste d\'attente n\'est pas disponible pour ce studio.',
     }, { status: 403 });
