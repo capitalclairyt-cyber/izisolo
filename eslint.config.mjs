@@ -1,5 +1,11 @@
 // Config ESLint flat minimaliste — Next.js 16 + ESLint 9.
 // FlatCompat avec next/core-web-vitals casse (circular ref) — on garde des règles de base.
+// jsx-uses-vars (2026-07-26, incident CI ratchet) : sans elle, TOUT identifiant
+// utilisé uniquement en JSX (icônes, composants) comptait « unused » — ~940
+// warnings fantômes qui noyaient les vrais et re-cassaient le plafond à
+// chaque nouvelle feature. La règle ne rapporte rien : elle MARQUE l'usage.
+import react from 'eslint-plugin-react';
+
 export default [
   {
     ignores: [
@@ -82,8 +88,10 @@ export default [
         ecmaFeatures: { jsx: true },
       },
     },
+    plugins: { react },
     rules: {
       'no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
+      'react/jsx-uses-vars': 'error',
       'no-undef': 'error',
       'no-debugger': 'error',
       'no-console': ['warn', { allow: ['warn', 'error'] }],
