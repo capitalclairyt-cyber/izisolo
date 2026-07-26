@@ -31,7 +31,7 @@ function relatif(dateStr) {
   return `le ${new Date(dateStr).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}`;
 }
 
-export default function AdminUsersClient({ initialUsers }) {
+export default function AdminUsersClient({ initialUsers, comptesEleves = [] }) {
   const [users, setUsers] = useState(initialUsers);
   const [search, setSearch] = useState('');
   const [filterPlan, setFilterPlan] = useState('');
@@ -58,6 +58,13 @@ export default function AdminUsersClient({ initialUsers }) {
       return acc;
     }, {});
   }, [users, masquerTests]);
+
+  // Comptes élèves : la même barre de recherche filtre (email, prénom, studios).
+  const elevesFiltres = useMemo(() => {
+    if (!search) return comptesEleves;
+    return comptesEleves.filter(e =>
+      matchRecherche(search, e.prenom, e.email, ...(e.studios || []).map(s => s.nom)));
+  }, [comptesEleves, search]);
 
   const handleChangePlan = async (userId, newPlan) => {
     const target = users.find(u => u.id === userId);
@@ -98,7 +105,7 @@ export default function AdminUsersClient({ initialUsers }) {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px', flexWrap: 'wrap' }}>
         <div>
           <h1 className="admin-title" style={{ marginBottom: '4px' }}>👥 Utilisateurs</h1>
-          <p style={{ color: '#64748b', fontSize: '0.875rem', margin: 0 }}>{users.length} inscrits au total</p>
+          <p style={{ color: '#64748b', fontSize: '0.875rem', margin: 0 }}>{users.length} profs · {comptesEleves.length} comptes élèves</p>
         </div>
       </div>
 
@@ -279,6 +286,76 @@ export default function AdminUsersClient({ initialUsers }) {
 
       <div style={{ color: '#475569', fontSize: '0.75rem', textAlign: 'right' }}>
         {filtered.length} résultat{filtered.length !== 1 ? 's' : ''} affiché{filtered.length !== 1 ? 's' : ''}
+      </div>
+
+      {/* ── Comptes ÉLÈVES (2026-07-26, demande Colin) : les comptes de
+          connexion des portails (auth sans profil, v57) — invisibles ici
+          avant. Affiliation = leurs fiches par email ; la recherche du haut
+          filtre aussi cette liste. */}
+      <div>
+        <h2 className="admin-subtitle" style={{ marginBottom: '4px' }}>🧘 Comptes élèves ({elevesFiltres.length}{search ? `/${comptesEleves.length}` : ''})</h2>
+        <p style={{ color: '#64748b', fontSize: '0.78rem', margin: '0 0 12px' }}>
+          Comptes de connexion aux portails. « Studios » = les fiches élève trouvées avec
+          cet email — un compte peut être élève dans plusieurs studios.
+        </p>
+        <div className="admin-card" style={{ padding: 0, overflow: 'hidden' }}>
+          <div className="admin-table-wrap">
+            <table className="admin-table">
+              <thead>
+                <tr>
+                  <th>Élève</th>
+                  <th>Studio(s)</th>
+                  <th>Dernière connexion</th>
+                  <th>Créé le</th>
+                </tr>
+              </thead>
+              <tbody>
+                {elevesFiltres.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} style={{ textAlign: 'center', color: '#475569', padding: '28px' }}>
+                      {comptesEleves.length === 0 ? 'Aucun compte élève pour l\'instant' : 'Aucun compte élève ne correspond à la recherche'}
+                    </td>
+                  </tr>
+                ) : elevesFiltres.map(e => (
+                  <tr key={e.id}>
+                    <td>
+                      <div style={{ fontWeight: 600, color: '#e2e8f0' }}>
+                        {e.prenom || '—'}
+                        {e.role !== 'eleve' && (
+                          <span className="admin-test-badge" title="Metadata role absente/inattendue — compte à regarder (façon Bruno)">⚠ rôle ?</span>
+                        )}
+                      </div>
+                      <div style={{ fontSize: '0.75rem', color: '#475569', marginTop: '2px' }}>{e.email}</div>
+                    </td>
+                    <td>
+                      {e.studios.length === 0 ? (
+                        <span style={{ color: '#f87171', fontSize: '0.78rem' }} title="Aucune fiche élève ne porte cet email — compte orphelin">
+                          ⚠ aucune fiche
+                        </span>
+                      ) : (
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                          {e.studios.map(s => (
+                            <Link key={s.id} href={`/admin/studios/${s.id}`} style={{ textDecoration: 'none' }}>
+                              <span style={{ background: '#1e3a5f', color: '#60a5fa', padding: '2px 8px', borderRadius: '6px', fontSize: '0.72rem', fontWeight: 600, display: 'inline-block' }}>
+                                {s.nom} →
+                              </span>
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+                    </td>
+                    <td style={{ color: '#94a3b8', fontSize: '0.8125rem' }}>
+                      {e.last_sign_in_at ? `vu ${relatif(e.last_sign_in_at)}` : <span style={{ color: '#475569' }}>jamais connecté</span>}
+                    </td>
+                    <td style={{ color: '#64748b', fontSize: '0.8125rem' }}>
+                      {e.created_at ? new Date(e.created_at).toLocaleDateString('fr-FR') : '—'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
 
       <style jsx global>{`

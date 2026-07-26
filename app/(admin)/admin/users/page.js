@@ -15,9 +15,11 @@ async function getUsers(supabase) {
 
   const emailById = {};
   const lastSignInById = {};
+  let authUsers = [];
   try {
     const { data: page } = await supabase.auth.admin.listUsers({ page: 1, perPage: 1000 });
-    for (const u of page?.users || []) {
+    authUsers = page?.users || [];
+    for (const u of authUsers) {
       emailById[u.id] = u.email;
       lastSignInById[u.id] = u.last_sign_in_at || null;
     }
@@ -28,7 +30,8 @@ async function getUsers(supabase) {
   // Activité par compte — lectures PAGINÉES (jamais tronquées à 1000 en silence)
   const trenteJours = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
   const [clientsRows, coursRows, paiementsRows] = await Promise.all([
-    fetchAllRows(supabase, 'clients', 'profile_id'),
+    // email + prenom : servent aussi à affilier les COMPTES ÉLÈVES aux studios
+    fetchAllRows(supabase, 'clients', 'profile_id, email, prenom'),
     fetchAllRows(supabase, 'cours', 'profile_id'),
     fetchAllRows(supabase, 'paiements', 'profile_id, date, statut'),
   ]);
@@ -43,14 +46,51 @@ async function getUsers(supabase) {
     }, {}),
   };
 
-  return (users || []).map(p => enrichirProfil(p, emailById, lastSignInById, usage));
+  const profs = (users || []).map(p => enrichirProfil(p, emailById, lastSignInById, usage));
+
+  // ── Comptes ÉLÈVES (demande Colin 2026-07-26) : les auth users SANS profil
+  // (role=eleve depuis v57) étaient INVISIBLES dans l'admin — impossible de
+  // voir à quel studio un nouveau compte ou une connexion se rattache.
+  // L'affiliation = leurs fiches `clients` (email ↔ studio), le modèle du
+  // brainstorm élèves (aucune FK : le lien EST l'email, en lower()).
+  const profilIds = new Set((users || []).map(p => p.id));
+  const nomStudioParProfil = {};
+  for (const p of users || []) nomStudioParProfil[p.id] = p.studio_nom || p.prenom || 'Studio sans nom';
+
+  const fichesParEmail = {};
+  for (const c of clientsRows) {
+    if (!c.email) continue;
+    const k = String(c.email).toLowerCase();
+    (fichesParEmail[k] = fichesParEmail[k] || []).push(c);
+  }
+
+  const comptesEleves = authUsers
+    .filter(u => !profilIds.has(u.id))
+    .map(u => {
+      const fiches = fichesParEmail[String(u.email || '').toLowerCase()] || [];
+      const studios = [...new Set(fiches.map(f => f.profile_id))]
+        .filter(id => profilIds.has(id))
+        .map(id => ({ id, nom: nomStudioParProfil[id] }));
+      return {
+        id: u.id,
+        email: u.email,
+        prenom: u.user_metadata?.prenom || fiches[0]?.prenom || null,
+        role: u.user_metadata?.role || null,
+        created_at: u.created_at,
+        last_sign_in_at: u.last_sign_in_at || null,
+        studios,
+      };
+    })
+    .sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''));
+
+  return { profs, comptesEleves };
 }
 
 export default async function AdminUsersPage() {
   // Client ADMIN : liste GLOBALE des utilisateurs (le client session + RLS
   // ne renvoyait que le profil de l'admin connecté).
   const supabase = createAdminClient();
-  const users = await getUsers(supabase);
+  const { profs, comptesEleves } = await getUsers(supabase);
 
-  return <AdminUsersClient initialUsers={users} />;
+  return <AdminUsersClient initialUsers={profs} comptesEleves={comptesEleves} />;
 }
