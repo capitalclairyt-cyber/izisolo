@@ -51,16 +51,20 @@ export const POST = withRoute({ auth: 'user' }, async ({ auth }) => {
     }
   }
 
-  // ── 2. Paiements en retard (> 7 jours, non réglés) ───────────────────────
+  // ── 2. Paiements en retard (non réglés depuis X jours) ───────────────────
+  // Seuil réglable : Paramètres → Notifications → « Alerte paiement en
+  // attente » (B2e — avant, 7 j codés en dur pendant que l'UI affichait un
+  // réglage à 14 jamais sauvegardé ni lu).
   if (wantInapp('paiement_retard')) {
-  const sevenAgo = new Date(today); sevenAgo.setDate(today.getDate() - 7);
+  const seuilJours = parseInt(prof?.alerte_paiement_attente_jours) || 14;
+  const seuilAgo = new Date(today); seuilAgo.setDate(today.getDate() - seuilJours);
 
   const { data: retards } = await supabase
     .from('paiements')
     .select('id, intitule, montant, date, client_id, clients(prenom, nom)')
     .eq('profile_id', user.id)
     .neq('statut', 'paid')
-    .lte('date', sevenAgo.toISOString().split('T')[0]);
+    .lte('date', seuilAgo.toISOString().split('T')[0]);
 
   for (const p of retards || []) {
     const jours = Math.floor((today - new Date(p.date)) / 86400000);
@@ -94,10 +98,13 @@ export const POST = withRoute({ auth: 'user' }, async ({ auth }) => {
     .not('seances_total', 'is', null)
     .gt('seances_total', 1);
 
+  // Même seuil que le dashboard et le cron notifs-eleves (alerte quand
+  // reste <= alerte_seances_seuil) — la cloche codait « < 2 » en dur (B2e).
+  const seuilSeances = parseInt(prof?.alerte_seances_seuil) || 2;
   for (const ab of carnets || []) {
     if (ab.type === 'cours_unique') continue;
     const reste = ab.seances_total - (ab.seances_utilisees || 0);
-    if (reste >= 2) continue; // seulement les carnets presque/déjà finis
+    if (reste > seuilSeances) continue; // seulement les carnets presque/déjà finis
     toUpsert.push({
       profile_id: user.id,
       type:       'carnet_epuise',
@@ -113,9 +120,12 @@ export const POST = withRoute({ auth: 'user' }, async ({ auth }) => {
   }
   } // fin notif_carnet_epuise
 
-  // ── 4. Abonnements qui expirent dans < 14 jours ───────────────────────────
+  // ── 4. Abonnements qui expirent bientôt ──────────────────────────────────
+  // Fenêtre = alerte_expiration_jours (le réglage qui pilote déjà le cron
+  // élèves et le dashboard) — la cloche codait 14 j en dur (B2e).
   if (wantInapp('abonnement_expire')) {
-  const in14 = new Date(today); in14.setDate(today.getDate() + 14);
+  const seuilExpJours = parseInt(prof?.alerte_expiration_jours) || 7;
+  const finFenetre = new Date(today); finFenetre.setDate(today.getDate() + seuilExpJours);
 
   const { data: expirant } = await supabase
     .from('abonnements')
@@ -124,7 +134,7 @@ export const POST = withRoute({ auth: 'user' }, async ({ auth }) => {
     .eq('statut', 'actif')
     .not('date_fin', 'is', null)
     .gte('date_fin', todayStr)
-    .lte('date_fin', in14.toISOString().split('T')[0]);
+    .lte('date_fin', finFenetre.toISOString().split('T')[0]);
 
   for (const ab of expirant || []) {
     const jours = Math.max(0, Math.floor((new Date(ab.date_fin) - today) / 86400000));

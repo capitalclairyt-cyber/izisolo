@@ -3,7 +3,7 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Search, Plus, User, Building2, Phone, Mail, ChevronRight, Filter, Send, SlidersHorizontal, Upload, Download, GitMerge } from 'lucide-react';
+import { Search, Plus, User, Building2, Phone, Mail, ChevronRight, Filter, Send, SlidersHorizontal, Upload, Download, GitMerge, Settings2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase';
 import { getVocabulaire } from '@/lib/vocabulaire';
 import { STATUTS_CLIENT } from '@/lib/constantes';
@@ -292,6 +292,16 @@ export default function ClientsClient({ clients: clientsInit, profile, statutMap
         >
           <GitMerge size={15} /> <span className="invite-btn-label">Fusionner</span>
         </button>
+        {/* Config près de l'usage (B2e) : les champs collectés sur les fiches
+            se règlent dans Paramètres, mais on y accède d'ici — c'est ICI
+            qu'on pense « il me manque un champ allergies ». */}
+        <Link
+          href="/parametres?tab=profil&s=champs"
+          className="izi-btn izi-btn-secondary invite-btn"
+          title="Personnaliser les champs collectés sur les fiches élèves"
+        >
+          <Settings2 size={15} /> <span className="invite-btn-label">Fiches</span>
+        </Link>
       </div>
 
       <InviteModal
@@ -583,6 +593,10 @@ export default function ClientsClient({ clients: clientsInit, profile, statutMap
           align-items: center;
           gap: 10px;
           flex-wrap: wrap;
+          /* Réserve la zone du FAB feedback (fixe en haut à droite, z-index 50) :
+             sans ça, le dernier bouton de la rangée passe DESSOUS et devient
+             incliquable — prouvé par elementFromPoint (B2e). */
+          padding-right: 56px;
         }
         /* Bannière doublons probables */
         .doublons-banner {

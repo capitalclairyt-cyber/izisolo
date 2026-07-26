@@ -18,7 +18,7 @@ export default function VisibiliteSection({ profile, setProfile, setDirty }) {
     { value: 'public',   label: 'Tout le monde',          desc: 'Visible par tous les visiteurs (default).' },
     { value: 'inscrits', label: 'Élèves inscrits',         desc: 'Seulement ceux qui ont déjà une fiche dans ton studio.' },
     { value: 'abonnes',  label: 'Détenteurs d\'abonnement', desc: 'Seulement avec un abonnement actif (carnet, mensuel...).' },
-    { value: 'fideles',  label: 'Élèves fidèles',          desc: 'Seulement ceux marqués \'Fidèle\' dans ta CRM.' },
+    { value: 'fideles',  label: 'Élèves fidèles',          desc: 'Seulement ceux marqués « Fidèle » — un statut que TU poses à la main sur leurs fiches (rien ne le pose automatiquement).' },
   ];
 
   return (

@@ -3,19 +3,17 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
-  Save, Palette, User, Building2, Bell, MapPin,
-  Plus, X, Trash2, Flower2, Crown, Mail, Home,
-  Eye, Zap, Gift, ToggleLeft, ToggleRight, Cake,
-  CreditCard, Copy, Check, ExternalLink, AlertCircle, Loader2,
-  Pencil, Image as ImageIcon,
+  Save, User, Building2, Bell, MapPin,
+  Plus, X, Trash2, Crown, Mail, Home,
+  Eye, Zap, ToggleLeft, ToggleRight, Cake,
+  Loader2, Pencil,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase';
 import { useToast } from '@/components/ui/ToastProvider';
-import { METIERS, PLANS, SMS_ENABLED, SMS_PRIX_UNITAIRE } from '@/lib/constantes';
+import { METIERS, PLANS } from '@/lib/constantes';
 import { getTrialStatus, effectivePlan as effectivePlanFromTrial } from '@/lib/trial';
 import { can } from '@/lib/plan-guard';
-import { slugify } from '@/lib/utils';
-import { getReglesAnnulation } from '@/lib/regles-metier';
+import { genererSlugStudioUnique } from '@/lib/slug-studio';
 // import BackgroundDecor — retiré, plus utilisé (apparences supprimées)
 
 // Normalise une URL utilisateur :
@@ -30,6 +28,11 @@ function normalizeUrl(value) {
   return 'https://' + trimmed;
 }
 // Sous-onglets par onglet principal (le 1er = section essentielle, par défaut).
+// Notifications réorganisées PAR DESTINATAIRE (B2e) : avant, 4 sous-onglets
+// (« Mes notifs / Seuils / Anniversaires / Notifs élèves ») répondaient tous à
+// la même question « qui est prévenu, quand ? » — 3 portes plausibles pour un
+// même réglage. Désormais 2 : ce que JE reçois / ce que MES ÉLÈVES reçoivent,
+// les seuils et anniversaires rangés à côté de la notif qu'ils pilotent.
 const SUBTABS = {
   profil: [
     { id: 'profil', label: 'Profil' },
@@ -41,19 +44,82 @@ const SUBTABS = {
     { id: 'page', label: 'Ma page' },
     { id: 'visibilite', label: 'Visibilité' },
     { id: 'essai', label: "Cours d'essai" },
-    { id: 'paiement', label: 'Paiement' },
+    { id: 'paiement', label: 'Paiement en ligne' },
   ],
   notifications: [
-    { id: 'notifs', label: 'Mes notifs' },
-    { id: 'seuils', label: 'Seuils' },
-    { id: 'anniv', label: 'Anniversaires' },
-    { id: 'eleves', label: 'Notifs élèves' },
+    { id: 'notifs', label: 'Ce que je reçois' },
+    { id: 'eleves', label: 'Ce que tes élèves reçoivent' },
   ],
   regles: [
     { id: 'annulation', label: 'Annulation' },
     { id: 'metier', label: 'Règles métier' },
   ],
 };
+
+// Anciens ids de sous-onglets (deep-links / habitudes) → nouvel emplacement.
+const SOUS_TAB_ALIAS = { seuils: 'eleves', anniv: 'eleves' };
+
+// ── Sauvegarde par carte (B2e) ──────────────────────────────────────────────
+// Chaque carte = la liste EXACTE des colonnes qu'elle possède. Le bouton
+// Enregistrer d'une carte n'écrit QUE ces colonnes (UPDATE partiel) : une
+// erreur sur un champ ne bloque que sa carte, et le save d'un onglet ne
+// réécrit plus jamais les champs des autres (fini le last-write-wins à 45
+// colonnes entre deux appareils ouverts).
+const CARTES = {
+  profil:        ['prenom', 'nom', 'email_contact', 'telephone', 'adresse'],
+  activite:      ['studio_nom', 'ville', 'metier'],
+  champs:        ['client_fields_config'],
+  page:          ['photo_couverture_focal_y', 'bio', 'philosophie', 'formations', 'annees_experience',
+                  'horaires_studio', 'horaires_studio_jours', 'afficher_tarifs', 'afficher_horaires',
+                  'faq_publique', 'instagram_url', 'facebook_url', 'website_url'],
+  visibilite:    ['visibilite_default', 'afficher_inscrits'],
+  essai:         ['essai_actif', 'essai_mode', 'essai_paiement', 'essai_prix', 'essai_stripe_payment_link', 'essai_message'],
+  paiement:      ['stripe_webhook_secret'],
+  seuils_prof:   ['alerte_paiement_attente_jours'],
+  seuils:        ['alerte_seances_seuil', 'alerte_expiration_jours'],
+  anniv:         ['anniversaire_mode', 'anniversaire_message'],
+  notifs_eleves: ['notifs_eleves', 'sms_seuil_mois'],
+  annulation:    ['regles_annulation'],
+};
+
+// Transformations avant écriture — miroir exact de l'ancien handleSave
+// monolithique (comportement constant). Champ absent d'ici = valeur brute.
+const SERIALIZERS = {
+  email_contact:             v => v || null,
+  alerte_seances_seuil:      v => parseInt(v) || 2,
+  alerte_expiration_jours:   v => parseInt(v) || 7,
+  alerte_paiement_attente_jours: v => parseInt(v) || 14,
+  anniversaire_message:      v => v || null,
+  stripe_webhook_secret:     v => v || null,
+  regles_annulation:         v => v || null,
+  notifs_eleves:             v => v || null,
+  sms_seuil_mois:            v => (v || v === 0 ? parseInt(v) || null : null),
+  photo_couverture_focal_y:  v => (v != null ? parseInt(v) : 50),
+  bio:                       v => v || null,
+  philosophie:               v => v || null,
+  formations:                v => v || null,
+  annees_experience:         v => (v ? parseInt(v) : null),
+  horaires_studio:           v => v || null,
+  horaires_studio_jours:     v => v || null,
+  client_fields_config:      v => v || null,
+  afficher_tarifs:           v => v === true,
+  afficher_horaires:         v => v === true,
+  afficher_inscrits:         v => v !== false,
+  faq_publique:              v => v || [],
+  instagram_url:             normalizeUrl,
+  facebook_url:              normalizeUrl,
+  website_url:               normalizeUrl,
+  essai_actif:               v => v === true,
+  essai_mode:                v => v || 'manuel',
+  essai_paiement:            v => v || 'gratuit',
+  essai_prix:                v => parseFloat(v) || 0,
+  essai_stripe_payment_link: v => v || null,
+  essai_message:             v => v || null,
+  visibilite_default:        v => v || 'public',
+};
+
+// Message d'anniversaire par défaut (le même que le prefill de la messagerie).
+const ANNIV_MESSAGE_DEFAUT = 'Joyeux anniversaire {prenom} ! 🎂 En ce jour spécial, toute l\'équipe du studio te souhaite une magnifique journée. À très bientôt sur le tapis !';
 
 function SubTabsBar({ items, active, onChange }) {
   return (
@@ -75,13 +141,10 @@ function SubTabsBar({ items, active, onChange }) {
 // ReglesTab (constructeur SI/ALORS avancé) retiré de l'UI le 2026-05-05.
 // Le composant reste sur disque (./ReglesTab) pour réintégration future.
 import ReglesMetierTab from './ReglesMetierTab';
-import PhotoUploader from '@/components/ui/PhotoUploader';
-import CoverPhotoEditor from '@/components/ui/CoverPhotoEditor';
 import UnsavedChangesGuard from '@/components/ui/UnsavedChangesGuard';
 import PushToggle from '@/components/push/PushToggle';
 import NotifPrefsPanel from '@/components/push/NotifPrefsPanel';
 import ChampsElevesSection from './sections/ChampsElevesSection';
-import HorairesStudioEditor from './sections/HorairesStudioEditor';
 import NotifsElevesSection from './sections/NotifsElevesSection';
 import AbonnementCheckout from './sections/AbonnementCheckout';
 import ReglesAnnulationSection from './sections/ReglesAnnulationSection';
@@ -89,15 +152,8 @@ import PagePubliqueSection from './sections/PagePubliqueSection';
 import StripePaiementSection from './sections/StripePaiementSection';
 import VisibiliteSection from './sections/VisibiliteSection';
 import CoursEssaiSection from './sections/CoursEssaiSection';
-
-const PALETTES = [
-  { id: 'rose', label: 'Rose', color: '#d4a0a0' },
-  { id: 'ocean', label: 'Océan', color: '#7aa0c4' },
-  { id: 'foret', label: 'Forêt', color: '#7ab07a' },
-  { id: 'soleil', label: 'Soleil', color: '#d4b06a' },
-  { id: 'lavande', label: 'Lavande', color: '#a890c4' },
-  { id: 'terre', label: 'Terre', color: '#c4956a' },
-];
+// (PhotoUploader / CoverPhotoEditor / HorairesStudioEditor vivent dans
+//  PagePubliqueSection depuis B2d ; PALETTES retirée — palette imposée brand.)
 
 const TABS = [
   { id: 'profil',        label: 'Profil & studio', icon: User },
@@ -107,12 +163,11 @@ const TABS = [
   { id: 'abonnement',    label: 'Abonnement IziSolo', icon: Crown },
 ];
 
-const ANNIV_MODES = [
-  { id: 'off',    label: 'Désactivé',  desc: 'Aucune alerte anniversaire' },
-  { id: 'manuel', label: 'Manuel',     desc: 'Notification uniquement, tu envoies toi-même' },
-  { id: 'semi',   label: 'Semi-auto',  desc: 'Notification + confirmation avant envoi' },
-  { id: 'auto',   label: 'Automatique',desc: 'Envoi automatique sans confirmation' },
-];
+// Les 4 « modes » anniversaire (off/manuel/semi/auto) ont été réduits à un
+// toggle en B2e : dans le code, seul off ≠ non-off comptait — « semi » et
+// « auto » promettaient un envoi (semi-)automatique qui n'a JAMAIS existé
+// (aucun cron, aucun envoi préparé). Le réel : cloche J-1/J-0 → clic → la
+// messagerie préremplit le message → la prof envoie. Promesse = produit.
 
 
 
@@ -127,21 +182,28 @@ export default function Parametres() {
   const [loading, setLoading] = useState(true);
 
   // ── Détection retour Stripe Checkout (?abo=success ou ?abo=cancel) ────
-  // Affiche un toast adapté + nettoie l'URL pour ne pas re-déclencher
-  // si le user refresh la page.
+  // Affiche un toast adapté + bascule sur l'onglet Abonnement + nettoie l'URL
+  // pour ne pas re-déclencher si le user refresh la page.
   useEffect(() => {
     const abo = searchParams.get('abo');
     if (abo === 'success') {
       toast.success('🎉 Abonnement activé ! Bienvenue dans IziSolo Pro.');
+      setActiveTab('abonnement');
       router.replace('/parametres?tab=abonnement', { scroll: false });
     } else if (abo === 'cancel') {
       toast.info('Souscription annulée. Tu peux relancer quand tu veux.');
+      setActiveTab('abonnement');
       router.replace('/parametres?tab=abonnement', { scroll: false });
     }
   }, []);
 
-  const [saving, setSaving] = useState(false);
-  const [dirty, setDirty] = useState(false);
+  // ── Sauvegarde PAR CARTE (B2e) : chaque carte de réglages a son propre
+  // bouton Enregistrer et son propre UPDATE partiel. Fini le save monolithique
+  // de ~45 champs où une seule colonne en erreur tuait TOUTE la page et où
+  // le bouton d'un onglet réécrivait les champs de tous les autres.
+  const [savingCarte, setSavingCarte] = useState(null);        // id de la carte en cours de save
+  const [dirtyCartes, setDirtyCartes] = useState(() => new Set());
+  const dirty = dirtyCartes.size > 0;
   const [profile, setProfile] = useState(null);
   const [lieux, setLieux] = useState([]);
   // Modal d'édition d'un lieu :
@@ -150,9 +212,23 @@ export default function Parametres() {
   //   { id: 'uuid', ...} → mode "édition"
   const [lieuEdit, setLieuEdit] = useState(null);
   const [lieuSaving, setLieuSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState('profil');
+  // ── Deep-links ?tab= & ?s= (B2e) : lus au premier rendu. Bug de naissance :
+  // 6 surfaces deep-linkaient (?tab=abonnement — upsells, emails du cron,
+  // bannière compte gelé, retour Stripe) et la page ne lisait JAMAIS le
+  // paramètre — tout le monde atterrissait sur Profil.
+  const [activeTab, setActiveTab] = useState(() => {
+    const t = searchParams.get('tab');
+    return TABS.some(x => x.id === t) ? t : 'profil';
+  });
   // Sous-onglets par onglet — le 1er (essentiel) est affiché par défaut.
-  const [subTab, setSubTab] = useState({ profil: 'profil', portail: 'page', notifications: 'notifs', regles: 'annulation' });
+  const [subTab, setSubTab] = useState(() => {
+    const defaults = { profil: 'profil', portail: 'page', notifications: 'notifs', regles: 'annulation' };
+    const t = searchParams.get('tab');
+    const brut = searchParams.get('s');
+    const s = SOUS_TAB_ALIAS[brut] || brut; // anciens ids (seuils, anniv) → eleves
+    if (s && (SUBTABS[t] || []).some(x => x.id === s)) defaults[t] = s;
+    return defaults;
+  });
   const setSub = (tab, id) => setSubTab(s => ({ ...s, [tab]: id }));
   const tabsRef = useRef(null);
   const [canScrollRight, setCanScrollRight] = useState(false);
@@ -161,37 +237,25 @@ export default function Parametres() {
   // ont disparu avec v61 : la cloche se règle dans « Mes notifications »
   // (notif_prefs, canal inapp). Tuyauterie morte purgée en B2b — les colonnes
   // DB restent, vestigiales (0 lecteur, 0 writer).
-  // Anniversaires
-  const [annivMode, setAnnivMode] = useState('semi');
-  const [annivMessage, setAnnivMessage] = useState('');
-  const [annivCadeauActif, setAnnivCadeauActif] = useState(false);
-  const [annivCadeauOffreId, setAnnivCadeauOffreId] = useState('');
-  const [annivCadeauType, setAnnivCadeauType] = useState('gratuit');
-  const [annivCadeauRemisePct, setAnnivCadeauRemisePct] = useState(20);
-  const [offresDisponibles, setOffresDisponibles] = useState([]);
+  // Anniversaires : les états séparés (mode/message/cadeau) ont été repliés
+  // dans `profile` en B2e — ils ne marquaient jamais dirty (modifs perdables
+  // sans garde-fou) et la zone « cadeau » était 100 % factice (aucun code ne
+  // créait le carnet 0 € promis) → UI réduite au réel : toggle + message.
 
   useEffect(() => {
     const load = async () => {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
 
-      const [{ data: prof }, { data: lieuxData }, { data: offresData }] = await Promise.all([
+      const [{ data: prof }, { data: lieuxData }] = await Promise.all([
         supabase.from('profiles').select('*').eq('id', user.id).single(),
         supabase.from('lieux').select('*').eq('profile_id', user.id).order('ordre'),
-        supabase.from('offres').select('id, nom, prix, type').eq('profile_id', user.id).eq('actif', true).order('nom'),
       ]);
 
-      setProfile(prof);
+      // Message anniv : le défaut est injecté à l'affichage (pas en DB) pour
+      // que la textarea ne montre jamais du vide — comportement historique.
+      setProfile(prof ? { ...prof, anniversaire_message: prof.anniversaire_message || ANNIV_MESSAGE_DEFAUT } : prof);
       setLieux(lieuxData || []);
-      setOffresDisponibles(offresData || []);
-
-      // Anniversaires
-      setAnnivMode(prof?.anniversaire_mode || 'semi');
-      setAnnivMessage(prof?.anniversaire_message || 'Joyeux anniversaire {prenom} ! 🎂 En ce jour spécial, toute l\'équipe du studio te souhaite une magnifique journée. À très bientôt sur le tapis !');
-      setAnnivCadeauActif(prof?.anniversaire_cadeau_actif || false);
-      setAnnivCadeauOffreId(prof?.anniversaire_cadeau_offre_id || '');
-      setAnnivCadeauType(prof?.anniversaire_cadeau_type || 'gratuit');
-      setAnnivCadeauRemisePct(prof?.anniversaire_cadeau_remise_pct || 20);
 
       setLoading(false);
     };
@@ -231,32 +295,31 @@ export default function Parametres() {
     el.scrollBy({ left: dir * Math.max(180, el.clientWidth * 0.6), behavior: 'smooth' });
   };
 
+  // Marque une carte comme modifiée (le bouton Enregistrer de cette carte
+  // s'allume ; la garde « modifs non enregistrées » s'arme).
+  const marquer = useCallback((carte) => {
+    setDirtyCartes(prev => (prev.has(carte) ? prev : new Set(prev).add(carte)));
+  }, []);
+
+  // field → carte propriétaire (déduit de CARTES, calculé une fois).
+  const carteDuChamp = useRef(null);
+  if (!carteDuChamp.current) {
+    carteDuChamp.current = {};
+    for (const [carte, fields] of Object.entries(CARTES)) {
+      for (const f of fields) carteDuChamp.current[f] = carte;
+    }
+  }
+
   const handleChange = (field) => (e) => {
     setProfile(prev => ({ ...prev, [field]: e.target.value }));
-    setDirty(true);
+    const carte = carteDuChamp.current[field];
+    if (carte) marquer(carte);
   };
 
-  // Garde des modifs non enregistrées : géré désormais par <UnsavedChangesGuard />
-  // (popstate retour navigateur + beforeunload tab close + modal pretty)
-
-  // Re-charger les données serveur (= annuler les modifs locales)
-  const handleDiscard = async () => {
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    const { data: prof } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-    if (prof) {
-      setProfile(prof);
-      // Reset les états anniv qui ne sont pas dans `profile`
-      setAnnivMode(prof.anniversaire_mode || 'semi');
-      setAnnivMessage(prof.anniversaire_message || '');
-      setAnnivCadeauActif(prof.anniversaire_cadeau_actif || false);
-      setAnnivCadeauOffreId(prof.anniversaire_cadeau_offre_id || '');
-      setAnnivCadeauType(prof.anniversaire_cadeau_type || 'gratuit');
-      setAnnivCadeauRemisePct(prof.anniversaire_cadeau_remise_pct || 20);
-    }
-    setDirty(false);
-    toast.success('Modifications annulées');
-  };
+  // Garde des modifs non enregistrées : géré par <UnsavedChangesGuard />
+  // (popstate retour navigateur + beforeunload tab close + modal pretty).
+  // L'ancien handleDiscard (« annuler les modifs ») était mort depuis le
+  // retrait de la barre sticky (2026-05-05) — purgé en B2e.
 
   // --- Lieux ---
   // Ouvre la modal en mode "création" (ou "édition" si on passe un lieu existant)
@@ -332,138 +395,80 @@ export default function Parametres() {
     toast.success('Lieu supprimé');
   };
 
-  // --- Save profile ---
-  const handleSave = async () => {
-    setSaving(true);
+  // --- Sauvegarde d'UNE carte : UPDATE partiel des seules colonnes listées
+  // dans CARTES[carte]. Remplace le save monolithique de ~45 champs (B2e).
+  const saveCarte = async (carte) => {
+    const fields = CARTES[carte];
+    if (!fields || !profile) return;
+    setSavingCarte(carte);
     const supabase = createClient();
 
-    // === Auto-magie : si la prof a renseigné un studio_nom mais qu'aucun slug
-    // n'existe encore, on en génère un automatiquement + on active le portail public.
-    // Objectif : que l'inscription / configuration soit "zéro friction" pour des
-    // utilisatrices non-tek (profs de yoga, pilates, etc.). Pas besoin qu'elles
-    // comprennent ce qu'est un slug ni d'aller cocher "activer ma page publique".
-    let computedSlug = profile.studio_slug || null;
-    let computedPortailActif = profile.portail_actif === true;
+    const payload = {};
+    for (const f of fields) {
+      const brut = profile[f];
+      payload[f] = SERIALIZERS[f] ? SERIALIZERS[f](brut) : brut;
+    }
 
-    if (profile.studio_nom && !computedSlug) {
-      const baseSlug = slugify(profile.studio_nom) || 'studio';
-      // Vérifier l'unicité — si déjà pris par un autre studio, on suffixe -2, -3, ...
-      let candidate = baseSlug;
-      let suffix = 1;
-      // Limite de sécurité (ne devrait jamais arriver en pratique)
-      while (suffix < 50) {
-        const { data: existing } = await supabase
-          .from('profiles')
-          .select('id')
-          .eq('studio_slug', candidate)
-          .neq('id', profile.id)
-          .maybeSingle();
-        if (!existing) break;
-        suffix += 1;
-        candidate = `${baseSlug}-${suffix}`;
+    // === Auto-magie (carte Activité uniquement) : studio_nom renseigné sans
+    // slug → on en génère un via lib/slug-studio (source UNIQUE depuis B1d —
+    // l'ancienne boucle locale dupliquait la logique) + on active le portail,
+    // sinon /p/{slug} renvoie 404 (RLS v25 filtre sur portail_actif = true).
+    // Cantonné à cette carte : avant, sauvegarder N'IMPORTE QUEL onglet
+    // re-forçait portail_actif = true.
+    let slugGenere = null;
+    if (carte === 'activite' && profile.studio_nom && !profile.studio_slug) {
+      try {
+        slugGenere = await genererSlugStudioUnique(supabase, profile.studio_nom, profile.id);
+        payload.studio_slug = slugGenere;
+        if (profile.portail_actif !== true) payload.portail_actif = true;
+      } catch (e) {
+        // Génération impossible (réseau/DB) : on sauve le reste de la carte,
+        // le slug se (re)tentera au prochain enregistrement.
+        console.warn('[parametres] génération slug impossible :', e?.message);
       }
-      computedSlug = candidate;
     }
 
-    // Si on a un slug (qu'on vient de générer OU qui existait déjà), on s'assure
-    // que le portail public est actif — sinon la page /p/{slug} renvoie 404 à cause
-    // de la RLS publique (v25) qui filtre sur portail_actif = true.
-    if (computedSlug && !computedPortailActif) {
-      computedPortailActif = true;
-    }
-
-    const { error } = await supabase.from('profiles').update({
-      prenom: profile.prenom,
-      nom: profile.nom,
-      // email_contact = email de contact public (différent de auth.users.email
-      // qui est l'email de connexion, géré par Supabase Auth). Rempli auto au
-      // signup par le trigger handle_new_user, modifiable ici.
-      email_contact: profile.email_contact || null,
-      studio_nom: profile.studio_nom,
-      studio_slug: computedSlug,
-      portail_actif: computedPortailActif,
-      adresse: profile.adresse,
-      ville: profile.ville,
-      telephone: profile.telephone,
-      metier: profile.metier,
-      lieu_principal: profile.lieu_principal || null,
-      // ui_couleur / ui_illustration / ui_grille_active / ui_animation_active
-      // ne sont plus modifiables via l'app (palette imposée brand IziSolo).
-      alerte_seances_seuil: parseInt(profile.alerte_seances_seuil) || 2,
-      alerte_expiration_jours: parseInt(profile.alerte_expiration_jours) || 7,
-      anniversaire_mode:            annivMode,
-      anniversaire_message:         annivMessage,
-      anniversaire_cadeau_actif:    annivCadeauActif,
-      anniversaire_cadeau_offre_id: annivCadeauOffreId || null,
-      anniversaire_cadeau_type:     annivCadeauType,
-      anniversaire_cadeau_remise_pct: parseInt(annivCadeauRemisePct) || 20,
-      stripe_webhook_secret:   profile.stripe_webhook_secret || null,
-      // Règles d'annulation (v5 + v15)
-      regles_annulation:       profile.regles_annulation || null,
-      // Notifications élèves (v19+v21) — OctoPush Mélutek, toggles + kill-switch + seuil
-      notifs_eleves:           profile.notifs_eleves || null,
-      sms_seuil_mois:          profile.sms_seuil_mois ? parseInt(profile.sms_seuil_mois) : null,
-      // Page publique enrichie (v14)
-      photo_url:               profile.photo_url || null,
-      photo_couverture:        profile.photo_couverture || null,
-      photo_couverture_focal_y: profile.photo_couverture_focal_y != null ? parseInt(profile.photo_couverture_focal_y) : 50,
-      bio:                     profile.bio || null,
-      philosophie:             profile.philosophie || null,
-      formations:              profile.formations || null,
-      annees_experience:       profile.annees_experience ? parseInt(profile.annees_experience) : null,
-      horaires_studio:         profile.horaires_studio || null,
-      horaires_studio_jours:   profile.horaires_studio_jours || null,  // structuré v40
-      client_fields_config:    profile.client_fields_config || null,    // v40 — champs élèves configurables
-      afficher_tarifs:         profile.afficher_tarifs === true,
-      afficher_horaires:       profile.afficher_horaires === true,      // v69 — toggle horaires page publique
-      afficher_inscrits:       profile.afficher_inscrits !== false,
-      faq_publique:            profile.faq_publique || [],
-      // URLs : normaliser pour respecter la contrainte CHECK (must start with http(s)://)
-      // Si vide → null, sinon préfixer https:// si absent
-      instagram_url:           normalizeUrl(profile.instagram_url),
-      facebook_url:            normalizeUrl(profile.facebook_url),
-      website_url:             normalizeUrl(profile.website_url),
-      // Cours d'essai (v29)
-      essai_actif:                profile.essai_actif === true,
-      essai_mode:                 profile.essai_mode || 'manuel',
-      essai_paiement:             profile.essai_paiement || 'gratuit',
-      essai_prix:                 parseFloat(profile.essai_prix) || 0,
-      essai_stripe_payment_link:  profile.essai_stripe_payment_link || null,
-      essai_message:              profile.essai_message || null,
-      // Visibilité par défaut des cours (v30)
-      visibilite_default:         profile.visibilite_default || 'public',
-    }).eq('id', profile.id);
+    const { error } = await supabase.from('profiles').update(payload).eq('id', profile.id);
 
     if (!error) {
-      // Refléter immédiatement le slug + activation auto dans l'état local,
-      // pour que l'UI affiche tout de suite l'URL publique sans rechargement manuel.
-      setProfile(prev => ({
-        ...prev,
-        studio_slug: computedSlug,
-        portail_actif: computedPortailActif,
-      }));
-      router.refresh();
-      if (computedSlug && computedSlug !== profile.studio_slug) {
-        toast.success(`Page publique activée : /p/${computedSlug}`);
+      if (slugGenere) {
+        // Refléter le slug + l'activation dans l'état local sans rechargement.
+        setProfile(prev => ({ ...prev, studio_slug: slugGenere, portail_actif: true }));
+        toast.success(`Page publique activée : /p/${slugGenere}`);
       } else {
-        toast.success('Paramètres enregistrés !');
+        toast.success('Enregistré !');
       }
-      setDirty(false);
+      setDirtyCartes(prev => {
+        const next = new Set(prev);
+        next.delete(carte);
+        return next;
+      });
+      router.refresh();
     } else {
       toast.error('Erreur : ' + error.message);
     }
-    setSaving(false);
+    setSavingCarte(null);
   };
+
+  // Bouton Enregistrer d'une carte — grisé tant que rien n'a changé dedans.
+  const BtnSauver = ({ carte }) => (
+    <button
+      onClick={() => saveCarte(carte)}
+      className="izi-btn izi-btn-primary save-btn"
+      disabled={savingCarte === carte || !dirtyCartes.has(carte)}
+    >
+      <Save size={18} /> {savingCarte === carte ? 'Enregistrement...' : 'Enregistrer'}
+    </button>
+  );
 
   if (loading) return <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>Chargement...</div>;
 
   return (
     <div className="parametres">
       {/* Garde-fou : modal qui s'affiche UNIQUEMENT à la tentative de quitter
-          (bouton retour, fermeture onglet, refresh) si dirty=true. La barre
-          sticky permanente a été retirée le 2026-05-05 — trop intrusive,
-          et chaque section a déjà son propre bouton Enregistrer inline. */}
-      <UnsavedChangesGuard dirty={dirty} onConfirmLeave={() => setDirty(false)} />
+          (bouton retour, fermeture onglet, refresh) s'il reste une carte
+          modifiée non enregistrée. */}
+      <UnsavedChangesGuard dirty={dirty} onConfirmLeave={() => setDirtyCartes(new Set())} />
 
       <div className="page-header animate-fade-in">
         <h1>Paramètres</h1>
@@ -530,8 +535,9 @@ export default function Parametres() {
               </div>
             </div>
             <div className="form-group">
-              <label className="form-label"><Mail size={14} style={{ display: 'inline', verticalAlign: '-2px', marginRight: 4 }} />Adresse e-mail</label>
+              <label className="form-label"><Mail size={14} style={{ display: 'inline', verticalAlign: '-2px', marginRight: 4 }} />Email de contact</label>
               <input className="izi-input" type="email" value={profile.email_contact || ''} onChange={handleChange('email_contact')} placeholder="ton@email.com" />
+              <p className="form-hint">C'est l'email affiché à tes élèves (portail, emails envoyés en ton nom). Il ne change pas ton email de connexion.</p>
             </div>
             <div className="form-group">
               <label className="form-label">Téléphone</label>
@@ -541,6 +547,7 @@ export default function Parametres() {
               <label className="form-label"><Home size={14} style={{ display: 'inline', verticalAlign: '-2px', marginRight: 4 }} />Adresse</label>
               <input className="izi-input" value={profile.adresse || ''} onChange={handleChange('adresse')} placeholder="Adresse postale" />
             </div>
+            <BtnSauver carte="profil" />
           </div>
           )}
 
@@ -566,21 +573,10 @@ export default function Parametres() {
                 </select>
               </div>
             </div>
-            {lieux.length > 0 && (
-              <div className="form-group">
-                <label className="form-label"><MapPin size={14} style={{ display: 'inline', verticalAlign: '-2px', marginRight: 4 }} />Ma salle principale</label>
-                <select
-                  className="izi-input"
-                  value={profile.lieu_principal || ''}
-                  onChange={handleChange('lieu_principal')}
-                >
-                  <option value="">Aucune sélection</option>
-                  {lieux.map(l => (
-                    <option key={l.id} value={l.id}>{l.nom}</option>
-                  ))}
-                </select>
-              </div>
-            )}
+            {/* « Ma salle principale » (lieu_principal) retirée en B2e : réglage
+                100 % factice — sauvé en DB mais lu par AUCUN code (les cours
+                portent chacun leur propre lieu). La colonne reste, vestige. */}
+            <BtnSauver carte="activite" />
           </div>
           )}
 
@@ -732,20 +728,19 @@ export default function Parametres() {
               (2026-06-01) : c'est la config des données qu'on collecte sur ses
               élèves, naturellement liée à l'identité du studio. */}
           {subTab.profil === 'champs' && (
-            <ChampsElevesSection
-              profile={profile}
-              setProfile={setProfile}
-              setDirty={setDirty}
-            />
+            <>
+              <ChampsElevesSection
+                profile={profile}
+                setProfile={setProfile}
+                setDirty={() => marquer('champs')}
+              />
+              <BtnSauver carte="champs" />
+            </>
           )}
 
           {/* Note : la page publique (PagePubliqueSection) a été déplacée vers
               l'onglet "Portail public" (2026-06-01), avec VisibiliteSection,
               CoursEssaiSection et StripePaiementSection. */}
-
-          <button onClick={handleSave} className="izi-btn izi-btn-primary save-btn" disabled={saving}>
-            <Save size={18} /> {saving ? 'Enregistrement...' : 'Enregistrer'}
-          </button>
         </div>
       )}
 
@@ -760,21 +755,29 @@ export default function Parametres() {
           <SubTabsBar items={SUBTABS.portail} active={subTab.portail} onChange={id => setSub('portail', id)} />
 
           {subTab.portail === 'page' && (
-            <PagePubliqueSection profile={profile} setProfile={setProfile} setDirty={setDirty} />
+            <>
+              <PagePubliqueSection profile={profile} setProfile={setProfile} setDirty={() => marquer('page')} />
+              <BtnSauver carte="page" />
+            </>
           )}
           {subTab.portail === 'visibilite' && (
-            <VisibiliteSection profile={profile} setProfile={setProfile} setDirty={setDirty} />
+            <>
+              <VisibiliteSection profile={profile} setProfile={setProfile} setDirty={() => marquer('visibilite')} />
+              <BtnSauver carte="visibilite" />
+            </>
           )}
           {subTab.portail === 'essai' && (
-            <CoursEssaiSection profile={profile} setProfile={setProfile} setDirty={setDirty} />
+            <>
+              <CoursEssaiSection profile={profile} setProfile={setProfile} setDirty={() => marquer('essai')} />
+              <BtnSauver carte="essai" />
+            </>
           )}
           {subTab.portail === 'paiement' && (
-            <StripePaiementSection profile={profile} setProfile={setProfile} setDirty={setDirty} />
+            <>
+              <StripePaiementSection profile={profile} setProfile={setProfile} setDirty={() => marquer('paiement')} />
+              <BtnSauver carte="paiement" />
+            </>
           )}
-
-          <button onClick={handleSave} className="izi-btn izi-btn-primary save-btn" disabled={saving}>
-            <Save size={18} /> {saving ? 'Enregistrement...' : 'Enregistrer'}
-          </button>
         </div>
       )}
 
@@ -786,9 +789,10 @@ export default function Parametres() {
           <SubTabsBar items={SUBTABS.notifications} active={subTab.notifications} onChange={id => setSub('notifications', id)} />
 
           {/* Mes notifications — ce que LA PROF veut recevoir (push navigateur +
-              choix par type). Distinct des "Notifications élèves auto" plus bas
+              choix par type). Distinct de « Ce que tes élèves reçoivent »
               (= ce que l'app envoie AUX élèves). Sauvegarde immédiate au toggle. */}
           {subTab.notifications === 'notifs' && (
+          <>
           <div className="section izi-card">
             <div className="section-top">
               <div className="section-icon"><Bell size={20} /></div>
@@ -816,74 +820,23 @@ export default function Parametres() {
               }}
             />
           </div>
-          )}
 
-          {/* Seuils d'alerte — pilotent à la fois (1) les alertes affichées
-              sur le dashboard prof et (2) les notifications auto envoyées
-              aux élèves (cf. section "Notifications élèves auto" ci-dessous
-              pour activer les canaux email/SMS).
-              Déplacé ici depuis l'onglet Réglages (2026-06-01). */}
-          {subTab.notifications === 'seuils' && (
-          <>
+          {/* Seuil de l'alerte « paiement en attente » (cloche prof uniquement).
+              B2e : ce réglage existait dans l'UI depuis toujours mais n'était
+              NI sauvegardé (absent du payload) NI lu (la cloche codait 7 j en
+              dur) — désormais branché de bout en bout. */}
           <div className="section izi-card">
             <div className="section-top">
               <div className="section-icon"><Bell size={20} /></div>
-              <h2>Seuils d'alerte</h2>
+              <h2>Alerte paiement en attente</h2>
             </div>
             <p className="section-desc">
-              Ces seuils déterminent quand l'app considère qu'une situation mérite ton
-              attention. Ils servent à <strong>(1)</strong> afficher des alertes sur
-              ton tableau de bord, et <strong>(2)</strong> déclencher les
-              notifications automatiques envoyées à tes élèves (si activées
-              ci-dessous dans <em>Notifications élèves auto</em>).
+              Quand un paiement (chèque, virement, espèces) reste marqué « en attente »
+              trop longtemps, tu reçois une notification dans ta cloche pour penser à
+              relancer. Rien n'est envoyé à l'élève — c'est à toi de choisir le ton.
             </p>
-
-            <div className="form-row">
-              <div className="form-group">
-                <label className="form-label">Carnet bientôt épuisé</label>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <input
-                    className="izi-input"
-                    type="number"
-                    min="1"
-                    max="20"
-                    style={{ maxWidth: 100 }}
-                    value={profile.alerte_seances_seuil || 2}
-                    onChange={handleChange('alerte_seances_seuil')}
-                  />
-                  <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>séances ou moins</span>
-                </div>
-                <p className="form-hint">
-                  Ex. <strong>2</strong> → quand un élève n'a plus que 2 séances dans son
-                  carnet, tu vois une alerte « Caroline a 2 séances restantes » + (si activé)
-                  l'élève reçoit un email type « Plus que 2 séances dans ton carnet ».
-                </p>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Abonnement bientôt expiré</label>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <input
-                    className="izi-input"
-                    type="number"
-                    min="1"
-                    max="60"
-                    style={{ maxWidth: 100 }}
-                    value={profile.alerte_expiration_jours || 7}
-                    onChange={handleChange('alerte_expiration_jours')}
-                  />
-                  <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>jours avant la date de fin</span>
-                </div>
-                <p className="form-hint">
-                  Ex. <strong>7</strong> → 7 jours avant l'expiration d'un abonnement, tu vois
-                  une alerte sur le dashboard + (si activé) l'élève reçoit un rappel pour
-                  penser à renouveler.
-                </p>
-              </div>
-            </div>
-
             <div className="form-group">
-              <label className="form-label">Paiement en attente</label>
+              <label className="form-label">Me prévenir après</label>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <input
                   className="izi-input"
@@ -894,87 +847,129 @@ export default function Parametres() {
                   value={profile.alerte_paiement_attente_jours || 14}
                   onChange={handleChange('alerte_paiement_attente_jours')}
                 />
-                <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>jours après émission</span>
+                <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>jours d'attente</span>
               </div>
-              <p className="form-hint">
-                Ex. <strong>14</strong> → quand un paiement (chèque, virement, espèces) reste
-                marqué « en attente » depuis 14 jours, alerte sur ton dashboard pour relancer
-                l'élève. Pas de notif auto envoyée à l'élève sur ce point — c'est à toi de
-                décider du ton (gentil rappel ou plus ferme).
-              </p>
             </div>
+            <BtnSauver carte="seuils_prof" />
           </div>
-          <button onClick={handleSave} className="izi-btn izi-btn-primary save-btn" disabled={saving}>
-            <Save size={18} /> {saving ? 'Enregistrement...' : 'Enregistrer'}
-          </button>
           </>
           )}
 
+          {/* Ce que TES ÉLÈVES reçoivent : les emails auto (NotifsElevesSection),
+              les seuils qui les déclenchent, et le message d'anniversaire.
+              Rangés ensemble PAR DESTINATAIRE (B2e). */}
           {subTab.notifications === 'eleves' && (
           <>
             <NotifsElevesSection
               profile={profile}
               setProfile={setProfile}
-              setDirty={setDirty}
+              setDirty={() => marquer('notifs_eleves')}
             />
-            <button onClick={handleSave} className="izi-btn izi-btn-primary save-btn" disabled={saving}>
-              <Save size={18} /> {saving ? 'Enregistrement...' : 'Enregistrer'}
-            </button>
-          </>
-          )}
+            <BtnSauver carte="notifs_eleves" />
 
-          {/* Anniversaires : messages auto ENVOYÉS aux élèves — feature à part
-              (≠ « Mes notifications » ci-dessus = ce que la prof reçoit). */}
-          {subTab.notifications === 'anniv' && (
-          <>
+            <div className="section izi-card">
+              <div className="section-top">
+                <div className="section-icon"><Bell size={20} /></div>
+                <h2>Seuils de déclenchement</h2>
+              </div>
+              <p className="section-desc">
+                Ces deux seuils déclenchent les emails automatiques ci-dessus (s'ils
+                sont activés) — et les mêmes alertes sur ton tableau de bord.
+              </p>
 
-
-          {/* ══════════ ANNIVERSAIRES (toujours visible) ══════════ */}
-          {true && (
-            <div className="notif-anniv animate-fade-in">
-
-              {/* Mode */}
-              <div className="param-section">
-                <div className="param-section-title">
-                  <Cake size={16} /> Mode d'envoi
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label">Carnet bientôt épuisé</label>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <input
+                      className="izi-input"
+                      type="number"
+                      min="1"
+                      max="20"
+                      style={{ maxWidth: 100 }}
+                      value={profile.alerte_seances_seuil || 2}
+                      onChange={handleChange('alerte_seances_seuil')}
+                    />
+                    <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>séances ou moins</span>
+                  </div>
+                  <p className="form-hint">
+                    Ex. <strong>2</strong> → quand un élève n'a plus que 2 séances dans son
+                    carnet, tu vois une alerte « Caroline a 2 séances restantes » + (si activé)
+                    l'élève reçoit un email type « Plus que 2 séances dans ton carnet ».
+                  </p>
                 </div>
-                <p className="param-section-desc">
-                  IziSolo détecte automatiquement les anniversaires et peut envoyer un message personnalisé.
-                </p>
-                <div className="anniv-modes">
-                  {ANNIV_MODES.map(m => (
-                    <button
-                      key={m.id}
-                      type="button"
-                      className={`anniv-mode-btn ${annivMode === m.id ? 'active' : ''}`}
-                      onClick={() => setAnnivMode(m.id)}
-                    >
-                      <div className="anniv-mode-label">{m.label}</div>
-                      <div className="anniv-mode-desc">{m.desc}</div>
-                    </button>
-                  ))}
+
+                <div className="form-group">
+                  <label className="form-label">Abonnement bientôt expiré</label>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <input
+                      className="izi-input"
+                      type="number"
+                      min="1"
+                      max="60"
+                      style={{ maxWidth: 100 }}
+                      value={profile.alerte_expiration_jours || 7}
+                      onChange={handleChange('alerte_expiration_jours')}
+                    />
+                    <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>jours avant la date de fin</span>
+                  </div>
+                  <p className="form-hint">
+                    Ex. <strong>7</strong> → 7 jours avant l'expiration d'un abonnement, tu vois
+                    une alerte sur le dashboard + (si activé) l'élève reçoit un rappel pour
+                    penser à renouveler.
+                  </p>
                 </div>
               </div>
+              <BtnSauver carte="seuils" />
+            </div>
 
-              {/* Message type */}
-              {annivMode !== 'off' && (
-                <div className="param-section">
-                  <div className="param-section-title">
-                    <Mail size={16} /> Message d'anniversaire
-                  </div>
-                  <p className="param-section-desc">
+            {/* Anniversaires — réduit au réel (B2e) : cloche J-1/J-0 → clic →
+                messagerie préremplie avec ce message → envoi MANUEL. Les modes
+                « semi-auto / automatique » et le « cadeau » (carnet 0 € promis)
+                n'ont jamais été branchés : retirés de l'UI, colonnes conservées. */}
+            <div className="section izi-card">
+              <div className="section-top">
+                <div className="section-icon"><Cake size={20} /></div>
+                <h2>Anniversaires</h2>
+                <button
+                  type="button"
+                  className="param-toggle-switch"
+                  style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'inline-flex' }}
+                  onClick={() => {
+                    const actif = (profile.anniversaire_mode || 'semi') !== 'off';
+                    setProfile(prev => ({ ...prev, anniversaire_mode: actif ? 'off' : 'manuel' }));
+                    marquer('anniv');
+                  }}
+                  aria-pressed={(profile.anniversaire_mode || 'semi') !== 'off'}
+                  aria-label="Activer les alertes anniversaire"
+                >
+                  {(profile.anniversaire_mode || 'semi') !== 'off'
+                    ? <ToggleRight size={30} style={{ color: 'var(--brand)' }} />
+                    : <ToggleLeft size={30} style={{ color: 'var(--border)' }} />}
+                </button>
+              </div>
+              <p className="section-desc">
+                La veille et le jour J de l'anniversaire d'un·e élève, tu reçois une
+                alerte dans ta cloche. Un clic ouvre la messagerie avec ton message
+                prérempli — tu n'as plus qu'à l'envoyer (rien ne part tout seul).
+              </p>
+
+              {(profile.anniversaire_mode || 'semi') !== 'off' && (
+                <div className="form-group">
+                  <label className="form-label">Message d'anniversaire</label>
+                  <p className="form-hint" style={{ marginTop: 0 }}>
                     Utilise <code>{'{prenom}'}</code> pour personnaliser avec le prénom de l'élève.
                   </p>
                   <textarea
                     className="izi-input anniv-textarea"
-                    value={annivMessage}
-                    onChange={e => setAnnivMessage(e.target.value)}
+                    value={profile.anniversaire_message || ''}
+                    onChange={handleChange('anniversaire_message')}
                     rows={4}
                     placeholder="Joyeux anniversaire {prenom} ! 🎂"
                   />
                   <div className="anniv-preview">
                     <span className="anniv-preview-label">Aperçu :</span>
-                    {annivMessage
+                    {(profile.anniversaire_message || '')
                       .replace(/\{\{\s*prenom\s*\}\}/g, 'Sophie')
                       .replace(/\{\s*prenom\s*\}/g, 'Sophie')
                       .replace(/\{\{\s*nom\s*\}\}/g, 'Martin')
@@ -982,106 +977,8 @@ export default function Parametres() {
                   </div>
                 </div>
               )}
-
-              {/* Cadeau */}
-              {annivMode !== 'off' && (
-                <div className="param-section">
-                  <div className="param-section-title-row">
-                    <div className="param-section-title">
-                      <Gift size={16} /> Offrir quelque chose
-                    </div>
-                    <button
-                      type="button"
-                      className="param-toggle-switch"
-                      onClick={() => setAnnivCadeauActif(v => !v)}
-                    >
-                      {annivCadeauActif
-                        ? <ToggleRight size={26} style={{ color: 'var(--brand)' }} />
-                        : <ToggleLeft  size={26} style={{ color: 'var(--border)' }} />
-                      }
-                    </button>
-                  </div>
-                  <p className="param-section-desc">
-                    Joindre un cadeau au message : offre à 0€ ou remise sur une prestation.
-                  </p>
-
-                  {annivCadeauActif && (
-                    <div className="anniv-cadeau-zone animate-slide-up">
-                      <div className="form-group">
-                        <label className="form-label">Type de cadeau</label>
-                        <div className="anniv-cadeau-type-row">
-                          {[
-                            { id: 'gratuit', label: '🎁 Offre offerte (0€)' },
-                            { id: 'remise',  label: '% Remise sur une offre' },
-                          ].map(ct => (
-                            <button
-                              key={ct.id}
-                              type="button"
-                              className={`anniv-cadeau-type-btn ${annivCadeauType === ct.id ? 'active' : ''}`}
-                              onClick={() => setAnnivCadeauType(ct.id)}
-                            >
-                              {ct.label}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div className="form-group">
-                        <label className="form-label">
-                          {annivCadeauType === 'gratuit' ? 'Offre à offrir' : 'Offre sur laquelle appliquer la remise'}
-                        </label>
-                        <select
-                          className="izi-input"
-                          value={annivCadeauOffreId}
-                          onChange={e => setAnnivCadeauOffreId(e.target.value)}
-                        >
-                          <option value="">— Choisir une offre —</option>
-                          {offresDisponibles.map(o => (
-                            <option key={o.id} value={o.id}>
-                              {o.nom} {o.prix > 0 ? `— ${o.prix}€` : '(offert)'}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
-                      {annivCadeauType === 'remise' && (
-                        <div className="form-group">
-                          <label className="form-label">Pourcentage de remise</label>
-                          <div className="anniv-remise-row">
-                            {[10, 20, 30, 50].map(p => (
-                              <button
-                                key={p}
-                                type="button"
-                                className={`anniv-pct-btn ${annivCadeauRemisePct === p ? 'active' : ''}`}
-                                onClick={() => setAnnivCadeauRemisePct(p)}
-                              >
-                                {p}%
-                              </button>
-                            ))}
-                            <input
-                              className="izi-input anniv-pct-input"
-                              type="number" min="1" max="100"
-                              value={annivCadeauRemisePct}
-                              onChange={e => setAnnivCadeauRemisePct(Number(e.target.value))}
-                              placeholder="Autre %"
-                            />
-                          </div>
-                        </div>
-                      )}
-
-                      <div className="anniv-cadeau-hint">
-                        💡 Le cadeau sera joint au message et créera automatiquement un abonnement/carnet à 0€ (ou avec remise) pour l'élève une fois le message envoyé.
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              <button className="izi-btn izi-btn-primary" onClick={handleSave} disabled={saving}>
-                <Save size={16} /> {saving ? 'Enregistrement…' : 'Enregistrer'}
-              </button>
+              <BtnSauver carte="anniv" />
             </div>
-          )}
           </>
           )}
 
@@ -1103,11 +1000,9 @@ export default function Parametres() {
               <ReglesAnnulationSection
                 profile={profile}
                 setProfile={setProfile}
-                setDirty={setDirty}
+                setDirty={() => marquer('annulation')}
               />
-              <button onClick={handleSave} className="izi-btn izi-btn-primary save-btn" disabled={saving}>
-                <Save size={18} /> {saving ? 'Enregistrement...' : 'Enregistrer'}
-              </button>
+              <BtnSauver carte="annulation" />
             </>
           )}
 

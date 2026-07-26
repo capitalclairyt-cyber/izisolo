@@ -14,8 +14,8 @@ import { SMS_ENABLED, SMS_PRIX_UNITAIRE } from '@/lib/constantes';
 const NOTIFS_TYPES = [
   { key: 'cours_annule',       label: 'Cours annulé par mes soins',       desc: "Email/SMS automatique aux inscrits quand j'annule un cours." },
   { key: 'annulation_tardive', label: 'Annulation tardive — séance comptée', desc: "L'élève reçoit un rappel transparent : sa séance a été décomptée." },
-  { key: 'credits_faibles',    label: 'Crédits faibles',                  desc: "Quand il reste peu de séances sur un carnet (seuil dans Notifications)." },
-  { key: 'expiration_abo',     label: 'Expiration prochaine d\'abonnement', desc: "X jours avant la date de fin (seuil dans Notifications)." },
+  { key: 'credits_faibles',    label: 'Crédits faibles',                  desc: "Quand il reste peu de séances sur un carnet (seuil réglable ci-dessous)." },
+  { key: 'expiration_abo',     label: 'Expiration prochaine d\'abonnement', desc: "X jours avant la date de fin (délai réglable ci-dessous)." },
 ];
 
 export default function NotifsElevesSection({ profile, setProfile, setDirty }) {
