@@ -20,7 +20,7 @@ export const FAQ_ITEMS = [
   },
   {
     q: 'Comment fonctionnent les sondages planning ?',
-    a: "Avant la rentrée (ou quand tu veux), tu crées un sondage avec tes créneaux candidats. Tes élèves votent depuis leur espace pour leurs préférences. Tu vois en temps réel les créneaux gagnants, et tu transformes les vainqueurs en cours officiels en deux clics. Plus jamais de planning lancé au pif — tu sais exactement ce qui va remplir.",
+    a: "Avant la rentrée (ou quand tu veux), tu crées un sondage avec tes créneaux candidats et tu partages le lien à tes élèves (SMS, WhatsApp, mail). Iels votent en un clic, tu vois les créneaux gagnants se dessiner, et tu transformes les vainqueurs en cours officiels en deux clics. Plus jamais de planning lancé au pif — tu sais exactement ce qui va remplir.",
   },
   {
     q: 'Et si un cours est complet, comment ça se passe ?',

@@ -150,7 +150,7 @@ function CompletAvecListeAttente({ cours, studioSlug, currentUser }) {
   );
 }
 
-export default function CoursReservationClient({ cours, profile, nbInscrits, studioSlug, currentUser, alreadyRegistered = false, canCancel = false, canWaitlist = false }) {
+export default function CoursReservationClient({ cours, profile, nbInscrits, studioSlug, currentUser, alreadyRegistered = false, canCancel = false, canReserve = true, canWaitlist = false }) {
   const { toast } = useToast();
   const [nom, setNom]       = useState(currentUser?.nom || '');
   const [email, setEmail]   = useState(currentUser?.email || '');
@@ -457,6 +457,15 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
             </p>
           </div>
         )
+      ) : !canReserve ? (
+        /* Studio Essentiel (vitrine, B3c) : pas de réservation en ligne —
+           les infos du cours restent visibles, la résa se fait en direct. */
+        <div className="portail-card" style={{ textAlign: 'center' }}>
+          <h2 style={{ fontSize: '1.0625rem', fontWeight: 700, margin: '0 0 8px', color: '#1a1a2e' }}>Réserver ta place</h2>
+          <p style={{ color: '#555', fontSize: '0.9rem', margin: 0 }}>
+            Ce studio prend les réservations en direct — <strong>contacte-le pour réserver</strong> (ses coordonnées sont sur sa page).
+          </p>
+        </div>
       ) : (
         <div className="portail-card">
           <h2 style={{ fontSize: '1.0625rem', fontWeight: 700, margin: '0 0 16px', color: '#1a1a2e' }}>Réserver ma place</h2>

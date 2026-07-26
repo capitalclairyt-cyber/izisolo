@@ -370,8 +370,8 @@ export function Features() {
         <FeatureRow
           eyebrow="Sondages planning"
           title="Lance un sondage, transforme les gagnants en cours"
-          desc="Envie de tester de nouveaux créneaux pour la rentrée ? Lance un sondage en 30 secondes, tes élèves votent pour leurs préférences depuis leur espace, et tu transformes les vainqueurs en cours officiels en deux clics. Plus de planning à l'aveugle — tu sais exactement ce qui va remplir."
-          bullets={['Vote des élèves depuis leur espace', 'Conversion sondage → cours officiel en 2 clics', 'Classement des créneaux par popularité']}
+          desc="Envie de tester de nouveaux créneaux pour la rentrée ? Lance un sondage en 30 secondes, partage le lien à tes élèves (SMS, WhatsApp, mail) — iels votent en un clic, et tu transformes les vainqueurs en cours officiels en deux clics. Plus de planning à l'aveugle — tu sais exactement ce qui va remplir."
+          bullets={['Vote des élèves en 1 clic via le lien partagé', 'Conversion sondage → cours officiel en 2 clics', 'Classement des créneaux par popularité']}
           mockupTab="sondage"
           flip={false}
         />
@@ -660,8 +660,11 @@ export function Testimonials() {
   );
 }
 
-/* ---- TARIFS — Solo 17€ / Pro 22€ / Studio 79€ (mensuel)
-   Founding 100 : Solo 12€ / Pro 19€ / Studio 49€ (à vie) ---- */
+/* ---- TARIFS — 2 plans depuis B3c (matrice PLAN-BATAILLE §5).
+   « Solo = ton cahier, en mieux. Pro = tes élèves entrent dans la boucle. »
+   Studio (79 €) retiré : plus jamais promu, vidéos/white-label au backlog.
+   Zéro quota affiché (les limites 40 élèves / 5 formules sont MORTES — v80).
+   Prix = placeholders Founding 100 actuels, les définitifs se décident en P4. */
 export function Pricing() {
   const plans = [
     {
@@ -669,15 +672,14 @@ export function Pricing() {
       price: '12',
       publicPrice: '17',
       sub: '/mois · à vie',
-      desc: 'Pour démarrer simplement. Tout l\'essentiel pour gérer ta pratique solo.',
+      desc: 'Ton cahier, en mieux. Tout ce que tu gères seule — sans aucune limite de volume.',
       features: [
-        'Jusqu\'à 40 élèves · lieux illimités',
-        'Jusqu\'à 5 formules d\'abonnement',
-        'Agenda complet · cours illimités',
-        'Portail élève + PWA',
-        'Mini-compta (espèces, chèque, virement, CB)',
-        'Pointage des présences',
+        'Élèves illimités · fiches complètes · import/export CSV',
+        'Agenda, récurrences, lieux illimités',
+        'Pointage 1-clic + carnets/abos gérés à la main',
+        'Mini-compta : encaissements, « à percevoir », export comptable',
         'Cas à traiter (no-show, paiement en attente…)',
+        'Page publique vitrine : planning affiché, PWA installable',
       ],
       cta: 'Essayer 14 jours · sans CB',
       ctaHref: '/register',
@@ -688,38 +690,19 @@ export function Pricing() {
       price: '19',
       publicPrice: '22',
       sub: '/mois · à vie',
-      desc: 'Le plan complet. Auto-pilote ton studio : encaissement en ligne, relances et mailing automatiques.',
+      desc: 'Tes élèves entrent dans la boucle : ils réservent, annulent, paient et te parlent en ligne.',
       features: [
-        'Élèves illimités · lieux illimités',
-        'Formules d\'abonnement illimitées',
         'Tout du plan Solo',
-        'Stripe Payment Link (CB par les élèves)',
+        'Réservation en ligne + annulation élève + règles d\'annulation',
+        'Espace élève connecté (compte, historique, rappels J-1)',
+        'Cours d\'essai en ligne · liste d\'attente · cours privés',
+        'Messagerie · mailing groupé · sondages planning',
+        'Paiement en ligne élèves (Stripe Payment Link)',
         'Import de fiche élève par photo (IA)',
-        'Mailing & relances auto · anniversaires',
-        'Sondages planning · liste d\'attente',
-        'Cours d\'essai · règles d\'annulation avancées',
-        'Export comptable CSV',
       ],
       cta: 'Essayer 14 jours · sans CB',
       ctaHref: '/register',
       featured: true,
-    },
-    {
-      name: 'Studio',
-      price: '49',
-      publicPrice: '79',
-      sub: '/mois · à vie',
-      desc: 'Pour les studios matures. Vidéos, white-label, lieux illimités.',
-      features: [
-        'Tout du plan Pro',
-        'Lieux illimités',
-        'Vidéos de cours vendables à l\'unité ou en abonnement',
-        'Logo studio dans tous les emails (white-label)',
-      ],
-      cta: 'Bientôt disponible',
-      ctaHref: '/register',
-      featured: false,
-      comingSoon: true,
     },
   ];
 
@@ -737,7 +720,7 @@ export function Pricing() {
           <span className="founding-text">Les 100 premiers inscrits bénéficient du tarif fondateur — <strong>à vie</strong>.</span>
         </div>
 
-        <div className="pricing-grid pricing-grid-3 reveal r-stagger">
+        <div className="pricing-grid reveal r-stagger">
           {plans.map((p, i) => (
             <div key={i} className={`price-card ${p.featured ? 'featured' : ''} ${p.comingSoon ? 'coming-soon' : ''}`}>
               {p.featured && <div className="price-badge">Le plus choisi</div>}
@@ -770,7 +753,7 @@ export function Pricing() {
         </div>
 
         <p className="pricing-fees">
-          Paiements en ligne (Pro / Studio) : <strong>tu encaisses sur ton propre compte Stripe</strong>.
+          Paiements en ligne (Pro) : <strong>tu encaisses sur ton propre compte Stripe</strong>.
           Frais transparents : 1 % IziSolo (sur ta facture mensuelle, jamais prélevé sur tes paiements)
           + frais Stripe standard (1,5 % + 0,25 € par transaction).
         </p>

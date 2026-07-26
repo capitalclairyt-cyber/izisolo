@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import PortailHome from './PortailHome';
 import { resolveClientInfo, filterCoursVisibles } from '@/lib/visibilite';
+import { studioCan } from '@/lib/plan-guard';
 import { presenceOccupePlace } from '@/lib/presences';
 import { coursDejaCommence } from '@/lib/dates';
 import { reportError } from '@/lib/report';
@@ -45,7 +46,8 @@ async function getStudioData(studioSlug) {
       horaires_studio, afficher_tarifs, afficher_horaires, afficher_inscrits, faq_publique,
       instagram_url, facebook_url, website_url,
       page_publique_draft,
-      essai_actif, essai_paiement, essai_prix
+      essai_actif, essai_paiement, essai_prix,
+      plan, trial_started_at, stripe_subscription_status
     `)
     .eq('studio_slug', studioSlug)
     .single();
@@ -202,6 +204,8 @@ export default async function PortailPage({ params, searchParams }) {
       isDemo={isDemo}
       currentClient={data.currentClient}
       reservedCoursIds={data.reservedCoursIds}
+      canReserve={studioCan(profile, 'reservation_en_ligne')}
+      essaiVisible={studioCan(profile, 'cours_essai')}
     />
   );
 }

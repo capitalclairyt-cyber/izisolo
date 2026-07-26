@@ -1,5 +1,6 @@
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { createServerClient } from '@/lib/supabase-server';
+import { studioCan } from '@/lib/plan-guard';
 import { resolveClientInfo, filterCoursVisibles } from '@/lib/visibilite';
 import { notFound } from 'next/navigation';
 import EssaiClient from './EssaiClient';
@@ -16,11 +17,13 @@ async function getData(studioSlug) {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('id, studio_nom, studio_slug, metier, ville, photo_url, essai_actif, essai_mode, essai_paiement, essai_prix, essai_stripe_payment_link, essai_message')
+    .select('id, studio_nom, studio_slug, metier, ville, photo_url, essai_actif, essai_mode, essai_paiement, essai_prix, essai_stripe_payment_link, essai_message, plan, trial_started_at, stripe_subscription_status')
     .eq('studio_slug', studioSlug)
     .single();
 
-  if (!profile || !profile.essai_actif) return null;
+  // Capacité Complet (B3c) : pour un studio Essentiel la page essai n'existe
+  // pas (vitrine) — la route API refuse déjà, ceci évite le formulaire → 403.
+  if (!profile || !profile.essai_actif || !studioCan(profile, 'cours_essai')) return null;
 
   // Cours futurs (60j) du studio, pour la sélection du créneau
   // (aligné sur la fenêtre de la home pour qu'un cours présélectionné à 31-60j apparaisse)

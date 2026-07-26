@@ -93,9 +93,10 @@ async function getData(studioSlug, coursId) {
   // l'élève ce que le studio ne peut pas offrir (annulation self-service /
   // liste d'attente = Pro). Évite les culs-de-sac et les promesses non tenues.
   const canCancel = studioCan(profile, 'reservation_en_ligne');
+  const canReserve = studioCan(profile, 'reservation_en_ligne');
   const canWaitlist = studioCan(profile, 'liste_attente');
 
-  return { profile, cours, nbInscrits: nbInscrits || 0, currentUser, alreadyRegistered, canCancel, canWaitlist };
+  return { profile, cours, nbInscrits: nbInscrits || 0, currentUser, alreadyRegistered, canCancel, canReserve, canWaitlist };
 }
 
 export async function generateMetadata({ params }) {
@@ -119,6 +120,7 @@ export default async function CoursDetailPortailPage({ params }) {
       currentUser={data.currentUser}
       alreadyRegistered={data.alreadyRegistered}
       canCancel={data.canCancel}
+      canReserve={data.canReserve}
       canWaitlist={data.canWaitlist}
     />
   );

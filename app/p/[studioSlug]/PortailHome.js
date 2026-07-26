@@ -73,7 +73,7 @@ function PlacesBadge({ capacite, inscrits, afficherInscrits = true }) {
   return <span className="portail-tag portail-tag-green">Places disponibles</span>;
 }
 
-export default function PortailHome({ profile, cours, offresStripe = [], offresPubliques = [], sondageActif = null, studioSlug, isPreview = false, isDemo = false, currentClient = null, reservedCoursIds = [] }) {
+export default function PortailHome({ profile, cours, offresStripe = [], offresPubliques = [], sondageActif = null, studioSlug, isPreview = false, isDemo = false, currentClient = null, reservedCoursIds = [], canReserve = true, essaiVisible = true }) {
   // Suffixe de query pour préserver le mode demo dans les liens internes
   const demoQS = isDemo ? '?demo=1' : '';
 
@@ -124,6 +124,9 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
   // pour un élève reconnu, badge « Inscrit·e » s'il l'est déjà, sinon le chevron
   // classique (visiteur non connecté → la carte mène à la page de réservation).
   const renderCoursAction = (c) => {
+    // Studio Essentiel (vitrine, B3c) : planning visible, aucun bouton de
+    // résa — la carte reste un lien vers la fiche du cours (infos).
+    if (!canReserve) return <ChevronRight size={16} style={{ color: '#ccc' }} />;
     const dispo = c.capacite_max ? c.capacite_max - c.nbInscrits : null;
     const complet = dispo !== null && dispo <= 0;
     if (canQuickBook && reserved.has(c.id)) {
@@ -411,9 +414,11 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
               </div>
             </div>
             <span className="portail-next-cours-cta">
-              {prochainCours.capacite_max && (prochainCours.capacite_max - prochainCours.nbInscrits) <= 0
-                ? <>Complet · liste d'attente <ChevronRight size={14} /></>
-                : <>Réserver <ChevronRight size={14} /></>}
+              {!canReserve
+                ? <>Voir le cours <ChevronRight size={14} /></>
+                : prochainCours.capacite_max && (prochainCours.capacite_max - prochainCours.nbInscrits) <= 0
+                  ? <>Complet · liste d'attente <ChevronRight size={14} /></>
+                  : <>Réserver <ChevronRight size={14} /></>}
             </span>
           </div>
         </Link>
@@ -424,7 +429,7 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
           fortiori payant·e) ne doit jamais voir « cours d'essai offert » (évite
           l'ambiguïté + l'embarras). currentClient = fiche de l'élève connecté·e,
           null si anonyme (ou aperçu prof → CTA visible en preview). */}
-      {profile.essai_actif && !currentClient && (
+      {essaiVisible && profile.essai_actif && !currentClient && (
         <Link href={`/p/${studioSlug}/essai${demoQS}`} className="portail-essai-cta">
           <div className="portail-essai-cta-icon">✨</div>
           <div className="portail-essai-cta-body">
