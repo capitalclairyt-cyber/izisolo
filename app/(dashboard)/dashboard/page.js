@@ -1,4 +1,6 @@
 import { createServerClient } from '@/lib/supabase-server';
+import { createAdminClient } from '@/lib/supabase-admin';
+import { escapeIlike } from '@/lib/utils';
 import DashboardClient from './DashboardClient';
 import { SMS_PRIX_UNITAIRE } from '@/lib/notifs-eleves';
 
@@ -46,6 +48,27 @@ export default async function DashboardPage() {
     .select('id', { count: 'exact', head: true })
     .eq('profile_id', user.id)
     .not('invitation_envoyee_at', 'is', null);
+
+  // Double identité (26/07) : ce compte prof est-il AUSSI élève ailleurs ?
+  // Lookup par email en service-role (la RLS interdit de lire les fiches des
+  // autres studios avec le client session) — même contrat que le GET de
+  // /api/eleve/compte. Décoratif : le dashboard vit très bien sans.
+  let espacesEleve = [];
+  try {
+    const admin = createAdminClient();
+    const { data: fiches } = await admin
+      .from('clients')
+      .select('profile_id, profiles(studio_slug, studio_nom, portail_actif)')
+      .ilike('email', escapeIlike((user.email || '').trim().toLowerCase()));
+    const vus = new Set();
+    for (const row of fiches || []) {
+      const p = row.profiles;
+      if (!p?.studio_slug || !p.portail_actif) continue;
+      if (row.profile_id === user.id || vus.has(p.studio_slug)) continue;
+      vus.add(p.studio_slug);
+      espacesEleve.push({ slug: p.studio_slug, nom: p.studio_nom || p.studio_slug });
+    }
+  } catch { /* fail-open : pas de pont élève affiché, rien de cassé */ }
 
   // Calculer les stats
   const revenusMois = derniersPaiements?.reduce((sum, p) => sum + parseFloat(p.montant || 0), 0) || 0;
@@ -105,6 +128,7 @@ export default async function DashboardPage() {
       hasSondage={(nbSondages || 0) > 0}
       nbInvites={nbInvites || 0}
       nbCasATraiter={nbCasOuverts || 0}
+      espacesEleve={espacesEleve}
     />
   );
 }

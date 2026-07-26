@@ -15,7 +15,7 @@ import { toneForCours } from '@/lib/tones';
 import PushToggle from '@/components/push/PushToggle';
 import PushPrompt from '@/components/push/PushPrompt';
 
-export default function DashboardClient({ profile, coursDuJour, nbClients, nbCoursTotal, revenusMois, alertes, coutsMois, hasSondage = false, nbCasATraiter = 0, nbInvites = 0 }) {
+export default function DashboardClient({ profile, coursDuJour, nbClients, nbCoursTotal, revenusMois, alertes, coutsMois, hasSondage = false, nbCasATraiter = 0, nbInvites = 0, espacesEleve = [] }) {
   const vocab = getVocabulaire(profile?.metier || 'yoga', profile?.vocabulaire);
   const prenom = profile?.prenom || 'toi';
   const studioSlug = profile?.studio_slug;
@@ -174,6 +174,23 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
           )}
         </div>
       </div>
+
+      {/* Pont double identité : ce compte prof est aussi élève ailleurs (26/07) */}
+      {espacesEleve.length > 0 && (
+        <div style={{
+          display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8,
+          padding: '8px 14px', marginBottom: 12,
+          background: 'var(--sage-light, #E5EBE5)', border: '1px solid var(--sage, #9CAFA0)',
+          borderRadius: 10, fontSize: '0.8125rem', color: 'var(--sage-deep, #2C3935)',
+        }}>
+          <span>🧘 Tu es aussi élève chez</span>
+          {espacesEleve.map(e => (
+            <a key={e.slug} href={`/p/${e.slug}/espace`} style={{ fontWeight: 700, color: 'var(--sage-deep, #2C3935)', textDecoration: 'underline' }}>
+              {e.nom} →
+            </a>
+          ))}
+        </div>
+      )}
 
       {/* Checklist de démarrage */}
       {showChecklist && (

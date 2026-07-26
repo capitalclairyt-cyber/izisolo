@@ -22,32 +22,41 @@ export const POST = withRoute({ auth: 'user' }, async ({ request, params, auth }
     return NextResponse.json({ error: 'Emoji invalide' }, { status: 400 });
   }
 
-  // Récupérer le message + la conversation
+  // Récupérer le message + le propriétaire de sa conversation
   const { data: message } = await supabase
     .from('messages')
-    .select('id, conversation_id')
+    .select('id, conversation_id, conversations(profile_id)')
     .eq('id', messageId)
     .single();
   if (!message) return NextResponse.json({ error: 'Message introuvable' }, { status: 404 });
+  const convOwner = message.conversations?.profile_id;
 
-  // Déterminer le user_type + user_id du caller : profile chargé par
-  // requireAuth (null pour un élève post-v57) → pro, sinon fiche client
-  // par email (pas d'auth_user_id sur clients).
+  // Identité JUSTE pour la double identité (26/07 : un compte peut être prof
+  // de SON studio ET élève ailleurs) : « pro » seulement si la conversation
+  // est à LUI ; sinon fiche élève par email DANS le studio de la conversation
+  // (avant : tout compte à profil était « pro » partout → un prof-élève
+  // réagissait sous la mauvaise identité dans son espace élève).
   let userType, userId;
-  if (profile) {
+  if (profile && convOwner === profile.id) {
     userType = 'pro';
     userId = profile.id;
   } else {
-    // On prend le 1er match si plusieurs studios partagent le même email (cas rare).
     const { data: client } = await supabase
       .from('clients')
       .select('id')
+      .eq('profile_id', convOwner)
       .ilike('email', escapeIlike(user.email || ''))
       .limit(1)
       .maybeSingle();
-    if (!client) return NextResponse.json({ error: 'Compte introuvable' }, { status: 403 });
-    userType = 'eleve';
-    userId = client.id;
+    if (client) {
+      userType = 'eleve';
+      userId = client.id;
+    } else if (profile) {
+      userType = 'pro'; // filet legacy : profil sans fiche dans ce studio
+      userId = profile.id;
+    } else {
+      return NextResponse.json({ error: 'Compte introuvable' }, { status: 403 });
+    }
   }
 
   // Toggle : check si déjà réagi
@@ -109,18 +118,27 @@ export const GET = withRoute({ auth: 'user' }, async ({ params, auth }) => {
     .select('emoji, user_type, user_id')
     .eq('message_id', messageId);
 
-  // Détecter celles du caller (profile = pro, cf. POST)
+  // Détecter celles du caller — même résolution d'identité que le POST
+  // (double identité : pro seulement si la conversation est à lui).
+  const { data: msgRow } = await supabase
+    .from('messages')
+    .select('id, conversations(profile_id)')
+    .eq('id', messageId)
+    .maybeSingle();
+  const convOwner = msgRow?.conversations?.profile_id;
   let myType, myId;
-  if (profile) {
+  if (profile && convOwner === profile.id) {
     myType = 'pro'; myId = profile.id;
   } else {
     const { data: client } = await supabase
       .from('clients')
       .select('id')
+      .eq('profile_id', convOwner)
       .ilike('email', escapeIlike(user.email || ''))
       .limit(1)
       .maybeSingle();
     if (client) { myType = 'eleve'; myId = client.id; }
+    else if (profile) { myType = 'pro'; myId = profile.id; }
   }
 
   const decorated = (reactions || []).map(r => ({

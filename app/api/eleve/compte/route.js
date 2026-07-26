@@ -55,12 +55,26 @@ export const GET = withRoute(
 
 export const POST = withRoute(
   { auth: 'user', rateLimit: { max: 5, scope: 'eleve-devenir-prof' } },
-  async ({ auth }) => {
+  async ({ request, auth }) => {
     const { user, profile } = auth;
 
     if (user.user_metadata?.role !== 'eleve') {
       return Response.json(
         { error: "Ton compte n'est pas un compte élève", code: 'NOT_ELEVE' },
+        { status: 400 }
+      );
+    }
+
+    // Durcissement (fausse manip réelle du 26/07 : un élève cherchant son
+    // espace a créé un studio fantôme au nom de sa prof). Le flip est
+    // engageant et sans retour dans l'app → consentement EXPLICITE exigé
+    // aussi côté serveur (l'UI n'envoie confirme:true qu'après une case
+    // cochée). Un POST nu ne peut plus créer de studio.
+    let body = {};
+    try { body = await request.json(); } catch { /* body absent = pas de consentement */ }
+    if (body?.confirme !== true) {
+      return Response.json(
+        { error: 'Confirmation explicite requise', code: 'CONFIRMATION_REQUISE' },
         { status: 400 }
       );
     }
@@ -86,8 +100,9 @@ export const POST = withRoute(
     // 2. Le role passe à 'prof' (merge shallow : les autres clés restent).
     //    En cas d'échec ici, le compte reste élève avec un profil déjà créé :
     //    un nouveau clic sur « Ouvrir mon studio » ne refait que ce flip.
+    //    `ex_eleve` = traçabilité admin (studios nés d'un compte élève).
     const { error: metaErr } = await supabaseAdmin.auth.admin.updateUserById(user.id, {
-      user_metadata: { role: 'prof' },
+      user_metadata: { role: 'prof', ex_eleve: true },
     });
     if (metaErr) {
       reportError('[eleve/compte] updateUserById error:', metaErr.message);

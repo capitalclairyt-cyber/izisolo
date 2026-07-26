@@ -23,6 +23,10 @@ export default function OnboardingPage() {
   const [isEleve, setIsEleve] = useState(false);
   const [portails, setPortails] = useState([]);
   const [devenirLoading, setDevenirLoading] = useState(false);
+  // Durcissement du flip élève→prof (fausse manip réelle du 26/07) :
+  // le bouton révèle un bloc de consentement, le POST exige la case cochée.
+  const [blocProfOuvert, setBlocProfOuvert] = useState(false);
+  const [confirmeProf, setConfirmeProf] = useState(false);
 
   // Données du formulaire
   const [metier, setMetier] = useState('');
@@ -231,20 +235,17 @@ export default function OnboardingPage() {
     // Garde-fou (fausse manip réelle du 26/07 : un élève cherchant son espace
     // a traversé ce bouton et créé un studio fantôme au nom de sa prof — puis
     // s'est retrouvé coincé côté prof, le flip n'ayant pas de retour dans
-    // l'app). Confirmation SANS ambiguïté avant le POST.
-    const nomsPortails = portails.map(p => p.nom).join(', ');
-    const ok = confirm(
-      'Tu es sur le point de créer TON studio de professeur·e (essai 14 jours).'
-      + (nomsPortails
-        ? `\n\nATTENTION : ce n'est PAS l'accès à ton espace élève chez ${nomsPortails} — pour ça, utilise le bouton « Mon espace » au-dessus.`
-        : '')
-      + '\n\nContinuer et ouvrir mon propre studio ?'
-    );
-    if (!ok) return;
+    // l'app). Le consentement = case cochée dans le bloc révélé, ET le
+    // serveur exige confirme:true (un POST nu ne crée plus de studio).
+    if (!confirmeProf) return;
     setDevenirLoading(true);
     setErreur('');
     try {
-      const res = await fetch('/api/eleve/compte', { method: 'POST' });
+      const res = await fetch('/api/eleve/compte', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ confirme: true }),
+      });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         throw new Error(data.error || 'Erreur serveur');
@@ -305,14 +306,47 @@ export default function OnboardingPage() {
               Ton essai gratuit de 14 jours démarre à ce moment-là, pas avant.
             </p>
             {erreur && <div className="onboarding-error" role="alert">{erreur}</div>}
-            <button
-              type="button"
-              className="izi-btn izi-btn-ghost"
-              onClick={handleDevenirProf}
-              disabled={devenirLoading}
-            >
-              {devenirLoading ? 'Préparation...' : 'Ouvrir mon studio'} <ArrowRight size={16} />
-            </button>
+            {!blocProfOuvert ? (
+              <button
+                type="button"
+                className="izi-btn izi-btn-ghost"
+                onClick={() => setBlocProfOuvert(true)}
+              >
+                Je veux créer mon propre studio <ArrowRight size={16} />
+              </button>
+            ) : (
+              <div style={{
+                textAlign: 'left', border: '1.5px solid var(--warning, #D4B06A)',
+                background: 'var(--warning-light, #F5EBD2)', borderRadius: 12,
+                padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 12,
+              }}>
+                <p style={{ margin: 0, fontSize: '0.875rem', lineHeight: 1.55, color: 'var(--text-primary)' }}>
+                  <strong>Tu crées ici TON studio de professeur·e</strong> (essai 14 jours).
+                  {portails.length > 0 && (
+                    <> Ce n'est <strong>pas</strong> l'accès à ton espace élève chez{' '}
+                    {portails.map(p => p.nom).join(', ')} — pour ça, utilise le bouton
+                    « Mon espace » au-dessus.</>
+                  )}
+                </p>
+                <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: '0.8125rem', cursor: 'pointer', lineHeight: 1.45 }}>
+                  <input
+                    type="checkbox"
+                    checked={confirmeProf}
+                    onChange={e => setConfirmeProf(e.target.checked)}
+                    style={{ marginTop: 2, accentColor: 'var(--brand)' }}
+                  />
+                  <span>Je comprends que je crée un <strong>nouveau studio dont je serai la/le prof</strong>, distinct de mon espace élève.</span>
+                </label>
+                <button
+                  type="button"
+                  className="izi-btn izi-btn-primary"
+                  onClick={handleDevenirProf}
+                  disabled={devenirLoading || !confirmeProf}
+                >
+                  {devenirLoading ? 'Préparation...' : 'Créer mon studio'} <ArrowRight size={16} />
+                </button>
+              </div>
+            )}
           </div>
         )}
 
