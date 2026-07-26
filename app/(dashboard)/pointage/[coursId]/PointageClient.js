@@ -221,7 +221,7 @@ function PaymentModal({ presence, coursNom, coursDate, montantDefaut = '', paiem
 // ─────────────────────────────────────────────────────────
 //  Carte de présence (split cell)
 // ─────────────────────────────────────────────────────────
-function PresenceCard({ presence, resolvedCarnet, estPayAsYouGo, paye, paiement, onMarquer, onPayer, onTypePresence, onExcuserTardive, loading, locked, impaye, ptard, nbDettes, essaisRestants }) {
+function PresenceCard({ presence, resolvedCarnet, estPayAsYouGo, paye, paiement, onMarquer, onPayer, onTypePresence, onExcuserTardive, onRelier, coursInfo, loading, locked, impaye, ptard, nbDettes, essaisRestants }) {
   const [showTypeMenu, setShowTypeMenu] = useState(false);
 
   // Fermer le menu au premier clic en dehors
@@ -433,6 +433,49 @@ function PresenceCard({ presence, resolvedCarnet, estPayAsYouGo, paye, paiement,
                     {typeP === val && <span className="tpm-check">✓</span>}
                   </button>
                 ))}
+
+                {/* ── Choix du carnet (B2f lot C, R3) : quel carnet décompter,
+                    ou « à l'unité » sur un cours à tarif. Seulement pour une
+                    séance normale, pas payée, pas annulée/tardive. */}
+                {typeP === 'normal' && !paye && !presence.annulation_tardive
+                  && !['annule', 'declinee'].includes(presence.statut_pointage)
+                  && ((presence.client_abos || []).length > 0 || Number(coursInfo?.tarif_unitaire) > 0) && (
+                  <>
+                    <div className="tpm-sep">Décompter sur</div>
+                    {(presence.client_abos || []).map(a => {
+                      const restreint = Array.isArray(a.types_cours_autorises) && a.types_cours_autorises.length > 0;
+                      const couvre = !restreint || !coursInfo?.type_cours || a.types_cours_autorises.includes(coursInfo.type_cours);
+                      const reste = a.seances_total != null ? Math.max(0, a.seances_total - (a.seances_utilisees || 0)) : null;
+                      const epuise = a.seances_total != null && (a.seances_utilisees || 0) >= a.seances_total;
+                      const actif = (presence.abonnement_id || resolvedCarnet?.id) === a.id;
+                      return (
+                        <button key={a.id}
+                          className={`tp-menu-item ${actif ? 'selected' : ''}`}
+                          disabled={epuise && !actif}
+                          onClick={() => { onRelier(presence, a.id); setShowTypeMenu(false); }}
+                        >
+                          <span className="tpm-label">📗 {a.offre_nom || 'Carnet'}</span>
+                          <span className="tpm-hint">
+                            {!couvre ? '⚠ ne couvre pas ce type'
+                              : epuise ? 'épuisé'
+                              : reste != null ? `${reste} restante${reste > 1 ? 's' : ''}` : 'illimité'}
+                          </span>
+                          {actif && <span className="tpm-check">✓</span>}
+                        </button>
+                      );
+                    })}
+                    {Number(coursInfo?.tarif_unitaire) > 0 && (
+                      <button
+                        className={`tp-menu-item ${!presence.abonnement_id && !resolvedCarnet ? 'selected' : ''}`}
+                        onClick={() => { onRelier(presence, null); setShowTypeMenu(false); }}
+                      >
+                        <span className="tpm-label">💶 À l'unité</span>
+                        <span className="tpm-hint">{Number(coursInfo.tarif_unitaire).toFixed(2).replace('.', ',').replace(',00', '')} €</span>
+                        {!presence.abonnement_id && !resolvedCarnet && <span className="tpm-check">✓</span>}
+                      </button>
+                    )}
+                  </>
+                )}
               </div>
             )}
           </div>
@@ -1039,6 +1082,46 @@ export default function PointageClient({ cours, presences: initialPresences, tou
     }
   }, []);
 
+  // ── Re-liaison du carnet d'une présence (B2f lot C, R3) ──────────────────
+  // « Utiliser un autre carnet » / « À l'unité » depuis le menu ··· de la
+  // ligne. Le serveur décide des mouvements de compteur (formule unifiée) et
+  // la RPC v82 exécute atomiquement ; ici on resynchronise l'affichage avec
+  // ce que la réponse dit AVOIR fait (pas d'optimisme sur un geste correctif).
+  const handleRelier = useCallback(async (presence, aboId) => {
+    if (locked) return;
+    setActionLoading(presence.id);
+    try {
+      const res = await fetch(`/api/presences/${presence.id}/relier`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ abonnement_id: aboId }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast.error(data.error || 'Re-liaison impossible');
+        return;
+      }
+      if (data.noop) return;
+      setPresences(prev => prev.map(p => {
+        if (p.id !== presence.id) return p;
+        const bump = (abos) => (abos || []).map(a => {
+          if (!data.compte) return a;
+          if (a.id === data.ancien_abo) return { ...a, seances_utilisees: Math.max(0, (a.seances_utilisees || 0) - 1) };
+          if (a.id === aboId) return { ...a, seances_utilisees: (a.seances_utilisees || 0) + 1 };
+          return a;
+        });
+        const clientAbos = bump(p.client_abos);
+        const abo = aboId ? clientAbos.find(a => a.id === aboId) || null : null;
+        return { ...p, abonnement_id: aboId, abonnements: abo, client_abos: clientAbos };
+      }));
+      toast.success(aboId ? 'Carnet mis à jour ✓' : 'Séance passée à l\'unité ✓');
+    } catch (e) {
+      toast.error('Re-liaison impossible : ' + (e?.message || 'réseau'));
+    } finally {
+      setActionLoading(null);
+    }
+  }, [locked, toast]);
+
   const getInitials = c => {
     const cl = c.clients || c;
     return ((cl.prenom?.[0] || '') + (cl.nom?.[0] || '')).toUpperCase() || '?';
@@ -1248,6 +1331,8 @@ export default function PointageClient({ cours, presences: initialPresences, tou
                 onPayer={setPaymentTarget}
                 onTypePresence={handleTypePresence}
                 onExcuserTardive={handleExcuserTardive}
+                onRelier={handleRelier}
+                coursInfo={{ type_cours: cours.type_cours, tarif_unitaire: cours.tarif_unitaire, carnets_acceptes: cours.carnets_acceptes }}
                 loading={actionLoading === p.id}
                 locked={locked}
                 impaye={isImpaye(p, paidIds)}
@@ -2124,6 +2209,13 @@ export default function PointageClient({ cours, presences: initialPresences, tou
         .tp-menu-item.selected { color: var(--brand); font-weight: 600; }
         .tpm-label { flex: 1; }
         .tpm-hint  { font-size: 0.7rem; color: var(--text-muted); }
+        .tpm-sep {
+          font-size: 0.65rem; font-weight: 700; letter-spacing: 0.06em;
+          text-transform: uppercase; color: var(--text-muted);
+          padding: 8px 12px 4px; border-top: 1px solid var(--border);
+          margin-top: 4px;
+        }
+        .tp-menu-item:disabled { opacity: 0.45; cursor: not-allowed; }
         .tpm-check { color: var(--brand); font-size: 0.75rem; font-weight: 800; }
 
         /* subtabs-bar / subtab-btn → globals.css */
