@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation';
 import { countUnread } from '@/lib/messagerie';
 import EspaceClient from './EspaceClient';
 import { escapeIlike } from '@/lib/utils';
+import { resoudreCarnetApplicable } from '@/lib/carnet-resolution';
 
 export const metadata = { title: 'Mon espace — IziSolo' };
 
@@ -186,7 +187,7 @@ async function getData(studioSlug, userEmail) {
       .order('date', { ascending: false }),
     supabase
       .from('abonnements')
-      .select('id, offre_nom, type, date_debut, date_fin, seances_total, seances_utilisees, statut, date_pause_debut, date_pause_fin')
+      .select('id, offre_nom, type, date_debut, date_fin, seances_total, seances_utilisees, statut, date_pause_debut, date_pause_fin, types_cours_autorises')
       .eq('profile_id', profile.id)
       .eq('client_id', client.id)
       .in('statut', ['actif', 'epuise', 'expire', 'gele'])
@@ -205,7 +206,7 @@ async function getData(studioSlug, userEmail) {
       abonnement_id,
       created_at,
       cours:cours_id (
-        id, nom, date, heure, duree_minutes, lieu, type_cours, est_annule, tarif_unitaire
+        id, nom, date, heure, duree_minutes, lieu, type_cours, est_annule, tarif_unitaire, carnets_acceptes
       )
     `)
     .eq('client_id', client.id)
@@ -267,6 +268,16 @@ async function getData(studioSlug, userEmail) {
     // (miroir du fix Revenus — B1f).
     && !['absent', 'excuse', 'annule', 'declinee'].includes(p.statut_pointage)
     && !p.cours?.est_annule
+    // Liée à un carnet = couverte (override atelier, ou mixte déjà pointé) —
+    // le filtre l'ignorait : une présence décomptée s'affichait AUSSI « à
+    // régler » (B2f).
+    && !p.abonnement_id
+    // Cours MIXTE (v82) pas encore pointé : si un carnet de l'élève couvre ce
+    // type, le pointage le décomptera → pas une dette (même prévision que la
+    // page cours). Si le carnet s'épuise d'ici là, le pointage retombera sur
+    // le tarif et la ligne apparaîtra — la prévision converge au réel.
+    && !(p.cours?.carnets_acceptes === true
+         && resoudreCarnetApplicable(abonnements || [], p.cours))
   );
   let seancesWorkshopDues = [];
   if (presWorkshop.length > 0) {

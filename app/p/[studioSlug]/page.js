@@ -78,7 +78,7 @@ async function getStudioData(studioSlug) {
   const [{ data: coursRaw }, { data: offresStripe }, { data: offresPubliques }, { data: sondageActif }] = await Promise.all([
     supabase
       .from('cours')
-      .select('id, nom, date, heure, duree_minutes, type_cours, lieu, capacite_max, est_annule, recurrence_parent_id, visibilite, tarif_unitaire')
+      .select('id, nom, date, heure, duree_minutes, type_cours, lieu, capacite_max, est_annule, recurrence_parent_id, visibilite, tarif_unitaire, carnets_acceptes')
       .eq('profile_id', profile.id)
       .eq('est_annule', false)
       .gte('date', today)

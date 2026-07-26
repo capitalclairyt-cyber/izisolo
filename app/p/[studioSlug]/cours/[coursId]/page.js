@@ -6,6 +6,7 @@ import { canSeeCours, resolveClientInfo } from '@/lib/visibilite';
 import { studioCan } from '@/lib/plan-guard';
 import { escapeIlike } from '@/lib/utils';
 import { compterPlacesOccupees } from '@/lib/presences';
+import { resoudreCarnetApplicable } from '@/lib/carnet-resolution';
 
 async function getData(studioSlug, coursId) {
   // Contenu PUBLIC du portail (studio, cours) + données élève filtrées par
@@ -63,6 +64,7 @@ async function getData(studioSlug, coursId) {
 
   let currentUser = null;
   let alreadyRegistered = false;
+  let prevision = null;
   if (user) {
     const { data: client } = await supabase
       .from('clients')
@@ -84,6 +86,39 @@ async function getData(studioSlug, coursId) {
         .eq('client_id', client.id)
         .maybeSingle();
       alreadyRegistered = !!existing;
+
+      // ── Prévision paiement (B2f, R2) : dire la VÉRITÉ avant de réserver —
+      // même calcul que le pointage (resoudreCarnetApplicable v64/v70/v82).
+      // Avant : « décomptée de ton carnet si tu en utilises un » (aveugle).
+      const { data: abosActifs } = await supabase
+        .from('abonnements')
+        .select('id, statut, seances_total, seances_utilisees, date_fin, date_pause_debut, date_pause_fin, types_cours_autorises, offres(nom)')
+        .eq('client_id', client.id)
+        .eq('profile_id', profile.id)
+        .eq('statut', 'actif');
+      const carnetPrevu = resoudreCarnetApplicable(abosActifs || [], cours);
+      const tarif = Number(cours.tarif_unitaire) > 0 ? Number(cours.tarif_unitaire) : null;
+      if (carnetPrevu) {
+        prevision = {
+          kind: 'carnet',
+          nom: carnetPrevu.offres?.nom || 'ton carnet',
+          // reste APRÈS cette séance (null = illimité)
+          resteApres: carnetPrevu.seances_total != null
+            ? Math.max(0, carnetPrevu.seances_total - (carnetPrevu.seances_utilisees || 0) - 1)
+            : null,
+        };
+      } else if (tarif) {
+        prevision = {
+          kind: 'unite',
+          montant: tarif,
+          // Mixte : elle A un carnet mais il ne couvre pas ce type → le dire.
+          carnetInapplicable: cours.carnets_acceptes === true && (abosActifs || []).length > 0,
+        };
+      } else if ((abosActifs || []).length > 0) {
+        prevision = { kind: 'incompatible' };
+      } else {
+        prevision = { kind: 'sans_carnet' };
+      }
     } else {
       currentUser = { nom: '', email: user.email, tel: '' };
     }
@@ -96,7 +131,7 @@ async function getData(studioSlug, coursId) {
   const canReserve = studioCan(profile, 'reservation_en_ligne');
   const canWaitlist = studioCan(profile, 'liste_attente');
 
-  return { profile, cours, nbInscrits: nbInscrits || 0, currentUser, alreadyRegistered, canCancel, canReserve, canWaitlist };
+  return { profile, cours, nbInscrits: nbInscrits || 0, currentUser, alreadyRegistered, prevision, canCancel, canReserve, canWaitlist };
 }
 
 export async function generateMetadata({ params }) {
@@ -119,6 +154,7 @@ export default async function CoursDetailPortailPage({ params }) {
       studioSlug={studioSlug}
       currentUser={data.currentUser}
       alreadyRegistered={data.alreadyRegistered}
+      prevision={data.prevision}
       canCancel={data.canCancel}
       canReserve={data.canReserve}
       canWaitlist={data.canWaitlist}

@@ -150,7 +150,7 @@ function CompletAvecListeAttente({ cours, studioSlug, currentUser }) {
   );
 }
 
-export default function CoursReservationClient({ cours, profile, nbInscrits, studioSlug, currentUser, alreadyRegistered = false, canCancel = false, canReserve = true, canWaitlist = false }) {
+export default function CoursReservationClient({ cours, profile, nbInscrits, studioSlug, currentUser, alreadyRegistered = false, prevision = null, canCancel = false, canReserve = true, canWaitlist = false }) {
   const { toast } = useToast();
   const [nom, setNom]       = useState(currentUser?.nom || '');
   const [email, setEmail]   = useState(currentUser?.email || '');
@@ -330,7 +330,11 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
           {cours.tarif_unitaire > 0 && (
             <div className="resa-detail-row">
               <span style={{ fontWeight: 800, fontSize: '0.95rem', width: 15, textAlign: 'center', flexShrink: 0 }}>€</span>
-              <span>Évènement payant · <strong>{Number(cours.tarif_unitaire).toFixed(2).replace('.', ',')} €</strong> — à régler auprès du studio</span>
+              {cours.carnets_acceptes === true ? (
+                <span><strong>{Number(cours.tarif_unitaire).toFixed(2).replace('.', ',')} €</strong> la séance — ou inclus dans les carnets/abos compatibles</span>
+              ) : (
+                <span>Évènement payant · <strong>{Number(cours.tarif_unitaire).toFixed(2).replace('.', ',')} €</strong> — à régler auprès du studio</span>
+              )}
             </div>
           )}
           {cours.capacite_max && (afficherInscrits || complet) && (
@@ -380,9 +384,11 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
         const delai = getDelaiPourCours(profile, cours.type_cours);
         const eval2 = evaluerAnnulation(profile, cours.date, cours.heure, cours.type_cours);
         const limiteStr = eval2.dateLimite ? formatDateLimite(eval2.dateLimite) : null;
-        // Conséquence honnête d'une annulation tardive : sur un cours payable à
-        // la séance il n'y a pas de « crédit » à décompter — la séance reste due.
-        const consequence = Number(cours.tarif_unitaire) > 0
+        // Conséquence honnête d'une annulation tardive — affinée par la
+        // prévision (B2f) : on sait ce qui arriverait à CETTE élève.
+        const consequence = prevision?.kind === 'carnet'
+          ? 'Après, la séance sera décomptée de ton carnet.'
+          : prevision?.kind === 'unite' || Number(cours.tarif_unitaire) > 0
           ? 'Après, la séance restera due.'
           : 'Après, la séance sera due (décomptée de ton carnet si tu en utilises un).';
         return (
@@ -406,6 +412,38 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
           <div>
             <strong style={{ display: 'block', marginBottom: 2 }}>Annulation</strong>
             Pour annuler ou modifier ta réservation, <strong>contacte directement ton studio</strong>.
+          </div>
+        </div>
+      )}
+
+      {/* Prévision paiement (B2f, R2) : la vérité AVANT de réserver — même
+          calcul que le pointage (résolution v64/v70/v82 côté serveur). Fini
+          le « décomptée de ton carnet si tu en utilises un » à l'aveugle. */}
+      {prevision && !passe && !complet && !annule && !alreadyRegistered && canReserve && (
+        <div className="resa-policy" style={{ alignItems: 'flex-start' }}>
+          <span style={{ fontSize: '0.95rem', flexShrink: 0, width: 15, textAlign: 'center' }}>
+            {prevision.kind === 'carnet' ? '🎟' : prevision.kind === 'unite' ? '💶' : 'ℹ️'}
+          </span>
+          <div>
+            <strong style={{ display: 'block', marginBottom: 2 }}>Ta séance</strong>
+            {prevision.kind === 'carnet' && (
+              <>Elle sera décomptée de <strong>{prevision.nom}</strong>
+                {prevision.resteApres != null
+                  ? <> — il te restera <strong>{prevision.resteApres} séance{prevision.resteApres > 1 ? 's' : ''}</strong> après celle-ci.</>
+                  : <> (illimité).</>}
+              </>
+            )}
+            {prevision.kind === 'unite' && (
+              <>{prevision.carnetInapplicable && <>Ton carnet ne couvre pas ce type de cours — </>}
+                elle est à <strong>{Number(prevision.montant).toFixed(2).replace('.', ',').replace(',00', '')} €</strong>, à régler auprès du studio.
+              </>
+            )}
+            {prevision.kind === 'incompatible' && (
+              <>Ton carnet actuel ne couvre pas ce type de cours — la séance sera à régler selon les règles du studio.</>
+            )}
+            {prevision.kind === 'sans_carnet' && (
+              <>Tu n'as pas de carnet ou d'abonnement actif pour ce cours — parles-en à ton studio si besoin.</>
+            )}
           </div>
         </div>
       )}

@@ -597,7 +597,7 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
                         {c.lieu && <span><MapPin size={12} /> {c.lieu}</span>}
                         {c.type_cours && <span className={`portail-tag portail-tag-${tone}`}>{c.type_cours}</span>}
                         {Number(c.tarif_unitaire) > 0 && (
-                          <span className="portail-tag portail-tag-amber">{Number(c.tarif_unitaire).toFixed(2).replace('.', ',').replace(',00', '')} € / séance</span>
+                          <span className="portail-tag portail-tag-amber">{Number(c.tarif_unitaire).toFixed(2).replace('.', ',').replace(',00', '')} €{c.carnets_acceptes === true ? ' ou carnet' : ' / séance'}</span>
                         )}
                       </div>
                     </div>
@@ -651,7 +651,7 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
                     {c.lieu && <span><MapPin size={12} /> {c.lieu}</span>}
                     {c.type_cours && <span className={`portail-tag portail-tag-${tone}`}>{c.type_cours}</span>}
                     {Number(c.tarif_unitaire) > 0 && (
-                      <span className="portail-tag portail-tag-amber">{Number(c.tarif_unitaire).toFixed(2).replace('.', ',').replace(',00', '')} € / séance</span>
+                      <span className="portail-tag portail-tag-amber">{Number(c.tarif_unitaire).toFixed(2).replace('.', ',').replace(',00', '')} €{c.carnets_acceptes === true ? ' ou carnet' : ' / séance'}</span>
                     )}
                   </div>
                 </div>
