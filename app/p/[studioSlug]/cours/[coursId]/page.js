@@ -92,7 +92,7 @@ async function getData(studioSlug, coursId) {
       // Avant : « décomptée de ton carnet si tu en utilises un » (aveugle).
       const { data: abosActifs } = await supabase
         .from('abonnements')
-        .select('id, statut, seances_total, seances_utilisees, date_fin, date_pause_debut, date_pause_fin, types_cours_autorises, offres(nom)')
+        .select('id, statut, seances_total, seances_utilisees, date_fin, date_pause_debut, date_pause_fin, types_cours_autorises, offre_nom')
         .eq('client_id', client.id)
         .eq('profile_id', profile.id)
         .eq('statut', 'actif');
@@ -101,7 +101,10 @@ async function getData(studioSlug, coursId) {
       if (carnetPrevu) {
         prevision = {
           kind: 'carnet',
-          nom: carnetPrevu.offres?.nom || 'ton carnet',
+          // offre_nom = le snapshot dénormalisé posé à la vente — LA source
+          // (la jointure offres(nom) rendait « ton carnet » générique pour
+          // tout abo sans offre_id, attrapé par le walkthrough B2f).
+          nom: carnetPrevu.offre_nom || 'ton carnet',
           // reste APRÈS cette séance (null = illimité)
           resteApres: carnetPrevu.seances_total != null
             ? Math.max(0, carnetPrevu.seances_total - (carnetPrevu.seances_utilisees || 0) - 1)
