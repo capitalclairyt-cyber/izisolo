@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import {
   CalendarDays, Users, BarChart3, AlertTriangle, ChevronRight,
   Clock, Plus, CheckCircle2, XCircle, Share2, Copy, ExternalLink, X, Sparkles, MapPin,
-  Receipt, MessageSquare, Settings as SettingsIcon, ClipboardList, Eye
+  Receipt, MessageSquare, Settings as SettingsIcon, ClipboardList, Eye, QrCode
 } from 'lucide-react';
 import { formatHeure, formatMontant } from '@/lib/utils';
 import { getVocabulaire } from '@/lib/vocabulaire';
@@ -14,6 +14,8 @@ import { useToast } from '@/components/ui/ToastProvider';
 import { toneForCours } from '@/lib/tones';
 import PushToggle from '@/components/push/PushToggle';
 import PushPrompt from '@/components/push/PushPrompt';
+import QrPortailModal from '@/components/portail/QrPortailModal';
+import { can } from '@/lib/plan-guard';
 
 export default function DashboardClient({ profile, coursDuJour, nbClients, nbCoursTotal, revenusMois, alertes, coutsMois, hasSondage = false, nbCasATraiter = 0, nbInvites = 0, espacesEleve = [] }) {
   const vocab = getVocabulaire(profile?.metier || 'yoga', profile?.vocabulaire);
@@ -74,6 +76,7 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
   // canShare en state + useEffect pour éviter un hydration mismatch
   // (navigator n'existe pas au rendu serveur). Fallback : copie.
   const [canShare, setCanShare] = useState(false);
+  const [qrOpen, setQrOpen] = useState(false); // modale « Mon QR code » (v1 2026-07-26)
   useEffect(() => { setCanShare(typeof navigator !== 'undefined' && !!navigator.share); }, []);
 
   const sharePortalUrl = async () => {
@@ -346,6 +349,15 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
             </div>
             <button
               type="button"
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); setQrOpen(true); }}
+              className="bento-portal-copy bento-portal-qr"
+              title="Mon QR code (carte de visite, flyer, affiche)"
+              aria-label="Ouvrir le QR code du portail"
+            >
+              <QrCode size={14} />
+            </button>
+            <button
+              type="button"
               onClick={(e) => { e.preventDefault(); e.stopPropagation(); sharePortalUrl(); }}
               className="bento-portal-copy"
               title={canShare ? 'Partager le lien (SMS, WhatsApp…)' : 'Copier le lien'}
@@ -354,6 +366,16 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
               {canShare ? <Share2 size={14} /> : <Copy size={14} />}
             </button>
           </a>
+        )}
+
+        {studioSlug && (
+          <QrPortailModal
+            open={qrOpen}
+            onClose={() => setQrOpen(false)}
+            studioSlug={studioSlug}
+            studioNom={profile?.studio_nom}
+            essaiDispo={profile?.essai_actif === true && can(profile, 'cours_essai')}
+          />
         )}
 
         {/* Bandeau "Cas à traiter" — si au moins un cas non résolu */}
@@ -685,6 +707,7 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
           max-width: 100%;
         }
         .bento-cell--portal { position: relative; }
+        .bento-portal-qr { right: 40px !important; } /* à gauche du bouton partage */
         .bento-portal-copy {
           position: absolute; top: 8px; right: 8px;
           background: oklch(1 0 0 / 0.7);

@@ -16,9 +16,11 @@ import {
   ToggleLeft, ToggleRight, Trash2, Plus,
 } from 'lucide-react';
 import { getTrialStatus } from '@/lib/trial';
+import { can } from '@/lib/plan-guard';
 import PhotoUploader from '@/components/ui/PhotoUploader';
 import CoverPhotoEditor from '@/components/ui/CoverPhotoEditor';
 import HorairesStudioEditor from './HorairesStudioEditor';
+import QrPortailModal from '@/components/portail/QrPortailModal';
 
 export default function PagePubliqueSection({ profile, setProfile, setDirty }) {
   const studioSlug = profile?.studio_slug;
@@ -29,6 +31,7 @@ export default function PagePubliqueSection({ profile, setProfile, setDirty }) {
   const publicUrl = studioSlug ? `${baseUrl}/p/${studioSlug}` : null;
   const previewUrl = publicUrl ? `${publicUrl}?preview=1` : null;
   const [previewLoading, setPreviewLoading] = useState(false);
+  const [qrOpen, setQrOpen] = useState(false); // modale « Mon QR code »
 
   const set = (field) => (e) => {
     const value = e?.target ? e.target.value : e;
@@ -129,6 +132,14 @@ export default function PagePubliqueSection({ profile, setProfile, setDirty }) {
           <div className="page-pub-workflow-actions">
             <button
               type="button"
+              onClick={() => setQrOpen(true)}
+              className="izi-btn izi-btn-secondary"
+              title="QR code à imprimer (carte de visite, flyer, affiche)"
+            >
+              ▦ Mon QR code
+            </button>
+            <button
+              type="button"
               onClick={openPreview}
               disabled={previewLoading}
               className="izi-btn izi-btn-secondary"
@@ -137,6 +148,16 @@ export default function PagePubliqueSection({ profile, setProfile, setDirty }) {
             </button>
           </div>
         </div>
+      )}
+
+      {studioSlug && (
+        <QrPortailModal
+          open={qrOpen}
+          onClose={() => setQrOpen(false)}
+          studioSlug={studioSlug}
+          studioNom={profile?.studio_nom}
+          essaiDispo={profile?.essai_actif === true && can(profile, 'cours_essai')}
+        />
       )}
 
       {/* Photo de couverture — hero du portail public, avec point focal ajustable */}
