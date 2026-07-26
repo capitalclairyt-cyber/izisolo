@@ -228,6 +228,19 @@ export default function OnboardingPage() {
   // trigger v33 pose trial_started_at à l'insert). On rafraîchit ensuite
   // la session pour récupérer le nouveau role, puis on ouvre le wizard.
   async function handleDevenirProf() {
+    // Garde-fou (fausse manip réelle du 26/07 : un élève cherchant son espace
+    // a traversé ce bouton et créé un studio fantôme au nom de sa prof — puis
+    // s'est retrouvé coincé côté prof, le flip n'ayant pas de retour dans
+    // l'app). Confirmation SANS ambiguïté avant le POST.
+    const nomsPortails = portails.map(p => p.nom).join(', ');
+    const ok = confirm(
+      'Tu es sur le point de créer TON studio de professeur·e (essai 14 jours).'
+      + (nomsPortails
+        ? `\n\nATTENTION : ce n'est PAS l'accès à ton espace élève chez ${nomsPortails} — pour ça, utilise le bouton « Mon espace » au-dessus.`
+        : '')
+      + '\n\nContinuer et ouvrir mon propre studio ?'
+    );
+    if (!ok) return;
     setDevenirLoading(true);
     setErreur('');
     try {
