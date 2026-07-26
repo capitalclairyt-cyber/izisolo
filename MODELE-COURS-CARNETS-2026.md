@@ -1,5 +1,12 @@
 # Modèle cours ↔ carnets/abonnements — analyse & cible (2026-07-26)
 
+> **STATUT : R1 + R2 + R3 IMPLÉMENTÉES (B2f, 2026-07-26, commits 44c3203→9dc5ba7,
+> migration v82 appliquée).** Walkthrough réel 11/11 : élève couverte décomptée
+> (3→4), passante à 20 €, prévision exacte, re-liaison aller-retour prouvée en
+> DB. Les non-recos du §4 restent des non-recos. Reste connu : la dérivation
+> « à percevoir » côté PROF (Revenus) n'a pas la prévision mixte (surestimation
+> temporaire jusqu'au pointage) — à symétriser au prochain passage Revenus.
+
 > Déclencheur : question de Colin — « une prof peut-elle mettre au planning un
 > cours qui accepte plusieurs types d'abonnements ET un paiement à l'unité
 > (20 € pour une nouvelle élève ou une élève non couverte) ? »
