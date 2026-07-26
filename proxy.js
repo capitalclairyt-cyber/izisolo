@@ -17,6 +17,8 @@ const PUBLIC_ROUTES = [
   '/mot-de-passe-oublie', '/nouveau-mot-de-passe',
   '/auth/',                 // /auth/callback Supabase
   '/p/',                    // portails publics studio (sondages, cours, espace, etc.)
+  '/embed/',                // planning intégrable iframé sur les sites des profs (B2g)
+  '/widget.js',             // loader du planning intégrable, chargé par les sites tiers (B2g)
   '/legal/',                // CGU/CGV/Mentions/RGPD
   '/profs-de-yoga', '/profs-de-pilates', '/profs-de-meditation', '/profs-de-danse',
   '/coachs-bien-etre', '/therapeutes', '/sophrologues',
