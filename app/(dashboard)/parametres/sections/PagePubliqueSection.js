@@ -33,6 +33,19 @@ export default function PagePubliqueSection({ profile, setProfile, setDirty }) {
   const [previewLoading, setPreviewLoading] = useState(false);
   const [qrOpen, setQrOpen] = useState(false); // modale « Mon QR code »
 
+  // Snippets « Intégrer sur ton site » (B2g — demande Manon) : le widget
+  // une-ligne (auto-hauteur) + l'iframe nue en secours (builders sans JS).
+  const [copie, setCopie] = useState(null); // 'widget' | 'iframe'
+  const snippetWidget = `<script src="${baseUrl}/widget.js" data-studio="${studioSlug}" async></script>`;
+  const snippetIframe = `<iframe src="${baseUrl}/embed/${studioSlug}" style="width:100%;height:900px;border:0;" title="Planning des cours"></iframe>`;
+  const copier = async (quoi, txt) => {
+    try {
+      await navigator.clipboard.writeText(txt);
+      setCopie(quoi);
+      setTimeout(() => setCopie(null), 2000);
+    } catch { /* clipboard refusé — le snippet reste sélectionnable à la main */ }
+  };
+
   const set = (field) => (e) => {
     const value = e?.target ? e.target.value : e;
     setProfile(prev => ({ ...prev, [field]: value }));
@@ -158,6 +171,41 @@ export default function PagePubliqueSection({ profile, setProfile, setDirty }) {
           studioNom={profile?.studio_nom}
           essaiDispo={profile?.essai_actif === true && can(profile, 'cours_essai')}
         />
+      )}
+
+      {/* Intégrer le planning sur SON site (B2g — demande Manon). Deux niveaux :
+          le widget une-ligne (auto-hauteur) et l'iframe nue (marche partout,
+          même les builders qui bloquent les scripts). */}
+      {studioSlug && (
+        <div className="emb-integrer">
+          <div className="emb-int-titre">🌐 Intègre ton planning sur ton site</div>
+          <p className="emb-int-desc">
+            Colle une de ces deux lignes dans un bloc <strong>HTML personnalisé</strong> de
+            ton site (WordPress, Wix, Squarespace…). Ton planning s'affiche chez toi,
+            et tes élèves réservent sur ta page IziSolo en un clic.
+          </p>
+          <div className="emb-int-row">
+            <div className="emb-int-label">Recommandé — s'ajuste tout seul à la hauteur du planning :</div>
+            <div className="emb-int-snippet">
+              <code>{snippetWidget}</code>
+              <button type="button" className="izi-btn izi-btn-secondary emb-int-copy" onClick={() => copier('widget', snippetWidget)}>
+                {copie === 'widget' ? '✓ Copié' : 'Copier'}
+              </button>
+            </div>
+          </div>
+          <div className="emb-int-row">
+            <div className="emb-int-label">Si ton site refuse les scripts — iframe simple (hauteur fixe) :</div>
+            <div className="emb-int-snippet">
+              <code>{snippetIframe}</code>
+              <button type="button" className="izi-btn izi-btn-secondary emb-int-copy" onClick={() => copier('iframe', snippetIframe)}>
+                {copie === 'iframe' ? '✓ Copié' : 'Copier'}
+              </button>
+            </div>
+          </div>
+          <a href={`/embed/${studioSlug}`} target="_blank" rel="noopener noreferrer" className="emb-int-preview">
+            Voir le rendu du planning intégrable →
+          </a>
+        </div>
       )}
 
       {/* Photo de couverture — hero du portail public, avec point focal ajustable */}
@@ -400,6 +448,25 @@ export default function PagePubliqueSection({ profile, setProfile, setDirty }) {
         .page-pub-workflow-info { font-size: 0.8125rem; color: var(--text-secondary); flex: 1; min-width: 220px; }
         .page-pub-workflow-info strong { color: var(--text-primary); font-weight: 600; }
         .page-pub-workflow-actions { display: flex; gap: 6px; flex-shrink: 0; }
+        .emb-integrer {
+          padding: 12px 14px; margin: 0 0 16px;
+          background: var(--bg-soft, #faf8f5);
+          border: 1px solid var(--border); border-radius: 12px;
+        }
+        .emb-int-titre { font-size: 0.875rem; font-weight: 700; color: var(--text-primary); }
+        .emb-int-desc { font-size: 0.8125rem; color: var(--text-secondary); margin: 4px 0 10px; line-height: 1.5; }
+        .emb-int-row { margin-bottom: 10px; }
+        .emb-int-label { font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 4px; }
+        .emb-int-snippet { display: flex; gap: 6px; align-items: stretch; }
+        .emb-int-snippet code {
+          flex: 1; min-width: 0; padding: 7px 10px;
+          background: white; border: 1px solid var(--border); border-radius: 8px;
+          font-size: 0.6875rem; word-break: break-all; color: var(--text-primary);
+          display: block;
+        }
+        .emb-int-copy { flex-shrink: 0; padding: 6px 12px; font-size: 0.75rem; }
+        .emb-int-preview { font-size: 0.75rem; color: var(--brand-700); font-weight: 600; text-decoration: none; }
+        .emb-int-preview:hover { text-decoration: underline; }
         .toggle-row .toggle-btn {
           display: inline-flex; align-items: center; gap: 10px;
           background: none; border: none; cursor: pointer;
