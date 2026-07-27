@@ -1,4 +1,5 @@
 import { createAdminClient } from '@/lib/supabase-admin';
+import { fetchAllRows } from '@/lib/admin-stats';
 
 async function getStats(supabase) {
   const today = new Date();
@@ -114,15 +115,40 @@ function MiniBarChart({ data, color = '#60a5fa', label }) {
 async function getActivityFeed(admin) {
   const events = [];
 
+  // ── Affiliation des comptes (demande Colin 2026-07-26) : « Connexion » et
+  // « Nouveau compte » arrivaient avec studio:null en dur — illisibles.
+  // Prof → son propre studio ; élève (auth sans profil, v57) → les studios de
+  // ses fiches par email (même mécanique que /admin/users).
+  const [{ data: profilsAff }, clientsAff] = await Promise.all([
+    admin.from('profiles').select('id, studio_nom, prenom'),
+    fetchAllRows(admin, 'clients', 'profile_id, email'),
+  ]);
+  const profilById = {};
+  for (const p of profilsAff || []) profilById[p.id] = p;
+  const studiosParEmail = {};
+  for (const c of clientsAff || []) {
+    if (!c.email) continue;
+    const k = String(c.email).toLowerCase();
+    (studiosParEmail[k] = studiosParEmail[k] || new Set()).add(c.profile_id);
+  }
+  const affiliation = (u) => {
+    const prof = profilById[u.id];
+    if (prof) return { studio: prof.studio_nom || prof.prenom || 'studio sans nom', qui: 'prof' };
+    const ids = [...(studiosParEmail[String(u.email || '').toLowerCase()] || [])].filter(id => profilById[id]);
+    if (ids.length === 0) return { studio: null, qui: 'élève ⚠ aucune fiche' };
+    return { studio: ids.map(id => profilById[id].studio_nom || 'studio sans nom').join(' + '), qui: 'élève' };
+  };
+
   // Connexions + nouveaux comptes (API admin Supabase)
   try {
     const { data: usersPage } = await admin.auth.admin.listUsers({ page: 1, perPage: 200 });
     for (const u of usersPage?.users || []) {
+      const { studio, qui } = affiliation(u);
       if (u.last_sign_in_at) {
-        events.push({ date: u.last_sign_in_at, icone: '🔑', type: 'Connexion', label: u.email, studio: null });
+        events.push({ date: u.last_sign_in_at, icone: '🔑', type: `Connexion ${qui}`, label: u.email, studio });
       }
       if (u.created_at) {
-        events.push({ date: u.created_at, icone: '✨', type: 'Nouveau compte', label: u.email, studio: null });
+        events.push({ date: u.created_at, icone: '✨', type: `Nouveau compte ${qui}`, label: u.email, studio });
       }
     }
   } catch (e) {

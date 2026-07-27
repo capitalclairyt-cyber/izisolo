@@ -1,33 +1,66 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Bell, X, Share } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Bell, X, Share, Smartphone } from 'lucide-react';
 import { isPushSupported, isIosNonInstalled, getExistingSubscription, enablePush } from '@/lib/push-client';
 
 /**
- * PushPrompt — bannière d'incitation à activer les notifications.
- * S'affiche tant que le push n'est pas activé (et pas déjà refusé/masqué).
- * Sur iOS non installé : explique comment ajouter à l'écran d'accueil (seul
- * moyen d'avoir le push sur iPhone). Se masque après activation ou « plus tard ».
+ * PushPrompt — bannière « installe l'appli, puis active les notifications ».
+ *
+ * v2 (2026-07-26, retour d'une élève de Maude : « je dois redemander un lien
+ * par email à chaque connexion ») : la mission n°1 devient l'INSTALLATION de
+ * la PWA — une icône sur l'écran d'accueil = accès 1-tap SANS repasser par
+ * l'email, et la session survit (Safari purge le stockage des sites non
+ * visités ~7 j, mais PAS celui des apps installées). Le push (l'ancienne
+ * mission unique) passe en n°2, une fois installé — sur iPhone il EXIGE de
+ * toute façon l'installation.
+ *
+ * Plateformes :
+ *  - iOS Safari non installé  → étapes Partager → « Sur l'écran d'accueil »
+ *  - Android/desktop Chrome   → vrai bouton « Installer » (beforeinstallprompt)
+ *                               ou, si l'événement n'est pas disponible,
+ *                               l'astuce menu ⋮ → « Installer l'application »
+ *  - déjà installé            → invitation push (comportement historique)
  *
  * @param {'eleve'|'prof'} audience  adapte le texte
  */
-const DISMISS_KEY = 'izi_push_prompt_dismissed_v1';
+const DISMISS_KEY = 'izi_pwa_prompt_v2'; // v2 : les « plus tard » du bandeau push v1 revoient la nouvelle mission une fois
 
 export default function PushPrompt({ audience = 'eleve' }) {
-  const [state, setState] = useState('hidden'); // hidden | ask | ios | busy
+  // hidden | install-ios | install-any | ask | busy
+  const [state, setState] = useState('hidden');
   const [dismissed, setDismissed] = useState(true);
+  const [installEvent, setInstallEvent] = useState(null);
+  const capteurPose = useRef(false);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
     if (localStorage.getItem(DISMISS_KEY) === '1') return;
     setDismissed(false);
+
+    const installee = window.matchMedia?.('(display-mode: standalone)')?.matches
+      || window.navigator.standalone === true;
+
+    if (!installee) {
+      // Mission n°1 : installer. Chrome/Edge émettent beforeinstallprompt
+      // quand la PWA est installable — on le capture pour offrir un VRAI bouton.
+      if (!capteurPose.current) {
+        capteurPose.current = true;
+        window.addEventListener('beforeinstallprompt', (e) => {
+          e.preventDefault();
+          setInstallEvent(e);
+        });
+      }
+      setState(isIosNonInstalled() ? 'install-ios' : 'install-any');
+      return;
+    }
+
+    // Mission n°2 : le push (app déjà installée).
     (async () => {
-      if (isIosNonInstalled()) { setState('ios'); return; }
-      if (!isPushSupported()) return;                       // canal indispo → rien
+      if (!isPushSupported()) return;
       if (typeof Notification !== 'undefined' && Notification.permission === 'denied') return;
       const sub = await getExistingSubscription();
-      if (!sub) setState('ask');                            // pas encore abonné → on invite
+      if (!sub) setState('ask');
     })();
   }, []);
 
@@ -38,35 +71,64 @@ export default function PushPrompt({ audience = 'eleve' }) {
     setDismissed(true);
   };
 
+  const installer = async () => {
+    if (!installEvent) return;
+    installEvent.prompt();
+    const { outcome } = await installEvent.userChoice.catch(() => ({ outcome: 'dismissed' }));
+    if (outcome === 'accepted') hide();
+    setInstallEvent(null); // l'événement ne se rejoue pas
+  };
+
   const activer = async () => {
     setState('busy');
     const res = await enablePush();
-    if (res === 'granted') { try { localStorage.setItem(DISMISS_KEY, '1'); } catch {} setDismissed(true); }
+    if (res === 'granted') { hide(); }
     else setState('ask');
   };
 
-  const valeur = audience === 'prof'
+  const pitchInstall = audience === 'prof'
+    ? 'Ton studio dans la poche : ouvre IziSolo d\'un tap, sans navigateur, et reste connecté·e.'
+    : 'Retrouve tes cours et ton carnet d\'un tap — sans redemander un lien par email : une fois installé, tu restes connecté·e.';
+
+  const pitchPush = audience === 'prof'
     ? 'Sois prévenu·e dès qu\'un·e élève réserve, annule ou t\'écrit — même app fermée.'
     : 'Sois prévenu·e dès qu\'une place se libère ou que ton studio t\'écrit — même app fermée.';
+
+  const estInstall = state === 'install-ios' || state === 'install-any';
 
   return (
     <div className="push-prompt">
       <button className="pp-close" onClick={hide} aria-label="Masquer"><X size={15} /></button>
-      <div className="pp-icon"><Bell size={18} /></div>
+      <div className="pp-icon">{estInstall ? <Smartphone size={18} /> : <Bell size={18} />}</div>
       <div className="pp-body">
-        {state === 'ios' ? (
+        {state === 'install-ios' && (
           <>
-            <div className="pp-title">Active les notifications</div>
+            <div className="pp-title">Installe {audience === 'prof' ? 'IziSolo' : 'ton espace'} sur ton écran d'accueil</div>
             <div className="pp-text">
-              Sur iPhone, ajoute d'abord ce portail à ton écran d'accueil :
-              appuie sur <Share size={13} style={{ verticalAlign: '-2px' }} /> <strong>Partager</strong> →
-              <strong> « Sur l'écran d'accueil »</strong>, puis rouvre-le depuis l'icône.
+              {pitchInstall}<br />
+              Appuie sur <Share size={13} style={{ verticalAlign: '-2px' }} /> <strong>Partager</strong> →
+              <strong> « Sur l'écran d'accueil »</strong>, puis rouvre depuis l'icône.
             </div>
           </>
-        ) : (
+        )}
+        {state === 'install-any' && (
+          <>
+            <div className="pp-title">Installe {audience === 'prof' ? 'IziSolo' : 'ton espace'} sur ton téléphone</div>
+            <div className="pp-text">{pitchInstall}</div>
+            <div className="pp-actions">
+              {installEvent ? (
+                <button className="pp-btn" onClick={installer}>Installer l'appli</button>
+              ) : (
+                <span className="pp-text">Dans ton navigateur : menu <strong>⋮</strong> → <strong>« Installer l'application »</strong>.</span>
+              )}
+              <button className="pp-later" onClick={hide}>Plus tard</button>
+            </div>
+          </>
+        )}
+        {(state === 'ask' || state === 'busy') && (
           <>
             <div className="pp-title">Ne rate rien 🔔</div>
-            <div className="pp-text">{valeur}</div>
+            <div className="pp-text">{pitchPush}</div>
             <div className="pp-actions">
               <button className="pp-btn" onClick={activer} disabled={state === 'busy'}>
                 {state === 'busy' ? 'Activation…' : 'Activer les notifications'}
@@ -83,7 +145,7 @@ export default function PushPrompt({ audience = 'eleve' }) {
           background: var(--brand-light, #f7efe6); border: 1px solid var(--brand-200, #e8d3bd);
           border-radius: 14px; padding: 14px 40px 14px 14px; margin-bottom: 16px;
         }
-        .pp-close { position: absolute; top: 8px; right: 8px; background: none; border: none; color: var(--text-muted, #999); cursor: pointer; padding: 4px; display: flex; }
+        .pp-close { position: absolute; top: 8px; right: 8px; background: none; border: none; color: var(--text-muted, #999); cursor: pointer; padding: 4px; display: flex; z-index: 1; }
         .pp-icon { flex-shrink: 0; width: 34px; height: 34px; border-radius: 50%; background: var(--brand, #B87333); color: white; display: flex; align-items: center; justify-content: center; }
         .pp-body { flex: 1; min-width: 0; }
         .pp-title { font-weight: 700; font-size: 0.9rem; color: var(--text-primary, #1a1a2e); margin-bottom: 2px; }
