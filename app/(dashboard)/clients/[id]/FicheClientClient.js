@@ -11,7 +11,9 @@ import {
   Banknote, CreditCard, Landmark, FileText, ChevronRight,
   Package, Zap, CalendarCheck, Loader2,
   MessageSquare, Wallet, AlertCircle, Trash2, PlusCircle, Home, Send, Pause, Play,
+  GitMerge,
 } from 'lucide-react';
+import MergeClientsModal from '@/components/clients/MergeClientsModal';
 import { formatDate, formatMontant } from '@/lib/utils';
 import { getVocabulaire } from '@/lib/vocabulaire';
 import { STATUTS_CLIENT, STATUTS_ABONNEMENT, STATUTS_PAIEMENT } from '@/lib/constantes';
@@ -371,6 +373,31 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
   }, [statutOpen]);
+
+  // ── Fusion depuis la fiche (demande Colin 2026-07-26, cas Karine/« K ») ──
+  // La fusion existait sur la LISTE (bannière doublons + bouton), mais quand
+  // Maude regarde la fiche du pseudo « K », rien ne lui propose de la
+  // fusionner — et la détection auto ne matche pas deux noms/emails
+  // différents. Ici : bouton → même modale, cette fiche pré-sélectionnée.
+  const [mergeOpen, setMergeOpen] = useState(false);
+  const [clientsPourFusion, setClientsPourFusion] = useState(null);
+  const ouvrirFusion = async () => {
+    if (!clientsPourFusion) {
+      const supabase = createClient();
+      const { data, error } = await supabase
+        .from('clients')
+        .select('id, prenom, nom, email, telephone, created_at, statut')
+        // client.profile_id, PAS profile.id : le prop `profile` de la fiche
+        // est partiel (vocab/réglages) et n'a pas d'id — attrapé au smoke
+        // (« invalid input syntax for type uuid: undefined »).
+        .eq('profile_id', client.profile_id)
+        .neq('statut', 'archive')
+        .order('nom');
+      if (error) { toast.error('Erreur : ' + error.message); return; }
+      setClientsPourFusion(data || []);
+    }
+    setMergeOpen(true);
+  };
 
   const changeStatut = async (newStatut) => {
     if (newStatut === clientStatut) { setStatutOpen(false); return; }
@@ -812,7 +839,28 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
               <span className="header-invite-label">{invited ? 'Envoyé !' : 'Inviter'}</span>
             </button>
           )}
+          <button
+            type="button"
+            className="header-msg-btn"
+            onClick={ouvrirFusion}
+            title="Fusionner cette fiche avec une autre (doublon, pseudo…)"
+          >
+            <GitMerge size={16} />
+            <span className="header-msg-label">Fusionner</span>
+          </button>
           <Link href={`/clients/${client.id}/edit`} className="edit-btn"><Edit3 size={18} /></Link>
+          {mergeOpen && (
+            <MergeClientsModal
+              allClients={clientsPourFusion || []}
+              initialA={{ id: client.id, prenom: client.prenom, nom: client.nom, email: client.email, created_at: client.created_at }}
+              onClose={() => setMergeOpen(false)}
+              onMerged={({ keptId }) => {
+                setMergeOpen(false);
+                if (keptId === client.id) router.refresh();
+                else router.push(`/clients/${keptId}`); // cette fiche a été absorbée
+              }}
+            />
+          )}
           <button
             type="button"
             className="delete-client-btn"
@@ -1868,7 +1916,10 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
         }
         .encaisser-btn-fiche:hover:not(:disabled) { background: #6ee7b7; color: #064e3b; }
         .encaisser-btn-fiche:disabled { opacity: 0.6; cursor: wait; }
-        .page-header { display: flex; align-items: center; gap: 12px; }
+        /* padding-right : réserve la zone du FAB feedback (fixe haut-droite,
+           z-50) — leçon B2e : le dernier bouton d'un header naît incliquable
+           sinon (elementFromPoint est le seul juge). */
+        .page-header { display: flex; align-items: center; gap: 12px; padding-right: 52px; flex-wrap: wrap; }
         .header-title { flex: 1; font-size: 1.0625rem; font-weight: 600; }
         .back-btn, .edit-btn { width: 40px; height: 40px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-card); display: flex; align-items: center; justify-content: center; color: var(--text-secondary); text-decoration: none; flex-shrink: 0; }
         .delete-client-btn { width: 40px; height: 40px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-card); display: flex; align-items: center; justify-content: center; color: var(--text-secondary); cursor: pointer; flex-shrink: 0; transition: all 0.15s; }
