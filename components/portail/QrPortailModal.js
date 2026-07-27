@@ -17,6 +17,7 @@
 // ════════════════════════════════════════════════════════════════════════════
 
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import QRCode from 'qrcode';
 import { X, Download, Printer, QrCode } from 'lucide-react';
 
@@ -79,7 +80,13 @@ export default function QrPortailModal({ open, onClose, studioSlug, studioNom, e
     window.open(`/qr-affiche?${params}`, '_blank', 'noopener');
   };
 
-  return (
+  // Portal vers <body> (fix feedback Maude, 2e étage) : le bento du dashboard
+  // garde un transform d'identité (animate-slide-up) → un ancêtre transformé
+  // devient le containing block du position:fixed, et le backdrop
+  // n'assombrissait QUE la zone de la grille. Le portal échappe à tout
+  // ancêtre piégé, quel que soit le point de montage. `open` n'est vrai
+  // qu'après un clic → document existe (pas de SSR ici).
+  return createPortal(
     <div className="qrm-backdrop" onClick={onClose} role="dialog" aria-modal="true" aria-label="QR code de ton portail">
       <div className="qrm-card izi-card" onClick={e => e.stopPropagation()}>
         <button type="button" className="qrm-close" onClick={onClose} aria-label="Fermer"><X size={16} /></button>
@@ -138,7 +145,13 @@ export default function QrPortailModal({ open, onClose, studioSlug, studioNom, e
           </button>
         </div>
 
-        <style jsx>{`
+        {/* GLOBAL (fix feedback Maude 2026-07-26) : monté dans le dashboard,
+            l'élément arrivait SANS le hash jsx alors que la feuille scopée
+            l'exigeait (.qrm-backdrop.jsx-… → matches:false) → ZÉRO style
+            appliqué, la modale tombait dans le flux de la grille bento et
+            l'élargissait de 48px. Classes qrm-* namespacées = global sans
+            risque, et prouvé par elementFromPoint/scrollWidth au smoke. */}
+        <style jsx global>{`
           .qrm-backdrop {
             position: fixed; inset: 0; z-index: 200;
             background: rgba(40, 30, 20, 0.35);
@@ -183,6 +196,7 @@ export default function QrPortailModal({ open, onClose, studioSlug, studioNom, e
           .qrm-actions :global(.izi-btn) { flex: 1; justify-content: center; min-width: 120px; }
         `}</style>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
