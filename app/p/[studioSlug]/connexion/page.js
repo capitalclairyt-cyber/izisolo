@@ -1,19 +1,47 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams, useSearchParams } from 'next/navigation';
+import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Mail, ArrowLeft, CheckCircle, Loader } from 'lucide-react';
+import { Mail, ArrowLeft, CheckCircle, Loader, KeyRound } from 'lucide-react';
+import { createClient } from '@/lib/supabase';
 
 export default function ConnexionPortailPage() {
   const { studioSlug } = useParams();
   const searchParams = useSearchParams();
+  const router = useRouter();
   const prefillEmail = searchParams.get('email') || '';
   const erreurParam = searchParams.get('erreur');
   const [email, setEmail]   = useState(prefillEmail);
   const [loading, setLoading] = useState(false);
   const [sent, setSent]     = useState(false);
   const [error, setError]   = useState('');
+  // Mot de passe OPTIONNEL (go Colin 2026-07-26) : l'élève qui en a défini un
+  // dans son espace se connecte directement — le lien email reste le défaut.
+  const [modeMdp, setModeMdp] = useState(false);
+  const [password, setPassword] = useState('');
+
+  const connexionMdp = async (e) => {
+    e.preventDefault();
+    if (!email.trim() || !password) return;
+    setLoading(true);
+    setError('');
+    try {
+      const supabase = createClient();
+      const { error: err } = await supabase.auth.signInWithPassword({
+        email: email.trim().toLowerCase(),
+        password,
+      });
+      if (err) {
+        setError('Email ou mot de passe incorrect. Tu peux aussi recevoir un lien de connexion.');
+        return;
+      }
+      try { localStorage.setItem(`izi_portail_email_${studioSlug}`, email.trim().toLowerCase()); } catch { /* stockage indispo */ }
+      router.push(`/p/${studioSlug}/espace`);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Lien expiré : le callback ne connaît pas l'email → on retombe sur la
   // dernière adresse utilisée sur CE portail (localStorage) pour offrir un
@@ -127,7 +155,7 @@ export default function ConnexionPortailPage() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={modeMdp ? connexionMdp : handleSubmit}>
           <div className="portail-field">
             <label className="portail-label">Ton adresse email</label>
             <input
@@ -142,6 +170,19 @@ export default function ConnexionPortailPage() {
             />
           </div>
 
+          {modeMdp && (
+            <div className="portail-field">
+              <label className="portail-label">Ton mot de passe</label>
+              <input
+                type="password"
+                className="portail-input"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                autoComplete="current-password"
+              />
+            </div>
+          )}
+
           {error && (
             <div style={{ background: '#fff0f0', border: '1px solid #ffcdd2', borderRadius: '8px', padding: '10px 14px', color: '#c62828', fontSize: '0.875rem', marginBottom: '14px' }}>
               {error}
@@ -150,16 +191,25 @@ export default function ConnexionPortailPage() {
 
           <button
             type="submit"
-            disabled={loading || !email.trim()}
+            disabled={loading || !email.trim() || (modeMdp && !password)}
             className="portail-btn-primary"
           >
-            {loading ? <Loader size={16} className="spin" /> : <Mail size={16} />}
-            {loading ? 'Envoi en cours…' : 'Recevoir mon lien de connexion'}
+            {loading ? <Loader size={16} className="spin" /> : modeMdp ? <KeyRound size={16} /> : <Mail size={16} />}
+            {loading ? (modeMdp ? 'Connexion…' : 'Envoi en cours…') : modeMdp ? 'Me connecter' : 'Recevoir mon lien de connexion'}
           </button>
 
-          <p style={{ textAlign: 'center', fontSize: '0.8125rem', color: '#aaa', margin: '14px 0 0', lineHeight: 1.5 }}>
-            Un lien magique sera envoyé à ton adresse.<br />
-            Pas besoin de mot de passe.
+          <button
+            type="button"
+            onClick={() => { setModeMdp(m => !m); setError(''); }}
+            style={{ display: 'block', margin: '14px auto 0', background: 'none', border: 'none', color: '#b58962', fontSize: '0.8125rem', cursor: 'pointer', textDecoration: 'underline' }}
+          >
+            {modeMdp ? 'Recevoir un lien par email à la place' : 'J\'ai un mot de passe — me connecter avec'}
+          </button>
+
+          <p style={{ textAlign: 'center', fontSize: '0.8125rem', color: '#aaa', margin: '10px 0 0', lineHeight: 1.5 }}>
+            {modeMdp
+              ? 'Le mot de passe se définit dans ton espace (section « Mon mot de passe »).'
+              : <>Un lien magique sera envoyé à ton adresse.<br />Pas besoin de mot de passe.</>}
           </p>
         </form>
       </div>

@@ -374,6 +374,31 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
     }
   };
 
+  // ── Mot de passe optionnel (go Colin 2026-07-26) ──────────────────────────
+  const [mdpOpen, setMdpOpen] = useState(false);
+  const [mdp1, setMdp1] = useState('');
+  const [mdp2, setMdp2] = useState('');
+  const [savingMdp, setSavingMdp] = useState(false);
+  const handleSaveMdp = async () => {
+    if (mdp1.length < 8 || mdp1 !== mdp2) return;
+    setSavingMdp(true);
+    try {
+      const res = await fetch('/api/eleve/mot-de-passe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: mdp1 }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json.error || 'Erreur');
+      toast.success('Mot de passe enregistré ✓ — tu peux maintenant te connecter avec, depuis la page Connexion.');
+      setMdpOpen(false); setMdp1(''); setMdp2('');
+    } catch (e) {
+      toast.error(e.message);
+    } finally {
+      setSavingMdp(false);
+    }
+  };
+
   const handleAnnuler = async (presenceId, tardiveAttendue = false) => {
     setAnnulEnCours(presenceId);
     setErrMsg('');
@@ -663,6 +688,52 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
           </div>
         );
       })()}
+
+      {/* Mon mot de passe (OPTIONNEL — go Colin 2026-07-26, retour d'une élève :
+          « je dois redemander un lien par email à chaque connexion »). Le lien
+          email reste le chemin par défaut et le secours en cas d'oubli. */}
+      {!isDemo && (
+        <div className="portail-card" style={{ marginBottom: 20 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+            <h2 className="espace-section-title" style={{ margin: 0 }}>
+              🔒 Mon mot de passe
+            </h2>
+            {!mdpOpen && (
+              <button type="button" onClick={() => setMdpOpen(true)} className="espace-coord-edit">
+                <Pencil size={13} /> Définir / changer
+              </button>
+            )}
+          </div>
+          {mdpOpen ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 14 }}>
+              <label className="espace-coord-field">
+                <span>Nouveau mot de passe (8 caractères min.)</span>
+                <input type="password" value={mdp1} onChange={e => setMdp1(e.target.value)} autoComplete="new-password" />
+              </label>
+              <label className="espace-coord-field">
+                <span>Confirme-le</span>
+                <input type="password" value={mdp2} onChange={e => setMdp2(e.target.value)} autoComplete="new-password" />
+              </label>
+              <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+                <button type="button" onClick={handleSaveMdp} disabled={savingMdp || mdp1.length < 8 || mdp1 !== mdp2} className="portail-btn-primary" style={{ flex: 1 }}>
+                  {savingMdp ? <Loader size={15} className="spin" /> : <><Save size={15} /> Enregistrer</>}
+                </button>
+                <button type="button" onClick={() => { setMdpOpen(false); setMdp1(''); setMdp2(''); }} className="portail-btn-ghost" style={{ flex: 1 }}>
+                  Annuler
+                </button>
+              </div>
+              {mdp1 && mdp2 && mdp1 !== mdp2 && (
+                <p style={{ color: '#c62828', fontSize: '0.8125rem', margin: 0 }}>Les deux mots de passe ne correspondent pas.</p>
+              )}
+            </div>
+          ) : (
+            <p style={{ color: '#aaa', fontSize: '0.875rem', margin: '10px 0 0', lineHeight: 1.5 }}>
+              Optionnel — pour te connecter directement, sans attendre un lien par
+              email. Le lien reste dispo si tu l'oublies.
+            </p>
+          )}
+        </div>
+      )}
 
       {errMsg && (
         <div style={{ background: '#fff0f0', border: '1px solid #ffcdd2', borderRadius: '10px', padding: '12px 14px', color: '#c62828', fontSize: '0.875rem', marginBottom: 14, display: 'flex', gap: 8, alignItems: 'center' }}>
