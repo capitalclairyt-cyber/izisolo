@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation';
 import CoursReservationClient from './CoursReservationClient';
 import { canSeeCours, resolveClientInfo } from '@/lib/visibilite';
 import { studioCan } from '@/lib/plan-guard';
-import { escapeIlike } from '@/lib/utils';
+import { resoudreFicheEleve } from '@/lib/fiche-eleve';
 import { compterPlacesOccupees } from '@/lib/presences';
 import { resoudreCarnetApplicable } from '@/lib/carnet-resolution';
 
@@ -38,7 +38,7 @@ async function getData(studioSlug, coursId) {
 
   // ── Vérification visibilité — si le cours n'est pas accessible au viewer, on
   // retourne null (déclenche notFound() côté page) ──
-  const clientInfo = user ? await resolveClientInfo(supabase, profile.id, user.email) : null;
+  const clientInfo = user ? await resolveClientInfo(supabase, profile.id, user) : null; // v83 : FK d'abord
   let visible = canSeeCours(cours.visibilite, clientInfo);
   // Cours privé (v73) : la SEULE exception — l'élève déjà inscrit·e dessus
   // (invité·e par la prof) peut ouvrir la page depuis son espace.
@@ -66,12 +66,8 @@ async function getData(studioSlug, coursId) {
   let alreadyRegistered = false;
   let prevision = null;
   if (user) {
-    const { data: client } = await supabase
-      .from('clients')
-      .select('id, prenom, nom, email, telephone')
-      .eq('profile_id', profile.id)
-      .ilike('email', escapeIlike(user.email))
-      .single();
+    // v83 : FK douce d'abord (survit à un changement d'email de la fiche).
+    const client = await resoudreFicheEleve(supabase, profile.id, user, 'id, prenom, nom, email, telephone');
     if (client) {
       currentUser = {
         nom: [client.prenom, client.nom].filter(Boolean).join(' '),

@@ -10,7 +10,7 @@ import { sendNotifElevePourRegle } from '@/lib/notif-eleve-regle';
 import { sendPushToUser } from '@/lib/push-server';
 import { wantsNotif } from '@/lib/notif-prefs';
 import { resoudreCarnetApplicable } from '@/lib/carnet-resolution';
-import { escapeIlike } from '@/lib/utils';
+import { resoudreFicheEleve } from '@/lib/fiche-eleve';
 import { promouvoirListeAttente } from '@/lib/promotion-liste-attente';
 import { reportError } from '@/lib/report';
 
@@ -66,12 +66,9 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
   }
 
   // Trouver le client lié à cet user dans ce studio (incl. infos pour notif)
-  const { data: client } = await supabaseAdmin
-    .from('clients')
-    .select('id, prenom, nom, email, telephone')
-    .eq('profile_id', profile.id)
-    .ilike('email', escapeIlike(user.email))
-    .single();
+  // v83 : FK douce d'abord — l'annulation marche même si la prof a corrigé
+  // l'email de la fiche entre-temps.
+  const client = await resoudreFicheEleve(supabaseAdmin, profile.id, user, 'id, prenom, nom, email, telephone');
 
   if (!client) {
     return Response.json({ error: 'Client introuvable' }, { status: 404 });

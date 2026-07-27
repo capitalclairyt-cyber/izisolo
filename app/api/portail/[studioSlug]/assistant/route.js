@@ -3,7 +3,7 @@ import { createServerClient } from '@/lib/supabase-server';
 import { createAdminClient } from '@/lib/supabase-admin';
 import { checkAntiBot } from '@/lib/antibot';
 import Anthropic from '@anthropic-ai/sdk';
-import { escapeIlike } from '@/lib/utils';
+import { resoudreFicheEleve } from '@/lib/fiche-eleve';
 import { reportError } from '@/lib/report';
 import { getReglesAnnulation } from '@/lib/regles-metier';
 
@@ -83,15 +83,10 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
   const counts = {};
   (presences || []).forEach(p => { counts[p.cours_id] = (counts[p.cours_id] || 0) + 1; });
 
-  // Prénom élève si connecté
+  // Prénom élève si connecté — v83 : FK douce d'abord.
   let prenom = null;
   if (user) {
-    const { data: client } = await supabaseAdmin
-      .from('clients')
-      .select('prenom')
-      .eq('profile_id', profile.id)
-      .ilike('email', escapeIlike(user.email))
-      .maybeSingle();
+    const client = await resoudreFicheEleve(supabaseAdmin, profile.id, user, 'id, prenom');
     prenom = client?.prenom || null;
   }
 

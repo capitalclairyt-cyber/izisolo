@@ -2,7 +2,7 @@ import { withRoute } from '@/lib/api-route';
 import { createServerClient } from '@/lib/supabase-server';
 import { createAdminClient } from '@/lib/supabase-admin';
 import { sanitizePrefs } from '@/lib/notif-prefs';
-import { escapeIlike } from '@/lib/utils';
+import { resoudreFicheEleve } from '@/lib/fiche-eleve';
 import { reportError } from '@/lib/report';
 
 /**
@@ -27,13 +27,9 @@ export const GET = withRoute({ auth: 'public' }, async ({ request, params }) => 
     .maybeSingle();
   if (!profile) return Response.json({ error: 'Studio introuvable' }, { status: 404 });
 
-  const { data: client, error: clientErr } = await supabaseAdmin
-    .from('clients')
-    .select('prenom')
-    .eq('profile_id', profile.id)
-    .ilike('email', escapeIlike(user.email))
-    .maybeSingle();
-  if (clientErr) reportError('[portail/profil GET] client err:', clientErr, { route: `/api/portail/${studioSlug}/profil` });
+  // v83 : FK douce d'abord (le prénom du header survit à un changement
+  // d'email de la fiche).
+  const client = await resoudreFicheEleve(supabaseAdmin, profile.id, user, 'id, prenom');
 
   return Response.json({ prenom: client?.prenom || null });
 });
@@ -63,12 +59,7 @@ export const PATCH = withRoute({ auth: 'public' }, async ({ request, params }) =
     .single();
   if (!profile) return Response.json({ error: 'Studio introuvable' }, { status: 404 });
 
-  const { data: client } = await supabaseAdmin
-    .from('clients')
-    .select('id')
-    .eq('profile_id', profile.id)
-    .ilike('email', escapeIlike(user.email))
-    .single();
+  const client = await resoudreFicheEleve(supabaseAdmin, profile.id, user, 'id'); // v83
   if (!client) return Response.json({ error: 'Client introuvable' }, { status: 404 });
 
   // Liste blanche stricte des champs modifiables par l'élève.

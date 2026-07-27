@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase-admin';
 import { parseJsonBody, reservationSchema } from '@/lib/validation';
 import { checkAntiBot, ipFromRequest } from '@/lib/antibot';
 import { withRoute } from '@/lib/api-route';
+import { resoudreFicheEleve } from '@/lib/fiche-eleve';
 import { getRegle, getDelaiPourCours } from '@/lib/regles-metier';
 import { sendNotifElevePourRegle } from '@/lib/notif-eleve-regle';
 import { sendPushToUser } from '@/lib/push-server';
@@ -91,7 +92,7 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
     if (cours.visibilite === 'prive') {
       return Response.json({ error: 'Ce cours est sur invitation.' }, { status: 403 });
     }
-    const clientInfo = await resolveClientInfo(supabaseAdmin, profile.id, email);
+    const clientInfo = await resolveClientInfo(supabaseAdmin, profile.id, authUser || email); // v83 : FK si connectée
     if (!canSeeCours(cours.visibilite, clientInfo)) {
       return Response.json({ error: 'Ce cours est réservé à certain·es élèves du studio.' }, { status: 403 });
     }
@@ -114,12 +115,21 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
   // Chercher ou créer le client dans la table clients du prof
   let clientId;
   let prenom;
-  const { data: existingClient } = await supabaseAdmin
-    .from('clients')
-    .select('id, prenom')
-    .eq('profile_id', profile.id)
-    .ilike('email', email.replace(/([%_\\])/g, '\\$1')) // échappe les jokers ilike (_ %)
-    .single();
+  // v83 : élève CONNECTÉE → sa fiche par la FK douce D'ABORD. Avant, la
+  // recherche se faisait sur l'email du FORMULAIRE seul : une connectée qui
+  // tapait une autre adresse (typo, 2e email) créait une fiche DOUBLON.
+  let existingClient = authUser
+    ? await resoudreFicheEleve(supabaseAdmin, profile.id, authUser, 'id, prenom')
+    : null;
+  if (!existingClient) {
+    const { data } = await supabaseAdmin
+      .from('clients')
+      .select('id, prenom')
+      .eq('profile_id', profile.id)
+      .ilike('email', email.replace(/([%_\\])/g, '\\$1')) // échappe les jokers ilike (_ %)
+      .single();
+    existingClient = data;
+  }
 
   if (existingClient) {
     clientId = existingClient.id;

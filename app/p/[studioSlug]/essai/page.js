@@ -44,7 +44,7 @@ async function getData(studioSlug) {
   // clientInfo null => seuls les cours 'public' sont proposés.
   const ssrClient = await createServerClient();
   const { data: { user } } = await ssrClient.auth.getUser();
-  const clientInfo = user ? await resolveClientInfo(supabase, profile.id, user.email) : null;
+  const clientInfo = user ? await resolveClientInfo(supabase, profile.id, user) : null; // v83 : FK d'abord
   let cours = filterCoursVisibles(coursRaw || [], clientInfo);
 
   // Cours COMPLETS masqués (audit 2026-07-25) : le sélecteur chargeait

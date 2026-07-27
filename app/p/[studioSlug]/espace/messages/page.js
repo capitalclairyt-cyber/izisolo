@@ -2,7 +2,7 @@ import { createServerClient } from '@/lib/supabase-server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { redirect, notFound } from 'next/navigation';
 import EspaceMessagesClient from './EspaceMessagesClient';
-import { escapeIlike } from '@/lib/utils';
+import { resoudreFicheEleve } from '@/lib/fiche-eleve';
 
 export const metadata = { title: 'Mes messages', robots: { index: false, follow: false } };
 
@@ -27,13 +27,8 @@ export default async function EspaceMessagesPage({ params }) {
     redirect(`/p/${studioSlug}/connexion?next=/p/${studioSlug}/espace/messages`);
   }
 
-  // Vérifier que l'user est bien client de ce studio
-  const { data: client } = await supabase
-    .from('clients')
-    .select('id, prenom, nom')
-    .eq('profile_id', profile.id)
-    .ilike('email', escapeIlike(user.email))
-    .maybeSingle();
+  // Vérifier que l'user est bien client de ce studio — v83 : FK d'abord.
+  const client = await resoudreFicheEleve(supabase, profile.id, user, 'id, prenom, nom');
   if (!client) {
     return (
       <div style={{ maxWidth: 600, margin: '40px auto', padding: 20, textAlign: 'center' }}>

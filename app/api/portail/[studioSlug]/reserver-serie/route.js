@@ -1,4 +1,5 @@
 import { withRoute } from '@/lib/api-route';
+import { resoudreFicheEleve } from '@/lib/fiche-eleve';
 import { studioCan } from '@/lib/plan-guard';
 import { createServerClient } from '@/lib/supabase-server';
 import { createAdminClient } from '@/lib/supabase-admin';
@@ -6,7 +7,6 @@ import { reserverSerieSchema } from '@/lib/validation';
 import { checkRateLimitIP } from '@/lib/antibot';
 import { sendPushToUser } from '@/lib/push-server';
 import { wantsNotif } from '@/lib/notif-prefs';
-import { escapeIlike } from '@/lib/utils';
 import { reportError } from '@/lib/report';
 import { canSeeCours, resolveClientInfo } from '@/lib/visibilite';
 import { coursDejaCommence } from '@/lib/dates';
@@ -73,9 +73,8 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
     );
   }
 
-  // Client lié à cet email dans ce studio
-  const { data: client } = await supabaseAdmin
-    .from('clients').select('id, prenom').eq('profile_id', profile.id).ilike('email', escapeIlike(user.email)).maybeSingle();
+  // Client lié à ce compte dans ce studio — v83 : FK douce d'abord.
+  const client = await resoudreFicheEleve(supabaseAdmin, profile.id, user, 'id, prenom');
   if (!client) return Response.json({ error: 'Client introuvable' }, { status: 404 });
 
   // Cours de référence
@@ -97,7 +96,7 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
     if (baseCours.visibilite === 'prive') {
       return Response.json({ error: 'Ce cours est sur invitation.' }, { status: 403 });
     }
-    const clientInfo = await resolveClientInfo(supabaseAdmin, profile.id, user.email);
+    const clientInfo = await resolveClientInfo(supabaseAdmin, profile.id, user); // v83 : FK d'abord
     if (!canSeeCours(baseCours.visibilite, clientInfo)) {
       return Response.json({ error: 'Ce cours est réservé à certain·es élèves du studio.' }, { status: 403 });
     }

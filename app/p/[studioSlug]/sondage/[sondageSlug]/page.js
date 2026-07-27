@@ -2,7 +2,7 @@ import { createServerClient } from '@/lib/supabase-server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { notFound } from 'next/navigation';
 import SondageReponseClient from './SondageReponseClient';
-import { escapeIlike } from '@/lib/utils';
+import { resoudreFicheEleve } from '@/lib/fiche-eleve';
 
 export async function generateMetadata({ params }) {
   const { studioSlug, sondageSlug } = await params;
@@ -62,12 +62,7 @@ export default async function SondagePublicPage({ params }) {
   const { data: { user } } = await ssrClient.auth.getUser();
   let connectedClient = null;
   if (user) {
-    const { data: client } = await supabase
-      .from('clients')
-      .select('id, prenom, email')
-      .eq('profile_id', profile.id)
-      .ilike('email', escapeIlike(user.email))
-      .maybeSingle();
+    const client = await resoudreFicheEleve(supabase, profile.id, user, 'id, prenom, email'); // v83
     connectedClient = client || null;
   }
 

@@ -105,7 +105,7 @@ async function getStudioData(studioSlug) {
   // (porteur des cookies de session) ; supabaseAdmin ne connaît pas la session.
   const ssrClient = await createServerClient();
   const { data: { user } } = await ssrClient.auth.getUser();
-  const clientInfo = user ? await resolveClientInfo(supabase, profile.id, user.email) : null;
+  const clientInfo = user ? await resolveClientInfo(supabase, profile.id, user) : null; // v83 : FK d'abord
   const cours = filterCoursVisibles(coursRaw || [], clientInfo);
 
   // ── Réservation 1 clic : si le visiteur est un client reconnu de ce studio,

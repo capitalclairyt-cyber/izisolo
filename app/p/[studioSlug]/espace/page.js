@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation';
 import { notFound } from 'next/navigation';
 import { countUnread } from '@/lib/messagerie';
 import EspaceClient from './EspaceClient';
-import { escapeIlike } from '@/lib/utils';
+import { resoudreFicheEleve } from '@/lib/fiche-eleve';
 import { resoudreCarnetApplicable } from '@/lib/carnet-resolution';
 
 export const metadata = { title: 'Mon espace — IziSolo' };
@@ -140,7 +140,7 @@ function buildDemoData(profile) {
   };
 }
 
-async function getData(studioSlug, userEmail) {
+async function getData(studioSlug, user) {
   // On utilise le client admin (service_role, hors RLS) : le studio est une
   // info publique, et toutes les requêtes élève sont filtrées par profile_id
   // (studio) + email/client_id (l'élève authentifié·e), donc l'isolation est
@@ -156,14 +156,10 @@ async function getData(studioSlug, userEmail) {
     .single();
   if (!profile) return null;
 
-  // Client lié à ce studio + offres avec Stripe Payment Link en parallèle
-  const [{ data: client }, { data: offresStripe }] = await Promise.all([
-    supabase
-      .from('clients')
-      .select('id, prenom, nom, email, telephone, adresse_postale, ville')
-      .eq('profile_id', profile.id)
-      .ilike('email', escapeIlike(userEmail))
-      .single(),
+  // Client lié à ce studio (v83 : FK douce d'abord — l'espace survit à un
+  // changement d'email de la fiche) + offres Stripe en parallèle
+  const [client, { data: offresStripe }] = await Promise.all([
+    resoudreFicheEleve(supabase, profile.id, user, 'id, prenom, nom, email, telephone, adresse_postale, ville'),
     supabase
       .from('offres')
       .select('id, nom, type, prix, seances, stripe_payment_link')
@@ -385,7 +381,7 @@ export default async function EspacePage({ params, searchParams }) {
     // demo=1 mais user n'est PAS le prof → on ignore le flag, vraie data
   }
 
-  const data = await getData(studioSlug, user.email);
+  const data = await getData(studioSlug, user);
   if (!data) notFound();
 
   return (

@@ -2,7 +2,7 @@ import { withRoute } from '@/lib/api-route';
 import { createServerClient } from '@/lib/supabase-server';
 import { createAdminClient } from '@/lib/supabase-admin';
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
-import { escapeIlike } from '@/lib/utils';
+import { resoudreFicheEleve } from '@/lib/fiche-eleve';
 import { reportError } from '@/lib/report';
 
 export const runtime = 'nodejs';
@@ -29,16 +29,11 @@ export const GET = withRoute({ auth: 'public' }, async ({ request, params }) => 
     .single();
   if (!profile) return new Response('Studio introuvable', { status: 404 });
 
-  // Client lié à cet user dans ce studio
+  // Client lié à cet user dans ce studio — v83 : FK douce d'abord.
   // ⚠️ `clients.code_postal` N'EXISTE PAS (l'adresse d'un particulier vit dans
   // `adresse_postale`) — l'ancien select → 42703 → client null → « Client
   // introuvable » pour TOUS les reçus PDF (bug muet, découvert par Manon).
-  const { data: client } = await supabaseAdmin
-    .from('clients')
-    .select('id, prenom, nom, email, adresse, adresse_postale, ville')
-    .eq('profile_id', profile.id)
-    .ilike('email', escapeIlike(user.email))
-    .single();
+  const client = await resoudreFicheEleve(supabaseAdmin, profile.id, user, 'id, prenom, nom, email, adresse, adresse_postale, ville');
   if (!client) return new Response('Client introuvable', { status: 404 });
 
   // Paiement (vérification que c'est bien le sien)
