@@ -7,6 +7,7 @@ import { studioCan } from '@/lib/plan-guard';
 import { resoudreFicheEleve } from '@/lib/fiche-eleve';
 import { compterPlacesOccupees } from '@/lib/presences';
 import { resoudreCarnetApplicable } from '@/lib/carnet-resolution';
+import { ogPortail } from '@/lib/portail-metadata';
 
 async function getData(studioSlug, coursId) {
   // Contenu PUBLIC du portail (studio, cours) + données élève filtrées par
@@ -137,7 +138,25 @@ export async function generateMetadata({ params }) {
   const { studioSlug, coursId } = await params;
   const data = await getData(studioSlug, coursId);
   if (!data) return { title: 'Cours introuvable' };
-  return { title: `${data.cours.nom} — ${data.profile.studio_nom}` };
+  const { cours, profile } = data;
+  // Lien de séance partagé tel quel par la prof (« le yoga de pleine lune de
+  // mercredi ») : l'aperçu doit dire la séance + le studio, pas IziSolo.
+  let quand = '';
+  try {
+    const jour = new Date(`${cours.date}T12:00:00`).toLocaleDateString('fr-FR', {
+      weekday: 'long', day: 'numeric', month: 'long',
+    });
+    quand = ` ${jour}${cours.heure ? ` à ${String(cours.heure).slice(0, 5)}` : ''}`;
+  } catch { /* date imparsable → description sans la date, jamais de crash */ }
+  const titre = `${cours.nom} — ${profile.studio_nom}`;
+  return {
+    title: titre,
+    ...ogPortail({
+      studio: profile,
+      titre,
+      description: `Réserve ta place${quand} chez ${profile.studio_nom}.`,
+    }),
+  };
 }
 
 export default async function CoursDetailPortailPage({ params }) {

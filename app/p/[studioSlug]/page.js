@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import PortailHome from './PortailHome';
 import { resolveClientInfo, filterCoursVisibles } from '@/lib/visibilite';
+import { ogPortail } from '@/lib/portail-metadata';
 import { studioCan } from '@/lib/plan-guard';
 import { presenceOccupePlace } from '@/lib/presences';
 import { coursDejaCommence } from '@/lib/dates';
@@ -23,7 +24,11 @@ export async function generateMetadata({ params }) {
   if (!profile) return { title: 'Studio introuvable' };
   return {
     title: `${profile.studio_nom} — Réserver un cours`,
-    description: `${profile.metier || 'Studio'} à ${profile.ville || 'France'}. Réservez vos cours en ligne.`,
+    ...ogPortail({
+      studio: profile,
+      titre: `${profile.studio_nom} — Réserver un cours`,
+      description: `${profile.metier || 'Studio'} à ${profile.ville || 'France'}. Réserve tes cours en ligne.`,
+    }),
   };
 }
 

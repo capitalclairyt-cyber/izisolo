@@ -1,33 +1,25 @@
-import { supabaseAdmin } from '@/lib/supabase-admin';
 import PortailLayoutClient from './PortailLayoutClient';
+import { fetchStudioPublic, ogPortail } from '@/lib/portail-metadata';
 
 /**
  * Layout server du portail élève.
  * Génère un manifest PWA dynamique au nom du studio (ex: "Maude Yoga")
  * → l'élève peut installer l'app sur son écran d'accueil avec le bon nom.
+ * Porte aussi l'Open Graph au nom du studio : un lien /p/* partagé par SMS ou
+ * WhatsApp doit montrer le studio, pas le slogan IziSolo de la racine.
  */
-async function getStudioNom(studioSlug) {
-  try {
-    // Lecture publique du nom du studio via admin (hors RLS) : les RLS bloquent
-    // un élève connecté (authenticated ≠ prof). Ne sélectionne que le nom public.
-    const { data } = await supabaseAdmin
-      .from('profiles')
-      .select('studio_nom')
-      .eq('studio_slug', studioSlug)
-      .single();
-    return data?.studio_nom || null;
-  } catch {
-    return null;
-  }
-}
 
 export async function generateMetadata({ params }) {
   const { studioSlug } = await params;
-  const nom = await getStudioNom(studioSlug);
-  const title = nom || 'Mon Studio';
+  const studio = await fetchStudioPublic(studioSlug);
+  const title = studio?.studio_nom || 'Mon Studio';
 
   return {
     title,
+    ...ogPortail({
+      studio,
+      description: `Réserve tes séances et retrouve ton espace élève — ${title}.`,
+    }),
     // Manifest dynamique : chaque studio → son propre nom d'appli installée
     manifest: `/p/${studioSlug}/manifest.webmanifest`,
     appleWebApp: {

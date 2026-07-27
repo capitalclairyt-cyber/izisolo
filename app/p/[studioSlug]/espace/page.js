@@ -7,7 +7,8 @@ import EspaceClient from './EspaceClient';
 import { resoudreFicheEleve } from '@/lib/fiche-eleve';
 import { resoudreCarnetApplicable } from '@/lib/carnet-resolution';
 
-export const metadata = { title: 'Mon espace — IziSolo' };
+// Le template racine ajoute déjà « — IziSolo » ; l'OG studio vient du layout portail.
+export const metadata = { title: 'Mon espace', robots: { index: false, follow: false } };
 
 // ─── Mode démo : données fake pour que le prof voie son portail comme une
 // élève fictive. Active uniquement si ?demo=1 ET viewer = prof du studio. ──
