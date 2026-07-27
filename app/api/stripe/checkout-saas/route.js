@@ -17,9 +17,10 @@ export const runtime = 'nodejs';
  *
  * Env vars requises (côté Mélutek) :
  *   - STRIPE_SECRET_KEY (clé secrète Mélutek)
- *   - STRIPE_PRICE_ID_SOLO_MENSUEL    (17€/mois)
- *   - STRIPE_PRICE_ID_PRO_MENSUEL     (22€/mois)
- *   - STRIPE_PRICE_ID_PREMIUM_MENSUEL (79€/mois — plan Studio)
+ *   - STRIPE_PRICE_ID_SOLO_MENSUEL    (15 €/mois — Essentiel)
+ *   - STRIPE_PRICE_ID_PRO_MENSUEL     (29 €/mois — Complet)
+ *   - STRIPE_PRICE_ID_PREMIUM_MENSUEL (legacy Studio — plus vendu, jamais posée :
+ *     un checkout premium répond « plan indisponible », c'est voulu)
  *   - NEXT_PUBLIC_APP_URL
  *
  * Body : { plan: 'solo'|'pro'|'premium', periode: 'mensuel' }

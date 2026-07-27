@@ -261,7 +261,7 @@ export default function ImporterClientsPage() {
             {report.invalides > 0 && <div className="imp-stat"><b>{report.invalides}</b><span>ligne{report.invalides > 1 ? 's' : ''} vide{report.invalides > 1 ? 's' : ''}</span></div>}
           </div>
           {report.bloques_limite > 0 && (
-            <p className="imp-upsell">Passe en Pro pour des élèves illimités et importer le reste.</p>
+            <p className="imp-upsell">Réessaie l'import pour ajouter les élèves restants.</p>
           )}
 
           {/* Invitation groupée : envoyer leur lien d'accès aux importés */}

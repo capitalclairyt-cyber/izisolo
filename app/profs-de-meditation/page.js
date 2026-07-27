@@ -13,7 +13,7 @@ const OG = ogImageUrl({
 
 export const metadata = {
   title: 'Logiciel pour profs de méditation indépendant·e·s — IziSolo',
-  description: "Outil de gestion pour les profs de méditation et mindfulness : cycles MBSR, méditations guidées, retraites silencieuses, paiements. Sans création de compte pour tes participant·e·s. 14 jours d'essai gratuit, dès 17 €/mois.",
+  description: "Outil de gestion pour les profs de méditation et mindfulness : cycles MBSR, méditations guidées, retraites silencieuses, paiements. Sans création de compte pour tes participant·e·s. 14 jours d'essai gratuit, dès 15 €/mois.",
   alternates: { canonical: 'https://www.izisolo.fr/profs-de-meditation' },
   openGraph: {
     title: 'Logiciel pour profs de méditation — IziSolo',

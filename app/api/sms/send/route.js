@@ -48,7 +48,7 @@ export const POST = withRoute({ auth: 'active' }, async ({ request, auth }) => {
   // l'auth (l'ancien re-fetch de `plan` seul ignorait le trial).
   if (!can(profile, 'sms')) {
     return Response.json(
-      { error: 'L\'envoi SMS nécessite le plan Pro.' },
+      { error: 'L\'envoi SMS nécessite le plan Complet.' },
       { status: 403 }
     );
   }

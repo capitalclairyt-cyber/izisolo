@@ -45,7 +45,7 @@ export const POST = withRoute({ auth: 'active' }, async ({ request, auth }) => {
   // Capacité Complet (essai inclus, donc dispo pour les nouvelles utilisatrices)
   if (!can(profile, 'photo_import')) {
     return Response.json(
-      { error: "L'import par photo est réservé au plan Pro." },
+      { error: "L'import par photo est réservé au plan Complet." },
       { status: 403 }
     );
   }

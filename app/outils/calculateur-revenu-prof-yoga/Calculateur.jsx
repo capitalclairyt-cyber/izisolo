@@ -354,7 +354,7 @@ export default function Calculateur() {
             <span className="toggle-track"><span className="toggle-thumb"></span></span>
             <span className="toggle-label">
               Application de gestion IziSolo
-              <span className="toggle-hint">17 €/mois · économise 4-6h/sem d&apos;admin</span>
+              <span className="toggle-hint">15 €/mois · économise 4-6h/sem d&apos;admin</span>
             </span>
           </label>
         </div>

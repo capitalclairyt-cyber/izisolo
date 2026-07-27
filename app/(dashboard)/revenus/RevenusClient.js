@@ -270,7 +270,7 @@ export default function RevenusClient({ paiements: initialPaiements, seancesDues
         const res = await fetch(`/api/export/paiements-csv?${params.toString()}`);
         if (!res.ok) {
           const j = await res.json().catch(() => ({}));
-          toast.error(j.error || 'L\'export comptable est réservé au plan Pro.');
+          toast.error(j.error || 'Export comptable impossible pour le moment.');
           return;
         }
         const blob = await res.blob();

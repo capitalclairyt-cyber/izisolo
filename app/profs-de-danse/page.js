@@ -13,7 +13,7 @@ const OG = ogImageUrl({
 
 export const metadata = {
   title: 'Logiciel pour profs de danse indépendant·e·s — IziSolo',
-  description: "Outil de gestion pour les profs de danse : classique, contemporain, hip-hop, swing, salsa. Cycles trimestriels, paiement échelonné, stages week-end, multi-niveaux. 14 jours d'essai gratuit, dès 17 €/mois.",
+  description: "Outil de gestion pour les profs de danse : classique, contemporain, hip-hop, swing, salsa. Cycles trimestriels, paiement échelonné, stages week-end, multi-niveaux. 14 jours d'essai gratuit, dès 15 €/mois.",
   alternates: { canonical: 'https://www.izisolo.fr/profs-de-danse' },
   openGraph: {
     title: 'Logiciel pour profs de danse — IziSolo',

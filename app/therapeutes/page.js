@@ -13,7 +13,7 @@ const OG = ogImageUrl({
 
 export const metadata = {
   title: 'Logiciel pour thérapeutes et praticien·ne·s bien-être',
-  description: "Une alternative douce à Doctolib pour sophro, naturo, énergéticien·ne·s, hypno. Page de RDV publique, fiche patient·e RGPD, reçus PDF. 14 jours d'essai gratuit, dès 17 €/mois.",
+  description: "Une alternative douce à Doctolib pour sophro, naturo, énergéticien·ne·s, hypno. Page de RDV publique, fiche patient·e RGPD, reçus PDF. 14 jours d'essai gratuit, dès 15 €/mois.",
   alternates: { canonical: 'https://www.izisolo.fr/therapeutes' },
   openGraph: {
     title: 'Logiciel pour thérapeutes — IziSolo',

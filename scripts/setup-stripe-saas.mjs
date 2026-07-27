@@ -2,14 +2,14 @@
  * IziSolo — Installation Stripe SaaS en 1 commande (idempotent)
  * ─────────────────────────────────────────────────────────────────────────────
  * Crée/retrouve tout ce que la chaîne d'abonnement attend :
- *   1. Products  : IziSolo Solo / Pro / Studio
- *   2. Prices    : 17 € / 22 € / 79 € par mois (EUR)
- *   3. Coupons + promotion codes :
- *        FOUNDING100SOLO   −5 €  à vie        (17 → 12 €)
- *        FOUNDING100PRO    −3 €  à vie        (22 → 19 €)
- *        FOUNDING100STUDIO −30 € à vie        (79 → 49 €)
- *        EARLYBIRDSOLO     −5 €  pendant 6 mois
- *        EARLYBIRDPRO      −3 €  pendant 6 mois
+ *   1. Products  : IziSolo Essentiel / IziSolo Complet
+ *      (les produits d'un éventuel run précédent sont RENOMMÉS s'ils portent
+ *      encore les anciens noms Solo/Pro — retrouvés par metadata izisolo_plan)
+ *   2. Prices    : 15 € / 29 € TTC par mois (EUR)
+ *   3. Coupon + promotion code de lancement :
+ *        LANCEMENT50  −50 % pendant 3 mois (tranché par Colin 2026-07-27 ;
+ *        Founding 100 / Early Bird ABANDONNÉS, jamais lancés commercialement).
+ *        Le parrainage viendra plus tard (mécanique à définir — rien ici).
  *   4. Webhook endpoint : https://www.izisolo.fr/api/stripe/webhook-saas
  *      (⚠️ TOUJOURS www. — sans www, redirect 307 et signature invalide)
  *      events : checkout.session.completed, customer.subscription.created,
@@ -28,7 +28,9 @@
  * puis REDÉPLOYER (une env var ne s'applique qu'aux nouveaux déploiements).
  *
  * Grille canonique (bible + lib/constantes.js) :
- *   public 17/22/79 · Founding 100 (à vie) 12/19/49 · Early Bird (6 mois) 12/19.
+ *   Essentiel 15 € / Complet 29 € TTC · lancement −50 % pendant 3 mois
+ *   (LANCEMENT50). Studio/premium : legacy, plus jamais vendu — aucun
+ *   Product/Price créé (un compte premium existant est traité comme pro).
  */
 
 import Stripe from 'stripe';
@@ -58,19 +60,14 @@ const WEBHOOK_EVENTS = [
   'invoice.payment_failed',
 ];
 
-// planKey = clé interne (premium = Studio, jamais migré — cf. constantes.js)
+// planKey = clé interne DB (solo/pro) ; noms marketing Essentiel/Complet.
 const PLANS = [
-  { planKey: 'solo',    nom: 'IziSolo Solo',   prix: 1700, envVar: 'STRIPE_PRICE_ID_SOLO_MENSUEL' },
-  { planKey: 'pro',     nom: 'IziSolo Pro',    prix: 2200, envVar: 'STRIPE_PRICE_ID_PRO_MENSUEL' },
-  { planKey: 'premium', nom: 'IziSolo Studio', prix: 7900, envVar: 'STRIPE_PRICE_ID_PREMIUM_MENSUEL' },
+  { planKey: 'solo', nom: 'IziSolo Essentiel', prix: 1500, envVar: 'STRIPE_PRICE_ID_SOLO_MENSUEL' },
+  { planKey: 'pro',  nom: 'IziSolo Complet',   prix: 2900, envVar: 'STRIPE_PRICE_ID_PRO_MENSUEL' },
 ];
 
 const COUPONS = [
-  { code: 'FOUNDING100SOLO',   nom: 'Founding 100 — Solo (à vie)',    amountOff: 500,  duration: 'forever' },
-  { code: 'FOUNDING100PRO',    nom: 'Founding 100 — Pro (à vie)',     amountOff: 300,  duration: 'forever' },
-  { code: 'FOUNDING100STUDIO', nom: 'Founding 100 — Studio (à vie)',  amountOff: 3000, duration: 'forever' },
-  { code: 'EARLYBIRDSOLO',     nom: 'Early Bird — Solo (6 mois)',     amountOff: 500,  duration: 'repeating', months: 6 },
-  { code: 'EARLYBIRDPRO',      nom: 'Early Bird — Pro (6 mois)',      amountOff: 300,  duration: 'repeating', months: 6 },
+  { code: 'LANCEMENT50', nom: 'Offre de lancement — −50 % pendant 3 mois', percentOff: 50, duration: 'repeating', months: 3 },
 ];
 
 const out = { prices: {}, webhookSecret: null };
@@ -84,6 +81,14 @@ async function ensureProductAndPrice({ planKey, nom, prix, envVar }) {
     if (VERIFY_ONLY) { log(`  ✗ Product ${nom} : ABSENT`); return; }
     product = await stripe.products.create({ name: nom, metadata: { izisolo_plan: planKey } });
     log(`  ＋ Product créé : ${nom} (${product.id})`);
+  } else if (product.name !== nom) {
+    // Run précédent avec les anciens noms marketing (Solo/Pro) : on renomme —
+    // c'est CE nom qui s'affiche au checkout et sur les factures.
+    if (VERIFY_ONLY) { log(`  ✗ Product ${product.name} : à renommer en ${nom}`); }
+    else {
+      await stripe.products.update(product.id, { name: nom });
+      log(`  ✎ Product renommé : ${product.name} → ${nom} (${product.id})`);
+    }
   } else {
     log(`  ✓ Product : ${nom} (${product.id})`);
   }
@@ -109,7 +114,7 @@ async function ensureProductAndPrice({ planKey, nom, prix, envVar }) {
   out.prices[envVar] = price.id;
 }
 
-async function ensureCoupon({ code, nom, amountOff, duration, months }) {
+async function ensureCoupon({ code, nom, percentOff, amountOff, duration, months }) {
   // Promotion code (la chaîne que la prof tape au checkout) → coupon derrière.
   const existing = await stripe.promotionCodes.list({ code, limit: 1 });
   if (existing.data[0]) {
@@ -119,13 +124,13 @@ async function ensureCoupon({ code, nom, amountOff, duration, months }) {
   if (VERIFY_ONLY) { log(`  ✗ Code promo ${code} : ABSENT`); return; }
   const coupon = await stripe.coupons.create({
     name: nom,
-    amount_off: amountOff,
-    currency: 'eur',
+    ...(percentOff ? { percent_off: percentOff } : { amount_off: amountOff, currency: 'eur' }),
     duration,
     ...(duration === 'repeating' ? { duration_in_months: months } : {}),
   });
   await stripe.promotionCodes.create({ coupon: coupon.id, code });
-  log(`  ＋ Code promo créé : ${code} (−${amountOff / 100} € ${duration === 'forever' ? 'à vie' : `pendant ${months} mois`})`);
+  const remise = percentOff ? `−${percentOff} %` : `−${amountOff / 100} €`;
+  log(`  ＋ Code promo créé : ${code} (${remise} ${duration === 'forever' ? 'à vie' : `pendant ${months} mois`})`);
 }
 
 async function ensureWebhook() {
@@ -185,7 +190,7 @@ async function ensurePortalConfig() {
   log('— Products & Prices');
   for (const plan of PLANS) await ensureProductAndPrice(plan);
 
-  log('\n— Coupons Founding 100 / Early Bird');
+  log('\n— Coupon de lancement');
   for (const coupon of COUPONS) await ensureCoupon(coupon);
 
   log('\n— Webhook SaaS');

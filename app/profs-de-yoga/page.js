@@ -13,7 +13,7 @@ const OG = ogImageUrl({
 
 export const metadata = {
   title: 'Logiciel de gestion pour profs de yoga indépendant·e·s',
-  description: "L'outil calme et beau pour les profs de yoga solo. Agenda, élèves, paiements, portail public — tout-en-un. 14 jours d'essai gratuit sans CB, dès 17 €/mois (12 € pour les 100 premières).",
+  description: "L'outil calme et beau pour les profs de yoga solo. Agenda, élèves, paiements, portail public — tout-en-un. 14 jours d'essai gratuit sans CB, dès 15 €/mois.",
   alternates: { canonical: 'https://www.izisolo.fr/profs-de-yoga' },
   openGraph: {
     title: 'Logiciel de gestion pour profs de yoga — IziSolo',

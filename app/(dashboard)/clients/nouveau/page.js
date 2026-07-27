@@ -534,7 +534,7 @@ export default function NouveauClient() {
                       onClick={() => photoDispo && photoInputRef.current?.click()}
                       disabled={extracting || !photoDispo}
                       style={!photoDispo ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
-                      title={!photoDispo ? 'Réservé au plan Pro' : undefined}
+                      title={!photoDispo ? 'Réservé au plan Complet' : undefined}
                     >
                       {extracting
                         ? <><Loader2 size={16} className="spin" /> Lecture de la photo…</>
@@ -543,7 +543,7 @@ export default function NouveauClient() {
                     <p className="photo-import-hint">
                       {photoDispo
                         ? <>Carte de visite, fiche papier ou capture d'écran — l'IA pré-remplit, tu vérifies.</>
-                        : <>✨ Réservé au plan Pro — <a href="/parametres?tab=abonnement" style={{ fontWeight: 600 }}>passe en Pro</a> pour pré-remplir les fiches depuis une photo.</>}
+                        : <>✨ Réservé au plan Complet — <a href="/parametres?tab=abonnement" style={{ fontWeight: 600 }}>passe en Complet</a> pour pré-remplir les fiches depuis une photo.</>}
                     </p>
                   </>
                 );

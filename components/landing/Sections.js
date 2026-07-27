@@ -660,18 +660,19 @@ export function Testimonials() {
   );
 }
 
-/* ---- TARIFS — 2 plans depuis B3c (matrice PLAN-BATAILLE §5).
-   « Solo = ton cahier, en mieux. Pro = tes élèves entrent dans la boucle. »
+/* ---- TARIFS — 2 plans (matrice PLAN-BATAILLE §5), grille définitive
+   tranchée par Colin le 2026-07-27 : Essentiel 15 € / Complet 29 € TTC.
+   « Essentiel = ton cahier, en mieux. Complet = tes élèves entrent dans la
+   boucle. » Founding 100 / Early Bird ABANDONNÉS (jamais lancés) → offre de
+   lancement -50 % pendant 3 mois (code Stripe LANCEMENT50, saisi au checkout).
    Studio (79 €) retiré : plus jamais promu, vidéos/white-label au backlog.
-   Zéro quota affiché (les limites 40 élèves / 5 formules sont MORTES — v80).
-   Prix = placeholders Founding 100 actuels, les définitifs se décident en P4. */
+   Zéro quota affiché (les limites 40 élèves / 5 formules sont MORTES — v80). */
 export function Pricing() {
   const plans = [
     {
-      name: 'Solo',
-      price: '12',
-      publicPrice: '17',
-      sub: '/mois · à vie',
+      name: 'Essentiel',
+      price: '15',
+      sub: '/mois',
       desc: 'Ton cahier, en mieux. Tout ce que tu gères seule — sans aucune limite de volume.',
       features: [
         'Élèves illimités · fiches complètes · import/export CSV',
@@ -686,13 +687,12 @@ export function Pricing() {
       featured: false,
     },
     {
-      name: 'Pro',
-      price: '19',
-      publicPrice: '22',
-      sub: '/mois · à vie',
+      name: 'Complet',
+      price: '29',
+      sub: '/mois',
       desc: 'Tes élèves entrent dans la boucle : ils réservent, annulent, paient et te parlent en ligne.',
       features: [
-        'Tout du plan Solo',
+        'Tout du plan Essentiel',
         'Réservation en ligne + annulation élève + règles d\'annulation',
         'Espace élève connecté (compte, historique, rappels J-1)',
         'Cours d\'essai en ligne · liste d\'attente · cours privés',
@@ -716,8 +716,8 @@ export function Pricing() {
         </div>
 
         <div className="pricing-founding reveal">
-          <span className="founding-badge">Founding 100</span>
-          <span className="founding-text">Les 100 premiers inscrits bénéficient du tarif fondateur — <strong>à vie</strong>.</span>
+          <span className="founding-badge">Offre de lancement</span>
+          <span className="founding-text"><strong>−50 %</strong> pendant tes 3 premiers mois avec le code <strong>LANCEMENT50</strong>.</span>
         </div>
 
         <div className="pricing-grid reveal r-stagger">
@@ -753,7 +753,7 @@ export function Pricing() {
         </div>
 
         <p className="pricing-fees">
-          Paiements en ligne (Pro) : <strong>tu encaisses sur ton propre compte Stripe</strong>.
+          Paiements en ligne (Complet) : <strong>tu encaisses sur ton propre compte Stripe</strong>.
           Frais transparents : 1 % IziSolo (sur ta facture mensuelle, jamais prélevé sur tes paiements)
           + frais Stripe standard (1,5 % + 0,25 € par transaction).
         </p>

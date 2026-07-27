@@ -15,7 +15,7 @@ const OG = ogImageUrl({
 
 export const metadata = {
   title: 'Logiciel & appli de gestion pour prof de yoga',
-  description: "Le logiciel de gestion tout-en-un pour prof de yoga solo : agenda, élèves, présences, paiements, mini-compta et portail de réservation — sur ton téléphone. 14 jours d'essai gratuit sans CB, dès 17 €/mois.",
+  description: "Le logiciel de gestion tout-en-un pour prof de yoga solo : agenda, élèves, présences, paiements, mini-compta et portail de réservation — sur ton téléphone. 14 jours d'essai gratuit sans CB, dès 15 €/mois.",
   keywords: ['logiciel de gestion yoga', 'appli de gestion pour prof de yoga', 'gestionnaire pour le yoga', 'système de gestion pour yoga', 'logiciel prof de yoga'],
   alternates: { canonical: URL_CANON },
   openGraph: {
@@ -51,7 +51,7 @@ export default async function LogicielGestionPage() {
       '@type': 'Offer',
       price: '17',
       priceCurrency: 'EUR',
-      description: "14 jours d'essai gratuit sans carte bancaire, puis dès 17 €/mois.",
+      description: "14 jours d'essai gratuit sans carte bancaire, puis dès 15 €/mois.",
     },
   };
 

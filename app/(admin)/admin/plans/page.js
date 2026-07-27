@@ -1,6 +1,8 @@
 import { createAdminClient } from '@/lib/supabase-admin';
 
-// Refonte 2026-05-05 : 3 plans publics + free interne (cf. lib/constantes.js)
+// Grille définitive 2026-07-27 (cf. lib/constantes.js) : 2 plans publics
+// Essentiel/Complet (clés DB solo/pro), zéro quota (v80), frontière = la
+// boucle élève. free = interne, premium = legacy traité comme pro.
 const PLANS_CONFIG = [
   {
     id: 'free',
@@ -13,28 +15,28 @@ const PLANS_CONFIG = [
   },
   {
     id: 'solo',
-    label: 'Solo',
-    price: '17 €/mois TTC',
-    description: 'Pour démarrer en autonomie, gestion à la main',
-    features: ['40 élèves max', '1 lieu', 'Agenda + cours + pointage', 'Paiements manuels', 'Page publique basique', 'Messagerie'],
+    label: 'Essentiel',
+    price: '15 €/mois TTC',
+    description: 'Ton cahier, en mieux — tout ce que la prof gère seule, sans quota',
+    features: ['Élèves illimités + import/export CSV', 'Agenda, récurrences, lieux illimités', 'Pointage + carnets/abos manuels', 'Mini-compta + export comptable', 'Cas à traiter', 'Page publique vitrine (PWA)'],
     color: '#60a5fa',
     bg: '#1e3a5f',
   },
   {
     id: 'pro',
-    label: 'Pro',
-    price: '22 €/mois TTC',
-    description: 'Le studio devient une machine — automatisations + Stripe + marketing',
-    features: ['Élèves illimités', '3 lieux', 'Stripe Payment Link (1%)', 'Mailing + SMS', 'Notifs auto élèves', 'Sondages + cours d\'essai', 'Page publique enrichie', 'Annulation par l\'élève', 'Export compta'],
+    label: 'Complet',
+    price: '29 €/mois TTC',
+    description: 'La boucle élève : iels réservent, annulent, paient et parlent en ligne',
+    features: ['Tout Essentiel', 'Résa en ligne + annulation élève', 'Espace élève + notifs auto', 'Essai, liste d\'attente, cours privés', 'Messagerie + mailing + sondages', 'Stripe Payment Link (1 %)', 'Import fiche par photo (IA)'],
     color: '#4ade80',
     bg: '#1c3a2e',
   },
   {
     id: 'premium',
-    label: 'Studio (bientôt)',
-    price: '79 €/mois TTC',
-    description: 'Studios matures — vidéos vendables à l\'unité ou en abonnement + white-label. Pas encore disponible à la souscription.',
-    features: ['Tout Pro', 'Lieux illimités', 'Vidéos de cours vendables à l\'unité ou en abonnement', 'Logo studio dans emails (white-label)'],
+    label: 'Studio (legacy)',
+    price: '79 €/mois — plus vendu',
+    description: 'Plus jamais vendu (2026-07-26) : les comptes premium existants sont traités comme Complet (effectivePlan). Vidéos/white-label au backlog.',
+    features: ['Traité comme Complet partout', 'Aucun Product/Price Stripe créé', 'Conservé pour l\'affichage des comptes legacy'],
     color: '#fb923c',
     bg: '#3f2d1f',
   },

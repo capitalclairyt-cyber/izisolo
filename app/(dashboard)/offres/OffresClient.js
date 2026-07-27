@@ -432,17 +432,17 @@ export default function OffresClient({ offres, profile, planKey, limiteOffres })
                 <Crown size={28} />
               </div>
               <p className="upgrade-title">
-                Tu as atteint la limite de {limiteOffres} offres sur le plan Solo
+                Tu as atteint la limite de {limiteOffres} offres sur le plan Essentiel
               </p>
               <p className="upgrade-desc">
-                Passe en Pro pour cr{'é'}er des offres illimit{'é'}es et d{'é'}bloquer toutes les fonctionnalit{'é'}s avanc{'é'}es.
+                Passe en Complet pour cr{'é'}er des offres illimit{'é'}es et d{'é'}bloquer toutes les fonctionnalit{'é'}s avanc{'é'}es.
               </p>
               <Link
                 href="/parametres?tab=abonnement"
                 className="izi-btn izi-btn-primary upgrade-cta-btn"
                 onClick={() => setShowUpgradePrompt(false)}
               >
-                <Crown size={16} /> D{'é'}couvrir le plan Pro <ArrowRight size={16} />
+                <Crown size={16} /> D{'é'}couvrir le plan Complet <ArrowRight size={16} />
               </Link>
               <button
                 type="button"

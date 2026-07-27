@@ -199,7 +199,7 @@ export default function NouvelleOffre() {
     if (!nom.trim() || !prix) return;
 
     if (planLimitReached) {
-      toast.warning('Tu as atteint la limite d\'offres de ton plan. Passe en Pro pour en créer davantage.');
+      toast.warning('Tu as atteint la limite d\'offres de ton plan. Passe en Complet pour en créer davantage.');
       return;
     }
 
@@ -290,11 +290,11 @@ export default function NouvelleOffre() {
         <div className="no-plan-limit-banner animate-slide-up">
           <div className="no-plan-limit-icon">&#x1F451;</div>
           <div className="no-plan-limit-text">
-            <strong>Limite atteinte</strong> — Tu as atteint la limite d'offres du plan Solo.
-            Passe en Pro pour cr{'é'}er des offres illimit{'é'}es.
+            <strong>Limite atteinte</strong> — Tu as atteint la limite d'offres du plan Essentiel.
+            Passe en Complet pour cr{'é'}er des offres illimit{'é'}es.
           </div>
           <Link href="/parametres?tab=abonnement" className="izi-btn izi-btn-primary" style={{ whiteSpace: 'nowrap', fontSize: '0.8125rem', padding: '8px 14px' }}>
-            D{'é'}couvrir Pro
+            D{'é'}couvrir Complet
           </Link>
         </div>
       )}

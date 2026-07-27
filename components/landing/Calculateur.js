@@ -16,7 +16,7 @@ export default function Calculateur() {
   const [plan, setPlan] = useState('pro');
 
   const volume = nbPayments * avgAmount;
-  const iziPlanCost = plan === 'solo' ? 17 : 22;
+  const iziPlanCost = plan === 'solo' ? 15 : 29;
   const iziFee = volume * 0.01;
   const stripeFee = nbPayments * 0.25 + volume * 0.015;
   const iziTotal = iziPlanCost + iziFee;
@@ -70,8 +70,8 @@ export default function Calculateur() {
               <div className="calc-input-group">
                 <label htmlFor="plan-select">Ton plan</label>
                 <select id="plan-select" value={plan} onChange={(e) => setPlan(e.target.value)}>
-                  <option value="solo">Solo — 17 €/mois</option>
-                  <option value="pro">Pro — 22 €/mois</option>
+                  <option value="solo">Essentiel — 15 €/mois</option>
+                  <option value="pro">Complet — 29 €/mois</option>
                 </select>
               </div>
             </div>
@@ -80,11 +80,11 @@ export default function Calculateur() {
               <div className="calc-result-card calc-izi">
                 <div className="calc-result-logo">
                   <IziSoloLogo size={20} wordmark={true} />
-                  <span className="calc-plan-badge">{plan === 'solo' ? 'Solo' : 'Pro'}</span>
+                  <span className="calc-plan-badge">{plan === 'solo' ? 'Essentiel' : 'Complet'}</span>
                 </div>
                 <div className="calc-result-total">{iziTotal.toFixed(2)} €<span>/mois</span></div>
                 <ul className="calc-breakdown">
-                  <li>Abonnement {plan === 'solo' ? 'Solo' : 'Pro'} : {iziPlanCost} €</li>
+                  <li>Abonnement {plan === 'solo' ? 'Essentiel' : 'Complet'} : {iziPlanCost} €</li>
                   {nbPayments > 0 && <li>Commission IziSolo (1 %) : {iziFee.toFixed(2)} €</li>}
                 </ul>
               </div>
@@ -117,7 +117,7 @@ export default function Calculateur() {
             <p className="calc-note reveal" style={{ textAlign: 'center', fontSize: '0.85rem', color: 'var(--c-ink-soft)', marginTop: 'var(--sp-6)', maxWidth: 600, marginLeft: 'auto', marginRight: 'auto' }}>
               La commission IziSolo (1 %) apparaît sur ta facture mensuelle — elle n'est jamais prélevée sur les paiements de tes élèves.
               Les frais Stripe (1,5 % + 0,25 €) sont les frais standard de paiement en ligne, identiques quel que soit l'outil que tu utilises.
-              {plan === 'solo' && ' Le plan Solo ne propose pas le paiement en ligne — tes élèves paient en espèces, chèque ou virement.'}
+              {plan === 'solo' && ' Le plan Essentiel ne propose pas le paiement en ligne — tes élèves paient en espèces, chèque ou virement.'}
             </p>
           </div>
         </section>
@@ -127,27 +127,26 @@ export default function Calculateur() {
             <h2 className="serif">Ce qui est inclus dans ton abonnement</h2>
             <div className="calc-plans-compare">
               <div className="calc-plan-col">
-                <h3>Solo · 17 €/mois</h3>
+                <h3>Essentiel · 15 €/mois</h3>
                 <ul className="calc-feat-list">
-                  <li>Agenda complet · cours illimités</li>
-                  <li>Jusqu'à 40 élèves · lieux illimités</li>
-                  <li>Pointage des présences</li>
-                  <li>Mini-compta (espèces, chèque, virement)</li>
-                  <li>Portail public élève (PWA)</li>
+                  <li>Élèves illimités · fiches complètes · import/export CSV</li>
+                  <li>Agenda, récurrences, lieux illimités</li>
+                  <li>Pointage 1-clic + carnets/abos gérés à la main</li>
+                  <li>Mini-compta + export comptable</li>
                   <li>Cas à traiter (no-show, impayés…)</li>
+                  <li>Page publique vitrine (planning, PWA)</li>
                 </ul>
               </div>
               <div className="calc-plan-col calc-plan-featured">
-                <h3>Pro · 22 €/mois</h3>
+                <h3>Complet · 29 €/mois</h3>
                 <ul className="calc-feat-list">
-                  <li>Tout du plan Solo</li>
-                  <li>Élèves illimités · lieux illimités</li>
+                  <li>Tout du plan Essentiel</li>
+                  <li>Réservation en ligne + annulation élève</li>
+                  <li>Espace élève connecté (compte, rappels J-1)</li>
+                  <li>Cours d'essai · liste d'attente · cours privés</li>
+                  <li>Messagerie · mailing groupé · sondages planning</li>
                   <li>Paiement CB en ligne (Stripe)</li>
                   <li>Import fiche élève par photo (IA)</li>
-                  <li>Mailing groupé ciblé</li>
-                  <li>Sondages planning · liste d'attente</li>
-                  <li>Règles d'annulation avancées</li>
-                  <li>Export comptable CSV</li>
                 </ul>
               </div>
             </div>

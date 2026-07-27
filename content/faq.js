@@ -36,7 +36,7 @@ export const FAQ_ITEMS = [
   },
   {
     q: 'Comment sont gérés les paiements ?',
-    a: "Tu choisis : encaissement manuel (espèces, chèque, virement, CB en présentiel) avec mini-compta intégrée, OU Stripe Payment Link (plan Pro) pour permettre à tes élèves de payer en CB depuis ton portail. Les fonds Stripe arrivent directement sur ton compte bancaire.",
+    a: "Tu choisis : encaissement manuel (espèces, chèque, virement, CB en présentiel) avec mini-compta intégrée, OU Stripe Payment Link (plan Complet) pour permettre à tes élèves de payer en CB depuis ton portail. Les fonds Stripe arrivent directement sur ton compte bancaire.",
   },
   {
     q: 'Quels sont les frais sur les paiements en ligne ?',

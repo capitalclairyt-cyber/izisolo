@@ -2,7 +2,7 @@
 
 // ════════════════════════════════════════════════════════════════════════════
 // Section "Abonnement IziSolo" — Stripe SaaS
-// 3 plans publics (Solo 17€ / Pro 22€ / Studio 79€) — MENSUEL UNIQUEMENT
+// 2 plans publics (Essentiel 15 € / Complet 29 € TTC) — MENSUEL UNIQUEMENT
 // (l'annuel est désactivé pour l'instant ; sera ajouté plus tard avec -20%)
 // Trial 14 jours sur tous. Plan `free` (interne, exempté) jamais affiché ici.
 // Extrait de parametres/page.js en B2d (découpe mécanique — seule prise :
@@ -34,15 +34,15 @@ export default function AbonnementCheckout({ currentPlan, profile }) {
     }
   };
 
-  // 2 plans depuis B3a (matrice §5) : « Essentiel = ton cahier, en mieux.
-  // Complet = tes élèves entrent dans la boucle. » Studio (premium) retiré —
-  // plus jamais vendu, vidéos/white-label au backlog sans carte grisée.
-  // Noms/prix provisoires : les définitifs se décident en P4.
+  // 2 plans (matrice §5) : « Essentiel = ton cahier, en mieux. Complet = tes
+  // élèves entrent dans la boucle. » Studio (premium) retiré — plus jamais
+  // vendu, vidéos/white-label au backlog sans carte grisée.
+  // Grille définitive tranchée 2026-07-27 : Essentiel 15 € / Complet 29 € TTC.
   const PLANS_PUB = [
     {
       id: 'solo',
-      nom: 'Solo',
-      prixMensuel: 17,
+      nom: 'Essentiel',
+      prixMensuel: 15,
       tagline: 'Ton cahier, en mieux',
       pitch: 'Tout ce que tu gères seule : élèves, agenda, carnets, compta.',
       features: [
@@ -56,11 +56,11 @@ export default function AbonnementCheckout({ currentPlan, profile }) {
     },
     {
       id: 'pro',
-      nom: 'Pro',
+      nom: 'Complet',
       recommended: true,
-      prixMensuel: 22,
+      prixMensuel: 29,
       tagline: 'Tes élèves entrent dans la boucle',
-      pitch: 'Tout Solo + tes élèves réservent, annulent, paient et te parlent en ligne.',
+      pitch: 'Tout Essentiel + tes élèves réservent, annulent, paient et te parlent en ligne.',
       features: [
         'Réservation en ligne + annulation élève + règles d\'annulation',
         'Espace élève connecté (compte, historique, rappels J-1)',
@@ -109,8 +109,8 @@ export default function AbonnementCheckout({ currentPlan, profile }) {
       )}
       {subStatus === 'canceled' && (
         <div className="abo-banner abo-banner-warning">
-          <strong>Abonnement annulé.</strong> Tu accèdes à tes données existantes mais
-          tu es ramenée aux limites Solo (40 élèves). Re-souscris quand tu veux.
+          <strong>Abonnement annulé.</strong> Tes données restent accessibles en lecture
+          (et exportables), mais ton studio est en pause. Re-souscris quand tu veux.
         </div>
       )}
       {(subStatus === 'active' || subStatus === 'trialing') && hasCustomerId && (
@@ -216,8 +216,8 @@ export default function AbonnementCheckout({ currentPlan, profile }) {
       </div>
 
       <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 14, textAlign: 'center' }}>
-        Tarifs TTC. Frais Stripe natifs (1,4% + 0,25 €) toujours dus à Stripe.
-        Les frais IziSolo (1 % sur Pro et Studio) viennent en plus.
+        Tarifs TTC. Frais Stripe natifs (1,5 % + 0,25 €) toujours dus à Stripe.
+        Les frais IziSolo (1 % sur le paiement en ligne, plan Complet) viennent en plus.
       </p>
     </div>
   );

@@ -233,8 +233,8 @@ export default function LocalLanding({ city, discipline = 'yoga' }) {
                 Démarre ton studio {d} à {city.name} <em>en 15 minutes</em>.
               </h2>
               <p>
-                14 jours d'essai gratuit sans CB. 12 €/mois à vie pour les 100 premières
-                inscrites (Founding 100), au lieu de 17 €/mois. Setup offert.
+                14 jours d'essai gratuit sans CB. Dès 15 €/mois — et −50 % pendant
+                tes 3 premiers mois avec le code LANCEMENT50. Setup offert.
               </p>
               <Link href="/register" className="btn btn-primary btn-lg">
                 Créer mon studio →
