@@ -870,6 +870,38 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
       )}
 
       <style jsx global>{`
+        /* ─── Acheter en ligne (offres à Payment Link Stripe) ───────────────
+           Styles nés le 2026-07-28 : la section existait depuis v13 SANS
+           aucune règle CSS (liens bleus nus) — invisible tant qu'aucun studio
+           n'avait d'offre à Payment Link. Manon (Soleya) est la première. */
+        .portail-stripe-section { margin: 28px 0; }
+        .portail-stripe-header { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+        .portail-stripe-header h2 { font-size: 1.125rem; font-weight: 700; margin: 0; color: var(--text-primary); }
+        .portail-stripe-desc { font-size: 0.875rem; color: var(--text-muted); margin: 0 0 14px; }
+        .portail-stripe-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
+        .portail-stripe-card {
+          display: flex; align-items: center; gap: 12px;
+          padding: 14px; background: var(--bg-card, #fff);
+          border: 1px solid var(--border-color, #e8e2d8); border-radius: 14px;
+          text-decoration: none; color: var(--text-primary);
+          transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+        }
+        .portail-stripe-card:hover {
+          border-color: #635bff;
+          box-shadow: 0 4px 14px rgba(99, 91, 255, 0.12);
+          transform: translateY(-1px);
+        }
+        .portail-stripe-card-icon {
+          flex-shrink: 0; width: 38px; height: 38px; border-radius: 10px;
+          display: flex; align-items: center; justify-content: center;
+          background: #f0efff; color: #635bff;
+        }
+        .portail-stripe-card-info { flex: 1; min-width: 0; }
+        .portail-stripe-card-nom { font-weight: 700; font-size: 0.9375rem; line-height: 1.3; }
+        .portail-stripe-card-meta { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
+        .portail-stripe-card-prix { font-weight: 800; font-size: 1rem; white-space: nowrap; }
+        .portail-stripe-trust { font-size: 0.75rem; color: var(--text-muted); margin: 10px 0 0; }
+
         /* ─── Hero pattern Lumorae : photo pure cinématographique + contenu dessous ─ */
         .portail-hero-cover {
           /* Casser le padding du container pour aller plein écran */
