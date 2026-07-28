@@ -242,6 +242,9 @@ export default function EditClientClient({ client, lieux: lieuxInitiaux }) {
         }
       }
 
+      // Confirmation explicite (retour Maude 2026-07-28 : « je ne sais pas si
+      // la modif a fonctionné ») — le toast survit à la navigation.
+      toast.success('Fiche mise à jour ✓');
       router.push(`/clients/${client.id}`);
       router.refresh();
     } catch (err) {

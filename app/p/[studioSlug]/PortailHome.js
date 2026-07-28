@@ -166,7 +166,15 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
   const [filterType, setFilterType] = useState('');
   const [tab, setTab] = useState('cours'); // 'cours' | 'propos' | 'tarifs' | 'infos'
   const [viewMode, setViewMode] = useState('week'); // 'week' | 'list'
-  const [weekStart, setWeekStart] = useState(() => getWeekStart(new Date()));
+  const [weekStart, setWeekStart] = useState(() => {
+    // Ancrée sur la 1re séance à venir si elle existe (décision Colin
+    // 2026-07-28, cas Soleya : coupure d'été → la semaine courante était
+    // vide). Sans séance future : semaine courante, vide assumé.
+    // La nav ◀ ▶ reste libre ensuite.
+    const todayIso = fmtIsoDate(new Date());
+    const premiere = (cours || []).find(c => c.date >= todayIso && !c.est_annule);
+    return getWeekStart(premiere ? new Date(premiere.date + 'T12:00:00') : new Date());
+  });
 
   const weekEnd = addDays(weekStart, 6);
   const weekStartIso = fmtIsoDate(weekStart);

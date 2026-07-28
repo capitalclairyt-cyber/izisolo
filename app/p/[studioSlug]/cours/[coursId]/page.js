@@ -120,7 +120,10 @@ async function getData(studioSlug, coursId) {
         prevision = { kind: 'sans_carnet' };
       }
     } else {
-      currentUser = { nom: '', email: user.email, tel: '' };
+      // Sans fiche dans CE studio : préremplir avec le prénom d'inscription
+      // (metadata) — le champ vide à retaper était le terrain des prénoms
+      // tronqués (enquête 2026-07-28 « K pour Karen »).
+      currentUser = { nom: user.user_metadata?.prenom || '', email: user.email, tel: '' };
     }
   }
 

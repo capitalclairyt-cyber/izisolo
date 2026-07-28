@@ -137,7 +137,18 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
   } else {
     const nomParts = nom.split(' ');
     prenom = nomParts[0];
-    const clientNom = nomParts.slice(1).join(' ') || '';
+    let clientNom = nomParts.slice(1).join(' ') || '';
+    // Filet anti-troncature (enquête 2026-07-28 — fiches « K » pour Karen,
+    // « n » pour Natacha, nées ici même) : le champ nom arrivait amputé à sa
+    // première lettre (état client incomplet — vol de focus pendant la frappe,
+    // widget Turnstile async suspecté). Pour une élève CONNECTÉE, l'inscription
+    // a déjà capturé le prénom complet en metadata : quand la saisie fait
+    // ≤ 2 caractères et que la metadata est plus riche, on la préfère.
+    const metaPrenom = (authUser?.user_metadata?.prenom || '').trim();
+    if ((prenom || '').trim().length <= 2 && metaPrenom.length > 2) {
+      if (!clientNom && (prenom || '').trim().length > 1) clientNom = prenom.trim();
+      prenom = metaPrenom;
+    }
     const { data: newClient, error: clientErr } = await supabaseAdmin
       .from('clients')
       .insert({

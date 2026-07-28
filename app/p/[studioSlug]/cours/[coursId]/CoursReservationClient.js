@@ -95,7 +95,7 @@ function CompletAvecListeAttente({ cours, studioSlug, currentUser }) {
       <form onSubmit={handleSubmit}>
         <div className="portail-field">
           <label className="portail-label" htmlFor="la-nom">Prénom et nom *</label>
-          <input id="la-nom" type="text" className="portail-input" value={nom} onChange={e => setNom(e.target.value)} placeholder="Marie Dupont" required autoComplete="name" />
+          <input id="la-nom" type="text" className="portail-input" value={nom} onChange={e => setNom(e.target.value)} placeholder="Marie Dupont" required minLength={2} autoComplete="name" />
         </div>
         <div className="portail-field">
           <label className="portail-label" htmlFor="la-email">Email *</label>
@@ -533,6 +533,7 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
                     onChange={e => setNom(e.target.value)}
                     placeholder="Marie Dupont"
                     required
+                    minLength={2}
                     autoComplete="name"
                   />
                 </div>
