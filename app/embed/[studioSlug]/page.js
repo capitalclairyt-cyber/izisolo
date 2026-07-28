@@ -6,6 +6,7 @@ import { coursDejaCommence } from '@/lib/dates';
 import { studioCan } from '@/lib/plan-guard';
 import { reportError } from '@/lib/report';
 import EmbedPlanning from './EmbedPlanning';
+import { parseHexCouleur, deriverCouleursEmbed } from '@/lib/embed-couleurs';
 
 // ════════════════════════════════════════════════════════════════════════════
 // B2g — Planning INTÉGRABLE (demande Manon) : la version iframe-able de
@@ -25,9 +26,15 @@ import EmbedPlanning from './EmbedPlanning';
 
 const JOURS_MAX = 7 * 12; // clamp ?semaines=
 
-// Palettes de l'embed (?palette= / data-palette du widget) — presets seulement,
-// jamais de couleur libre (contraste garanti, cohérence de marque).
+// Palettes de l'embed (?palette= / data-palette du widget) — presets, plus
+// ?c1=/?c2= (hex libres, demande Manon) dont les rôles sont DÉRIVÉS avec
+// plancher de contraste par lib/embed-couleurs (jamais de couleur brute sur
+// du texte). Les couleurs libres priment sur la palette.
 const PALETTES_EMBED = ['sable', 'rose', 'sauge', 'lavande'];
+
+// Modes d'affichage : liste (jours avec séances, défaut) ou semaine (grille
+// 7 colonnes façon semaine complète, jours vides compris — demande Manon).
+const AFFICHAGES_EMBED = ['liste', 'semaine'];
 
 async function getData(studioSlug, { semaines, type }) {
   const supabase = supabaseAdmin;
@@ -118,5 +125,18 @@ export default async function EmbedPage({ params, searchParams }) {
   const sp = await searchParams;
   const data = await getData(studioSlug, { semaines: sp?.semaines, type: sp?.type });
   if (!data) notFound();
-  return <EmbedPlanning {...data} palette={paletteValide(sp?.palette)} />;
+
+  const c1 = parseHexCouleur(sp?.c1);
+  const c2 = parseHexCouleur(sp?.c2);
+  const couleurs = c1 ? deriverCouleursEmbed(c1, c2) : null;
+  const affichage = AFFICHAGES_EMBED.includes(sp?.affichage) ? sp.affichage : 'liste';
+
+  return (
+    <EmbedPlanning
+      {...data}
+      palette={paletteValide(sp?.palette)}
+      couleurs={couleurs}
+      affichage={affichage}
+    />
+  );
 }

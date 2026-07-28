@@ -17,7 +17,12 @@ const prixTag = (c) => {
   return c.carnets_acceptes === true ? `${prix} € ou carnet` : `${prix} € / séance`;
 };
 
-export default function EmbedPlanning({ studioNom, slug, afficherInscrits, canReserve, cours, palette = 'sable' }) {
+const JOURS_COURTS = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+
+export default function EmbedPlanning({
+  studioNom, slug, afficherInscrits, canReserve, cours,
+  palette = 'sable', couleurs = null, affichage = 'liste',
+}) {
   const rootRef = useRef(null);
 
   // Auto-hauteur : à l'affichage + à chaque resize du contenu.
@@ -46,6 +51,40 @@ export default function EmbedPlanning({ studioNom, slug, afficherInscrits, canRe
     else parDate.push({ date: c.date, items: [c] });
   }
 
+  // Mode « semaine » (façon Momoyoga) : grille Lun→Dim, jours vides compris
+  // sur desktop (masqués en mobile où tout s'empile).
+  const parSemaine = [];
+  if (affichage === 'semaine') {
+    const lundiDe = (iso) => {
+      const d = new Date(iso + 'T12:00:00');
+      d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+      return d.toLocaleDateString('sv-SE');
+    };
+    const semaines = new Map();
+    for (const c of cours) {
+      const lundi = lundiDe(c.date);
+      if (!semaines.has(lundi)) semaines.set(lundi, new Map());
+      const jour = semaines.get(lundi);
+      if (!jour.has(c.date)) jour.set(c.date, []);
+      jour.get(c.date).push(c);
+    }
+    for (const [lundi, parJour] of semaines) {
+      const jours = [];
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(lundi + 'T12:00:00');
+        d.setDate(d.getDate() + i);
+        const iso = d.toLocaleDateString('sv-SE');
+        jours.push({ date: iso, num: d.getDate(), idx: i, items: parJour.get(iso) || [] });
+      }
+      parSemaine.push({ lundi, jours });
+    }
+  }
+
+  const libelleSemaine = (lundiIso) => {
+    const d = new Date(lundiIso + 'T12:00:00');
+    return 'Semaine du ' + d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', timeZone: 'Europe/Paris' });
+  };
+
   const libelleDate = (iso) => {
     const d = new Date(iso + 'T12:00:00');
     const s = d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Europe/Paris' });
@@ -53,12 +92,48 @@ export default function EmbedPlanning({ studioNom, slug, afficherInscrits, canRe
   };
 
   return (
-    <div className="emb" data-palette={palette} ref={rootRef}>
+    <div className="emb" data-palette={palette} data-affichage={affichage} style={couleurs || undefined} ref={rootRef}>
       {parDate.length === 0 && (
         <p className="emb-vide">Aucune séance programmée pour le moment — reviens bientôt !</p>
       )}
 
-      {parDate.map(({ date, items }) => (
+      {affichage === 'semaine' && parSemaine.map(({ lundi, jours }) => (
+        <section key={lundi} className="emb-sem">
+          <h2 className="emb-date">{libelleSemaine(lundi)}</h2>
+          <div className="emb-sem-scroll">
+            <div className="emb-sem-grille">
+              {jours.map(j => (
+                <div key={j.date} className={`emb-sj ${j.items.length === 0 ? 'emb-sj-sans' : ''}`}>
+                  <div className="emb-sj-tete">{JOURS_COURTS[j.idx]} {j.num}</div>
+                  {j.items.length === 0 && <span className="emb-sc-vide">—</span>}
+                  {j.items.map(c => {
+                    const complet = c.capacite_max && c.nbInscrits >= c.capacite_max;
+                    return (
+                      <a
+                        key={c.id}
+                        className="emb-sc"
+                        href={`/p/${slug}/cours/${c.id}?src=embed`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <span className="emb-sc-h">{formatHeure(c.heure)}</span>
+                        <span className="emb-sc-nom">{c.nom}</span>
+                        {complet
+                          ? <span className="emb-complet">Complet</span>
+                          : afficherInscrits && c.capacite_max
+                            ? <span className="emb-places">{c.nbInscrits}/{c.capacite_max}</span>
+                            : null}
+                      </a>
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      ))}
+
+      {affichage !== 'semaine' && parDate.map(({ date, items }) => (
         <section key={date} className="emb-jour">
           <h2 className="emb-date">{libelleDate(date)}</h2>
           {items.map(c => {
@@ -189,6 +264,33 @@ export default function EmbedPlanning({ studioNom, slug, afficherInscrits, canRe
         .emb-pied a { font-size: 0.75rem; color: var(--e-soft); text-decoration: none; }
         .emb-pied a:hover { color: var(--e-deep); }
         .emb-pied strong { color: var(--e-deep); }
+        /* ── Mode « semaine » (grille Lun→Dim, jours vides compris) ── */
+        .emb[data-affichage='semaine'] { max-width: 1080px; }
+        .emb-sem { margin-bottom: 18px; }
+        .emb-sem-scroll { overflow-x: auto; padding-bottom: 4px; }
+        .emb-sem-grille { display: grid; grid-template-columns: repeat(7, minmax(96px, 1fr)); gap: 6px; }
+        .emb-sj { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+        .emb-sj-tete {
+          font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.03em;
+          color: var(--e-jour); text-align: center; padding: 2px 0;
+        }
+        .emb-sc {
+          display: flex; flex-direction: column; gap: 2px; padding: 8px;
+          background: #fff; border: 1px solid var(--e-border); border-radius: 10px;
+          text-decoration: none; color: inherit;
+          transition: border-color 0.15s, box-shadow 0.15s;
+        }
+        .emb-sc:hover { border-color: var(--e-accent); box-shadow: 0 2px 10px var(--e-ombre); }
+        .emb-sc-h { font-weight: 800; font-size: 0.8125rem; color: var(--e-deep); }
+        .emb-sc-nom { font-size: 0.75rem; font-weight: 600; line-height: 1.25; overflow-wrap: anywhere; }
+        .emb-sc .emb-complet, .emb-sc .emb-places { align-self: flex-start; }
+        .emb-sc-vide { color: var(--e-border); text-align: center; font-size: 0.8125rem; padding-top: 6px; }
+        @media (max-width: 560px) {
+          /* Mobile : la grille s'empile, les jours vides disparaissent. */
+          .emb-sem-grille { grid-template-columns: 1fr; }
+          .emb-sj-sans { display: none; }
+          .emb-sj-tete { text-align: left; padding-left: 2px; }
+        }
         @media (max-width: 420px) {
           .emb-cours { gap: 8px; padding: 9px 10px; }
           .emb-heure { width: 48px; font-size: 0.875rem; }

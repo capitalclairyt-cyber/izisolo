@@ -5,6 +5,9 @@
  *
  * Options : data-semaines="4" (fenêtre affichée), data-type="Yoga" (filtre),
  *           data-palette="sable|rose|sauge|lavande" (couleurs du planning),
+ *           data-couleur="#7a5fb0" + data-couleur-2="#e8927c" (couleurs libres,
+ *           2 max — roles derives avec garde-fou de contraste, priment sur la palette),
+ *           data-affichage="semaine" (grille Lun->Dim facon semaine complete),
  *           data-hauteur="900" (hauteur de départ avant auto-ajustement).
  *
  * Le script crée une iframe vers /embed/<studio> À L'ENDROIT où il est collé,
@@ -32,9 +35,15 @@
   var semaines = script.getAttribute('data-semaines');
   var type = script.getAttribute('data-type');
   var palette = script.getAttribute('data-palette');
+  var c1 = script.getAttribute('data-couleur');
+  var c2 = script.getAttribute('data-couleur-2');
+  var affichage = script.getAttribute('data-affichage');
   if (semaines) params.push('semaines=' + encodeURIComponent(semaines));
   if (type) params.push('type=' + encodeURIComponent(type));
   if (palette) params.push('palette=' + encodeURIComponent(palette));
+  if (c1) params.push('c1=' + encodeURIComponent(c1.replace('#', '')));
+  if (c2) params.push('c2=' + encodeURIComponent(c2.replace('#', '')));
+  if (affichage) params.push('affichage=' + encodeURIComponent(affichage));
 
   var iframe = document.createElement('iframe');
   iframe.src = origin + '/embed/' + encodeURIComponent(studio) + (params.length ? '?' + params.join('&') : '');

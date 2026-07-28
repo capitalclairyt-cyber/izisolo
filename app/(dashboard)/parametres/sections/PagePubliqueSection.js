@@ -36,8 +36,30 @@ export default function PagePubliqueSection({ profile, setProfile, setDirty }) {
   // Snippets « Intégrer sur ton site » (B2g — demande Manon) : le widget
   // une-ligne (auto-hauteur) + l'iframe nue en secours (builders sans JS).
   const [copie, setCopie] = useState(null); // 'widget' | 'iframe'
-  const snippetWidget = `<script src="${baseUrl}/widget.js" data-studio="${studioSlug}" async></script>`;
-  const snippetIframe = `<iframe src="${baseUrl}/embed/${studioSlug}" style="width:100%;height:900px;border:0;" title="Planning des cours"></iframe>`;
+  // Options du planning intégrable (demande Manon 2026-07-28) : elles ne sont
+  // stockées nulle part — la vérité vit dans le code que la prof colle sur son
+  // site. Les sélecteurs ci-dessous régénèrent les 2 snippets en direct.
+  const [optAffichage, setOptAffichage] = useState('liste');
+  const [optPalette, setOptPalette] = useState('');
+  const [optCouleur1, setOptCouleur1] = useState(''); // '#rrggbb' ou ''
+  const [optCouleur2, setOptCouleur2] = useState('');
+
+  const attrs = [`data-studio="${studioSlug}"`];
+  const urlParams = [];
+  if (optAffichage === 'semaine') { attrs.push('data-affichage="semaine"'); urlParams.push('affichage=semaine'); }
+  if (optCouleur1) {
+    // Couleurs libres (2 max) : priment sur la palette — les nuances de texte
+    // sont dérivées côté embed avec un plancher de contraste (lib/embed-couleurs).
+    attrs.push(`data-couleur="${optCouleur1}"`);
+    urlParams.push('c1=' + optCouleur1.slice(1));
+    if (optCouleur2) { attrs.push(`data-couleur-2="${optCouleur2}"`); urlParams.push('c2=' + optCouleur2.slice(1)); }
+  } else if (optPalette) {
+    attrs.push(`data-palette="${optPalette}"`);
+    urlParams.push('palette=' + optPalette);
+  }
+  const embSuffixe = urlParams.length ? '?' + urlParams.join('&') : '';
+  const snippetWidget = `<script src="${baseUrl}/widget.js" ${attrs.join(' ')} async></script>`;
+  const snippetIframe = `<iframe src="${baseUrl}/embed/${studioSlug}${embSuffixe}" style="width:100%;height:900px;border:0;" title="Planning des cours"></iframe>`;
   const copier = async (quoi, txt) => {
     try {
       await navigator.clipboard.writeText(txt);
@@ -184,6 +206,54 @@ export default function PagePubliqueSection({ profile, setProfile, setDirty }) {
             ton site (WordPress, Wix, Squarespace…). Ton planning s'affiche chez toi,
             et tes élèves réservent sur ta page IziSolo en un clic.
           </p>
+          <div className="emb-int-opts">
+            <label className="emb-int-opt">
+              Affichage
+              <select value={optAffichage} onChange={e => setOptAffichage(e.target.value)}>
+                <option value="liste">Liste — jours avec séances</option>
+                <option value="semaine">Semaine complète (Lun → Dim)</option>
+              </select>
+            </label>
+            <label className="emb-int-opt">
+              Palette
+              <select value={optPalette} onChange={e => setOptPalette(e.target.value)} disabled={!!optCouleur1}>
+                <option value="">Sable (défaut)</option>
+                <option value="rose">Rose</option>
+                <option value="sauge">Sauge</option>
+                <option value="lavande">Lavande</option>
+              </select>
+            </label>
+            <div className="emb-int-opt">
+              Tes couleurs
+              <span className="emb-int-pickers">
+                <input
+                  type="color"
+                  value={optCouleur1 || '#b9794d'}
+                  onChange={e => setOptCouleur1(e.target.value)}
+                  title="Couleur principale (titres, boutons)"
+                  aria-label="Couleur principale"
+                />
+                <input
+                  type="color"
+                  value={optCouleur2 || optCouleur1 || '#b9794d'}
+                  onChange={e => setOptCouleur2(e.target.value)}
+                  disabled={!optCouleur1}
+                  title="Deuxième couleur (pastilles) — optionnelle"
+                  aria-label="Deuxième couleur (optionnelle)"
+                />
+                {optCouleur1 && (
+                  <button type="button" className="emb-int-reset" onClick={() => { setOptCouleur1(''); setOptCouleur2(''); }}>
+                    Réinitialiser
+                  </button>
+                )}
+              </span>
+            </div>
+          </div>
+          <p className="form-hint" style={{ margin: '0 0 10px' }}>
+            Tes couleurs remplacent la palette (2 max) — les textes restent lisibles quoi
+            qu&apos;il arrive, les nuances sont dérivées automatiquement. Les codes ci-dessous
+            se mettent à jour : recolle le code sur ton site pour appliquer.
+          </p>
           <div className="emb-int-row">
             <div className="emb-int-label">Recommandé — s'ajuste tout seul à la hauteur du planning :</div>
             <div className="emb-int-snippet">
@@ -203,12 +273,11 @@ export default function PagePubliqueSection({ profile, setProfile, setDirty }) {
             </div>
           </div>
           <p className="form-hint" style={{ marginTop: 8 }}>
-            Options à ajouter dans la balise : <code>data-palette=&quot;rose | sauge | sable | lavande&quot;</code> (couleurs
-            du planning), <code>data-semaines=&quot;8&quot;</code> (nombre de semaines affichées),
-            <code> data-type=&quot;Yoga&quot;</code> (un seul type de cours). Pour l&apos;iframe, les mêmes options
-            se passent dans l&apos;adresse : <code>/embed/{studioSlug}?palette=lavande&amp;semaines=8</code>.
+            Autres options à ajouter à la main dans la balise : <code>data-semaines=&quot;8&quot;</code> (nombre
+            de semaines affichées), <code>data-type=&quot;Yoga&quot;</code> (un seul type de cours).
+            Pour l&apos;iframe : <code>?semaines=8&amp;type=Yoga</code> dans l&apos;adresse.
           </p>
-          <a href={`/embed/${studioSlug}`} target="_blank" rel="noopener noreferrer" className="emb-int-preview">
+          <a href={`/embed/${studioSlug}${embSuffixe}`} target="_blank" rel="noopener noreferrer" className="emb-int-preview">
             Voir le rendu du planning intégrable →
           </a>
         </div>
@@ -462,6 +531,22 @@ export default function PagePubliqueSection({ profile, setProfile, setDirty }) {
         .emb-int-titre { font-size: 0.875rem; font-weight: 700; color: var(--text-primary); }
         .emb-int-desc { font-size: 0.8125rem; color: var(--text-secondary); margin: 4px 0 10px; line-height: 1.5; }
         .emb-int-row { margin-bottom: 10px; }
+        .emb-int-opts { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-end; margin: 4px 0 8px; }
+        .emb-int-opt { display: flex; flex-direction: column; gap: 4px; font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); }
+        .emb-int-opt select {
+          font: inherit; font-weight: 500; padding: 5px 8px; border-radius: 8px;
+          border: 1px solid var(--border-color, #ddd); background: var(--bg-primary, #fff); color: var(--text-primary);
+        }
+        .emb-int-pickers { display: flex; align-items: center; gap: 6px; }
+        .emb-int-pickers input[type='color'] {
+          width: 34px; height: 30px; padding: 2px; border: 1px solid var(--border-color, #ddd);
+          border-radius: 8px; background: var(--bg-primary, #fff); cursor: pointer;
+        }
+        .emb-int-pickers input[type='color']:disabled { opacity: 0.4; cursor: not-allowed; }
+        .emb-int-reset {
+          font-size: 0.6875rem; font-weight: 600; color: var(--text-secondary);
+          background: none; border: none; cursor: pointer; text-decoration: underline; padding: 2px 4px;
+        }
         .emb-int-label { font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 4px; }
         .emb-int-snippet { display: flex; gap: 6px; align-items: stretch; }
         .emb-int-snippet code {
