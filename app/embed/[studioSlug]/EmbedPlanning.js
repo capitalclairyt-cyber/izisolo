@@ -17,7 +17,7 @@ const prixTag = (c) => {
   return c.carnets_acceptes === true ? `${prix} € ou carnet` : `${prix} € / séance`;
 };
 
-export default function EmbedPlanning({ studioNom, slug, afficherInscrits, canReserve, cours }) {
+export default function EmbedPlanning({ studioNom, slug, afficherInscrits, canReserve, cours, palette = 'sable' }) {
   const rootRef = useRef(null);
 
   // Auto-hauteur : à l'affichage + à chaque resize du contenu.
@@ -53,7 +53,7 @@ export default function EmbedPlanning({ studioNom, slug, afficherInscrits, canRe
   };
 
   return (
-    <div className="emb" ref={rootRef}>
+    <div className="emb" data-palette={palette} ref={rootRef}>
       {parDate.length === 0 && (
         <p className="emb-vide">Aucune séance programmée pour le moment — reviens bientôt !</p>
       )}
@@ -108,6 +108,40 @@ export default function EmbedPlanning({ studioNom, slug, afficherInscrits, canRe
         html, body { background: transparent; }
       `}</style>
       <style jsx>{`
+        /* Palettes (data-palette, presets seulement — demande Manon 2026-07-28,
+           son site est lavande/pêche). Défaut sable = les couleurs historiques.
+           Le badge « Complet » reste rouge partout (sémantique, pas décoratif). */
+        .emb {
+          --e-jour: #8a7a68;   /* libellé du jour */
+          --e-deep: #7a4a1e;   /* heure, CTA, liens pied */
+          --e-accent: #c9a227; /* bordure au survol */
+          --e-border: #e8e2d8;
+          --e-tag-bg: #f6efe4;  --e-tag-ink: #7a5c34;
+          --e-prix-bg: #fdf3e0; --e-prix-ink: #9a6b1f;
+          --e-soft: #a09484;   /* durée, pied */
+          --e-ombre: rgba(80, 60, 30, 0.08);
+        }
+        .emb[data-palette='rose'] {
+          --e-jour: #9a6a70; --e-deep: #a04a58; --e-accent: #d08a95;
+          --e-border: #efdde0;
+          --e-tag-bg: #f9ecee;  --e-tag-ink: #8a5560;
+          --e-prix-bg: #fdf0f2; --e-prix-ink: #b06070;
+          --e-soft: #ab9195; --e-ombre: rgba(120, 60, 70, 0.08);
+        }
+        .emb[data-palette='sauge'] {
+          --e-jour: #6f8062; --e-deep: #4a6a3f; --e-accent: #8fa87b;
+          --e-border: #e2e8db;
+          --e-tag-bg: #eef3e8;  --e-tag-ink: #5c7050;
+          --e-prix-bg: #f2f7ec; --e-prix-ink: #6a8a55;
+          --e-soft: #98a48d; --e-ombre: rgba(60, 90, 50, 0.08);
+        }
+        .emb[data-palette='lavande'] {
+          --e-jour: #7a70a0; --e-deep: #5d4f95; --e-accent: #9a8cc8;
+          --e-border: #e6e2f2;
+          --e-tag-bg: #efecf9;  --e-tag-ink: #5f5590;
+          --e-prix-bg: #f4f0fc; --e-prix-ink: #7460b0;
+          --e-soft: #9d95b8; --e-ombre: rgba(80, 70, 130, 0.08);
+        }
         .emb {
           font-family: var(--font-geist-sans, ui-sans-serif, system-ui, sans-serif);
           color: #2a2a2e;
@@ -119,30 +153,30 @@ export default function EmbedPlanning({ studioNom, slug, afficherInscrits, canRe
         .emb-jour { margin-bottom: 14px; }
         .emb-date {
           font-size: 0.8125rem; font-weight: 700; letter-spacing: 0.03em;
-          color: #8a7a68; margin: 0 0 6px 2px;
+          color: var(--e-jour); margin: 0 0 6px 2px;
         }
         .emb-cours {
           display: flex; align-items: center; gap: 12px;
           padding: 10px 12px; margin-bottom: 6px;
-          background: #fff; border: 1px solid #e8e2d8; border-radius: 12px;
+          background: #fff; border: 1px solid var(--e-border); border-radius: 12px;
           text-decoration: none; color: inherit;
           transition: border-color 0.15s, box-shadow 0.15s;
         }
-        .emb-cours:hover { border-color: #c9a227; box-shadow: 0 2px 10px rgba(80, 60, 30, 0.08); }
+        .emb-cours:hover { border-color: var(--e-accent); box-shadow: 0 2px 10px var(--e-ombre); }
         .emb-heure {
           flex-shrink: 0; width: 58px; text-align: center;
-          font-weight: 800; font-size: 0.9375rem; color: #7a4a1e;
+          font-weight: 800; font-size: 0.9375rem; color: var(--e-deep);
           display: flex; flex-direction: column; line-height: 1.2;
         }
-        .emb-duree { font-size: 0.6875rem; font-weight: 500; color: #a09484; }
+        .emb-duree { font-size: 0.6875rem; font-weight: 500; color: var(--e-soft); }
         .emb-corps { flex: 1; min-width: 0; }
         .emb-nom { font-weight: 700; font-size: 0.9375rem; line-height: 1.3; }
         .emb-meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 3px; }
         .emb-tag {
           font-size: 0.6875rem; font-weight: 600; padding: 2px 8px;
-          border-radius: 999px; background: #f6efe4; color: #7a5c34;
+          border-radius: 999px; background: var(--e-tag-bg); color: var(--e-tag-ink);
         }
-        .emb-tag-prix { background: #fdf3e0; color: #9a6b1f; }
+        .emb-tag-prix { background: var(--e-prix-bg); color: var(--e-prix-ink); }
         .emb-lieu { font-size: 0.75rem; color: #8a8a8f; }
         .emb-droite { flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end; gap: 3px; }
         .emb-complet {
@@ -150,11 +184,11 @@ export default function EmbedPlanning({ studioNom, slug, afficherInscrits, canRe
           border-radius: 999px; background: #fdeaea; color: #b03030;
         }
         .emb-places { font-size: 0.75rem; color: #8a8a8f; }
-        .emb-cta { font-size: 0.8125rem; font-weight: 700; color: #7a4a1e; white-space: nowrap; }
+        .emb-cta { font-size: 0.8125rem; font-weight: 700; color: var(--e-deep); white-space: nowrap; }
         .emb-pied { text-align: center; padding: 10px 0 8px; }
-        .emb-pied a { font-size: 0.75rem; color: #a09484; text-decoration: none; }
-        .emb-pied a:hover { color: #7a4a1e; }
-        .emb-pied strong { color: #7a4a1e; }
+        .emb-pied a { font-size: 0.75rem; color: var(--e-soft); text-decoration: none; }
+        .emb-pied a:hover { color: var(--e-deep); }
+        .emb-pied strong { color: var(--e-deep); }
         @media (max-width: 420px) {
           .emb-cours { gap: 8px; padding: 9px 10px; }
           .emb-heure { width: 48px; font-size: 0.875rem; }

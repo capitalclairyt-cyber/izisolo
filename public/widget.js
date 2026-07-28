@@ -4,6 +4,7 @@
  *   <script src="https://www.izisolo.fr/widget.js" data-studio="mon-studio" async></script>
  *
  * Options : data-semaines="4" (fenêtre affichée), data-type="Yoga" (filtre),
+ *           data-palette="sable|rose|sauge|lavande" (couleurs du planning),
  *           data-hauteur="900" (hauteur de départ avant auto-ajustement).
  *
  * Le script crée une iframe vers /embed/<studio> À L'ENDROIT où il est collé,
@@ -30,8 +31,10 @@
   var params = [];
   var semaines = script.getAttribute('data-semaines');
   var type = script.getAttribute('data-type');
+  var palette = script.getAttribute('data-palette');
   if (semaines) params.push('semaines=' + encodeURIComponent(semaines));
   if (type) params.push('type=' + encodeURIComponent(type));
+  if (palette) params.push('palette=' + encodeURIComponent(palette));
 
   var iframe = document.createElement('iframe');
   iframe.src = origin + '/embed/' + encodeURIComponent(studio) + (params.length ? '?' + params.join('&') : '');

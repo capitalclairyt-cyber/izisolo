@@ -202,6 +202,12 @@ export default function PagePubliqueSection({ profile, setProfile, setDirty }) {
               </button>
             </div>
           </div>
+          <p className="form-hint" style={{ marginTop: 8 }}>
+            Options à ajouter dans la balise : <code>data-palette=&quot;rose | sauge | sable | lavande&quot;</code> (couleurs
+            du planning), <code>data-semaines=&quot;8&quot;</code> (nombre de semaines affichées),
+            <code> data-type=&quot;Yoga&quot;</code> (un seul type de cours). Pour l&apos;iframe, les mêmes options
+            se passent dans l&apos;adresse : <code>/embed/{studioSlug}?palette=lavande&amp;semaines=8</code>.
+          </p>
           <a href={`/embed/${studioSlug}`} target="_blank" rel="noopener noreferrer" className="emb-int-preview">
             Voir le rendu du planning intégrable →
           </a>

@@ -25,6 +25,10 @@ import EmbedPlanning from './EmbedPlanning';
 
 const JOURS_MAX = 7 * 12; // clamp ?semaines=
 
+// Palettes de l'embed (?palette= / data-palette du widget) — presets seulement,
+// jamais de couleur libre (contraste garanti, cohérence de marque).
+const PALETTES_EMBED = ['sable', 'rose', 'sauge', 'lavande'];
+
 async function getData(studioSlug, { semaines, type }) {
   const supabase = supabaseAdmin;
 
@@ -37,7 +41,24 @@ async function getData(studioSlug, { semaines, type }) {
 
   const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Paris' });
   const jours = Math.min(JOURS_MAX, Math.max(7, (parseInt(semaines) || 4) * 7));
-  const finFenetre = new Date(Date.now() + jours * 86400000).toLocaleDateString('sv-SE', { timeZone: 'Europe/Paris' });
+
+  // Fenêtre ancrée sur la PREMIÈRE séance à venir, pas sur aujourd'hui.
+  // Cas Manon/Soleya (2026-07-28) : coupure d'été, rentrée le lun 24/08 —
+  // « aujourd'hui + 4 semaines » finissait le mar 25/08 et n'attrapait que
+  // lundi et mardi de sa semaine type (« il n'y a que lundi et mardi sur le
+  // planning intégré »). Ancré sur la rentrée, l'embed montre N semaines de
+  // VRAI planning, en été comme en période normale (où ancre = aujourd'hui).
+  const { data: premiere } = await supabase
+    .from('cours')
+    .select('date')
+    .eq('profile_id', profile.id)
+    .eq('est_annule', false)
+    .gte('date', today)
+    .order('date', { ascending: true })
+    .limit(1);
+  const ancre = premiere?.[0]?.date || today;
+  const finFenetre = new Date(new Date(ancre + 'T12:00:00').getTime() + jours * 86400000)
+    .toLocaleDateString('sv-SE', { timeZone: 'Europe/Paris' });
 
   let q = supabase
     .from('cours')
@@ -80,6 +101,10 @@ async function getData(studioSlug, { semaines, type }) {
   };
 }
 
+function paletteValide(palette) {
+  return PALETTES_EMBED.includes(palette) ? palette : 'sable';
+}
+
 export async function generateMetadata({ params }) {
   const { studioSlug } = await params;
   return {
@@ -93,5 +118,5 @@ export default async function EmbedPage({ params, searchParams }) {
   const sp = await searchParams;
   const data = await getData(studioSlug, { semaines: sp?.semaines, type: sp?.type });
   if (!data) notFound();
-  return <EmbedPlanning {...data} />;
+  return <EmbedPlanning {...data} palette={paletteValide(sp?.palette)} />;
 }
