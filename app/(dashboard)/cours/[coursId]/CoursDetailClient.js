@@ -12,6 +12,8 @@ import {
 import { formatHeure, getAllTypesFromCategories } from '@/lib/utils';
 import { parseDate } from '@/lib/dates';
 import { compterPlacesOccupees, presenceOccupePlace, presenceEstReservationActive } from '@/lib/presences';
+import { seanceDeltaChangementType } from '@/lib/pointage-delta';
+import { getRegle } from '@/lib/regles-metier';
 import { resoudreCarnetApplicable } from '@/lib/carnet-resolution';
 import { can } from '@/lib/plan-guard';
 import { createClient } from '@/lib/supabase';
@@ -145,6 +147,11 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
 
   // ---- Message aux participants ----
   const [showMessageModal, setShowMessageModal] = useState(false);
+  // Modale réservation (demande Colin 2026-07-28) : clic sur un·e inscrit·e →
+  // ouvrir la fiche / changer le type (essai, offerte) / supprimer la résa.
+  const [resaModal, setResaModal] = useState(null); // la présence cliquée
+  const [resaBusy, setResaBusy] = useState(false);
+  const [resaConfirmDel, setResaConfirmDel] = useState(false);
   const [messageForm, setMessageForm]           = useState({
     sujet:   `À propos de "${cours.nom}"`,
     message: '',
@@ -421,6 +428,67 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
   // → crée ou réutilise une conv 1-to-1 par participant et y envoie le
   // message. Visible ensuite dans /messagerie pour la prof et les élèves.
   const [sendingMessage, setSendingMessage] = useState(false);
+  // ── Modale réservation : changer le type (même mécanique que le pointage —
+  // le delta carnet passe par la formule verrouillée + le RPC, rollback si ko).
+  const handleChangerType = async (presence, newType) => {
+    const oldType = presence.type_presence || 'normal';
+    if (newType === oldType || resaBusy) return;
+    setResaBusy(true);
+    try {
+      const supabase = createClient();
+      const statut = presence.statut_pointage || (presence.pointee ? 'present' : 'inscrit');
+      const regleNoShow = getRegle({ regles_metier: profile?.regles_metier }, 'no_show');
+      const absenceCompte = regleNoShow.mode === 'auto' && regleNoShow.choix === 'decompter_auto';
+      const delta = seanceDeltaChangementType(statut, oldType, newType, absenceCompte);
+      const { error } = await supabase.from('presences').update({ type_presence: newType }).eq('id', presence.id);
+      if (error) throw error;
+      if (delta !== 0) {
+        const { data: result, error: rpcErr } = await supabase.rpc('pointer_presence', {
+          p_presence_id: presence.id,
+          p_statut: statut,
+          p_pointee: presence.pointee,
+          p_heure: presence.heure_pointage || null,
+          p_delta: delta,
+        });
+        if (rpcErr || !result?.ok) {
+          // Rollback : gratuité et carnet ne doivent jamais se désynchroniser.
+          await supabase.from('presences').update({ type_presence: oldType }).eq('id', presence.id);
+          throw new Error('ajustement du carnet impossible');
+        }
+      }
+      toast.success(newType === 'normal' ? 'Séance repassée en normale ✓'
+        : newType === 'essai' ? 'Séance marquée « essai » ✓' : 'Séance offerte ✓');
+      setResaModal(m => (m && m.id === presence.id ? { ...m, type_presence: newType } : m));
+      router.refresh();
+    } catch (e) {
+      toast.error('Changement non enregistré : ' + (e?.message || 'réessaie'));
+    } finally {
+      setResaBusy(false);
+    }
+  };
+
+  // ── Modale réservation : supprimer la résa (désinscription par la prof).
+  const handleSupprimerResa = async (presence) => {
+    if (resaBusy) return;
+    setResaBusy(true);
+    try {
+      const res = await fetch(`/api/presences/${presence.id}`, { method: 'DELETE' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast.error(data.error || 'Suppression impossible');
+        return;
+      }
+      toast.success(`Réservation supprimée ✓${data.recredite ? ' — séance re-créditée sur le carnet' : ''}${data.promu ? ' · 1 personne promue depuis la liste d\'attente' : ''}`);
+      setResaModal(null);
+      setResaConfirmDel(false);
+      router.refresh();
+    } catch {
+      toast.error('Suppression impossible — problème réseau ?');
+    } finally {
+      setResaBusy(false);
+    }
+  };
+
   const handleSendMessage = async () => {
     const message = (messageForm.message || '').trim();
     if (!message) { toast.warning('Saisis un message avant d\'envoyer.'); return; }
@@ -878,7 +946,15 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
         ) : (
           <div className="inscrits-list">
             {presences.map(p => (
-              <div key={p.id} className={`inscrit-row ${p.pointee ? 'pointe' : ''}`}>
+              <div
+                key={p.id}
+                className={`inscrit-row cliquable ${p.pointee ? 'pointe' : ''}`}
+                role="button"
+                tabIndex={0}
+                title="Ouvrir la fiche ou modifier la réservation"
+                onClick={() => { setResaConfirmDel(false); setResaModal(p); }}
+                onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setResaConfirmDel(false); setResaModal(p); } }}
+              >
                 <div className="inscrit-info">
                   <span className="inscrit-nom">{p.clients?.prenom} {p.clients?.nom}</span>
                   <span className="inscrit-statut">{p.clients?.statut}</span>
@@ -901,9 +977,12 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
                     <span className="argent-chip chip-gratuit">Offert</span>
                   )}
                 </div>
-                {p.pointee && (
-                  <span className="pointe-badge"><CheckCircle2 size={14} /> Pointé</span>
-                )}
+                <span className="inscrit-droite">
+                  {p.pointee && (
+                    <span className="pointe-badge"><CheckCircle2 size={14} /> Pointé</span>
+                  )}
+                  <ChevronDown size={15} className="inscrit-chevron" aria-hidden="true" />
+                </span>
               </div>
             ))}
           </div>
@@ -1229,6 +1308,74 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
               chaque participant le retrouve dans son espace élève + reçoit un email de notification.
               Les réponses arrivent dans <a href="/messagerie" style={{ color: 'var(--brand-700)' }}>ta messagerie</a>.
             </p>
+          </div>
+        </div>
+      )}
+
+      {/* ================================================
+          MODALE RÉSERVATION (clic sur un·e inscrit·e)
+          ================================================ */}
+      {resaModal && (
+        <div className="modal-overlay" onClick={() => !resaBusy && setResaModal(null)}>
+          <div className="resa-modal" onClick={e => e.stopPropagation()}>
+            <div className="resa-modal-head">
+              <h3>Réservation — {resaModal.clients?.prenom} {resaModal.clients?.nom}</h3>
+              <button className="modal-close-x" onClick={() => setResaModal(null)} aria-label="Fermer" type="button">✕</button>
+            </div>
+
+            <Link href={`/clients/${resaModal.client_id || resaModal.clients?.id}`} className="resa-modal-fiche">
+              <Users size={15} /> Ouvrir la fiche élève →
+            </Link>
+
+            {(resaModal.annulation_tardive || ['annule', 'declinee'].includes(resaModal.statut_pointage)) ? (
+              <p className="resa-modal-note">
+                Cette réservation est {resaModal.annulation_tardive ? 'une annulation tardive' : 'annulée'} —
+                tu peux seulement la supprimer.
+              </p>
+            ) : (
+              <div className="resa-modal-types">
+                <span className="resa-modal-label">Type de séance</span>
+                <div className="resa-type-btns">
+                  {[['normal', 'Normale'], ['essai', 'Essai'], ['offert', 'Offerte']].map(([val, lab]) => (
+                    <button
+                      key={val}
+                      type="button"
+                      disabled={resaBusy}
+                      className={`resa-type-btn ${(resaModal.type_presence || 'normal') === val ? 'selected' : ''}`}
+                      onClick={() => handleChangerType(resaModal, val)}
+                    >
+                      {lab}
+                    </button>
+                  ))}
+                </div>
+                <p className="resa-modal-hint">
+                  Une séance « essai » ou « offerte » ne décompte pas de carnet — si elle avait
+                  déjà été décomptée, elle est re-créditée automatiquement.
+                </p>
+              </div>
+            )}
+
+            <div className="resa-modal-danger">
+              {!resaConfirmDel ? (
+                <button type="button" className="izi-btn izi-btn-ghost resa-del-btn" disabled={resaBusy} onClick={() => setResaConfirmDel(true)}>
+                  <Trash2 size={15} /> Supprimer la réservation
+                </button>
+              ) : (
+                <div className="resa-del-confirm">
+                  <span>
+                    Supprimer la réservation de {resaModal.clients?.prenom} ?
+                    {resaModal.abonnement_id ? ' La séance sera re-créditée sur son carnet si elle avait été décomptée.' : ''}
+                    {' '}S&apos;il y a une liste d&apos;attente, la première personne est promue.
+                  </span>
+                  <div className="resa-del-actions">
+                    <button type="button" className="izi-btn izi-btn-ghost" disabled={resaBusy} onClick={() => setResaConfirmDel(false)}>Garder</button>
+                    <button type="button" className="izi-btn izi-btn-danger" disabled={resaBusy} onClick={() => handleSupprimerResa(resaModal)}>
+                      {resaBusy ? 'Suppression…' : 'Oui, supprimer'}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -1710,6 +1857,41 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
           background: var(--brand-50);
           border-color: var(--brand-200);
         }
+        .inscrit-row.cliquable { cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s; }
+        .inscrit-row.cliquable:hover { border-color: var(--brand-300, #d0a8a8); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+        .inscrit-droite { display: flex; align-items: center; gap: 8px; }
+        .inscrit-chevron { color: var(--text-muted); flex-shrink: 0; }
+        /* ── Modale réservation ── */
+        .resa-modal {
+          background: var(--bg-card, #fff); border-radius: 16px; width: min(440px, 92vw);
+          padding: 0 0 16px; box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
+        }
+        .resa-modal-head {
+          display: flex; align-items: center; justify-content: space-between;
+          padding: 16px 20px 10px;
+        }
+        .resa-modal-head h3 { margin: 0; font-size: 1rem; }
+        .resa-modal-fiche {
+          display: flex; align-items: center; gap: 8px; margin: 0 20px 12px;
+          padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px;
+          text-decoration: none; color: var(--text-primary); font-weight: 600; font-size: 0.875rem;
+        }
+        .resa-modal-fiche:hover { border-color: var(--brand-300, #d0a8a8); }
+        .resa-modal-note { margin: 0 20px 12px; font-size: 0.8125rem; color: var(--text-secondary); }
+        .resa-modal-types { padding: 0 20px 4px; }
+        .resa-modal-label { display: block; font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 6px; }
+        .resa-type-btns { display: flex; gap: 6px; }
+        .resa-type-btn {
+          flex: 1; padding: 8px 10px; border-radius: 10px; font-size: 0.8125rem; font-weight: 600;
+          border: 1px solid var(--border); background: var(--bg-card, #fff); color: var(--text-primary); cursor: pointer;
+        }
+        .resa-type-btn.selected { background: var(--brand-50); border-color: var(--brand-300, #d0a8a8); color: var(--brand-700); }
+        .resa-type-btn:disabled { opacity: 0.5; cursor: wait; }
+        .resa-modal-hint { font-size: 0.75rem; color: var(--text-muted); margin: 8px 0 0; line-height: 1.45; }
+        .resa-modal-danger { margin: 14px 20px 0; padding-top: 12px; border-top: 1px solid var(--border); }
+        .resa-del-btn { color: #b03030; width: 100%; justify-content: center; }
+        .resa-del-confirm { font-size: 0.8125rem; color: var(--text-secondary); display: flex; flex-direction: column; gap: 10px; }
+        .resa-del-actions { display: flex; gap: 8px; justify-content: flex-end; }
         .inscrit-info {
           display: flex;
           flex-direction: column;
