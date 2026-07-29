@@ -14,6 +14,7 @@ import { parseDate } from '@/lib/dates';
 import { compterPlacesOccupees, presenceOccupePlace, presenceEstReservationActive } from '@/lib/presences';
 import { seanceDeltaChangementType } from '@/lib/pointage-delta';
 import { getRegle } from '@/lib/regles-metier';
+import TypeCoursHint from '@/components/cours/TypeCoursHint';
 import { resoudreCarnetApplicable } from '@/lib/carnet-resolution';
 import { can } from '@/lib/plan-guard';
 import { createClient } from '@/lib/supabase';
@@ -745,6 +746,7 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
                     </button>
                   ))}
                 </div>
+                <TypeCoursHint typeCours={form.type_cours} />
               </div>
             )}
 

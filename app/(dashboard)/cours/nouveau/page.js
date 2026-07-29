@@ -17,6 +17,7 @@ import {
 import { createClient } from '@/lib/supabase';
 import HeureSelect from '@/components/ui/HeureSelect';
 import { useToast } from '@/components/ui/ToastProvider';
+import TypeCoursHint from '@/components/cours/TypeCoursHint';
 
 const FREQUENCES = [
   { value: 'unique', label: 'Cours unique', desc: 'Une seule date' },
@@ -658,6 +659,7 @@ function NouveauCoursInner() {
               <Plus size={13} /> Nouveau
             </button>
           </div>
+          <TypeCoursHint typeCours={form.type_cours} />
         </div>
 
         {/* Modale nouveau type */}

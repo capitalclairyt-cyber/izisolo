@@ -12,6 +12,7 @@ import { formatMontant, matchRecherche } from '@/lib/utils';
 import { toneForOffre } from '@/lib/tones';
 import { TYPES_OFFRE } from '@/lib/constantes';
 import { createClient } from '@/lib/supabase';
+import { diagnostiquerOffres } from '@/lib/coherence-offres';
 import EmptyState from '@/components/ui/EmptyState';
 import PaiementStep from '@/components/paiements/PaiementStep';
 
@@ -260,6 +261,70 @@ function AssignerClientModal({ offre, onClose, onSuccess }) {
 // ═══════════════════════════════════════════════════════════════════════════
 // Composant principal
 // ═══════════════════════════════════════════════════════════════════════════
+// ── Diagnostic de cohérence offres ↔ cours (analyse système 2026-07-28, cas
+// Manon) : détecte les pièges silencieux — restriction inerte (cours sans
+// type couverts malgré la limite), type fantôme, offre « à l'unité » legacy.
+function DiagnosticOffres({ offres }) {
+  const [coursAVenir, setCoursAVenir] = useState(null);
+
+  useEffect(() => {
+    let vivant = true;
+    (async () => {
+      try {
+        const supabase = createClient();
+        const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Paris' });
+        const { data, error } = await supabase
+          .from('cours')
+          .select('type_cours, date')
+          .gte('date', today)
+          .eq('est_annule', false)
+          .limit(500);
+        if (!error && vivant) setCoursAVenir(data || []);
+      } catch { /* diagnostic silencieux */ }
+    })();
+    return () => { vivant = false; };
+  }, []);
+
+  if (!coursAVenir) return null;
+  const issues = diagnostiquerOffres(offres, coursAVenir);
+  if (issues.length === 0) return null;
+
+  return (
+    <div className="izi-card diag-offres animate-fade-in">
+      <div className="diag-offres-titre">🔍 À vérifier dans tes offres</div>
+      <ul className="diag-offres-liste">
+        {issues.map(({ kind, offre, analyse }) => (
+          <li key={offre.id || offre.nom}>
+            {kind === 'restriction_inerte' && (
+              <><strong>{offre.nom}</strong> est limitée à {offre.types_cours_autorises.join(' / ')},
+                mais <strong>{analyse.sansType} séance{analyse.sansType > 1 ? 's' : ''} à venir</strong> n&apos;ont
+                pas de type — elles sont quand même couvertes (un cours sans type est toujours accepté).
+                Renseigne le type sur tes cours pour que la limite s&apos;applique.</>
+            )}
+            {kind === 'type_fantome' && (
+              <><strong>{offre.nom}</strong> est limitée à {offre.types_cours_autorises.join(' / ')},
+                mais <strong>aucune séance à venir</strong> ne porte ce type
+                {analyse.sansType > 0 ? <> ({analyse.sansType} sans type restent couvertes)</> : null}.
+                Vérifie le type de tes cours ou la restriction.</>
+            )}
+            {kind === 'legacy_unite' && (
+              <><strong>{offre.nom}</strong> (offre « à l&apos;unité ») ne s&apos;affiche pas à la
+                réservation — le paiement à la séance se règle désormais sur chaque cours
+                (fiche du cours → <strong>Tarif à la séance</strong>, + « carnets acceptés » si besoin).</>
+            )}
+          </li>
+        ))}
+      </ul>
+      <style jsx>{`
+        .diag-offres { padding: 14px 18px; margin-bottom: 14px; border-left: 3px solid #c9a227; }
+        .diag-offres-titre { font-weight: 700; font-size: 0.875rem; margin-bottom: 8px; }
+        .diag-offres-liste { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 8px; }
+        .diag-offres-liste li { font-size: 0.8125rem; color: var(--text-secondary); line-height: 1.5; }
+      `}</style>
+    </div>
+  );
+}
+
 export default function OffresClient({ offres, profile, planKey, limiteOffres }) {
   const router = useRouter();
   const [deleting, setDeleting] = useState(null);
@@ -351,6 +416,7 @@ export default function OffresClient({ offres, profile, planKey, limiteOffres })
 
   return (
     <div className="offres-page">
+      <DiagnosticOffres offres={offres} />
       <div className="page-header animate-fade-in">
         <div className="page-header-left">
           <h1>Tes offres</h1>

@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase';
 import { useToast } from '@/components/ui/ToastProvider';
+import CoherenceTypesHint from '@/components/offres/CoherenceTypesHint';
 import { formatMontant, getAllTypesFromCategories } from '@/lib/utils';
 import { PLANS } from '@/lib/constantes';
 import { effectivePlan } from '@/lib/trial';
@@ -683,6 +684,7 @@ export default function NouvelleOffre() {
                 sur un autre type de cours, l'élève paiera à la séance.
               </span>
             )}
+            <CoherenceTypesHint typesAutorises={typesCoursAutorises} />
           </div>
         )}
 

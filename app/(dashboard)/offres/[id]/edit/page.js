@@ -10,6 +10,7 @@ import {
 import { createClient } from '@/lib/supabase';
 import { getAllTypesFromCategories } from '@/lib/utils';
 import { useToast } from '@/components/ui/ToastProvider';
+import CoherenceTypesHint from '@/components/offres/CoherenceTypesHint';
 
 const TYPES = [
   { value: 'carnet',       label: 'Carnet de séances', Icon: Ticket,        desc: 'Ex : 10 cours pour 120 €' },
@@ -378,6 +379,7 @@ export default function EditOffre({ params }) {
                 Restreint aux cours de type <strong>{typesCoursAutorises.join(', ')}</strong> — sur un autre type, l'élève paiera à la séance.
               </span>
             )}
+            <CoherenceTypesHint typesAutorises={typesCoursAutorises} />
           </div>
         )}
 

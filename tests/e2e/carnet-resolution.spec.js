@@ -136,3 +136,76 @@ test('carnets_acceptes explicitement false / sans tarif → aucun effet', () => 
   // flag posé sans tarif (combinaison sans objet) → résolution normale
   expect(resoudreCarnetApplicable(abos, { ...COURS_YOGA, carnets_acceptes: true })?.id).toBe('all');
 });
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Cohérence offres ↔ cours (lib/coherence-offres, analyse système 2026-07-28,
+// cas Manon/Soleya). Le module DÉLÈGUE son verdict de couverture à
+// resoudreCarnetApplicable — ces tests verrouillent que les diagnostics
+// suivent la formule (notamment « cours sans type = toujours accepté »).
+// ═══════════════════════════════════════════════════════════════════════════
+import { coursCouvert, analyserRestrictionOffre, diagnostiquerOffres } from '../../lib/coherence-offres.js';
+
+test.describe('coherence-offres — couverture par restriction', () => {
+  test('non restreinte → couvre tout (typé, autre type, sans type)', () => {
+    expect(coursCouvert(null, COURS_YOGA)).toBe(true);
+    expect(coursCouvert([], COURS_RENFO)).toBe(true);
+    expect(coursCouvert(null, { type_cours: null, date: '2026-08-01' })).toBe(true);
+  });
+
+  test('restreinte : type inclus couvert, autre type exclu, SANS TYPE ACCEPTÉ (fail-open de la formule)', () => {
+    expect(coursCouvert(['yoga'], COURS_YOGA)).toBe(true);
+    expect(coursCouvert(['yoga'], COURS_RENFO)).toBe(false);
+    // LE piège documenté : la restriction ne filtre pas un cours sans type.
+    expect(coursCouvert(['yoga'], { type_cours: null, date: '2026-08-01' })).toBe(true);
+  });
+
+  test('miroir : coursCouvert = resoudreCarnetApplicable sur carnet équivalent', () => {
+    const cas = [
+      [['yoga'], COURS_YOGA], [['yoga'], COURS_RENFO],
+      [['yoga'], { type_cours: null, date: '2026-08-01' }], [null, COURS_RENFO],
+    ];
+    for (const [types, cours] of cas) {
+      const direct = !!resoudreCarnetApplicable([carnet({ id: 'x', types_cours_autorises: types })], cours);
+      expect(coursCouvert(types, cours)).toBe(direct);
+    }
+  });
+});
+
+test.describe('coherence-offres — analyse et diagnostic', () => {
+  const SEMAINE = [
+    { type_cours: 'yoga', date: '2026-08-01' },
+    { type_cours: null, date: '2026-08-02' },
+    { type_cours: null, date: '2026-08-03' },
+    { type_cours: 'renfo', date: '2026-08-04' },
+  ];
+
+  test('analyserRestrictionOffre compte couvertes / sansType / duType / autresTypes', () => {
+    const a = analyserRestrictionOffre(['yoga'], SEMAINE);
+    expect(a).toMatchObject({ restreinte: true, total: 4, couvertes: 3, sansType: 2, duType: 1, autresTypes: 1 });
+    const libre = analyserRestrictionOffre(null, SEMAINE);
+    expect(libre.restreinte).toBe(false);
+    expect(libre.couvertes).toBe(4);
+  });
+
+  test('diagnostiquerOffres : restriction inerte, type fantôme, legacy unité — et rien sur une config saine', () => {
+    const offres = [
+      { id: '1', nom: 'Abo Yoga', type: 'abonnement', actif: true, types_cours_autorises: ['yoga'] },
+      { id: '2', nom: 'Abo Pilates', type: 'abonnement', actif: true, types_cours_autorises: ['pilates'] },
+      { id: '3', nom: 'Unité 18€', type: 'cours_unique', actif: true, types_cours_autorises: null },
+      { id: '4', nom: 'Carnet libre', type: 'carnet', actif: true, types_cours_autorises: null },
+      { id: '5', nom: 'Inactive', type: 'abonnement', actif: false, types_cours_autorises: ['pilates'] },
+    ];
+    const issues = diagnostiquerOffres(offres, SEMAINE);
+    const parOffre = Object.fromEntries(issues.map(i => [i.offre.id, i.kind]));
+    expect(parOffre['1']).toBe('restriction_inerte'); // 2 séances sans type passent
+    expect(parOffre['2']).toBe('type_fantome');       // aucune séance pilates
+    expect(parOffre['3']).toBe('legacy_unite');
+    expect(parOffre['4']).toBeUndefined();            // carnet libre = sain
+    expect(parOffre['5']).toBeUndefined();            // inactive ignorée
+    // Config saine (tous les cours typés du bon type) → zéro bruit
+    expect(diagnostiquerOffres(
+      [{ id: '1', nom: 'Abo Yoga', type: 'abonnement', actif: true, types_cours_autorises: ['yoga'] }],
+      [COURS_YOGA]
+    )).toHaveLength(0);
+  });
+});
