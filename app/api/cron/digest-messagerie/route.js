@@ -54,12 +54,18 @@ export const GET = withRoute({ auth: 'cron' }, async () => {
     const ids = (convIds || []).map(c => c.id);
     if (ids.length === 0) continue;
 
-    const { count: nbRecus } = await supabase
+    // media_urls chargées pour mentionner les pièces jointes dans l'email
+    // (2026-07-31 : un digest « 1 message » qui cache 12 photos sous-vendait
+    // le message — et un message photos-seules semblait vide).
+    const { data: msgsPro } = await supabase
       .from('messages')
-      .select('id', { count: 'exact', head: true })
+      .select('media_urls')
       .in('conversation_id', ids)
       .eq('sender_type', 'eleve')
-      .gte('created_at', il24h);
+      .gte('created_at', il24h)
+      .limit(1000);
+    const nbRecus = (msgsPro || []).length;
+    const nbPiecesPro = (msgsPro || []).reduce((s, m) => s + (Array.isArray(m.media_urls) ? m.media_urls.length : 0), 0);
 
     if (!nbRecus || nbRecus === 0) continue;
 
@@ -76,6 +82,7 @@ export const GET = withRoute({ auth: 'cron' }, async () => {
       to: email,
       prenom: pro.prenom || 'là',
       nbRecus,
+      nbPieces: nbPiecesPro,
       url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://www.izisolo.fr'}/messagerie`,
       contexte: 'pro',
     });
@@ -92,23 +99,27 @@ export const GET = withRoute({ auth: 'cron' }, async () => {
   // messages récents et on dérive les destinataires.
   const { data: msgsRecents } = await supabase
     .from('messages')
-    .select('conversation_id, conversations(client_id, profile_id, type), created_at')
+    .select('conversation_id, media_urls, conversations(client_id, profile_id, type), created_at')
     .eq('sender_type', 'pro')
     .gte('created_at', il24h);
 
-  // Grouper par client (ou cours)
-  const eleveCount = new Map(); // clientId -> count
+  // Grouper par client (ou cours) — messages ET pièces jointes (les photos
+  // d'une annonce doivent se voir dans l'email, 2026-07-31).
+  const eleveCount = new Map(); // clientId -> { count, pieces }
   for (const m of (msgsRecents || [])) {
     if (m.conversations?.type === 'client' && m.conversations.client_id) {
       const cid = m.conversations.client_id;
-      eleveCount.set(cid, (eleveCount.get(cid) || 0) + 1);
+      const cur = eleveCount.get(cid) || { count: 0, pieces: 0 };
+      cur.count += 1;
+      cur.pieces += Array.isArray(m.media_urls) ? m.media_urls.length : 0;
+      eleveCount.set(cid, cur);
     }
     // Pour les groupes-cours, on devrait fan-out vers les membres — V2 (sinon
     // on risque de spammer les clients sur de gros groupes).
   }
 
   // Pour chaque client : envoyer digest si pref != 'off'
-  for (const [clientId, count] of eleveCount.entries()) {
+  for (const [clientId, { count, pieces }] of eleveCount.entries()) {
     const { data: client } = await supabase
       .from('clients')
       .select('id, prenom, email, notif_prefs, profile_id, profiles(studio_nom, studio_slug)')
@@ -133,6 +144,7 @@ export const GET = withRoute({ auth: 'cron' }, async () => {
       to: client.email,
       prenom: client.prenom || 'là',
       nbRecus: count,
+      nbPieces: pieces,
       url,
       contexte: 'eleve',
       studioNom,
@@ -184,7 +196,7 @@ async function releaseEnvoi(supabase, destinataire, refDate) {
   } catch { /* release raté : le claim 'failed' sera re-clamé au prochain run (B1g) */ }
 }
 
-async function envoyerDigest({ to, prenom, nbRecus, url, contexte, studioNom }) {
+async function envoyerDigest({ to, prenom, nbRecus, nbPieces = 0, url, contexte, studioNom }) {
   if (!process.env.RESEND_API_KEY) {
     console.warn('[cron digest] RESEND_API_KEY manquante');
     return false;
@@ -194,9 +206,16 @@ async function envoyerDigest({ to, prenom, nbRecus, url, contexte, studioNom }) 
       ? `${nbRecus} nouveau${nbRecus > 1 ? 'x' : ''} message${nbRecus > 1 ? 's' : ''} de tes élèves`
       : `${studioNom} t'a écrit`;
 
+    // Mention des pièces jointes (2026-07-31) : un message photos-seules
+    // semblait vide dans l'email, et « 1 message » cachait les 12 photos
+    // de la pleine lune.
+    const mentionPieces = nbPieces > 0
+      ? `, avec ${nbPieces} photo${nbPieces > 1 ? 's' : ''} ou fichier${nbPieces > 1 ? 's' : ''} joint${nbPieces > 1 ? 's' : ''}`
+      : '';
+
     const corps = contexte === 'pro'
-      ? `Bonjour ${prenom},\n\nTu as ${nbRecus} message${nbRecus > 1 ? 's' : ''} non lu${nbRecus > 1 ? 's' : ''} dans ta messagerie IziSolo.\n\nJette un œil quand tu as un moment :`
-      : `Bonjour ${prenom},\n\n${studioNom} t'a envoyé ${nbRecus} message${nbRecus > 1 ? 's' : ''}. Voici le lien pour le${nbRecus > 1 ? 's' : ''} consulter :`;
+      ? `Bonjour ${prenom},\n\nTu as ${nbRecus} message${nbRecus > 1 ? 's' : ''} non lu${nbRecus > 1 ? 's' : ''}${mentionPieces} dans ta messagerie IziSolo.\n\nJette un œil quand tu as un moment :`
+      : `Bonjour ${prenom},\n\n${studioNom} t'a envoyé ${nbRecus} message${nbRecus > 1 ? 's' : ''}${mentionPieces}. Voici le lien pour le${nbRecus > 1 ? 's' : ''} consulter :`;
 
     // Pipeline central (Sprint 5) : blacklist respectée + List-Unsubscribe
     const r = await sendEmail({
