@@ -47,7 +47,9 @@ export default function InviteModal({ open, onClose, profile, clients = [] }) {
   const emailCible  = (recipientMode === 'new' ? newEmail : selectedClient?.email) || '';
 
   // Templates — utilisent prenom du destinataire si saisi, sinon générique
-  const salutation = prenomCible ? `Salut ${prenomCible}` : 'Coucou';
+  // « Bonjour » plutôt que « Salut »/« Coucou » (retour Maude 2026-07-30) —
+  // le ton chaleureux vit dans le corps, pas dans une familiarité imposée.
+  const salutation = prenomCible ? `Bonjour ${prenomCible}` : 'Bonjour';
 
   const sujetEmail = `Ton lien de connexion — ${studioNom}`;
   const corpsEmail = `${salutation},

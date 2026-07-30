@@ -68,7 +68,8 @@ export const POST = withRoute({ auth: 'active', schema: coursInviterSchema }, as
 
     const magicLink = slug ? await buildPortailMagicLink({ email, studioSlug: slug }) : null;
     const lien = magicLink || (slug ? `${appUrl}/p/${slug}/connexion` : appUrl);
-    const salutation = p.clients?.prenom ? `Salut ${p.clients.prenom}` : 'Coucou';
+    // « Bonjour » plutôt que « Salut »/« Coucou » (retour Maude 2026-07-30).
+    const salutation = p.clients?.prenom ? `Bonjour ${p.clients.prenom}` : 'Bonjour';
 
     try {
       // Transactionnel : concerne une séance réservée pour l'élève et porte
