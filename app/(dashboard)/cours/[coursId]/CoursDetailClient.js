@@ -58,6 +58,13 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
       const tp = p.type_presence || 'normal';
       if (tp === 'essai')  { gratuits++; parPresence[p.id] = { kind: 'essai' };  continue; }
       if (tp === 'offert') { gratuits++; parPresence[p.id] = { kind: 'offert' }; continue; }
+      // Excusée = rien à régler (cas Sarah 2026-07-30 : excusée par Maude mais
+      // la fiche cours affichait encore « à régler 20 € » — cette surface était
+      // la SEULE à avoir raté le filtre B1f, pointage/Revenus/espace l'ont).
+      // Un absent « souple » non payé ne doit rien non plus (miroir pointage).
+      const st = p.statut_pointage || 'inscrit';
+      if (st === 'excuse') { parPresence[p.id] = { kind: 'excuse' }; continue; }
+      if (st === 'absent' && !paidByPresence[p.id]) { continue; }
       // Carnet D'ABORD : lié (override compris — avant, un atelier affichait
       // « à régler » même pour une présence décomptée d'un carnet lié) ou
       // résoluble. Sur un cours MIXTE (carnets_acceptes, v82) la résolution
@@ -977,6 +984,9 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
                   )}
                   {argent.parPresence[p.id]?.kind === 'offert' && (
                     <span className="argent-chip chip-gratuit">Offert</span>
+                  )}
+                  {argent.parPresence[p.id]?.kind === 'excuse' && (
+                    <span className="argent-chip chip-gratuit">Excusée — rien à régler</span>
                   )}
                 </div>
                 <span className="inscrit-droite">
