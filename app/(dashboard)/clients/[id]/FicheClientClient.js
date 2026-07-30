@@ -673,6 +673,10 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
 
   // ─── Libérer une série de réservations futures ─────────────────────────
   const [libererModal, setLibererModal] = useState(null); // { recurrence_id, presences[], coursNom }
+  // Détail d'un carnet/abo (retour Camille 2026-07-30 : « rendre cliquables
+  // les titres des cartes pour avoir des détails/options ») — la modale
+  // montre l'historique des séances décomptées + les options en toutes lettres.
+  const [aboDetail, setAboDetail] = useState(null);
   const [libererSubmitting, setLibererSubmitting] = useState(false);
 
   const confirmerLibererSerie = async () => {
@@ -1112,7 +1116,9 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
               return (
                 <div key={abo.id} className="abo-card izi-card">
                   <div className="abo-top">
-                    <span className="abo-nom">{abo.offre_nom}</span>
+                    <button type="button" className="abo-nom abo-nom-btn" onClick={() => setAboDetail(abo)} title="Voir le détail et les options">
+                      {abo.offre_nom} <ChevronRight size={14} className="abo-nom-chevron" aria-hidden="true" />
+                    </button>
                     <div className="abo-top-right">
                       <span className={`izi-badge izi-badge-${sInfo.color || 'neutral'}`}>{sInfo.label || abo.statut}</span>
                       {abo.statut === 'actif' && (
@@ -1499,6 +1505,96 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
       )}
 
       {/* Modal pause abonnement */}
+      {aboDetail && (() => {
+        const abo = aboDetail;
+        const sInfo = STATUTS_ABONNEMENT[abo.statut] || {};
+        const restantes = abo.seances_total != null ? (abo.seances_total - (abo.seances_utilisees || 0)) : null;
+        const aboPaiements = paiements.filter(p => p.abonnement_id === abo.id);
+        const aboRecu = aboPaiements.filter(p => p.statut === 'paid').reduce((s, p) => s + parseFloat(p.montant || 0), 0);
+        const aboTotal = aboPaiements.reduce((s, p) => s + parseFloat(p.montant || 0), 0);
+        const aboReste = aboTotal - aboRecu;
+        const decomptees = presences.filter(p => p.abonnement_id === abo.id);
+        return (
+          <div className="modal-backdrop" onClick={e => { if (e.target === e.currentTarget) setAboDetail(null); }}>
+            <div className="modal-sheet versement-sheet animate-slide-up abo-detail-sheet" role="dialog" aria-modal="true">
+              <div className="modal-header">
+                <div style={{ width: 36 }} />
+                <span className="modal-title">{abo.offre_nom}</span>
+                <button className="modal-close" onClick={() => setAboDetail(null)} type="button" aria-label="Fermer"><X size={20} /></button>
+              </div>
+              <div className="modal-body">
+                <div className="abo-detail-infos">
+                  <span className={`izi-badge izi-badge-${sInfo.color || 'neutral'}`}>{sInfo.label || abo.statut}</span>
+                  {restantes !== null && <span className="abo-detail-info">🎟️ {restantes}/{abo.seances_total} séances restantes</span>}
+                  {abo.date_debut && <span className="abo-detail-info">Du {formatDate(abo.date_debut)}{abo.date_fin ? ` au ${formatDate(abo.date_fin)}` : ''}</span>}
+                  {!abo.date_debut && abo.date_fin && <span className="abo-detail-info">Expire le {formatDate(abo.date_fin)}</span>}
+                  {abo.created_at && <span className="abo-detail-info">Souscrit le {formatDate(abo.created_at.split('T')[0])}</span>}
+                  {abo.statut === 'gele' && abo.date_pause_fin && <span className="abo-detail-info">⏸ En pause jusqu'au {formatDate(abo.date_pause_fin)}</span>}
+                </div>
+
+                <div className="abo-detail-section">
+                  <span className="abo-detail-titre">Séances décomptées ({decomptees.length})</span>
+                  {decomptees.length === 0 ? (
+                    <p className="abo-detail-vide">Aucune séance décomptée pour le moment.</p>
+                  ) : (
+                    <ul className="abo-detail-liste">
+                      {decomptees.slice(0, 8).map(p => (
+                        <li key={p.id}>
+                          <Link href={`/cours/${p.cours_id}`} onClick={() => setAboDetail(null)}>
+                            {p.cours?.nom || 'Séance'}{p.cours?.date ? ` — ${formatDate(p.cours.date)}` : ''}
+                          </Link>
+                        </li>
+                      ))}
+                      {decomptees.length > 8 && <li className="abo-detail-plus">… et {decomptees.length - 8} autre{decomptees.length - 8 > 1 ? 's' : ''} (50 dernières présences chargées)</li>}
+                    </ul>
+                  )}
+                </div>
+
+                {aboPaiements.length > 0 && (
+                  <div className="abo-detail-section">
+                    <span className="abo-detail-titre">Paiements liés</span>
+                    <ul className="abo-detail-liste">
+                      {aboPaiements.slice(0, 6).map(p => (
+                        <li key={p.id}>
+                          {formatMontant(parseFloat(p.montant || 0))} · {p.mode || '—'} · {p.date ? formatDate(p.date) : ''} {p.statut !== 'paid' && <em>({p.statut === 'pending' ? 'à encaisser' : p.statut})</em>}
+                        </li>
+                      ))}
+                    </ul>
+                    <p className="abo-detail-total">
+                      {formatMontant(aboRecu)} reçu{aboReste > 0.009 ? ` · ${formatMontant(aboReste)} restant` : ' — réglé ✓'}
+                    </p>
+                  </div>
+                )}
+
+                <div className="abo-detail-actions">
+                  <button type="button" className="izi-btn izi-btn-secondary" onClick={() => { setAboDetail(null); openEditAbo(abo); }}>
+                    <Edit3 size={15} /> Modifier
+                  </button>
+                  {abo.statut === 'actif' && (
+                    <button type="button" className="izi-btn izi-btn-secondary" onClick={() => { setAboDetail(null); setPauseModal(abo); setPauseDebut(new Date().toISOString().split('T')[0]); setPauseFin(''); setPauseNotes(''); }}>
+                      <Pause size={15} /> Mettre en pause
+                    </button>
+                  )}
+                  {abo.statut === 'gele' && (
+                    <button type="button" className="izi-btn izi-btn-secondary" onClick={() => { setAboDetail(null); reprendreAbo(abo); }}>
+                      <Play size={15} /> Réactiver
+                    </button>
+                  )}
+                  {abo.statut === 'actif' && aboReste > 0.009 && (
+                    <button type="button" className="izi-btn izi-btn-secondary" onClick={() => { setAboDetail(null); setVersementModal(abo); setVersementMontant(''); setVersementMode('especes'); setVersementDate(new Date().toISOString().split('T')[0]); }}>
+                      <Banknote size={15} /> Encaisser un versement
+                    </button>
+                  )}
+                  <button type="button" className="izi-btn izi-btn-ghost abo-detail-suppr" onClick={() => { setAboDetail(null); deleteAbonnement(abo); }}>
+                    <Trash2 size={15} /> Supprimer
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
       {pauseModal && (
         <div className="modal-backdrop" onClick={e => { if (e.target === e.currentTarget) setPauseModal(null); }}>
           <div className="modal-sheet versement-sheet animate-slide-up" role="dialog" aria-modal="true">
@@ -2050,6 +2146,26 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
         .empty-mini { text-align: center; padding: 24px; color: var(--text-muted); font-size: 0.875rem; }
 
         .abo-card { padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; }
+        .abo-nom-btn {
+          display: inline-flex; align-items: center; gap: 3px;
+          background: none; border: none; padding: 0; cursor: pointer;
+          font: inherit; font-weight: 700; color: var(--text-primary); text-align: left;
+        }
+        .abo-nom-btn:hover { color: var(--brand-700, #7a4a1e); text-decoration: underline; }
+        .abo-nom-chevron { color: var(--text-muted); flex-shrink: 0; }
+        .abo-detail-infos { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 14px; }
+        .abo-detail-info { font-size: 0.8125rem; color: var(--text-secondary); }
+        .abo-detail-section { margin-bottom: 14px; }
+        .abo-detail-titre { display: block; font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.03em; }
+        .abo-detail-vide { font-size: 0.8125rem; color: var(--text-muted); margin: 0; }
+        .abo-detail-liste { margin: 0; padding-left: 16px; display: flex; flex-direction: column; gap: 4px; }
+        .abo-detail-liste li { font-size: 0.8125rem; color: var(--text-secondary); }
+        .abo-detail-liste a { color: var(--brand-700, #7a4a1e); text-decoration: none; }
+        .abo-detail-liste a:hover { text-decoration: underline; }
+        .abo-detail-plus { color: var(--text-muted); list-style: none; margin-left: -16px; }
+        .abo-detail-total { font-size: 0.8125rem; font-weight: 600; margin: 6px 0 0; }
+        .abo-detail-actions { display: flex; flex-wrap: wrap; gap: 8px; padding-top: 10px; border-top: 1px solid var(--border); }
+        .abo-detail-suppr { color: #b03030; }
         .abo-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
         .abo-top-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
         .abo-nom { font-weight: 600; font-size: 0.9375rem; flex: 1; }
