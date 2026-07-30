@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft, MessageSquare, Megaphone, Plus, Search, X, Send, Loader2, Users } from 'lucide-react';
 import ConversationList from '@/components/messagerie/ConversationList';
 import ChatRoom from '@/components/messagerie/ChatRoom';
+import AttachmentPicker from '@/components/messagerie/AttachmentPicker';
 import { useToast } from '@/components/ui/ToastProvider';
 import { matchRecherche } from '@/lib/utils';
 
@@ -36,6 +37,7 @@ export default function MessagerieClient({ profile, clients, cours, offres }) {
   const [clientIds, setClientIds]    = useState(new Set());
   const [searchClient, setSearchClient] = useState('');
   const [content, setContent]        = useState('');
+  const [annAttachments, setAnnAttachments] = useState([]); // PJ d'annonce [{url, kind, name}]
   const [mode, setMode]              = useState('individuel'); // 'individuel'|'groupe' (pour scope=cours)
   const [sending, setSending]        = useState(false);
   const [birthdayText, setBirthdayText] = useState('');
@@ -98,7 +100,9 @@ export default function MessagerieClient({ profile, clients, cours, offres }) {
     return null; // inconnu côté client
   }, [scope, coursId, mode, clientIds, clients.length]);
 
-  const canAnnounce = content.trim().length > 0 && (
+  // Photos seules autorisées (demande Maude 2026-07-30) — miroir du
+  // « Message vide » de l'API announce (content OU media_urls).
+  const canAnnounce = (content.trim().length > 0 || annAttachments.length > 0) && (
     scope === 'tous' ||
     (scope === 'cours' && coursId) ||
     (scope === 'type_cours' && typeCours) ||
@@ -112,6 +116,7 @@ export default function MessagerieClient({ profile, clients, cours, offres }) {
     try {
       const body = {
         content: content.trim(),
+        media_urls: annAttachments.map(a => a.url),
         scope,
         mode,
         cours_id: scope === 'cours' ? coursId : undefined,
@@ -134,6 +139,7 @@ export default function MessagerieClient({ profile, clients, cours, offres }) {
       } else {
         toast.success(`Envoyé à ${json.count} conversation${json.count > 1 ? 's' : ''} !`);
         setContent('');
+        setAnnAttachments([]);
         setClientIds(new Set());
         setTab('conversations');
       }
@@ -276,6 +282,7 @@ export default function MessagerieClient({ profile, clients, cours, offres }) {
               placeholder="Ex : Le cours de mardi 19h30 est annulé, on se retrouve mercredi à la place. Bonne soirée !"
             />
             <p className="ann-hint">{content.length}/4000 — chaque destinataire recevra ce message dans sa conversation avec toi. Il pourra te répondre.</p>
+            <AttachmentPicker attachments={annAttachments} onChange={setAnnAttachments} disabled={sending} />
           </div>
 
           <button

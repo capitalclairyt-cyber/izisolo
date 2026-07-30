@@ -15,6 +15,7 @@ import { compterPlacesOccupees, presenceOccupePlace, presenceEstReservationActiv
 import { seanceDeltaChangementType } from '@/lib/pointage-delta';
 import { getRegle } from '@/lib/regles-metier';
 import TypeCoursHint from '@/components/cours/TypeCoursHint';
+import AttachmentPicker from '@/components/messagerie/AttachmentPicker';
 import { resoudreCarnetApplicable } from '@/lib/carnet-resolution';
 import { can } from '@/lib/plan-guard';
 import { createClient } from '@/lib/supabase';
@@ -155,6 +156,7 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
 
   // ---- Message aux participants ----
   const [showMessageModal, setShowMessageModal] = useState(false);
+  const [msgAttachments, setMsgAttachments] = useState([]); // PJ de l'annonce [{url, kind, name}]
   // Modale réservation (demande Colin 2026-07-28) : clic sur un·e inscrit·e →
   // ouvrir la fiche / changer le type (essai, offerte) / supprimer la résa.
   const [resaModal, setResaModal] = useState(null); // la présence cliquée
@@ -499,7 +501,9 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
 
   const handleSendMessage = async () => {
     const message = (messageForm.message || '').trim();
-    if (!message) { toast.warning('Saisis un message avant d\'envoyer.'); return; }
+    // Photos seules autorisées (demande Maude 2026-07-30 : envoyer les photos
+    // de la veille aux participantes) — miroir du « Message vide » de l'API.
+    if (!message && msgAttachments.length === 0) { toast.warning('Saisis un message ou joins une photo avant d\'envoyer.'); return; }
     if (presences.length === 0) { toast.warning('Aucun participant inscrit à ce cours.'); return; }
 
     // On préfixe le message par le sujet (s'il y en a un) — la messagerie
@@ -514,6 +518,7 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           content,
+          media_urls: msgAttachments.map(a => a.url),
           scope: 'cours',
           cours_id: cours.id,
           mode: 'individuel',  // 1 conv 1-to-1 par participant (plus respectueux que groupe)
@@ -527,6 +532,7 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
       toast.success(`Message envoyé à ${json.count || presences.length} participant${(json.count || presences.length) > 1 ? 's' : ''} ✓`);
       setShowMessageModal(false);
       setMessageForm({ sujet: '', message: '' });
+      setMsgAttachments([]);
     } catch (err) {
       toast.error('Erreur : ' + err.message);
     } finally {
@@ -1302,6 +1308,10 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
                 onChange={e => setMessageForm(p => ({ ...p, message: e.target.value }))} />
             </div>
 
+            <div style={{ padding: '0 20px' }}>
+              <AttachmentPicker attachments={msgAttachments} onChange={setMsgAttachments} disabled={sendingMessage} />
+            </div>
+
             <div className="modal-actions" style={{ padding: '0 20px 20px' }}>
               <button className="izi-btn izi-btn-ghost"
                 onClick={() => setShowMessageModal(false)}
@@ -1310,7 +1320,7 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
               </button>
               <button className="izi-btn izi-btn-primary"
                 onClick={handleSendMessage}
-                disabled={!messageForm.message.trim() || sendingMessage}>
+                disabled={(!messageForm.message.trim() && msgAttachments.length === 0) || sendingMessage}>
                 <Send size={16} />
                 {sendingMessage ? 'Envoi…' : `Envoyer via la messagerie IziSolo`}
               </button>
