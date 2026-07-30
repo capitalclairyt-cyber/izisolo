@@ -269,6 +269,26 @@ export default function EssaisClient({ profile, demandes: initialDemandes }) {
         label="demandes d'essai"
       />
 
+      <style jsx global>{`
+        /* Global exprès : ces classes habillent des <Link> (composants custom)
+           que styled-jsx scoped ne hashe pas — en scoped, les règles ne
+           matchaient jamais et les liens s'affichaient en bleu navigateur
+           (« lien type internet explorer », retour Camille 2026-07-30). */
+        .essais-config-link {
+          display: inline-flex; align-items: center; gap: 5px;
+          padding: 7px 12px; border-radius: 99px;
+          background: white; border: 1.5px solid var(--border);
+          color: var(--text-secondary); text-decoration: none;
+          font-size: 0.8125rem; font-weight: 600;
+          transition: all 0.15s;
+        }
+        .essais-config-link:hover { color: var(--brand); border-color: var(--brand); }
+        .essai-card-link {
+          display: inline-flex; align-items: center; gap: 4px;
+          color: var(--brand); text-decoration: none;
+        }
+        .essai-card-link:hover { text-decoration: underline; }
+      `}</style>
       <style jsx>{`
         .essais-page { padding-bottom: 40px; }
         .essais-header {
@@ -282,15 +302,10 @@ export default function EssaisClient({ profile, demandes: initialDemandes }) {
         .essais-subtitle {
           font-size: 0.8125rem; color: var(--text-muted); margin: 4px 0 0;
         }
-        .essais-config-link {
-          display: inline-flex; align-items: center; gap: 5px;
-          padding: 7px 12px; border-radius: 99px;
-          background: white; border: 1.5px solid var(--border);
-          color: var(--text-secondary); text-decoration: none;
-          font-size: 0.8125rem; font-weight: 600;
-          transition: all 0.15s;
-        }
-        .essais-config-link:hover { color: var(--brand); border-color: var(--brand); }
+        /* ⚠️ .essais-config-link et .essai-card-link vivent dans le bloc
+           GLOBAL ci-dessous : posées sur des <Link> (composant custom),
+           styled-jsx scoped ne leur ajoute PAS son hash → règles mortes,
+           liens bleus par défaut (retour Camille 2026-07-30). */
 
         .essais-filters {
           display: flex; gap: 6px; margin-bottom: 16px;
@@ -355,11 +370,6 @@ export default function EssaisClient({ profile, demandes: initialDemandes }) {
         .essai-card-cours-meta svg { flex-shrink: 0; }
 
         .essai-card-contact { display: flex; flex-wrap: wrap; gap: 12px; font-size: 0.8125rem; }
-        .essai-card-link {
-          display: inline-flex; align-items: center; gap: 4px;
-          color: var(--brand); text-decoration: none;
-        }
-        .essai-card-link:hover { text-decoration: underline; }
 
         .essai-card-msg {
           display: flex; gap: 6px; padding: 8px 10px;

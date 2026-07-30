@@ -7,7 +7,7 @@ import {
   ArrowLeft, Save, Calendar, Clock, MapPin, Users, Repeat, UserPlus,
   Trash2, AlertTriangle, CheckCircle2, Edit3, X, Copy,
   ChevronDown, ChevronUp, Mail, Send, ShieldAlert, Smartphone, CheckCheck, Lock,
-  Home, Navigation, Euro,
+  Home, Navigation, Euro, MessageSquare,
 } from 'lucide-react';
 import { formatHeure, getAllTypesFromCategories } from '@/lib/utils';
 import { parseDate } from '@/lib/dates';
@@ -1327,6 +1327,9 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
 
             <Link href={`/clients/${resaModal.client_id || resaModal.clients?.id}`} className="resa-modal-fiche">
               <Users size={15} /> Ouvrir la fiche élève →
+            </Link>
+            <Link href={`/messagerie?with=${resaModal.client_id || resaModal.clients?.id}`} className="resa-modal-fiche">
+              <MessageSquare size={15} /> Envoyer un message →
             </Link>
 
             {(resaModal.annulation_tardive || ['annule', 'declinee'].includes(resaModal.statut_pointage)) ? (

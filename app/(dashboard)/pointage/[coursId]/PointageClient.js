@@ -14,6 +14,18 @@ import { createClient } from '@/lib/supabase';
 import { evaluerRegles } from '@/lib/regles';
 import { getRegle, getDelaiPourCours } from '@/lib/regles-metier';
 import { seanceDelta, seanceDeltaChangementType } from '@/lib/pointage-delta';
+
+// Réseau mobile réel (pointage SUR PLACE) : une écriture qui PEND est pire
+// qu'une écriture qui échoue — timeout court + échec honnête + rollback.
+// Incident pleine lune 2026-07-29 : sur la 4G d'un parc, des encaissements et
+// pointages restaient muets (fetch suspendu sans timeout) → Maude a tout
+// refait à 22 h de chez elle. 12 s puis on rend la main.
+const signalEcriture = () =>
+  (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function'
+    ? AbortSignal.timeout(12000)
+    : undefined);
+const estTimeout = (err) =>
+  err?.name === 'AbortError' || /abort|timeout/i.test(String(err?.message || ''));
 import { resoudreCarnetApplicable } from '@/lib/carnet-resolution';
 import { useToast } from '@/components/ui/ToastProvider';
 
@@ -67,17 +79,20 @@ function PaymentModal({ presence, coursNom, coursDate, montantDefaut = '', paiem
     setSaving(true);
     try {
       const supabase = createClient();
+      const sig = signalEcriture(); // timeout court : jamais d'encaissement qui « pend » sur place
       if (isEdit) {
         // Correction d'un encaissement (montant / mode) — même ligne paiements.
-        const { error } = await supabase
+        let q = supabase
           .from('paiements')
           .update({ montant: val, mode })
           .eq('id', paiementExistant.id);
+        if (sig) q = q.abortSignal(sig);
+        const { error } = await q;
         if (error) throw error;
         onSaved({ id: paiementExistant.id, presence_id: presence.id, montant: val, mode });
       } else {
         const { data: { user } } = await supabase.auth.getUser();
-        const { data: created, error } = await supabase.from('paiements').insert({
+        let q = supabase.from('paiements').insert({
           profile_id:  user.id,
           client_id:   presence.client_id,
           presence_id: presence.id, // paiement à la séance (v65)
@@ -88,12 +103,16 @@ function PaymentModal({ presence, coursNom, coursDate, montantDefaut = '', paiem
           date:        new Date().toISOString().split('T')[0],
           notes:       'Encaissement rapide depuis le pointage',
         }).select('id').single();
+        if (sig) q = q.abortSignal(sig);
+        const { data: created, error } = await q;
         if (error) throw error;
         onSaved({ id: created?.id, presence_id: presence.id, montant: val, mode });
       }
       onClose();
     } catch (err) {
-      toast.error('Erreur : ' + err.message);
+      toast.error(estTimeout(err)
+        ? 'Réseau trop lent — encaissement NON enregistré, réessaie.'
+        : 'Erreur : ' + err.message);
     } finally {
       setSaving(false);
     }
@@ -771,13 +790,24 @@ export default function PointageClient({ cours, presences: initialPresences, tou
     // encore liée (agnostique à l'ordre : « attribuer puis pointer » comme
     // « pointer puis attribuer » décomptent correctement). Il ne résout jamais
     // pour un crédit (delta < 0).
-    const { data: result, error } = await supabase.rpc('pointer_presence', {
-      p_presence_id: presence.id,
-      p_statut: newStatut,
-      p_pointee: isPresent,
-      p_heure: isPresent ? nowIso : null,
-      p_delta: delta,
-    });
+    let result, error;
+    try {
+      let q = supabase.rpc('pointer_presence', {
+        p_presence_id: presence.id,
+        p_statut: newStatut,
+        p_pointee: isPresent,
+        p_heure: isPresent ? nowIso : null,
+        p_delta: delta,
+      });
+      const sig = signalEcriture();
+      if (sig) q = q.abortSignal(sig);
+      ({ data: result, error } = await q);
+    } catch (e) {
+      // Réseau tombé/suspendu : le fetch peut JETER au lieu de renvoyer
+      // { error } — sans ce catch, l'optimisme restait affiché sans
+      // persistance ni toast (le vécu de la pleine lune).
+      error = e;
+    }
 
     if (error || !result?.ok) {
       // ── Rollback ciblé : on restaure les valeurs de la ligne d'avant le tap ──
@@ -792,7 +822,9 @@ export default function PointageClient({ cours, presences: initialPresences, tou
         }
       ));
       setActionLoading(null);
-      toast.error('Pointage non enregistré, réessaie.');
+      toast.error(estTimeout(error)
+        ? 'Réseau trop lent — pointage NON enregistré, réessaie.'
+        : 'Pointage non enregistré, réessaie.');
       return;
     }
 

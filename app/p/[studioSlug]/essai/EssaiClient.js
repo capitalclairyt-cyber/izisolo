@@ -281,7 +281,7 @@ export default function EssaiClient({ profile, cours, studioSlug, preselectedCou
         {/* Honeypot anti-bot — caché aux humains, visible aux bots naïfs */}
         <input
           type="text"
-          name="website"
+          name="verif_hp"
           tabIndex={-1}
           autoComplete="off"
           value={website}

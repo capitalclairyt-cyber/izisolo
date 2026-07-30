@@ -288,12 +288,16 @@ function DiagnosticOffres({ offres }) {
   if (!coursAVenir) return null;
   const issues = diagnostiquerOffres(offres, coursAVenir);
   if (issues.length === 0) return null;
+  // Les offres « à l'unité » legacy se groupent en UNE ligne (retour Camille
+  // 2026-07-30 : 3 offres du même nom = 3 lignes quasi identiques, illisible).
+  const legacy = issues.filter(i => i.kind === 'legacy_unite');
+  const autres = issues.filter(i => i.kind !== 'legacy_unite');
 
   return (
     <div className="izi-card diag-offres animate-fade-in">
       <div className="diag-offres-titre">🔍 À vérifier dans tes offres</div>
       <ul className="diag-offres-liste">
-        {issues.map(({ kind, offre, analyse }) => (
+        {autres.map(({ kind, offre, analyse }) => (
           <li key={offre.id || offre.nom}>
             {kind === 'restriction_inerte' && (
               <><strong>{offre.nom}</strong> est limitée à {offre.types_cours_autorises.join(' / ')},
@@ -307,13 +311,17 @@ function DiagnosticOffres({ offres }) {
                 {analyse.sansType > 0 ? <> ({analyse.sansType} sans type restent couvertes)</> : null}.
                 Vérifie le type de tes cours ou la restriction.</>
             )}
-            {kind === 'legacy_unite' && (
-              <><strong>{offre.nom}</strong> (offre « à l&apos;unité ») ne s&apos;affiche pas à la
-                réservation — le paiement à la séance se règle désormais sur chaque cours
-                (fiche du cours → <strong>Tarif à la séance</strong>, + « carnets acceptés » si besoin).</>
-            )}
           </li>
         ))}
+        {legacy.length > 0 && (
+          <li key="legacy-unite">
+            {legacy.length === 1
+              ? <><strong>{legacy[0].offre.nom}</strong> (offre « à l&apos;unité ») ne s&apos;affiche pas</>
+              : <><strong>{legacy.length} offres « à l&apos;unité »</strong> ({legacy.map(i => i.offre.nom).join(', ')}) ne s&apos;affichent pas</>}
+            {' '}à la réservation — le paiement à la séance se règle désormais sur chaque cours
+            (fiche du cours → <strong>Tarif à la séance</strong>, + « carnets acceptés » si besoin).
+          </li>
+        )}
       </ul>
       <style jsx>{`
         .diag-offres { padding: 14px 18px; margin-bottom: 14px; border-left: 3px solid #c9a227; }

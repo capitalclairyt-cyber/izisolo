@@ -109,7 +109,7 @@ function CompletAvecListeAttente({ cours, studioSlug, currentUser }) {
         {/* Honeypot anti-bot — caché aux humains */}
         <input
           type="text"
-          name="website"
+          name="verif_hp"
           tabIndex={-1}
           autoComplete="off"
           value={website}
@@ -617,7 +617,7 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
             {/* Honeypot anti-bot — caché aux humains */}
             <input
               type="text"
-              name="website"
+              name="verif_hp"
               tabIndex={-1}
               autoComplete="off"
               value={website}
