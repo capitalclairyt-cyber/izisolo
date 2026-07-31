@@ -81,6 +81,16 @@ export default function RevenusClient({ paiements: initialPaiements, seancesDues
   const [filterMode, setFilterMode] = useState('');
   const [filterStatut, setFilterStatut] = useState('');
   const [encaisserModal, setEncaisserModal] = useState(null); // { id, intitule, montant, ... }
+  // Encaissement DIRECT d'une séance due depuis « À percevoir » (retour Maude
+  // 2026-07-31 : le bouton renvoyait au pointage du cours — il fallait se
+  // rappeler du cours ; désormais tout se règle ici, note compta comprise).
+  const [seanceModal, setSeanceModal] = useState(null); // row de seancesDues
+  const [seanceMontant, setSeanceMontant] = useState('');
+  const [seanceMode, setSeanceMode] = useState('especes');
+  const [seanceNote, setSeanceNote] = useState('');
+  const [seanceSubmitting, setSeanceSubmitting] = useState(false);
+  const [seancesEncaissees, setSeancesEncaissees] = useState(() => new Set());
+  const [showAllPercevoir, setShowAllPercevoir] = useState(false);
   const [encaisserMode, setEncaisserMode] = useState('especes');
   const [encaisserDate, setEncaisserDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [encaisserNotes, setEncaisserNotes] = useState('');
@@ -382,7 +392,8 @@ export default function RevenusClient({ paiements: initialPaiements, seancesDues
           tardives « séance due » sans montant fixe. */}
       {(() => {
         const aPercevoir = paiements.filter(p => p.statut === 'pending' || p.statut === 'overdue');
-        if (aPercevoir.length === 0 && seancesDues.length === 0 && annulations.length === 0) return null;
+        const seancesVisibles = seancesDues.filter(s => !seancesEncaissees.has(s.id));
+        if (aPercevoir.length === 0 && seancesVisibles.length === 0 && annulations.length === 0) return null;
         const today = new Date().toISOString().split('T')[0];
         // Tri par date CROISSANTE : les échéances les plus proches d'abord.
         // (Les paiements arrivent en date DESC → sans ce tri, « À venir »
@@ -391,12 +402,13 @@ export default function RevenusClient({ paiements: initialPaiements, seancesDues
         // Fusion paiements + séances dues, réparties retard / à venir par date.
         const rows = [
           ...aPercevoir.map(p => ({ kind: 'paiement', key: `p-${p.id}`, data: p, date: p.date || '', late: p.statut === 'overdue' || (p.statut === 'pending' && p.date < today) })),
-          ...seancesDues.map(s => ({ kind: 'seance', key: `s-${s.id}`, data: s, date: s.date || '', late: (s.date || '') < today })),
+          ...seancesVisibles.map(s => ({ kind: 'seance', key: `s-${s.id}`, data: s, date: s.date || '', late: (s.date || '') < today })),
         ];
         const overdueList = rows.filter(r => r.late).sort(byDateAsc);
         const upcomingList = rows.filter(r => !r.late).sort(byDateAsc);
+        const coupe = showAllPercevoir ? Infinity : 5;
         const totalDu = aPercevoir.reduce((s, p) => s + parseFloat(p.montant || 0), 0)
-          + seancesDues.reduce((s, w) => s + (parseFloat(w.montant) || 0), 0);
+          + seancesVisibles.reduce((s, w) => s + (parseFloat(w.montant) || 0), 0);
 
         const renderRow = (r) => r.kind === 'paiement' ? (
           <div key={r.key} className={`a-percevoir-row${r.late ? ' overdue' : ''}`}>
@@ -419,13 +431,19 @@ export default function RevenusClient({ paiements: initialPaiements, seancesDues
             </span>
             <span className="a-percevoir-date">{formatDate(r.data.date)}</span>
             <span className="a-percevoir-montant">{formatMontant(r.data.montant)}</span>
-            <Link
+            <button
               className="a-percevoir-action"
-              href={`/pointage/${r.data.cours_id}`}
-              title="Encaisser depuis le pointage de la séance"
+              onClick={() => {
+                setSeanceModal(r.data);
+                setSeanceMontant(String(r.data.montant ?? ''));
+                setSeanceMode('especes');
+                setSeanceNote('');
+              }}
+              title="Encaisser cette séance maintenant"
+              type="button"
             >
               <CheckCircle2 size={13} /> Encaisser
-            </Link>
+            </button>
           </div>
         );
 
@@ -439,16 +457,23 @@ export default function RevenusClient({ paiements: initialPaiements, seancesDues
             {overdueList.length > 0 && (
               <div className="a-percevoir-group">
                 <div className="a-percevoir-group-label overdue">En retard ({overdueList.length})</div>
-                {overdueList.slice(0, 5).map(renderRow)}
-                {overdueList.length > 5 && <div className="a-percevoir-more">+ {overdueList.length - 5} autre{overdueList.length - 5 > 1 ? 's' : ''}</div>}
+                {overdueList.slice(0, coupe).map(renderRow)}
               </div>
             )}
             {upcomingList.length > 0 && (
               <div className="a-percevoir-group">
                 <div className="a-percevoir-group-label upcoming">À venir ({upcomingList.length})</div>
-                {upcomingList.slice(0, 5).map(renderRow)}
-                {upcomingList.length > 5 && <div className="a-percevoir-more">+ {upcomingList.length - 5} autre{upcomingList.length - 5 > 1 ? 's' : ''}</div>}
+                {upcomingList.slice(0, coupe).map(renderRow)}
               </div>
+            )}
+            {(overdueList.length > 5 || upcomingList.length > 5) && (
+              <button
+                type="button"
+                className="a-percevoir-more a-percevoir-toggle"
+                onClick={() => setShowAllPercevoir(v => !v)}
+              >
+                {showAllPercevoir ? 'Réduire' : `Tout afficher (${overdueList.length + upcomingList.length})`}
+              </button>
             )}
             {annulations.length > 0 && (
               <div className="a-percevoir-group">
@@ -580,6 +605,75 @@ export default function RevenusClient({ paiements: initialPaiements, seancesDues
       </div>
 
       {/* Modal encaisser */}
+      {seanceModal && (
+        <div className="enc-overlay" onClick={() => !seanceSubmitting && setSeanceModal(null)}>
+          <div className="enc-modal" onClick={e => e.stopPropagation()}>
+            <button className="enc-close" onClick={() => setSeanceModal(null)} aria-label="Fermer" type="button">
+              <X size={16} />
+            </button>
+            <h3 className="enc-title">Encaisser la séance</h3>
+            <div className="enc-recap">
+              <strong>{seanceModal.cours_nom}</strong>{seanceModal.date ? ` · ${formatDate(seanceModal.date)}` : ''}
+              <div style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', marginTop: 2 }}>
+                {clientName(seanceModal.clients) || 'Élève'}
+              </div>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Montant (€)</label>
+              <input className="izi-input" type="number" min="0" step="0.5" value={seanceMontant} onChange={e => setSeanceMontant(e.target.value)} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Mode</label>
+              <div className="enc-modes">
+                {MODES.map(({ value, label, Icon }) => (
+                  <button key={value} type="button" className={`enc-mode-btn ${seanceMode === value ? 'selected' : ''}`} onClick={() => setSeanceMode(value)}>
+                    <Icon size={13} /> {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Note compta <span style={{ fontWeight: 400, color: 'var(--text-muted)' }}>(optionnelle)</span></label>
+              <input className="izi-input" type="text" maxLength={200} placeholder="Ex : réglé en retard, payé par le mari…" value={seanceNote} onChange={e => setSeanceNote(e.target.value)} />
+            </div>
+            <button
+              type="button"
+              className="izi-btn izi-btn-primary"
+              style={{ width: '100%', justifyContent: 'center' }}
+              disabled={seanceSubmitting || !seanceMontant || parseFloat(seanceMontant) <= 0}
+              onClick={async () => {
+                setSeanceSubmitting(true);
+                try {
+                  const supabase = createClient();
+                  const { data: { user } } = await supabase.auth.getUser();
+                  const { error } = await supabase.from('paiements').insert({
+                    profile_id: user.id,
+                    client_id: seanceModal.client_id,
+                    presence_id: seanceModal.id, // même liaison v65 que l'encaissement du pointage
+                    intitule: `${seanceModal.cours_nom}${seanceModal.date ? ` — ${formatDate(seanceModal.date)}` : ''}`,
+                    montant: parseFloat(seanceMontant),
+                    statut: 'paid',
+                    mode: seanceMode,
+                    date: new Date().toISOString().slice(0, 10),
+                    notes: seanceNote.trim() || 'Encaissé depuis Revenus (À percevoir)',
+                  });
+                  if (error) throw error;
+                  setSeancesEncaissees(prev => new Set([...prev, seanceModal.id]));
+                  toast.success('Séance encaissée ✓');
+                  setSeanceModal(null);
+                } catch (err) {
+                  toast.error('Encaissement impossible : ' + (err?.message || 'réessaie'));
+                } finally {
+                  setSeanceSubmitting(false);
+                }
+              }}
+            >
+              <CheckCircle2 size={15} /> {seanceSubmitting ? 'Encaissement…' : `Encaisser ${seanceMontant ? parseFloat(seanceMontant).toFixed(2) + ' €' : ''}`}
+            </button>
+          </div>
+        </div>
+      )}
+
       {encaisserModal && (
         <div className="enc-overlay" onClick={() => !encaisserSubmitting && setEncaisserModal(null)}>
           <div className="enc-modal" onClick={e => e.stopPropagation()}>
@@ -939,6 +1033,12 @@ export default function RevenusClient({ paiements: initialPaiements, seancesDues
         }
         .a-percevoir-action:hover { background: #6ee7b7; color: #064e3b; }
         .a-percevoir-more { font-size: 0.75rem; color: var(--text-muted); padding-left: 10px; }
+        .a-percevoir-toggle {
+          background: none; border: none; cursor: pointer;
+          color: var(--brand-700, #7a4a1e); font-weight: 600; padding: 6px 10px;
+          text-align: left;
+        }
+        .a-percevoir-toggle:hover { text-decoration: underline; }
       `}</style>
     </div>
   );

@@ -63,6 +63,11 @@ function PaymentModal({ presence, coursNom, coursDate, montantDefaut = '', paiem
   // Espèces par défaut : c'est le mode réel du terrain (retour Maude — CB en
   // dur lui faisait enregistrer de faux paiements carte).
   const [mode, setMode]         = useState(paiementExistant?.mode || 'Espèces');
+  // Note compta optionnelle + « règlement supplémentaire » (cas du mari de
+  // Marie-Pierre, 2026-07-31 : une élève règle DEUX séances — la 2e ligne
+  // n'est pas liée à la présence, elle vit en compta avec sa note).
+  const [note, setNote]         = useState('');
+  const [extraMode, setExtraMode] = useState(false);
   const [saving, setSaving]     = useState(false);
   const [confirming, setConfirming] = useState(false); // étape confirmation "payer plus tard"
 
@@ -80,6 +85,27 @@ function PaymentModal({ presence, coursNom, coursDate, montantDefaut = '', paiem
     try {
       const supabase = createClient();
       const sig = signalEcriture(); // timeout court : jamais d'encaissement qui « pend » sur place
+      if (extraMode) {
+        // Règlement SUPPLÉMENTAIRE : ligne compta non liée à la présence (la
+        // séance est déjà couverte par le 1er encaissement) — la note dit qui.
+        const { data: { user } } = await supabase.auth.getUser();
+        let q = supabase.from('paiements').insert({
+          profile_id: user.id,
+          client_id:  presence.client_id,
+          intitule:   `${coursNom} — ${coursDate} (règlement supplémentaire)`,
+          montant:    val,
+          statut:     'paid',
+          mode,
+          date:       new Date().toISOString().split('T')[0],
+          notes:      note.trim() || 'Règlement supplémentaire depuis le pointage',
+        });
+        if (sig) q = q.abortSignal(sig);
+        const { error } = await q;
+        if (error) throw error;
+        toast.success('Règlement supplémentaire encaissé ✓');
+        onClose();
+        return;
+      }
       if (isEdit) {
         // Correction d'un encaissement (montant / mode) — même ligne paiements.
         let q = supabase
@@ -101,7 +127,7 @@ function PaymentModal({ presence, coursNom, coursDate, montantDefaut = '', paiem
           statut:      'paid',
           mode,
           date:        new Date().toISOString().split('T')[0],
-          notes:       'Encaissement rapide depuis le pointage',
+          notes:       note.trim() || 'Encaissement rapide depuis le pointage',
         }).select('id').single();
         if (sig) q = q.abortSignal(sig);
         const { data: created, error } = await q;
@@ -179,18 +205,54 @@ function PaymentModal({ presence, coursNom, coursDate, montantDefaut = '', paiem
                   </button>
                 ))}
               </div>
+
+              <div className="form-group" style={{ marginTop: 10 }}>
+                <label className="form-label">Note compta <span style={{ fontWeight: 400, color: 'var(--text-muted)' }}>(optionnelle)</span></label>
+                <input
+                  className="izi-input"
+                  type="text"
+                  maxLength={200}
+                  placeholder={extraMode ? 'Ex : règlement du mari de Marie-Pierre' : 'Ex : payé pour deux, acompte…'}
+                  value={note}
+                  onChange={e => setNote(e.target.value)}
+                />
+              </div>
+              {extraMode && (
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '6px 0 0', lineHeight: 1.45 }}>
+                  Ce règlement s&apos;ajoute en compta SANS toucher la séance (déjà couverte
+                  par le premier encaissement).
+                </p>
+              )}
             </div>
 
             <div className="pm-footer">
-              {isEdit ? (
+              {extraMode ? (
                 <button
-                  className="izi-btn izi-btn-ghost pm-delete-btn"
-                  onClick={handleDelete}
+                  className="izi-btn izi-btn-ghost"
+                  onClick={() => { setExtraMode(false); setMontant(String(paiementExistant?.montant ?? '')); setNote(''); }}
                   disabled={saving}
-                  title="Supprime le paiement — la séance repasse « à régler »"
                 >
-                  🗑 Annuler l'encaissement
+                  ← Retour
                 </button>
+              ) : isEdit ? (
+                <>
+                  <button
+                    className="izi-btn izi-btn-ghost pm-delete-btn"
+                    onClick={handleDelete}
+                    disabled={saving}
+                    title="Supprime le paiement — la séance repasse « à régler »"
+                  >
+                    🗑 Annuler l'encaissement
+                  </button>
+                  <button
+                    className="izi-btn izi-btn-ghost"
+                    onClick={() => { setExtraMode(true); setMontant(''); setNote(''); }}
+                    disabled={saving}
+                    title="Encaisser un règlement de plus pour cette séance (ex : elle paie aussi pour son mari) — ligne compta avec note, la séance reste couverte par le 1er encaissement"
+                  >
+                    ➕ Autre règlement
+                  </button>
+                </>
               ) : (
                 <button
                   className={`izi-btn pm-ptard-btn ${ptardAuto ? 'pm-ptard-auto' : 'izi-btn-ghost'}`}
@@ -206,9 +268,11 @@ function PaymentModal({ presence, coursNom, coursDate, montantDefaut = '', paiem
                 disabled={saving || !montant || parseFloat(montant) <= 0}
               >
                 <Check size={15} />
-                {saving ? 'Enregistrement…' : isEdit
-                  ? 'Enregistrer la correction'
-                  : `Encaisser ${montant ? parseFloat(montant).toFixed(2) + ' €' : ''}`}
+                {saving ? 'Enregistrement…' : extraMode
+                  ? `Encaisser en plus ${montant ? parseFloat(montant).toFixed(2) + ' €' : ''}`
+                  : isEdit
+                    ? 'Enregistrer la correction'
+                    : `Encaisser ${montant ? parseFloat(montant).toFixed(2) + ' €' : ''}`}
               </button>
             </div>
           </>
