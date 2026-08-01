@@ -103,7 +103,11 @@ async function getProConversations(supabase, profileId) {
           .order('created_at', { ascending: false })
           .limit(1)
           .maybeSingle();
-        last_message_preview = lastMsg?.content?.slice(0, 80) || (lastMsg?.message_type === 'photo' ? '📷 Photo' : (lastMsg?.message_type === 'file' ? '📎 Fichier' : ''));
+        // Préfixe 📷/📎 même avec du texte : une annonce « texte + photo »
+        // n'affichait AUCUN indice de pièce jointe (incident Maude 2026-08-01).
+        last_message_preview = lastMsg?.content
+          ? (lastMsg?.message_type === 'photo' ? '📷 ' : (lastMsg?.message_type === 'file' ? '📎 ' : '')) + lastMsg.content.slice(0, 80)
+          : (lastMsg?.message_type === 'photo' ? '📷 Photo' : (lastMsg?.message_type === 'file' ? '📎 Fichier' : ''));
         last_message_from = lastMsg?.sender_type || null;
         // Si le dernier msg est un announce du pro ET qu'aucun élève n'a répondu
         // depuis (i.e. pas d'autre msg eleve plus récent), la conv reste dans le
@@ -224,7 +228,11 @@ async function getEleveConversations(supabase, userEmail) {
           .order('created_at', { ascending: false })
           .limit(1)
           .maybeSingle();
-        last_message_preview = lastMsg?.content?.slice(0, 80) || (lastMsg?.message_type === 'photo' ? '📷 Photo' : (lastMsg?.message_type === 'file' ? '📎 Fichier' : ''));
+        // Préfixe 📷/📎 même avec du texte : une annonce « texte + photo »
+        // n'affichait AUCUN indice de pièce jointe (incident Maude 2026-08-01).
+        last_message_preview = lastMsg?.content
+          ? (lastMsg?.message_type === 'photo' ? '📷 ' : (lastMsg?.message_type === 'file' ? '📎 ' : '')) + lastMsg.content.slice(0, 80)
+          : (lastMsg?.message_type === 'photo' ? '📷 Photo' : (lastMsg?.message_type === 'file' ? '📎 Fichier' : ''));
         last_message_from = lastMsg?.sender_type || null;
       } catch (e) { console.warn('[messagerie GET eleve] last msg err:', e?.message); }
 

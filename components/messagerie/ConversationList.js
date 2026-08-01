@@ -168,6 +168,21 @@ export default function ConversationList({ onSelect, selectedId, onCounts, studi
               </button>
               {expanded && (
                 <div className="conv-group-body">
+                  {/* Retrouver SON message (incident Maude 2026-08-01 : « je vois
+                      les 15 participantes mais plus mon message ni ma photo » —
+                      rien n'indiquait qu'il faut ouvrir un destinataire). */}
+                  <button
+                    type="button"
+                    onClick={() => onSelect?.(g.convs[0]?.id)}
+                    className="conv-item conv-item-nested conv-voir-message"
+                  >
+                    <div className="conv-avatar conv-avatar-small">
+                      <Eye size={14} />
+                    </div>
+                    <div className="conv-main">
+                      <span className="conv-label" style={{ fontWeight: 600 }}>Voir le message envoyé →</span>
+                    </div>
+                  </button>
                   {g.convs.map(c => (
                     <button
                       key={c.id}
