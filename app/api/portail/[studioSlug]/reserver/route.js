@@ -162,11 +162,34 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
       })
       .select('id')
       .single();
-    if (clientErr) {
+    if (clientErr?.code === '23505') {
+      // L'index anti-doublon a reconnu quelqu'un. Deux cas :
+      //  - même email (course entre 2 résas simultanées) → la fiche vient
+      //    d'être créée par l'autre requête, on la reprend ;
+      //  - même nom+prénom mais autre adresse (clients_unique_nom_prenom :
+      //    2e email d'une élève, ou homonyme) → on n'attache JAMAIS par nom
+      //    (ce serait la fiche et l'historique de quelqu'un d'autre) : impasse
+      //    honnête au lieu du 500 muet (cas réel Carmen, 2026-07-29).
+      const { data: fichePrise } = await supabaseAdmin
+        .from('clients')
+        .select('id, prenom')
+        .eq('profile_id', profile.id)
+        .ilike('email', email.replace(/([%_\\])/g, '\\$1'))
+        .maybeSingle();
+      if (fichePrise) {
+        clientId = fichePrise.id;
+        prenom = fichePrise.prenom;
+      } else {
+        return Response.json({
+          error: `Une fiche à ce nom existe déjà chez ${profile.studio_nom}, avec une autre adresse email. Réserve avec l'adresse utilisée la première fois — ou contacte directement ton studio pour être inscrit·e.`,
+        }, { status: 409 });
+      }
+    } else if (clientErr) {
       reportError('create client error:', clientErr);
       return Response.json({ error: 'Erreur lors de la création du profil' }, { status: 500 });
+    } else {
+      clientId = newClient.id;
     }
-    clientId = newClient.id;
   }
 
   // Vérifier que l'élève n'est pas déjà inscrit

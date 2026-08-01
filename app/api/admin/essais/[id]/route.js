@@ -102,9 +102,10 @@ export const POST = withRoute({ auth: 'active' }, async ({ request, params, auth
 
       return Response.json({ ok: true, client_id, presence_id });
     } catch (err) {
-      // Refus métier de la RPC (complet/annulé) → 409 avec le message propre,
-      // pas un 500 (la demande reste en_attente/acceptee, re-tentable).
-      if (['complet', 'annule', 'introuvable'].includes(err?.code)) {
+      // Refus métier de la RPC (complet/annulé) ou fiche homonyme (index
+      // anti-doublon) → 409 avec le message propre, pas un 500 (la demande
+      // reste en_attente/acceptee, re-tentable après correction).
+      if (['complet', 'annule', 'introuvable', 'fiche_homonyme'].includes(err?.code)) {
         return Response.json({ error: err.message }, { status: 409 });
       }
       reportError('[admin/essai] valider err:', err);

@@ -175,6 +175,13 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
       if (['annule', 'introuvable'].includes(err?.code)) {
         return Response.json({ error: err.message }, { status: 409 });
       }
+      if (err?.code === 'fiche_homonyme') {
+        // Message côté visiteur (celui de lib/essai parle à la prof) : une
+        // fiche à ce nom existe déjà avec une autre adresse email.
+        return Response.json({
+          error: 'Une fiche à ton nom existe déjà chez ce studio, avec une autre adresse email. Refais ta demande avec l\'adresse utilisée la première fois — ou contacte directement le studio.',
+        }, { status: 409 });
+      }
       reportError('[essai] finaliserDemande err:', err);
       return Response.json({ error: 'Erreur lors de la finalisation : ' + err.message }, { status: 500 });
     }
