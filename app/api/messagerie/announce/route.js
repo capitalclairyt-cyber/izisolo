@@ -1,10 +1,15 @@
+import { after } from 'next/server';
 import { withRoute } from '@/lib/api-route';
 import { announce } from '@/lib/messagerie';
+import { envoyerEmailsMessageInstant } from '@/lib/messagerie-email';
 import { messagerieAnnounceSchema } from '@/lib/validation';
 import { reportError } from '@/lib/report';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+// Les emails instantanés partent APRÈS la réponse (after) — séquentiels,
+// ~0,5 s par destinataire : on garde de la marge pour les grosses annonces.
+export const maxDuration = 120;
 
 /**
  * POST /api/messagerie/announce
@@ -178,6 +183,52 @@ export const POST = withRoute({
       reportError(`[messagerie] announce partiel : ${count} ok, ${echecs.length} échec(s) —`,
         echecs[0]?.message, { route: '/api/messagerie/announce' });
     }
+
+    // Email instantané à chaque destinataire (2026-08-01, incident pleine
+    // lune : avant, seul le digest 16 h UTC prévenait — Colin veut l'email
+    // dès l'envoi). En after() : la prof reçoit sa confirmation tout de
+    // suite, les emails partent derrière.
+    const echecIds = new Set((echecs || []).map(e => `${e.type}:${e.id}`));
+    let destinataireIds = targets
+      .filter(t => t.type === 'client' && !echecIds.has(`client:${t.id}`))
+      .map(t => t.id);
+    // Mode groupe (target = cours) : les destinataires sont les inscrits
+    // vivants du cours — même filtre que le fan-out individuel.
+    const coursCibles = targets.filter(t => t.type === 'cours' && !echecIds.has(`cours:${t.id}`));
+    if (coursCibles.length > 0) {
+      const { data: presGroupe } = await supabase
+        .from('presences')
+        .select('client_id, statut_pointage, annulation_tardive')
+        .in('cours_id', coursCibles.map(t => t.id));
+      destinataireIds = destinataireIds.concat((presGroupe || [])
+        .filter(p => !['annule', 'declinee'].includes(p.statut_pointage) && !p.annulation_tardive)
+        .map(p => p.client_id));
+    }
+    destinataireIds = [...new Set(destinataireIds.filter(Boolean))];
+    if (destinataireIds.length > 0) {
+      const paramsEmail = {
+        profileId: profile.id,
+        studioNom: profile.studio_nom || 'Ton studio',
+        studioSlug: profile.studio_slug,
+        replyTo: auth.user?.email || null,
+        clientIds: destinataireIds,
+        contenu: content,
+        nbPieces: (body.media_urls || []).length,
+        batchId,
+      };
+      after(async () => {
+        try {
+          const bilan = await envoyerEmailsMessageInstant(paramsEmail);
+          if (bilan.failed > 0) {
+            reportError(`[messagerie] emails instant annonce : ${bilan.failed} échec(s) sur ${destinataireIds.length}`,
+              null, { route: '/api/messagerie/announce' });
+          }
+        } catch (err) {
+          reportError('[messagerie] emails instant annonce err:', err);
+        }
+      });
+    }
+
     return Response.json({ batch_id: batchId, count, failed: echecs?.length || 0 });
   } catch (err) {
     reportError('[messagerie] announce err:', err);

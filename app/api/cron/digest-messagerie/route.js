@@ -13,12 +13,19 @@ export const maxDuration = 300;
  * Cron quotidien (16h UTC = 18h Paris) : digest email des messages reçus la
  * veille, pour les pros et les élèves.
  *
+ * Depuis le 2026-08-01 (incident pleine lune), les élèves reçoivent un email
+ * INSTANTANÉ à chaque envoi de la prof (lib/messagerie-email, routes announce
+ * + messages). La branche élève de ce cron n'est plus que le FILET : elle
+ * skip quiconque a déjà reçu un email instantané de ce studio dans les 24 h
+ * (marqueur emails_envoyes type 'message_instant', ref préfixée profileId)
+ * et ne rattrape que les autres — échec d'envoi instantané, messages
+ * antérieurs au déploiement. La branche PRO (élève → prof) est inchangée.
+ *
  * Préférence : notif_prefs.message.email (catalogue lib/notif-prefs, défaut
  * ON) — le MÊME toggle « Messages » que le push, dans les réglages de notifs.
  * Audit 2026-07-25 : l'ancienne colonne `notif_messagerie_canal` n'avait ni
- * UI ni writer (promesse fantôme dans le pied de mail), et sa branche
- * 'instant' skippait l'utilisateur alors qu'aucun envoi instantané n'existe.
- * La colonne reste en DB, vestigiale.
+ * UI ni writer (promesse fantôme dans le pied de mail) ; la colonne reste en
+ * DB, vestigiale.
  *
  * Variable d'env requise : RESEND_API_KEY
  */
@@ -127,6 +134,19 @@ export const GET = withRoute({ auth: 'cron' }, async () => {
       .maybeSingle();
     if (!client || !client.email) continue;
     if (!wantsNotif(client.notif_prefs, 'message', 'eleve', 'email')) { totalSkipped++; continue; }
+
+    // FILET (2026-08-01) : déjà notifié·e en instantané pour ce studio dans
+    // les 24 h → pas de re-nag. Fail-open : si la lecture échoue, on envoie
+    // le digest (mieux vaut un double email qu'un silence).
+    const { data: instant, error: instErr } = await supabase
+      .from('emails_envoyes')
+      .select('id')
+      .eq('type', 'message_instant')
+      .eq('destinataire', client.email.trim().toLowerCase())
+      .gte('created_at', il24h)
+      .like('ref', `${client.profile_id}:%`)
+      .limit(1);
+    if (!instErr && (instant || []).length > 0) { totalSkipped++; continue; }
 
     const studioNom = client.profiles?.studio_nom || 'Ton studio';
     const studioSlug = client.profiles?.studio_slug || '';

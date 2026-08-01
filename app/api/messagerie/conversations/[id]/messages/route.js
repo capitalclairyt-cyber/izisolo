@@ -1,10 +1,14 @@
+import { after } from 'next/server';
 import { withRoute } from '@/lib/api-route';
 import { sendMessage, resolveClientFromUserEmail } from '@/lib/messagerie';
+import { envoyerEmailsMessageInstant } from '@/lib/messagerie-email';
 import { sendPushToUser, sendPushToEmail } from '@/lib/push-server';
 import { reportError } from '@/lib/report';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+// Les emails instantanés d'un message de groupe partent en after().
+export const maxDuration = 60;
 
 /**
  * GET /api/messagerie/conversations/[id]/messages?before=ISO&limit=50
@@ -129,6 +133,42 @@ export const POST = withRoute({ auth: 'user' }, async ({ request, params, auth }
           ));
         })().catch(() => {});
       }
+
+      // Email instantané (2026-08-01) : l'élève est prévenue par mail dès le
+      // message — cooldown 3-6 h par conversation dans la lib (un échange
+      // actif ne mitraille pas sa boîte). En after() : réponse immédiate.
+      const nbPieces = Array.isArray(body.media_urls) && body.media_urls.length > 0
+        ? body.media_urls.length : (body.media_url ? 1 : 0);
+      const paramsEmail = {
+        profileId: profile.id,
+        studioNom: profile.studio_nom || 'Ton studio',
+        studioSlug: profile.studio_slug,
+        replyTo: user?.email || null,
+        contenu: body.content || '',
+        nbPieces,
+        conversationId,
+      };
+      after(async () => {
+        try {
+          let clientIds = [];
+          if (conv.type === 'client' && conv.client_id) {
+            clientIds = [conv.client_id];
+          } else if (conv.type === 'cours') {
+            const { data: membres } = await supabase
+              .from('conversation_members')
+              .select('client_id')
+              .eq('conversation_id', conversationId)
+              .not('client_id', 'is', null);
+            clientIds = [...new Set((membres || []).map(m => m.client_id).filter(Boolean))];
+          }
+          if (clientIds.length > 0) {
+            await envoyerEmailsMessageInstant({ ...paramsEmail, clientIds });
+          }
+        } catch (err) {
+          reportError('[messagerie] email instant message err:', err);
+        }
+      });
+
       return Response.json({ message: msg });
     } catch (err) {
       reportError('[messagerie] pro send err:', err);

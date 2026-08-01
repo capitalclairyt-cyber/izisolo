@@ -1327,8 +1327,8 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
             </div>
             <p style={{ padding: '0 20px 20px', fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.5 }}>
               ✉️ Le message est envoyé via la <strong>messagerie interne IziSolo</strong> :
-              chaque participant le retrouve dans son espace élève, et reçoit un
-              <strong> email récapitulatif une fois par jour</strong> (vers 16 h) s&apos;il ne l&apos;a pas déjà lu.
+              chaque participant le retrouve dans son espace élève et reçoit
+              <strong> un email tout de suite</strong> (selon ses réglages de notifications).
               Les réponses arrivent dans <a href="/messagerie" style={{ color: 'var(--brand-700)' }}>ta messagerie</a>.
             </p>
           </div>
