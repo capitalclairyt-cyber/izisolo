@@ -26,7 +26,11 @@ export default function ConversationList({ onSelect, selectedId, onCounts, studi
 
   const fetchConvs = useCallback(async () => {
     try {
-      const res = await fetch('/api/messagerie/conversations');
+      // no-store : sans lui, le navigateur peut resservir une liste en cache —
+      // une annonce tout juste envoyée n'apparaissait pas au retour sur
+      // l'onglet (constaté au spec de preuve 2026-08-01, famille « mon
+      // message a disparu » de Maude).
+      const res = await fetch('/api/messagerie/conversations', { cache: 'no-store' });
       // 500/401 transitoire : on GARDE l'état affiché (avant : la liste était
       // vidée et l'écran basculait sur « Aucune conversation »).
       if (!res.ok) return;

@@ -1,6 +1,6 @@
 import { after } from 'next/server';
 import { withRoute } from '@/lib/api-route';
-import { announce } from '@/lib/messagerie';
+import { announce, resoudreCiblesAnnonce } from '@/lib/messagerie';
 import { envoyerEmailsMessageInstant } from '@/lib/messagerie-email';
 import { messagerieAnnounceSchema } from '@/lib/validation';
 import { reportError } from '@/lib/report';
@@ -51,98 +51,19 @@ export const POST = withRoute({
     return Response.json({ error: 'Message trop long' }, { status: 400 });
   }
 
-  const mode = body.mode === 'groupe' ? 'groupe' : 'individuel';
-  const scope = body.scope || 'tous';
+  // Résolution des cibles : SOURCE UNIQUE partagée avec la route preview
+  // (l'aperçu décochable du composeur) — lib/messagerie.resoudreCiblesAnnonce.
+  const { targets: resolus, erreur } = await resoudreCiblesAnnonce(supabase, profile.id, body);
+  if (erreur) return Response.json({ error: erreur.message }, { status: erreur.status });
+  let targets = resolus || [];
 
-  // Construire la liste des cibles selon le scope
-  let targets = [];
-
-  if (scope === 'tous') {
-    const { data: clients } = await supabase
-      .from('clients')
-      .select('id')
-      .eq('profile_id', profile.id)
-      .in('statut', ['prospect', 'actif', 'fidele']);
-    targets = (clients || []).map(c => ({ type: 'client', id: c.id }));
-  }
-
-  else if (scope === 'cours' && body.cours_id) {
-    // OWNERSHIP : ce cours doit appartenir au pro connecté, sinon les présences
-    // (et la conv de groupe) remonteraient les élèves d'un AUTRE studio.
-    const { data: coursOwn } = await supabase
-      .from('cours')
-      .select('id')
-      .eq('id', body.cours_id)
-      .eq('profile_id', profile.id)
-      .maybeSingle();
-    if (!coursOwn) return Response.json({ error: 'Cours introuvable' }, { status: 404 });
-
-    if (mode === 'groupe') {
-      // 1 seule conversation de groupe
-      targets = [{ type: 'cours', id: body.cours_id }];
-    } else {
-      // Fan-out individuel : 1 conv par inscrit VIVANT du cours — les
-      // annulations (annule/declinee/tardive) ne reçoivent plus le rappel.
-      const { data: presences } = await supabase
-        .from('presences')
-        .select('client_id, statut_pointage, annulation_tardive')
-        .eq('cours_id', body.cours_id);
-      targets = (presences || [])
-        .filter(p => !['annule', 'declinee'].includes(p.statut_pointage) && !p.annulation_tardive)
-        .map(p => ({ type: 'client', id: p.client_id }));
-    }
-  }
-
-  else if (scope === 'type_cours' && body.type_cours) {
-    // Tous les inscrits à des cours de ce type (sur les 90 derniers jours pour limiter)
-    const ilYa90j = new Date(Date.now() - 90 * 86400000).toISOString().slice(0, 10);
-    const { data: cours } = await supabase
-      .from('cours')
-      .select('id')
-      .eq('profile_id', profile.id)
-      .eq('type_cours', body.type_cours)
-      .gte('date', ilYa90j);
-    const coursIds = (cours || []).map(c => c.id);
-    if (coursIds.length > 0) {
-      const { data: presences } = await supabase
-        .from('presences')
-        .select('client_id, statut_pointage, annulation_tardive')
-        .in('cours_id', coursIds);
-      const clientIds = [...new Set((presences || [])
-        .filter(p => !['annule', 'declinee'].includes(p.statut_pointage) && !p.annulation_tardive)
-        .map(p => p.client_id))];
-      targets = clientIds.map(id => ({ type: 'client', id }));
-    }
-  }
-
-  else if (scope === 'abonnement' && body.offre_id) {
-    // OWNERSHIP : l'offre doit appartenir au pro connecté.
-    const { data: offreOwn } = await supabase
-      .from('offres')
-      .select('id')
-      .eq('id', body.offre_id)
-      .eq('profile_id', profile.id)
-      .maybeSingle();
-    if (!offreOwn) return Response.json({ error: 'Offre introuvable' }, { status: 404 });
-
-    const { data: abos } = await supabase
-      .from('abonnements')
-      .select('client_id')
-      .eq('profile_id', profile.id)
-      .eq('offre_id', body.offre_id)
-      .eq('statut', 'actif');
-    const clientIds = [...new Set((abos || []).map(a => a.client_id))];
-    targets = clientIds.map(id => ({ type: 'client', id }));
-  }
-
-  else if (scope === 'clients' && Array.isArray(body.client_ids)) {
-    // Vérifier que tous les client_ids sont bien à ce pro
-    const { data: clients } = await supabase
-      .from('clients')
-      .select('id')
-      .eq('profile_id', profile.id)
-      .in('id', body.client_ids);
-    targets = (clients || []).map(c => ({ type: 'client', id: c.id }));
+  // Décochage (2026-08-01, demande Colin) : la prof peut retirer des
+  // destinataires de la liste résolue avant l'envoi (« tous mes élèves sauf
+  // ces 3 »). Ne s'applique qu'aux cibles individuelles — un canal de groupe
+  // (target type 'cours') est un espace commun, pas une liste de diffusion.
+  if (Array.isArray(body.exclure_client_ids) && body.exclure_client_ids.length > 0) {
+    const exclus = new Set(body.exclure_client_ids);
+    targets = targets.filter(t => t.type !== 'client' || !exclus.has(t.id));
   }
 
   if (targets.length === 0) {

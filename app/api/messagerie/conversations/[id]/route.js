@@ -119,3 +119,36 @@ export const PATCH = withRoute({ auth: 'user' }, async ({ request, params, auth 
 
   return Response.json({ conversation: data });
 });
+
+/**
+ * DELETE /api/messagerie/conversations/[id] — suppression d'une conversation
+ * par le PRO propriétaire (2026-08-01, demande Colin).
+ *
+ * DÉFINITIF et DES DEUX CÔTÉS : les cascades v24/v48 emportent messages,
+ * membres et réactions — l'élève perd aussi l'historique (l'UI l'annonce
+ * avant de confirmer). RLS « Pro CRUD ses conversations » = seul le pro
+ * owner supprime ; un non-owner fait 0 ligne → 404, jamais de fuite.
+ */
+export const DELETE = withRoute({ auth: 'active' }, async ({ params, auth }) => {
+  const { profile, supabase } = auth;
+  const { id: conversationId } = params;
+  if (!profile?.studio_slug) return Response.json({ error: 'Réservé aux pros' }, { status: 403 });
+
+  const { data, error } = await supabase
+    .from('conversations')
+    .delete()
+    .eq('id', conversationId)
+    .eq('profile_id', profile.id)
+    .select('id')
+    .maybeSingle();
+
+  if (error) {
+    reportError('[messagerie DELETE] err:', error, { route: '/api/messagerie/conversations/[id]' });
+    return Response.json({ error: 'Une erreur est survenue.' }, { status: 500 });
+  }
+  if (!data) {
+    return Response.json({ error: 'Conversation introuvable ou non autorisé' }, { status: 404 });
+  }
+
+  return Response.json({ ok: true });
+});

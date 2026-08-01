@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import MessageBubble, { DateSeparator } from './MessageBubble';
 import ChatInput from './ChatInput';
-import { Loader2, Pencil, Check, X } from 'lucide-react';
+import { Loader2, Pencil, Check, X, Trash2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase';
 import { useToast } from '@/components/ui/ToastProvider';
 import EmptyState from '@/components/ui/EmptyState';
@@ -24,7 +24,7 @@ function isSameDay(a, b) {
   return new Date(a).toDateString() === new Date(b).toDateString();
 }
 
-export default function ChatRoom({ conversationId, viewerKind, onMessageSent, initialText = '' }) {
+export default function ChatRoom({ conversationId, viewerKind, onMessageSent, initialText = '', onDeleted }) {
   const { toast } = useToast();
   const [messages, setMessages] = useState([]);
   const [reactionsByMsg, setReactionsByMsg] = useState({}); // { msgId: [{ emoji, mine }] }
@@ -34,6 +34,10 @@ export default function ChatRoom({ conversationId, viewerKind, onMessageSent, in
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState('');
   const [savingTitle, setSavingTitle] = useState(false);
+  // Suppression (pro uniquement) : confirmation INLINE — pas de ConfirmProvider,
+  // ChatRoom est aussi monté côté espace élève qui n'en a pas.
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const scrollRef = useRef(null);
   const lastFetchAt = useRef(null);
   const nearBottomRef = useRef(true);   // auto-scroll seulement si on est déjà en bas
@@ -56,6 +60,21 @@ export default function ChatRoom({ conversationId, viewerKind, onMessageSent, in
   useEffect(() => { fetchConv(); }, [fetchConv]);
   useEffect(() => { convRef.current = conv; }, [conv]);
   useEffect(() => { messagesRef.current = messages; }, [messages]);
+
+  const handleDelete = async () => {
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/messagerie/conversations/${conversationId}`, { method: 'DELETE' });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json.error || 'Erreur');
+      toast.success('Conversation supprimée.');
+      onDeleted?.();
+    } catch (err) {
+      toast.error('Suppression impossible : ' + err.message);
+      setDeleting(false);
+      setConfirmDelete(false);
+    }
+  };
 
   const handleSaveTitle = async () => {
     setSavingTitle(true);
@@ -372,6 +391,48 @@ export default function ChatRoom({ conversationId, viewerKind, onMessageSent, in
                   <Pencil size={13} />
                 </button>
               )}
+              {conv.is_owner_pro && !confirmDelete && (
+                <button
+                  type="button"
+                  onClick={() => setConfirmDelete(true)}
+                  className="cr-title-btn"
+                  title="Supprimer la conversation"
+                  aria-label="Supprimer la conversation"
+                  style={{ marginLeft: 'auto' }}
+                >
+                  <Trash2 size={13} />
+                </button>
+              )}
+            </div>
+          )}
+          {confirmDelete && (
+            <div style={{
+              display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8,
+              marginTop: 8, padding: '10px 12px', borderRadius: 10,
+              background: '#fdf2f2', border: '1px solid #f0c4c4',
+              fontSize: '0.8125rem', color: '#7a3b3b', lineHeight: 1.45,
+            }}>
+              <span style={{ flex: 1, minWidth: 180 }}>
+                Supprimer cette conversation ? Les messages seront effacés
+                <strong> pour toi ET pour l'élève</strong> — définitif.
+              </span>
+              <button
+                type="button"
+                onClick={() => setConfirmDelete(false)}
+                disabled={deleting}
+                style={{ padding: '6px 12px', borderRadius: 99, border: '1px solid var(--border, #e5e0dc)', background: 'white', cursor: 'pointer', fontSize: '0.8125rem' }}
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={deleting}
+                style={{ padding: '6px 12px', borderRadius: 99, border: 'none', background: '#c04545', color: 'white', cursor: 'pointer', fontWeight: 600, fontSize: '0.8125rem', display: 'inline-flex', alignItems: 'center', gap: 5 }}
+              >
+                {deleting ? <Loader2 size={13} className="spin" /> : <Trash2 size={13} />}
+                Supprimer
+              </button>
             </div>
           )}
         </div>

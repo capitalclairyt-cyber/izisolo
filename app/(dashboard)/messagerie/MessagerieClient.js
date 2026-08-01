@@ -92,13 +92,73 @@ export default function MessagerieClient({ profile, clients, cours, offres }) {
     return clients.filter(c => matchRecherche(searchClient, c.prenom, c.nom, c.email));
   }, [clients, searchClient]);
 
+  // ── Aperçu décochable des destinataires (2026-08-01, demande Colin) ────────
+  // « Tous mes élèves » = 46 destinataires → Maude voit la liste résolue par le
+  // SERVEUR (même fonction que l'envoi) et décoche qui elle veut avant d'envoyer.
+  // Hors périmètre : scope 'clients' (le picker EST déjà la sélection) et le
+  // mode groupe (un canal de cours n'est pas une liste de diffusion).
+  const [destinataires, setDestinataires] = useState(null); // null = pas encore chargé
+  const [exclus, setExclus] = useState(new Set());
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [showDest, setShowDest] = useState(false);
+
+  const previewEligible =
+    scope !== 'clients' &&
+    !(scope === 'cours' && mode === 'groupe') && (
+      scope === 'tous' ||
+      (scope === 'cours' && coursId) ||
+      (scope === 'type_cours' && typeCours) ||
+      (scope === 'abonnement' && offreId)
+    );
+
+  // Tout changement de cible invalide l'aperçu et les décochages
+  useEffect(() => {
+    setDestinataires(null);
+    setExclus(new Set());
+    setShowDest(false);
+  }, [scope, coursId, typeCours, offreId, mode]);
+
+  const chargerDestinataires = async () => {
+    if (!previewEligible) return;
+    setPreviewLoading(true);
+    try {
+      const res = await fetch('/api/messagerie/announce/preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          scope, mode,
+          cours_id: scope === 'cours' ? coursId : undefined,
+          type_cours: scope === 'type_cours' ? typeCours : undefined,
+          offre_id: scope === 'abonnement' ? offreId : undefined,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Erreur');
+      setDestinataires(json.destinataires || []);
+      setShowDest(true);
+    } catch (err) {
+      toast.error('Impossible de charger les destinataires : ' + err.message);
+    } finally {
+      setPreviewLoading(false);
+    }
+  };
+
+  const toggleExclu = (id) => {
+    setExclus(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
   // Compteur de destinataires
   const nbDestinataires = useMemo(() => {
+    if (destinataires !== null && previewEligible) return destinataires.length - exclus.size;
     if (scope === 'tous') return clients.length;
     if (scope === 'cours' && coursId && mode === 'groupe') return 1; // 1 conv groupe
     if (scope === 'clients') return clientIds.size;
     return null; // inconnu côté client
-  }, [scope, coursId, mode, clientIds, clients.length]);
+  }, [scope, coursId, mode, clientIds, clients.length, destinataires, exclus, previewEligible]);
 
   // Photos seules autorisées (demande Maude 2026-07-30) — miroir du
   // « Message vide » de l'API announce (content OU media_urls).
@@ -108,7 +168,7 @@ export default function MessagerieClient({ profile, clients, cours, offres }) {
     (scope === 'type_cours' && typeCours) ||
     (scope === 'abonnement' && offreId) ||
     (scope === 'clients' && clientIds.size > 0)
-  );
+  ) && nbDestinataires !== 0; // tout décoché = plus personne à qui envoyer
 
   const handleAnnounce = async () => {
     if (!canAnnounce) return;
@@ -123,6 +183,7 @@ export default function MessagerieClient({ profile, clients, cours, offres }) {
         type_cours: scope === 'type_cours' ? typeCours : undefined,
         offre_id: scope === 'abonnement' ? offreId : undefined,
         client_ids: scope === 'clients' ? [...clientIds] : undefined,
+        exclure_client_ids: previewEligible && exclus.size > 0 ? [...exclus] : undefined,
       };
       const res = await fetch('/api/messagerie/announce', {
         method: 'POST',
@@ -141,6 +202,9 @@ export default function MessagerieClient({ profile, clients, cours, offres }) {
         setContent('');
         setAnnAttachments([]);
         setClientIds(new Set());
+        setExclus(new Set());
+        setDestinataires(null);
+        setShowDest(false);
         setTab('conversations');
       }
     } catch (err) {
@@ -187,6 +251,7 @@ export default function MessagerieClient({ profile, clients, cours, offres }) {
             viewerKind="pro"
             onMessageSent={() => {}}
             initialText={birthdayText}
+            onDeleted={() => setSelectedConvId(null)}
           />
         </div>
       ) : tab === 'conversations' ? (
@@ -269,6 +334,50 @@ export default function MessagerieClient({ profile, clients, cours, offres }) {
               searchClient={searchClient}
               setSearchClient={setSearchClient}
             />
+          )}
+
+          {/* Aperçu décochable : la liste vient du SERVEUR (même résolution que
+              l'envoi) — ce que Maude voit = ce qui part, moins ses décochages. */}
+          {previewEligible && (
+            <div className="ann-section">
+              {!showDest ? (
+                <button type="button" className="ann-dest-toggle" onClick={chargerDestinataires} disabled={previewLoading}>
+                  {previewLoading ? <Loader2 size={14} className="spin" /> : <Users size={14} />}
+                  Voir et ajuster les destinataires
+                </button>
+              ) : (
+                <div className="ann-dest-panel">
+                  <div className="ann-dest-head">
+                    <span>
+                      <strong>{(destinataires || []).length - exclus.size}</strong> destinataire{((destinataires || []).length - exclus.size) > 1 ? 's' : ''}
+                      {exclus.size > 0 && <span className="ann-dest-exclus"> · {exclus.size} décoché{exclus.size > 1 ? 's' : ''}</span>}
+                    </span>
+                    <button type="button" className="ann-dest-close" onClick={() => setShowDest(false)}>Replier</button>
+                  </div>
+                  <div className="ann-dest-list">
+                    {(destinataires || []).map(d => (
+                      <label key={d.id} className={`ann-dest-item ${exclus.has(d.id) ? 'off' : ''}`}>
+                        <input
+                          type="checkbox"
+                          checked={!exclus.has(d.id)}
+                          onChange={() => toggleExclu(d.id)}
+                        />
+                        <span>{`${d.prenom || ''} ${d.nom || ''}`.trim() || 'Élève'}</span>
+                      </label>
+                    ))}
+                    {(destinataires || []).length === 0 && (
+                      <p className="ann-hint" style={{ margin: 0 }}>Aucun destinataire pour cette cible.</p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+          {scope === 'cours' && mode === 'groupe' && coursId && (
+            <p className="ann-hint" style={{ marginTop: -6 }}>
+              Annonce au canal du cours : tous les inscrits la voient. Pour choisir
+              individuellement, passe en « 1 message à chacun ».
+            </p>
           )}
 
           <div className="ann-section">
@@ -376,6 +485,41 @@ export default function MessagerieClient({ profile, clients, cours, offres }) {
         }
         .ann-scope:hover { border-color: var(--brand-200, #f0d0d0); }
         .ann-scope.active { background: var(--brand); color: white; border-color: var(--brand); }
+
+        /* Aperçu décochable des destinataires */
+        .ann-dest-toggle {
+          display: inline-flex; align-items: center; gap: 6px;
+          padding: 8px 14px; border-radius: var(--radius-full, 99px);
+          font-size: 0.8125rem; font-weight: 600; cursor: pointer;
+          background: var(--bg-card); color: var(--text-secondary);
+          border: 1px solid var(--border);
+        }
+        .ann-dest-toggle:hover { border-color: var(--brand); color: var(--brand); }
+        .ann-dest-panel {
+          border: 1px solid var(--border); border-radius: var(--radius-md, 12px);
+          background: var(--bg-card); padding: 12px 14px;
+        }
+        .ann-dest-head {
+          display: flex; align-items: center; justify-content: space-between; gap: 8px;
+          font-size: 0.8125rem; color: var(--text-secondary); margin-bottom: 10px;
+        }
+        .ann-dest-head strong { color: var(--text-primary); }
+        .ann-dest-exclus { color: #c04545; font-weight: 600; }
+        .ann-dest-close {
+          background: none; border: none; cursor: pointer;
+          font-size: 0.75rem; font-weight: 600; color: var(--brand); padding: 0;
+        }
+        .ann-dest-list {
+          display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+          gap: 4px 12px; max-height: 240px; overflow-y: auto;
+        }
+        .ann-dest-item {
+          display: flex; align-items: center; gap: 7px;
+          font-size: 0.8125rem; color: var(--text-primary);
+          padding: 4px 2px; cursor: pointer; border-radius: 6px;
+        }
+        .ann-dest-item input { accent-color: var(--brand); cursor: pointer; }
+        .ann-dest-item.off span { color: var(--text-muted); text-decoration: line-through; }
 
         .ann-mode { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
         .ann-mode-opt {

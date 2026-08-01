@@ -29,12 +29,25 @@ async function getUsers(supabase) {
 
   // Activité par compte — lectures PAGINÉES (jamais tronquées à 1000 en silence)
   const trenteJours = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
-  const [clientsRows, coursRows, paiementsRows] = await Promise.all([
+  const [clientsRows, coursRows, paiementsRows, membresRows] = await Promise.all([
     // email + prenom : servent aussi à affilier les COMPTES ÉLÈVES aux studios
-    fetchAllRows(supabase, 'clients', 'profile_id, email, prenom'),
+    // (+ id : joint la dernière lecture messagerie à chaque fiche)
+    fetchAllRows(supabase, 'clients', 'id, profile_id, email, prenom'),
     fetchAllRows(supabase, 'cours', 'profile_id'),
     fetchAllRows(supabase, 'paiements', 'profile_id, date, statut'),
+    // Dernière ACTIVITÉ élève (2026-08-01, mystère pleine lune) : last_sign_in_at
+    // ne bouge PAS pour une session persistante (PWA/cookie, refresh token) —
+    // 6 lectrices sur 9 étaient invisibles. La lecture messagerie, elle, trace
+    // l'usage réel.
+    fetchAllRows(supabase, 'conversation_members', 'client_id, last_read_at'),
   ]);
+  const lectureParClient = {};
+  for (const m of membresRows) {
+    if (!m.client_id || !m.last_read_at) continue;
+    if (!lectureParClient[m.client_id] || m.last_read_at > lectureParClient[m.client_id]) {
+      lectureParClient[m.client_id] = m.last_read_at;
+    }
+  }
   const paiementsPaid = paiementsRows.filter(p => p.statut === 'paid');
   const usage = {
     clientsParProfil: countParProfil(clientsRows),
@@ -71,6 +84,11 @@ async function getUsers(supabase) {
       const studios = [...new Set(fiches.map(f => f.profile_id))]
         .filter(id => profilIds.has(id))
         .map(id => ({ id, nom: nomStudioParProfil[id] }));
+      // Dernière activité = lecture messagerie la plus récente sur SES fiches
+      const derniere_activite = fiches.reduce((max, f) => {
+        const l = lectureParClient[f.id];
+        return l && (!max || l > max) ? l : max;
+      }, null);
       return {
         id: u.id,
         email: u.email,
@@ -78,6 +96,7 @@ async function getUsers(supabase) {
         role: u.user_metadata?.role || null,
         created_at: u.created_at,
         last_sign_in_at: u.last_sign_in_at || null,
+        derniere_activite,
         studios,
       };
     })

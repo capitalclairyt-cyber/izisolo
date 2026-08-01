@@ -305,7 +305,7 @@ export default function AdminUsersClient({ initialUsers, comptesEleves = [] }) {
                 <tr>
                   <th>Élève</th>
                   <th>Studio(s)</th>
-                  <th>Dernière connexion</th>
+                  <th title="Connexion = vrai sign-in (mot de passe/magic link). Activité = dernière lecture messagerie — une session persistante (PWA) lit SANS re-connexion.">Connexion / activité</th>
                   <th>Créé le</th>
                 </tr>
               </thead>
@@ -346,6 +346,13 @@ export default function AdminUsersClient({ initialUsers, comptesEleves = [] }) {
                     </td>
                     <td style={{ color: '#94a3b8', fontSize: '0.8125rem' }}>
                       {e.last_sign_in_at ? `vu ${relatif(e.last_sign_in_at)}` : <span style={{ color: '#475569' }}>jamais connecté</span>}
+                      {/* Activité réelle (lecture messagerie) — les sessions
+                          persistantes lisent sans re-sign-in (pleine lune 01/08) */}
+                      {e.derniere_activite && (!e.last_sign_in_at || e.derniere_activite > e.last_sign_in_at) && (
+                        <div style={{ fontSize: '0.72rem', color: '#4ade80', marginTop: '2px' }}>
+                          actif·ve {relatif(e.derniere_activite)} (lecture)
+                        </div>
+                      )}
                     </td>
                     <td style={{ color: '#64748b', fontSize: '0.8125rem' }}>
                       {e.created_at ? new Date(e.created_at).toLocaleDateString('fr-FR') : '—'}
