@@ -4,6 +4,7 @@ import { withRoute } from '@/lib/api-route';
 import { getTrialStatus } from '@/lib/trial';
 import { sendEmail } from '@/lib/email';
 import { reportError } from '@/lib/report';
+import { choisirEmailOnboarding, renderEmailOnboarding } from '@/lib/onboarding-emails';
 
 // Durée max explicite (fluid compute : 300 s = plafond Hobby)
 export const maxDuration = 300;
@@ -237,6 +238,79 @@ export const GET = withRoute({ auth: 'cron' }, async () => {
     reportError('[cron/expirations] trial reminders section:', e?.message);
   }
 
+  // ── Emails d'onboarding J+1 / J+3 (2026-08-01, plan « aide utilisateur ») ──
+  // J+1 « premier cours récurrent » (skip si des cours existent), J+3 « invite
+  // tes élèves » (skip si des élèves existent). Fenêtres [1,3) et [3,7) jours —
+  // pas de backfill des comptes plus anciens. Dédup par claim emails_envoyes
+  // (type 'onboarding', ref profileId:j1|j3), libéré si l'envoi échoue.
+  let onboardingJ1 = 0, onboardingJ3 = 0;
+  try {
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.izisolo.fr';
+    const now = new Date();
+    const il7jours = new Date(now.getTime() - 7 * 86400000).toISOString();
+    const { data: nouveaux, error: nouveauxErr } = await supabaseAdmin
+      .from('profiles')
+      .select('id, prenom, email_contact, created_at')
+      .gte('created_at', il7jours);
+    if (nouveauxErr) throw nouveauxErr;
+
+    for (const prof of (nouveaux || [])) {
+      try {
+        // Compteurs d'activation (head:true = pas de données, juste le count)
+        const [{ count: nbCours }, { count: nbClients }] = await Promise.all([
+          supabaseAdmin.from('cours').select('id', { count: 'exact', head: true }).eq('profile_id', prof.id),
+          supabaseAdmin.from('clients').select('id', { count: 'exact', head: true }).eq('profile_id', prof.id),
+        ]);
+        const type = choisirEmailOnboarding(
+          { createdAt: prof.created_at, nbCours: nbCours || 0, nbClients: nbClients || 0 },
+          now
+        );
+        if (!type) continue;
+
+        // Même fallback email que la relance trial (B1d) : email_contact est
+        // public et vidable → l'email de connexion en secours.
+        let to = prof.email_contact;
+        if (!to) {
+          try {
+            const { data: { user: authUser } } = await supabaseAdmin.auth.admin.getUserById(prof.id);
+            to = authUser?.email || null;
+          } catch { /* compte auth introuvable : skip */ }
+        }
+        if (!to) continue;
+
+        // Claim AVANT envoi (un cron re-joué ne double-envoie pas)
+        const ref = `${prof.id}:${type}`;
+        const { data: claim, error: clErr } = await supabaseAdmin
+          .from('emails_envoyes')
+          .upsert(
+            { type: 'onboarding', destinataire: to.toLowerCase(), ref },
+            { onConflict: 'type,destinataire,ref', ignoreDuplicates: true }
+          )
+          .select('id');
+        if (clErr) throw clErr;
+        if ((claim || []).length === 0) continue; // déjà envoyé
+
+        const { subject, html } = renderEmailOnboarding(type, { prenom: prof.prenom, appUrl });
+        const r = await sendEmail({ categorie: 'notification', to, subject, html });
+        if (!r.ok) {
+          // Échec → claim libéré : retentative au prochain run (pattern B1g)
+          await supabaseAdmin.from('emails_envoyes').delete()
+            .match({ type: 'onboarding', destinataire: to.toLowerCase(), ref })
+            .then(() => {}, () => {});
+          if (!r.skipped) {
+            reportError('[cron/expirations] onboarding envoi échoué:', String(r.error || 'send failed'), { route: '/api/cron/expirations' });
+          }
+          continue;
+        }
+        if (type === 'j1') onboardingJ1++; else onboardingJ3++;
+      } catch (e) {
+        reportError('[cron/expirations] onboarding err', prof.id, e?.message);
+      }
+    }
+  } catch (e) {
+    reportError('[cron/expirations] onboarding section:', e?.message);
+  }
+
   return NextResponse.json({
     expires: data?.length || 0,
     epuises: epuises?.length || 0,
@@ -245,6 +319,8 @@ export const GET = withRoute({ auth: 'cron' }, async () => {
     listeAttentePurgee,
     trialJ3,
     trialJ1,
+    onboardingJ1,
+    onboardingJ3,
     timestamp: new Date().toISOString(),
   });
 });

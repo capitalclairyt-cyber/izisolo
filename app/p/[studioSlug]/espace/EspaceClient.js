@@ -28,126 +28,6 @@ function formatHeure(h) {
   return mm === '00' ? `${parseInt(hh)}h` : `${parseInt(hh)}h${mm}`;
 }
 
-// Mini chatbot Claude pour aider l'élève à choisir un cours
-function AssistantBookingButton({ studioSlug, prenom }) {
-  const [open, setOpen] = useState(false);
-  const [messages, setMessages] = useState([
-    { role: 'assistant', content: prenom
-      ? `Bonjour ${prenom} ! Je peux t'aider à trouver un cours dans les 14 prochains jours. Qu'est-ce qui te ferait plaisir ?`
-      : `Bonjour ! Je peux t'aider à trouver un cours dans les 14 prochains jours. Qu'est-ce qui te ferait plaisir ?`
-    },
-  ]);
-  const [input, setInput] = useState('');
-  const [loading, setLoading] = useState(false);
-
-  const send = async (e) => {
-    e?.preventDefault();
-    const text = input.trim();
-    if (!text || loading) return;
-    const next = [...messages, { role: 'user', content: text }];
-    setMessages(next);
-    setInput('');
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/portail/${studioSlug}/assistant`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: next }),
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Erreur');
-      setMessages([...next, { role: 'assistant', content: json.message }]);
-    } catch (err) {
-      setMessages([...next, { role: 'assistant', content: `Désolé, je rencontre un souci technique : ${err.message}. Réessaie dans un instant.` }]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <>
-      <button
-        onClick={() => setOpen(true)}
-        title="Aide-moi à choisir un cours"
-        style={{
-          position: 'fixed', bottom: 20, right: 20, zIndex: 50,
-          width: 54, height: 54, borderRadius: '50%',
-          background: '#d4a0a0', color: 'white', border: 'none',
-          boxShadow: '0 4px 16px rgba(212, 160, 160, 0.45)',
-          cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}
-      >
-        <MessageCircle size={22} />
-      </button>
-
-      {open && (
-        <div style={{
-          position: 'fixed', bottom: 84, right: 20, zIndex: 51,
-          width: 'calc(100vw - 40px)', maxWidth: 360,
-          height: 460, maxHeight: 'calc(100vh - 120px)',
-          background: 'white', borderRadius: 16,
-          boxShadow: '0 10px 40px rgba(0,0,0,0.18)',
-          display: 'flex', flexDirection: 'column', overflow: 'hidden',
-        }}>
-          <div style={{ padding: '14px 16px', background: '#d4a0a0', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <MessageCircle size={16} />
-              <span style={{ fontWeight: 600, fontSize: '0.875rem' }}>Aide-moi à choisir</span>
-            </div>
-            <button onClick={() => setOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'white', padding: 0, display: 'flex' }}>
-              <X size={18} />
-            </button>
-          </div>
-          <div style={{ flex: 1, overflowY: 'auto', padding: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {messages.map((m, i) => (
-              <div key={i} style={{
-                alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start',
-                maxWidth: '85%',
-                background: m.role === 'user' ? '#d4a0a0' : '#faf8f5',
-                color: m.role === 'user' ? 'white' : '#1a1a2e',
-                padding: '8px 12px', borderRadius: 12,
-                fontSize: '0.875rem', lineHeight: 1.5,
-                whiteSpace: 'pre-wrap',
-              }}>
-                {/* Markdown links basiques [text](url) → vrai <a> */}
-                {m.content.split(/(\[[^\]]+\]\([^)]+\))/g).map((part, j) => {
-                  const m2 = part.match(/\[([^\]]+)\]\(([^)]+)\)/);
-                  if (m2) return <a key={j} href={m2[2]} style={{ color: m.role === 'user' ? 'white' : '#d4a0a0', fontWeight: 600 }}>{m2[1]}</a>;
-                  return <span key={j}>{part}</span>;
-                })}
-              </div>
-            ))}
-            {loading && (
-              <div style={{ alignSelf: 'flex-start', color: '#888', fontSize: '0.875rem' }}>
-                <Loader size={14} className="spin" /> Recherche…
-              </div>
-            )}
-          </div>
-          <form onSubmit={send} style={{ padding: 12, borderTop: '1px solid #f0ebe8', display: 'flex', gap: 6 }}>
-            <input
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              placeholder="Ex : un Hatha doux mardi soir"
-              disabled={loading}
-              style={{
-                flex: 1, padding: '8px 12px', borderRadius: 10,
-                border: '1px solid #e8e0db', fontSize: '0.875rem', outline: 'none',
-              }}
-            />
-            <button type="submit" disabled={loading || !input.trim()} style={{
-              padding: '8px 12px', borderRadius: 10,
-              background: '#d4a0a0', color: 'white', border: 'none', cursor: 'pointer',
-              opacity: loading || !input.trim() ? 0.6 : 1,
-            }}>
-              <Send size={14} />
-            </button>
-          </form>
-        </div>
-      )}
-    </>
-  );
-}
-
 function modeLabel(mode) {
   const map = { especes: 'Espèces', cheque: 'Chèque', virement: 'Virement', CB: 'CB' };
   return map[mode] || mode;
@@ -1075,10 +955,6 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
           </p>
         </div>
       )}
-
-      {/* Assistant Claude — désactivé temporairement (UX pas au point).
-          Pour réactiver, déscommenter la ligne ci-dessous. */}
-      {/* <AssistantBookingButton studioSlug={studioSlug} prenom={client?.prenom} /> */}
 
       {/* Bouton rebooking */}
       <div style={{ marginTop: 28, paddingTop: 20, borderTop: '1px solid #f0ebe8', textAlign: 'center' }}>

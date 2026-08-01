@@ -21,7 +21,7 @@ export default function robots() {
           '/parametres',
           '/pointage',
           '/evenements',
-          '/assistant',
+          '/aide',
           '/support',
           '/plus',
           '/onboarding',

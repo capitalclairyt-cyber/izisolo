@@ -209,6 +209,11 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
           <div className="dash-checklist-header">
             <Sparkles size={16} style={{ color: 'var(--brand)' }} />
             <span>Démarre ton studio en 4 étapes</span>
+            {/* Lien inline (pas en absolu : la croix de masquage occupe déjà le
+                coin haut-droit — leçon elementFromPoint, bible §12) */}
+            <Link href="/aide" style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--brand)', textDecoration: 'none', whiteSpace: 'nowrap' }}>
+              Guide pas à pas →
+            </Link>
           </div>
           <div className="dash-checklist-items">
             {checklistItems.map(item => {
