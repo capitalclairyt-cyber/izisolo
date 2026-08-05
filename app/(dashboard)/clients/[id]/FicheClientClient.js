@@ -18,6 +18,7 @@ import { formatDate, formatMontant } from '@/lib/utils';
 import { getVocabulaire } from '@/lib/vocabulaire';
 import { STATUTS_CLIENT, STATUTS_ABONNEMENT, STATUTS_PAIEMENT } from '@/lib/constantes';
 import { statutCompteEleve, formatDateRelative } from '@/lib/eleve-statut';
+import { moisFacturables } from '@/lib/factures';
 import { createClient } from '@/lib/supabase';
 import { useToast } from '@/components/ui/ToastProvider';
 import PaiementStep from '@/components/paiements/PaiementStep';
@@ -300,7 +301,7 @@ function AssignerOffreModal({ client, onClose, onSuccess }) {
 // ═══════════════════════════════════════════════════════════════════════════
 // Composant principal
 // ═══════════════════════════════════════════════════════════════════════════
-export default function FicheClientClient({ client, profile, abonnements: abosInit, presences, paiements: paiementsInit = [], lieux, statutCompte = null }) {
+export default function FicheClientClient({ client, profile, abonnements: abosInit, presences, paiements: paiementsInit = [], lieux, statutCompte = null, facturationActive = false, facturesParPaiement = {} }) {
   const router = useRouter();
   const { toast } = useToast();
   const vocab = getVocabulaire(profile?.metier || 'yoga', profile?.vocabulaire);
@@ -308,6 +309,11 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
   const [showAssignerModal, setShowAssignerModal] = useState(false);
   const [abonnements, setAbonnements] = useState(abosInit);
   const [paiements, setPaiements] = useState(paiementsInit);
+  // Factures émises par paiement (v84) : { paiementId: { id, numero } }.
+  // PAS un useState : la vérité vit côté serveur — après une émission
+  // (téléchargement) ou une annulation, router.refresh() recharge la map.
+  const factures = facturesParPaiement;
+  const refreshFactures = () => setTimeout(() => router.refresh(), 1800);
   const [encaisserModal, setEncaisserModal] = useState(null);
   const [encaisserMode, setEncaisserMode] = useState('especes');
   const [encaisserNotes, setEncaisserNotes] = useState('');
@@ -494,6 +500,9 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
     return acc;
   })();
   const nbImpayes = paiements.filter(p => p.statut === 'pending' || p.statut === 'overdue').length;
+  // « Facture du mois » (v84) : mois avec ≥ 2 paiements encaissés pas encore
+  // facturés (pour 1 seul, le bouton de la ligne fait le même document).
+  const moisChips = facturationActive ? moisFacturables(paiements, factures) : [];
 
   const openEncaisser = (paiement) => {
     setEncaisserModal(paiement);
@@ -563,6 +572,23 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
     setShowAssignerModal(false);
     if (clientStatut === 'prospect' && (pays || []).some(p => p.statut === 'paid')) {
       setClientStatut('actif');
+    }
+  };
+
+  // v84 : annule une facture émise — le numéro reste brûlé (marqué annulé),
+  // les paiements redeviennent facturables et modifiables.
+  const annulerFacture = async (paiement) => {
+    const f = factures[paiement.id];
+    if (!f) return;
+    if (!confirm(`Annuler la facture ${f.numero} ?\n\nLe numéro restera marqué « annulé » dans ta numérotation, et le(s) paiement(s) qu'elle porte pourront être re-facturés ou modifiés.`)) return;
+    try {
+      const res = await fetch(`/api/factures/${f.id}/annuler`, { method: 'POST' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) throw new Error(data.error || 'Annulation impossible — réessaie.');
+      toast.success(`Facture ${f.numero} annulée`);
+      router.refresh(); // la map serveur fait foi (mensuelle = plusieurs lignes libérées)
+    } catch (e) {
+      toast.error(e.message);
     }
   };
 
@@ -1240,6 +1266,34 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
             </button>
           </div>
 
+          {/* « Facture du mois » (v84) : un document pour tous les paiements
+              du mois pas encore facturés — le justificatif CSE en 1 clic */}
+          {moisChips.length > 0 && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, margin: '0 0 12px' }}>
+              {moisChips.map(m => (
+                <a
+                  key={m.mois}
+                  href={`/api/factures/mois?client=${client.id}&mois=${m.mois}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={refreshFactures}
+                  className="izi-btn izi-btn-ghost"
+                  style={{ fontSize: '0.75rem', padding: '5px 11px' }}
+                  title={`Émettre une facture regroupant les ${m.count} paiements de ${m.label}`}
+                >
+                  <FileText size={13} /> Facture {m.label} · {m.count}
+                </a>
+              ))}
+            </div>
+          )}
+          {!facturationActive && paiements.length > 0 && (
+            <p style={{ fontSize: '0.75rem', color: '#888', margin: '0 0 12px', lineHeight: 1.5 }}>
+              💡 Renseigne ton SIRET dans{' '}
+              <Link href="/parametres?tab=profil&s=activite" style={{ fontWeight: 600 }}>Paramètres → Activité</Link>
+              {' '}pour émettre de vraies factures (CSE, mutuelles) — en attendant, tes élèves téléchargent un simple reçu.
+            </p>
+          )}
+
           {paiements.length === 0 ? (
             <EmptyState title={`Aucun paiement enregistré pour ${vocab.client || 'cet élève'}`} />
           ) : (
@@ -1295,6 +1349,31 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
                           title="Encaisser ce paiement"
                         >
                           <CheckCircle2 size={12} /> Encaisser
+                        </button>
+                      )}
+                      {/* v84 : justificatif PDF (facture si SIRET configuré,
+                          reçu sinon) + annulation d'une facture émise */}
+                      {p.statut === 'paid' && (
+                        <a
+                          href={`/api/factures/paiement/${p.id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={facturationActive && !factures[p.id] ? refreshFactures : undefined}
+                          className="delete-pay-btn-fiche"
+                          title={factures[p.id]
+                            ? `Télécharger la facture ${factures[p.id].numero}`
+                            : (facturationActive ? 'Générer la facture PDF' : 'Télécharger le reçu PDF')}
+                        >
+                          <FileText size={12} />
+                        </a>
+                      )}
+                      {factures[p.id] && (
+                        <button
+                          onClick={() => annulerFacture(p)}
+                          className="delete-pay-btn-fiche"
+                          title={`Annuler la facture ${factures[p.id].numero}`}
+                        >
+                          <XCircle size={12} />
                         </button>
                       )}
                       <button

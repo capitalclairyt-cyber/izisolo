@@ -3,13 +3,14 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Calendar, Clock, MapPin, ArrowLeft, LogOut, CheckCircle, XCircle, Loader, AlertCircle, User, Lock, CreditCard, Ticket, CalendarCheck, Zap, Download, Receipt, MessageCircle, Send, X, Phone, Home, Pencil, Save, Wallet, Bell } from 'lucide-react';
+import { Calendar, Clock, MapPin, ArrowLeft, LogOut, CheckCircle, XCircle, Loader, AlertCircle, User, Lock, CreditCard, Ticket, CalendarCheck, Zap, Download, Receipt, MessageCircle, Send, X, Phone, Home, Pencil, Save, Wallet, Bell, FileText } from 'lucide-react';
 import PushToggle from '@/components/push/PushToggle';
 import PushPrompt from '@/components/push/PushPrompt';
 import NotifPrefsPanel from '@/components/push/NotifPrefsPanel';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/components/ui/ToastProvider';
 import { evaluerAnnulation, formatDateLimite } from '@/lib/regles-metier';
+import { moisFacturables } from '@/lib/factures';
 import { toneForCours, toneForPaiement } from '@/lib/tones';
 
 const STRIPE_TYPE_ICONS = { carnet: Ticket, abonnement: CalendarCheck, cours_unique: Zap };
@@ -163,7 +164,7 @@ function CoursCard({ presence, profile, studioSlug, onAnnuler, annulEnCours }) {
   );
 }
 
-export default function EspaceClient({ profile, client, aVenir, passes, paiements = [], offresStripe = [], abonnements = [], aRegler = [], seancesWorkshopDues = [], annulationsDues = [], unreadMessages = 0, clientPrefs = {}, studioSlug, userEmail, isDemo = false }) {
+export default function EspaceClient({ profile, client, aVenir, passes, paiements = [], offresStripe = [], abonnements = [], aRegler = [], seancesWorkshopDues = [], annulationsDues = [], unreadMessages = 0, clientPrefs = {}, studioSlug, userEmail, isDemo = false, facturationActive = false, facturesParPaiement = {} }) {
   const router = useRouter();
   const { toast } = useToast();
   const [notifsOpen, setNotifsOpen] = useState(false);
@@ -190,6 +191,9 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
   // attente est 'pending' → il apparaît bien tant qu'il n'est pas encaissé.
   const paiementsDus = (paiements || []).filter(p => p.statut === 'pending' || p.statut === 'overdue');
   const paiementsRegles = (paiements || []).filter(p => p.statut === 'paid');
+  // « Facture du mois » (v84) : mois avec ≥ 2 paiements réglés pas encore
+  // facturés — pour un seul, le bouton de la ligne produit le même document.
+  const moisChips = facturationActive ? moisFacturables(paiementsRegles, facturesParPaiement) : [];
   // Total dû = paiements en attente + dettes issues des cas (annulation tardive,
   // séance sans carnet…) quand un montant est connu. Les cas sans montant chiffré
   // restent listés mais ne faussent pas le total.
@@ -867,7 +871,7 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
         </div>
       )}
 
-      {/* Section "Mes paiements" — historique des règlements + reçu PDF */}
+      {/* Section "Mes paiements" — historique des règlements + facture/reçu PDF (v84) */}
       {paiementsRegles.length > 0 && (
         <div style={{ marginTop: 28, paddingTop: 20, borderTop: '1px solid #f0ebe8' }}>
           <h2 className="espace-section-title">
@@ -875,6 +879,29 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
             Mes paiements
             <span className="espace-count">{paiementsRegles.length}</span>
           </h2>
+          {/* « Facture du mois » : un seul document pour tous les paiements du
+              mois pas encore facturés (justificatif CSE/mutuelle en 1 clic) */}
+          {moisChips.length > 0 && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, margin: '0 0 12px' }}>
+              {moisChips.map(m => (
+                <a
+                  key={m.mois}
+                  href={`/api/portail/${studioSlug}/facture-mois?mois=${m.mois}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 5,
+                    padding: '5px 11px', borderRadius: 999,
+                    background: '#faf5f2', border: '1px solid #eaddd5',
+                    color: '#8a5a44', fontSize: '0.72rem', fontWeight: 600,
+                    textDecoration: 'none',
+                  }}
+                >
+                  <FileText size={12} /> Facture {m.label} · {m.count} paiements
+                </a>
+              ))}
+            </div>
+          )}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             {paiementsRegles.slice(0, 10).map(p => {
               const tone = toneForPaiement(p.statut);
@@ -898,7 +925,11 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
                       href={`/api/portail/${studioSlug}/facture/${p.id}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      title="Télécharger le reçu PDF"
+                      title={facturationActive
+                        ? (facturesParPaiement[p.id]
+                            ? `Télécharger la facture ${facturesParPaiement[p.id]}`
+                            : 'Télécharger la facture PDF')
+                        : 'Télécharger le reçu PDF'}
                       className="paiement-pdf-btn"
                     >
                       <Download size={13} />
@@ -914,6 +945,15 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
               {paiements.length - 10} paiement{paiements.length - 10 > 1 ? 's' : ''} plus ancien{paiements.length - 10 > 1 ? 's' : ''} non affichés
             </p>
           )}
+          <p style={{ fontSize: '0.72rem', color: '#999', margin: '10px 2px 0', lineHeight: 1.5 }}>
+            {facturationActive
+              ? 'Chaque paiement réglé a sa facture (⬇). '
+              : ''}
+            Il te manque un justificatif ?{' '}
+            <Link href={`/p/${studioSlug}/espace/messages`} style={{ color: '#8a5a44', fontWeight: 600 }}>
+              Écris à ton studio
+            </Link>.
+          </p>
         </div>
       )}
 

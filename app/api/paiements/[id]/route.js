@@ -2,6 +2,21 @@ import { z } from 'zod';
 import { withRoute } from '@/lib/api-route';
 import { reportError } from '@/lib/report';
 
+/**
+ * v84 : un paiement porté par une facture ÉMISE est verrouillé — le document
+ * comptable téléchargé par l'élève doit rester vrai. Renvoie le numéro de la
+ * facture, ou null (pas facturé / migration v84 absente → pas de verrou).
+ */
+async function factureVerrouillante(supabase, paiementId) {
+  const { data, error } = await supabase
+    .from('factures_paiements')
+    .select('facture:facture_id (numero_affiche, statut)')
+    .eq('paiement_id', paiementId)
+    .maybeSingle();
+  if (error || !data) return null; // table absente ou non facturé : pas de verrou
+  return data.facture?.statut === 'emise' ? data.facture.numero_affiche : null;
+}
+
 const updateSchema = z.object({
   montant: z.number().positive().optional(),
   mode: z.enum(['especes', 'cheque', 'virement', 'CB']).optional(),
@@ -25,6 +40,20 @@ export const PATCH = withRoute({ auth: 'active', schema: updateSchema }, async (
 
   if (fetchErr || !paiement) {
     return Response.json({ error: 'Paiement introuvable' }, { status: 404 });
+  }
+
+  // v84 : montant / dates / mode / statut d'un paiement facturé sont gelés
+  // (notes et n° de chèque restent libres — ils n'apparaissent pas sur le
+  // document). Annuler la facture le déverrouille.
+  const champsFactures = ['montant', 'mode', 'date', 'date_encaissement', 'statut'];
+  if (champsFactures.some(c => body[c] !== undefined)) {
+    const numeroFacture = await factureVerrouillante(supabase, id);
+    if (numeroFacture) {
+      return Response.json({
+        error: `Ce paiement figure sur la facture ${numeroFacture} — annule d'abord la facture (fiche élève → Paiements) pour le modifier.`,
+        code: 'PAIEMENT_FACTURE',
+      }, { status: 409 });
+    }
   }
 
   const update = {};
@@ -66,6 +95,16 @@ export const DELETE = withRoute({ auth: 'active' }, async ({ params, auth }) => 
 
   if (fetchErr || !paiement) {
     return Response.json({ error: 'Paiement introuvable' }, { status: 404 });
+  }
+
+  // v84 : jamais de suppression d'un paiement facturé — le justificatif de
+  // l'élève (CSE/mutuelle) pointerait sur de l'argent disparu de la compta.
+  const numeroFacture = await factureVerrouillante(supabase, id);
+  if (numeroFacture) {
+    return Response.json({
+      error: `Ce paiement figure sur la facture ${numeroFacture} — annule d'abord la facture (fiche élève → Paiements) pour le supprimer.`,
+      code: 'PAIEMENT_FACTURE',
+    }, { status: 409 });
   }
 
   // B1f : supprimer un paiement ENCAISSÉ rattaché à un carnet/échéancier

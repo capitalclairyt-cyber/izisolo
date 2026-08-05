@@ -30,6 +30,32 @@ export default async function FicheClientPage({ params }) {
     statutCompte = (statuts || []).find(s => s.client_id === client.id) || null;
   }
 
+  // Facturation (v84) — requêtes SÉPARÉES et défensives (migration absente →
+  // boutons facture masqués, la fiche vit). Lecture RLS (policies v84).
+  let facturationActive = false;
+  {
+    const { data: fact, error: factErr } = await supabase
+      .from('profiles')
+      .select('facturation_siret')
+      .eq('id', user.id)
+      .maybeSingle();
+    if (!factErr && String(fact?.facturation_siret || '').trim()) facturationActive = true;
+  }
+  let facturesParPaiement = {};
+  if ((paiements || []).length > 0) {
+    const { data: liaisons, error: liErr } = await supabase
+      .from('factures_paiements')
+      .select('paiement_id, facture:facture_id (id, numero_affiche, statut)')
+      .in('paiement_id', paiements.map(p => p.id));
+    if (!liErr) {
+      for (const l of liaisons || []) {
+        if (l.facture?.statut === 'emise') {
+          facturesParPaiement[l.paiement_id] = { id: l.facture.id, numero: l.facture.numero_affiche };
+        }
+      }
+    }
+  }
+
   // Fetch lieux linked to this client pro
   let lieux = [];
   if (client.type_client && client.type_client !== 'particulier') {
@@ -50,6 +76,8 @@ export default async function FicheClientPage({ params }) {
       paiements={paiements || []}
       lieux={lieux}
       statutCompte={statutCompte}
+      facturationActive={facturationActive}
+      facturesParPaiement={facturesParPaiement}
     />
   );
 }

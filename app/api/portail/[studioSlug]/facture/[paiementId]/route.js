@@ -1,17 +1,26 @@
 import { withRoute } from '@/lib/api-route';
 import { createServerClient } from '@/lib/supabase-server';
 import { createAdminClient } from '@/lib/supabase-admin';
-import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 import { resoudreFicheEleve } from '@/lib/fiche-eleve';
 import { reportError } from '@/lib/report';
+import { construireSnapshot } from '@/lib/factures';
+import { genererFacturePdf, reponsePdf } from '@/lib/facture-pdf';
+import { chargerFacturation, obtenirOuEmettreFacture, nomFichierFacture } from '@/lib/factures-service';
 
 export const runtime = 'nodejs';
 
 /**
- * Génère une facture PDF pour un paiement donné, accessible par l'élève authentifié
- * (uniquement ses propres paiements).
+ * Justificatif PDF d'un paiement, téléchargé par l'élève authentifié
+ * (uniquement ses propres paiements RÉGLÉS).
+ *
+ * v84 : si le studio a configuré sa facturation (SIRET dans Paramètres), le
+ * document est une vraie FACTURE acquittée — numéro séquentiel, snapshot gelé,
+ * re-téléchargeable à l'identique. Si le paiement figure déjà sur une facture
+ * (individuelle OU mensuelle), on re-sert CE document — jamais deux factures
+ * pour le même paiement. Sans SIRET (ou migration absente) : le reçu simple
+ * historique, comme avant.
  */
-export const GET = withRoute({ auth: 'public' }, async ({ request, params }) => {
+export const GET = withRoute({ auth: 'public' }, async ({ params }) => {
   const { studioSlug, paiementId } = params;
 
   // Auth
@@ -29,136 +38,68 @@ export const GET = withRoute({ auth: 'public' }, async ({ request, params }) => 
     .single();
   if (!profile) return new Response('Studio introuvable', { status: 404 });
 
-  // Client lié à cet user dans ce studio — v83 : FK douce d'abord.
-  // ⚠️ `clients.code_postal` N'EXISTE PAS (l'adresse d'un particulier vit dans
-  // `adresse_postale`) — l'ancien select → 42703 → client null → « Client
-  // introuvable » pour TOUS les reçus PDF (bug muet, découvert par Manon).
+  // Fiche liée à ce compte dans ce studio — v83 : FK douce d'abord.
+  // ⚠️ `clients.code_postal` N'EXISTE PAS (adresse particulier = adresse_postale).
   const client = await resoudreFicheEleve(supabaseAdmin, profile.id, user, 'id, prenom, nom, email, adresse, adresse_postale, ville');
   if (!client) return new Response('Client introuvable', { status: 404 });
 
   // Paiement (vérification que c'est bien le sien)
   const { data: paiement } = await supabaseAdmin
     .from('paiements')
-    .select('id, intitule, montant, mode, date, date_encaissement, statut, notes')
+    .select('id, intitule, montant, mode, date, date_encaissement, statut')
     .eq('id', paiementId)
     .eq('profile_id', profile.id)
     .eq('client_id', client.id)
     .single();
   if (!paiement) return new Response('Facture introuvable', { status: 404 });
 
-  // B1f (rouge) : le garde « paid seulement » était UI-only — en forgeant
-  // l'URL, une élève obtenait un « REÇU DE PAIEMENT » officiel pour un
-  // paiement jamais effectué (pending/overdue), opposable à la prof.
+  // B1f (rouge) : garde serveur — pas de justificatif pour un paiement non
+  // réglé (un « reçu » forgeable sur du pending était opposable à la prof).
   if (paiement.statut !== 'paid') {
-    return new Response('Ce paiement n\'est pas encore réglé — le reçu sera disponible après encaissement.', { status: 403 });
+    return new Response('Ce paiement n\'est pas encore réglé — le justificatif sera disponible après encaissement.', { status: 403 });
   }
-
-  // WinAnsi uniquement (B1f) : un emoji dans « Carnet 10 ✨ » ou le nom du
-  // studio faisait THROW pdf-lib → 500 brut. On nettoie les champs affichés.
-  const winAnsi = (s) => String(s ?? '').replace(/[^\x20-\x7E\xA0-\xFF€]/g, '').trim();
-  for (const k of ['studio_nom', 'adresse', 'ville', 'telephone', 'email_contact', 'code_postal']) profile[k] = winAnsi(profile[k]);
-  for (const k of ['prenom', 'nom', 'email', 'adresse', 'adresse_postale', 'ville']) client[k] = winAnsi(client[k]);
-  paiement.intitule = winAnsi(paiement.intitule);
 
   try {
-  // Génération PDF avec pdf-lib
-  const pdf = await PDFDocument.create();
-  const page = pdf.addPage([595, 842]); // A4
-  const font = await pdf.embedFont(StandardFonts.Helvetica);
-  const fontBold = await pdf.embedFont(StandardFonts.HelveticaBold);
-  const black = rgb(0, 0, 0);
-  const grey = rgb(0.4, 0.4, 0.4);
-  const brand = rgb(0.83, 0.63, 0.63); // #d4a0a0
+    // ── Facturation configurée → vraie facture (émise ou re-servie) ─────────
+    const { active, facturation } = await chargerFacturation(supabaseAdmin, profile.id);
+    if (active) {
+      const res = await obtenirOuEmettreFacture(supabaseAdmin, {
+        profileId: profile.id,
+        clientId: client.id,
+        profile,
+        facturation,
+        client,
+        paiement,
+      });
+      if (res.facture) {
+        const pdfBytes = await genererFacturePdf({
+          type: 'facture',
+          numeroAffiche: res.facture.numero_affiche,
+          dateEmission: res.facture.date_emission,
+          snapshot: res.facture.snapshot,
+        });
+        return reponsePdf(pdfBytes, nomFichierFacture(res.facture));
+      }
+      if (res.erreur) {
+        // paiement_invalide, etc. — état inattendu (le paiement est vérifié
+        // paid ci-dessus) : on le voit dans erreurs_app et on sert le reçu.
+        reportError('[facture portail] émission refusée:', new Error(res.erreur), { route: `/api/portail/${studioSlug}/facture` });
+      }
+      // res.fallback → migration absente : reçu simple ci-dessous.
+    }
 
-  let y = 800;
-  const left = 50;
-  const right = 545;
-
-  // ── En-tête studio
-  page.drawText(profile.studio_nom || 'Studio', { x: left, y, size: 22, font: fontBold, color: black });
-  y -= 28;
-  if (profile.adresse) {
-    page.drawText(profile.adresse, { x: left, y, size: 10, font, color: grey });
-    y -= 14;
-  }
-  const cp = [profile.code_postal, profile.ville].filter(Boolean).join(' ');
-  if (cp) { page.drawText(cp, { x: left, y, size: 10, font, color: grey }); y -= 14; }
-  if (profile.telephone) { page.drawText(profile.telephone, { x: left, y, size: 10, font, color: grey }); y -= 14; }
-  if (profile.email_contact) { page.drawText(profile.email_contact, { x: left, y, size: 10, font, color: grey }); y -= 14; }
-
-  // ── Titre + numéro
-  y = 720;
-  page.drawText('REÇU DE PAIEMENT', { x: left, y, size: 14, font: fontBold, color: brand });
-  y -= 18;
-  const numFacture = `N° ${paiement.id.slice(0, 8).toUpperCase()}`;
-  const dateEmission = new Date(paiement.date_encaissement || paiement.date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
-  page.drawText(numFacture, { x: left, y, size: 10, font, color: grey });
-  page.drawText(`Émis le ${dateEmission}`, { x: right - 150, y, size: 10, font, color: grey });
-
-  // ── Client
-  y = 660;
-  page.drawText('Émis pour :', { x: left, y, size: 10, font, color: grey });
-  y -= 16;
-  page.drawText([client.prenom, client.nom].filter(Boolean).join(' '), { x: left, y, size: 12, font: fontBold, color: black });
-  y -= 14;
-  if (client.email) { page.drawText(client.email, { x: left, y, size: 10, font, color: grey }); y -= 14; }
-  // Particulier : l'adresse vit dans adresse_postale (texte libre, on prend la
-  // 1re ligne) ; `adresse` = champ des clients PRO. Pas de code_postal côté clients.
-  const adresseClient = ((client.adresse_postale || client.adresse || '').split('\n')[0] || '').trim();
-  if (adresseClient) { page.drawText(adresseClient, { x: left, y, size: 10, font, color: grey }); y -= 14; }
-  const cpClient = [client.ville].filter(Boolean).join(' ');
-  if (cpClient) { page.drawText(cpClient, { x: left, y, size: 10, font, color: grey }); y -= 14; }
-
-  // ── Détail
-  y = 540;
-  page.drawRectangle({ x: left, y: y - 4, width: right - left, height: 1, color: rgb(0.85, 0.85, 0.85) });
-  y -= 20;
-  page.drawText('Désignation', { x: left, y, size: 10, font: fontBold, color: black });
-  page.drawText('Mode', { x: 380, y, size: 10, font: fontBold, color: black });
-  page.drawText('Montant TTC', { x: right - 90, y, size: 10, font: fontBold, color: black });
-  y -= 12;
-  page.drawRectangle({ x: left, y: y - 4, width: right - left, height: 1, color: rgb(0.85, 0.85, 0.85) });
-  y -= 20;
-
-  const intitule = paiement.intitule || 'Prestation';
-  page.drawText(intitule.length > 50 ? intitule.slice(0, 47) + '...' : intitule, { x: left, y, size: 11, font, color: black });
-  page.drawText(formatMode(paiement.mode), { x: 380, y, size: 11, font, color: black });
-  page.drawText(`${parseFloat(paiement.montant).toFixed(2).replace('.', ',')} €`, { x: right - 90, y, size: 11, font, color: black });
-
-  // ── Total
-  y -= 50;
-  page.drawRectangle({ x: 350, y: y - 4, width: right - 350, height: 1, color: rgb(0.85, 0.85, 0.85) });
-  y -= 20;
-  page.drawText('TOTAL', { x: 380, y, size: 12, font: fontBold, color: black });
-  page.drawText(`${parseFloat(paiement.montant).toFixed(2).replace('.', ',')} €`, { x: right - 90, y, size: 14, font: fontBold, color: brand });
-
-  // ── Mentions légales
-  y = 100;
-  page.drawText('TVA non applicable, art. 293 B du CGI (auto-entrepreneur ou micro-entreprise).', {
-    x: left, y, size: 8, font, color: grey,
-  });
-  y -= 12;
-  page.drawText(`Reçu généré automatiquement le ${new Date().toLocaleDateString('fr-FR')} par IziSolo.`, {
-    x: left, y, size: 8, font, color: grey,
-  });
-
-  const pdfBytes = await pdf.save();
-
-  return new Response(pdfBytes, {
-    status: 200,
-    headers: {
-      'Content-Type': 'application/pdf',
-      'Content-Disposition': `attachment; filename="recu-${profile.studio_nom?.replace(/[^a-z0-9]/gi, '-').toLowerCase() || 'studio'}-${paiement.id.slice(0, 8)}.pdf"`,
-      'Cache-Control': 'private, no-store',
-    },
-  });
+    // ── Reçu simple historique (facturation non configurée) ─────────────────
+    const snapshot = construireSnapshot({ profile, facturation: null, client, paiements: [paiement] });
+    const pdfBytes = await genererFacturePdf({
+      type: 'recu',
+      numeroAffiche: `N° ${paiement.id.slice(0, 8).toUpperCase()}`,
+      dateEmission: paiement.date_encaissement || paiement.date,
+      snapshot,
+    });
+    const nomStudio = profile.studio_nom?.replace(/[^a-z0-9]/gi, '-').toLowerCase() || 'studio';
+    return reponsePdf(pdfBytes, `recu-${nomStudio}-${paiement.id.slice(0, 8)}.pdf`);
   } catch (err) {
     reportError('[facture pdf] génération err:', err, { route: `/api/portail/${studioSlug}/facture` });
-    return new Response('Le reçu n\'a pas pu être généré — réessaie, ou contacte ton studio.', { status: 500 });
+    return new Response('Le justificatif n\'a pas pu être généré — réessaie, ou contacte ton studio.', { status: 500 });
   }
 });
-
-function formatMode(mode) {
-  const map = { especes: 'Espèces', cheque: 'Chèque', virement: 'Virement', CB: 'CB' };
-  return map[mode] || mode || '—';
-}

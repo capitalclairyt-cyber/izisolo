@@ -317,6 +317,31 @@ async function getData(studioSlug, user) {
       cours_date: p.cours?.date || null,
     }));
 
+  // Facturation (v84) — requêtes SÉPARÉES et défensives : colonnes/table
+  // absentes (migration pas appliquée) → reçu simple, l'espace vit. Ne JAMAIS
+  // ajouter facturation_* au select principal (anti-pattern colonnes fantômes).
+  let facturationActive = false;
+  {
+    const { data: fact, error: factErr } = await supabase
+      .from('profiles')
+      .select('facturation_siret')
+      .eq('id', profile.id)
+      .maybeSingle();
+    if (!factErr && String(fact?.facturation_siret || '').trim()) facturationActive = true;
+  }
+  let facturesParPaiement = {};
+  if (facturationActive && (paiements || []).length > 0) {
+    const { data: liaisons, error: liErr } = await supabase
+      .from('factures_paiements')
+      .select('paiement_id, facture:facture_id (numero_affiche, statut)')
+      .in('paiement_id', paiements.map(p => p.id));
+    if (!liErr) {
+      for (const l of liaisons || []) {
+        if (l.facture?.statut === 'emise') facturesParPaiement[l.paiement_id] = l.facture.numero_affiche;
+      }
+    }
+  }
+
   // Compteur de messages non lus (pour la cloche de notifications de l'espace).
   let unreadMessages = 0;
   try { unreadMessages = await countUnread(supabase, 'eleve', client.id); } catch { /* badge décoratif : l'espace s'affiche sans le compteur */ }
@@ -329,7 +354,7 @@ async function getData(studioSlug, user) {
     .from('clients').select('notif_prefs').eq('id', client.id).maybeSingle();
   if (!cpErr && cp?.notif_prefs) clientPrefs = cp.notif_prefs;
 
-  return { profile, client, aVenir, passes, paiements: paiements || [], offresStripe: offresStripe || [], abonnements: abonnements || [], aRegler, seancesWorkshopDues, annulationsDues, unreadMessages, clientPrefs };
+  return { profile, client, aVenir, passes, paiements: paiements || [], offresStripe: offresStripe || [], abonnements: abonnements || [], aRegler, seancesWorkshopDues, annulationsDues, unreadMessages, clientPrefs, facturationActive, facturesParPaiement };
 }
 
 export default async function EspacePage({ params, searchParams }) {
@@ -399,6 +424,8 @@ export default async function EspacePage({ params, searchParams }) {
       annulationsDues={data.annulationsDues || []}
       unreadMessages={data.unreadMessages || 0}
       clientPrefs={data.clientPrefs || {}}
+      facturationActive={data.facturationActive || false}
+      facturesParPaiement={data.facturesParPaiement || {}}
       studioSlug={studioSlug}
       userEmail={user.email}
     />

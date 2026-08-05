@@ -6,7 +6,7 @@ import {
   Save, User, Building2, Bell, MapPin,
   Plus, X, Trash2, Crown, Mail, Home,
   Eye, Zap, ToggleLeft, ToggleRight, Cake,
-  Loader2, Pencil,
+  Loader2, Pencil, FileText,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase';
 import { useToast } from '@/components/ui/ToastProvider';
@@ -14,6 +14,8 @@ import { METIERS, PLANS } from '@/lib/constantes';
 import { getTrialStatus, effectivePlan as effectivePlanFromTrial } from '@/lib/trial';
 import { can } from '@/lib/plan-guard';
 import { genererSlugStudioUnique } from '@/lib/slug-studio';
+import { validerSiret } from '@/lib/validation';
+import { MENTION_TVA_DEFAUT } from '@/lib/factures';
 // import BackgroundDecor — retiré, plus utilisé (apparences supprimées)
 
 // Normalise une URL utilisateur :
@@ -68,6 +70,7 @@ const SOUS_TAB_ALIAS = { seuils: 'eleves', anniv: 'eleves' };
 const CARTES = {
   profil:        ['prenom', 'nom', 'email_contact', 'telephone', 'adresse'],
   activite:      ['studio_nom', 'ville', 'metier'],
+  facturation:   ['facturation_raison_sociale', 'facturation_siret', 'facturation_mention_tva'],
   champs:        ['client_fields_config'],
   page:          ['photo_couverture_focal_y', 'bio', 'philosophie', 'formations', 'annees_experience',
                   'horaires_studio', 'horaires_studio_jours', 'afficher_tarifs', 'afficher_horaires',
@@ -86,6 +89,9 @@ const CARTES = {
 // monolithique (comportement constant). Champ absent d'ici = valeur brute.
 const SERIALIZERS = {
   email_contact:             v => v || null,
+  facturation_raison_sociale: v => v || null,
+  facturation_siret:         v => (v ? String(v).replace(/\s/g, '') : null),
+  facturation_mention_tva:   v => v || null,
   alerte_seances_seuil:      v => parseInt(v) || 2,
   alerte_expiration_jours:   v => parseInt(v) || 7,
   alerte_paiement_attente_jours: v => parseInt(v) || 14,
@@ -579,6 +585,62 @@ export default function Parametres() {
             <BtnSauver carte="activite" />
           </div>
           )}
+
+          {/* Facturation (v84) — l'identité légale des factures élèves */}
+          {subTab.profil === 'activite' && (() => {
+            const siretCheck = validerSiret(profile.facturation_siret || '');
+            const active = !!String(profile.facturation_siret || '').trim();
+            return (
+          <div className="section izi-card">
+            <div className="section-top"><div className="section-icon"><FileText size={20} /></div><h2>Facturation</h2></div>
+            <p className="section-desc">
+              Avec ton SIRET renseigné, tes élèves téléchargent de <strong>vraies factures acquittées</strong> depuis
+              leur espace (CSE, mutuelles…) — à la place du simple reçu. Numérotation automatique et séquentielle
+              (FAC-{new Date().getFullYear()}-0001), documents figés à l'émission, re-téléchargeables à l'identique.
+            </p>
+            <div className="form-group">
+              <label className="form-label">Nom / raison sociale sur les factures</label>
+              <input
+                className="izi-input"
+                value={profile.facturation_raison_sociale || ''}
+                onChange={handleChange('facturation_raison_sociale')}
+                placeholder={profile.studio_nom || 'Ton nom, ou celui de ta structure'}
+              />
+              <p className="form-hint">Vide = le nom de ton studio.</p>
+            </div>
+            <div className="form-group">
+              <label className="form-label">SIRET</label>
+              <input
+                className="izi-input"
+                value={profile.facturation_siret || ''}
+                onChange={handleChange('facturation_siret')}
+                placeholder="123 456 789 00012"
+                inputMode="numeric"
+              />
+              {!siretCheck.valide ? (
+                <p className="form-hint" style={{ color: '#dc2626' }}>{siretCheck.message}</p>
+              ) : (
+                <p className="form-hint">
+                  {active ? 'Facturation active ✓' : 'Sans SIRET, tes élèves téléchargent un simple reçu de paiement.'}
+                </p>
+              )}
+            </div>
+            <div className="form-group">
+              <label className="form-label">Mention TVA</label>
+              <input
+                className="izi-input"
+                value={profile.facturation_mention_tva || ''}
+                onChange={handleChange('facturation_mention_tva')}
+                placeholder={MENTION_TVA_DEFAUT}
+              />
+              <p className="form-hint">
+                Vide = « {MENTION_TVA_DEFAUT} » (franchise de TVA, le cas micro-entreprise). Adapte si tu factures la TVA.
+              </p>
+            </div>
+            <BtnSauver carte="facturation" />
+          </div>
+            );
+          })()}
 
           {/* Lieux */}
           {subTab.profil === 'lieux' && (
