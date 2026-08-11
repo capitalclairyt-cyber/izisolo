@@ -248,7 +248,7 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
   const handleCancel = async () => {
     const n = presences.length;
     if (!confirm(
-      `Annuler cette séance ?${n > 0 ? `\n\nLes ${n} inscrit·e${n > 1 ? 's' : ''} seront prévenu·es par email, et les crédits restitués selon ta règle « Cours annulé ».` : ''}\n\nCette action est définitive (pas de ré-activation).`
+      `Annuler cette séance ?${n > 0 ? `\n\nLes ${n} inscrit·e${n > 1 ? 's' : ''} seront prévenu·es par email, et les crédits restitués selon ta règle « Cours annulé ».` : ''}\n\nElle restera visible (barrée) sur ton agenda — c'est ce qui informe tes élèves. Tu pourras ensuite la supprimer (corbeille) pour la faire disparaître.\n\nCette action est définitive (pas de ré-activation).`
     )) return;
     setCancelling(true);
     try {
@@ -638,11 +638,17 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
         </div>
       )}
 
-      {/* Annulé */}
+      {/* Annulé — expliquer POURQUOI la séance reste visible (retour Maude
+          08/2026 : « je l'ai enlevée mais je la vois quand même ») et donner
+          le geste pour la faire disparaître (la corbeille existe plus bas). */}
       {cours.est_annule && (
         <div className="annule-banner">
           <X size={18} />
-          <span>Ce cours a été annulé</span>
+          <span>
+            Cette séance est annulée. Elle reste affichée <strong>barrée</strong> sur ton agenda pour
+            que tes élèves voient l'annulation — si tu veux la faire disparaître complètement,
+            supprime-la avec la corbeille <Trash2 size={13} style={{ display: 'inline', verticalAlign: '-2px' }} /> ci-dessous.
+          </span>
         </div>
       )}
 
@@ -1802,6 +1808,11 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
           display: grid;
           grid-template-columns: 1fr 1fr;
           gap: 12px;
+        }
+        /* Petit mobile : une colonne — deux champs côte à côte écrasaient
+           date et heure jusqu'à l'illisible (retours Maude, 08/2026). */
+        @media (max-width: 480px) {
+          .form-row { grid-template-columns: 1fr; }
         }
         .type-chips {
           display: flex;

@@ -36,7 +36,18 @@ export default function HeureSelect({ value, onChange, className = '' }) {
 
       <style jsx>{`
         .heure-selects { display: flex; align-items: center; gap: 6px; }
-        .heure-selects select { flex: 1; min-width: 0; text-align: center; }
+        /* Padding resserré vs izi-input (12px 16px) : dans une DEMI-colonne de
+           form-row sur petit mobile, 32px de padding + la flèche native du
+           select ne laissaient ~18px au texte — l'heure choisie était
+           invisible (3 signalements Maude, 08/2026). min-width = plancher de
+           lisibilité, la rangée s'élargit plutôt que d'écraser la valeur. */
+        .heure-selects select {
+          flex: 1;
+          min-width: 64px;
+          padding: 12px 8px;
+          text-align: center;
+          text-align-last: center;
+        }
         .heure-sep { font-weight: 700; color: var(--text-muted); }
       `}</style>
     </div>

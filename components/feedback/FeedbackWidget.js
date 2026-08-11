@@ -170,11 +170,20 @@ export default function FeedbackWidget() {
       <style jsx global>{`
         .feedback-fab-wrapper {
           position: fixed;
-          top: 16px;
+          /* Mobile : BAS-droite. En haut-droite, le FAB recouvrait les
+             actions des headers de page — 3 incidents documentés (croix de
+             la checklist, bouton « Fiches », puis le « Modifier » d'une
+             séance, prouvé par interception Playwright sur les retours
+             Maude 08/2026). Le bas-droite mobile est libre (pas de nav). */
+          top: auto;
+          bottom: calc(16px + env(safe-area-inset-bottom, 0px));
           right: 16px;
           z-index: 50;
         }
-        @media (min-width: 1024px) { .feedback-fab-wrapper { top: 20px; right: 24px; } }
+        @media (min-width: 1024px) { .feedback-fab-wrapper { top: 20px; bottom: auto; right: 24px; } }
+        /* La bulle d'invitation ne s'affiche JAMAIS sur mobile : 200px en
+           surimpression du contenu, et elle interceptait les taps. */
+        @media (max-width: 1023px) { .feedback-tooltip { display: none; } }
 
         .feedback-fab {
           width: 40px;

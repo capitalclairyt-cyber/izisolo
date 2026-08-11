@@ -2100,7 +2100,10 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
         .delete-client-btn { width: 40px; height: 40px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-card); display: flex; align-items: center; justify-content: center; color: var(--text-secondary); cursor: pointer; flex-shrink: 0; transition: all 0.15s; }
         .delete-client-btn:hover:not(:disabled) { background: #fef2f2; color: #dc2626; border-color: #fca5a5; }
         .delete-client-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        .header-actions { display: flex; align-items: center; gap: 8px; }
+        /* wrap : 4 actions + titre débordaient de l'écran sur petit mobile
+           (« corbeille non visible », feedback 07/2026) — la rangée replie
+           plutôt que d'élargir la page. */
+        .header-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
         .header-msg-btn {
           display: flex; align-items: center; gap: 6px;
           padding: 8px 14px; height: 40px; border-radius: var(--radius-sm);

@@ -992,7 +992,7 @@ function AgendaStyles() {
         overflow: hidden;
       }
       .cours-chip:hover { background: var(--brand-200); }
-      .cours-chip.annule { opacity: 0.5; }
+      .cours-chip.annule { opacity: 0.5; text-decoration: line-through; }
       .chip-heure {
         font-size: 0.6875rem;
         font-weight: 700;
@@ -1206,7 +1206,7 @@ function AgendaStyles() {
         overflow: hidden;
         width: 100%;
       }
-      .mois-chip.annule { opacity: 0.4; }
+      .mois-chip.annule { opacity: 0.4; text-decoration: line-through; }
       .mois-chip-heure {
         font-size: 0.5625rem;
         font-weight: 800;

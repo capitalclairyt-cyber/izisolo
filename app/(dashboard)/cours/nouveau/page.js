@@ -1174,6 +1174,9 @@ function NouveauCoursInner() {
 
         .form { display: flex; flex-direction: column; gap: 16px; }
         .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        /* Petit mobile : une colonne — date + heure côte à côte devenaient
+           illisibles (série de retours Maude, 08/2026). */
+        @media (max-width: 480px) { .form-row { grid-template-columns: 1fr; } }
         .form-group { display: flex; flex-direction: column; gap: 6px; }
         .form-label { display: flex; align-items: center; gap: 4px; font-size: 0.8125rem; font-weight: 600; color: var(--text-secondary); }
         .form-hint { font-size: 0.75rem; color: var(--text-muted); }

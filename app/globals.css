@@ -271,6 +271,15 @@ button, input, optgroup, select, textarea {
   font: inherit;
   color: inherit;
 }
+/* 3e règle du preflight, rattrapée le 2026-08-11 : sans elle, toute <img>
+   non stylée s'affiche à sa taille NATURELLE — l'illustration sidebar
+   (1200px) élargissait chaque page dashboard à 1200px sur mobile
+   (« dépassé de la fenêtre du téléphone », feedbacks Maude). Tout style
+   explicite (width/height posés) continue de gagner. */
+img, video {
+  max-width: 100%;
+  height: auto;
+}
 
 html {
   -webkit-text-size-adjust: 100%;
