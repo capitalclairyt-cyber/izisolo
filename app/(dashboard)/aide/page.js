@@ -3,17 +3,20 @@
 import Link from 'next/link';
 import {
   BookOpen, CalendarDays, Users, Wallet, ClipboardList, Globe,
-  LifeBuoy, MessageSquarePlus, ArrowRight
+  LifeBuoy, MessageSquarePlus, ArrowRight, Package, Inbox,
+  MessageSquare, FileText
 } from 'lucide-react';
 
 /**
  * /aide — Guide de démarrage (2026-08-01, plan « aide utilisateur » validé Colin).
  *
- * 5 parcours pas-à-pas ciblés sur les frictions d'activation MESURÉES
- * (récurrence non adoptée, drop-off à l'ajout d'élèves) et les questions
- * réelles du terrain. Chaque section = une ancre stable (#premier-cours,
- * #eleves, #encaisser, #pointage, #page-publique) — liée depuis la FAQ de
- * /support, la checklist du dashboard et les emails J+1/J+3.
+ * 9 parcours pas-à-pas : les 5 d'origine ciblés sur les frictions d'activation
+ * MESURÉES (récurrence non adoptée, drop-off à l'ajout d'élèves), + 4 tutos
+ * « vie du studio » ajoutés le 2026-08-17 (demande Colin) : catalogue d'offres,
+ * inbox « À traiter », messagerie/sondages, reçus & factures. Chaque section =
+ * une ancre stable (#premier-cours, #eleves, #offres, #encaisser, #pointage,
+ * #cas-a-traiter, #messagerie, #factures, #page-publique) — liée depuis la FAQ
+ * de /support, la checklist du dashboard et les emails J+1/J+3.
  *
  * Règle d'or : chaque étape cite le VRAI libellé d'écran (nav Sidebar,
  * onglets Paramètres vérifiés) — si un écran est renommé, ce guide DOIT
@@ -48,13 +51,27 @@ const SECTIONS = [
     astuce: 'Deux fiches pour la même personne (deux emails, une faute de frappe) ? La liste Élèves les détecte et te propose de les fusionner sans rien perdre.',
   },
   {
+    id: 'offres',
+    icon: Package,
+    titre: 'Construis ton catalogue d\'offres',
+    intro: 'Ce que tu vends — carnets, abonnements — et ce qui n\'a pas besoin d\'offre du tout.',
+    etapes: [
+      <>Page <strong>Offres</strong> → <strong>« Créer une offre »</strong>. Deux types : <strong>Carnet de séances</strong> (ex : 10 cours pour 120 €) ou <strong>Abonnement</strong> (mensuel, trimestriel, annuel — illimité ou plafonné à X séances par semaine).</>,
+      <>Pour un carnet, choisis sa <strong>validité</strong> (3 mois, 6 mois, sans limite…) : passée la date, il expire — et tes règles décident quoi faire d'une réservation qui dépasse.</>,
+      <><strong>« Vaut pour quels cours ? »</strong> : par défaut, l'offre couvre tous tes cours. Restreins par type (Hatha, Fitball…) si ton carnet yoga ne doit pas payer tes ateliers.</>,
+      <>La <strong>séance à l'unité</strong> (drop-in, atelier, stage) n'a pas besoin d'offre : mets un <strong>tarif à l'unité</strong> directement sur le cours à sa création — tes élèves voient « à X € la séance » sur ton portail, et tu encaisses au pointage.</>,
+      <>Tarif à l'unité <em>et</em> carnets sur le même cours ? Coche <strong>« Accepter aussi les carnets/abos compatibles »</strong> : celles dont le carnet couvre ce type décomptent une séance, les autres paient le tarif.</>,
+    ],
+    astuce: 'Modifier une offre plus tard ne change rien aux carnets déjà vendus : chaque vente fige ses conditions (cours couverts, validité) au moment de l\'achat.',
+  },
+  {
     id: 'encaisser',
     icon: Wallet,
     titre: 'Vends tes carnets et abos',
-    intro: 'Ton catalogue dans Offres, la vente depuis la fiche élève, le suivi dans Revenus.',
+    intro: 'La vente en trois clics depuis la fiche élève, le suivi dans Revenus.',
     etapes: [
-      <>Page <strong>Offres</strong> → <strong>« Créer une offre »</strong> : carnet de X séances, abonnement mensuel ou trimestriel, séance à l'unité… et « Vaut pour quels cours ? » si l'offre est limitée à certains types.</>,
-      <>Pour vendre : <strong>fiche élève</strong> → <strong>« Ajouter une offre »</strong>. Trois modes de règlement : <strong>payé maintenant</strong>, <strong>à régler plus tard</strong>, ou <strong>en plusieurs fois</strong> (échéancier).</>,
+      <>Ton catalogue est prêt ? (Sinon, remonte d'une section : <a href="#offres">Construis ton catalogue</a>.) Pour vendre : <strong>fiche élève</strong> → <strong>« Ajouter une offre »</strong>.</>,
+      <>Trois modes de règlement : <strong>payé maintenant</strong>, <strong>à régler plus tard</strong>, ou <strong>en plusieurs fois</strong> (échéancier).</>,
       <>« À régler plus tard » n'est pas un oubli : le montant apparaît dans <strong>Revenus → « À percevoir »</strong>, encaissable en un clic (espèces, chèque, virement, CB) — sur place ou plus tard.</>,
       <>Avec le plan Complet, ajoute un <strong>lien de paiement Stripe</strong> à tes offres : tes élèves paient en ligne depuis ton portail, tu n'as plus rien à courir.</>,
     ],
@@ -73,6 +90,47 @@ const SECTIONS = [
       <>Les absences suivent <strong>tes</strong> règles (Paramètres → Règles) : les cas ambigus remontent dans <strong>« À traiter »</strong> et tu tranches — « Excuser » re-crédite la séance.</>,
     ],
     astuce: 'Réseau capricieux en studio ? Si un pointage ne passe pas, IziSolo te le dit clairement et rien n\'est perdu — réessaie simplement.',
+  },
+  {
+    id: 'cas-a-traiter',
+    icon: Inbox,
+    titre: 'L\'inbox « À traiter »',
+    intro: 'Tout ce qui demande une décision de ta part atterrit au même endroit — tu tranches en un clic, IziSolo fait le reste.',
+    etapes: [
+      <>Dans la nav, <strong>« À traiter »</strong> (la pastille = le nombre de cas ouverts) : élève sans carnet qui réserve, annulation hors délai, no-show, carnet qui expire avant un cours réservé…</>,
+      <>Chaque carte raconte le contexte (qui, quel cours, quand) et l'<strong>action automatique déjà appliquée</strong> selon tes règles — le studio n'attend jamais ton feu vert pour tourner.</>,
+      <>Ouvre le cas et choisis l'issue en français clair : <strong>« Excusé »</strong> (la séance est re-créditée, même si elle avait été décomptée), <strong>« Encaissé sur place »</strong>, <strong>« Dette créée »</strong>, « À gérer plus tard »…</>,
+      <>Tu t'es trompée ? Onglet <strong>« Historique »</strong> : chaque décision est <strong>annulable pendant 7 jours</strong>, et tout est remis comme avant (carnet compris).</>,
+      <>Le comportement automatique se règle dans <strong>Paramètres → Règles</strong> : onglet <strong>« Annulation »</strong> (ton délai, ta politique) et onglet <strong>« Règles métier »</strong> (les 7 situations, chacune avec ses options).</>,
+    ],
+    astuce: 'Un cas qui revient sans arrêt = un réglage à ajuster. Si tu excuses chaque no-show, passe la règle sur « Crédit reporté gratuitement » : l\'inbox se videra toute seule.',
+  },
+  {
+    id: 'messagerie',
+    icon: MessageSquare,
+    titre: 'Préviens tes élèves',
+    intro: 'Fini les infos éparpillées entre SMS et WhatsApp : tout part d\'IziSolo, et chacune reçoit un email avec le lien pour répondre.',
+    etapes: [
+      <>Page <strong>Messagerie</strong> : écris à une élève en direct (1-à-1). Elle reçoit un email « {'{ton studio}'} t'a écrit » et répond depuis son espace.</>,
+      <>Pour une info collective, bouton <strong>« Annoncer »</strong> : choisis les destinataires — <strong>tous tes élèves</strong>, les <strong>inscrit·es d'un cours</strong>, les <strong>habitué·es d'un type</strong>, les <strong>détenteurs d'une offre</strong>, ou une <strong>sélection libre</strong> — avec aperçu de la liste avant envoi.</>,
+      <>Chaque cours a aussi son <strong>canal</strong> : les inscrit·es y sont ajoutées automatiquement — parfait pour « mardi, on est en salle 2 ».</>,
+      <>Tu hésites entre deux créneaux ? <strong>Sondage planning</strong> : propose 3 à 8 créneaux, partage le lien à tes élèves, elles cochent ceux où elles viendraient — et tu transformes les gagnants en série en un clic.</>,
+    ],
+    astuce: 'L\'annonce est l\'outil de la rentrée : « les inscriptions sont ouvertes, réserve tes cours de septembre » + le lien de ton portail, à tout le monde d\'un coup.',
+  },
+  {
+    id: 'factures',
+    icon: FileText,
+    titre: 'Reçus et factures',
+    intro: 'Tes élèves se servent seules : reçu simple par défaut, vraie facture dès que ton SIRET est renseigné.',
+    etapes: [
+      <>Sans rien configurer : chaque paiement réglé a son <strong>reçu de paiement</strong>, téléchargeable par l'élève depuis son espace — et par toi depuis sa fiche.</>,
+      <>Pour des <strong>factures acquittées</strong> (celles qu'exigent CSE, employeurs et mutuelles) : <strong>Paramètres → Profil &amp; studio → Activité</strong>, carte <strong>« Facturation »</strong> — ton nom ou ta raison sociale + ton <strong>SIRET</strong>.</>,
+      <>Dès le SIRET renseigné, le même bouton produit une <strong>facture numérotée</strong> (FAC-2026-0001…). Re-téléchargée plus tard : même document, même numéro — l'administration adore.</>,
+      <>Plusieurs paiements dans le mois ? <strong>« Facture du mois »</strong> les regroupe en une seule.</>,
+      <>Une erreur ? <strong>« Annuler la facture »</strong> depuis la fiche élève : le numéro est brûlé (jamais réutilisé), les paiements redeviennent facturables.</>,
+    ],
+    astuce: 'La mention TVA proposée par défaut est celle de la franchise en base (art. 293 B du CGI) — modifie-la dans la même carte si ton régime est différent.',
   },
   {
     id: 'page-publique',
@@ -98,7 +156,7 @@ export default function AidePage() {
         <div>
           <h1>Guide de démarrage</h1>
           <p className="aide-subtitle">
-            Tout ce qu'il faut pour être à l'aise avec IziSolo, pas à pas — 10 minutes, grand maximum.
+            Tout ce qu'il faut pour être à l'aise avec IziSolo, pas à pas — chaque tuto se lit en deux minutes.
           </p>
         </div>
       </div>

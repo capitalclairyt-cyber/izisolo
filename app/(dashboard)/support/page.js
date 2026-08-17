@@ -45,6 +45,17 @@ const FAQ = [
   {
     q: "Où je règle mon délai d'annulation et mes règles (absences, retards…) ?",
     a: "Paramètres → Règles : délai d'annulation, absence non prévenue, annulation tardive… Tes élèves voient la règle au moment d'annuler, et les cas ambigus remontent dans « À traiter » pour que tu tranches.",
+    lien: { href: '/aide#cas-a-traiter', label: 'Voir le pas-à-pas' },
+  },
+  {
+    q: "Une élève me demande une facture pour son CSE ou son employeur — comment faire ?",
+    a: "Renseigne ton SIRET une fois pour toutes : Paramètres → Profil & studio → Activité, carte « Facturation ». Ensuite chaque paiement réglé produit une vraie facture acquittée numérotée — l'élève la télécharge elle-même depuis son espace, et toi depuis sa fiche. Sans SIRET, c'est un reçu de paiement simple.",
+    lien: { href: '/aide#factures', label: 'Voir le pas-à-pas' },
+  },
+  {
+    q: "Comment prévenir tous mes élèves d'un coup (rentrée, changement de salle…) ?",
+    a: "Messagerie → « Annoncer » : choisis les destinataires (tous, les inscrit·es d'un cours, les détenteurs d'une offre, ou une sélection libre), écris ton message, et chacune reçoit un email avec le lien pour répondre.",
+    lien: { href: '/aide#messagerie', label: 'Voir le pas-à-pas' },
   },
   {
     q: "Comment exporter mes données ?",
