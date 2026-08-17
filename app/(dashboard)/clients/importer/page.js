@@ -4,33 +4,7 @@ import { useState, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Upload, ArrowLeft, Check, Loader2, FileText, AlertCircle, PartyPopper, Send } from 'lucide-react';
-
-// ─── Parser CSV robuste (guillemets, BOM, délimiteur ; ou , auto) ───────────
-function parseCSV(text) {
-  text = text.replace(/^﻿/, ''); // BOM Excel
-  const nl = text.indexOf('\n');
-  const firstLine = nl < 0 ? text : text.slice(0, nl);
-  const delim = (firstLine.split(';').length > firstLine.split(',').length) ? ';' : ',';
-  const rows = [];
-  let i = 0, field = '', row = [], inQuotes = false;
-  while (i < text.length) {
-    const ch = text[i];
-    if (inQuotes) {
-      if (ch === '"') {
-        if (text[i + 1] === '"') { field += '"'; i += 2; continue; }
-        inQuotes = false; i++; continue;
-      }
-      field += ch; i++; continue;
-    }
-    if (ch === '"') { inQuotes = true; i++; continue; }
-    if (ch === delim) { row.push(field); field = ''; i++; continue; }
-    if (ch === '\r') { i++; continue; }
-    if (ch === '\n') { row.push(field); rows.push(row); row = []; field = ''; i++; continue; }
-    field += ch; i++;
-  }
-  if (field.length || row.length) { row.push(field); rows.push(row); }
-  return rows.filter(r => r.some(c => (c || '').trim() !== ''));
-}
+import { parseCSV, decodeCSVBuffer } from '@/lib/csv-import';
 
 // ─── Cibles d'import + synonymes pour l'auto-mapping ────────────────────────
 const TARGETS = [
@@ -83,7 +57,9 @@ export default function ImporterClientsPage() {
     setError('');
     const reader = new FileReader();
     reader.onload = (e) => {
-      const parsed = parseCSV(String(e.target.result || ''));
+      // Octets bruts → décodage tolérant (UTF-8 / ANSI Excel / UTF-16) : forcer
+      // l'UTF-8 sur un export Excel FR détruisait les accents (é → �) en DB.
+      const parsed = parseCSV(decodeCSVBuffer(e.target.result));
       if (parsed.length < 1) { setError("Ce fichier semble vide ou illisible."); return; }
       setRows(parsed);
       setFileName(file.name);
@@ -92,7 +68,7 @@ export default function ImporterClientsPage() {
       setStep('map');
     };
     reader.onerror = () => setError("Impossible de lire le fichier.");
-    reader.readAsText(file, 'utf-8');
+    reader.readAsArrayBuffer(file);
   };
 
   const buildClients = () => {
