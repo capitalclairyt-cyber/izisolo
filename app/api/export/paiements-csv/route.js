@@ -67,15 +67,32 @@ function csvEscape(value) {
   return str;
 }
 
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const MODES_VALIDES = ['especes', 'cheque', 'virement', 'CB'];
+const STATUTS_VALIDES = ['paid', 'pending', 'overdue'];
+
 // plan 'export_compta' : feature Pro (gate serveur — l'UI seule était contournable)
 export const GET = withRoute({ auth: 'user', plan: 'export_compta' }, async ({ request, auth }) => {
   const { user, supabase } = auth;
 
   const url = new URL(request.url);
   const periode = url.searchParams.get('periode') || 'mois';
-  const filterMode = url.searchParams.get('mode');
-  const filterStatut = url.searchParams.get('statut');
-  const { from, to } = PERIODE_TO_RANGE(periode);
+  // Filtres validés strictement — un paramètre invalide est IGNORÉ (pas de
+  // filtre silencieusement faux dans un document comptable).
+  const filterMode = MODES_VALIDES.includes(url.searchParams.get('mode')) ? url.searchParams.get('mode') : null;
+  const filterStatut = STATUTS_VALIDES.includes(url.searchParams.get('statut')) ? url.searchParams.get('statut') : null;
+  // Offre : uuid = cette offre précise ; 'aucune' = paiements hors offre
+  // (séance à l'unité, prestation libre). RLS scope déjà par profile_id.
+  const offreParam = url.searchParams.get('offre');
+  const filterOffre = offreParam === 'aucune' ? 'aucune' : (UUID_RE.test(offreParam || '') ? offreParam : null);
+
+  // Bornes libres du/au (demande Patricia 2026-08-18 : jour, semaine,
+  // trimestre… = une plage libre couvre tout) — priment sur `periode`.
+  const fromParam = url.searchParams.get('from');
+  const toParam = url.searchParams.get('to');
+  const libre = DATE_RE.test(fromParam || '') && DATE_RE.test(toParam || '') && fromParam <= toParam;
+  const { from, to } = libre ? { from: fromParam, to: toParam } : PERIODE_TO_RANGE(periode);
 
   // Paginé (B1f, rouge) : sans .range, le cap PostgREST 1000 tronquait le
   // CSV COMPTABLE en silence — en ordre ASC, ce sont les lignes les plus
@@ -94,6 +111,8 @@ export const GET = withRoute({ auth: 'user', plan: 'export_compta' }, async ({ r
 
     if (filterMode)   query = query.eq('mode', filterMode);
     if (filterStatut) query = query.eq('statut', filterStatut);
+    if (filterOffre === 'aucune') query = query.is('offre_id', null);
+    else if (filterOffre)         query = query.eq('offre_id', filterOffre);
 
     const { data: lot, error } = await query;
     if (error) {
@@ -139,7 +158,9 @@ export const GET = withRoute({ auth: 'user', plan: 'export_compta' }, async ({ r
   // (B1f). Round-trip aligné.
   const csv = '﻿' + [headers.join(';'), ...rows].join('\n');
 
-  const filename = `izisolo-paiements-${periode}-${new Date().toISOString().slice(0, 10)}.csv`;
+  const filename = libre
+    ? `izisolo-paiements-${from}-au-${to}.csv`
+    : `izisolo-paiements-${periode}-${new Date().toISOString().slice(0, 10)}.csv`;
 
   return new Response(csv, {
     status: 200,

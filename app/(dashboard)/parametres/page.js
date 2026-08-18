@@ -16,6 +16,7 @@ import { can } from '@/lib/plan-guard';
 import { genererSlugStudioUnique } from '@/lib/slug-studio';
 import { validerSiret } from '@/lib/validation';
 import { MENTION_TVA_DEFAUT } from '@/lib/factures';
+import { sanitizeDocs } from '@/lib/docs-inscription';
 // import BackgroundDecor — retiré, plus utilisé (apparences supprimées)
 
 // Normalise une URL utilisateur :
@@ -75,6 +76,7 @@ const CARTES = {
   page:          ['photo_couverture_focal_y', 'bio', 'philosophie', 'formations', 'annees_experience',
                   'horaires_studio', 'horaires_studio_jours', 'afficher_tarifs', 'afficher_horaires',
                   'faq_publique', 'instagram_url', 'facebook_url', 'website_url'],
+  docs:          ['docs_inscription'],
   visibilite:    ['visibilite_default', 'afficher_inscrits'],
   essai:         ['essai_actif', 'essai_mode', 'essai_paiement', 'essai_prix', 'essai_stripe_payment_link', 'essai_message'],
   paiement:      ['stripe_webhook_secret'],
@@ -98,6 +100,7 @@ const SERIALIZERS = {
   anniversaire_message:      v => v || null,
   stripe_webhook_secret:     v => v || null,
   regles_annulation:         v => v || null,
+  docs_inscription:          v => { const s = sanitizeDocs(v); return s.length ? s : null; },
   notifs_eleves:             v => v || null,
   sms_seuil_mois:            v => (v || v === 0 ? parseInt(v) || null : null),
   photo_couverture_focal_y:  v => (v != null ? parseInt(v) : 50),
@@ -155,6 +158,7 @@ import NotifsElevesSection from './sections/NotifsElevesSection';
 import AbonnementCheckout from './sections/AbonnementCheckout';
 import ReglesAnnulationSection from './sections/ReglesAnnulationSection';
 import PagePubliqueSection from './sections/PagePubliqueSection';
+import DocsInscriptionSection from './sections/DocsInscriptionSection';
 import StripePaiementSection from './sections/StripePaiementSection';
 import VisibiliteSection from './sections/VisibiliteSection';
 import CoursEssaiSection from './sections/CoursEssaiSection';
@@ -820,6 +824,9 @@ export default function Parametres() {
             <>
               <PagePubliqueSection profile={profile} setProfile={setProfile} setDirty={() => marquer('page')} />
               <BtnSauver carte="page" />
+              {/* v85 — documents d'inscription (sa propre carte : save séparé) */}
+              <DocsInscriptionSection profile={profile} setProfile={setProfile} setDirty={() => marquer('docs')} />
+              <BtnSauver carte="docs" />
             </>
           )}
           {subTab.portail === 'visibilite' && (

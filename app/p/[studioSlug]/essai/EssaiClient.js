@@ -20,7 +20,7 @@ function formatHeure(h) {
   return mm === '00' ? `${parseInt(hh)}h` : `${parseInt(hh)}h${mm}`;
 }
 
-export default function EssaiClient({ profile, cours, studioSlug, preselectedCoursId }) {
+export default function EssaiClient({ profile, cours, docs = [], studioSlug, preselectedCoursId }) {
   const { toast } = useToast();
   const [coursId, setCoursId] = useState(preselectedCoursId || '');
   const [prenom, setPrenom] = useState('');
@@ -118,6 +118,22 @@ export default function EssaiClient({ profile, cours, studioSlug, preselectedCou
             </div>
           )}
 
+          {/* Documents d'inscription (v85) : rappel sur l'écran de confirmation */}
+          {docs.length > 0 && (
+            <div className="essai-docs">
+              <div className="essai-docs-title">📄 À préparer pour ton premier cours</div>
+              <p className="essai-docs-desc">
+                Imprime {docs.length > 1 ? 'ces documents' : 'ce document'}, remplis-{docs.length > 1 ? 'les' : 'le'} et
+                rapporte-{docs.length > 1 ? 'les' : 'le'} signé{docs.length > 1 ? 's' : ''} :
+              </p>
+              {docs.map(d => (
+                <a key={d.url} href={d.url} target="_blank" rel="noopener noreferrer" className="essai-doc-link">
+                  ⬇ {d.nom}
+                </a>
+              ))}
+            </div>
+          )}
+
           <Link href={`/p/${studioSlug}`} className="essai-back-link">
             ← Retour au studio
           </Link>
@@ -141,6 +157,16 @@ export default function EssaiClient({ profile, cours, studioSlug, preselectedCou
           .essai-confirm-desc {
             font-size: 0.9375rem; color: #555; line-height: 1.6;
             margin: 0 0 22px; max-width: 380px; margin-left: auto; margin-right: auto;
+          }
+          .essai-docs {
+            margin: 18px auto 8px; max-width: 380px; text-align: left;
+            background: #faf7f2; border: 1px solid #eee5d8; border-radius: 12px; padding: 14px 16px;
+          }
+          .essai-docs-title { font-weight: 700; font-size: 0.875rem; color: #1a1a2e; margin-bottom: 4px; }
+          .essai-docs-desc { font-size: 0.8125rem; color: #666; line-height: 1.5; margin: 0 0 8px; }
+          .essai-doc-link {
+            display: block; padding: 8px 0; font-size: 0.875rem; font-weight: 600;
+            color: #8c5826; text-decoration: underline;
           }
           .essai-stripe-cta {
             display: inline-flex; align-items: center; gap: 8px;
@@ -316,6 +342,22 @@ export default function EssaiClient({ profile, cours, studioSlug, preselectedCou
         <p className="essai-cgu">
           En envoyant, tu acceptes les <a href="/legal/cgu" target="_blank" rel="noopener">CGU</a> d'IziSolo.
         </p>
+
+        {/* Documents d'inscription (v85) : annoncés dès le formulaire */}
+        {docs.length > 0 && (
+          <div className="essai-docs">
+            <div className="essai-docs-title">📄 Documents d'inscription</div>
+            <p className="essai-docs-desc">
+              {profile.studio_nom} te demandera {docs.length > 1 ? 'ces documents imprimés et signés' : 'ce document imprimé et signé'} à
+              ton premier cours :
+            </p>
+            {docs.map(d => (
+              <a key={d.url} href={d.url} target="_blank" rel="noopener noreferrer" className="essai-doc-link">
+                ⬇ {d.nom}
+              </a>
+            ))}
+          </div>
+        )}
       </form>
 
       <style jsx>{`
@@ -411,6 +453,16 @@ export default function EssaiClient({ profile, cours, studioSlug, preselectedCou
           cursor: pointer; transition: background 0.15s;
         }
         .essai-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+        .essai-docs {
+          margin-top: 16px; text-align: left;
+          background: #faf7f2; border: 1px solid #eee5d8; border-radius: 12px; padding: 14px 16px;
+        }
+        .essai-docs-title { font-weight: 700; font-size: 0.875rem; color: #1a1a2e; margin-bottom: 4px; }
+        .essai-docs-desc { font-size: 0.8125rem; color: #666; line-height: 1.5; margin: 0 0 8px; }
+        .essai-doc-link {
+          display: block; padding: 8px 0; font-size: 0.875rem; font-weight: 600;
+          color: #8c5826; text-decoration: underline;
+        }
         .essai-submit:hover:not(:disabled) { background: var(--brand-dark); }
         .essai-cgu {
           text-align: center; font-size: 0.75rem; color: #aaa; margin: 4px 0 0;

@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation';
 import { countUnread } from '@/lib/messagerie';
 import EspaceClient from './EspaceClient';
 import { resoudreFicheEleve } from '@/lib/fiche-eleve';
+import { getDocsInscription } from '@/lib/docs-inscription';
 import { resoudreCarnetApplicable } from '@/lib/carnet-resolution';
 
 // Le template racine ajoute déjà « — IziSolo » ; l'OG studio vient du layout portail.
@@ -354,7 +355,10 @@ async function getData(studioSlug, user) {
     .from('clients').select('notif_prefs').eq('id', client.id).maybeSingle();
   if (!cpErr && cp?.notif_prefs) clientPrefs = cp.notif_prefs;
 
-  return { profile, client, aVenir, passes, paiements: paiements || [], offresStripe: offresStripe || [], abonnements: abonnements || [], aRegler, seancesWorkshopDues, annulationsDues, unreadMessages, clientPrefs, facturationActive, facturesParPaiement };
+  // Documents d'inscription (v85) — requête séparée défensive (colonne absente → [])
+  const docsInscription = await getDocsInscription(supabase, profile.id);
+
+  return { profile, client, aVenir, passes, paiements: paiements || [], offresStripe: offresStripe || [], abonnements: abonnements || [], aRegler, seancesWorkshopDues, annulationsDues, unreadMessages, clientPrefs, facturationActive, facturesParPaiement, docsInscription };
 }
 
 export default async function EspacePage({ params, searchParams }) {
@@ -426,6 +430,7 @@ export default async function EspacePage({ params, searchParams }) {
       clientPrefs={data.clientPrefs || {}}
       facturationActive={data.facturationActive || false}
       facturesParPaiement={data.facturesParPaiement || {}}
+      docsInscription={data.docsInscription || []}
       studioSlug={studioSlug}
       userEmail={user.email}
     />

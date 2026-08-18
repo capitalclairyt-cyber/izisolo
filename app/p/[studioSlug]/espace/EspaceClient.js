@@ -164,7 +164,7 @@ function CoursCard({ presence, profile, studioSlug, onAnnuler, annulEnCours }) {
   );
 }
 
-export default function EspaceClient({ profile, client, aVenir, passes, paiements = [], offresStripe = [], abonnements = [], aRegler = [], seancesWorkshopDues = [], annulationsDues = [], unreadMessages = 0, clientPrefs = {}, studioSlug, userEmail, isDemo = false, facturationActive = false, facturesParPaiement = {} }) {
+export default function EspaceClient({ profile, client, aVenir, passes, paiements = [], offresStripe = [], abonnements = [], aRegler = [], seancesWorkshopDues = [], annulationsDues = [], unreadMessages = 0, clientPrefs = {}, studioSlug, userEmail, isDemo = false, facturationActive = false, facturesParPaiement = {}, docsInscription = [] }) {
   const router = useRouter();
   const { toast } = useToast();
   const [notifsOpen, setNotifsOpen] = useState(false);
@@ -996,6 +996,23 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
         </div>
       )}
 
+      {/* Documents du studio (v85) — questionnaire santé, CGV… à rapporter signés */}
+      {docsInscription.length > 0 && (
+        <div style={{ marginTop: 28, paddingTop: 20, borderTop: '1px solid #f0ebe8' }}>
+          <h2 className="espace-section-title">📄 Documents du studio</h2>
+          <p style={{ fontSize: '0.8125rem', color: '#888', margin: '0 0 10px' }}>
+            À imprimer, remplir et rapporter signé{docsInscription.length > 1 ? 's' : ''} à {profile.studio_nom}.
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {docsInscription.map(d => (
+              <a key={d.url} href={d.url} target="_blank" rel="noopener noreferrer" className="espace-doc-link">
+                ⬇ {d.nom}
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Bouton rebooking */}
       <div style={{ marginTop: 28, paddingTop: 20, borderTop: '1px solid #f0ebe8', textAlign: 'center' }}>
         <Link href={`/p/${studioSlug}`} className="portail-btn-primary" style={{ maxWidth: 280, margin: '0 auto' }}>
@@ -1006,6 +1023,13 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
       <style jsx global>{`
         .portail-back-link { display: inline-flex; align-items: center; gap: 6px; color: #888; font-size: 0.875rem; text-decoration: none; margin-bottom: 20px; }
         .portail-back-link:hover { color: #d4a0a0; }
+
+        .espace-doc-link {
+          display: block; padding: 10px 14px; background: #faf7f2;
+          border: 1px solid #eee5d8; border-radius: 10px;
+          font-size: 0.875rem; font-weight: 600; color: #8c5826; text-decoration: none;
+        }
+        .espace-doc-link:hover { border-color: #d4a574; }
 
         .espace-section-title {
           display: flex; align-items: center; gap: 8px;

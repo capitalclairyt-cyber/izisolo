@@ -1,6 +1,7 @@
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { createServerClient } from '@/lib/supabase-server';
 import { studioCan } from '@/lib/plan-guard';
+import { getDocsInscription } from '@/lib/docs-inscription';
 import { resolveClientInfo, filterCoursVisibles } from '@/lib/visibilite';
 import { notFound } from 'next/navigation';
 import EssaiClient from './EssaiClient';
@@ -65,7 +66,12 @@ async function getData(studioSlug) {
     }
   }
 
-  return { profile, cours };
+  // Documents d'inscription (v85) — requête séparée DÉFENSIVE : sans la
+  // migration, la colonne n'existe pas et un select qui la nommerait tuerait
+  // toute la page. getDocsInscription → [] dans ce cas.
+  const docs = await getDocsInscription(supabase, profile.id);
+
+  return { profile, cours, docs };
 }
 
 export default async function EssaiPage({ params, searchParams }) {
@@ -78,6 +84,7 @@ export default async function EssaiPage({ params, searchParams }) {
     <EssaiClient
       profile={data.profile}
       cours={data.cours}
+      docs={data.docs}
       studioSlug={studioSlug}
       preselectedCoursId={sp?.cours || null}
     />

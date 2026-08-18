@@ -266,36 +266,79 @@ export default function RevenusClient({ paiements: initialPaiements, seancesDues
     }
   };
 
-  const handleExport = () => {
+  // ── Export personnalisable (demande Patricia 2026-08-18) ──
+  // Modale : période préréglée OU dates libres, état, mode, offre.
+  const [exportModal, setExportModal] = useState(false);
+  const [exportPeriode, setExportPeriode] = useState('mois'); // valeur PERIODES ou 'libre'
+  const [exportFrom, setExportFrom] = useState('');
+  const [exportTo, setExportTo] = useState('');
+  const [exportStatut, setExportStatut] = useState('');   // '' = tous
+  const [exportMode, setExportMode] = useState('');       // '' = tous
+  const [exportOffre, setExportOffre] = useState('');     // '' = toutes | uuid | 'aucune'
+  const [offresExport, setOffresExport] = useState(null); // null = pas chargées
+  const [exporting, setExporting] = useState(false);
+
+  const openExport = () => {
+    // Préremplir depuis les filtres courants de la page (continuité)
+    setExportPeriode(periode);
+    setExportStatut(filterStatut || '');
+    setExportMode(filterMode || '');
+    const paris = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Paris' });
+    setExportFrom(paris.slice(0, 8) + '01');
+    setExportTo(paris);
+    setExportModal(true);
+    if (offresExport === null) {
+      (async () => {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) { setOffresExport([]); return; }
+        const { data } = await supabase
+          .from('offres').select('id, nom').eq('profile_id', user.id).order('nom');
+        setOffresExport(data || []);
+      })();
+    }
+  };
+
+  const handleExport = async () => {
+    const libre = exportPeriode === 'libre';
+    if (libre && (!exportFrom || !exportTo || exportFrom > exportTo)) {
+      toast.warning('Vérifie tes dates : « du » doit précéder « au ».');
+      return;
+    }
     const params = new URLSearchParams({
-      periode,
-      ...(filterMode ? { mode: filterMode } : {}),
-      ...(filterStatut ? { statut: filterStatut } : {}),
+      ...(libre ? { from: exportFrom, to: exportTo } : { periode: exportPeriode }),
+      ...(exportMode ? { mode: exportMode } : {}),
+      ...(exportStatut ? { statut: exportStatut } : {}),
+      ...(exportOffre ? { offre: exportOffre } : {}),
     });
     // fetch + blob (B1f) : la navigation directe affichait le JSON brut du
     // 403 en PLEIN ÉCRAN pour une prof Solo (« Export CSV pour ton
     // comptable » visible mais feature Pro).
-    (async () => {
-      try {
-        const res = await fetch(`/api/export/paiements-csv?${params.toString()}`);
-        if (!res.ok) {
-          const j = await res.json().catch(() => ({}));
-          toast.error(j.error || 'Export comptable impossible pour le moment.');
-          return;
-        }
-        const blob = await res.blob();
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `izisolo-paiements-${new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Paris' })}.csv`;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        URL.revokeObjectURL(url);
-      } catch (e) {
-        toast.error('Export impossible : ' + e.message);
+    setExporting(true);
+    try {
+      const res = await fetch(`/api/export/paiements-csv?${params.toString()}`);
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        toast.error(j.error || 'Export comptable impossible pour le moment.');
+        return;
       }
-    })();
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = libre
+        ? `izisolo-paiements-${exportFrom}-au-${exportTo}.csv`
+        : `izisolo-paiements-${new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Paris' })}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      setExportModal(false);
+    } catch (e) {
+      toast.error('Export impossible : ' + e.message);
+    } finally {
+      setExporting(false);
+    }
   };
 
   const periodeLabel = PERIODES.find(p => p.value === periode)?.label || '';
@@ -305,7 +348,7 @@ export default function RevenusClient({ paiements: initialPaiements, seancesDues
       <div className="page-header animate-fade-in">
         <h1>Revenus</h1>
         <div style={{ display: 'flex', gap: 8 }}>
-          <button onClick={handleExport} className="izi-btn izi-btn-ghost header-cta-btn" title="Export CSV pour ton comptable">
+          <button onClick={openExport} className="izi-btn izi-btn-ghost header-cta-btn" title="Export CSV pour ton comptable">
             <Download size={16} /> Export
           </button>
           <Link href="/revenus/nouveau" className="izi-btn izi-btn-primary header-cta-btn">
@@ -735,6 +778,95 @@ export default function RevenusClient({ paiements: initialPaiements, seancesDues
         </div>
       )}
 
+      {/* Modal export compta personnalisable (demande Patricia 2026-08-18) */}
+      {exportModal && (
+        <div className="enc-overlay" onClick={() => !exporting && setExportModal(false)}>
+          <div className="enc-modal" onClick={e => e.stopPropagation()}>
+            <button className="enc-close" onClick={() => setExportModal(false)} aria-label="Fermer">
+              <X size={16} />
+            </button>
+            <h3 className="enc-title">Exporter pour ta compta</h3>
+
+            <div className="enc-field">
+              <label>Période</label>
+              <div className="export-chips">
+                {PERIODES.map(p => (
+                  <button key={p.value} type="button"
+                    className={`enc-mode-btn ${exportPeriode === p.value ? 'active' : ''}`}
+                    onClick={() => setExportPeriode(p.value)}>
+                    {p.label}
+                  </button>
+                ))}
+                <button type="button"
+                  className={`enc-mode-btn ${exportPeriode === 'libre' ? 'active' : ''}`}
+                  onClick={() => setExportPeriode('libre')}>
+                  Dates libres…
+                </button>
+              </div>
+              {exportPeriode === 'libre' && (
+                <div className="export-dates-row">
+                  <label className="export-date-lbl">du
+                    <input type="date" className="izi-input" value={exportFrom} onChange={e => setExportFrom(e.target.value)} />
+                  </label>
+                  <label className="export-date-lbl">au
+                    <input type="date" className="izi-input" value={exportTo} onChange={e => setExportTo(e.target.value)} />
+                  </label>
+                </div>
+              )}
+            </div>
+
+            <div className="enc-field">
+              <label>État</label>
+              <div className="export-chips">
+                <button type="button" className={`enc-mode-btn ${!exportStatut ? 'active' : ''}`} onClick={() => setExportStatut('')}>Tous</button>
+                {STATUTS.map(s => (
+                  <button key={s.value} type="button"
+                    className={`enc-mode-btn ${exportStatut === s.value ? 'active' : ''}`}
+                    onClick={() => setExportStatut(s.value)}>
+                    {s.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="enc-field">
+              <label>Mode de règlement</label>
+              <div className="export-chips">
+                <button type="button" className={`enc-mode-btn ${!exportMode ? 'active' : ''}`} onClick={() => setExportMode('')}>Tous</button>
+                {MODES.map(({ value, label }) => (
+                  <button key={value} type="button"
+                    className={`enc-mode-btn ${exportMode === value ? 'active' : ''}`}
+                    onClick={() => setExportMode(value)}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="enc-field">
+              <label>Offre</label>
+              <select className="izi-input" value={exportOffre} onChange={e => setExportOffre(e.target.value)}>
+                <option value="">Toutes</option>
+                {(offresExport || []).map(o => (
+                  <option key={o.id} value={o.id}>{o.nom}</option>
+                ))}
+                <option value="aucune">Hors offre (séances à l'unité, paiements libres)</option>
+              </select>
+            </div>
+
+            <div className="enc-actions">
+              <button onClick={() => setExportModal(false)} className="izi-btn izi-btn-ghost" disabled={exporting}>
+                Annuler
+              </button>
+              <button onClick={handleExport} className="izi-btn izi-btn-primary" disabled={exporting}>
+                {exporting ? <Loader2 size={14} className="spin" /> : <Download size={14} />}
+                Télécharger le CSV
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Modal édition paiement */}
       {editModal && (
         <div className="enc-overlay" onClick={() => !editSubmitting && setEditModal(null)}>
@@ -999,6 +1131,9 @@ export default function RevenusClient({ paiements: initialPaiements, seancesDues
         }
         .enc-mode-btn.active { border-color: var(--brand); background: var(--brand-light); color: var(--brand-700); }
         .enc-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px; }
+        .export-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+        .export-dates-row { display: flex; gap: 10px; margin-top: 10px; }
+        .export-date-lbl { flex: 1; display: flex; flex-direction: column; gap: 4px; font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); }
 
         @keyframes enc-fade-in { from { opacity: 0; } to { opacity: 1; } }
         @keyframes enc-pop-in { from { opacity: 0; transform: scale(0.94); } to { opacity: 1; transform: scale(1); } }
