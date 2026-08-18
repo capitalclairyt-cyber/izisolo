@@ -1,11 +1,13 @@
 'use client';
 
+import { useState, useRef } from 'react';
 import Link from 'next/link';
 import {
   BookOpen, CalendarDays, Users, Wallet, ClipboardList, Globe,
   LifeBuoy, MessageSquarePlus, ArrowRight, Package, Inbox,
-  MessageSquare, FileText, Smartphone, CalendarClock, Hourglass
+  MessageSquare, FileText, Smartphone, CalendarClock, Hourglass, Search, X
 } from 'lucide-react';
+import { FAQ_SUPPORT } from '@/content/faq-support';
 
 /**
  * /aide — Guide de démarrage (2026-08-01, plan « aide utilisateur » validé Colin).
@@ -198,7 +200,40 @@ const SECTIONS = [
   },
 ];
 
+// Recherche insensible aux accents et à la casse (« echeancier » trouve « échéancier »)
+const normaliser = (s) => (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+
 export default function AidePage() {
+  // ── Recherche instantanée (2026-08-18, décision Colin — le pont AVANT tout
+  // chatbot : contenu statique fouillé côté client, zéro IA, zéro coût, zéro
+  // hallucination). L'index des tutos se construit depuis le DOM : les 12
+  // sections sont rendues, leur textContent EST la vérité (étapes comprises) —
+  // pas de double source à maintenir. La FAQ /support est fouillée en plus
+  // (content/faq-support), résultats en liens #faq-N.
+  const [query, setQuery] = useState('');
+  const [sectionsVisibles, setSectionsVisibles] = useState(null); // null = toutes
+  const [faqTrouvees, setFaqTrouvees] = useState([]);
+  const indexRef = useRef(null); // [{id, texte normalisé}] — construit au 1er caractère
+
+  const chercher = (q) => {
+    setQuery(q);
+    const nq = normaliser(q.trim());
+    if (nq.length < 2) { setSectionsVisibles(null); setFaqTrouvees([]); return; }
+    if (!indexRef.current) {
+      indexRef.current = Array.from(document.querySelectorAll('.aide-section'))
+        .map(el => ({ id: el.id, texte: normaliser(el.textContent) }));
+    }
+    setSectionsVisibles(new Set(indexRef.current.filter(s => s.texte.includes(nq)).map(s => s.id)));
+    setFaqTrouvees(
+      FAQ_SUPPORT
+        .map((item, i) => ({ ...item, i }))
+        .filter(item => normaliser(item.q + ' ' + item.a).includes(nq))
+        .slice(0, 4)
+    );
+  };
+
+  const enRecherche = sectionsVisibles !== null;
+
   return (
     <div className="aide-page">
       <div className="aide-header">
@@ -211,18 +246,67 @@ export default function AidePage() {
         </div>
       </div>
 
-      {/* Sommaire */}
-      <div className="aide-sommaire">
-        {SECTIONS.map(s => (
-          <a key={s.id} href={`#${s.id}`} className="aide-chip">
-            <s.icon size={14} /> {s.titre}
-          </a>
-        ))}
+      {/* Recherche instantanée */}
+      <div className="aide-search-wrap">
+        <Search size={16} className="aide-search-icon" />
+        <input
+          type="search"
+          className="izi-input aide-search-input"
+          placeholder="Cherche dans le guide… (échéancier, annuler, facture…)"
+          value={query}
+          onChange={e => chercher(e.target.value)}
+          aria-label="Rechercher dans le guide"
+        />
+        {query && (
+          <button type="button" className="aide-search-clear" onClick={() => chercher('')} aria-label="Effacer la recherche">
+            <X size={15} />
+          </button>
+        )}
       </div>
 
-      {/* Sections */}
+      {/* Résultats : compteur + questions FAQ correspondantes */}
+      {enRecherche && (
+        <div className="aide-search-etat">
+          {sectionsVisibles.size > 0
+            ? <span>{sectionsVisibles.size} tuto{sectionsVisibles.size > 1 ? 's' : ''} correspond{sectionsVisibles.size > 1 ? 'ent' : ''} ↓</span>
+            : <span>Aucun tuto ne contient « {query.trim()} ».</span>}
+          {faqTrouvees.length > 0 && (
+            <div className="aide-faq-matches">
+              <span className="aide-faq-matches-label">Aussi dans la FAQ :</span>
+              {faqTrouvees.map(item => (
+                <Link key={item.i} href={`/support#faq-${item.i}`} className="aide-faq-match">
+                  {item.q}
+                </Link>
+              ))}
+            </div>
+          )}
+          {sectionsVisibles.size === 0 && faqTrouvees.length === 0 && (
+            <div className="aide-faq-matches">
+              <Link href="/support" className="aide-faq-match">Pose ta question au support — on répond vite.</Link>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Sommaire */}
+      {!enRecherche && (
+        <div className="aide-sommaire">
+          {SECTIONS.map(s => (
+            <a key={s.id} href={`#${s.id}`} className="aide-chip">
+              <s.icon size={14} /> {s.titre}
+            </a>
+          ))}
+        </div>
+      )}
+
+      {/* Sections — masquées (pas démontées : l'index et les ancres restent valides) */}
       {SECTIONS.map(section => (
-        <section key={section.id} id={section.id} className="aide-section">
+        <section
+          key={section.id}
+          id={section.id}
+          className="aide-section"
+          style={enRecherche && !sectionsVisibles.has(section.id) ? { display: 'none' } : undefined}
+        >
           <div className="aide-section-head">
             <section.icon size={18} />
             <h2>{section.titre}</h2>
@@ -274,6 +358,25 @@ export default function AidePage() {
         }
         .aide-header h1 { font-size: 1.375rem; font-weight: 800; margin: 0 0 4px; }
         .aide-subtitle { color: var(--text-secondary); font-size: 0.9rem; margin: 0; line-height: 1.5; }
+
+        .aide-search-wrap { position: relative; }
+        .aide-search-icon { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none; }
+        .aide-search-input { width: 100%; padding-left: 38px !important; padding-right: 38px !important; }
+        .aide-search-clear {
+          position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+          background: none; border: none; cursor: pointer; color: var(--text-muted);
+          width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: 50%;
+        }
+        .aide-search-clear:hover { color: var(--text-primary); background: var(--bg-soft, #f8f9fa); }
+        .aide-search-etat { font-size: 0.8125rem; color: var(--text-secondary); display: flex; flex-direction: column; gap: 8px; }
+        .aide-faq-matches { display: flex; flex-direction: column; gap: 5px; }
+        .aide-faq-matches-label { font-weight: 700; font-size: 0.78rem; color: var(--text-primary); }
+        .aide-faq-match {
+          display: block; padding: 9px 13px; background: var(--bg-card);
+          border: 1px solid var(--border); border-radius: var(--radius-md);
+          color: var(--brand); font-weight: 600; font-size: 0.8125rem; text-decoration: none;
+        }
+        .aide-faq-match:hover { border-color: var(--brand); }
 
         .aide-sommaire { display: flex; flex-wrap: wrap; gap: 8px; }
         .aide-chip {
