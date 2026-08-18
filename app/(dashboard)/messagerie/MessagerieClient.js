@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft, MessageSquare, Megaphone, Plus, Search, X, Send, Loader2, Users } from 'lucide-react';
+import AideContextuelle from '@/components/AideContextuelle';
 import ConversationList from '@/components/messagerie/ConversationList';
 import ChatRoom from '@/components/messagerie/ChatRoom';
 import AttachmentPicker from '@/components/messagerie/AttachmentPicker';
@@ -223,6 +224,7 @@ export default function MessagerieClient({ profile, clients, cours, offres }) {
           </button>
         ) : null}
         <h1>{selectedConvId ? '' : 'Messagerie'}</h1>
+        {!selectedConvId && <AideContextuelle ancre="messagerie" titre="Tuto : préviens tes élèves" />}
       </header>
 
       {!selectedConvId && (

@@ -6,6 +6,7 @@ import {
   TrendingUp, TrendingDown, Clock, Plus, Download, X, CheckCircle2,
   Banknote, FileText, Landmark, CreditCard, Loader2, Pencil, Save, Trash2, AlertTriangle,
 } from 'lucide-react';
+import AideContextuelle from '@/components/AideContextuelle';
 import { formatMontant, formatDate } from '@/lib/utils';
 import { STATUTS_PAIEMENT } from '@/lib/constantes';
 import { createClient } from '@/lib/supabase';
@@ -346,7 +347,7 @@ export default function RevenusClient({ paiements: initialPaiements, seancesDues
   return (
     <div className="revenus-page">
       <div className="page-header animate-fade-in">
-        <h1>Revenus</h1>
+        <h1>Revenus <AideContextuelle ancre="encaisser" titre="Tuto : encaisser et suivre les paiements" /></h1>
         <div style={{ display: 'flex', gap: 8 }}>
           <button onClick={openExport} className="izi-btn izi-btn-ghost header-cta-btn" title="Export CSV pour ton comptable">
             <Download size={16} /> Export

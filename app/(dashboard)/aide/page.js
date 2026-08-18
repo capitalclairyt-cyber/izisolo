@@ -4,22 +4,26 @@ import Link from 'next/link';
 import {
   BookOpen, CalendarDays, Users, Wallet, ClipboardList, Globe,
   LifeBuoy, MessageSquarePlus, ArrowRight, Package, Inbox,
-  MessageSquare, FileText, Smartphone
+  MessageSquare, FileText, Smartphone, CalendarClock, Hourglass
 } from 'lucide-react';
 
 /**
  * /aide — Guide de démarrage (2026-08-01, plan « aide utilisateur » validé Colin).
  *
- * 10 parcours pas-à-pas : les 5 d'origine ciblés sur les frictions d'activation
+ * 12 parcours pas-à-pas : les 5 d'origine ciblés sur les frictions d'activation
  * MESURÉES (récurrence non adoptée, drop-off à l'ajout d'élèves), + 4 tutos
  * « vie du studio » ajoutés le 2026-08-17 (demande Colin) : catalogue d'offres,
  * inbox « À traiter », messagerie/sondages, reçus & factures, + « installer
  * l'appli » le 2026-08-18 (appel Patricia : bloquée sur l'installation PWA
- * depuis Chrome — la bannière PushPrompt y renvoie). Chaque section = une
- * ancre stable (#premier-cours, #eleves, #offres, #encaisser, #pointage,
- * #cas-a-traiter, #messagerie, #factures, #page-publique, #installer) — liée
- * depuis la FAQ de /support, la checklist du dashboard, les emails J+1/J+3 et
- * la bannière d'installation.
+ * depuis Chrome — la bannière PushPrompt y renvoie), + #agenda et
+ * #regles-annulation le 2026-08-18 (chantier « propulser le guide » : les
+ * feedbacks des 9-10/08 tournaient tous autour de modifier/annuler une séance)
+ * et l'échéancier détaillé dans #encaisser. Chaque section = une ancre stable
+ * (#premier-cours, #agenda, #eleves, #offres, #encaisser, #pointage,
+ * #cas-a-traiter, #regles-annulation, #messagerie, #factures, #page-publique,
+ * #installer) — liée depuis la FAQ de /support, la checklist du dashboard,
+ * les emails J+1/J+3, la bannière d'installation et les « ? » contextuels des
+ * pages (components/AideContextuelle).
  *
  * Règle d'or : chaque étape cite le VRAI libellé d'écran (nav Sidebar,
  * onglets Paramètres vérifiés) — si un écran est renommé, ce guide DOIT
@@ -39,6 +43,20 @@ const SECTIONS = [
       <>Quand la série se termine : ne recrée rien ! Ouvre l'écran des cours récurrents et clique sur l'icône <strong>📅+</strong> de la série → nouvelle date de fin, et les séances repartent avec les mêmes réglages.</>,
     ],
     astuce: 'Pour un atelier ponctuel ou un stage, crée un cours unique avec un tarif à l\'unité — tes élèves le voient « à X € la séance » sur ton portail, carnet ou pas.',
+  },
+  {
+    id: 'agenda',
+    icon: CalendarClock,
+    titre: 'Modifier, déplacer, annuler une séance',
+    intro: 'La vie réelle bouge — ton planning suit, sans jamais casser le reste de la série.',
+    etapes: [
+      <>Depuis l'<strong>Agenda</strong> (ou Cours &amp; Évènements), ouvre la séance concernée. L'icône <strong>crayon</strong> modifie <strong>cette séance seulement</strong> — changer l'heure du mardi 12 ne touche pas les autres mardis.</>,
+      <>Pour changer l'horaire, le lieu ou le nom de <strong>toutes</strong> les séances à venir : bouton <strong>« Modifier toute la série »</strong> sur la page de la séance.</>,
+      <><strong>« Annuler cette séance »</strong> : les inscrit·es sont prévenu·es par email et les crédits restitués selon ta règle « Cours annulé ». La séance <strong>reste visible, barrée</strong>, sur ton agenda — c'est voulu : c'est ce qui informe tes élèves du changement.</>,
+      <>Tu veux la faire disparaître complètement ? Après l'annulation, la <strong>corbeille</strong> la supprime. Attention : l'annulation est définitive, une séance annulée ne se ré-active pas — au besoin, recrée-la.</>,
+      <>Une place se libère grâce à une annulation d'élève ? La <strong>liste d'attente</strong> est promue automatiquement (ou manuellement si tu as choisi ce mode dans tes règles).</>,
+    ],
+    astuce: 'Les vacances scolaires se gèrent à la création de la série (« exclure les vacances », zone A/B/C) — pas besoin d\'annuler l\'été à la main.',
   },
   {
     id: 'eleves',
@@ -74,8 +92,9 @@ const SECTIONS = [
     intro: 'La vente en trois clics depuis la fiche élève, le suivi dans Revenus.',
     etapes: [
       <>Ton catalogue est prêt ? (Sinon, remonte d'une section : <a href="#offres">Construis ton catalogue</a>.) Pour vendre : <strong>fiche élève</strong> → <strong>« Ajouter une offre »</strong>.</>,
-      <>Trois modes de règlement : <strong>payé maintenant</strong>, <strong>à régler plus tard</strong>, ou <strong>en plusieurs fois</strong> (échéancier).</>,
-      <>« À régler plus tard » n'est pas un oubli : le montant apparaît dans <strong>Revenus → « À percevoir »</strong>, encaissable en un clic (espèces, chèque, virement, CB) — sur place ou plus tard.</>,
+      <>Trois modes de règlement : <strong>payé maintenant</strong>, <strong>à régler plus tard</strong>, ou <strong>en plusieurs fois</strong>.</>,
+      <><strong>« En plusieurs fois »</strong> ouvre l'échéancier : choisis <strong>2× à 10×</strong> et le rythme, coche « Le 1<sup>er</sup> versement est déjà encaissé » si l'élève règle le premier aujourd'hui. Chaque versement a sa <strong>date et son montant modifiables</strong> ligne par ligne, et <strong>« Arrondir aux euros »</strong> supprime les centimes (ex : 425 € en 3× → 141 + 142 + 142).</>,
+      <>« À régler plus tard » et les versements à venir ne sont pas des oublis : ils t'attendent dans <strong>Revenus → « À percevoir »</strong>, encaissables en un clic (espèces, chèque, virement, CB) — chacun à sa date.</>,
       <>Avec le plan Complet, ajoute un <strong>lien de paiement Stripe</strong> à tes offres : tes élèves paient en ligne depuis ton portail, tu n'as plus rien à courir.</>,
     ],
     astuce: 'Le carnet se décompte au pointage, pas à la réservation — une élève qui annule à temps ne perd jamais sa séance.',
@@ -107,6 +126,20 @@ const SECTIONS = [
       <>Le comportement automatique se règle dans <strong>Paramètres → Règles</strong> : onglet <strong>« Annulation »</strong> (ton délai, ta politique) et onglet <strong>« Règles métier »</strong> (les 7 situations, chacune avec ses options).</>,
     ],
     astuce: 'Un cas qui revient sans arrêt = un réglage à ajuster. Si tu excuses chaque no-show, passe la règle sur « Crédit reporté gratuitement » : l\'inbox se videra toute seule.',
+  },
+  {
+    id: 'regles-annulation',
+    icon: Hourglass,
+    titre: 'Ton délai d\'annulation, côté élève',
+    intro: 'Une seule règle à poser — l\'app l\'affiche, l\'applique et t\'évite les conversations pénibles.',
+    etapes: [
+      <><strong>Paramètres → Règles → « Annulation »</strong> : choisis ton <strong>délai libre d'annulation</strong> (6 h, 12 h, 24 h — recommandé —, 48 h, 72 h) et, si tu veux, un message personnalisé.</>,
+      <>Ce que vit l'élève : la règle est <strong>affichée au moment d'annuler</strong> depuis son espace. Dans le délai → annulation libre, séance rendue. Hors délai → c'est ta politique qui s'applique.</>,
+      <>La politique hors délai se règle dans <strong>« Règles métier »</strong> (cas « Annulation hors délai ») : <strong>décompter la séance</strong> (stricte), <strong>excuser quand même</strong> (souple), ou décompter/créer une dette. Les cas ambigus remontent dans <a href="#cas-a-traiter">« À traiter »</a> pour ta décision au cas par cas.</>,
+      <>L'email envoyé à l'élève est <strong>honnête</strong> : « séance décomptée », « séance rendue » ou « ton carnet ne couvre pas ce type de cours » — jamais de formule vague.</>,
+      <>Une annulation libère une place → la <strong>liste d'attente</strong> est prévenue et promue selon ton mode (auto ou manuel).</>,
+    ],
+    astuce: 'Commence souple (24 h + « excuser »), durcis si les annulations tardives se multiplient — tu peux changer la règle à tout moment, elle ne s\'applique qu\'aux annulations suivantes.',
   },
   {
     id: 'messagerie',

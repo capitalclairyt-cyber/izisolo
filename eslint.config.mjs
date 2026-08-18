@@ -18,6 +18,9 @@ export default [
       '.vercel/**',
       'playwright-report/**',
       'test-results/**',
+      // Worktrees des sessions Claude parallèles : leurs artefacts .next/
+      // faisaient exploser le lint local (~1000 faux problèmes, 2026-08-18).
+      '.claude/**',
     ],
   },
   {

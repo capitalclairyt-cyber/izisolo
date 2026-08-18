@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   Home, CalendarDays, Users, Settings,
-  BookOpen, Mail, ChevronRight, Sparkles,
+  BookOpen, BookMarked, Mail, ChevronRight, Sparkles,
   Package, BarChart3, LogOut, Menu, X, GraduationCap, LifeBuoy, ClipboardList,
   MessageSquare, Inbox, Clock
 } from 'lucide-react';
@@ -148,8 +148,17 @@ export default function Sidebar({ studioNom = 'Mon Studio', vocabulaire = {}, il
           </div>
         ))}
 
-        {/* Support + Paramètres */}
+        {/* Aide + Support + Paramètres */}
         <div className="sidebar-divider" />
+        {/* Guide /aide : invisible hors checklist avant le 2026-08-18 (chantier
+            « propulser le guide » — il n'était accessible que par un lien 0.75rem) */}
+        <Link href="/aide" className={`sidebar-item ${pathname === '/aide' ? 'active' : ''}`} onClick={triggerPulse}>
+          <span className="sidebar-icon-wrap">
+            <BookMarked size={20} strokeWidth={pathname === '/aide' ? 2.2 : 1.8} />
+          </span>
+          <span className="sidebar-label">Guide</span>
+          {pathname === '/aide' && <ChevronRight size={14} className="sidebar-chevron" />}
+        </Link>
         <Link href="/support" className={`sidebar-item ${pathname === '/support' ? 'active' : ''}`} onClick={triggerPulse}>
           <span className="sidebar-icon-wrap">
             <LifeBuoy size={20} strokeWidth={pathname === '/support' ? 2.2 : 1.8} />

@@ -7,6 +7,7 @@ import {
   X, Check, GraduationCap, Tag, ChevronRight,
   CalendarDays, Pencil, FolderPlus, Folder, AlertTriangle, ArrowRightLeft
 } from 'lucide-react';
+import AideContextuelle from '@/components/AideContextuelle';
 import { createClient } from '@/lib/supabase';
 import { formatHeure } from '@/lib/utils';
 import { normalizeTypesCours } from '@/lib/utils';
@@ -144,6 +145,7 @@ export default function CoursEventsClient({
         <div className="ce-header-left">
           <GraduationCap size={22} />
           <h1>Cours &amp; Évènements</h1>
+          <AideContextuelle ancre="premier-cours" titre="Tuto : ton premier cours récurrent" />
         </div>
         <Link href="/cours/nouveau" className="izi-btn izi-btn-primary ce-btn-new">
           <Plus size={16} /> Nouveau

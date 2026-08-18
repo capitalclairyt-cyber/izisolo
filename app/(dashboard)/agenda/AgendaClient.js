@@ -7,6 +7,7 @@ import {
   ChevronLeft, ChevronRight, Clock, Plus, CheckCircle2,
   Users, Calendar, List, LayoutGrid, Filter, X, Eye, Home
 } from 'lucide-react';
+import AideContextuelle from '@/components/AideContextuelle';
 import { formatHeure, getAllTypesFromCategories } from '@/lib/utils';
 import {
   parseDate, toDateStr, getLundi, getSemaine, addDays, addMonths,
@@ -218,6 +219,7 @@ export default function AgendaClient({ cours: initialCours, profile, initialDate
 
         <div className="header-center">
           <h1 className="nav-title">{titreNav}</h1>
+          <AideContextuelle ancre="agenda" titre="Tuto : modifier, déplacer, annuler une séance" />
           {!isAujourdhui(dateRef) && (
             <button type="button" className="today-btn" onClick={allerAujourdhui}>Aujourd'hui</button>
           )}

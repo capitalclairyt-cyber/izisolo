@@ -7,6 +7,7 @@ import {
   Plus, Package, Ticket, CalendarCheck, Zap, Trash2,
   ToggleLeft, ToggleRight, UserPlus, X, Crown, ArrowRight, Pencil,
 } from 'lucide-react';
+import AideContextuelle from '@/components/AideContextuelle';
 import { formatMontant } from '@/lib/utils';
 import { toneForOffre } from '@/lib/tones';
 import { TYPES_OFFRE } from '@/lib/constantes';
@@ -222,6 +223,7 @@ export default function OffresClient({ offres, profile, planKey, limiteOffres })
       <div className="page-header animate-fade-in">
         <div className="page-header-left">
           <h1>Tes offres</h1>
+          <AideContextuelle ancre="offres" titre="Tuto : construis ton catalogue d'offres" />
           {offres.length > 0 && (
             <span className="count-badge">
               {offres.length}{limiteOffres != null ? `/${limiteOffres}` : ''}

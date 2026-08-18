@@ -9,6 +9,7 @@ import {
   ChevronDown, ChevronUp, Mail, Send, ShieldAlert, Smartphone, CheckCheck, Lock,
   Home, Navigation, Euro, MessageSquare,
 } from 'lucide-react';
+import AideContextuelle from '@/components/AideContextuelle';
 import { formatHeure, getAllTypesFromCategories } from '@/lib/utils';
 import { parseDate } from '@/lib/dates';
 import { compterPlacesOccupees, presenceOccupePlace, presenceEstReservationActive } from '@/lib/presences';
@@ -587,7 +588,7 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
       <div className="page-header">
         <Link href={cours.date ? `/agenda?date=${cours.date}` : '/agenda'} className="back-btn"><ArrowLeft size={20} /></Link>
         <div className="page-header-info">
-          <h1>{cours.nom}</h1>
+          <h1>{cours.nom} <AideContextuelle ancre="pointage" titre="Tuto : le pointage au quotidien" /></h1>
           {isRecurrent && (
             <span className="recurrence-tag">
               <Repeat size={14} /> Récurrent · {nbOccurrences} séance{nbOccurrences > 1 ? 's' : ''} à venir

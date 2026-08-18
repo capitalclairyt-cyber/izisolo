@@ -4,6 +4,7 @@ import { useState, useMemo, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Search, Plus, User, Building2, Phone, Mail, ChevronRight, Filter, Send, SlidersHorizontal, Upload, Download, GitMerge, Settings2 } from 'lucide-react';
+import AideContextuelle from '@/components/AideContextuelle';
 import { createClient } from '@/lib/supabase';
 import { getVocabulaire } from '@/lib/vocabulaire';
 import { STATUTS_CLIENT } from '@/lib/constantes';
@@ -260,6 +261,7 @@ export default function ClientsClient({ clients: clientsInit, profile, statutMap
       <div className="page-header animate-fade-in">
         <h1>{vocab.Clients || 'Élèves'}</h1>
         <span className="count-badge">{clientsList.length}</span>
+        <AideContextuelle ancre="eleves" titre="Tuto : fais entrer tes élèves" />
         <Link
           href="/clients/importer"
           className="izi-btn izi-btn-secondary invite-btn"

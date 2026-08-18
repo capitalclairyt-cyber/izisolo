@@ -18,6 +18,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { CheckCircle2, Clock, AlertCircle, Loader2, Inbox, RotateCcw } from 'lucide-react';
+import AideContextuelle from '@/components/AideContextuelle';
 import { createClient } from '@/lib/supabase';
 import { useToast } from '@/components/ui/ToastProvider';
 import { CASES, getChoixLabel } from '@/lib/regles-metier';
@@ -171,6 +172,7 @@ export default function CasATraiterClient({ casOuverts, casResolus }) {
     <div className="cas-page">
       <div className="page-header animate-fade-in">
         <h1>Cas à traiter</h1>
+        <AideContextuelle ancre="cas-a-traiter" titre="Tuto : l'inbox « À traiter »" />
         {items.length > 0 && (
           <span className="count-badge count-badge-hot">{items.length}</span>
         )}

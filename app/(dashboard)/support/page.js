@@ -41,11 +41,22 @@ const FAQ = [
   {
     q: "Comment modifier une seule séance sans toucher au reste de la série ?",
     a: "Ouvre la séance → icône crayon : la modification ne s'applique qu'à cette séance. Pour changer l'horaire ou le lieu de toutes les séances, utilise « Modifier toute la série » dans le bandeau.",
+    lien: { href: '/aide#agenda', label: 'Voir le pas-à-pas' },
+  },
+  {
+    q: "J'ai annulé une séance mais elle s'affiche encore sur l'agenda — c'est normal ?",
+    a: "Oui : une séance annulée reste visible, barrée — c'est ce qui informe tes élèves du changement (ils sont aussi prévenus par email). Pour la faire disparaître complètement, utilise la corbeille sur sa page. Attention, l'annulation est définitive : une séance annulée ne se ré-active pas.",
+    lien: { href: '/aide#agenda', label: 'Voir le pas-à-pas' },
+  },
+  {
+    q: "Comment faire payer un abonnement en plusieurs fois ?",
+    a: "Le paiement en plusieurs fois se choisit au moment de la VENTE (pas à la création de l'offre) : fiche élève → « Ajouter une offre » → « En plusieurs fois », ou bouton « Vendre » sur les pages Offres et Carnets & abos. Tu choisis 2× à 10×, le rythme, et chaque versement est modifiable — avec un bouton « Arrondir aux euros ».",
+    lien: { href: '/aide#encaisser', label: 'Voir le pas-à-pas' },
   },
   {
     q: "Où je règle mon délai d'annulation et mes règles (absences, retards…) ?",
     a: "Paramètres → Règles : délai d'annulation, absence non prévenue, annulation tardive… Tes élèves voient la règle au moment d'annuler, et les cas ambigus remontent dans « À traiter » pour que tu tranches.",
-    lien: { href: '/aide#cas-a-traiter', label: 'Voir le pas-à-pas' },
+    lien: { href: '/aide#regles-annulation', label: 'Voir le pas-à-pas' },
   },
   {
     q: "Une élève me demande une facture pour son CSE ou son employeur — comment faire ?",

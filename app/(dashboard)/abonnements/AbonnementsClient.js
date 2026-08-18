@@ -9,6 +9,7 @@ import {
   ChevronRight, CreditCard, TrendingUp, Users,
   Banknote, FileText, Landmark, PauseCircle, ShoppingBag,
 } from 'lucide-react';
+import AideContextuelle from '@/components/AideContextuelle';
 import VenteOffreModal from '@/components/paiements/VenteOffreModal';
 import { formatDate, formatMontant } from '@/lib/utils';
 import { toneForAbonnement } from '@/lib/tones';
@@ -179,7 +180,7 @@ export default function AbonnementsClient({ abonnements: initAbo, paiementsParAb
       {/* ── En-tête ── */}
       <div className="abo-header animate-fade-in">
         <div>
-          <h1 className="abo-title">Carnets & abos</h1>
+          <h1 className="abo-title">Carnets & abos <AideContextuelle ancre="encaisser" titre="Tuto : vends tes carnets et abos" /></h1>
           <p className="abo-subtitle">{stats.total} au total · {stats.actifs} actif{stats.actifs > 1 ? 's' : ''}</p>
         </div>
         {/* Point de vente sur la page où on la cherche (appel Patricia
