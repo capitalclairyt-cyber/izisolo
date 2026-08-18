@@ -15,6 +15,14 @@ import { isPushSupported, isIosNonInstalled, getExistingSubscription, enablePush
  * mission unique) passe en n°2, une fois installé — sur iPhone il EXIGE de
  * toute façon l'installation.
  *
+ * v3 (2026-08-18, appel Patricia : « je n'arrive pas à installer », demande
+ * Colin « l'afficher tant que ce n'est pas installé ») : le « Plus tard » de
+ * la mission INSTALLATION n'est plus définitif — simple report de 7 jours
+ * (clé SNOOZE horodatée). Tant que l'app n'est pas installée, la bannière
+ * revient. Le « Plus tard » du push, lui, reste définitif (harceler pour des
+ * notifications est pire que pour une icône). + lien « Comment faire ? » vers
+ * le tuto /aide#installer côté prof.
+ *
  * Plateformes :
  *  - iOS Safari non installé  → étapes Partager → « Sur l'écran d'accueil »
  *  - Android/desktop Chrome   → vrai bouton « Installer » (beforeinstallprompt)
@@ -24,7 +32,9 @@ import { isPushSupported, isIosNonInstalled, getExistingSubscription, enablePush
  *
  * @param {'eleve'|'prof'} audience  adapte le texte
  */
-const DISMISS_KEY = 'izi_pwa_prompt_v2'; // v2 : les « plus tard » du bandeau push v1 revoient la nouvelle mission une fois
+const DISMISS_KEY = 'izi_pwa_prompt_v2';        // push : « plus tard » définitif (historique)
+const SNOOZE_KEY = 'izi_pwa_install_snooze';    // install : timestamp du dernier report
+const SNOOZE_JOURS = 7;
 
 export default function PushPrompt({ audience = 'eleve' }) {
   // hidden | install-ios | install-any | ask | busy
@@ -35,15 +45,18 @@ export default function PushPrompt({ audience = 'eleve' }) {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    if (localStorage.getItem(DISMISS_KEY) === '1') return;
-    setDismissed(false);
 
     const installee = window.matchMedia?.('(display-mode: standalone)')?.matches
       || window.navigator.standalone === true;
 
     if (!installee) {
-      // Mission n°1 : installer. Chrome/Edge émettent beforeinstallprompt
-      // quand la PWA est installable — on le capture pour offrir un VRAI bouton.
+      // Mission n°1 : installer — re-proposée tant que ce n'est pas fait
+      // (le report n'est qu'un snooze de SNOOZE_JOURS, jamais définitif).
+      const snooze = parseInt(localStorage.getItem(SNOOZE_KEY) || '0', 10);
+      if (snooze && Date.now() - snooze < SNOOZE_JOURS * 24 * 3600 * 1000) return;
+      setDismissed(false);
+      // Chrome/Edge émettent beforeinstallprompt quand la PWA est installable
+      // — on le capture pour offrir un VRAI bouton.
       if (!capteurPose.current) {
         capteurPose.current = true;
         window.addEventListener('beforeinstallprompt', (e) => {
@@ -55,7 +68,9 @@ export default function PushPrompt({ audience = 'eleve' }) {
       return;
     }
 
-    // Mission n°2 : le push (app déjà installée).
+    // Mission n°2 : le push (app déjà installée) — « plus tard » définitif.
+    if (localStorage.getItem(DISMISS_KEY) === '1') return;
+    setDismissed(false);
     (async () => {
       if (!isPushSupported()) return;
       if (typeof Notification !== 'undefined' && Notification.permission === 'denied') return;
@@ -66,8 +81,13 @@ export default function PushPrompt({ audience = 'eleve' }) {
 
   if (dismissed || state === 'hidden') return null;
 
+  const estInstallMission = state === 'install-ios' || state === 'install-any';
+
   const hide = () => {
-    try { localStorage.setItem(DISMISS_KEY, '1'); } catch {}
+    try {
+      if (estInstallMission) localStorage.setItem(SNOOZE_KEY, String(Date.now()));
+      else localStorage.setItem(DISMISS_KEY, '1');
+    } catch {}
     setDismissed(true);
   };
 
@@ -94,12 +114,10 @@ export default function PushPrompt({ audience = 'eleve' }) {
     ? 'Sois prévenu·e dès qu\'un·e élève réserve, annule ou t\'écrit — même app fermée.'
     : 'Sois prévenu·e dès qu\'une place se libère ou que ton studio t\'écrit — même app fermée.';
 
-  const estInstall = state === 'install-ios' || state === 'install-any';
-
   return (
     <div className="push-prompt">
       <button className="pp-close" onClick={hide} aria-label="Masquer"><X size={15} /></button>
-      <div className="pp-icon">{estInstall ? <Smartphone size={18} /> : <Bell size={18} />}</div>
+      <div className="pp-icon">{estInstallMission ? <Smartphone size={18} /> : <Bell size={18} />}</div>
       <div className="pp-body">
         {state === 'install-ios' && (
           <>
@@ -108,6 +126,7 @@ export default function PushPrompt({ audience = 'eleve' }) {
               {pitchInstall}<br />
               Appuie sur <Share size={13} style={{ verticalAlign: '-2px' }} /> <strong>Partager</strong> →
               <strong> « Sur l'écran d'accueil »</strong>, puis rouvre depuis l'icône.
+              {audience === 'prof' && <> <a className="pp-link" href="/aide#installer">Le pas-à-pas complet →</a></>}
             </div>
           </>
         )}
@@ -121,6 +140,7 @@ export default function PushPrompt({ audience = 'eleve' }) {
               ) : (
                 <span className="pp-text">Dans ton navigateur : menu <strong>⋮</strong> → <strong>« Installer l'application »</strong>.</span>
               )}
+              {audience === 'prof' && <a className="pp-link" href="/aide#installer">Comment faire ?</a>}
               <button className="pp-later" onClick={hide}>Plus tard</button>
             </div>
           </>
@@ -154,6 +174,7 @@ export default function PushPrompt({ audience = 'eleve' }) {
         .pp-btn { background: var(--brand, #B87333); color: white; border: none; border-radius: 99px; padding: 8px 16px; font-size: 0.8125rem; font-weight: 700; cursor: pointer; font-family: inherit; }
         .pp-btn:disabled { opacity: 0.7; cursor: wait; }
         .pp-later { background: none; border: none; color: var(--text-muted, #999); font-size: 0.8125rem; cursor: pointer; text-decoration: underline; font-family: inherit; }
+        .pp-link { color: var(--brand, #B87333); font-size: 0.8125rem; font-weight: 600; text-decoration: underline; }
       `}</style>
     </div>
   );

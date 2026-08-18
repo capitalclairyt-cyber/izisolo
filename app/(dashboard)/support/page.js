@@ -62,6 +62,11 @@ const FAQ = [
     a: "Page Élèves → « Exporter » : un CSV de toutes tes fiches, disponible quel que soit ton plan. L'export comptable des encaissements se fait depuis Revenus (plan Complet).",
   },
   {
+    q: "Comment installer IziSolo sur mon téléphone (sans App Store) ?",
+    a: "IziSolo est une appli web installable. Android + Chrome : menu ⋮ → « Installer l'application ». iPhone : bouton Partager → « Sur l'écran d'accueil » (Safari, ou Chrome récent). Une fois installée, tu ouvres depuis l'icône et tu restes connecté·e.",
+    lien: { href: '/aide#installer', label: 'Voir le pas-à-pas' },
+  },
+  {
     q: "Comment gérer mon abonnement IziSolo ?",
     a: "Paramètres → Abonnement IziSolo. Pour une facture ou une question de facturation, écris-nous à bonjour@izisolo.fr — on te répond vite.",
   },

@@ -4,19 +4,22 @@ import Link from 'next/link';
 import {
   BookOpen, CalendarDays, Users, Wallet, ClipboardList, Globe,
   LifeBuoy, MessageSquarePlus, ArrowRight, Package, Inbox,
-  MessageSquare, FileText
+  MessageSquare, FileText, Smartphone
 } from 'lucide-react';
 
 /**
  * /aide — Guide de démarrage (2026-08-01, plan « aide utilisateur » validé Colin).
  *
- * 9 parcours pas-à-pas : les 5 d'origine ciblés sur les frictions d'activation
+ * 10 parcours pas-à-pas : les 5 d'origine ciblés sur les frictions d'activation
  * MESURÉES (récurrence non adoptée, drop-off à l'ajout d'élèves), + 4 tutos
  * « vie du studio » ajoutés le 2026-08-17 (demande Colin) : catalogue d'offres,
- * inbox « À traiter », messagerie/sondages, reçus & factures. Chaque section =
- * une ancre stable (#premier-cours, #eleves, #offres, #encaisser, #pointage,
- * #cas-a-traiter, #messagerie, #factures, #page-publique) — liée depuis la FAQ
- * de /support, la checklist du dashboard et les emails J+1/J+3.
+ * inbox « À traiter », messagerie/sondages, reçus & factures, + « installer
+ * l'appli » le 2026-08-18 (appel Patricia : bloquée sur l'installation PWA
+ * depuis Chrome — la bannière PushPrompt y renvoie). Chaque section = une
+ * ancre stable (#premier-cours, #eleves, #offres, #encaisser, #pointage,
+ * #cas-a-traiter, #messagerie, #factures, #page-publique, #installer) — liée
+ * depuis la FAQ de /support, la checklist du dashboard, les emails J+1/J+3 et
+ * la bannière d'installation.
  *
  * Règle d'or : chaque étape cite le VRAI libellé d'écran (nav Sidebar,
  * onglets Paramètres vérifiés) — si un écran est renommé, ce guide DOIT
@@ -145,6 +148,20 @@ const SECTIONS = [
       <>Chaque cours a sa <strong>visibilité</strong> : public, réservé aux inscrit·es, aux abonné·es, aux fidèles — ou privé sur invitation.</>,
     ],
     astuce: 'Le cours d\'essai est ta porte d\'entrée : une demande d\'essai crée la fiche, t\'alerte, et l\'élève reçoit la confirmation avec l\'accès à son espace.',
+  },
+  {
+    id: 'installer',
+    icon: Smartphone,
+    titre: 'Installe l\'appli sur ton téléphone',
+    intro: 'IziSolo s\'installe comme une vraie app — sans App Store, sans téléchargement. Une icône sur ton écran d\'accueil, et tu restes connectée.',
+    etapes: [
+      <><strong>Android + Chrome</strong> : ouvre IziSolo, puis menu <strong>⋮</strong> (en haut à droite) → <strong>« Installer l'application »</strong> (parfois « Ajouter à l'écran d'accueil »). Confirme, l'icône apparaît. La bannière « Installer l'appli » de ton Accueil fait la même chose en un tap.</>,
+      <><strong>iPhone + Safari</strong> : bouton <strong>Partager</strong> (le carré avec la flèche, en bas) → fais défiler → <strong>« Sur l'écran d'accueil »</strong> → « Ajouter ».</>,
+      <><strong>iPhone + Chrome</strong> : icône <strong>Partager</strong> (en haut à droite) → <strong>« Ajouter à l'écran d'accueil »</strong>. Si l'option n'apparaît pas (anciens iOS), ouvre izisolo.fr dans <strong>Safari</strong> et suis l'étape précédente.</>,
+      <><strong>Ordinateur</strong> (Chrome/Edge) : petite icône d'installation à droite de la barre d'adresse → « Installer ».</>,
+      <>Ensuite, ouvre toujours IziSolo <strong>depuis l'icône</strong> : tu restes connectée (fini les reconnexions), et tu peux activer les <strong>notifications</strong> quand la bannière de l'Accueil te le propose.</>,
+    ],
+    astuce: 'Tes élèves ont la même magie : leur espace s\'installe pareil depuis ton portail — une bannière le leur propose, avec les mêmes étapes.',
   },
 ];
 
