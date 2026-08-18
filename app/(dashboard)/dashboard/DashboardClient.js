@@ -17,7 +17,7 @@ import PushPrompt from '@/components/push/PushPrompt';
 import QrPortailModal from '@/components/portail/QrPortailModal';
 import { can } from '@/lib/plan-guard';
 
-export default function DashboardClient({ profile, coursDuJour, nbClients, nbCoursTotal, revenusMois, alertes, coutsMois, hasSondage = false, nbCasATraiter = 0, nbInvites = 0, espacesEleve = [] }) {
+export default function DashboardClient({ profile, coursDuJour, nbClients, nbCoursTotal, revenusMois, alertes, coutsMois, hasSondage = false, nbCasATraiter = 0, nbInvites = 0, nbOffres = 0, nbVentes = 0, espacesEleve = [] }) {
   const vocab = getVocabulaire(profile?.metier || 'yoga', profile?.vocabulaire);
   const prenom = profile?.prenom || 'toi';
   const studioSlug = profile?.studio_slug;
@@ -44,9 +44,13 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
     setPortailPartage(true);
   };
 
+  // Étendue à la boucle argent le 2026-08-18 (état des lieux aide : elle
+  // s'arrêtait pile avant l'activation qui compte — créer une offre, vendre).
   const checklistItems = [
     { key: 'cours',  label: 'Crée ton premier cours',   done: nbCoursTotal > 0, href: '/cours/nouveau' },
     { key: 'eleve',  label: `Ajoute ton premier ${(vocab.client || 'élève').toLowerCase()}`, done: nbClients > 0, href: '/clients/nouveau' },
+    { key: 'offre',  label: 'Crée ta première offre (carnet, abo…)', done: nbOffres > 0, href: '/offres/nouveau' },
+    { key: 'vente',  label: 'Vends ta première offre', done: nbVentes > 0, href: '/offres' },
     { key: 'portail', label: 'Partage ton portail élève', done: portailPartage, action: 'share' },
     { key: 'invite', label: `Invite tes ${(vocab.clients || 'élèves').toLowerCase()} sur leur espace`, done: nbInvites > 0, href: '/clients?inviter=1' },
   ];
@@ -208,7 +212,7 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
           </button>
           <div className="dash-checklist-header">
             <Sparkles size={16} style={{ color: 'var(--brand)' }} />
-            <span>Démarre ton studio en 4 étapes</span>
+            <span>Démarre ton studio en {checklistItems.length} étapes</span>
             {/* Lien inline (pas en absolu : la croix de masquage occupe déjà le
                 coin haut-droit — leçon elementFromPoint, bible §12) */}
             <Link href="/aide" style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--brand)', textDecoration: 'none', whiteSpace: 'nowrap' }}>

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { Sparkles, Calendar, Clock, MapPin, Mail, Phone, Check, X, Loader, AlertCircle, Settings as SettingsIcon, MessageSquare } from 'lucide-react';
+import AideContextuelle from '@/components/AideContextuelle';
 import { useToast } from '@/components/ui/ToastProvider';
 import { toneForCours } from '@/lib/tones';
 import Pagination, { usePagination } from '@/components/ui/Pagination';
@@ -87,8 +88,13 @@ export default function EssaisClient({ profile, demandes: initialDemandes }) {
         title="Cours d'essai non activé"
         description="Active la fonctionnalité dans les paramètres pour permettre aux visiteurs de demander un cours d'essai depuis ton portail public."
       >
-        <Link href="/parametres" className="izi-btn izi-btn-primary">
+        <Link href="/parametres?tab=portail&s=essai" className="izi-btn izi-btn-primary">
           <SettingsIcon size={16} /> Activer dans les paramètres
+        </Link>
+        {/* Le « ? » sert SURTOUT ici : comprendre la feature avant de l'activer
+            (cas Patricia — essai jamais activé, peut-être jamais compris) */}
+        <Link href="/aide#cours-essai" className="aide-ctx" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 10, fontSize: '0.8125rem', fontWeight: 600, color: 'var(--brand)' }}>
+          Comment ça marche ? Le tuto →
         </Link>
       </EmptyState>
     );
@@ -98,7 +104,7 @@ export default function EssaisClient({ profile, demandes: initialDemandes }) {
     <div className="essais-page">
       <header className="essais-header">
         <div>
-          <h1><Sparkles size={20} /> Demandes de cours d'essai</h1>
+          <h1><Sparkles size={20} /> Demandes de cours d'essai <AideContextuelle ancre="cours-essai" titre="Tuto : le cours d'essai" /></h1>
           <p className="essais-subtitle">
             Mode : <strong>{profile.essai_mode === 'auto' ? 'Automatique' : profile.essai_mode === 'semi' ? 'Semi-auto' : 'Manuel'}</strong> ·
             Paiement : <strong>{profile.essai_paiement === 'gratuit' ? 'Gratuit' : profile.essai_paiement === 'sur_place' ? `${profile.essai_prix}€ sur place` : `${profile.essai_prix}€ Stripe`}</strong>

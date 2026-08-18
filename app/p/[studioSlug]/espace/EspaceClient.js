@@ -12,6 +12,7 @@ import { useToast } from '@/components/ui/ToastProvider';
 import { evaluerAnnulation, formatDateLimite } from '@/lib/regles-metier';
 import { moisFacturables } from '@/lib/factures';
 import { toneForCours, toneForPaiement } from '@/lib/tones';
+import AideEleve from '@/components/portail/AideEleve';
 
 const STRIPE_TYPE_ICONS = { carnet: Ticket, abonnement: CalendarCheck, cours_unique: Zap };
 
@@ -1012,6 +1013,9 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
           </div>
         </div>
       )}
+
+      {/* Mini-aide élève (2026-08-18) — les questions récurrentes, réponses vérifiées */}
+      <AideEleve studioNom={profile.studio_nom} studioSlug={studioSlug} />
 
       {/* Bouton rebooking */}
       <div style={{ marginTop: 28, paddingTop: 20, borderTop: '1px solid #f0ebe8', textAlign: 'center' }}>

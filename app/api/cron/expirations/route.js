@@ -238,31 +238,34 @@ export const GET = withRoute({ auth: 'cron' }, async () => {
     reportError('[cron/expirations] trial reminders section:', e?.message);
   }
 
-  // ── Emails d'onboarding J+1 / J+3 (2026-08-01, plan « aide utilisateur ») ──
+  // ── Emails d'onboarding J+1 / J+3 / J+7 (2026-08-01 + 2026-08-18) ──
   // J+1 « premier cours récurrent » (skip si des cours existent), J+3 « invite
-  // tes élèves » (skip si des élèves existent). Fenêtres [1,3) et [3,7) jours —
-  // pas de backfill des comptes plus anciens. Dédup par claim emails_envoyes
-  // (type 'onboarding', ref profileId:j1|j3), libéré si l'envoi échoue.
-  let onboardingJ1 = 0, onboardingJ3 = 0;
+  // tes élèves » (skip si des élèves existent), J+7 « ta première vente »
+  // (skip si une vente existe — le contact humain de mi-essai). Fenêtres
+  // [1,3), [3,7) et [7,10) jours — pas de backfill des comptes plus anciens.
+  // Dédup par claim emails_envoyes (type 'onboarding', ref profileId:j1|j3|j7),
+  // libéré si l'envoi échoue.
+  let onboardingJ1 = 0, onboardingJ3 = 0, onboardingJ7 = 0;
   try {
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.izisolo.fr';
     const now = new Date();
-    const il7jours = new Date(now.getTime() - 7 * 86400000).toISOString();
+    const il10jours = new Date(now.getTime() - 10 * 86400000).toISOString();
     const { data: nouveaux, error: nouveauxErr } = await supabaseAdmin
       .from('profiles')
       .select('id, prenom, email_contact, created_at')
-      .gte('created_at', il7jours);
+      .gte('created_at', il10jours);
     if (nouveauxErr) throw nouveauxErr;
 
     for (const prof of (nouveaux || [])) {
       try {
         // Compteurs d'activation (head:true = pas de données, juste le count)
-        const [{ count: nbCours }, { count: nbClients }] = await Promise.all([
+        const [{ count: nbCours }, { count: nbClients }, { count: nbVentes }] = await Promise.all([
           supabaseAdmin.from('cours').select('id', { count: 'exact', head: true }).eq('profile_id', prof.id),
           supabaseAdmin.from('clients').select('id', { count: 'exact', head: true }).eq('profile_id', prof.id),
+          supabaseAdmin.from('abonnements').select('id', { count: 'exact', head: true }).eq('profile_id', prof.id),
         ]);
         const type = choisirEmailOnboarding(
-          { createdAt: prof.created_at, nbCours: nbCours || 0, nbClients: nbClients || 0 },
+          { createdAt: prof.created_at, nbCours: nbCours || 0, nbClients: nbClients || 0, nbVentes: nbVentes || 0 },
           now
         );
         if (!type) continue;
@@ -302,7 +305,9 @@ export const GET = withRoute({ auth: 'cron' }, async () => {
           }
           continue;
         }
-        if (type === 'j1') onboardingJ1++; else onboardingJ3++;
+        if (type === 'j1') onboardingJ1++;
+        else if (type === 'j3') onboardingJ3++;
+        else onboardingJ7++;
       } catch (e) {
         reportError('[cron/expirations] onboarding err', prof.id, e?.message);
       }
@@ -321,6 +326,7 @@ export const GET = withRoute({ auth: 'cron' }, async () => {
     trialJ1,
     onboardingJ1,
     onboardingJ3,
+    onboardingJ7,
     timestamp: new Date().toISOString(),
   });
 });

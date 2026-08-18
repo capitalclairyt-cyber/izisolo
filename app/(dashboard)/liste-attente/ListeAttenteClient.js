@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Clock, Users, Calendar, MapPin, ArrowRight, Loader2, X, CheckCircle2, Send, Trash2 } from 'lucide-react';
+import AideContextuelle from '@/components/AideContextuelle';
 import { useToast } from '@/components/ui/ToastProvider';
 import { formatDate } from '@/lib/utils';
 import EmptyState from '@/components/ui/EmptyState';
@@ -69,6 +70,7 @@ export default function ListeAttenteClient({ groupes: groupesInit }) {
           <Clock size={20} />
           Liste d'attente
           {totalEnAttente > 0 && <span className="la-count">{totalEnAttente}</span>}
+          <AideContextuelle ancre="liste-attente" titre="Tuto : la liste d'attente" />
         </h1>
         <p className="la-subtitle">
           Personnes en attente d'une place sur tes cours à venir.

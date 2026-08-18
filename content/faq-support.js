@@ -47,9 +47,24 @@ export const FAQ_SUPPORT = [
     lien: { href: '/aide#agenda', label: 'Voir le pas-à-pas' },
   },
   {
+    // Demandé 2× dans les feedbacks (19-20/07) — enfin une réponse écrite.
+    q: "Comment faire apparaître le lieu d'une séance ?",
+    a: "Le lieu se choisit sur le cours : à la création, ou après coup via l'icône crayon (cette séance) / « Modifier toute la série » (toutes). Tes lieux se gèrent dans Paramètres → Profil & studio → Lieux — ils sont illimités. Une fois posé, le lieu s'affiche sur l'agenda, le portail et les emails à tes élèves.",
+    lien: { href: '/aide#agenda', label: 'Voir le pas-à-pas' },
+  },
+  {
     q: "Comment faire payer un abonnement en plusieurs fois ?",
     a: "Le paiement en plusieurs fois se choisit au moment de la VENTE (pas à la création de l'offre) : fiche élève → « Ajouter une offre » → « En plusieurs fois », ou bouton « Vendre » sur les pages Offres et Carnets & abos. Tu choisis 2× à 10×, le rythme, et chaque versement est modifiable — avec un bouton « Arrondir aux euros ».",
     lien: { href: '/aide#encaisser', label: 'Voir le pas-à-pas' },
+  },
+  {
+    q: "Puis-je modifier une offre déjà vendue ?",
+    a: "Oui : page Offres → icône crayon. La modification vaut pour les PROCHAINES ventes — les carnets déjà vendus gardent leurs conditions, figées à l'achat (prix, cours couverts, validité). Pour corriger un carnet précis : fiche de l'élève → « Modifier » sur la carte du carnet.",
+    lien: { href: '/aide#carnets-abos', label: 'Voir le pas-à-pas' },
+  },
+  {
+    q: "Comment archiver ou supprimer une fiche élève ?",
+    a: "Archiver (recommandé) : liste Élèves → statut de la fiche → « Archivé » — elle est masquée mais tout est conservé, réactivable à tout moment. Supprimer (fiche → corbeille) est irréversible : carnets, présences et inscriptions partent avec ; seuls les paiements encaissés restent dans ta compta.",
   },
   {
     q: "Où je règle mon délai d'annulation et mes règles (absences, retards…) ?",
@@ -67,8 +82,8 @@ export const FAQ_SUPPORT = [
     lien: { href: '/aide#messagerie', label: 'Voir le pas-à-pas' },
   },
   {
-    q: "Comment exporter mes données ?",
-    a: "Page Élèves → « Exporter » : un CSV de toutes tes fiches, disponible quel que soit ton plan. L'export comptable des encaissements se fait depuis Revenus (plan Complet).",
+    q: "Comment exporter mes données (élèves, compta) ?",
+    a: "Page Élèves → « Exporter » : un CSV de toutes tes fiches, disponible quel que soit ton plan. Pour ta compta (plan Complet) : Revenus → « Export » ouvre une modale où tu choisis la période (préréglée ou dates libres), l'état, le mode de règlement et l'offre — le CSV s'ouvre directement dans Excel.",
   },
   {
     q: "Comment installer IziSolo sur mon téléphone (sans App Store) ?",

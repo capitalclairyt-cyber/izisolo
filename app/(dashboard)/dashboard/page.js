@@ -49,6 +49,13 @@ export default async function DashboardPage() {
     .eq('profile_id', user.id)
     .not('invitation_envoyee_at', 'is', null);
 
+  // Boucle argent (checklist étendue 2026-08-18) : la checklist s'arrêtait
+  // AVANT l'argent — or offre créée + première vente = LE moment d'activation.
+  const [{ count: nbOffres }, { count: nbVentes }] = await Promise.all([
+    supabase.from('offres').select('id', { count: 'exact', head: true }).eq('profile_id', user.id),
+    supabase.from('abonnements').select('id', { count: 'exact', head: true }).eq('profile_id', user.id),
+  ]);
+
   // Double identité (26/07) : ce compte prof est-il AUSSI élève ailleurs ?
   // Lookup par email en service-role (la RLS interdit de lire les fiches des
   // autres studios avec le client session) — même contrat que le GET de
@@ -127,6 +134,8 @@ export default async function DashboardPage() {
       }}
       hasSondage={(nbSondages || 0) > 0}
       nbInvites={nbInvites || 0}
+      nbOffres={nbOffres || 0}
+      nbVentes={nbVentes || 0}
       nbCasATraiter={nbCasOuverts || 0}
       espacesEleve={espacesEleve}
     />

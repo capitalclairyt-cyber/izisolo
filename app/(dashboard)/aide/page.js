@@ -5,27 +5,27 @@ import Link from 'next/link';
 import {
   BookOpen, CalendarDays, Users, Wallet, ClipboardList, Globe,
   LifeBuoy, MessageSquarePlus, ArrowRight, Package, Inbox,
-  MessageSquare, FileText, Smartphone, CalendarClock, Hourglass, Search, X
+  MessageSquare, FileText, Smartphone, CalendarClock, Hourglass, Search, X,
+  Sparkles, ListOrdered
 } from 'lucide-react';
 import { FAQ_SUPPORT } from '@/content/faq-support';
 
 /**
  * /aide — Guide de démarrage (2026-08-01, plan « aide utilisateur » validé Colin).
  *
- * 12 parcours pas-à-pas : les 5 d'origine ciblés sur les frictions d'activation
- * MESURÉES (récurrence non adoptée, drop-off à l'ajout d'élèves), + 4 tutos
- * « vie du studio » ajoutés le 2026-08-17 (demande Colin) : catalogue d'offres,
- * inbox « À traiter », messagerie/sondages, reçus & factures, + « installer
- * l'appli » le 2026-08-18 (appel Patricia : bloquée sur l'installation PWA
- * depuis Chrome — la bannière PushPrompt y renvoie), + #agenda et
- * #regles-annulation le 2026-08-18 (chantier « propulser le guide » : les
- * feedbacks des 9-10/08 tournaient tous autour de modifier/annuler une séance)
- * et l'échéancier détaillé dans #encaisser. Chaque section = une ancre stable
- * (#premier-cours, #agenda, #eleves, #offres, #encaisser, #pointage,
- * #cas-a-traiter, #regles-annulation, #messagerie, #factures, #page-publique,
- * #installer) — liée depuis la FAQ de /support, la checklist du dashboard,
- * les emails J+1/J+3, la bannière d'installation et les « ? » contextuels des
- * pages (components/AideContextuelle).
+ * 15 parcours pas-à-pas. Historique : 5 d'origine (frictions d'activation
+ * MESURÉES — récurrence non adoptée, drop-off à l'ajout d'élèves), + 4 « vie
+ * du studio » le 2026-08-17 (offres, À traiter, messagerie, factures),
+ * + #installer, #agenda, #regles-annulation et l'échéancier détaillé le
+ * 2026-08-18 (appel Patricia + feedbacks 9-10/08), + #carnets-abos,
+ * #cours-essai, #liste-attente le 2026-08-18 (état des lieux aide : la
+ * gestion APRÈS la vente et la machine à prospects n'étaient pas documentées).
+ * Ancres stables : #premier-cours, #agenda, #eleves, #offres, #encaisser,
+ * #carnets-abos, #pointage, #cas-a-traiter, #regles-annulation, #messagerie,
+ * #factures, #page-publique, #cours-essai, #liste-attente, #installer —
+ * liées depuis la FAQ de /support, la checklist du dashboard, les emails
+ * J+1/J+3, la bannière d'installation et les « ? » contextuels des pages
+ * (components/AideContextuelle).
  *
  * Règle d'or : chaque étape cite le VRAI libellé d'écran (nav Sidebar,
  * onglets Paramètres vérifiés) — si un écran est renommé, ce guide DOIT
@@ -100,6 +100,20 @@ const SECTIONS = [
       <>Avec le plan Complet, ajoute un <strong>lien de paiement Stripe</strong> à tes offres : tes élèves paient en ligne depuis ton portail, tu n'as plus rien à courir.</>,
     ],
     astuce: 'Le carnet se décompte au pointage, pas à la réservation — une élève qui annule à temps ne perd jamais sa séance.',
+  },
+  {
+    id: 'carnets-abos',
+    icon: BookOpen,
+    titre: 'Les carnets au quotidien',
+    intro: 'Après la vente : suivre, mettre en pause, corriger — sur la fiche de l\'élève et dans « Carnets & abos ».',
+    etapes: [
+      <>La page <strong>Carnets &amp; abos</strong> = ta vue d'ensemble : statuts <strong>Actif / En pause / Épuisé / Expiré / Annulé</strong>, filtres, et le bouton « Vendre une offre ».</>,
+      <>Élève absente un moment (blessure, déplacement) ? <strong>Fiche élève</strong> → carte du carnet → <strong>« Mettre en pause »</strong> (⏸) avec dates de début et de fin : pendant la pause, <strong>aucune séance n'est décomptée</strong>, et son espace affiche « ⏸ En pause jusqu'au… ». <strong>« Réactiver »</strong> (▶) pour reprendre avant la date.</>,
+      <>Corriger un compteur, prolonger une validité, changer un statut : bouton <strong>« Modifier »</strong> (crayon) sur la carte du carnet — séances totales, séances utilisées, dates, statut.</>,
+      <>Carnet <strong>épuisé ou expiré</strong> : il sort de la résolution automatique au pointage, et ta règle « Carnet expire avant la date du cours réservé » décide du sort des réservations (bloquer, prolonger, autoriser en avertissant).</>,
+      <>Le décompte, lui, vit au <a href="#pointage">pointage</a> : « sur carnet · 10 → 9 », corrigeable à tout moment via <strong>···</strong> → « Décompter sur ».</>,
+    ],
+    astuce: 'Supprimer un carnet est définitif — pour un litige ou un remboursement, préfère « Modifier » avec le statut Annulé : le compteur s\'arrête, l\'historique reste.',
   },
   {
     id: 'pointage',
@@ -185,6 +199,34 @@ const SECTIONS = [
     astuce: 'Le cours d\'essai est ta porte d\'entrée : une demande d\'essai crée la fiche, t\'alerte, et l\'élève reçoit la confirmation avec l\'accès à son espace.',
   },
   {
+    id: 'cours-essai',
+    icon: Sparkles,
+    titre: 'Le cours d\'essai, ta porte d\'entrée',
+    intro: 'Le premier contact d\'une future élève — une demande, une fiche créée, et toi qui choisis le niveau d\'automatisation.',
+    etapes: [
+      <>Réglages : <strong>Paramètres → Portail public → « Cours d'essai »</strong>. Active-le, puis choisis le <strong>mode de validation</strong> : <strong>Automatique</strong> (validée immédiatement), <strong>Semi-automatique</strong> (validée + tu es notifiée), ou <strong>Manuel</strong> (tu valides ou refuses chaque demande depuis l'app).</>,
+      <>Choisis aussi le <strong>paiement</strong> de l'essai — gratuit, ou payant (sur place, ou en ligne) — et ton message d'accueil.</>,
+      <>Côté visiteuse : ta page publique propose le cours d'essai. Sa demande <strong>crée sa fiche</strong> (statut prospect) et t'alerte dans ta cloche. Les cours complets ne sont jamais proposés.</>,
+      <>En mode manuel, les demandes t'attendent dans <strong>« Cours d'essai »</strong> (nav, avec la pastille) : accepter ou refuser en un clic.</>,
+      <>L'élève reçoit sa confirmation par email, avec un lien <strong>« Accéder à mon espace »</strong> — son compte existe, sans mot de passe à créer.</>,
+    ],
+    astuce: 'La séance d\'essai ne décompte jamais un carnet — même acheté le jour même. Elle est marquée « essai » au pointage, avec ton quota d\'essais par élève bien visible.',
+  },
+  {
+    id: 'liste-attente',
+    icon: ListOrdered,
+    titre: 'La liste d\'attente',
+    intro: 'Un cours complet ne perd plus personne : la file se remplit toute seule et se vide dès qu\'une place se libère.',
+    etapes: [
+      <>Côté élève : sur un cours <strong>complet</strong>, ton portail propose l'inscription en liste d'attente — elle reçoit une confirmation par email avec sa position.</>,
+      <>Une place se libère (annulation, désinscription) ? La <strong>première de la file est promue automatiquement</strong> et prévenue (email + push) — toi aussi, dans ta cloche.</>,
+      <>Tu préfères garder la main ? Passe la règle « Liste d'attente » en mode <strong>manuel</strong> (Paramètres → Règles → Règles métier) : la promotion attend ton clic.</>,
+      <>La page <strong>Liste d'attente</strong> (nav) montre chaque file : <strong>« Promouvoir »</strong> pour attribuer la place toi-même, <strong>« Retirer »</strong>, et le badge « Promu·e ✓ » garde la trace.</>,
+      <>Les files des cours passés se purgent toutes seules — rien à nettoyer.</>,
+    ],
+    astuce: 'Une promotion crée une vraie réservation : si l\'élève promue annule à son tour, la place repart à la file.',
+  },
+  {
     id: 'installer',
     icon: Smartphone,
     titre: 'Installe l\'appli sur ton téléphone',
@@ -200,8 +242,10 @@ const SECTIONS = [
   },
 ];
 
-// Recherche insensible aux accents et à la casse (« echeancier » trouve « échéancier »)
-const normaliser = (s) => (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+// Recherche insensible aux accents, à la casse ET aux apostrophes : le contenu
+// utilise l'apostrophe typographique (') qu'aucun clavier ne tape — « liste
+// d attente », « liste d'attente » et « liste d'attente » doivent tous matcher.
+const normaliser = (s) => (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[''ʼ]/g, ' ');
 
 export default function AidePage() {
   // ── Recherche instantanée (2026-08-18, décision Colin — le pont AVANT tout
