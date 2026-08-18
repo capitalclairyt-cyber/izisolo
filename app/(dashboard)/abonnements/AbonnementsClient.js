@@ -7,8 +7,9 @@ import {
   Ticket, CalendarCheck, Zap, Search,
   CheckCircle2, XCircle, AlertTriangle, Clock,
   ChevronRight, CreditCard, TrendingUp, Users,
-  Banknote, FileText, Landmark, PauseCircle,
+  Banknote, FileText, Landmark, PauseCircle, ShoppingBag,
 } from 'lucide-react';
+import VenteOffreModal from '@/components/paiements/VenteOffreModal';
 import { formatDate, formatMontant } from '@/lib/utils';
 import { toneForAbonnement } from '@/lib/tones';
 import Pagination, { usePagination } from '@/components/ui/Pagination';
@@ -70,6 +71,8 @@ export default function AbonnementsClient({ abonnements: initAbo, paiementsParAb
   const [abonnements, setAbonnements]         = useState(initAbo || []);
   const [paiementsParAbo, setPaiementsParAbo] = useState(initPaiements || {});
   const [loadingData, setLoadingData]         = useState(!initAbo);
+  const [venteOuverte, setVenteOuverte]       = useState(false); // tunnel de vente
+  const [reloadKey, setReloadKey]             = useState(0);     // re-fetch après une vente
 
   useEffect(() => {
     if (initAbo) return; // données passées depuis un parent — pas besoin de fetch
@@ -100,7 +103,7 @@ export default function AbonnementsClient({ abonnements: initAbo, paiementsParAb
       setLoadingData(false);
     };
     fetchData();
-  }, [initAbo]);
+  }, [initAbo, reloadKey]);
 
   const [filtre, setFiltre]   = useState('tous');
   const [search, setSearch]   = useState('');
@@ -179,6 +182,11 @@ export default function AbonnementsClient({ abonnements: initAbo, paiementsParAb
           <h1 className="abo-title">Carnets & abos</h1>
           <p className="abo-subtitle">{stats.total} au total · {stats.actifs} actif{stats.actifs > 1 ? 's' : ''}</p>
         </div>
+        {/* Point de vente sur la page où on la cherche (appel Patricia
+            2026-08-18 : « le plusieurs fois a disparu » = cherché ici) */}
+        <button className="izi-btn izi-btn-primary abo-vendre-btn" onClick={() => setVenteOuverte(true)} type="button">
+          <ShoppingBag size={16} /> Vendre une offre
+        </button>
       </div>
 
       {/* ── Statistiques ── */}
@@ -281,11 +289,20 @@ export default function AbonnementsClient({ abonnements: initAbo, paiementsParAb
         </>
       )}
 
+      {/* Tunnel de vente (partagé avec la page Offres) — choix de l'offre inclus */}
+      {venteOuverte && (
+        <VenteOffreModal
+          onClose={() => setVenteOuverte(false)}
+          onSuccess={() => { setVenteOuverte(false); setReloadKey(k => k + 1); }}
+        />
+      )}
+
       <style jsx global>{`
         .abo-page { display: flex; flex-direction: column; gap: 16px; padding-bottom: 40px; }
 
         /* Header */
         .abo-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+        .abo-vendre-btn { flex-shrink: 0; font-size: 0.8125rem; padding: 9px 14px; gap: 6px; }
         .abo-title  { font-size: 1.375rem; font-weight: 800; color: var(--text-primary); }
         .abo-subtitle { font-size: 0.8125rem; color: var(--text-muted); margin-top: 2px; }
 

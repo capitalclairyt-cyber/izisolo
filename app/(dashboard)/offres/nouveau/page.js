@@ -263,11 +263,13 @@ export default function NouvelleOffre() {
         payload.stripe_payment_link = stripePaymentLink.trim();
       }
 
-      const { error } = await supabase.from('offres').insert(payload);
+      const { data: creee, error } = await supabase.from('offres').insert(payload).select('id').single();
       if (error) throw error;
 
       toast.success('Offre créée !');
-      router.push('/offres');
+      // ?creee=<id> → bannière « Vendre cette offre » sur la page Offres
+      // (la promesse du hint ci-dessous : « on te le proposera juste après »)
+      router.push(creee?.id ? `/offres?creee=${creee.id}` : '/offres');
       router.refresh();
     } catch (err) {
       toast.error('Erreur : ' + err.message);
@@ -801,6 +803,15 @@ export default function NouvelleOffre() {
           )}
         </div>
 
+        {/* Raconter le modèle (appel Patricia 2026-08-18) : le règlement — dont
+            le plusieurs fois — se choisit à la VENTE, pas ici. Sans cette
+            phrase, tout le monde le cherche dans ce formulaire. */}
+        <p className="no-vente-hint">
+          💡 Ici tu définis <strong>ce que tu vends</strong>. Le règlement — payé, à régler plus tard,
+          ou <strong>en plusieurs fois</strong> — se choisit au moment de <strong>vendre</strong> l'offre
+          à un·e élève. On te le proposera juste après.
+        </p>
+
         <button
           type="submit"
           className="izi-btn izi-btn-primary no-submit"
@@ -979,6 +990,11 @@ export default function NouvelleOffre() {
         }
 
         .no-submit { width: 100%; margin-top: 4px; }
+        .no-vente-hint {
+          margin: 0; padding: 11px 14px; border-radius: var(--radius-md);
+          background: var(--brand-light, #f7efe6); border: 1px solid var(--brand-200, #e8d3bd);
+          font-size: 0.8125rem; line-height: 1.5; color: var(--text-secondary);
+        }
         @keyframes spin { to { transform: rotate(360deg); } }
         .spin { animation: spin 0.8s linear infinite; }
         .form-hint { font-size: 0.75rem; color: var(--text-muted); }

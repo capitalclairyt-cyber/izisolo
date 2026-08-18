@@ -1,262 +1,25 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
   Plus, Package, Ticket, CalendarCheck, Zap, Trash2,
-  ToggleLeft, ToggleRight, UserPlus, X, ChevronRight,
-  Loader2, Search, Crown, ArrowRight, Pencil,
+  ToggleLeft, ToggleRight, UserPlus, X, Crown, ArrowRight, Pencil,
 } from 'lucide-react';
-import { formatMontant, matchRecherche } from '@/lib/utils';
+import { formatMontant } from '@/lib/utils';
 import { toneForOffre } from '@/lib/tones';
 import { TYPES_OFFRE } from '@/lib/constantes';
 import { createClient } from '@/lib/supabase';
 import { diagnostiquerOffres } from '@/lib/coherence-offres';
 import EmptyState from '@/components/ui/EmptyState';
-import PaiementStep from '@/components/paiements/PaiementStep';
+import VenteOffreModal from '@/components/paiements/VenteOffreModal';
 
 const TYPE_ICONS = { carnet: Ticket, abonnement: CalendarCheck, cours_unique: Zap };
 
-function calcDateFin(dureeJours) {
-  if (!dureeJours) return null;
-  const d = new Date();
-  d.setDate(d.getDate() + dureeJours);
-  return d.toISOString().split('T')[0];
-}
-
-// Pro-rata abonnement (même calcul que la fiche client)
-function calcProRata(offre) {
-  if (!offre.pro_rata_actif || !offre.date_debut || !offre.date_fin || !offre.prix) return null;
-  const today = new Date();
-  const debut = new Date(offre.date_debut);
-  const fin = new Date(offre.date_fin);
-  if (today <= debut) return null;
-  const limite = offre.pro_rata_date_limite ? new Date(offre.pro_rata_date_limite) : fin;
-  if (today > limite) return null;
-  const totalSemaines = Math.max(1, Math.round((fin - debut) / (7 * 86400000)));
-  const resteSemaines = Math.max(0, Math.round((fin - today) / (7 * 86400000)));
-  if (resteSemaines <= 0) return null;
-  return Math.round((parseFloat(offre.prix) / totalSemaines) * resteSemaines * 2) / 2;
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// Modal tunnel de vente — appelé depuis OffresClient (offre déjà connue).
-// MÊME moteur que la fiche client : PaiementStep (payé / à régler plus tard /
-// échéancier) + RPC atomique vendre_offre (snapshot types_cours_autorises,
-// dates d'abonnement respectées). Avant : inserts directs divergents — pas de
-// snapshot, dates d'abonnement perdues, pas d'atomicité, pas d'impayé.
-// ═══════════════════════════════════════════════════════════════════════════
-
-function AssignerClientModal({ offre, onClose, onSuccess }) {
-  const [step, setStep] = useState('client'); // 'client' | 'paiement'
-  const [clients, setClients] = useState([]);
-  const [loadingClients, setLoadingClients] = useState(true);
-  const [search, setSearch] = useState('');
-  const [selectedClient, setSelectedClient] = useState(null);
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    const load = async () => {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { setLoadingClients(false); return; }
-      // Défense en profondeur : on filtre par profile_id même si la table
-      // 'clients' n'est pas (encore) exposée par une policy publique (v25).
-      // Évite tout futur leak si une policy SELECT publique est ajoutée.
-      const { data } = await supabase
-        .from('clients')
-        .select('id, prenom, nom, nom_structure, type_client, statut, telephone')
-        .eq('profile_id', user.id)
-        .order('nom');
-      setClients(data || []);
-      setLoadingClients(false);
-    };
-    load();
-  }, []);
-
-  const filtered = clients.filter(c =>
-    matchRecherche(search, c.prenom, c.nom_structure || c.nom)
-  );
-
-  const displayName = (c) => {
-    const isPro = c.type_client && c.type_client !== 'particulier';
-    return isPro
-      ? (c.nom_structure || c.nom)
-      : [c.prenom, c.nom].filter(Boolean).join(' ');
-  };
-
-  const selectClient = (c) => {
-    setSelectedClient(c);
-    setStep('paiement');
-  };
-
-  // Même construction que la fiche client (AssignerOffreModal.handleConfirm) :
-  // abonnement avec dates de l'OFFRE + snapshot types_cours_autorises, paiements
-  // paid/pending/échéancier — le tout persisté par la RPC atomique vendre_offre.
-  const handleConfirm = async ({ montant, modePaiement, notes, numeroCheque, reglement = 'paye', premierEncaisse = true, versements = [] }) => {
-    if (!selectedClient) return;
-    setSubmitting(true);
-    setError('');
-    try {
-      const supabase = createClient();
-      const today = new Date().toISOString().split('T')[0];
-      const multiVersement = reglement === 'multi';
-
-      const abonnement = {
-        client_id: selectedClient.id,
-        offre_id: offre.id,
-        offre_nom: offre.nom,
-        type: offre.type,
-        date_debut: offre.date_debut || today,
-        date_fin: offre.date_fin || calcDateFin(offre.duree_jours),
-        seances_total: offre.seances || null,
-        types_cours_autorises: offre.types_cours_autorises || null,
-      };
-
-      let paiements;
-      if (multiVersement && versements.length > 1) {
-        const echId = crypto.randomUUID();
-        paiements = versements.map((v, i) => {
-          const encaisse = i === 0 && premierEncaisse;
-          return {
-            client_id: selectedClient.id,
-            offre_id: offre.id,
-            echeancier_id: echId,
-            intitule: `${offre.nom} (${i + 1}/${versements.length})`,
-            type: offre.type,
-            montant: v.montant,
-            statut: encaisse ? 'paid' : 'pending',
-            mode: encaisse ? modePaiement : null,
-            date: v.date,
-            notes: encaisse ? (notes || null) : null,
-            numero_cheque: encaisse && numeroCheque ? numeroCheque : null,
-          };
-        });
-      } else {
-        const impaye = reglement === 'aregler';
-        paiements = [{
-          client_id: selectedClient.id,
-          offre_id: offre.id,
-          echeancier_id: null,
-          intitule: offre.nom,
-          type: offre.type,
-          montant: montant,
-          statut: impaye ? 'pending' : 'paid',
-          mode: impaye ? null : modePaiement,
-          date: today,
-          notes: notes || null,
-          numero_cheque: impaye ? null : (numeroCheque || null),
-        }];
-      }
-
-      const { data: result, error: rpcErr } = await supabase.rpc('vendre_offre', {
-        p_abonnement: abonnement,
-        p_paiements: paiements,
-      });
-      if (rpcErr || !result?.ok) {
-        throw (rpcErr || new Error(result?.reason || 'Vente non enregistrée'));
-      }
-
-      onSuccess();
-    } catch (err) {
-      console.error('[vendre_offre]', err);
-      setError(err.message || 'Erreur inconnue');
-      setSubmitting(false);
-    }
-  };
-
-  return (
-    <div className="modal-backdrop" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="modal-sheet animate-slide-up" role="dialog" aria-modal="true">
-
-        {/* Header */}
-        <div className="modal-header">
-          {step === 'paiement' ? (
-            <button className="modal-back" onClick={() => setStep('client')} type="button" aria-label="Retour">
-              <ChevronRight size={18} style={{ transform: 'rotate(180deg)' }} />
-            </button>
-          ) : (
-            <div style={{ width: 36 }} />
-          )}
-          <span className="modal-title">
-            {step === 'client' ? 'Choisir un élève' : 'Paiement'}
-          </span>
-          <button className="modal-close" onClick={onClose} type="button" aria-label="Fermer"><X size={20} /></button>
-        </div>
-
-        {/* Step 1 — Choisir un client */}
-        {step === 'client' && (
-          <div className="modal-body">
-            {/* Récap offre */}
-            <div className="offre-recap-pill">
-              {(() => { const Icon = TYPE_ICONS[offre.type] || Package; return <Icon size={16} />; })()}
-              <span>{offre.nom}</span>
-              <span className="offre-recap-prix">{formatMontant(offre.prix)}</span>
-            </div>
-
-            {/* Search */}
-            <div className="search-wrap">
-              <Search size={16} className="search-icon" />
-              <input
-                className="izi-input search-input"
-                type="text"
-                placeholder="Rechercher un élève..."
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                autoFocus
-              />
-            </div>
-
-            {loadingClients ? (
-              <div className="modal-loading"><Loader2 size={24} className="spin" /> Chargement...</div>
-            ) : filtered.length === 0 ? (
-              <div className="modal-empty">
-                <p>Aucun élève trouvé.</p>
-                <Link href="/clients/nouveau" className="izi-btn izi-btn-secondary" onClick={onClose}>
-                  Ajouter un élève
-                </Link>
-              </div>
-            ) : (
-              <div className="client-list">
-                {filtered.map(c => (
-                  <button key={c.id} className="client-choice-btn" onClick={() => selectClient(c)} type="button">
-                    <div className="client-choice-avatar">
-                      {displayName(c).charAt(0).toUpperCase()}
-                    </div>
-                    <div className="client-choice-info">
-                      <span className="client-choice-nom">{displayName(c)}</span>
-                      {c.telephone && <span className="client-choice-tel">{c.telephone}</span>}
-                    </div>
-                    <ChevronRight size={16} style={{ color: 'var(--text-muted)' }} />
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Step 2 — Paiement (composant partagé avec la fiche client) */}
-        {step === 'paiement' && selectedClient && (() => {
-          const prorata = offre.type === 'abonnement' ? calcProRata(offre) : null;
-          return (
-            <>
-              {error && <p className="error-msg" style={{ margin: '10px 16px 0' }}>{error}</p>}
-              <PaiementStep
-                offreNom={offre.nom}
-                clientNom={displayName(selectedClient)}
-                offrePrix={prorata || offre.prix}
-                onConfirm={handleConfirm}
-                submitting={submitting}
-              />
-            </>
-          );
-        })()}
-      </div>
-    </div>
-  );
-}
+// Le tunnel de vente (ex-AssignerClientModal) vit désormais dans
+// components/paiements/VenteOffreModal.js — partagé avec Carnets & abos
+// (lot simplification 2026-08-18).
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Composant principal
@@ -335,9 +98,20 @@ function DiagnosticOffres({ offres }) {
 
 export default function OffresClient({ offres, profile, planKey, limiteOffres }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [deleting, setDeleting] = useState(null);
   const [assignModalOffre, setAssignModalOffre] = useState(null); // offre sélectionnée pour le modal
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
+
+  // ?creee=<id> (retour de « Créer une offre ») → bannière « Vendre cette
+  // offre » : la promesse du formulaire (« on te le proposera juste après »).
+  const [offreCreee, setOffreCreee] = useState(null);
+  useEffect(() => {
+    const id = searchParams.get('creee');
+    if (!id) return;
+    const o = offres.find(x => x.id === id && x.actif);
+    if (o) setOffreCreee(o);
+  }, [searchParams, offres]);
 
   const limitReached = limiteOffres != null && offres.length >= limiteOffres;
 
@@ -387,12 +161,11 @@ export default function OffresClient({ offres, profile, planKey, limiteOffres })
           {active && (
             <button
               onClick={() => setAssignModalOffre(offre)}
-              className="action-btn assign-btn"
-              title="Assigner à un élève"
-              aria-label="Assigner à un élève"
+              className="vendre-btn"
+              title="Vendre cette offre à un élève"
               type="button"
             >
-              <UserPlus size={16} />
+              <UserPlus size={15} /> Vendre
             </button>
           )}
           <button
@@ -424,6 +197,27 @@ export default function OffresClient({ offres, profile, planKey, limiteOffres })
 
   return (
     <div className="offres-page">
+      {/* Bannière post-création : proposer la vente tout de suite */}
+      {offreCreee && (
+        <div className="izi-card offre-creee-banner animate-fade-in">
+          <span className="offre-creee-txt">
+            ✓ <strong>{offreCreee.nom}</strong> est prête. Tu veux la vendre à un·e élève ?
+          </span>
+          <div className="offre-creee-actions">
+            <button
+              className="vendre-btn"
+              type="button"
+              onClick={() => { setAssignModalOffre(offreCreee); setOffreCreee(null); }}
+            >
+              <UserPlus size={15} /> Vendre cette offre
+            </button>
+            <button className="offre-creee-later" type="button" onClick={() => setOffreCreee(null)}>
+              Plus tard
+            </button>
+          </div>
+        </div>
+      )}
+
       <DiagnosticOffres offres={offres} />
       <div className="page-header animate-fade-in">
         <div className="page-header-left">
@@ -530,9 +324,9 @@ export default function OffresClient({ offres, profile, planKey, limiteOffres })
         </div>
       )}
 
-      {/* Modal tunnel de vente */}
+      {/* Modal tunnel de vente (partagé — components/paiements/VenteOffreModal) */}
       {assignModalOffre && (
-        <AssignerClientModal
+        <VenteOffreModal
           offre={assignModalOffre}
           onClose={() => setAssignModalOffre(null)}
           onSuccess={() => { setAssignModalOffre(null); router.refresh(); }}
@@ -573,6 +367,22 @@ export default function OffresClient({ offres, profile, planKey, limiteOffres })
           .offre-actions { flex-basis: 100%; justify-content: flex-end; margin-top: 2px; }
         }
         .action-btn { width: 36px; height: 36px; border: none; background: none; border-radius: var(--radius-sm); cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--text-muted); transition: background var(--transition-fast); }
+        .vendre-btn {
+          display: inline-flex; align-items: center; gap: 5px;
+          padding: 7px 13px; border-radius: var(--radius-full);
+          border: none; background: var(--brand); color: white;
+          font-size: 0.8125rem; font-weight: 700; font-family: inherit;
+          cursor: pointer; transition: filter var(--transition-fast);
+        }
+        .vendre-btn:hover { filter: brightness(1.08); }
+        .offre-creee-banner {
+          display: flex; align-items: center; justify-content: space-between; gap: 12px;
+          flex-wrap: wrap; padding: 14px 16px; border-left: 4px solid var(--success, #059669);
+        }
+        .offre-creee-txt { font-size: 0.875rem; color: var(--text-secondary); }
+        .offre-creee-txt strong { color: var(--text-primary); }
+        .offre-creee-actions { display: flex; align-items: center; gap: 10px; }
+        .offre-creee-later { background: none; border: none; color: var(--text-muted); font-size: 0.8125rem; cursor: pointer; text-decoration: underline; font-family: inherit; }
         .action-btn:active, .action-btn:hover { background: var(--cream-dark); }
         .assign-btn { color: var(--brand-700); }
 

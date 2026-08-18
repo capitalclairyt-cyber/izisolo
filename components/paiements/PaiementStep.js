@@ -223,6 +223,31 @@ export default function PaiementStep({
             Le 1<sup>er</sup> versement est déjà encaissé
           </label>
 
+          {/* Arrondi aux euros (appel Patricia 2026-08-18) : versements entiers,
+              le 1er absorbe le reliquat pour que le total reste exact.
+              Montants toujours modifiables à la main ensuite. */}
+          {versements.some(v => (parseFloat(v.montant) || 0) % 1 !== 0) && (
+            <button
+              type="button"
+              className="multi-arrondir-btn"
+              onClick={() => {
+                const total = parseFloat(montant) || 0;
+                const nb = versements.length;
+                if (!total || nb < 2) return;
+                const base = Math.round(total / nb);
+                const premier = +(total - base * (nb - 1)).toFixed(2);
+                setVersements(prev => prev.map((v, i) => ({ ...v, montant: i === 0 ? premier : base })));
+              }}
+            >
+              Arrondir aux euros (ex : {(() => {
+                const total = parseFloat(montant) || 0;
+                const nb = versements.length;
+                const base = Math.round(total / nb);
+                return `${+(total - base * (nb - 1)).toFixed(2)} € puis ${nb - 1} × ${base} €`;
+              })()})
+            </button>
+          )}
+
           <div className="multi-v-list">
             {versements.map((v, i) => {
               const encaisse = i === 0 && premierEncaisse;
@@ -288,6 +313,13 @@ export default function PaiementStep({
           display: flex; align-items: center; gap: 8px; margin: 10px 0 4px;
           font-size: 0.8125rem; color: var(--text-secondary, #6B5D52); cursor: pointer;
         }
+        .multi-arrondir-btn {
+          align-self: flex-start; margin: 2px 0 6px;
+          background: none; border: 1px dashed var(--brand-200, #e8d3bd); border-radius: 99px;
+          padding: 5px 12px; font-size: 0.78rem; font-weight: 600; font-family: inherit;
+          color: var(--brand, #B87333); cursor: pointer;
+        }
+        .multi-arrondir-btn:hover { background: var(--brand-light, #f7efe6); }
         .multi-v-date-input { flex: 1; font-size: 0.8125rem !important; padding: 6px 8px !important; min-width: 0; }
         .multi-v-montant-input { width: 80px; font-size: 0.8125rem !important; padding: 6px 8px !important; text-align: right; font-weight: 600; }
       `}</style>

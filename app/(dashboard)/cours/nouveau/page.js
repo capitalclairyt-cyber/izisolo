@@ -194,6 +194,7 @@ function NouveauCoursInner() {
   const [typesCours, setTypesCours] = useState([]);
   const [rawTypesCours, setRawTypesCours] = useState([]);
   const [showNewType, setShowNewType] = useState(false);
+  const [montrerTypes, setMontrerTypes] = useState(false); // déplie « Type de cours » quand la prof n'a aucun type
   const [newTypeName, setNewTypeName] = useState('');
   const [savingType, setSavingType] = useState(false);
   const [lieux, setLieux] = useState([]);
@@ -239,6 +240,26 @@ function NouveauCoursInner() {
     // Domicile (v44)
     frais_deplacement: '',
   });
+
+  // « Comment se paie ce cours ? » (lot simplification 2026-08-18) — présentation
+  // à 3 choix des MÊMES champs tarif_unitaire/carnets_acceptes :
+  //   carnets (défaut) → pas de tarif ; unite → tarif, gate v70 ; mixte → tarif + v82.
+  const [paiementChoix, setPaiementChoix] = useState('carnets');
+  useEffect(() => {
+    // La duplication depuis un cours frère préremplit le form APRÈS le mount :
+    // on aligne le choix affiché sur les champs reçus (jamais l'inverse).
+    if (form.tarif_unitaire && paiementChoix === 'carnets') {
+      setPaiementChoix(form.carnets_acceptes ? 'mixte' : 'unite');
+    }
+  }, [form.tarif_unitaire, form.carnets_acceptes, paiementChoix]);
+  const choisirPaiement = (choix) => {
+    setPaiementChoix(choix);
+    setForm(prev => ({
+      ...prev,
+      tarif_unitaire: choix === 'carnets' ? '' : prev.tarif_unitaire,
+      carnets_acceptes: choix === 'mixte',
+    }));
+  };
 
   // Charger les données
   useEffect(() => {
@@ -641,26 +662,36 @@ function NouveauCoursInner() {
 
       <form onSubmit={handleSubmit} className="form animate-slide-up">
 
-        {/* Type de cours (chips) */}
-        <div className="form-group">
-          <label className="form-label"><Tag size={14} /> Type de cours</label>
-          <div className="type-chips">
-            {typesCours.map(type => (
-              <button
-                key={type}
-                type="button"
-                className={`chip ${form.type_cours === type ? 'selected' : ''}`}
-                onClick={() => selectType(type)}
-              >
-                {type}
+        {/* Type de cours (chips) — REPLIÉ tant que la prof n'a aucun type
+            (progressive disclosure, lot simplification 2026-08-18, appel
+            Patricia : le champ trop tôt = confusion, alors que le défaut
+            « pas de type » couvre le cas nominal). Le formulaire d'offre
+            masque déjà « Vaut pour quels cours ? » dans ce cas — symétrie. */}
+        {(typesCours.length > 0 || form.type_cours || montrerTypes) ? (
+          <div className="form-group">
+            <label className="form-label"><Tag size={14} /> Type de cours</label>
+            <div className="type-chips">
+              {typesCours.map(type => (
+                <button
+                  key={type}
+                  type="button"
+                  className={`chip ${form.type_cours === type ? 'selected' : ''}`}
+                  onClick={() => selectType(type)}
+                >
+                  {type}
+                </button>
+              ))}
+              <button type="button" className="chip chip-new" onClick={() => setShowNewType(true)}>
+                <Plus size={13} /> Nouveau
               </button>
-            ))}
-            <button type="button" className="chip chip-new" onClick={() => setShowNewType(true)}>
-              <Plus size={13} /> Nouveau
-            </button>
+            </div>
+            <TypeCoursHint typeCours={form.type_cours} />
           </div>
-          <TypeCoursHint typeCours={form.type_cours} />
-        </div>
+        ) : (
+          <button type="button" className="types-avance-toggle" onClick={() => setMontrerTypes(true)}>
+            <Tag size={13} /> Classer ce cours par type <span className="types-avance-hint">(avancé — utile si certains carnets ne doivent valoir que pour certains cours)</span>
+          </button>
+        )}
 
         {/* Modale nouveau type */}
         {showNewType && (
@@ -970,46 +1001,54 @@ function NouveauCoursInner() {
           <textarea className="izi-input" value={form.notes} onChange={handleChange('notes')} placeholder="Infos complémentaires..." rows={2} style={{ resize: 'vertical' }} />
         </div>
 
-        {/* === Cours payable à la séance (workshop / stage / drop-in) ===
-            cours.tarif_unitaire — s'applique au cours unique ET à chaque
-            occurrence d'une série. Sans la case « carnets acceptés » : aucun
-            carnet décompté (atelier pur, gate v70). Avec (cours MIXTE, v82) :
-            les carnets compatibles décomptent, les autres paient le tarif. */}
+        {/* === Comment se paie ce cours ? ===
+            Présentation à 3 choix (lot simplification 2026-08-18, appel
+            Patricia : « prix optionnel + case carnets » ne racontait pas le
+            modèle). Écrit les MÊMES champs qu'avant : cours.tarif_unitaire
+            (cours unique ET chaque occurrence d'une série) + carnets_acceptes.
+            Sans tarif : carnets seuls. Tarif sans carnets : atelier pur
+            (gate v70). Tarif + carnets : cours MIXTE (v82). */}
         <div className="form-group" style={{ background: 'var(--bg-soft, #F8F4ED)', padding: 14, borderRadius: 12, border: '1px solid var(--border)' }}>
-          <label className="form-label">💰 Prix à la séance (optionnel)</label>
-          <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '0 0 10px', lineHeight: 1.5 }}>
-            Mets un prix ici pour un cours qui se règle <strong>à la séance</strong> —
-            atelier, stage, ou cours ouvert aux élèves de passage.
-            Laisse vide pour un cours couvert uniquement par tes carnets/abos.
-          </p>
-          <div className="form-group" style={{ background: 'transparent', padding: 0, border: 'none', maxWidth: 220 }}>
-            <label className="form-label" style={{ fontSize: '0.75rem' }}>Prix à la séance (€)</label>
-            <input
-              className="izi-input"
-              type="number"
-              step="0.01"
-              min="0"
-              value={form.tarif_unitaire}
-              onChange={handleChange('tarif_unitaire')}
-              placeholder="ex : 15.00"
-            />
+          <label className="form-label">💰 Comment se paie ce cours ?</label>
+          <div className="paie-choix-row">
+            {[
+              { value: 'carnets', label: 'Avec un carnet / abo' },
+              { value: 'unite',   label: 'À la séance' },
+              { value: 'mixte',   label: 'Les deux' },
+            ].map(c => (
+              <button
+                key={c.value}
+                type="button"
+                className={`paie-choix-btn ${paiementChoix === c.value ? 'active' : ''}`}
+                onClick={() => choisirPaiement(c.value)}
+              >
+                {c.label}
+              </button>
+            ))}
           </div>
-          {form.tarif_unitaire && (
-            <div style={{ marginTop: 10 }}>
-              <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, cursor: 'pointer', fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-                <input
-                  type="checkbox"
-                  checked={form.carnets_acceptes === true}
-                  onChange={e => setForm(prev => ({ ...prev, carnets_acceptes: e.target.checked }))}
-                  style={{ marginTop: 2, accentColor: 'var(--brand)' }}
-                />
-                <span>Accepter aussi les carnets/abos compatibles</span>
-              </label>
-              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '6px 0 0 24px', lineHeight: 1.5 }}>
-                {form.carnets_acceptes
-                  ? <>Cours <strong>mixte</strong> : les élèves dont le carnet couvre ce type de cours décomptent une séance, les autres (nouvelles, carnet d'un autre type) paient {form.tarif_unitaire} € à la séance.</>
-                  : <>Décochée : <strong>personne</strong> ne décompte de carnet — tout le monde règle {form.tarif_unitaire} € à la séance (atelier classique).</>}
-              </p>
+          <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '8px 0 0', lineHeight: 1.5 }}>
+            {paiementChoix === 'carnets' && <>Le cas classique : la séance est <strong>décomptée du carnet ou couverte par l'abo</strong> de l'élève au pointage. Le prix se joue dans tes <strong>offres</strong>, pas ici.</>}
+            {paiementChoix === 'unite' && <>Atelier, stage, drop-in : <strong>tout le monde règle le prix à la séance</strong> — aucun carnet n'est décompté, même pour tes abonné·es.</>}
+            {paiementChoix === 'mixte' && <>Cours <strong>mixte</strong> : les élèves dont le carnet couvre ce type de cours décomptent une séance, les autres (nouvelles, élèves de passage) paient le prix à la séance.</>}
+          </p>
+          {paiementChoix !== 'carnets' && (
+            <div className="form-group" style={{ background: 'transparent', padding: 0, border: 'none', maxWidth: 220, marginTop: 10 }}>
+              <label className="form-label" style={{ fontSize: '0.75rem' }}>Prix à la séance (€)</label>
+              <input
+                className="izi-input"
+                type="number"
+                step="0.01"
+                min="0"
+                value={form.tarif_unitaire}
+                onChange={handleChange('tarif_unitaire')}
+                placeholder="ex : 15.00"
+                autoFocus
+              />
+              {!form.tarif_unitaire && (
+                <span className="form-hint" style={{ color: 'var(--brand-700, #8c5826)' }}>
+                  Indique le prix — sans lui, le cours repasse en « carnets/abos seulement ».
+                </span>
+              )}
             </div>
           )}
         </div>
@@ -1073,6 +1112,22 @@ function NouveauCoursInner() {
         .frais-row { display: flex; align-items: center; gap: 8px; }
         .frais-input { width: 120px; text-align: right; }
         .frais-suffix { font-size: 0.8125rem; color: var(--text-muted); font-weight: 500; }
+        .paie-choix-row { display: flex; gap: 6px; flex-wrap: wrap; }
+        .paie-choix-btn {
+          flex: 1; min-width: 110px; padding: 9px 10px; border-radius: 10px;
+          border: 1.5px solid var(--border); background: var(--bg-card);
+          font-size: 0.8125rem; font-weight: 600; color: var(--text-secondary);
+          cursor: pointer; font-family: inherit; transition: all 0.15s;
+        }
+        .paie-choix-btn.active { border-color: var(--brand); background: var(--brand-light); color: var(--brand-700); }
+        .types-avance-toggle {
+          display: inline-flex; align-items: center; gap: 6px; align-self: flex-start;
+          background: none; border: none; padding: 2px 0; font-family: inherit;
+          font-size: 0.8125rem; font-weight: 600; color: var(--text-muted);
+          cursor: pointer; text-align: left;
+        }
+        .types-avance-toggle:hover { color: var(--brand); }
+        .types-avance-hint { font-weight: 500; font-size: 0.75rem; }
 
         /* Preview récurrence */
         .rec-preview {
