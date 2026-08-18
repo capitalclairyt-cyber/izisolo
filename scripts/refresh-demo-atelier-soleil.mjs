@@ -14,8 +14,10 @@
  *   - sondage actif à 11 votants, messagerie (2 conv non lues + 2 canaux de
  *     cours + réactions), 3 cas à traiter ouverts, 2 demandes d'essai
  *
- * ⚠️ Conçu pour un run mi-août 2026 (dates ancrées autour du 13/08).
- *    Pour re-shooter plus tard : ajuster TODAY/fenêtres/évènements ci-dessous.
+ * Dates RELATIVES à la date du run depuis le 2026-08-18 (programme démo) :
+ * tout le seed est décalé d'un nombre entier de semaines — re-runnable à
+ * n'importe quelle date, le démo est toujours « vivant » (séances passées
+ * pointées, futures réservées, anniversaires du jour, pleine lune à ~J+15).
  *
  * Usage : node scripts/refresh-demo-atelier-soleil.mjs
  */
@@ -32,10 +34,34 @@ const env = Object.fromEntries(
 const sb = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
 
 const PROFILE_ID = '17a6194a-87e6-47e2-ac31-c6224cd78f44'; // L'Atelier Soleil
-const TODAY = '2026-08-13';
-const YEST = '2026-08-12';
-const WINDOW_START = '2026-07-27'; // 1re occurrence des séries
-const WINDOW_END = '2026-09-26';   // dernière occurrence
+// ── Ancrage temporel RELATIF (2026-08-18, programme démo) ────────────────────
+// Le seed original était ancré au 13/08/2026. On décale TOUT d'un nombre
+// ENTIER de semaines vers la date du run : les jours de semaine sont préservés
+// (séries hebdo, « vendredi » de la pleine lune, clés `serie:date`), et le
+// « aujourd'hui simulé » (TODAY) RECULE de 0 à 6 jours sur le vrai jour, jamais
+// en avance (floor) : aucune séance future « déjà pointée » — au pire, quelques
+// séances récentes restent à pointer (réaliste, et parfait pour une démo de
+// pointage en direct). Les anniversaires d'Emma/Bastien sont recalés sur le
+// VRAI aujourd'hui (la cloche les dérive de date_naissance vs date réelle).
+// Les textes datés des messages sont calculés (fmtLong/fmtJM), jamais en dur.
+// Test du décalage sans attendre : DEMO_TODAY=2026-10-06 node scripts/…
+const ANCHOR = '2026-08-13';
+const REAL_TODAY = process.env.DEMO_TODAY || new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Paris' });
+const addDaysRaw = (iso, n) => { const dt = new Date(`${iso}T12:00:00Z`); dt.setUTCDate(dt.getUTCDate() + n); return dt.toISOString().slice(0, 10); };
+const daysBetween = (a, b) => Math.round((new Date(`${b}T12:00:00Z`) - new Date(`${a}T12:00:00Z`)) / 86400000);
+const OFFSET = Math.floor(daysBetween(ANCHOR, REAL_TODAY) / 7) * 7; // semaines entières, jamais en avance
+const D = (iso) => addDaysRaw(iso, OFFSET); // décale une date du seed original
+const TODAY = D(ANCHOR); // « aujourd'hui simulé » (±3 j du réel)
+const YEST = addDaysRaw(TODAY, -1);
+const WINDOW_START = D('2026-07-27'); // 1re occurrence des séries
+const WINDOW_END = D('2026-09-26');   // dernière occurrence
+const ANNIV_AUJ = '1991-' + REAL_TODAY.slice(5);                   // Emma — anniversaire le jour du run
+const ANNIV_DEMAIN = '1991-' + addDaysRaw(REAL_TODAY, 1).slice(5); // Bastien — demain
+const fmtJM = (iso) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
+const jourDe = (iso) => String(parseInt(iso.slice(8, 10), 10));
+const fmtJMois = (iso) => new Date(`${iso}T12:00:00Z`).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', timeZone: 'UTC' });
+const fmtLong = (iso) => new Date(`${iso}T12:00:00Z`).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' });
+console.log(`Ancrage : aujourd'hui réel ${REAL_TODAY} · décalage ${OFFSET} j · TODAY simulé ${TODAY}`);
 
 // ── Helpers dates (Europe/Paris = UTC+2 sur juil→sept 2026) ──────────────────
 const T = (d, h) => `${d}T${h}:00+02:00`;
@@ -181,7 +207,7 @@ const CAST = [
   // clé, prénom, nom, ddn, ville, statut, niveau, source, créée le, notes, tel
   ['lea',     'Léa',     'Marchand',  '1992-03-14', 'Bordeaux', 'fidele',   'Intermédiaire', 'Instagram',        '2026-02-10', 'Toujours au premier rang — adore les équilibres.', '06 41 22 87 03'],
   ['sophie',  'Sophie',  'Bergeron',  '1985-08-16', 'Bordeaux', 'actif',    'Avancé',        'Bouche à oreille', '2026-03-02', null, '06 52 18 44 91'],
-  ['emma',    'Emma',    'Costa',     '1991-08-13', 'Talence',  'fidele',   'Intermédiaire', 'Instagram',        '2026-02-24', null, '06 63 05 77 12'],
+  ['emma',    'Emma',    'Costa',     ANNIV_AUJ, 'Talence',  'fidele',   'Intermédiaire', 'Instagram',        '2026-02-24', null, '06 63 05 77 12'],
   ['chloe',   'Chloé',   'Dubreuil',  '1997-05-02', 'Bordeaux', 'actif',    'Débutant',      'Google',           '2026-06-18', null, '06 74 90 21 55'],
   ['ines',    'Inès',    'Bachiri',   '1998-08-20', 'Bordeaux', 'actif',    'Intermédiaire', 'Instagram',        '2026-08-06', null, '06 85 33 60 28'],
   ['margaux', 'Margaux', 'Sentier',   '1994-06-30', 'Le Bouscat', 'actif',  'Tous niveaux',  'Bouche à oreille', '2026-05-11', 'Lombaires sensibles — proposer les adaptations.', '06 96 47 15 82'],
@@ -190,11 +216,11 @@ const CAST = [
   ['lucie',   'Lucie',   'Fabre',     '1990-01-25', 'Bordeaux', 'actif',    'Débutant',      'Événement',        '2026-07-29', 'Maman de Maë (7 ans) — yoga enfants le mercredi.', '06 29 73 50 84'],
   ['anouk',   'Anouk',   'Pelletier', '1996-04-18', 'Bègles',   'actif',    'Intermédiaire', 'Instagram',        '2026-06-02', null, '06 30 84 61 95'],
   ['claire',  'Claire',  'Vasseur',   '1979-10-07', 'Bordeaux', 'actif',    'Débutant',      'Bouche à oreille', '2026-07-20', null, '06 41 95 72 06'],
-  ['hugo',    'Hugo',    'Bianchi',   '1993-07-19', 'Bordeaux', 'prospect', 'Débutant',      'Portail IziSolo',  '2026-08-05', 'Venu via un cours d\'essai le 8/08 — à relancer.', '06 52 06 83 17'],
+  ['hugo',    'Hugo',    'Bianchi',   '1993-07-19', 'Bordeaux', 'prospect', 'Débutant',      'Portail IziSolo',  '2026-08-05', `Venu via un cours d'essai le ${fmtJM(D('2026-08-08'))} — à relancer.`, '06 52 06 83 17'],
   ['elise',   'Élise',   'Ferrand',   '1975-11-30', 'Bordeaux', 'fidele',   'Avancé',        'Bouche à oreille', '2026-02-12', null, '06 63 17 94 28'],
   ['marion',  'Marion',  'Dutertre',  '1988-03-03', 'Mérignac', 'actif',    'Intermédiaire', 'Instagram',        '2026-05-26', null, '06 74 28 05 39'],
   ['salome',  'Salomé',  'Nguyen',    '2000-09-12', 'Bordeaux', 'actif',    'Débutant',      'Instagram',        '2026-07-31', null, '06 85 39 16 40'],
-  ['bastien', 'Bastien', 'Morel',     '1991-08-14', 'Talence',  'actif',    'Débutant',      'Google',           '2026-08-03', null, '06 96 40 27 51'],
+  ['bastien', 'Bastien', 'Morel',     ANNIV_DEMAIN, 'Talence',  'actif',    'Débutant',      'Google',           '2026-08-03', null, '06 96 40 27 51'],
   ['justine', 'Justine', 'Aubert',    '1986-12-14', 'Bordeaux', 'actif',    'Tous niveaux',  'Événement',        '2026-06-25', 'Vient aux ateliers — règle sur place à la séance.', '06 07 61 38 62'],
   // Nouvelles venues via le portail (pleine lune)
   ['apolline', 'Apolline', 'Garcia',   '1995-02-27', 'Bordeaux', 'prospect', null, 'Portail IziSolo', '2026-08-10', 'Amie de Léa — venue pour la pleine lune 🌕', '06 18 72 49 73'],
@@ -216,12 +242,12 @@ const clientRows = [
   ...CAST.map(([, prenom, nom, ddn, ville, statut, niveau, source, created, notes, tel]) => ({
     profile_id: PROFILE_ID, prenom, nom, email: mail(prenom, nom), telephone: tel,
     date_naissance: ddn, ville, statut, niveau, source, notes,
-    type_client: 'particulier', notif_prefs: PREFS_OFF, created_at: T(created, '10:00'),
+    type_client: 'particulier', notif_prefs: PREFS_OFF, created_at: T(D(created), '10:00'),
   })),
   ...KIDS.map(([, prenom, nom, ddn, notes]) => ({
     profile_id: PROFILE_ID, prenom, nom, email: null, telephone: null,
     date_naissance: ddn, ville: 'Bordeaux', statut: 'actif', niveau: null, source: 'Événement', notes,
-    type_client: 'particulier', notif_prefs: PREFS_OFF, created_at: T('2026-08-08', '11:00'),
+    type_client: 'particulier', notif_prefs: PREFS_OFF, created_at: T(D('2026-08-08'), '11:00'),
   })),
 ];
 const { data: clients, error: eClients } = await sb.from('clients').insert(clientRows).select('id, prenom, nom, email');
@@ -261,10 +287,10 @@ for (const s of SERIES) {
   occs.forEach(o => { coursByKey[`${s.key}:${o.date}`] = o; });
 }
 const EVENTS = [
-  { key: 'pl',    nom: 'Yoga Pleine Lune 🌕', type_cours: 'Yoga', date: '2026-08-28', heure: '20:30', duree: 75, cap: 16, lieu: PARC, tarif: 25, notes: "Séance douce au coucher du soleil, suivie d'une tisane sous les arbres. Amène ton tapis et un plaid !" },
-  { key: 'ocean', nom: 'Yoga enfants — thème Océan 🐠', type_cours: 'Yoga enfants', date: '2026-08-26', heure: '15:00', duree: 45, cap: 8, lieu: LUMIERE, tarif: 12, notes: 'Pour les 6-10 ans : vagues, crabes et étoiles de mer au programme.' },
-  { key: 'rentree', nom: 'Atelier Rentrée : Pilates & brunch', type_cours: 'Mat', date: '2026-09-12', heure: '10:00', duree: 120, cap: 12, lieu: LUMIERE, tarif: 35, notes: '2 h de pratique + brunch maison pour lancer la saison ensemble.' },
-  { key: 'sonore', nom: 'Bain sonore & étirements', type_cours: 'Stretching', date: '2026-09-20', heure: '18:00', duree: 75, cap: 14, lieu: PARC, tarif: 28, notes: 'Bols tibétains et étirements profonds — repartez sur un nuage.' },
+  { key: 'pl',    nom: 'Yoga Pleine Lune 🌕', type_cours: 'Yoga', date: D('2026-08-28'), heure: '20:30', duree: 75, cap: 16, lieu: PARC, tarif: 25, notes: "Séance douce au coucher du soleil, suivie d'une tisane sous les arbres. Amène ton tapis et un plaid !" },
+  { key: 'ocean', nom: 'Yoga enfants — thème Océan 🐠', type_cours: 'Yoga enfants', date: D('2026-08-26'), heure: '15:00', duree: 45, cap: 8, lieu: LUMIERE, tarif: 12, notes: 'Pour les 6-10 ans : vagues, crabes et étoiles de mer au programme.' },
+  { key: 'rentree', nom: 'Atelier Rentrée : Pilates & brunch', type_cours: 'Mat', date: D('2026-09-12'), heure: '10:00', duree: 120, cap: 12, lieu: LUMIERE, tarif: 35, notes: '2 h de pratique + brunch maison pour lancer la saison ensemble.' },
+  { key: 'sonore', nom: 'Bain sonore & étirements', type_cours: 'Stretching', date: D('2026-09-20'), heure: '18:00', duree: 75, cap: 14, lieu: PARC, tarif: 28, notes: 'Bols tibétains et étirements profonds — repartez sur un nuage.' },
 ];
 for (const ev of EVENTS) {
   const { data, error } = await sb.from('cours').insert({
@@ -301,15 +327,15 @@ const ABOS = [
 const aboRows = [
   ...CARNETS.map(([c, o, debut, used]) => ({
     profile_id: PROFILE_ID, client_id: C[c].id, offre_id: O[o].id, offre_nom: O[o].nom,
-    type: 'carnet', date_debut: debut, date_fin: addDays(debut, O[o].duree_jours),
+    type: 'carnet', date_debut: D(debut), date_fin: addDays(D(debut), O[o].duree_jours),
     seances_total: O[o].seances, seances_utilisees: used, statut: 'actif',
-    created_at: T(debut, '10:30'),
+    created_at: T(D(debut), '10:30'),
   })),
   ...ABOS.map(([c, debut, fin, statut]) => ({
     profile_id: PROFILE_ID, client_id: C[c].id, offre_id: O.abo.id, offre_nom: O.abo.nom,
-    type: 'abonnement', date_debut: debut, date_fin: fin,
+    type: 'abonnement', date_debut: D(debut), date_fin: D(fin),
     seances_total: null, seances_utilisees: 0, statut,
-    created_at: T(debut, '09:00'),
+    created_at: T(D(debut), '09:00'),
   })),
 ];
 const { data: abos, error: eAbos } = await sb.from('abonnements').insert(aboRows).select('id, client_id, type, statut, date_debut');
@@ -334,15 +360,15 @@ const ROSTERS = {
 };
 // Écarts ponctuels : absente non prévenue (cas), annulation tardive (cas), excusée
 const SPECIAL = {
-  'flow:2026-08-11:anouk': { statut_pointage: 'absent', motif_absence: null },
-  'barre:2026-08-06:chloe': { statut_pointage: 'annule', annulation_tardive: true, est_due: true, motif_due: 'Annulation 2 h avant la séance' },
-  'mat:2026-08-10:marion': { statut_pointage: 'excuse', motif_absence: 'Prévenue le matin — souci de garde' },
+  [`flow:${D('2026-08-11')}:anouk`]: { statut_pointage: 'absent', motif_absence: null },
+  [`barre:${D('2026-08-06')}:chloe`]: { statut_pointage: 'annule', annulation_tardive: true, est_due: true, motif_due: 'Annulation 2 h avant la séance' },
+  [`mat:${D('2026-08-10')}:marion`]: { statut_pointage: 'excuse', motif_absence: 'Prévenue le matin — souci de garde' },
 };
 // Le lien carnet : carnet si présent·e, sinon abo actif (juillet pour les dates < 01/08)
 const lienAbo = (c, date) => {
   if (carnetOf[c]) return carnetOf[c];
-  if (aboActifOf[c] && date >= '2026-08-01') return aboActifOf[c];
-  if (aboActifOf[`${c}:juillet`] && date < '2026-08-01') return aboActifOf[`${c}:juillet`];
+  if (aboActifOf[c] && date >= D('2026-08-01')) return aboActifOf[c];
+  if (aboActifOf[`${c}:juillet`] && date < D('2026-08-01')) return aboActifOf[`${c}:juillet`];
   return null;
 };
 
@@ -356,7 +382,7 @@ for (const s of SERIES) {
     const farFuture = date > addDays(TODAY, 13);
     for (let i = 0; i < ROSTERS[s.key].length; i++) {
       const [c, since] = ROSTERS[s.key][i];
-      if (since && date < since) continue;
+      if (since && date < D(since)) continue;
       if (farFuture && i >= 2 + (s.jour % 3)) continue; // septembre clairsemé
       const special = SPECIAL[`${s.key}:${date}:${c}`];
       const abo = lienAbo(c, date);
@@ -383,22 +409,22 @@ for (const s of SERIES) {
 }
 // Essai d'Hugo (Stretching du 08/08, gratuit, sans carnet)
 presenceRows.push({
-  profile_id: PROFILE_ID, cours_id: coursByKey['stretch:2026-08-08'].id, client_id: C.hugo.id,
+  profile_id: PROFILE_ID, cours_id: coursByKey[`stretch:${D('2026-08-08')}`].id, client_id: C.hugo.id,
   abonnement_id: null, type_presence: 'essai', statut_pointage: 'present', pointee: true,
-  heure_pointage: T('2026-08-08', '10:05'), created_at: T('2026-08-05', '09:12'),
+  heure_pointage: T(D('2026-08-08'), '10:05'), created_at: T(D('2026-08-05'), '09:12'),
 });
 // La réservation « sans carnet » de Justine (cas à traiter) — Mat du 17/08
 presenceRows.push({
-  profile_id: PROFILE_ID, cours_id: coursByKey['mat:2026-08-17'].id, client_id: C.justine.id,
+  profile_id: PROFILE_ID, cours_id: coursByKey[`mat:${D('2026-08-17')}`].id, client_id: C.justine.id,
   abonnement_id: null, type_presence: 'normal', statut_pointage: 'inscrit', pointee: false,
-  payer_plus_tard: true, created_at: T('2026-08-12', '10:12'),
+  payer_plus_tard: true, created_at: T(D('2026-08-12'), '10:12'),
 });
 // Reformer du 19/08 : 2 venues ponctuelles → 8/8 COMPLET (l'annonce du canal + la liste d'attente)
 for (const c of ['sophie', 'thomas']) {
   presenceRows.push({
-    profile_id: PROFILE_ID, cours_id: coursByKey['reformer:2026-08-19'].id, client_id: C[c].id,
-    abonnement_id: lienAbo(c, '2026-08-19'), type_presence: 'normal', statut_pointage: 'inscrit', pointee: false,
-    created_at: T('2026-08-11', c === 'sophie' ? '09:40' : '11:05'),
+    profile_id: PROFILE_ID, cours_id: coursByKey[`reformer:${D('2026-08-19')}`].id, client_id: C[c].id,
+    abonnement_id: lienAbo(c, D('2026-08-19')), type_presence: 'normal', statut_pointage: 'inscrit', pointee: false,
+    created_at: T(D('2026-08-11'), c === 'sophie' ? '09:40' : '11:05'),
   });
 }
 // Évènements
@@ -439,35 +465,35 @@ const pay = (c, offre, aboId, montant, date, mode, statut = 'paid', extra = {}) 
   montant, statut, mode, date, date_encaissement: statut === 'paid' ? date : null,
   presence_id: extra.presence_id || null, notes: extra.notes || null, created_at: T(date, '10:45'),
 });
-pay('emma', O.c10, carnetOf.emma, 140, '2026-07-06', 'virement');
-pay('thomas', O.c10, carnetOf.thomas, 140, '2026-07-15', 'CB');
-pay('nadia', O.c5, carnetOf.nadia, 80, '2026-07-20', 'CB');
-pay('anouk', O.c10, carnetOf.anouk, 140, '2026-07-20', 'CB');
-pay('elise', O.c10, carnetOf.elise, 140, '2026-07-25', 'cheque');
-pay('lea', O.c10, carnetOf.lea, 140, '2026-07-27', 'CB');
-pay('chloe', O.c5, carnetOf.chloe, 80, '2026-07-28', 'especes');
-pay('salome', O.c5, carnetOf.salome, 80, '2026-08-04', 'especes');
-pay('bastien', O.c10, carnetOf.bastien, 140, '2026-08-05', 'virement');
-pay('lucie', O.c5, carnetOf.lucie, 80, '2026-08-05', 'CB');
-pay('ines', O.c10, carnetOf.ines, 140, '2026-08-10', 'CB');
-pay('margaux', O.abo, aboActifOf['margaux:juillet'], 99, '2026-07-01', 'CB');
-pay('margaux', O.abo, aboActifOf.margaux, 99, '2026-08-01', 'CB');
-pay('sophie', O.abo, aboActifOf.sophie, 99, '2026-08-01', 'virement');
-pay('marion', O.abo, aboActifOf.marion, 99, '2026-08-03', 'CB');
+pay('emma', O.c10, carnetOf.emma, 140, D('2026-07-06'), 'virement');
+pay('thomas', O.c10, carnetOf.thomas, 140, D('2026-07-15'), 'CB');
+pay('nadia', O.c5, carnetOf.nadia, 80, D('2026-07-20'), 'CB');
+pay('anouk', O.c10, carnetOf.anouk, 140, D('2026-07-20'), 'CB');
+pay('elise', O.c10, carnetOf.elise, 140, D('2026-07-25'), 'cheque');
+pay('lea', O.c10, carnetOf.lea, 140, D('2026-07-27'), 'CB');
+pay('chloe', O.c5, carnetOf.chloe, 80, D('2026-07-28'), 'especes');
+pay('salome', O.c5, carnetOf.salome, 80, D('2026-08-04'), 'especes');
+pay('bastien', O.c10, carnetOf.bastien, 140, D('2026-08-05'), 'virement');
+pay('lucie', O.c5, carnetOf.lucie, 80, D('2026-08-05'), 'CB');
+pay('ines', O.c10, carnetOf.ines, 140, D('2026-08-10'), 'CB');
+pay('margaux', O.abo, aboActifOf['margaux:juillet'], 99, D('2026-07-01'), 'CB');
+pay('margaux', O.abo, aboActifOf.margaux, 99, D('2026-08-01'), 'CB');
+pay('sophie', O.abo, aboActifOf.sophie, 99, D('2026-08-01'), 'virement');
+pay('marion', O.abo, aboActifOf.marion, 99, D('2026-08-03'), 'CB');
 // En attente depuis 16 j (seuil cloche : 14 j) — Claire règle « ce week-end »
-pay('claire', O.c5, carnetOf.claire, 80, '2026-07-28', 'virement', 'pending');
+pay('claire', O.c5, carnetOf.claire, 80, D('2026-07-28'), 'virement', 'pending');
 // Pleine lune : 3 règlements à la séance (25 €)
 const plCours = coursByKey['ev:pl'];
 for (const [c, date, mode] of [['apolline', '2026-08-10', 'CB'], ['maelys', '2026-08-12', 'CB'], ['justine', '2026-08-09', 'especes']]) {
-  pay(c, null, null, 25, date, mode, 'paid', {
+  pay(c, null, null, 25, D(date), mode, 'paid', {
     intitule: `Yoga Pleine Lune 🌕 — ${C[c].prenom}`, type: 'cours_unique',
     presence_id: findPresence(plCours.id, C[c].id)?.id || null,
   });
 }
 const { error: ePaie } = await sb.from('paiements').insert(paiementRows);
 if (ePaie) die('paiements', ePaie);
-const encaisseAout = paiementRows.filter(p => p.statut === 'paid' && p.date >= '2026-08-01').reduce((s, p) => s + p.montant, 0);
-console.log(`💶 paiements : ${paiementRows.length} (encaissé en août : ${encaisseAout} € · 1 en attente 80 €)`);
+const encaisseAout = paiementRows.filter(p => p.statut === 'paid' && p.date >= D('2026-08-01')).reduce((s, p) => s + p.montant, 0);
+console.log(`💶 paiements : ${paiementRows.length} (encaissé sur ~2 semaines : ${encaisseAout} € · 1 en attente 80 €)`);
 
 // ═════════════════════════════════════════════════════════════════════════════
 // 9. LISTE D'ATTENTE — pleine lune complète (3) + Reformer du 19/08 (2)
@@ -479,7 +505,7 @@ const laRows = [
     notified_at: null, created_at: T(addDays(TODAY, -(1 - Math.min(i, 1))), `${17 + i}:2${i}`),
   })),
   ...[['marion', 1], ['zoe', 2]].map(([c, position], i) => ({
-    profile_id: PROFILE_ID, cours_id: coursByKey['reformer:2026-08-19'].id, client_id: C[c].id,
+    profile_id: PROFILE_ID, cours_id: coursByKey[`reformer:${D('2026-08-19')}`].id, client_id: C[c].id,
     email: C[c].email, nom: `${C[c].prenom} ${C[c].nom}`, position,
     notified_at: null, created_at: T(YEST, `1${2 + i}:40`),
   })),
@@ -492,19 +518,19 @@ console.log(`⏳ liste d'attente : ${laRows.length}`);
 // 10. DEMANDES D'ESSAI — Julien en attente (badge nav + cloche), Hugo finalisée
 // ═════════════════════════════════════════════════════════════════════════════
 const { error: eEssai1 } = await sb.from('cours_essai_demandes').insert({
-  profile_id: PROFILE_ID, cours_id: coursByKey['flow:2026-08-18'].id,
+  profile_id: PROFILE_ID, cours_id: coursByKey[`flow:${D('2026-08-18')}`].id,
   prenom: 'Julien', nom: 'Lefort', email: 'julien.lefort@example.com', telephone: '06 74 50 27 39',
   message_visiteur: 'Bonjour ! Je cherche un cours le midi pour me remettre en douceur. Mardi prochain, c\'est possible ?',
   statut: 'en_attente', created_at: T(YEST, '18:40'),
 });
 if (eEssai1) die('essai Julien', eEssai1);
 const { error: eEssai2 } = await sb.from('cours_essai_demandes').insert({
-  profile_id: PROFILE_ID, cours_id: coursByKey['stretch:2026-08-08'].id,
+  profile_id: PROFILE_ID, cours_id: coursByKey[`stretch:${D('2026-08-08')}`].id,
   prenom: 'Hugo', nom: 'Bianchi', email: C.hugo.email, telephone: '06 52 06 83 17',
   message_visiteur: 'Un ami m\'a parlé du studio, je peux venir tester le stretching samedi ?',
   statut: 'finalisee', client_id: C.hugo.id,
-  presence_id: findPresence(coursByKey['stretch:2026-08-08'].id, C.hugo.id)?.id || null,
-  created_at: T('2026-08-05', '09:10'), decided_at: T('2026-08-06', '08:30'),
+  presence_id: findPresence(coursByKey[`stretch:${D('2026-08-08')}`].id, C.hugo.id)?.id || null,
+  created_at: T(D('2026-08-05'), '09:10'), decided_at: T(D('2026-08-06'), '08:30'),
 });
 if (eEssai2) die('essai Hugo', eEssai2);
 console.log('🙋 essais : 1 en attente (Julien) + 1 finalisé (Hugo)');
@@ -567,7 +593,7 @@ await mkConv({
 await mkConv({
   type: 'client', clientKey: 'sophie',
   messages: [
-    { de: 'sophie', a: T(YEST, '14:05'), texte: 'Petite question : mon abo couvre aussi l\'atelier rentrée du 12 septembre ?' },
+    { de: 'sophie', a: T(YEST, '14:05'), texte: `Petite question : mon abo couvre aussi l'atelier rentrée du ${fmtJMois(D('2026-09-12'))} ?` },
     { de: 'pro', a: T(YEST, '14:32'), texte: 'Hello Sophie ! L\'atelier est en tarif à part (35 € avec le brunch 🥐), ton abo couvre tous les cours de la semaine. Je te garde une place ?' },
   ],
   profLastRead: T(YEST, '14:40'),
@@ -577,23 +603,23 @@ await mkConv({
 await mkConv({
   type: 'client', clientKey: 'lucie',
   messages: [
-    { de: 'lucie', a: T('2026-08-12', '17:48'), texte: 'Maë est surexcitée pour le yoga océan 🐙 Est-ce que sa copine Jade peut venir aussi ?' },
-    { de: 'pro', a: T('2026-08-12', '18:02'), texte: 'Mais oui, avec plaisir ! Il reste de la place — j\'ai ajouté Jade à la liste 🌊 Rendez-vous le 26 à 15 h !' },
+    { de: 'lucie', a: T(D('2026-08-12'), '17:48'), texte: 'Maë est surexcitée pour le yoga océan 🐙 Est-ce que sa copine Jade peut venir aussi ?' },
+    { de: 'pro', a: T(D('2026-08-12'), '18:02'), texte: `Mais oui, avec plaisir ! Il reste de la place — j'ai ajouté Jade à la liste 🌊 Rendez-vous le ${jourDe(D('2026-08-26'))} à 15 h !` },
   ],
-  profLastRead: T('2026-08-12', '18:05'),
-  membres: [['lucie', T('2026-08-12', '18:20')]],
+  profLastRead: T(D('2026-08-12'), '18:05'),
+  membres: [['lucie', T(D('2026-08-12'), '18:20')]],
 });
 // Canal du cours Pleine Lune — annonce + réponse de Léa + réactions
 const canalPL = await mkConv({
-  type: 'cours', coursKey: 'ev:pl', titre: 'Yoga Pleine Lune 🌕 · 28/08 20:30',
+  type: 'cours', coursKey: 'ev:pl', titre: `Yoga Pleine Lune 🌕 · ${fmtJM(D('2026-08-28'))} 20:30`,
   messages: [
-    { de: 'pro', a: T('2026-08-10', '20:05'), texte: 'Bonsoir à toutes et à tous 🌕 Rendez-vous vendredi 28 août à 20 h 30 à la Salle du Parc. Amenez tapis, plaid et gourde — si le ciel est dégagé, on pratique dehors sous les étoiles ✨' },
-    { de: 'lea', a: T('2026-08-10', '20:40'), texte: 'On a trop hâte !! 🌕' },
+    { de: 'pro', a: T(D('2026-08-10'), '20:05'), texte: `Bonsoir à toutes et à tous 🌕 Rendez-vous ${fmtLong(D('2026-08-28'))} à 20 h 30 à la Salle du Parc. Amenez tapis, plaid et gourde — si le ciel est dégagé, on pratique dehors sous les étoiles ✨` },
+    { de: 'lea', a: T(D('2026-08-10'), '20:40'), texte: 'On a trop hâte !! 🌕' },
   ],
   profLastRead: T(TODAY, '09:02'),
   membres: [
-    ['lea', T('2026-08-10', '20:40')], ['sophie', T('2026-08-10', '21:30')], ['emma', T('2026-08-10', '22:10')],
-    ['marion', T('2026-08-11', '08:15')], ['ines'], ['margaux'], ['thomas'], ['nadia'], ['lucie'], ['elise'],
+    ['lea', T(D('2026-08-10'), '20:40')], ['sophie', T(D('2026-08-10'), '21:30')], ['emma', T(D('2026-08-10'), '22:10')],
+    ['marion', T(D('2026-08-11'), '08:15')], ['ines'], ['margaux'], ['thomas'], ['nadia'], ['lucie'], ['elise'],
     ['salome'], ['bastien'], ['justine'], ['apolline'], ['maelys'], ['louise'],
   ],
 });
@@ -605,9 +631,9 @@ const { error: eReact } = await sb.from('messages_reactions').insert([
 soft('réactions', eReact);
 // Canal Reformer du 19/08 — annonce complet → liste d'attente
 await mkConv({
-  type: 'cours', coursKey: 'reformer:2026-08-19', titre: 'Reformer — petit groupe · 19/08 18:00',
+  type: 'cours', coursKey: `reformer:${D('2026-08-19')}`, titre: `Reformer — petit groupe · ${fmtJM(D('2026-08-19'))} 18:00`,
   messages: [
-    { de: 'pro', a: T(YEST, '12:30'), texte: 'La séance Reformer de mercredi 19 août est complète 💪 Si vous visez une place, inscrivez-vous en liste d\'attente — je vous préviens dès qu\'une place se libère !' },
+    { de: 'pro', a: T(YEST, '12:30'), texte: `La séance Reformer de ${fmtLong(D('2026-08-19'))} est complète 💪 Si vous visez une place, inscrivez-vous en liste d'attente — je vous préviens dès qu'une place se libère !` },
   ],
   profLastRead: T(YEST, '12:30'),
   membres: [['elise', T(YEST, '13:05')], ['nadia'], ['margaux'], ['lea'], ['emma'], ['salome'], ['sophie'], ['thomas']],
@@ -620,8 +646,8 @@ console.log('💬 messagerie : 6 conversations (2 non lues côté prof) + 3 réa
 const { data: sondage, error: eSond } = await sb.from('sondages_planning').insert({
   profile_id: PROFILE_ID, slug: `rentree-2026-${PROFILE_ID.slice(0, 6)}`,
   titre: 'Nouveaux créneaux de la rentrée 🍂',
-  message: 'Dis-moi ce qui t\'arrange le mieux — j\'ouvre les créneaux plébiscités début septembre !',
-  date_fin: '2026-08-31', visibilite: 'mixte', actif: true, created_at: T('2026-08-05', '11:20'),
+  message: 'Dis-moi ce qui t\'arrange le mieux — j\'ouvre les créneaux plébiscités dès la fin du sondage !',
+  date_fin: D('2026-08-31'), visibilite: 'mixte', actif: true, created_at: T(D('2026-08-05'), '11:20'),
 }).select('id').single();
 if (eSond) die('sondage', eSond);
 const creneauxDef = [
@@ -643,7 +669,7 @@ const voteRows = [];
 Object.entries(VOTES).forEach(([c, valeurs], vi) => {
   valeurs.forEach((valeur, i) => voteRows.push({
     creneau_id: CR[i], client_id: C[c].id, email: null, prenom: C[c].prenom,
-    valeur, created_at: T(addDays('2026-08-05', 1 + (vi % 6)), `${9 + (vi % 11)}:${10 + (i * 7)}`),
+    valeur, created_at: T(addDays(D('2026-08-05'), 1 + (vi % 6)), `${9 + (vi % 11)}:${10 + (i * 7)}`),
   }));
 });
 const { error: eVotes } = await sb.from('sondages_reponses').insert(voteRows);
@@ -653,27 +679,27 @@ console.log(`🗳️ sondage : 3 créneaux, ${Object.keys(VOTES).length} votants
 // ═════════════════════════════════════════════════════════════════════════════
 // 13. CAS À TRAITER — 3 ouverts
 // ═════════════════════════════════════════════════════════════════════════════
-const flowMardi = coursByKey['flow:2026-08-11'];
-const barreJeudi = coursByKey['barre:2026-08-06'];
-const matLundi = coursByKey['mat:2026-08-17'];
+const flowMardi = coursByKey[`flow:${D('2026-08-11')}`];
+const barreJeudi = coursByKey[`barre:${D('2026-08-06')}`];
+const matLundi = coursByKey[`mat:${D('2026-08-17')}`];
 const casRows = [
   {
     profile_id: PROFILE_ID, case_type: 'no_show', client_id: C.anouk.id, cours_id: flowMardi.id,
     presence_id: findPresence(flowMardi.id, C.anouk.id)?.id || null,
-    context: { mode: 'cas', seance_decomptee: false, client_nom: 'Anouk Pelletier', cours_nom: 'Yoga Flow — pause déj', cours_date: '2026-08-11', message: 'Anouk ne s\'est pas présentée — Yoga Flow du mardi 11/08', montant_potentiel: 14 },
-    created_at: T('2026-08-11', '13:35'),
+    context: { mode: 'cas', seance_decomptee: false, client_nom: 'Anouk Pelletier', cours_nom: 'Yoga Flow — pause déj', cours_date: D('2026-08-11'), message: `Anouk ne s'est pas présentée — Yoga Flow du ${fmtLong(D('2026-08-11'))}`, montant_potentiel: 14 },
+    created_at: T(D('2026-08-11'), '13:35'),
   },
   {
     profile_id: PROFILE_ID, case_type: 'annulation_hors_delai', client_id: C.chloe.id, cours_id: barreJeudi.id,
     presence_id: findPresence(barreJeudi.id, C.chloe.id)?.id || null,
-    context: { choix_applique: 'creer_dette', dette_a_regler: true, delai_h: 2, client_nom: 'Chloé Dubreuil', client_email: C.chloe.email, cours_date: '2026-08-06' },
-    created_at: T('2026-08-06', '17:05'),
+    context: { choix_applique: 'creer_dette', dette_a_regler: true, delai_h: 2, client_nom: 'Chloé Dubreuil', client_email: C.chloe.email, cours_date: D('2026-08-06') },
+    created_at: T(D('2026-08-06'), '17:05'),
   },
   {
     profile_id: PROFILE_ID, case_type: 'eleve_sans_carnet', client_id: C.justine.id, cours_id: matLundi.id,
     presence_id: findPresence(matLundi.id, C.justine.id)?.id || null,
     context: { choix_applique: 'paiement_sur_place' },
-    created_at: T('2026-08-12', '10:12'),
+    created_at: T(D('2026-08-12'), '10:12'),
   },
 ];
 const { error: eCas } = await sb.from('cas_a_traiter').insert(casRows);
@@ -690,15 +716,15 @@ const notifRows = [
   {
     profile_id: PROFILE_ID, type: 'reservation',
     titre: '🎉 Nouvelle réservation — Apolline',
-    corps: 'Yoga Pleine Lune 🌕 · ven. 28 août à 20:30',
-    data: { client_id: C.apolline.id, cours_id: plCours.id, cours_date: '2026-08-28', presence_id: presApolline?.id || null, prenom: 'Apolline' },
+    corps: `Yoga Pleine Lune 🌕 · ${fmtLong(D('2026-08-28'))} à 20:30`,
+    data: { client_id: C.apolline.id, cours_id: plCours.id, cours_date: D('2026-08-28'), presence_id: presApolline?.id || null, prenom: 'Apolline' },
     ref_key: `reservation_${presApolline?.id}`, lu: false,
     created_at: T(TODAY, '09:14'), expires_at: T(addDays(TODAY, 2), '09:14'),
   },
   {
     profile_id: PROFILE_ID, type: 'liste_attente',
     titre: 'Nouvelle inscription en liste d\'attente',
-    corps: 'Zoé Lambert attend une place — Yoga Pleine Lune 🌕 (28/08 à 20:30).',
+    corps: `Zoé Lambert attend une place — Yoga Pleine Lune 🌕 (${fmtJM(D('2026-08-28'))} à 20:30).`,
     data: { cours_id: plCours.id, email: C.zoe.email }, lu: false,
     created_at: T(YEST, '17:21'),
   },
