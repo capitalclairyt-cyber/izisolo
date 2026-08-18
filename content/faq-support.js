@@ -86,6 +86,12 @@ export const FAQ_SUPPORT = [
     a: "Page Élèves → « Exporter » : un CSV de toutes tes fiches, disponible quel que soit ton plan. Pour ta compta (plan Complet) : Revenus → « Export » ouvre une modale où tu choisis la période (préréglée ou dates libres), l'état, le mode de règlement et l'offre — le CSV s'ouvre directement dans Excel.",
   },
   {
+    // Cas Patricia 2026-08-18 : une prof crée un compte élève avec son adresse
+    // perso, sa session bascule, et croit son studio disparu.
+    q: "J'ai créé un compte élève et je ne retrouve plus mon compte pro — perdu ?",
+    a: "Rien n'est perdu ! Un compte élève et un compte studio sont deux comptes séparés (deux adresses email). Ton navigateur est simplement resté connecté au compte élève : déconnecte-toi (bouton « Changer de compte » ou Déconnexion), puis reconnecte-toi sur izisolo.fr/login avec l'adresse email de ton studio et ton mot de passe. Ton studio et toutes tes données sont intacts.",
+  },
+  {
     q: "Comment installer IziSolo sur mon téléphone (sans App Store) ?",
     a: "IziSolo est une appli web installable. Android + Chrome : menu ⋮ → « Installer l'application ». iPhone : bouton Partager → « Sur l'écran d'accueil » (Safari, ou Chrome récent). Une fois installée, tu ouvres depuis l'icône et tu restes connecté·e.",
     lien: { href: '/aide#installer', label: 'Voir le pas-à-pas' },

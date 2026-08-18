@@ -299,6 +299,20 @@ export default function OnboardingPage() {
               </p>
             )}
 
+            {/* La porte qui manquait (cas Patricia 2026-08-18 : une PROF crée un
+                2e compte élève avec son adresse perso, sa session bascule, et
+                cet écran se lisait « ton compte pro a disparu ») : proposer
+                explicitement le retour vers le compte studio. */}
+            <div className="eleve-retour-prof">
+              <p style={{ margin: '0 0 8px', fontSize: '0.875rem', lineHeight: 1.5, color: 'var(--text-secondary)' }}>
+                Tu enseignes et tu cherches <strong>ton tableau de bord de professeur·e</strong> ?
+                Ton studio est sous une autre adresse email : reconnecte-toi avec elle.
+              </p>
+              <button type="button" className="izi-btn izi-btn-secondary" onClick={handleLogout}>
+                Changer de compte <ArrowRight size={15} />
+              </button>
+            </div>
+
             <div className="eleve-divider" />
 
             <p style={{ fontSize: '0.9375rem', color: 'var(--text-secondary)', margin: '0 0 14px', lineHeight: 1.5 }}>
@@ -823,6 +837,11 @@ export default function OnboardingPage() {
           margin: 0 0 4px;
         }
         .eleve-portail-btn { width: 100%; }
+        .eleve-retour-prof {
+          margin-top: 16px; padding: 14px 16px; text-align: left;
+          background: var(--bg-soft, #f8f4ed); border: 1px solid var(--border);
+          border-radius: 12px;
+        }
         .eleve-divider {
           border-top: 1px solid var(--border);
           margin: 20px 0;
