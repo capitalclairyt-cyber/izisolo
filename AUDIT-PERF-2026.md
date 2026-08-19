@@ -32,13 +32,12 @@ par n'importe qui**. Les fiches à email NULL ne matchent pas (NULL ≠ '').
 
 ## CATÉGORIE 1 — À corriger MAINTENANT (structurel, coût faible)
 
-> **STATUT (2026-08-19 soir, go Colin « go pour tout, pour l'index on droppe »)** :
-> 1.1 → 1.6 LIVRÉS côté code (build + lint verts, fallback du portail prouvé
-> iso-comportement en vrai navigateur contre la prod). Le volet SQL est dans
-> **`migrations-v89-perf-fondations.sql`** (RPC places_occupees + index annexe B
-> + DROP clients_unique_nom_prenom) — **À APPLIQUER par Colin**, puis
-> `node scripts/verifier-selects.mjs` + re-comparer les jauges du portail
-> (chemin RPC cette fois). 1.7 : fait le soir même (résultats plus bas).
+> **STATUT : CATÉGORIE 1 SOLDÉE (2026-08-19 soir)**. Code livré (build + lint
+> verts, fallback du portail prouvé iso-comportement contre la prod) ET
+> **v89 appliquée par Colin le soir même** : `verifier-selects` ✅, RPC
+> `places_occupees` = formule v74 recalculée en JS sur 12 cours réels 12/12
+> (dont le Yoga Pleine Lune complet 16/16), jauges du portail prod identiques
+> sur le chemin RPC. 1.7 : annexe A exécutée (résultats plus bas).
 
 ### 1.1 🔴 Jauges de places FAUSSES sur le portail public (cap 1000 silencieux)
 - **Fichier** : `app/p/[studioSlug]/page.js:136-147` (atténué : `essai/page.js:58-66`)
