@@ -277,7 +277,7 @@ export const PERSONAS = {
     h2_em: "pas pour gérer.",
     benefices: [
       { kw: 'RDV en ligne', title: 'Page de prise de RDV publique', desc: 'Tes patient·e·s réservent leur créneau seul·e·s, à toute heure.' },
-      { kw: 'RGPD-friendly', title: 'Données hébergées en Europe', desc: 'Supabase Frankfurt + Vercel Paris. Pas de transfert hors UE.' },
+      { kw: 'RGPD-friendly', title: 'Données hébergées en Europe', desc: 'Base de données Supabase en Union européenne, app servie depuis Paris (Vercel). Pas de transfert hors UE.' },
       { kw: 'Annulation auto', title: 'Délai et règles à toi', desc: 'Tu fixes ton délai d\'annulation libre. Au-delà, la séance est due — l\'app applique sans ambiguïté.' },
       { kw: 'Reçus PDF', title: 'Facturation conforme', desc: 'Reçu généré automatiquement après chaque encaissement. Mention TVA non applicable (art. 293 B du CGI).' },
     ],

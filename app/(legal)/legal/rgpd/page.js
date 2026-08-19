@@ -115,7 +115,7 @@ export default function RGPDPage() {
           <tr>
             <td>Supabase Inc.</td>
             <td>Base de données, authentification</td>
-            <td>UE (Francfort)</td>
+            <td>UE (Irlande)</td>
             <td>Hébergement européen</td>
           </tr>
           <tr>
@@ -132,7 +132,7 @@ export default function RGPDPage() {
           </tr>
           <tr>
             <td>Anthropic, PBC</td>
-            <td>Assistant conversationnel (Claude)</td>
+            <td>Extraction de fiches élèves par photo (IA Claude)</td>
             <td>États-Unis</td>
             <td>Clauses contractuelles types, données non utilisées pour l'entraînement</td>
           </tr>

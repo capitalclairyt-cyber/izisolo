@@ -52,7 +52,7 @@ export default function MentionsLegalesPage() {
       </p>
       <p>
         Les données stockées par Supabase sont hébergées dans la région{' '}
-        <strong>Europe (Francfort, Allemagne)</strong>.
+        <strong>Europe (Irlande)</strong>.
       </p>
 
       <h2>4. Sous-traitants techniques</h2>
@@ -64,7 +64,7 @@ export default function MentionsLegalesPage() {
       <ul>
         <li><strong>Stripe Payments Europe Ltd.</strong> — paiement en ligne</li>
         <li><strong>Resend Inc.</strong> — envoi d'emails transactionnels</li>
-        <li><strong>Anthropic, PBC</strong> — assistant conversationnel (Claude)</li>
+        <li><strong>Anthropic, PBC</strong> — extraction de fiches élèves par photo (IA Claude)</li>
       </ul>
 
       <h2>5. Propriété intellectuelle</h2>
