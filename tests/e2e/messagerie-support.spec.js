@@ -19,6 +19,7 @@ import {
   estVisiblePourEleve,
   clientIdsNotifiables,
   estNonLuePourAdmin,
+  estLuParProf,
   estErreurMigrationV87,
   SUPPORT_TITRE,
 } from '../../lib/messagerie-support.js';
@@ -83,6 +84,25 @@ test.describe('estNonLuePourAdmin — NULL = jamais lu', () => {
 
   test('lecture à la MÊME milliseconde que le message → lu (pas de faux positif)', () => {
     expect(estNonLuePourAdmin('2026-08-19T10:00:00.000Z', '2026-08-19T10:00:00.000Z')).toBe(false);
+  });
+});
+
+test.describe('estLuParProf — accusé de lecture côté admin uniquement', () => {
+  test('prof jamais venue (NULL) → non lu', () => {
+    expect(estLuParProf('2026-08-19T10:00:00Z', null)).toBe(false);
+  });
+
+  test('lecture APRÈS le message → lu ; AVANT → non lu', () => {
+    expect(estLuParProf('2026-08-19T10:00:00Z', '2026-08-19T10:05:00Z')).toBe(true);
+    expect(estLuParProf('2026-08-19T10:05:00Z', '2026-08-19T10:00:00Z')).toBe(false);
+  });
+
+  test('même milliseconde → lu (symétrie estNonLuePourAdmin)', () => {
+    expect(estLuParProf('2026-08-19T10:00:00.000Z', '2026-08-19T10:00:00.000Z')).toBe(true);
+  });
+
+  test('message sans date → jamais « lu » par défaut', () => {
+    expect(estLuParProf(null, '2026-08-19T10:00:00Z')).toBe(false);
   });
 });
 

@@ -51,15 +51,25 @@ export const GET = withRoute({ auth: 'admin' }, async ({ params }) => {
     return Response.json({ error: 'Lecture impossible' }, { status: 500 });
   }
 
-  // Studio en header du fil
-  const { data: prof } = await admin
-    .from('profiles')
-    .select('prenom, studio_nom, studio_slug')
-    .eq('id', conv.profile_id)
-    .maybeSingle();
+  // Studio en header du fil + lecture de la PROF (accusé de lecture ✓✓,
+  // affiché côté admin UNIQUEMENT — la prof ne voit jamais l'équivalent).
+  const [{ data: prof }, { data: membrePro }] = await Promise.all([
+    admin
+      .from('profiles')
+      .select('prenom, studio_nom, studio_slug')
+      .eq('id', conv.profile_id)
+      .maybeSingle(),
+    admin
+      .from('conversation_members')
+      .select('last_read_at')
+      .eq('conversation_id', conversationId)
+      .eq('profile_id', conv.profile_id)
+      .maybeSingle(),
+  ]);
 
   return Response.json({
     messages: messages || [],
+    prof_last_read_at: membrePro?.last_read_at || null,
     studio: {
       profile_id: conv.profile_id,
       prenom: prof?.prenom || '',

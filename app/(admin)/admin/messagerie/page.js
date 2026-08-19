@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { estLuParProf } from '@/lib/messagerie-support';
 
 // ─── /admin/messagerie — messagerie support prof ↔ IziSolo (v87) ─────────────
 // Les profs écrivent depuis leur messagerie (fil épinglé « Équipe IziSolo ») ;
@@ -215,6 +216,8 @@ const EMOJIS_RAPIDES = ['🧘', '🙏', '🌿', '💛', '✨', '😊', '👍', '
 function FilSupport({ conv, onBack }) {
   const [messages, setMessages] = useState([]);
   const [studio, setStudio] = useState(null);
+  // Accusé de lecture (admin only) : dernière ouverture du fil par la PROF.
+  const [profLastReadAt, setProfLastReadAt] = useState(null);
   const [draft, setDraft] = useState('');
   const [sending, setSending] = useState(false);
   const [err, setErr] = useState('');
@@ -243,6 +246,7 @@ function FilSupport({ conv, onBack }) {
       if (!res.ok) throw new Error(j.error || `Erreur ${res.status}`);
       setMessages(j.messages || []);
       setStudio(j.studio || null);
+      setProfLastReadAt(j.prof_last_read_at || null);
       setErr('');
     } catch (e) {
       setErr(e.message);
@@ -327,6 +331,13 @@ function FilSupport({ conv, onBack }) {
               })}
               <div style={{ fontSize: '0.65rem', opacity: 0.7, marginTop: 3, textAlign: 'right' }}>
                 {formatDate(m.created_at)}
+                {/* Accusé de lecture — côté ADMIN uniquement, la prof ne voit
+                    jamais l'équivalent. Se met à jour au poll (8 s). */}
+                {m.sender_type === 'izisolo' && (
+                  estLuParProf(m.created_at, profLastReadAt)
+                    ? <span title="Lu par la prof" style={{ marginLeft: 6 }}>✓✓ Lu</span>
+                    : <span title="Pas encore ouvert par la prof" style={{ marginLeft: 6 }}>✓ Envoyé</span>
+                )}
               </div>
             </div>
           </div>
