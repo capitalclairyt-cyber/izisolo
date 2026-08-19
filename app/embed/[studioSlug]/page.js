@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { filterCoursVisibles } from '@/lib/visibilite';
-import { presenceOccupePlace } from '@/lib/presences';
+import { compterPlacesOccupeesParCours } from '@/lib/presences';
 import { coursDejaCommence } from '@/lib/dates';
 import { studioCan } from '@/lib/plan-guard';
 import { reportError } from '@/lib/report';
@@ -36,7 +36,38 @@ const PALETTES_EMBED = ['sable', 'rose', 'sauge', 'lavande'];
 // 7 colonnes façon semaine complète, jours vides compris — demande Manon).
 const AFFICHAGES_EMBED = ['liste', 'semaine'];
 
+// ── Cache mémoire 120 s par (slug, semaines, type) — AUDIT-PERF cat 2.5 ─────
+// L'embed vit sur les SITES des profs : chaque visiteur du site de Manon
+// coûtait 1 render + 4 requêtes DB. La vue est anonyme par design (aucun
+// cookie) → cache idéal. Mémoire d'instance lambda = best-effort : une
+// instance chaude sert la quasi-totalité du trafic d'un site actif ; à froid
+// on paie le chemin complet, comme avant. (Pas d'API framework : le cache
+// survit aux changements de Next, et 120 s de staleness sur un planning
+// hebdomadaire est invisible.)
+const EMBED_CACHE = new Map(); // key -> { at, data }
+const EMBED_CACHE_TTL = 120 * 1000;
+const EMBED_CACHE_MAX = 500;
+
 async function getData(studioSlug, { semaines, type }) {
+  const cacheKey = `${studioSlug}|${semaines || ''}|${type || ''}`;
+  const hit = EMBED_CACHE.get(cacheKey);
+  if (hit && Date.now() - hit.at < EMBED_CACHE_TTL) return hit.data;
+
+  const data = await getDataFresh(studioSlug, { semaines, type });
+  if (EMBED_CACHE.size >= EMBED_CACHE_MAX) {
+    // Purge simple : on jette les entrées périmées, sinon la plus vieille.
+    for (const [k, v] of EMBED_CACHE) {
+      if (Date.now() - v.at >= EMBED_CACHE_TTL) EMBED_CACHE.delete(k);
+    }
+    if (EMBED_CACHE.size >= EMBED_CACHE_MAX) {
+      EMBED_CACHE.delete(EMBED_CACHE.keys().next().value);
+    }
+  }
+  EMBED_CACHE.set(cacheKey, { at: Date.now(), data });
+  return data;
+}
+
+async function getDataFresh(studioSlug, { semaines, type }) {
   const supabase = supabaseAdmin;
 
   const { data: profile } = await supabase
@@ -84,18 +115,16 @@ async function getData(studioSlug, { semaines, type }) {
   // Anonyme : cours publics uniquement + pas les séances déjà commencées.
   const cours = filterCoursVisibles(coursRaw || [], null).filter(c => !coursDejaCommence(c));
 
-  // Jauge (formule v74 — jamais de count brut sur presences).
+  // Jauge (formule v74) — agrégat RPC v89, fini le cap 1000 silencieux et le
+  // transfert de centaines de lignes juste pour compter (AUDIT-PERF 2.5).
   const coursIds = cours.map(c => c.id);
-  const counts = {};
+  let counts = {};
   if (coursIds.length > 0) {
-    const { data: presences, error: presErr } = await supabase
-      .from('presences')
-      .select('cours_id, statut_pointage, annulation_tardive')
-      .in('cours_id', coursIds);
-    if (presErr) reportError('[embed] lecture presences err:', presErr, { route: `/embed/${studioSlug}` });
-    (presences || []).filter(presenceOccupePlace).forEach(p => {
-      counts[p.cours_id] = (counts[p.cours_id] || 0) + 1;
-    });
+    try {
+      counts = await compterPlacesOccupeesParCours(supabase, coursIds);
+    } catch (presErr) {
+      reportError('[embed] comptage places err:', presErr, { route: `/embed/${studioSlug}` });
+    }
   }
 
   return {

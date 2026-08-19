@@ -317,11 +317,16 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
       const debSemaine = lundi.toISOString().slice(0, 10);
       const finSemaine = dimanche.toISOString().slice(0, 10);
 
+      // Fenêtre bornée à LA semaine du cours via !inner (AUDIT-PERF 2.9 :
+      // l'historique COMPLET de l'élève était chargé à chaque réservation —
+      // chemin public chaud). Le filtre JS reste en ceinture-bretelles.
       const { data: presencesSemaine } = await supabaseAdmin
         .from('presences')
-        .select('id, cours:cours_id(date)')
+        .select('id, cours:cours_id!inner(date)')
         .eq('client_id', clientId)
-        .eq('profile_id', profile.id);
+        .eq('profile_id', profile.id)
+        .gte('cours.date', debSemaine)
+        .lte('cours.date', finSemaine);
 
       const nbDansSemaine = (presencesSemaine || []).filter(p =>
         p.cours?.date >= debSemaine && p.cours?.date <= finSemaine

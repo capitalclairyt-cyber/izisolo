@@ -1,5 +1,3 @@
-import { redirect } from 'next/navigation';
-import { createServerClient } from '@/lib/supabase-server';
 import LogicielGestionLanding from '@/components/landing/LogicielGestionLanding';
 import { getBreadcrumbSchema, ogImageUrl } from '@/lib/seo';
 import '../landing.css';
@@ -29,10 +27,6 @@ export const metadata = {
 };
 
 export default async function LogicielGestionPage() {
-  const supabase = await createServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (user) redirect('/dashboard');
-
   const breadcrumb = getBreadcrumbSchema([
     { name: 'Accueil', url: '/' },
     { name: 'Logiciel de gestion pour prof de yoga', url: '/logiciel-gestion-prof-yoga' },

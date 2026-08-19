@@ -83,7 +83,7 @@ export default function LocalLanding({ city, discipline = 'yoga' }) {
               </Link>
             </div>
             <p className="local-sub">
-              Sans carte bancaire · Annulation 1 clic · Setup offert pour les 100 premières
+              Sans carte bancaire · Annulation 1 clic · On t'accompagne à la mise en route
             </p>
           </header>
 

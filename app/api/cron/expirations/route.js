@@ -38,33 +38,41 @@ export const GET = withRoute({ auth: 'cron' }, async () => {
   let listeAttentePurgee = 0;
   try {
     const il60jours = new Date(Date.now() - 60 * 86400000).toISOString().split('T')[0];
-    // Paginé (B1g) : sans .range, le cap PostgREST 1000 renvoyait les MÊMES
-    // 1000 vieux cours chaque nuit (jamais supprimés) → la purge stagnait et
-    // liste_attente s'accumulait sur les cours 1001+.
-    const vieuxIds = [];
-    for (let page = 0; page < 5; page++) {
-      const { data: coursVieux, error: vieuxErr } = await supabaseAdmin
-        .from('cours')
-        .select('id')
-        .lt('date', il60jours)
-        .order('date', { ascending: true })
-        .range(page * 1000, page * 1000 + 999);
-      if (vieuxErr) {
-        reportError('[cron/expirations] cours vieux err:', vieuxErr, { route: '/api/cron/expirations' });
-        break;
+    // Chemin nominal v90 : DELETE par jointure en RPC — l'ancien chemin
+    // sélectionnait les 5000 plus VIEUX cours (jamais supprimés) et re-scannait
+    // donc les mêmes chaque nuit sans jamais atteindre les nouveaux expirés
+    // au-delà (AUDIT-PERF cat 2.2, le bug B1g qui re-stagnait un cran plus loin).
+    const { data: purged, error: purgeErr } = await supabaseAdmin
+      .rpc('purger_liste_attente', { p_cutoff: il60jours });
+    if (!purgeErr) {
+      listeAttentePurgee = Number(purged) || 0;
+    } else {
+      // Fallback pré-migration v90 : chemin paginé historique (borné 5000).
+      const vieuxIds = [];
+      for (let page = 0; page < 5; page++) {
+        const { data: coursVieux, error: vieuxErr } = await supabaseAdmin
+          .from('cours')
+          .select('id')
+          .lt('date', il60jours)
+          .order('date', { ascending: true })
+          .range(page * 1000, page * 1000 + 999);
+        if (vieuxErr) {
+          reportError('[cron/expirations] cours vieux err:', vieuxErr, { route: '/api/cron/expirations' });
+          break;
+        }
+        vieuxIds.push(...(coursVieux || []).map(c => c.id));
+        if (!coursVieux || coursVieux.length < 1000) break;
       }
-      vieuxIds.push(...(coursVieux || []).map(c => c.id));
-      if (!coursVieux || coursVieux.length < 1000) break;
-    }
-    // Supprime par lots de 200 ids pour rester sous la limite d'URL PostgREST.
-    for (let i = 0; i < vieuxIds.length; i += 200) {
-      const lot = vieuxIds.slice(i, i + 200);
-      const { data: del } = await supabaseAdmin
-        .from('liste_attente')
-        .delete()
-        .in('cours_id', lot)
-        .select('id');
-      listeAttentePurgee += del?.length || 0;
+      // Supprime par lots de 200 ids pour rester sous la limite d'URL PostgREST.
+      for (let i = 0; i < vieuxIds.length; i += 200) {
+        const lot = vieuxIds.slice(i, i + 200);
+        const { data: del } = await supabaseAdmin
+          .from('liste_attente')
+          .delete()
+          .in('cours_id', lot)
+          .select('id');
+        listeAttentePurgee += del?.length || 0;
+      }
     }
   } catch (e) {
     reportError('[cron/expirations] purge liste_attente:', e?.message);
@@ -97,11 +105,24 @@ export const GET = withRoute({ auth: 'cron' }, async () => {
   // Batché par 200 (limite d'URL PostgREST) + erreurs LUES : le .in() non
   // batché cassait au-delà de ~200 prospects → paidClientIds null → plus
   // AUCUNE promotion, toutes les nuits, sans un log (B1g).
-  const { data: prospects, error: prospErr } = await supabaseAdmin
-    .from('clients')
-    .select('id')
-    .eq('statut', 'prospect');
-  if (prospErr) reportError('[cron/expirations] prospects err:', prospErr, { route: '/api/cron/expirations' });
+  // Paginé (AUDIT-PERF cat 2.2) : le select nu plafonnait à 1000 prospects
+  // globaux — au-delà, les suivants n'étaient JAMAIS promus, sans un log.
+  // L'index partiel idx_clients_prospects (v89) porte ce scan.
+  const prospects = [];
+  for (let page = 0; page < 50; page++) {
+    const { data: lot, error: prospErr } = await supabaseAdmin
+      .from('clients')
+      .select('id')
+      .eq('statut', 'prospect')
+      .order('id')
+      .range(page * 1000, page * 1000 + 999);
+    if (prospErr) {
+      reportError('[cron/expirations] prospects err:', prospErr, { route: '/api/cron/expirations' });
+      break;
+    }
+    prospects.push(...(lot || []));
+    if (!lot || lot.length < 1000) break;
+  }
 
   if (prospects?.length) {
     const toActivateSet = new Set();

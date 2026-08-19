@@ -32,6 +32,22 @@ const PUBLIC_ROUTES = [
   '/sitemap.xml', '/robots.txt',
 ];
 
+// Pages marketing dont le « déjà connecté → /dashboard » vit ICI depuis
+// AUDIT-PERF cat 2.4 (avant : chaque page faisait un auth.getUser() serveur
+// par visite → toute la surface SEO était rendue dynamique). Le check se fait
+// sur la simple PRÉSENCE du cookie de session (zéro appel réseau) : un cookie
+// périmé renvoie vers /dashboard dont le layout renverra vers /login.
+const MARKETING_EXACT = [
+  '/', '/profs-de-yoga', '/profs-de-yoga-enfants', '/profs-de-pilates',
+  '/profs-de-meditation', '/profs-de-danse', '/coachs-bien-etre',
+  '/therapeutes', '/sophrologues', '/logiciel-gestion-prof-yoga', '/calculateur',
+];
+const MARKETING_PREFIXES = ['/prof-yoga-', '/prof-pilates-'];
+
+function hasSessionCookie(request) {
+  return request.cookies.getAll().some(c => c.name.startsWith('sb-') && c.name.includes('-auth-token'));
+}
+
 export async function proxy(request) {
   const { pathname } = request.nextUrl;
 
@@ -50,6 +66,39 @@ export async function proxy(request) {
     url.host = 'www.izisolo.fr';
     url.port = '';
     return NextResponse.redirect(url, 308);
+  }
+
+  // ── Pages marketing : redirections légères, SANS appel réseau ────────────
+  if (MARKETING_EXACT.includes(pathname) || MARKETING_PREFIXES.some(p => pathname.startsWith(p))) {
+    // Cas spéciaux de la home : liens de confirmation email Supabase dont le
+    // SiteURL pointe sur `/` (?code= PKCE, ?token_hash= OTP) → /auth/callback.
+    // AVANT le check cookie, pour ne pas perdre les params (ex-app/page.js).
+    if (pathname === '/') {
+      const sp = request.nextUrl.searchParams;
+      const code = sp.get('code');
+      const tokenHash = sp.get('token_hash');
+      const type = sp.get('type');
+      const rawNext = sp.get('next');
+      const next = rawNext && rawNext.startsWith('/') && !rawNext.startsWith('//') ? rawNext : '/onboarding';
+      if (code) {
+        const url = new URL('/auth/callback', request.url);
+        url.searchParams.set('code', code);
+        url.searchParams.set('next', next);
+        if (type) url.searchParams.set('type', type);
+        return NextResponse.redirect(url);
+      }
+      if (tokenHash) {
+        const url = new URL('/auth/callback', request.url);
+        url.searchParams.set('token_hash', tokenHash);
+        url.searchParams.set('type', type || 'signup');
+        url.searchParams.set('next', next);
+        return NextResponse.redirect(url);
+      }
+    }
+    if (hasSessionCookie(request)) {
+      return NextResponse.redirect(new URL('/dashboard', request.url));
+    }
+    return NextResponse.next();
   }
 
   // Laisser passer les routes publiques, API, assets statiques

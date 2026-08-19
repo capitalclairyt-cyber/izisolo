@@ -14,7 +14,10 @@ import { useToast } from '@/components/ui/ToastProvider';
 import { toneForCours } from '@/lib/tones';
 import PushToggle from '@/components/push/PushToggle';
 import PushPrompt from '@/components/push/PushPrompt';
-import QrPortailModal from '@/components/portail/QrPortailModal';
+// Chargée à la demande (AUDIT-PERF 2.9) : la lib `qrcode` (~12-15 Ko gzip)
+// pesait dans le bundle de la page la plus visitée pour une modale rare.
+import dynamic from 'next/dynamic';
+const QrPortailModal = dynamic(() => import('@/components/portail/QrPortailModal'), { ssr: false });
 import { can } from '@/lib/plan-guard';
 
 export default function DashboardClient({ profile, coursDuJour, nbClients, nbCoursTotal, revenusMois, alertes, coutsMois, hasSondage = false, nbCasATraiter = 0, nbInvites = 0, nbOffres = 0, nbVentes = 0, espacesEleve = [] }) {

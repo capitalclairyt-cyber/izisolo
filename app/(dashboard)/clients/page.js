@@ -1,20 +1,38 @@
 import { createServerClient } from '@/lib/supabase-server';
 import ClientsClient from './ClientsClient';
 
+// Boucle .range() (AUDIT-PERF cat 2.8) : le select nu plafonne à 1000 fiches
+// EN SILENCE — au-delà, des élèves « disparaissaient » de la liste ET de
+// l'export CSV (qui lit cette liste côté client = portabilité RGPD fausse).
+async function fetchTousLesClients(supabase, profileId) {
+  const rows = [];
+  for (let page = 0; page < 30; page++) {
+    const { data, error } = await supabase
+      .from('clients')
+      .select('*, abonnements(id, type, offre_nom, seances_total, seances_utilisees, statut, date_fin)')
+      .eq('profile_id', profileId)
+      .order('updated_at', { ascending: false })
+      .order('id')
+      .range(page * 1000, page * 1000 + 999);
+    if (error) break;
+    rows.push(...(data || []));
+    if (!data || data.length < 1000) break;
+  }
+  return rows;
+}
+
 export default async function ClientsPage() {
   const supabase = await createServerClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   const [
     { data: profile },
-    { data: clients },
+    clients,
     { data: statuts },
     { data: segments, error: segmentsError },
   ] = await Promise.all([
     supabase.from('profiles').select('metier, vocabulaire, niveaux, sources, studio_slug, studio_nom, prenom').eq('id', user.id).single(),
-    supabase.from('clients').select('*, abonnements(id, type, offre_nom, seances_total, seances_utilisees, statut, date_fin)')
-      .eq('profile_id', user.id)
-      .order('updated_at', { ascending: false }),
+    fetchTousLesClients(supabase, user.id),
     // Statut de compte (RPC v67) — dégrade proprement si la migration n'est pas
     // appliquée (rpc renvoie une erreur → statuts null → aucun badge « actif »).
     supabase.rpc('eleves_statut_compte'),

@@ -63,10 +63,31 @@ export default async function DashboardPage() {
   let espacesEleve = [];
   try {
     const admin = createAdminClient();
-    const { data: fiches } = await admin
-      .from('clients')
-      .select('profile_id, profiles(studio_slug, studio_nom, portail_actif)')
-      .ilike('email', escapeIlike((user.email || '').trim().toLowerCase()));
+    const email = (user.email || '').trim().toLowerCase();
+    // v90 : lookup indexé lower(email) via RPC — le .ilike global seq-scannait
+    // toute la table clients à CHAQUE affichage du dashboard (AUDIT-PERF 2.6).
+    let fiches = null;
+    const { data: viaRpc, error: rpcErr } = await admin.rpc('fiches_par_email', { p_email: email });
+    if (!rpcErr && viaRpc) {
+      const autresIds = [...new Set(viaRpc.map(f => f.profile_id))];
+      if (autresIds.length > 0) {
+        const { data: profs } = await admin
+          .from('profiles')
+          .select('id, studio_slug, studio_nom, portail_actif')
+          .in('id', autresIds);
+        const profById = new Map((profs || []).map(p => [p.id, p]));
+        fiches = viaRpc.map(f => ({ profile_id: f.profile_id, profiles: profById.get(f.profile_id) || null }));
+      } else {
+        fiches = [];
+      }
+    } else {
+      // Pré-migration v90 : chemin historique
+      const { data } = await admin
+        .from('clients')
+        .select('profile_id, profiles(studio_slug, studio_nom, portail_actif)')
+        .ilike('email', escapeIlike(email));
+      fiches = data;
+    }
     const vus = new Set();
     for (const row of fiches || []) {
       const p = row.profiles;

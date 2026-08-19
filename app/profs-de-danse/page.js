@@ -1,5 +1,3 @@
-import { redirect } from 'next/navigation';
-import { createServerClient } from '@/lib/supabase-server';
 import PersonaLanding from '@/components/landing/PersonaLanding';
 import { getBreadcrumbSchema, ogImageUrl } from '@/lib/seo';
 import '../landing.css';
@@ -26,10 +24,6 @@ export const metadata = {
 };
 
 export default async function ProfsDeDansePage() {
-  const supabase = await createServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (user) redirect('/dashboard');
-
   const breadcrumb = getBreadcrumbSchema([
     { name: 'Accueil', url: '/' },
     { name: 'Profs de danse', url: '/profs-de-danse' },

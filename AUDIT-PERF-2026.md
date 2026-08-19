@@ -112,6 +112,20 @@ par n'importe qui**. Les fiches à email NULL ne matchent pas (NULL ≠ '').
 
 ## CATÉGORIE 2 — Avant 50 profs actives
 
+> **STATUT (2026-08-19 tard le soir, go Colin)** : TOUT le volet code est
+> LIVRÉ (build + lint + ratchet route-standards verts ; dashboard + messagerie
+> vérifiés en vrai navigateur session démo sur les chemins de fallback ;
+> 34 routes marketing prouvées STATIQUES au build). Deux migrations attendent
+> Colin : **v90** (RPC agrégées messagerie + purge liste_attente + fiches par
+> email — le code dégrade sur les boucles historiques sans elle) puis **v91**
+> (réécritures RLS — pur SQL, indépendante du déploiement).
+> Après v90 : `verifier-selects` + relire /messagerie du démo.
+> Après v91 : `verifier-selects` + `npx playwright test tests/e2e/parcours-eleve-live.spec.js --workers=1`
+> + naviguer le dashboard démo + Advisor « auth_rls_initplan » au vert.
+> Resté hors lot (assumé) : push_subscriptions en .ilike (table minuscule),
+> fenêtrage visuel de la page Cours (paginé, pas borné : les stats de séries
+> restent exactes).
+
 ### 2.1 🔴 Messagerie : remplacer les N+1 par des agrégats (LE mur n°1)
 - **Fichiers** : `lib/messagerie.js:332-355` (`countUnread` : 1 count PAR
   conversation, en boucle séquentielle), `app/api/messagerie/conversations/route.js:76-147`

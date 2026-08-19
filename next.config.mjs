@@ -27,6 +27,15 @@ const nextConfig = {
   // couverture portail) servies via next/image, sans perte visible.
   images: {
     formats: ['image/avif', 'image/webp'],
+    // Photos uploadées par les profs (couverture/avatar portail = Supabase
+    // Storage, docs = Vercel Blob) : sans remotePatterns, next/image ne PEUT
+    // pas les optimiser (AUDIT-PERF 2.9 — la couverture 1920px partait
+    // entière sur un mobile 375px). Jokers : le ref du projet Supabase
+    // changera à la migration Paris.
+    remotePatterns: [
+      { protocol: 'https', hostname: '**.supabase.co' },
+      { protocol: 'https', hostname: '**.public.blob.vercel-storage.com' },
+    ],
   },
   async headers() {
     return [

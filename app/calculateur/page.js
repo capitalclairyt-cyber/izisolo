@@ -1,5 +1,3 @@
-import { redirect } from 'next/navigation';
-import { createServerClient } from '@/lib/supabase-server';
 import Calculateur from '@/components/landing/Calculateur';
 import { ogImageUrl } from '@/lib/seo';
 import '../landing.css';
@@ -25,9 +23,6 @@ export const metadata = {
   twitter: { card: 'summary_large_image', images: [OG] },
 };
 
-export default async function CalculateurPage() {
-  const supabase = await createServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (user) redirect('/dashboard');
+export default function CalculateurPage() {
   return <Calculateur />;
 }

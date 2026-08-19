@@ -1,5 +1,3 @@
-import { redirect } from 'next/navigation';
-import { createServerClient } from '@/lib/supabase-server';
 import LocalLanding from '@/components/landing/LocalLanding';
 import { getBreadcrumbSchema, ogImageUrl, BASE_URL } from '@/lib/seo';
 import { CITIES } from '@/content/cities';
@@ -15,7 +13,7 @@ const OG = ogImageUrl({
 
 export const metadata = {
   title: 'Logiciel pour profs de Pilates à Montpellier — IziSolo',
-  description: "Outil de gestion pensé pour les profs de Pilates indépendant·e·s à Montpellier : Mat + Reformer, planning, élèves, paiements, portail public. Dès 12 €/mois pour les 100 premières. 14 jours d'essai sans CB.",
+  description: "Outil de gestion pensé pour les profs de Pilates indépendant·e·s à Montpellier : Mat + Reformer, planning, élèves, paiements, portail public. Dès 15 €/mois. 14 jours d'essai sans CB.",
   alternates: { canonical: `${BASE_URL}/prof-pilates-montpellier` },
   openGraph: {
     title: 'Logiciel pour profs de Pilates à Montpellier — IziSolo',
@@ -28,10 +26,6 @@ export const metadata = {
 };
 
 export default async function ProfPilatesMontpellierPage() {
-  const supabase = await createServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (user) redirect('/dashboard');
-
   const breadcrumb = getBreadcrumbSchema([
     { name: 'Accueil', url: '/' },
     { name: 'Profs de Pilates', url: '/profs-de-pilates' },

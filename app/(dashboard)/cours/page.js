@@ -43,14 +43,27 @@ export default async function CoursPage() {
       .eq('actif', true)
       .order('ordre'),
 
-    // Prochaines séances des séries (pour stats) — même règle v74
-    supabase.from('cours')
-      .select('id, recurrence_parent_id, date, heure, presences(statut_pointage, annulation_tardive)')
-      .eq('profile_id', user.id)
-      .not('recurrence_parent_id', 'is', null)
-      .gte('date', todayStr)
-      .eq('est_annule', false)
-      .order('date'),
+    // Prochaines séances des séries (pour stats) — même règle v74. PAGINÉ
+    // (AUDIT-PERF 2.9) : des séries prolongées à l'année dépassent le cap
+    // PostgREST 1000 → stats de séries silencieusement fausses.
+    (async () => {
+      const rows = [];
+      for (let page = 0; page < 20; page++) {
+        const { data, error } = await supabase.from('cours')
+          .select('id, recurrence_parent_id, date, heure, presences(statut_pointage, annulation_tardive)')
+          .eq('profile_id', user.id)
+          .not('recurrence_parent_id', 'is', null)
+          .gte('date', todayStr)
+          .eq('est_annule', false)
+          .order('date')
+          .order('id')
+          .range(page * 1000, page * 1000 + 999);
+        if (error) break;
+        rows.push(...(data || []));
+        if (!data || data.length < 1000) break;
+      }
+      return { data: rows };
+    })(),
 
     // Liste d'attente : compter par cours (non notifiées uniquement)
     supabase.from('liste_attente')

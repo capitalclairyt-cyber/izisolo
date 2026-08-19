@@ -28,12 +28,25 @@ export const GET = withRoute({ auth: 'cron' }, async () => {
   d.setUTCDate(d.getUTCDate() + 1);
   const demain = d.toISOString().slice(0, 10);
 
-  // 1. Cours de demain, non annulés (tous studios).
-  const { data: coursDemain } = await supabaseAdmin
-    .from('cours')
-    .select('id, nom, heure, lieu, profile_id, format')
-    .eq('date', demain)
-    .eq('est_annule', false);
+  // 1. Cours de demain, non annulés (tous studios) — PAGINÉ (AUDIT-PERF 2.2 :
+  // le select nu plafonnait à 1000 → au-delà, des rappels J-1 disparaissaient
+  // en silence). L'index cours(date) v89 porte ce scan.
+  const coursDemain = [];
+  for (let page = 0; page < 50; page++) {
+    const { data: lot, error: cdErr } = await supabaseAdmin
+      .from('cours')
+      .select('id, nom, heure, lieu, profile_id, format')
+      .eq('date', demain)
+      .eq('est_annule', false)
+      .order('id')
+      .range(page * 1000, page * 1000 + 999);
+    if (cdErr) {
+      reportError('[cron/alertes] cours demain err:', cdErr, { route: '/api/cron/alertes' });
+      break;
+    }
+    coursDemain.push(...(lot || []));
+    if (!lot || lot.length < 1000) break;
+  }
   if (!coursDemain || coursDemain.length === 0) {
     return NextResponse.json({ rappels: 0, sent: 0, demain });
   }
@@ -85,14 +98,25 @@ export const GET = withRoute({ auth: 'cron' }, async () => {
   }
   const clientById = Object.fromEntries(clients.map(c => [c.id, c]));
 
-  const { data: profiles } = await supabaseAdmin
-    .from('profiles')
-    // plan + champs trial : le rappel J-1 est une capacité Complet (matrice
-    // B3a, « espace élève connecté … rappels J-1 ») — sans ces champs, can()
-    // lirait undefined et gâterait tout le monde.
-    .select('id, studio_nom, studio_slug, email_contact, notifs_eleves, plan, trial_started_at, stripe_subscription_status')
-    .in('id', profileIds);
-  const profileById = Object.fromEntries((profiles || []).map(p => [p.id, p]));
+  // Profils par lots de 200 (limite d'URL PostgREST — même règle que les
+  // presences/clients ci-dessus, AUDIT-PERF 2.2).
+  const profiles = [];
+  for (let i = 0; i < profileIds.length; i += 200) {
+    const lot = profileIds.slice(i, i + 200);
+    const { data: lotProfs, error: profErr } = await supabaseAdmin
+      .from('profiles')
+      // plan + champs trial : le rappel J-1 est une capacité Complet (matrice
+      // B3a, « espace élève connecté … rappels J-1 ») — sans ces champs, can()
+      // lirait undefined et gâterait tout le monde.
+      .select('id, studio_nom, studio_slug, email_contact, notifs_eleves, plan, trial_started_at, stripe_subscription_status')
+      .in('id', lot);
+    if (profErr) {
+      reportError('[cron/alertes] profiles err:', profErr, { route: '/api/cron/alertes' });
+      continue;
+    }
+    profiles.push(...(lotProfs || []));
+  }
+  const profileById = Object.fromEntries(profiles.map(p => [p.id, p]));
 
   const dateStr = new Date(demain + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
 
@@ -115,18 +139,21 @@ export const GET = withRoute({ auth: 'cron' }, async () => {
 
   // 4. Envoi (email dédupé + push), gaté sur la pref élève rappel_cours
   //    ET sur la capacité du studio (B3b : rappels J-1 = Complet).
+  //    Par LOTS de 6 en parallèle (AUDIT-PERF 2.2 : la boucle séquentielle
+  //    aurait crevé maxDuration vers 10-25k rappels/jour ; 6 = assez pour
+  //    diviser le temps par ~5 sans marteler Resend/GoTrue).
   let sent = 0, skipped = 0, prefOff = 0, plansGates = 0;
-  for (const p of pres) {
+  const traiterRappel = async (p) => {
     const client = clientById[p.client_id];
     const cours = coursById[p.cours_id];
     const profile = cours ? profileById[cours.profile_id] : null;
-    if (!client || !cours || !profile) continue;
-    if (!can(profile, 'espace_eleve')) { plansGates++; continue; }
+    if (!client || !cours || !profile) return;
+    if (!can(profile, 'espace_eleve')) { plansGates++; return; }
 
     const prefs = client.notif_prefs;
     const wantEmail = wantsNotif(prefs, 'rappel_cours', 'eleve', 'email');
     const wantPush = wantsNotif(prefs, 'rappel_cours', 'eleve', 'push');
-    if (!wantEmail && !wantPush) { prefOff++; continue; }
+    if (!wantEmail && !wantPush) { prefOff++; return; }
 
     const heureStr = cours.heure ? cours.heure.slice(0, 5).replace(':', 'h') : '';
     const enLigne = cours.format === 'visio' || cours.format === 'hybride';
@@ -185,6 +212,9 @@ Petit rappel : tu es inscrit·e à la séance ${cours.nom} demain ${dateStr}${he
     } catch (e) {
       reportError('[cron alertes] rappel err', p.id, e?.message);
     }
+  };
+  for (let i = 0; i < pres.length; i += 6) {
+    await Promise.all(pres.slice(i, i + 6).map(traiterRappel));
   }
 
   // ── Rappel de pointage (prof) — cours d'HIER non pointés ──────────────────
@@ -196,11 +226,25 @@ Petit rappel : tu es inscrit·e à la séance ${cours.nom} demain ${dateStr}${he
     hierD.setUTCDate(hierD.getUTCDate() - 1);
     const hier = hierD.toISOString().slice(0, 10);
 
-    const { data: coursHier } = await supabaseAdmin
-      .from('cours').select('id, profile_id').eq('date', hier).eq('est_annule', false);
+    // Paginé + chunké (AUDIT-PERF 2.2) — mêmes plafonds que la branche J-1.
+    const coursHier = [];
+    for (let page = 0; page < 50; page++) {
+      const { data: lot, error: chErr } = await supabaseAdmin
+        .from('cours').select('id, profile_id').eq('date', hier).eq('est_annule', false)
+        .order('id').range(page * 1000, page * 1000 + 999);
+      if (chErr) { reportError('[cron/alertes] cours hier err:', chErr, { route: '/api/cron/alertes' }); break; }
+      coursHier.push(...(lot || []));
+      if (!lot || lot.length < 1000) break;
+    }
     if (coursHier && coursHier.length) {
-      const { data: presH } = await supabaseAdmin
-        .from('presences').select('cours_id, statut_pointage').in('cours_id', coursHier.map(c => c.id));
+      const hierIds = coursHier.map(c => c.id);
+      const presH = [];
+      for (let i = 0; i < hierIds.length; i += 200) {
+        const { data: lotPres, error: phErr } = await supabaseAdmin
+          .from('presences').select('cours_id, statut_pointage').in('cours_id', hierIds.slice(i, i + 200));
+        if (phErr) { reportError('[cron/alertes] presences hier err:', phErr, { route: '/api/cron/alertes' }); continue; }
+        presH.push(...(lotPres || []));
+      }
       const nonPointes = new Set();
       for (const p of (presH || [])) {
         if (!p.statut_pointage || p.statut_pointage === 'inscrit') nonPointes.add(p.cours_id);
@@ -211,8 +255,12 @@ Petit rappel : tu es inscrit·e à la séance ${cours.nom} demain ${dateStr}${he
       }
       const profIds = Object.keys(parProfil);
       if (profIds.length) {
-        const { data: profs } = await supabaseAdmin
-          .from('profiles').select('id, notif_prefs').in('id', profIds);
+        const profs = [];
+        for (let i = 0; i < profIds.length; i += 200) {
+          const { data: lotP } = await supabaseAdmin
+            .from('profiles').select('id, notif_prefs').in('id', profIds.slice(i, i + 200));
+          profs.push(...(lotP || []));
+        }
         for (const prof of (profs || [])) {
           // La cloche (Appli) est l'ancre de dédup du rappel de pointage :
           // sans elle activée, on ne déclenche rien (feature niche, défaut OFF).

@@ -39,11 +39,23 @@ export const GET = withRoute({ auth: 'cron' }, async () => {
 
   // Charger tous les profils (avec préférences notifs + champs plan pour le
   // gate capacité — sans eux, can() lirait undefined → tout le monde gâté).
-  const { data: profiles } = await supabase
-    .from('profiles')
-    // studio_slug : indispensable aux URLs des push (sans lui, tous les push
-    // carnet/expiration pointaient sur « / » — audit 2026-07-25).
-    .select('id, studio_nom, studio_slug, notifs_eleves, alerte_seances_seuil, alerte_expiration_jours, sms_seuil_mois, plan, trial_started_at, stripe_subscription_status');
+  // PAGINÉ (AUDIT-PERF 2.2) : le select nu aurait ignoré les profils 1001+.
+  const profiles = [];
+  for (let page = 0; page < 20; page++) {
+    const { data: lot, error: pErr } = await supabase
+      .from('profiles')
+      // studio_slug : indispensable aux URLs des push (sans lui, tous les push
+      // carnet/expiration pointaient sur « / » — audit 2026-07-25).
+      .select('id, studio_nom, studio_slug, notifs_eleves, alerte_seances_seuil, alerte_expiration_jours, sms_seuil_mois, plan, trial_started_at, stripe_subscription_status')
+      .order('id')
+      .range(page * 1000, page * 1000 + 999);
+    if (pErr) {
+      reportError('[cron notifs] profiles err:', pErr, { route: '/api/cron/notifs-eleves' });
+      break;
+    }
+    profiles.push(...(lot || []));
+    if (!lot || lot.length < 1000) break;
+  }
 
   let totalSent = 0, totalSkipped = 0, totalErrors = 0, totalReglesDeclenchees = 0, profilsTraites = 0, profilsGates = 0;
 
@@ -64,14 +76,20 @@ export const GET = withRoute({ auth: 'cron' }, async () => {
       .eq('profile_id', profile.id)
       .eq('actif', true);
 
-    // Charger tous les abos actifs du studio avec le client lié
+    // Charger les abos ACTIFS du studio avec le client lié. Filtre statut à la
+    // requête (AUDIT-PERF 2.2) : sans lui, TOUS les carnets jamais vendus
+    // (expirés/épuisés compris) revenaient chaque nuit → cap 1000 par studio à
+    // terme = PASS 1/2 silencieusement partiels. Iso-comportement : PASS 1
+    // filtrait déjà actif en JS, et toutes les conditions d'abo de
+    // lib/regles.js exigent statut='actif' (vérifié ligne à ligne).
     const { data: abos } = await supabase
       .from('abonnements')
       .select(`
         id, offre_nom, type, seances_total, seances_utilisees, date_fin, statut,
         clients(id, prenom, nom, email, telephone, niveau, statut, notif_prefs)
       `)
-      .eq('profile_id', profile.id);
+      .eq('profile_id', profile.id)
+      .eq('statut', 'actif');
 
     // ─────────────────────────────────────────────────────────────────
     // PASS 1 — Notifs système (crédits faibles + expiration)

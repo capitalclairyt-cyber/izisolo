@@ -2,6 +2,24 @@ import { createServerClient } from '@/lib/supabase-server';
 import { reportError } from '@/lib/report';
 import RevenusClient from './RevenusClient';
 
+// Boucle .range() : le select nu plafonne à 1000 lignes EN SILENCE — sur cette
+// page ça voulait dire des TOTAUX D'ARGENT FAUX dès ~1000 paiements/12 mois
+// (AUDIT-PERF cat 2.7, le bug du CSV B1f jamais corrigé sur la page).
+// Même modèle que app/api/export/paiements-csv.
+async function fetchTout(buildQuery, label) {
+  const rows = [];
+  for (let page = 0; page < 30; page++) {
+    const { data, error } = await buildQuery().range(page * 1000, page * 1000 + 999);
+    if (error) {
+      reportError(`[revenus] ${label} err:`, error, { route: '/revenus' });
+      break;
+    }
+    rows.push(...(data || []));
+    if (!data || data.length < 1000) break;
+  }
+  return rows;
+}
+
 export default async function RevenusPage() {
   const supabase = await createServerClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -12,13 +30,13 @@ export default async function RevenusPage() {
   debutFenetre.setMonth(debutFenetre.getMonth() - 12);
   const debutFenetreStr = debutFenetre.toISOString().split('T')[0];
 
-  const { data: paiements, error: paiementsErr } = await supabase
+  const paiements = await fetchTout(() => supabase
     .from('paiements')
     .select('id, intitule, type, montant, statut, mode, date, date_encaissement, notes, commission_montant, stripe_session_id, client_id, presence_id, clients(prenom, nom, nom_structure)')
     .eq('profile_id', user.id)
     .gte('date', debutFenetreStr)
-    .order('date', { ascending: false });
-  if (paiementsErr) reportError('[revenus] paiements err:', paiementsErr, { route: '/revenus' });
+    .order('date', { ascending: false })
+    .order('id', { ascending: false }), 'paiements');
 
   // ── Dettes dérivées (audit cohérence 2026-07-22) ──────────────────────────
   // « À percevoir » ne voyait QUE les lignes `paiements` pending/overdue. Deux
@@ -30,7 +48,7 @@ export default async function RevenusPage() {
   //      (presences.est_due, montant à la discrétion de la prof).
 
   // 1. Séances payables à la séance non couvertes par un paiement lié
-  const { data: presTarifees, error: presTarifeesErr } = await supabase
+  const presTarifees = await fetchTout(() => supabase
     .from('presences')
     .select('id, statut_pointage, type_presence, annulation_tardive, client_id, clients(prenom, nom, nom_structure), cours:cours_id!inner(id, nom, date, heure, tarif_unitaire)')
     .eq('profile_id', user.id)
@@ -39,8 +57,8 @@ export default async function RevenusPage() {
     // (B1f, rouge : 8 inscrit·es × 15 € restaient « À percevoir » à vie
     // après l'annulation — l'espace élève, lui, filtrait déjà).
     .eq('cours.est_annule', false)
-    .gte('cours.date', debutFenetreStr);
-  if (presTarifeesErr) reportError('[revenus] presences tarifées err:', presTarifeesErr, { route: '/revenus' });
+    .gte('cours.date', debutFenetreStr)
+    .order('id'), 'presences tarifées');
 
   const presEligibles = (presTarifees || []).filter(p =>
     (p.type_presence || 'normal') === 'normal'

@@ -41,42 +41,56 @@ export const GET = withRoute({ auth: 'cron' }, async () => {
   let totalErrors = 0;
   let totalSkipped = 0;
 
-  // ─── Pros : récupérer ceux qui ont reçu au moins 1 message hier
-  const { data: pros, error: prosErr } = await supabase
-    .from('profiles')
-    .select('id, prenom, studio_nom, notif_prefs');
-  if (prosErr) {
-    reportError('[cron digest] lecture profiles err:', prosErr, { route: '/api/cron/digest-messagerie' });
-    return Response.json({ error: 'Lecture profiles impossible' }, { status: 500 });
-  }
-
-  for (const pro of (pros || [])) {
-    if (!wantsNotif(pro.notif_prefs, 'message', 'prof', 'email')) { totalSkipped++; continue; }
-
-    // Compter messages reçus hier dans ses conversations, où l'expéditeur est un élève
-    const { data: convIds } = await supabase
-      .from('conversations')
-      .select('id')
-      .eq('profile_id', pro.id);
-    const ids = (convIds || []).map(c => c.id);
-    if (ids.length === 0) continue;
-
-    // media_urls chargées pour mentionner les pièces jointes dans l'email
-    // (2026-07-31 : un digest « 1 message » qui cache 12 photos sous-vendait
-    // le message — et un message photos-seules semblait vide).
-    const { data: msgsPro } = await supabase
+  // ─── Pros : dérivés d'UNE requête messages cross-studio (AUDIT-PERF 2.2).
+  // Avant : pour CHAQUE profil, 1 requête conversations + 1 requête messages
+  // + 1 getUserById GoTrue, même sans le moindre message. Désormais : les
+  // messages élève des 24 h (paginés), agrégés par studio, puis on ne charge
+  // les profils/emails QUE des pros réellement concernés.
+  const msgsEleve = [];
+  for (let page = 0; page < 20; page++) {
+    const { data: lot, error: meErr } = await supabase
       .from('messages')
-      .select('media_urls')
-      .in('conversation_id', ids)
+      // media_urls chargées pour mentionner les pièces jointes dans l'email
+      // (2026-07-31 : un digest « 1 message » qui cache 12 photos sous-vendait
+      // le message — et un message photos-seules semblait vide).
+      .select('media_urls, conversations!inner(profile_id)')
       .eq('sender_type', 'eleve')
       .gte('created_at', il24h)
-      .limit(1000);
-    const nbRecus = (msgsPro || []).length;
-    const nbPiecesPro = (msgsPro || []).reduce((s, m) => s + (Array.isArray(m.media_urls) ? m.media_urls.length : 0), 0);
+      .order('created_at')
+      .range(page * 1000, page * 1000 + 999);
+    if (meErr) {
+      reportError('[cron digest] messages eleve err:', meErr, { route: '/api/cron/digest-messagerie' });
+      break;
+    }
+    msgsEleve.push(...(lot || []));
+    if (!lot || lot.length < 1000) break;
+  }
+  const proCount = new Map(); // profileId -> { count, pieces }
+  for (const m of msgsEleve) {
+    const pid = m.conversations?.profile_id;
+    if (!pid) continue;
+    const cur = proCount.get(pid) || { count: 0, pieces: 0 };
+    cur.count += 1;
+    cur.pieces += Array.isArray(m.media_urls) ? m.media_urls.length : 0;
+    proCount.set(pid, cur);
+  }
+  const proIds = [...proCount.keys()];
+  const prosById = new Map();
+  for (let i = 0; i < proIds.length; i += 200) {
+    const { data: lot } = await supabase
+      .from('profiles')
+      .select('id, prenom, studio_nom, notif_prefs')
+      .in('id', proIds.slice(i, i + 200));
+    for (const p of lot || []) prosById.set(p.id, p);
+  }
 
-    if (!nbRecus || nbRecus === 0) continue;
+  for (const [proId, { count: nbRecus, pieces: nbPiecesPro }] of proCount.entries()) {
+    const pro = prosById.get(proId);
+    if (!pro) continue;
+    if (!wantsNotif(pro.notif_prefs, 'message', 'prof', 'email')) { totalSkipped++; continue; }
 
-    // Récupérer email du pro via auth
+    // Récupérer email du pro via auth — uniquement pour les pros qui ont
+    // réellement un digest à recevoir (plus jamais 1 appel GoTrue par profil).
     const { data: { user: authUser } } = await supabase.auth.admin.getUserById(pro.id).catch(() => ({ data: { user: null } }));
     const email = authUser?.email;
     if (!email) continue;
@@ -103,12 +117,24 @@ export const GET = withRoute({ auth: 'cron' }, async () => {
 
   // ─── Élèves : itérer sur les clients ayant reçu un message hier
   // On ne charge pas TOUS les clients (potentiellement >10k) — on part des
-  // messages récents et on dérive les destinataires.
-  const { data: msgsRecents } = await supabase
-    .from('messages')
-    .select('conversation_id, media_urls, conversations(client_id, profile_id, type), created_at')
-    .eq('sender_type', 'pro')
-    .gte('created_at', il24h);
+  // messages récents et on dérive les destinataires. PAGINÉ (AUDIT-PERF 2.2 :
+  // le cap 1000 silencieux faisait sauter des digests dès ~1000 messages/j).
+  const msgsRecents = [];
+  for (let page = 0; page < 20; page++) {
+    const { data: lot, error: mrErr } = await supabase
+      .from('messages')
+      .select('conversation_id, media_urls, conversations(client_id, profile_id, type), created_at')
+      .eq('sender_type', 'pro')
+      .gte('created_at', il24h)
+      .order('created_at')
+      .range(page * 1000, page * 1000 + 999);
+    if (mrErr) {
+      reportError('[cron digest] messages pro err:', mrErr, { route: '/api/cron/digest-messagerie' });
+      break;
+    }
+    msgsRecents.push(...(lot || []));
+    if (!lot || lot.length < 1000) break;
+  }
 
   // Grouper par client (ou cours) — messages ET pièces jointes (les photos
   // d'une annonce doivent se voir dans l'email, 2026-07-31).
@@ -125,13 +151,20 @@ export const GET = withRoute({ auth: 'cron' }, async () => {
     // on risque de spammer les clients sur de gros groupes).
   }
 
-  // Pour chaque client : envoyer digest si pref != 'off'
-  for (const [clientId, { count, pieces }] of eleveCount.entries()) {
-    const { data: client } = await supabase
+  // Fiches destinataires par LOTS de 200 (avant : 1 requête PAR client).
+  const destIds = [...eleveCount.keys()];
+  const clientDigestById = new Map();
+  for (let i = 0; i < destIds.length; i += 200) {
+    const { data: lot } = await supabase
       .from('clients')
       .select('id, prenom, email, notif_prefs, profile_id, profiles(studio_nom, studio_slug)')
-      .eq('id', clientId)
-      .maybeSingle();
+      .in('id', destIds.slice(i, i + 200));
+    for (const c of lot || []) clientDigestById.set(c.id, c);
+  }
+
+  // Pour chaque client : envoyer digest si pref != 'off'
+  for (const [clientId, { count, pieces }] of eleveCount.entries()) {
+    const client = clientDigestById.get(clientId);
     if (!client || !client.email) continue;
     if (!wantsNotif(client.notif_prefs, 'message', 'eleve', 'email')) { totalSkipped++; continue; }
 

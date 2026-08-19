@@ -2,11 +2,21 @@
 
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { MapPin, Calendar, Clock, Users, ChevronRight, ChevronLeft, Search, CreditCard, Ticket, CalendarCheck, Zap, Instagram, Facebook, Globe, Award, BookOpen, LayoutGrid, List, Check, Loader } from 'lucide-react';
 import { toneForCours } from '@/lib/tones';
 import ScrollReveal from '@/components/landing/ScrollReveal';
 import { useToast } from '@/components/ui/ToastProvider';
 import { matchRecherche } from '@/lib/utils';
+
+// next/image ne peut optimiser que les hosts déclarés dans
+// next.config.mjs → images.remotePatterns (AUDIT-PERF 2.9 : la couverture
+// 1920px partait entière sur un mobile 375px). Toute autre URL (vieil upload,
+// lien externe collé) retombe sur <img> brut plutôt qu'une image cassée.
+function photoOptimisable(url) {
+  return typeof url === 'string'
+    && /^https:\/\/[^/]+\.(supabase\.co|public\.blob\.vercel-storage\.com)\//.test(url);
+}
 
 // Helpers semaine
 function getWeekStart(date) {
@@ -259,21 +269,38 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
         <>
           <div className="portail-hero-cover">
             <div className="portail-hero-cover-inner">
-              <img
-                className="portail-hero-img"
-                src={profile.photo_couverture}
-                alt=""
-                style={{
-                  objectPosition: `50% ${profile.photo_couverture_focal_y ?? 50}%`,
-                }}
-              />
+              {photoOptimisable(profile.photo_couverture) ? (
+                <Image
+                  className="portail-hero-img"
+                  src={profile.photo_couverture}
+                  alt=""
+                  fill
+                  priority
+                  sizes="(max-width: 1440px) 100vw, 1440px"
+                  style={{
+                    objectFit: 'cover',
+                    objectPosition: `50% ${profile.photo_couverture_focal_y ?? 50}%`,
+                  }}
+                />
+              ) : (
+                <img
+                  className="portail-hero-img"
+                  src={profile.photo_couverture}
+                  alt=""
+                  style={{
+                    objectPosition: `50% ${profile.photo_couverture_focal_y ?? 50}%`,
+                  }}
+                />
+              )}
               <div className="portail-hero-cover-fade" aria-hidden="true" />
             </div>
           </div>
           <header className="portail-hero-header">
             {profile.photo_url && (
               <div className="portail-hero-avatar">
-                <img src={profile.photo_url} alt={profile.studio_nom} />
+                {photoOptimisable(profile.photo_url)
+                  ? <Image src={profile.photo_url} alt={profile.studio_nom} width={256} height={256} sizes="128px" />
+                  : <img src={profile.photo_url} alt={profile.studio_nom} />}
               </div>
             )}
             {(profile.metier || profile.ville) && (
@@ -297,7 +324,9 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
         <div className="portail-studio-header">
           <div className="portail-studio-avatar">
             {profile.photo_url
-              ? <img src={profile.photo_url} alt={profile.studio_nom} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+              ? (photoOptimisable(profile.photo_url)
+                  ? <Image src={profile.photo_url} alt={profile.studio_nom} width={256} height={256} sizes="96px" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+                  : <img src={profile.photo_url} alt={profile.studio_nom} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />)
               : <span style={{ fontSize: '2rem' }}>🌿</span>
             }
           </div>
@@ -930,6 +959,9 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
           overflow: hidden;
           background: #1a1612;
         }
+        /* NB : ce bloc est GLOBAL (style jsx global) — la classe reste donc
+           effective sur next/image (un composant ne recevrait pas le hash
+           d'un bloc scopé, piège bible §12 — vérifié avant la bascule). */
         .portail-hero-img {
           display: block;
           width: 100%; height: 100%;

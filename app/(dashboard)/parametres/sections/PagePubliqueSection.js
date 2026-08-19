@@ -20,7 +20,9 @@ import { can } from '@/lib/plan-guard';
 import PhotoUploader from '@/components/ui/PhotoUploader';
 import CoverPhotoEditor from '@/components/ui/CoverPhotoEditor';
 import HorairesStudioEditor from './HorairesStudioEditor';
-import QrPortailModal from '@/components/portail/QrPortailModal';
+// Chargée à la demande (AUDIT-PERF 2.9) : la lib `qrcode` hors du bundle.
+import dynamic from 'next/dynamic';
+const QrPortailModal = dynamic(() => import('@/components/portail/QrPortailModal'), { ssr: false });
 
 export default function PagePubliqueSection({ profile, setProfile, setDirty }) {
   const studioSlug = profile?.studio_slug;

@@ -31,14 +31,28 @@ export const GET = withRoute(
 
     // Client admin : l'élève n'a aucun droit RLS sur `clients` (ce sont les
     // fiches des studios). On ne renvoie que le strict minimum public.
-    const { data, error } = await supabaseAdmin
-      .from('clients')
-      .select('profile_id, profiles(studio_slug, studio_nom, portail_actif)')
-      .ilike('email', escapeIlike(email));
-
-    if (error) {
-      reportError('[eleve/compte] GET error:', error.message);
-      return Response.json({ portails: [] });
+    // v90 : lookup indexé lower(email) via RPC (le .ilike global seq-scannait
+    // toute la table — AUDIT-PERF 2.6), chemin historique en fallback.
+    let data = null;
+    const { data: viaRpc, error: rpcErr } = await supabaseAdmin
+      .rpc('fiches_par_email', { p_email: email });
+    if (!rpcErr && viaRpc) {
+      const ids = [...new Set(viaRpc.map(f => f.profile_id))];
+      const { data: profs } = ids.length > 0
+        ? await supabaseAdmin.from('profiles').select('id, studio_slug, studio_nom, portail_actif').in('id', ids)
+        : { data: [] };
+      const profById = new Map((profs || []).map(p => [p.id, p]));
+      data = viaRpc.map(f => ({ profile_id: f.profile_id, profiles: profById.get(f.profile_id) || null }));
+    } else {
+      const { data: viaIlike, error } = await supabaseAdmin
+        .from('clients')
+        .select('profile_id, profiles(studio_slug, studio_nom, portail_actif)')
+        .ilike('email', escapeIlike(email));
+      if (error) {
+        reportError('[eleve/compte] GET error:', error.message);
+        return Response.json({ portails: [] });
+      }
+      data = viaIlike;
     }
 
     const vus = new Set();

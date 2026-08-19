@@ -170,15 +170,26 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
   };
   const parSemaine = {};
   if (aboCap > 0) {
-    const { data: presExistantes } = await supabaseAdmin
-      .from('presences')
-      .select('id, cours:cours_id(date)')
-      .eq('client_id', client.id)
-      .eq('profile_id', profile.id);
-    for (const p of presExistantes || []) {
-      if (!p.cours?.date) continue;
-      const sem = lundiDe(p.cours.date);
-      parSemaine[sem] = (parSemaine[sem] || 0) + 1;
+    // Fenêtre bornée aux semaines couvertes par la série via !inner
+    // (AUDIT-PERF 2.9 : l'historique COMPLET de l'élève était chargé).
+    const datesSerie = (futureCourses || []).map(c => c.date).filter(Boolean).sort();
+    if (datesSerie.length > 0) {
+      const debFenetre = lundiDe(datesSerie[0]);
+      const finFenetre = new Date(
+        new Date(lundiDe(datesSerie[datesSerie.length - 1]) + 'T00:00:00').getTime() + 6 * 86400000
+      ).toISOString().slice(0, 10);
+      const { data: presExistantes } = await supabaseAdmin
+        .from('presences')
+        .select('id, cours:cours_id!inner(date)')
+        .eq('client_id', client.id)
+        .eq('profile_id', profile.id)
+        .gte('cours.date', debFenetre)
+        .lte('cours.date', finFenetre);
+      for (const p of presExistantes || []) {
+        if (!p.cours?.date) continue;
+        const sem = lundiDe(p.cours.date);
+        parSemaine[sem] = (parSemaine[sem] || 0) + 1;
+      }
     }
   }
 
