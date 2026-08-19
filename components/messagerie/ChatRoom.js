@@ -380,7 +380,9 @@ export default function ChatRoom({ conversationId, viewerKind, onMessageSent, in
           ) : (
             <div className="cr-title-row">
               <span className="cr-title">{conv.peer_label}</span>
-              {conv.is_owner_pro && (
+              {/* Fil support (v87) : ni renommage ni suppression — c'est LE
+                  canal vers l'équipe, son historique doit survivre. */}
+              {conv.is_owner_pro && conv.type !== 'support' && (
                 <button
                   type="button"
                   onClick={() => { setTitleDraft(conv.titre || ''); setEditingTitle(true); }}
@@ -391,7 +393,7 @@ export default function ChatRoom({ conversationId, viewerKind, onMessageSent, in
                   <Pencil size={13} />
                 </button>
               )}
-              {conv.is_owner_pro && !confirmDelete && (
+              {conv.is_owner_pro && conv.type !== 'support' && !confirmDelete && (
                 <button
                   type="button"
                   onClick={() => setConfirmDelete(true)}

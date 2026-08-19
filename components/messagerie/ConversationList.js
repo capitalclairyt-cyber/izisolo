@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Loader2, Users, User, Megaphone, ChevronDown, ChevronRight, Eye } from 'lucide-react';
+import { Loader2, Users, User, Megaphone, ChevronDown, ChevronRight, Eye, LifeBuoy } from 'lucide-react';
 import Pagination, { usePagination } from '@/components/ui/Pagination';
 import EmptyState from '@/components/ui/EmptyState';
+import { useToast } from '@/components/ui/ToastProvider';
 
 /**
  * ConversationList — liste des conversations du viewer (pro ou élève).
@@ -19,10 +20,12 @@ import EmptyState from '@/components/ui/EmptyState';
  *   studioSlug — côté élève : ne liste QUE les conversations de ce studio
  */
 export default function ConversationList({ onSelect, selectedId, onCounts, studioSlug = null }) {
+  const { toast } = useToast();
   const [conversations, setConversations] = useState([]);
   const [viewer, setViewer] = useState(null);
   const [loading, setLoading] = useState(true);
   const [expandedGroups, setExpandedGroups] = useState(new Set());
+  const [supportBusy, setSupportBusy] = useState(false);
 
   const fetchConvs = useCallback(async () => {
     try {
@@ -56,6 +59,36 @@ export default function ConversationList({ onSelect, selectedId, onCounts, studi
     return () => clearInterval(interval);
   }, [fetchConvs]);
 
+  // ── Fil support « Équipe IziSolo » (v87) — épinglé EN TÊTE côté pro ──────
+  // Sorti de la liste normale (rendu à part), créé au premier clic si absent.
+  const supportConv = useMemo(
+    () => (viewer === 'pro' ? conversations.find(c => c.type === 'support') || null : null),
+    [conversations, viewer]
+  );
+
+  const openSupport = async () => {
+    if (supportConv) { onSelect?.(supportConv.id); return; }
+    if (supportBusy) return;
+    setSupportBusy(true);
+    try {
+      const res = await fetch('/api/messagerie/conversations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'support' }),
+      });
+      const json = await res.json().catch(() => ({}));
+      // Pré-migration v87, la route répond 503 avec un message explicite —
+      // il DOIT arriver tel quel à la prof (pattern v86), pas un « Erreur ».
+      if (!res.ok || !json.conversation) throw new Error(json.error || 'Erreur serveur');
+      onSelect?.(json.conversation.id);
+      fetchConvs();
+    } catch (err) {
+      toast.error('Impossible d\'ouvrir le fil IziSolo : ' + (err?.message || 'erreur réseau'));
+    } finally {
+      setSupportBusy(false);
+    }
+  };
+
   // Grouper les conversations annonces non répondues (pro uniquement)
   const items = useMemo(() => {
     if (viewer !== 'pro') {
@@ -65,6 +98,7 @@ export default function ConversationList({ onSelect, selectedId, onCounts, studi
     const groups = new Map();
     const standalone = [];
     for (const c of conversations) {
+      if (c.type === 'support') continue; // épinglé à part, jamais dans le flux daté
       if (c.last_announce_batch_id) {
         const g = groups.get(c.last_announce_batch_id) || {
           batch_id: c.last_announce_batch_id,
@@ -112,15 +146,26 @@ export default function ConversationList({ onSelect, selectedId, onCounts, studi
     );
   }
 
-  if (conversations.length === 0) {
+  if (conversations.length === 0 || (viewer === 'pro' && items.length === 0)) {
+    // Vide « normal » — mais le fil IziSolo reste offert au pro (v87).
     return (
-      <EmptyState
-        icon={<User size={28} />}
-        title="Aucune conversation"
-        description={viewer === 'pro'
-          ? "Démarre un échange avec un élève depuis sa fiche, ou envoie une annonce groupée depuis l'onglet \"Annoncer\"."
-          : "Tu n'as pas encore reçu de message."}
-      />
+      <div>
+        {viewer === 'pro' && (
+          <SupportRow
+            conv={supportConv}
+            selected={selectedId && supportConv?.id === selectedId}
+            busy={supportBusy}
+            onClick={openSupport}
+          />
+        )}
+        <EmptyState
+          icon={<User size={28} />}
+          title="Aucune conversation"
+          description={viewer === 'pro'
+            ? "Démarre un échange avec un élève depuis sa fiche, ou envoie une annonce groupée depuis l'onglet \"Annoncer\"."
+            : "Tu n'as pas encore reçu de message."}
+        />
+      </div>
     );
   }
 
@@ -135,6 +180,14 @@ export default function ConversationList({ onSelect, selectedId, onCounts, studi
 
   return (
     <div className="conv-list">
+      {viewer === 'pro' && (
+        <SupportRow
+          conv={supportConv}
+          selected={selectedId && supportConv?.id === selectedId}
+          busy={supportBusy}
+          onClick={openSupport}
+        />
+      )}
       {paginated.map(item => {
         if (item.kind === 'group') {
           const g = item.data;
@@ -341,6 +394,94 @@ export default function ConversationList({ onSelect, selectedId, onCounts, studi
         }
       `}</style>
     </div>
+  );
+}
+
+/**
+ * SupportRow — le fil « Équipe IziSolo » épinglé en tête (v87, côté pro).
+ * Existe même sans conversation créée : le premier clic la crée.
+ * Styles autonomes : la ligne est aussi rendue au-dessus de l'EmptyState.
+ */
+function SupportRow({ conv, selected, busy, onClick }) {
+  const unread = conv?.unread_count || 0;
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={busy}
+      className={`conv-support ${selected ? 'selected' : ''} ${unread > 0 ? 'unread' : ''}`}
+    >
+      <div className="conv-support-avatar">
+        {busy ? <Loader2 size={18} className="spin" /> : <LifeBuoy size={18} />}
+      </div>
+      <div className="conv-support-main">
+        <div className="conv-support-top">
+          <span className="conv-support-label">💬 Équipe IziSolo</span>
+          {conv?.last_message_at && (
+            <span className="conv-support-time">{formatRelative(conv.last_message_at)}</span>
+          )}
+        </div>
+        <div className="conv-support-bottom">
+          <span className="conv-support-preview">
+            {conv?.last_message_preview
+              ? <>{conv.last_message_from === 'pro' ? 'Toi : ' : ''}{conv.last_message_preview}</>
+              : 'Une question, un souci ? Écris-nous ici.'}
+          </span>
+          {unread > 0 && <span className="conv-support-badge">{unread}</span>}
+        </div>
+      </div>
+      <style>{`
+        .conv-support {
+          display: flex; align-items: center; gap: 12px;
+          padding: 12px 14px; width: 100%;
+          background: var(--brand-light, #fef0dc);
+          border: none; border-bottom: 1px solid var(--border);
+          text-align: left; cursor: pointer;
+          transition: filter 0.1s;
+        }
+        .conv-support:hover { filter: brightness(0.98); }
+        .conv-support:disabled { opacity: 0.7; cursor: wait; }
+        .conv-support.selected { filter: brightness(0.96); }
+        .conv-support.unread .conv-support-label { font-weight: 800; }
+        .conv-support-avatar {
+          width: 40px; height: 40px; border-radius: 50%;
+          background: var(--brand); color: white;
+          display: flex; align-items: center; justify-content: center;
+          flex-shrink: 0;
+        }
+        .conv-support-main { flex: 1; min-width: 0; }
+        .conv-support-top {
+          display: flex; justify-content: space-between; align-items: baseline;
+          gap: 8px; margin-bottom: 2px;
+        }
+        .conv-support-label {
+          font-size: 0.875rem; font-weight: 700; color: var(--text-primary);
+          white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .conv-support-time {
+          font-size: 0.6875rem; color: var(--text-muted);
+          flex-shrink: 0; font-variant-numeric: tabular-nums;
+        }
+        .conv-support-bottom {
+          display: flex; justify-content: space-between; align-items: center; gap: 8px;
+        }
+        .conv-support-preview {
+          font-size: 0.75rem; color: var(--text-secondary);
+          white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+          flex: 1;
+        }
+        .conv-support-badge {
+          background: var(--brand); color: white;
+          font-size: 0.6875rem; font-weight: 700;
+          min-width: 18px; height: 18px;
+          padding: 0 6px; border-radius: 99px;
+          display: flex; align-items: center; justify-content: center;
+          flex-shrink: 0;
+        }
+        @keyframes conv-support-spin { to { transform: rotate(360deg); } }
+        .conv-support .spin { animation: conv-support-spin 0.8s linear infinite; }
+      `}</style>
+    </button>
   );
 }
 

@@ -126,6 +126,11 @@ export default function MessageBubble({ message, viewerKind, showAvatar = false,
   return (
     <div className={`msg-row ${isOwn ? 'own' : 'other'}`}>
       <div className={`msg-bubble ${isOwn ? 'own' : 'other'}`}>
+        {/* Réponse de l'équipe (fil support v87) : expéditeur nommé, jamais
+            confondu avec un élève ou le pro. */}
+        {message.sender_type === 'izisolo' && (
+          <div className="msg-sender-izisolo">🌿 Équipe IziSolo</div>
+        )}
         {message.content && (
           <div className="msg-content">{message.content}</div>
         )}
@@ -261,6 +266,11 @@ export default function MessageBubble({ message, viewerKind, showAvatar = false,
         }
         .msg-bubble:hover { box-shadow: 0 4px 14px rgba(0,0,0,0.08); }
 
+        .msg-sender-izisolo {
+          font-size: 0.6875rem; font-weight: 700;
+          color: var(--brand);
+          margin-bottom: 3px;
+        }
         .msg-content {
           font-size: 0.9375rem;
           line-height: 1.45;

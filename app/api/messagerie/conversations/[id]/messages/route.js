@@ -1,7 +1,8 @@
 import { after } from 'next/server';
 import { withRoute } from '@/lib/api-route';
 import { sendMessage, resolveClientFromUserEmail } from '@/lib/messagerie';
-import { envoyerEmailsMessageInstant } from '@/lib/messagerie-email';
+import { envoyerEmailsMessageInstant, notifierSupportNouveauMessage } from '@/lib/messagerie-email';
+import { clientIdsNotifiables } from '@/lib/messagerie-support';
 import { sendPushToUser, sendPushToEmail } from '@/lib/push-server';
 import { reportError } from '@/lib/report';
 
@@ -150,17 +151,30 @@ export const POST = withRoute({ auth: 'user' }, async ({ request, params, auth }
       };
       after(async () => {
         try {
-          let clientIds = [];
-          if (conv.type === 'client' && conv.client_id) {
-            clientIds = [conv.client_id];
-          } else if (conv.type === 'cours') {
+          // Fil support (v87) : la sonnette part à l'équipe IziSolo — jamais
+          // à un élève (personne d'autre dans ce fil).
+          if (conv.type === 'support') {
+            await notifierSupportNouveauMessage({
+              studioNom: profile.studio_nom || 'Un studio',
+              profEmail: user?.email || null,
+              messageId: msg.id,
+              contenu: body.content || '',
+              nbPieces,
+            });
+            return;
+          }
+          let membreIds = [];
+          if (conv.type === 'cours') {
             const { data: membres } = await supabase
               .from('conversation_members')
               .select('client_id')
               .eq('conversation_id', conversationId)
               .not('client_id', 'is', null);
-            clientIds = [...new Set((membres || []).map(m => m.client_id).filter(Boolean))];
+            membreIds = (membres || []).map(m => m.client_id);
           }
+          // Source unique de la dérivation par type (support/inconnu → [],
+          // verrou messagerie-support.spec.js).
+          const clientIds = clientIdsNotifiables(conv, membreIds);
           if (clientIds.length > 0) {
             await envoyerEmailsMessageInstant({ ...paramsEmail, clientIds });
           }

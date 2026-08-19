@@ -4,6 +4,7 @@ import {
   getOrCreateConversationCours,
   resolveClientFromUserEmail,
 } from '@/lib/messagerie';
+import { getOrCreateConversationSupport, estVisiblePourEleve } from '@/lib/messagerie-support';
 import { escapeIlike } from '@/lib/utils';
 import { reportError } from '@/lib/report';
 
@@ -202,6 +203,10 @@ async function getEleveConversations(supabase, userEmail) {
     const conversations = await Promise.all(members.map(async (m) => {
       const conv = convById.get(m.conversation_id);
       if (!conv) return null;
+      // Liste blanche élève (v87) : un fil support (ou tout type futur) ne
+      // fuit JAMAIS dans un espace élève — ceinture-bretelles par-dessus la
+      // RLS et l'absence de membership. Verrou messagerie-support.spec.js.
+      if (!estVisiblePourEleve(conv)) return null;
       const client = clients.find(c => c.id === m.client_id);
       const studio = profileById.get(client?.profile_id);
       const studioNom = studio?.studio_nom || 'Studio';
@@ -316,6 +321,19 @@ export const POST = withRoute({ auth: 'user' }, async ({ request, auth }) => {
     if (body.type === 'cours' && body.cours_id) {
       const conv = await getOrCreateConversationCours(supabase, profile.id, body.cours_id);
       return Response.json({ conversation: conv });
+    }
+    // Fil support prof ↔ IziSolo (v87) : une conv par studio, créée au premier
+    // besoin. Pré-migration : 503 explicite plutôt qu'un « Erreur serveur ».
+    if (body.type === 'support') {
+      try {
+        const conv = await getOrCreateConversationSupport(supabase, profile.id);
+        return Response.json({ conversation: conv });
+      } catch (err) {
+        if (err?.code === 'MIGRATION_V87_REQUISE') {
+          return Response.json({ error: err.message }, { status: 503 });
+        }
+        throw err;
+      }
     }
     return Response.json({ error: 'type + (client_id|cours_id) requis' }, { status: 400 });
   }
