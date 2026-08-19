@@ -62,8 +62,7 @@ catch { browser = await chromium.launch({ channel: 'msedge' }); }
 
 // ═══ CÔTÉ PROF (démo melutek) ═══
 console.log('\n— Côté prof (bonjour@melutek.com) —');
-const PROF_ID_QUERY = await admin.from('profiles').select('id, studio_slug').eq('studio_slug', 'melutek').maybeSingle();
-// (slug réel inconnu : on résout le profil par l'email auth)
+// Le profil se résout par l'email auth (le slug du compte démo importe peu)
 const { data: { users } } = await admin.auth.admin.listUsers({ perPage: 200 });
 const profUser = users.find(u => u.email === 'bonjour@melutek.com');
 if (!profUser) { console.error('compte démo introuvable'); process.exit(1); }

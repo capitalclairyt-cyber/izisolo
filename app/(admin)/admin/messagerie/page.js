@@ -17,6 +17,11 @@ export default function AdminMessageriePage() {
   const [loading, setLoading] = useState(true);
   const [listErr, setListErr] = useState('');
   const [selected, setSelected] = useState(null); // {id, studio_nom, prenom}
+  // Initier un fil (2026-08-19, retour Colin : « obligé d'attendre qu'elle écrive »)
+  const [studios, setStudios] = useState(null); // null = pas chargés
+  const [showPicker, setShowPicker] = useState(false);
+  const [pickedStudio, setPickedStudio] = useState('');
+  const [initBusy, setInitBusy] = useState(false);
 
   const chargerListe = useCallback(async () => {
     try {
@@ -39,13 +44,97 @@ export default function AdminMessageriePage() {
     return () => clearInterval(t);
   }, [chargerListe]);
 
+  // Ouvre (crée si besoin) LE fil support d'une prof — utilisé par le picker
+  // et par le bouton « Répondre » des feedbacks (?studio=<profileId>).
+  const ouvrirPourProfil = useCallback(async (profileId) => {
+    setInitBusy(true);
+    setListErr('');
+    try {
+      const res = await fetch('/api/admin/messagerie/conversations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ profile_id: profileId }),
+      });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok || !j.conversation) throw new Error(j.error || `Erreur ${res.status}`);
+      setSelected({ id: j.conversation.id, studio_nom: j.studio?.studio_nom, prenom: j.studio?.prenom, profile_id: profileId });
+      setShowPicker(false);
+      setPickedStudio('');
+    } catch (e) {
+      setListErr(e.message);
+    } finally {
+      setInitBusy(false);
+    }
+  }, []);
+
+  // Arrivée depuis un feedback : /admin/messagerie?studio=<profileId>.
+  // window.location plutôt que useSearchParams : page 100 % client, pas de
+  // Suspense à introduire pour un paramètre lu une seule fois.
+  useEffect(() => {
+    const studioParam = new URLSearchParams(window.location.search).get('studio');
+    if (studioParam) ouvrirPourProfil(studioParam);
+  }, [ouvrirPourProfil]);
+
+  const ouvrirPicker = async () => {
+    setShowPicker(v => !v);
+    if (studios !== null) return;
+    try {
+      const res = await fetch('/api/admin/messagerie/studios');
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(j.error || `Erreur ${res.status}`);
+      setStudios(j.studios || []);
+    } catch (e) {
+      setListErr(e.message);
+      setStudios([]);
+    }
+  };
+
   return (
     <div>
       <h1 style={{ fontSize: '1.5rem', fontWeight: 800, margin: '0 0 6px' }}>💬 Messagerie profs</h1>
-      <p style={{ color: '#64748b', margin: '0 0 20px', fontSize: '0.9rem' }}>
+      <p style={{ color: '#64748b', margin: '0 0 16px', fontSize: '0.9rem' }}>
         Les messages que les profs envoient à l&apos;équipe depuis leur fil « Équipe IziSolo ».
         Répondre ici = la prof reçoit un email instantané.
       </p>
+
+      {/* Initier une conversation — sans attendre que la prof écrive */}
+      {!selected && (
+        <div style={{ marginBottom: 20 }}>
+          <button type="button" onClick={ouvrirPicker} style={btnPrimaire}>
+            ✉️ Écrire à une prof
+          </button>
+          {showPicker && (
+            <div style={{ ...carte, marginTop: 10, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+              {studios === null ? (
+                <span style={texte}>Chargement des studios…</span>
+              ) : (
+                <>
+                  <select
+                    value={pickedStudio}
+                    onChange={e => setPickedStudio(e.target.value)}
+                    style={{ flex: 1, minWidth: 240, padding: '9px 12px', border: '1px solid #cbd5e1', borderRadius: 8, fontSize: '0.875rem', background: 'white' }}
+                  >
+                    <option value="">— Choisir un studio —</option>
+                    {studios.map(s => (
+                      <option key={s.id} value={s.id}>
+                        {s.studio_nom}{s.prenom ? ` · ${s.prenom}` : ''}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => pickedStudio && ouvrirPourProfil(pickedStudio)}
+                    disabled={!pickedStudio || initBusy}
+                    style={{ ...btnPrimaire, opacity: !pickedStudio || initBusy ? 0.6 : 1 }}
+                  >
+                    {initBusy ? '⏳' : 'Ouvrir le fil'}
+                  </button>
+                </>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {migrationRequise && (
         <div style={{ ...carte, background: '#fffbeb', borderColor: '#fcd34d' }}>

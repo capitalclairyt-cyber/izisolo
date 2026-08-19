@@ -1,6 +1,6 @@
 import { withRoute } from '@/lib/api-route';
 import { createAdminClient } from '@/lib/supabase-admin';
-import { estNonLuePourAdmin } from '@/lib/messagerie-support';
+import { estNonLuePourAdmin, getOrCreateConversationSupport, estErreurMigrationV87, MESSAGE_MIGRATION_V87 } from '@/lib/messagerie-support';
 import { reportError } from '@/lib/report';
 
 export const runtime = 'nodejs';
@@ -90,4 +90,46 @@ export const GET = withRoute({ auth: 'admin' }, async () => {
   }
 
   return Response.json({ conversations });
+});
+
+/**
+ * POST /api/admin/messagerie/conversations — l'équipe INITIE un fil (2026-08-19,
+ * retour Colin : « je suis obligé d'attendre qu'elle écrive »).
+ * Body: { profile_id } — crée ou retrouve LE fil support de cette prof
+ * (service_role : la conv appartient à la prof, l'équipe n'a pas sa RLS).
+ * Réservé aux VRAIS profs (studio_slug configuré) : un fil support sur un
+ * compte élève n'aurait aucune surface où s'afficher.
+ */
+export const POST = withRoute({ auth: 'admin' }, async ({ request }) => {
+  const admin = createAdminClient();
+
+  let body;
+  try { body = await request.json(); } catch { return Response.json({ error: 'JSON invalide' }, { status: 400 }); }
+  if (!body.profile_id) return Response.json({ error: 'profile_id requis' }, { status: 400 });
+
+  const { data: prof, error: pErr } = await admin
+    .from('profiles')
+    .select('id, prenom, studio_nom, studio_slug')
+    .eq('id', body.profile_id)
+    .maybeSingle();
+  if (pErr) {
+    reportError('[admin/messagerie] POST profil err:', pErr, { route: '/api/admin/messagerie/conversations' });
+    return Response.json({ error: 'Lecture impossible' }, { status: 500 });
+  }
+  if (!prof || !prof.studio_slug) {
+    return Response.json({ error: 'Prof introuvable (ou compte sans studio)' }, { status: 404 });
+  }
+
+  try {
+    const conv = await getOrCreateConversationSupport(admin, prof.id);
+    return Response.json({
+      conversation: conv,
+      studio: { profile_id: prof.id, prenom: prof.prenom || '', studio_nom: prof.studio_nom || 'Studio' },
+    });
+  } catch (err) {
+    if (err?.code === 'MIGRATION_V87_REQUISE' || estErreurMigrationV87(err)) {
+      return Response.json({ error: MESSAGE_MIGRATION_V87 }, { status: 503 });
+    }
+    throw err;
+  }
 });

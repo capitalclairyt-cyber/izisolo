@@ -82,6 +82,17 @@ export const POST = withRoute({ auth: 'admin' }, async ({ request, params }) => 
   const conv = await chargerConvSupport(admin, conversationId);
   if (!conv) return Response.json({ error: 'Fil support introuvable' }, { status: 404 });
 
+  // L'équipe initie-t-elle (aucun message de la prof encore) ? → l'email dira
+  // « t'a écrit » plutôt que « t'a répondu ».
+  const { data: msgProf } = await admin
+    .from('messages')
+    .select('id')
+    .eq('conversation_id', conversationId)
+    .eq('sender_type', 'pro')
+    .limit(1)
+    .maybeSingle();
+  const premierContact = !msgProf;
+
   const { data: msg, error } = await admin
     .from('messages')
     .insert({
@@ -119,6 +130,7 @@ export const POST = withRoute({ auth: 'admin' }, async ({ request, params }) => 
         conversationId,
         messageId: msg.id,
         contenu: content,
+        premierContact,
       });
     } catch (err) {
       reportError('[admin/messagerie] email réponse err:', err);

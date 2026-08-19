@@ -134,6 +134,20 @@ export default function FeedbacksClient({ initialFeedbacks, profilById, tronque 
               ) : (
                 <span style={{ color: '#64748b', fontSize: '0.8125rem' }}>profil supprimé</span>
               )}
+              {/* Répondre = ouvrir SON fil support (2026-08-19). Option B tenue :
+                  aucune liaison stockée feedback↔conversation — Colin cite le
+                  feedback à la main s'il veut du contexte. */}
+              {profil?.studio_slug && (
+                <Link
+                  href={`/admin/messagerie?studio=${f.user_id}`}
+                  style={{
+                    color: '#f5b878', fontSize: '0.75rem', fontWeight: 700, textDecoration: 'none',
+                    border: '1px solid #4a2e10', background: '#4a2e1033', borderRadius: '999px', padding: '3px 10px',
+                  }}
+                >
+                  💬 Répondre
+                </Link>
+              )}
               <span style={{ color: '#475569', fontSize: '0.75rem', marginLeft: 'auto' }}>{relatif(f.created_at)}</span>
             </div>
 

@@ -51,7 +51,7 @@ jobs:
       # Vérif locale AVANT push : `npm run lint` global — jamais --quiet,
       # qui masque les warnings.
       - name: Lint
-        run: npm run lint --if-present -- --max-warnings=105
+        run: npm run lint --if-present -- --max-warnings=98
 
       - name: Build
         run: npm run build
