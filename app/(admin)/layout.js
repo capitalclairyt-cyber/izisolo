@@ -49,6 +49,7 @@ export default async function AdminLayout({ children }) {
             )}
           </Link>
           <Link href="/admin/erreurs" className="admin-nav-item">🚨 Erreurs</Link>
+          <Link href="/admin/demo" className="admin-nav-item">🎬 Démo</Link>
         </nav>
 
         <div className="admin-sidebar-footer">
