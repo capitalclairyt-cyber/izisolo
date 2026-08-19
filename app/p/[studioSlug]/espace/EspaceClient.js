@@ -834,6 +834,22 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
                     <div style={{ fontSize: '0.7rem', color: '#b45309', marginTop: 2 }}>
                       {w.annulationTardive ? 'Annulation tardive — séance due' : 'Séance à régler'}{dateStr ? ` · ${dateStr}` : ''}
                     </div>
+                    {/* Paiement par séance (v2 de v86) : la ligne disparaît
+                        seule dès que le webhook rattache le paiement. */}
+                    {w.paiement_url && (
+                      <a
+                        href={w.paiement_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          display: 'inline-block', marginTop: 8,
+                          background: '#b45309', color: 'white', textDecoration: 'none',
+                          padding: '7px 14px', borderRadius: 99, fontWeight: 700, fontSize: '0.78rem',
+                        }}
+                      >
+                        💳 Payer par CB
+                      </a>
+                    )}
                   </div>
                   <div style={{ fontWeight: 700, fontSize: '0.9375rem', color: '#b45309', flexShrink: 0 }}>
                     {Number(w.montant).toFixed(2).replace('.', ',')} €

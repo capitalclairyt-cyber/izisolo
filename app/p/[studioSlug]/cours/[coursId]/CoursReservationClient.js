@@ -159,6 +159,9 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
   const [loading, setLoading] = useState(false);
   const [done, setDone]     = useState(false);
   const [magicLinkSent, setMagicLinkSent] = useState(false);
+  // Paiement par séance (v2 de v86) : {url, montant} si le cours a un Payment
+  // Link Stripe — la place est déjà réservée, le paiement vient APRÈS.
+  const [paiementInfo, setPaiementInfo] = useState(null);
   const [error, setError]   = useState('');
   const isConnected = !!currentUser;
 
@@ -215,6 +218,7 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Erreur lors de la réservation');
       setMagicLinkSent(!!json.magicLinkSent);
+      if (json.paiement_url) setPaiementInfo({ url: json.paiement_url, montant: json.paiement_montant });
 
       // Si l'élève a coché "série", on enchaîne avec /reserver-serie
       if (serieActive && hasSeries) {
@@ -260,6 +264,26 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
             Tu es inscrit·e pour <strong>{cours.nom}</strong><br />
             le <strong>{formatDate(cours.date)}</strong> à <strong>{formatHeure(cours.heure)}</strong>.
           </p>
+
+          {paiementInfo && (
+            <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: '10px', padding: '14px 16px', marginBottom: '16px', textAlign: 'left' }}>
+              <div style={{ fontSize: '0.875rem', color: '#9a3412', marginBottom: 10 }}>
+                <strong>Ta place est réservée.</strong> Tu peux régler ta séance
+                {paiementInfo.montant ? <> (<strong>{Number(paiementInfo.montant).toFixed(2).replace('.', ',')} €</strong>)</> : null} en ligne dès maintenant :
+              </div>
+              <a
+                href={paiementInfo.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ display: 'inline-block', background: '#9a3412', color: 'white', textDecoration: 'none', padding: '10px 22px', borderRadius: '10px', fontWeight: 700, fontSize: '0.9rem' }}
+              >
+                💳 Régler ma place par CB
+              </a>
+              <div style={{ fontSize: '0.75rem', color: '#b45309', marginTop: 8 }}>
+                Tu préfères régler sur place ? Aucun souci, ta réservation reste valable.
+              </div>
+            </div>
+          )}
 
           <div style={{ background: '#f0faf0', border: '1px solid #c8e6c9', borderRadius: '10px', padding: '12px 16px', marginBottom: '16px', fontSize: '0.875rem', color: '#2e7d32', display: 'flex', alignItems: 'flex-start', gap: '8px', textAlign: 'left' }}>
             <Mail size={16} style={{ flexShrink: 0, marginTop: 2 }} />

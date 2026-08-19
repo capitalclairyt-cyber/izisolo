@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { parseDate, toDateStr, semainesEntre } from '@/lib/dates';
 import { sanitizeLienVisio } from '@/lib/visio';
+import { sanitizeLienPaiement } from '@/lib/paiement-seance';
 import { getAllTypesFromCategories, normalizeTypesCours } from '@/lib/utils';
 import {
   estJourFerie, getPeriodeVacances, ZONES_VACANCES,
@@ -228,6 +229,7 @@ function NouveauCoursInner() {
     // Workshop / évènement payant à l'unité (v35)
     tarif_unitaire: '',           // ex: 30 (€) — NULL/vide = cours régulier
     carnets_acceptes: false,      // v82 — cours MIXTE : tarif = filet, carnets compatibles décomptent
+    stripe_payment_link_unit: '', // v2 de v86 — Payment Link Stripe : CB à la résa (plan Complet)
     // Cours en ligne (v18 format + v86 lien, feedback Ariana 2026-08-19)
     format: 'presentiel',         // 'presentiel' | 'visio'
     lien_visio: '',               // URL Zoom/Meet — servie via lib/visio.js selon le verrou
@@ -263,6 +265,7 @@ function NouveauCoursInner() {
       ...prev,
       tarif_unitaire: choix === 'carnets' ? '' : prev.tarif_unitaire,
       carnets_acceptes: choix === 'mixte',
+      stripe_payment_link_unit: choix === 'carnets' ? '' : prev.stripe_payment_link_unit,
     }));
   };
 
@@ -321,7 +324,7 @@ function NouveauCoursInner() {
       if (fromId) {
         const { data: source } = await supabase
           .from('cours')
-          .select('nom, type_cours, heure, duree_minutes, lieu_id, capacite_max, client_pro_id, notes, tarif_unitaire, carnets_acceptes, visibilite, domicile, format')
+          .select('nom, type_cours, heure, duree_minutes, lieu_id, capacite_max, client_pro_id, notes, tarif_unitaire, carnets_acceptes, stripe_payment_link_unit, visibilite, domicile, format')
           .eq('id', fromId)
           .eq('profile_id', user.id)
           .maybeSingle();
@@ -341,6 +344,7 @@ function NouveauCoursInner() {
             // élèves étaient décomptés au lieu de créer « à régler 25 € »)
             // et un cours 🔒 privé en cours PUBLIC listé sur le portail.
             tarif_unitaire: source.tarif_unitaire != null ? String(source.tarif_unitaire) : (prev.tarif_unitaire || ''),
+            stripe_payment_link_unit: source.stripe_payment_link_unit || prev.stripe_payment_link_unit || '',
             carnets_acceptes: source.carnets_acceptes === true,
             format: source.format || 'presentiel',
             visibilite: source.visibilite || prev.visibilite || 'public',
@@ -487,6 +491,7 @@ function NouveauCoursInner() {
           tarif_unitaire: form.tarif_unitaire ? parseFloat(form.tarif_unitaire) : null,
           // Mixte (v82) : seulement pertinent avec un tarif — sans tarif, false.
           carnets_acceptes: form.tarif_unitaire ? form.carnets_acceptes === true : false,
+          stripe_payment_link_unit: form.tarif_unitaire ? (sanitizeLienPaiement(form.stripe_payment_link_unit) || null) : null,
           ...domicileFields,
         }).select('id').single();
         if (error) throw error;
@@ -555,6 +560,7 @@ function NouveauCoursInner() {
             // le recopie depuis un cours frère de la série).
             tarif_unitaire: form.tarif_unitaire ? parseFloat(form.tarif_unitaire) : null,
             carnets_acceptes: form.tarif_unitaire ? form.carnets_acceptes === true : false,
+            stripe_payment_link_unit: form.tarif_unitaire ? (sanitizeLienPaiement(form.stripe_payment_link_unit) || null) : null,
             // La note du formulaire était posée sur le cours unique mais
             // silencieusement JETÉE pour les séries (B1b).
             notes: form.notes || null,
@@ -1124,6 +1130,23 @@ function NouveauCoursInner() {
                   Indique le prix — sans lui, le cours repasse en « carnets/abos seulement ».
                 </span>
               )}
+            </div>
+          )}
+          {paiementChoix !== 'carnets' && form.tarif_unitaire && (
+            <div className="form-group" style={{ background: 'transparent', padding: 0, border: 'none', marginTop: 10 }}>
+              <label className="form-label" style={{ fontSize: '0.75rem' }}>💳 Lien de paiement Stripe (optionnel)</label>
+              <input
+                className="izi-input"
+                type="url"
+                value={form.stripe_payment_link_unit}
+                onChange={handleChange('stripe_payment_link_unit')}
+                placeholder="https://buy.stripe.com/…"
+              />
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginTop: 4 }}>
+                Colle le Payment Link de cet atelier (créé dans ton Stripe, au même prix) :
+                tes élèves règlent leur place par CB dès la réservation, et le paiement
+                arrive tout seul dans Revenus. Avec le plan Complet.
+              </span>
             </div>
           )}
         </div>

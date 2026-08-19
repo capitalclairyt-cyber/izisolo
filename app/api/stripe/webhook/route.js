@@ -1,6 +1,7 @@
 import { withRoute } from '@/lib/api-route';
 import { createAdminClient } from '@/lib/supabase-admin';
 import { verifyStripeSignature, getCheckoutSessionAmount, getCheckoutSessionEmail } from '@/lib/stripe';
+import { estRefPresence } from '@/lib/paiement-seance';
 import { sendPushToUser } from '@/lib/push-server';
 import { escapeIlike } from '@/lib/utils';
 import { reportError } from '@/lib/report';
@@ -93,6 +94,20 @@ async function handleCheckoutCompleted(supabase, profileId, session) {
   const email = getCheckoutSessionEmail(session);
   const amount = getCheckoutSessionAmount(session);
 
+  // ─── Paiement PAR SÉANCE (v2 de v86, 2026-08-19) ──────────────────────────
+  // La résa d'un cours à tarif_unitaire tague le Payment Link du cours avec
+  // client_reference_id=<presenceId> (lib/paiement-seance). Si la référence
+  // est là et pointe une vraie présence du studio, le paiement se rattache à
+  // la séance — ce qui la sort de « à régler » partout et déverrouille le
+  // lien visio d'un cours en ligne (lib/visio). Prioritaire sur le matching
+  // d'offre : une référence de présence est plus précise qu'un plink.
+  if (estRefPresence(session.client_reference_id)) {
+    const traite = await handleSeancePayee(supabase, profileId, session, { email, amount });
+    if (traite) return;
+    // Référence inconnue/étrangère : on retombe sur le flux générique
+    // (paiement enregistré quand même — l'argent est réel).
+  }
+
   // Récupérer le payment_link pour matcher l'offre IziSolo
   // Stripe envoie payment_link dans session.payment_link (string ID, ex: "plink_xyz")
   const paymentLinkId = session.payment_link || null;
@@ -183,6 +198,105 @@ async function handleCheckoutCompleted(supabase, profileId, session) {
       });
     }
   }
+}
+
+/**
+ * Paiement d'UNE séance via le Payment Link du cours (client_reference_id =
+ * presence id). Retourne true si traité ici, false pour retomber sur le flux
+ * générique (référence qui ne pointe aucune présence de CE studio).
+ */
+async function handleSeancePayee(supabase, profileId, session, { email, amount }) {
+  const presenceId = session.client_reference_id;
+
+  const { data: presence, error: pErr } = await supabase
+    .from('presences')
+    .select('id, client_id, cours_id')
+    .eq('id', presenceId)
+    .maybeSingle();
+  if (pErr) {
+    reportError('[stripe/webhook] séance — lecture présence err:', pErr, { profileId });
+    return false;
+  }
+  if (!presence) return false;
+
+  // OWNERSHIP : la présence doit appartenir au studio du webhook — un
+  // client_reference_id forgé vers la présence d'un AUTRE studio ne doit
+  // jamais créer un paiement chez lui.
+  const { data: cours } = await supabase
+    .from('cours')
+    .select('id, nom, date, profile_id')
+    .eq('id', presence.cours_id)
+    .maybeSingle();
+  if (!cours || cours.profile_id !== profileId) return false;
+
+  const today = new Date().toISOString().slice(0, 10);
+  const dateStr = cours.date
+    ? new Date(cours.date + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })
+    : '';
+  const intitule = `${cours.nom || 'Séance'}${dateStr ? ` — ${dateStr}` : ''}`;
+  const commission = parseFloat((amount * COMMISSION_RATE).toFixed(2));
+
+  // La séance est-elle DÉJÀ payée (double clic = 2 sessions Stripe, l'argent
+  // est parti 2 fois) ? On enregistre quand même le 2e paiement — le cacher
+  // serait mentir sur l'argent encaissé — mais SANS presence_id (la séance
+  // est déjà couverte) et avec une note explicite pour rembourser.
+  const { data: dejaPayee } = await supabase
+    .from('paiements')
+    .select('id')
+    .eq('presence_id', presence.id)
+    .eq('statut', 'paid')
+    .limit(1)
+    .maybeSingle();
+
+  const { error: insertErr } = await supabase.from('paiements').insert({
+    profile_id: profileId,
+    client_id: presence.client_id,
+    presence_id: dejaPayee ? null : presence.id, // paiement à la séance (v65)
+    intitule,
+    montant: amount,
+    statut: 'paid',
+    mode: 'CB',
+    date: today,
+    date_encaissement: today,
+    stripe_session_id: session.id,
+    stripe_payment_intent: typeof session.payment_intent === 'string' ? session.payment_intent : null,
+    commission_taux: COMMISSION_RATE,
+    commission_montant: commission,
+    notes: dejaPayee
+      ? `⚠️ Séance déjà payée — possible DOUBLE paiement Stripe, à vérifier/rembourser. Stripe · ${email || 'email inconnu'}`
+      : `Payé en ligne à la réservation. Stripe · ${email || 'email inconnu'}`,
+  });
+  if (insertErr) {
+    reportError('[stripe/webhook] insert paiement séance error:', insertErr);
+    throw new Error('Failed to create paiement séance: ' + insertErr.message);
+  }
+
+  // Le cas « workshop à régler » de cette présence est réglé de fait —
+  // best effort : un échec ici ne perd pas le paiement, la prof verra juste
+  // un cas déjà réglé dans son inbox.
+  if (!dejaPayee) {
+    const { error: casErr } = await supabase
+      .from('cas_a_traiter')
+      .update({
+        resolu_at: new Date().toISOString(),
+        resolu_action: 'encaisse',
+        resolu_notes: 'Payé en ligne (Stripe) à la réservation',
+      })
+      .eq('profile_id', profileId)
+      .eq('presence_id', presence.id)
+      .eq('case_type', 'workshop_vs_cours')
+      .is('resolu_at', null);
+    if (casErr) reportError('[stripe/webhook] résolution cas workshop err:', casErr);
+  }
+
+  sendPushToUser(profileId, {
+    title: dejaPayee ? '⚠️ Possible double paiement séance' : 'Séance payée en ligne 💳',
+    body: `${amount} € — ${intitule}`,
+    url: '/revenus',
+    tag: `stripe-${session.id}`,
+  }, { type: 'paiement_stripe' }).catch(() => {});
+
+  return true;
 }
 
 async function handleChargeRefunded(supabase, profileId, charge) {

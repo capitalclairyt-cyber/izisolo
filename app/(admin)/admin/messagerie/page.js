@@ -208,6 +208,10 @@ export default function AdminMessageriePage() {
   );
 }
 
+// Emojis rapides du composeur (retour Colin 2026-08-19 : « les emojis
+// classiques (yoga) ») — insérés au curseur, pas seulement en fin de texte.
+const EMOJIS_RAPIDES = ['🧘', '🙏', '🌿', '💛', '✨', '😊', '👍', '🎉', '💪', '☀️'];
+
 function FilSupport({ conv, onBack }) {
   const [messages, setMessages] = useState([]);
   const [studio, setStudio] = useState(null);
@@ -216,6 +220,21 @@ function FilSupport({ conv, onBack }) {
   const [err, setErr] = useState('');
   const scrollRef = useRef(null);
   const readPosted = useRef(false);
+  const draftRef = useRef(null);
+
+  const insererEmoji = (emoji) => {
+    const ta = draftRef.current;
+    if (!ta) { setDraft(d => d + emoji); return; }
+    const debut = ta.selectionStart ?? draft.length;
+    const fin = ta.selectionEnd ?? draft.length;
+    const next = draft.slice(0, debut) + emoji + draft.slice(fin);
+    setDraft(next);
+    requestAnimationFrame(() => {
+      ta.focus();
+      const pos = debut + emoji.length;
+      ta.setSelectionRange(pos, pos);
+    });
+  };
 
   const charger = useCallback(async () => {
     try {
@@ -271,7 +290,7 @@ function FilSupport({ conv, onBack }) {
   };
 
   return (
-    <div style={{ ...carte, padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', height: 'min(70vh, 640px)' }}>
+    <div style={{ ...carte, padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', height: 'min(80vh, 820px)' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', borderBottom: '1px solid #e2e8f0', background: '#f8fafc' }}>
         <button type="button" onClick={onBack} style={btnSecondaire}>← Retour</button>
         <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#0f172a' }}>
@@ -317,22 +336,42 @@ function FilSupport({ conv, onBack }) {
 
       {err && <p style={{ color: '#dc2626', fontSize: '0.8rem', margin: '6px 14px' }}>❌ {err}</p>}
 
-      <div style={{ display: 'flex', gap: 8, padding: 12, borderTop: '1px solid #e2e8f0', background: '#f8fafc' }}>
-        <textarea
-          value={draft}
-          onChange={e => setDraft(e.target.value)}
-          onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) envoyer(); }}
-          rows={2}
-          maxLength={4000}
-          placeholder="Réponds à la prof… (Ctrl+Entrée pour envoyer)"
-          style={{
-            flex: 1, padding: '9px 12px', border: '1px solid #cbd5e1', borderRadius: 10,
-            fontSize: '0.875rem', fontFamily: 'inherit', resize: 'vertical',
-          }}
-        />
-        <button type="button" onClick={envoyer} disabled={sending || !draft.trim()} style={{ ...btnPrimaire, alignSelf: 'flex-end', opacity: sending || !draft.trim() ? 0.6 : 1 }}>
-          {sending ? '⏳' : 'Envoyer'}
-        </button>
+      <div style={{ padding: 12, borderTop: '1px solid #e2e8f0', background: '#f8fafc' }}>
+        <div style={{ display: 'flex', gap: 4, marginBottom: 8, flexWrap: 'wrap' }}>
+          {EMOJIS_RAPIDES.map(e => (
+            <button
+              key={e}
+              type="button"
+              onClick={() => insererEmoji(e)}
+              title={`Insérer ${e}`}
+              style={{
+                width: 32, height: 32, border: '1px solid #e2e8f0', borderRadius: 8,
+                background: 'white', cursor: 'pointer', fontSize: '1.05rem', lineHeight: 1,
+              }}
+            >
+              {e}
+            </button>
+          ))}
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <textarea
+            ref={draftRef}
+            value={draft}
+            onChange={e => setDraft(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) envoyer(); }}
+            rows={5}
+            maxLength={4000}
+            placeholder="Réponds à la prof… (Ctrl+Entrée pour envoyer)"
+            style={{
+              flex: 1, padding: '10px 13px', border: '1px solid #cbd5e1', borderRadius: 10,
+              fontSize: '0.9rem', fontFamily: 'inherit', resize: 'vertical',
+              minHeight: 110, lineHeight: 1.5,
+            }}
+          />
+          <button type="button" onClick={envoyer} disabled={sending || !draft.trim()} style={{ ...btnPrimaire, alignSelf: 'flex-end', opacity: sending || !draft.trim() ? 0.6 : 1 }}>
+            {sending ? '⏳' : 'Envoyer'}
+          </button>
+        </div>
       </div>
     </div>
   );

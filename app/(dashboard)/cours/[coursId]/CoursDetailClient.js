@@ -15,6 +15,7 @@ import { parseDate } from '@/lib/dates';
 import { compterPlacesOccupees, presenceOccupePlace, presenceEstReservationActive } from '@/lib/presences';
 import { seanceDeltaChangementType } from '@/lib/pointage-delta';
 import { getRegle } from '@/lib/regles-metier';
+import { sanitizeLienPaiement } from '@/lib/paiement-seance';
 import TypeCoursHint from '@/components/cours/TypeCoursHint';
 import AttachmentPicker from '@/components/messagerie/AttachmentPicker';
 import { resoudreCarnetApplicable } from '@/lib/carnet-resolution';
@@ -172,6 +173,7 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
     type_cours:    cours.type_cours || '',
     tarif_unitaire: cours.tarif_unitaire != null ? String(cours.tarif_unitaire) : '',
     carnets_acceptes: cours.carnets_acceptes === true,
+    stripe_payment_link_unit: cours.stripe_payment_link_unit || '',
   });
 
   // ---- Message aux participants ----
@@ -220,6 +222,7 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
     visibilite: cours.visibilite || 'public',
     tarif_unitaire: cours.tarif_unitaire != null ? String(cours.tarif_unitaire) : '',
     carnets_acceptes: cours.carnets_acceptes === true,
+    stripe_payment_link_unit: cours.stripe_payment_link_unit || '',
   });
 
   const handleChange = (field) => (e) => {
@@ -248,6 +251,7 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
           visibilite: form.visibilite || 'public',
           tarif_unitaire: form.tarif_unitaire ? parseFloat(form.tarif_unitaire) : null,
           carnets_acceptes: form.tarif_unitaire ? form.carnets_acceptes === true : false,
+          stripe_payment_link_unit: form.tarif_unitaire ? (sanitizeLienPaiement(form.stripe_payment_link_unit) || null) : null,
         })
         .eq('id', cours.id);
 
@@ -417,6 +421,7 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
         // (la table recurrences n'a pas la colonne, cf. cours/nouveau).
         tarif_unitaire: recurrenceForm.tarif_unitaire ? parseFloat(recurrenceForm.tarif_unitaire) : null,
         carnets_acceptes: recurrenceForm.tarif_unitaire ? recurrenceForm.carnets_acceptes === true : false,
+        stripe_payment_link_unit: recurrenceForm.tarif_unitaire ? (sanitizeLienPaiement(recurrenceForm.stripe_payment_link_unit) || null) : null,
       };
 
       // 1. Mettre à jour toutes les occurrences futures
@@ -911,6 +916,23 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
                   </span>
                 </label>
               )}
+              {form.tarif_unitaire && (
+                <div style={{ marginTop: 10 }}>
+                  <label className="form-label" style={{ fontSize: '0.75rem' }}>💳 Lien de paiement Stripe (optionnel)</label>
+                  <input
+                    className="izi-input"
+                    type="url"
+                    value={form.stripe_payment_link_unit}
+                    onChange={handleChange('stripe_payment_link_unit')}
+                    placeholder="https://buy.stripe.com/…"
+                    style={{ maxWidth: 380 }}
+                  />
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginTop: 4 }}>
+                    Payment Link de ce cours (même prix) : tes élèves règlent par CB dès la
+                    réservation, le paiement se rattache tout seul. Plan Complet.
+                  </span>
+                </div>
+              )}
             </div>
 
             <div className="edit-actions">
@@ -1290,6 +1312,21 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
                       Vide = ces séances sont couvertes par les carnets/abos.
                     </span>
                   )}
+                  {recurrenceForm.tarif_unitaire ? (
+                    <div style={{ marginTop: 8 }}>
+                      <input
+                        className="izi-input"
+                        type="url"
+                        value={recurrenceForm.stripe_payment_link_unit}
+                        onChange={e => setRecurrenceForm(p => ({ ...p, stripe_payment_link_unit: e.target.value }))}
+                        placeholder="💳 Lien de paiement Stripe (optionnel) — https://buy.stripe.com/…"
+                        style={{ maxWidth: 380 }}
+                      />
+                      <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'block', marginTop: 4 }}>
+                        CB à la réservation pour ces séances (plan Complet).
+                      </span>
+                    </div>
+                  ) : null}
                 </div>
               </div>
 

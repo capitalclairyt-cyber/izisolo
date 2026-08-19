@@ -215,18 +215,20 @@ export default function RecurrencesClient({ recurrences: initialRecurrences, cou
     // l'occurrence ajoutée garde le même modèle de paiement.
     let tarifUnitaire = null;
     let carnetsAcceptes = false;
+    let lienPaiement = null;
     let visibilite = null;
     let lieuTexte = null;
     try {
       const { data: frere } = await supabase
         .from('cours')
-        .select('tarif_unitaire, carnets_acceptes, visibilite, lieu')
+        .select('tarif_unitaire, carnets_acceptes, stripe_payment_link_unit, visibilite, lieu')
         .eq('recurrence_parent_id', selected.id)
         .order('date', { ascending: false })
         .limit(1)
         .maybeSingle();
       tarifUnitaire = frere?.tarif_unitaire ?? null;
       carnetsAcceptes = frere?.carnets_acceptes === true;
+      lienPaiement = frere?.stripe_payment_link_unit ?? null;
       visibilite = frere?.visibilite ?? null;
       lieuTexte = frere?.lieu ?? null;
     } catch { /* pas de frère : défauts */ }
@@ -250,6 +252,7 @@ export default function RecurrencesClient({ recurrences: initialRecurrences, cou
       recurrence_parent_id: selected.id,
       tarif_unitaire: tarifUnitaire,
       carnets_acceptes: carnetsAcceptes,
+      stripe_payment_link_unit: lienPaiement,
       client_pro_id: selected.client_pro_id || null,
       ...(selected.domicile ? {
         domicile: true,
@@ -442,7 +445,7 @@ export default function RecurrencesClient({ recurrences: initialRecurrences, cou
       // séance) — même logique que l'ajout d'occurrence manuel.
       const { data: frere } = await supabase
         .from('cours')
-        .select('lieu, visibilite, tarif_unitaire, carnets_acceptes')
+        .select('lieu, visibilite, tarif_unitaire, carnets_acceptes, stripe_payment_link_unit')
         .eq('recurrence_parent_id', selected.id)
         .order('date', { ascending: false })
         .limit(1)
@@ -462,6 +465,7 @@ export default function RecurrencesClient({ recurrences: initialRecurrences, cou
         visibilite: frere?.visibilite || 'public',
         tarif_unitaire: frere?.tarif_unitaire ?? null,
         carnets_acceptes: frere?.carnets_acceptes === true,
+        stripe_payment_link_unit: frere?.stripe_payment_link_unit ?? null,
         client_pro_id: selected.client_pro_id || null,
         // Série à domicile (v44) : recopiée depuis la récurrence (audit
         // 2026-07-25 : prolonger oubliait le domicile → occurrences sans

@@ -8,6 +8,8 @@ import { resoudreFicheEleve } from '@/lib/fiche-eleve';
 import { getDocsInscription } from '@/lib/docs-inscription';
 import { getVisioCoursMap, lienVisioVisible } from '@/lib/visio';
 import { resoudreCarnetApplicable } from '@/lib/carnet-resolution';
+import { urlPaiementSeance } from '@/lib/paiement-seance';
+import { studioCan } from '@/lib/plan-guard';
 
 // Le template racine ajoute déjà « — IziSolo » ; l'OG studio vient du layout portail.
 export const metadata = { title: 'Mon espace', robots: { index: false, follow: false } };
@@ -151,10 +153,12 @@ async function getData(studioSlug, user) {
   // le prof) → la lecture du profil studio renvoie null → notFound().
   const supabase = supabaseAdmin;
 
-  // Studio (+ règles d'annulation pour application dans EspaceClient)
+  // Studio (+ règles d'annulation pour application dans EspaceClient ;
+  // + champs de plan pour studioCan — le lien de paiement par séance est une
+  // capacité Complet, comme le Payment Link des offres)
   const { data: profile } = await supabase
     .from('profiles')
-    .select('id, studio_nom, studio_slug, regles_annulation')
+    .select('id, studio_nom, studio_slug, regles_annulation, plan, trial_started_at, stripe_subscription_status')
     .eq('studio_slug', studioSlug)
     .single();
   if (!profile) return null;
@@ -205,7 +209,7 @@ async function getData(studioSlug, user) {
       abonnement_id,
       created_at,
       cours:cours_id (
-        id, nom, date, heure, duree_minutes, lieu, type_cours, est_annule, tarif_unitaire, carnets_acceptes, format
+        id, nom, date, heure, duree_minutes, lieu, type_cours, est_annule, tarif_unitaire, carnets_acceptes, format, stripe_payment_link_unit
       )
     `)
     .eq('client_id', client.id)
@@ -290,6 +294,9 @@ async function getData(studioSlug, user) {
     const couvertes = new Set((paiesLies || [])
       .filter(x => ['paid', 'pending', 'overdue'].includes(x.statut))
       .map(x => x.presence_id));
+    // Paiement en ligne par séance (v2 de v86) : URL taguée de la présence —
+    // le webhook rattachera le paiement. Capacité Complet, comme les offres.
+    const paiementEnLigne = studioCan(profile, 'paiement_en_ligne');
     seancesWorkshopDues = presWorkshop
       .filter(p => !couvertes.has(p.id))
       .map(p => ({
@@ -298,6 +305,9 @@ async function getData(studioSlug, user) {
         cours_date: p.cours.date,
         montant: Number(p.cours.tarif_unitaire),
         annulationTardive: !!p.annulation_tardive,
+        paiement_url: paiementEnLigne
+          ? urlPaiementSeance(p.cours.stripe_payment_link_unit, p.id, client.email)
+          : '',
       }));
   }
 

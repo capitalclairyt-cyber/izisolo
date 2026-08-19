@@ -14,6 +14,7 @@ import { sendEmail } from '@/lib/email';
 import { reportError } from '@/lib/report';
 import { canSeeCours, resolveClientInfo } from '@/lib/visibilite';
 import { coursDejaCommence } from '@/lib/dates';
+import { urlPaiementSeance } from '@/lib/paiement-seance';
 
 export const POST = withRoute({ auth: 'public' }, async ({ request, params }) => {
   const { studioSlug } = params;
@@ -210,25 +211,25 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
   // ─── Cas particulier : workshop / cours payant à l'unité ─────────────────
   // Si le cours a tarif_unitaire défini, c'est un évènement séparé du
   // carnet/abo régulier (cf. règle workshop_vs_cours).
-  // - Si stripe_payment_link_unit défini → on retourne l'URL pour paiement
-  //   immédiat. La résa ne se finalise PAS automatiquement après paiement
-  //   (manque webhook par cours), c'est à la prof de créer la presence
-  //   manuellement OU à l'élève de revenir confirmer.
-  // - Si pas de lien Stripe → on crée la presence + log un cas "à régler sur place".
+  // Depuis le 2026-08-19 (v2 de v86) : on réserve TOUJOURS la place d'abord
+  // (P0 anti double-paiement — l'élève ne paie jamais sans être inscrite),
+  // PUIS, si le cours a un Payment Link (stripe_payment_link_unit) et le plan
+  // Complet, on propose le règlement CB immédiat : URL taguée de la présence,
+  // le webhook rattache le paiement (paid + presence_id) → la séance sort de
+  // « à régler » et le lien visio d'un cours en ligne se déverrouille (v86).
+  // Sans lien : le montant tombe en « à régler », la prof encaisse en 1 clic.
+  const paiementEnLignePossible = !!(cours.tarif_unitaire
+    && cours.stripe_payment_link_unit
+    && studioCan(profile, 'paiement_en_ligne'));
   if (cours.tarif_unitaire) {
-    // Workshop / cours payant à l'unité (séparé du carnet/abo régulier).
-    // ⚠️ Le paiement Stripe en ligne À LA RÉSERVATION est DÉSACTIVÉ tant qu'il
-    // n'existe pas de webhook « paiement par cours » : sinon l'élève payait sur
-    // Stripe SANS être inscrit (place non décomptée) + risque de double paiement
-    // au re-clic (cf. AUDIT-PORTAIL-ELEVE-2026 §P0). On réserve donc TOUJOURS la
-    // place et on log le montant en « à régler » (visible espace élève + côté
-    // prof, qui encaisse en 1 clic ou envoie un lien Stripe séparément).
     casATraiterAttendu = casATraiterAttendu || {
       case_type: 'workshop_vs_cours',
       context: {
         choix_applique: 'paiement_a_regler',
         tarif_unitaire: cours.tarif_unitaire,
-        raison: 'Workshop payant à l\'unité — à régler (paiement en ligne à la résa désactivé, manque webhook par cours)',
+        raison: paiementEnLignePossible
+          ? 'Workshop payant à l\'unité — lien de paiement CB proposé à la réservation (le cas se résout seul si l\'élève paie en ligne)'
+          : 'Workshop payant à l\'unité — à régler (encaissement en 1 clic depuis Revenus ou le pointage)',
       },
     };
   }
@@ -459,6 +460,12 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
   }
   const newPresence = { id: resa.presence_id };
 
+  // Paiement en ligne PAR SÉANCE : la place est réservée, on peut proposer le
+  // règlement CB — jamais l'inverse (P0). '' si lien invalide → flux à régler.
+  const paiementUrl = paiementEnLignePossible
+    ? urlPaiementSeance(cours.stripe_payment_link_unit, newPresence.id, email)
+    : '';
+
   // Notif prof « nouvelle réservation » — cloche in-app + push. La cloche est
   // le canal fiable (le push exige un abonnement web push) : sans elle, une
   // résa d'un élève existant ne laissait AUCUNE trace côté prof.
@@ -678,7 +685,9 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
             ${cours.tarif_unitaire ? `
             <div style="background: #fff7ed; border: 1px solid #fed7aa; border-radius: 10px; padding: 12px 16px; margin: 0 0 16px; color: #9a3412; font-size: 0.875rem;">
               <strong>Cours à régler à la séance</strong><br/>
-              Tarif : ${Number(cours.tarif_unitaire).toFixed(2).replace('.', ',')} € — à régler directement avec ton studio.
+              Tarif : ${Number(cours.tarif_unitaire).toFixed(2).replace('.', ',')} €${paiementUrl
+                ? ` — tu peux régler ta place en ligne dès maintenant :<div style="text-align: center; margin: 12px 0 4px;"><a href="${paiementUrl}" style="display: inline-block; background: #9a3412; color: white; text-decoration: none; padding: 10px 22px; border-radius: 10px; font-weight: 600; font-size: 0.9rem;">💳 Régler ma place par CB</a></div>`
+                : ' — à régler directement avec ton studio.'}
             </div>` : ''}
             <div style="background: #fffaf0; border: 1px solid #ffe0b2; border-radius: 10px; padding: 12px 16px; margin: 0 0 16px; color: #7c4a03; font-size: 0.875rem;">
               ${studioCan(profile, 'reservation_en_ligne')
@@ -698,5 +707,12 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
     // On ne fait pas échouer la réservation si l'email plante
   }
 
-  return Response.json({ ok: true, magicLinkSent });
+  return Response.json({
+    ok: true,
+    magicLinkSent,
+    // Paiement par séance (v2 de v86) : l'écran de confirmation du portail
+    // affiche le bouton « Régler par CB » — null = flux « à régler » classique.
+    paiement_url: paiementUrl || null,
+    paiement_montant: paiementUrl ? Number(cours.tarif_unitaire) : null,
+  });
 });
