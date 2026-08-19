@@ -6,7 +6,10 @@ import { useEffect, useState } from 'react';
  * MessagesBadge — petite pastille rouge avec compteur de non-lus.
  * À placer à côté de l'icône Messagerie dans la nav.
  *
- * Polling 30s. Pas de realtime ici (overkill pour un badge).
+ * Polling 90s, suspendu onglet caché, rattrapé au retour (AUDIT-PERF cat 1.3 :
+ * ce badge est monté sur TOUTES les pages dashboard — c'était, multiplié par
+ * countUnread N+1, le premier poste de charge DB projeté). Pas de realtime
+ * ici (overkill pour un badge).
  */
 export default function MessagesBadge() {
   const [count, setCount] = useState(0);
@@ -24,8 +27,14 @@ export default function MessagesBadge() {
       }
     };
     fetchCount();
-    const interval = setInterval(fetchCount, 30000);
-    return () => { cancelled = true; clearInterval(interval); };
+    const interval = setInterval(() => { if (!document.hidden) fetchCount(); }, 90000);
+    const onVisible = () => { if (!document.hidden) fetchCount(); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
   }, []);
 
   if (count === 0) return null;

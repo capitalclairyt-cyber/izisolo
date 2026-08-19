@@ -60,6 +60,7 @@ export async function proxy(request) {
     pathname.startsWith('/manifest.json') ||
     pathname.startsWith('/sw.js') ||
     pathname.startsWith('/icons/') ||
+    pathname.startsWith('/illustrations/') ||
     pathname === '/'
   ) {
     return NextResponse.next();
@@ -99,6 +100,8 @@ export async function proxy(request) {
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|manifest.json|sw.js|icons/).*)',
+    // illustrations/ exclu comme icons/ (AUDIT-PERF cat 1.6) : l'image de la
+    // Sidebar déclenchait une vérification GoTrue à chaque affichage.
+    '/((?!_next/static|_next/image|favicon.ico|manifest.json|sw.js|icons/|illustrations/).*)',
   ],
 };

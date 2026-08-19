@@ -3,6 +3,7 @@ import { createServerClient } from '@/lib/supabase-server';
 import { studioCan } from '@/lib/plan-guard';
 import { getDocsInscription } from '@/lib/docs-inscription';
 import { resolveClientInfo, filterCoursVisibles } from '@/lib/visibilite';
+import { compterPlacesOccupeesParCours } from '@/lib/presences';
 import { notFound } from 'next/navigation';
 import EssaiClient from './EssaiClient';
 
@@ -55,14 +56,15 @@ async function getData(studioSlug) {
   // évite juste de proposer l'impossible.
   const avecJauge = cours.filter(c => c.capacite_max != null).map(c => c.id);
   if (avecJauge.length > 0) {
-    const { data: presRows, error: presErr } = await supabase
-      .from('presences')
-      .select('cours_id')
-      .in('cours_id', avecJauge);
-    if (!presErr) {
-      const compte = {};
-      for (const p of presRows || []) compte[p.cours_id] = (compte[p.cours_id] || 0) + 1;
+    try {
+      // RPC d'agrégat v89 (formule v74) — l'ancien comptage brut incluait les
+      // annulations, donc masquait de l'essai des cours qui avaient une place,
+      // et heurtait le cap 1000 (AUDIT-PERF cat 1.1).
+      const compte = await compterPlacesOccupeesParCours(supabase, avecJauge);
       cours = cours.filter(c => c.capacite_max == null || (compte[c.id] || 0) < c.capacite_max);
+    } catch {
+      // Comptage indisponible : on propose tout, la RPC reserver_place
+      // re-vérifie la capacité sous verrou à la finalisation.
     }
   }
 

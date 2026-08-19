@@ -42,7 +42,9 @@ function PortailLayoutInner({ studioSlug, children }) {
     return () => subscription.unsubscribe();
   }, [studioSlug]);
 
-  // Polling unread messages count (every 30s) — uniquement si connecté
+  // Polling unread messages count — uniquement si connecté. 90s + suspendu
+  // onglet caché, rattrapé au retour (AUDIT-PERF cat 1.3 : chaque élève
+  // connecté pollait toutes les 30 s, y compris en arrière-plan).
   useEffect(() => {
     if (!prenom) return;
     let cancelled = false;
@@ -55,8 +57,14 @@ function PortailLayoutInner({ studioSlug, children }) {
       } catch { /* ignore */ }
     };
     fetchUnread();
-    const interval = setInterval(fetchUnread, 30000);
-    return () => { cancelled = true; clearInterval(interval); };
+    const interval = setInterval(() => { if (!document.hidden) fetchUnread(); }, 90000);
+    const onVisible = () => { if (!document.hidden) fetchUnread(); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
   }, [prenom]);
 
   return (

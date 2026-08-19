@@ -6,7 +6,7 @@ import PortailHome from './PortailHome';
 import { resolveClientInfo, filterCoursVisibles } from '@/lib/visibilite';
 import { ogPortail } from '@/lib/portail-metadata';
 import { studioCan } from '@/lib/plan-guard';
-import { presenceOccupePlace } from '@/lib/presences';
+import { presenceOccupePlace, compterPlacesOccupeesParCours } from '@/lib/presences';
 import { coursDejaCommence } from '@/lib/dates';
 import { reportError } from '@/lib/report';
 
@@ -129,21 +129,19 @@ async function getStudioData(studioSlug) {
     reservedCoursIds = (pres || []).filter(presenceOccupePlace).map(p => p.cours_id);
   }
 
-  // Count presences per cours
+  // Places occupées par cours — RPC d'agrégat v89 (formule v74 en SQL).
+  // Avant : .in(240 ids) sur les LIGNES presences → cap PostgREST 1000
+  // silencieux → jauges fausses dès un studio bien rempli (AUDIT-PERF cat 1.1).
   const coursIds = (cours || []).map(c => c.id);
   let presencesCounts = {};
   if (coursIds.length > 0) {
-    const { data: presences, error: presErr } = await supabase
-      .from('presences')
-      .select('cours_id, statut_pointage, annulation_tardive')
-      .in('cours_id', coursIds);
-    if (presErr) reportError('[portail] lecture presences err:', presErr, { route: `/p/${studioSlug}` });
-    // Formule v74 : les annulations tardives / annule / declinee ne comptent
-    // plus — avant, le portail affichait « Complet » (et cachait le bouton
-    // Réserver) pour des places que la route aurait acceptées (B1b, rouge).
-    (presences || []).filter(presenceOccupePlace).forEach(p => {
-      presencesCounts[p.cours_id] = (presencesCounts[p.cours_id] || 0) + 1;
-    });
+    try {
+      presencesCounts = await compterPlacesOccupeesParCours(supabase, coursIds);
+    } catch (presErr) {
+      // Jauges à 0 plutôt que page morte — la RPC reserver_place re-vérifie
+      // la capacité sous verrou à la réservation de toute façon.
+      reportError('[portail] comptage places err:', presErr, { route: `/p/${studioSlug}` });
+    }
   }
 
   // Filtrer les cours du jour dont l'heure est déjà passée — horloge unique

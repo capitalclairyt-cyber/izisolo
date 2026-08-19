@@ -53,10 +53,19 @@ export default function ConversationList({ onSelect, selectedId, onCounts, studi
     }
   }, [onCounts, studioSlug]);
 
+  // 30s + suspendu onglet caché (AUDIT-PERF cat 1.3 : à 8 s, ce poll — jusqu'à
+  // ~300 requêtes DB par rafraîchissement côté serveur — était le endpoint le
+  // plus cher de l'app ; le rafraîchissement instantané du fil ouvert reste
+  // assuré par le realtime de ChatRoom).
   useEffect(() => {
     fetchConvs();
-    const interval = setInterval(fetchConvs, 8000);
-    return () => clearInterval(interval);
+    const interval = setInterval(() => { if (!document.hidden) fetchConvs(); }, 30000);
+    const onVisible = () => { if (!document.hidden) fetchConvs(); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
   }, [fetchConvs]);
 
   // ── Fil support « Équipe IziSolo » (v87) — épinglé EN TÊTE côté pro ──────

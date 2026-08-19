@@ -21,16 +21,15 @@ async function getStats(supabase, testIds) {
     });
   }
 
-  const [
-    { data: rawProfiles },
-    { data: rawCours },
-    { data: rawClients },
-  ] = await Promise.all([
-    supabase.from('profiles').select('id, plan, created_at, metier'),
+  // PAGINÉ via fetchAllRows (AUDIT-PERF cat 1.4) : le select nu plafonne à
+  // 1000 lignes en silence — `cours` l'aurait crevé le premier (graphes
+  // 12 mois silencieusement faux), à rebours de la doctrine d'admin-stats.
+  const [rawProfiles, rawCours, rawClients] = await Promise.all([
+    fetchAllRows(supabase, 'profiles', 'id, plan, created_at, metier'),
     // ⚠️ cours.created_at N'EXISTE PAS (42703 → data null → graphe vide en
     // silence depuis toujours) — on suit les séances PROGRAMMÉES via `date`.
-    supabase.from('cours').select('id, profile_id, date, type_cours'),
-    supabase.from('clients').select('id, profile_id, created_at'),
+    fetchAllRows(supabase, 'cours', 'id, profile_id, date, type_cours'),
+    fetchAllRows(supabase, 'clients', 'id, profile_id, created_at'),
   ]);
   const allProfiles = (rawProfiles || []).filter(p => !testIds.has(p.id));
   const allCours = (rawCours || []).filter(c => !testIds.has(c.profile_id));

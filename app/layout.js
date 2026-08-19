@@ -1,7 +1,7 @@
 import './globals.css';
 import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
-import { Instrument_Serif, Fraunces, Inter, JetBrains_Mono, Caveat } from 'next/font/google';
+import { Instrument_Serif, Fraunces, Inter, JetBrains_Mono } from 'next/font/google';
 import AuthFragmentCatcher from '@/components/auth/AuthFragmentCatcher';
 import { getOrganizationSchema, getWebSiteSchema } from '@/lib/seo';
 
@@ -54,14 +54,9 @@ const jetMono = JetBrains_Mono({
   display: 'swap',
 });
 
-// Caveat — accent manuscrit wellness (citation dashboard, message anniv).
-// À doser : 2-3 endroits max, jamais en body.
-const caveat = Caveat({
-  weight: ['600', '700'],
-  subsets: ['latin'],
-  variable: '--font-script',
-  display: 'swap',
-});
+// (Caveat supprimée le 2026-08-19, AUDIT-PERF cat 1.5 : --font-script n'avait
+// AUCUN consommateur — 60-80 Ko de woff2 préchargés pour rien sur chaque page.
+// Si un accent manuscrit revient un jour, la recharger ici avec preload:false.)
 
 export const metadata = {
   metadataBase: new URL(baseUrl),
@@ -112,7 +107,7 @@ export const viewport = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="fr" className={`${instrumentSerif.variable} ${fraunces.variable} ${inter.variable} ${jetMono.variable} ${caveat.variable}`}>
+    <html lang="fr" className={`${instrumentSerif.variable} ${fraunces.variable} ${inter.variable} ${jetMono.variable}`}>
       <head>
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />

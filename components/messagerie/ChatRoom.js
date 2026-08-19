@@ -18,7 +18,10 @@ import EmptyState from '@/components/ui/EmptyState';
  *   onMessageSent (optionnel)
  */
 
-const POLL_INTERVAL = 5000;
+// 20s : le realtime Supabase (branché plus bas) livre l'instantané, ce poll
+// n'est que le filet anti-trou (AUDIT-PERF cat 1.3 — à 5 s il était le tuyau
+// principal et doublonnait le realtime).
+const POLL_INTERVAL = 20000;
 
 function isSameDay(a, b) {
   return new Date(a).toDateString() === new Date(b).toDateString();
@@ -261,15 +264,23 @@ export default function ChatRoom({ conversationId, viewerKind, onMessageSent, in
   useEffect(() => { fetchMessages(); }, [conversationId, fetchMessages]);
   useEffect(() => { markReadUpTo(); }, [messages, markReadUpTo]);
 
-  // Polling — messages + réactions (throttlées) + retry read + header raté
+  // Polling filet — messages + réactions (throttlées) + retry read + header
+  // raté. Suspendu onglet caché, rattrapé au retour (le realtime continue de
+  // pousser pendant ce temps).
   useEffect(() => {
-    const interval = setInterval(() => {
+    const tick = () => {
       fetchMessages();
       maybeFetchReactions();
       markReadUpTo();
       if (!convRef.current) fetchConv();
-    }, POLL_INTERVAL);
-    return () => clearInterval(interval);
+    };
+    const interval = setInterval(() => { if (!document.hidden) tick(); }, POLL_INTERVAL);
+    const onVisible = () => { if (!document.hidden) tick(); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
   }, [fetchMessages, maybeFetchReactions, markReadUpTo, fetchConv]);
 
   // Realtime via Supabase (en plus du polling)
