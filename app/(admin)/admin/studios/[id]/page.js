@@ -80,6 +80,19 @@ export default async function AdminStudioPage({ params }) {
     console.error('[admin/studio] getUserById:', e?.message);
   }
 
+  // Dernière activité RÉELLE (v88, pouls du layout — last_sign_in_at ment en
+  // PWA). Requête SÉPARÉE défensive : colonne absente pré-migration → la
+  // fiche vit sur la connexion seule (anti-pattern colonnes fantômes).
+  let derniereActivite = null;
+  {
+    const { data: act, error: eAct } = await supabase
+      .from('profiles')
+      .select('derniere_activite_at')
+      .eq('id', id)
+      .maybeSingle();
+    if (!eAct) derniereActivite = act?.derniere_activite_at || null;
+  }
+
   const trenteJours = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
   const aujourdhui = new Date().toISOString().slice(0, 10);
 
@@ -172,6 +185,13 @@ export default async function AdminStudioPage({ params }) {
           <span>Inscrite le {fmtDate(profil.created_at)}</span>
           <span style={{ color: lastSignIn && (Date.now() - new Date(lastSignIn).getTime()) < 7 * 86400000 ? '#4ade80' : '#64748b' }}>
             Dernière connexion : {lastSignIn ? `${relatif(lastSignIn)} (${fmtDate(lastSignIn)})` : 'jamais vue'}
+          </span>
+          <span style={{ color: derniereActivite && (Date.now() - new Date(derniereActivite).getTime()) < 10 * 60 * 1000 ? '#4ade80' : '#64748b' }}>
+            {derniereActivite && (Date.now() - new Date(derniereActivite).getTime()) < 10 * 60 * 1000
+              ? '🟢 Sur IziSolo maintenant'
+              : `Dernière activité : ${derniereActivite
+                  ? new Date(derniereActivite).toLocaleString('fr-FR', { timeZone: 'Europe/Paris', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
+                  : '—'}`}
           </span>
         </div>
       </div>

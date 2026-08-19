@@ -1,7 +1,10 @@
 import { createAdminClient } from '@/lib/supabase-admin';
-import { fetchAllRows } from '@/lib/admin-stats';
+import { fetchAllRows, idsComptesTest } from '@/lib/admin-stats';
 
-async function getStats(supabase) {
+// `testIds` : profils de TEST (démo Atelier Soleil, melutek, colin+*) —
+// exclus de TOUTES les stats et du fil (2026-08-19, retour Colin : le refresh
+// du démo seedait 812 € et 32 élèves dans les graphes).
+async function getStats(supabase, testIds) {
   const today = new Date();
   const todayStr = today.toISOString().slice(0, 10);
 
@@ -19,16 +22,19 @@ async function getStats(supabase) {
   }
 
   const [
-    { data: allProfiles },
-    { data: allCours },
-    { data: allClients },
+    { data: rawProfiles },
+    { data: rawCours },
+    { data: rawClients },
   ] = await Promise.all([
     supabase.from('profiles').select('id, plan, created_at, metier'),
     // ⚠️ cours.created_at N'EXISTE PAS (42703 → data null → graphe vide en
     // silence depuis toujours) — on suit les séances PROGRAMMÉES via `date`.
-    supabase.from('cours').select('id, date, type_cours'),
-    supabase.from('clients').select('id, created_at'),
+    supabase.from('cours').select('id, profile_id, date, type_cours'),
+    supabase.from('clients').select('id, profile_id, created_at'),
   ]);
+  const allProfiles = (rawProfiles || []).filter(p => !testIds.has(p.id));
+  const allCours = (rawCours || []).filter(c => !testIds.has(c.profile_id));
+  const allClients = (rawClients || []).filter(c => !testIds.has(c.profile_id));
 
   // Inscriptions par mois
   const signupsByMonth = months.map(m => ({
@@ -112,7 +118,7 @@ function MiniBarChart({ data, color = '#60a5fa', label }) {
 // chronologique unique. Lecture via client ADMIN : la page est réservée aux
 // ADMIN_EMAILS par le layout ; avec le client session, la RLS filtrerait
 // tout sur le compte connecté (même bug que les routes admin, corrigé S3).
-async function getActivityFeed(admin) {
+async function getActivityFeed(admin, testIds) {
   const events = [];
 
   // ── Affiliation des comptes (demande Colin 2026-07-26) : « Connexion » et
@@ -139,10 +145,19 @@ async function getActivityFeed(admin) {
     return { studio: ids.map(id => profilById[id].studio_nom || 'studio sans nom').join(' + '), qui: 'élève' };
   };
 
+  // Un auth user de TEST : le prof démo lui-même, ou un élève dont TOUTES les
+  // fiches sont dans des studios de test (les 32 élèves fictifs du démo).
+  const estUserTest = (u) => {
+    if (testIds.has(u.id)) return true;
+    const ids = [...(studiosParEmail[String(u.email || '').toLowerCase()] || [])];
+    return ids.length > 0 && ids.every(id => testIds.has(id));
+  };
+
   // Connexions + nouveaux comptes (API admin Supabase)
   try {
     const { data: usersPage } = await admin.auth.admin.listUsers({ page: 1, perPage: 200 });
     for (const u of usersPage?.users || []) {
+      if (estUserTest(u)) continue;
       const { studio, qui } = affiliation(u);
       if (u.last_sign_in_at) {
         events.push({ date: u.last_sign_in_at, icone: '🔑', type: `Connexion ${qui}`, label: u.email, studio });
@@ -157,20 +172,27 @@ async function getActivityFeed(admin) {
 
   const nomClient = (c) => [c?.prenom, c?.nom].filter(Boolean).join(' ') || 'élève inconnu·e';
 
-  const [{ data: presences }, { data: paiements }, { data: clients }, { data: essais }] = await Promise.all([
+  // Limites élargies PUIS filtre test : un refresh du démo (dizaines de
+  // lignes récentes) ne doit pas vider le fil réel.
+  const [{ data: rawPresences }, { data: rawPaiements }, { data: rawClients }, { data: rawEssais }] = await Promise.all([
     admin.from('presences')
-      .select('created_at, clients(prenom, nom), cours(nom, date), profiles(studio_nom)')
-      .order('created_at', { ascending: false }).limit(15),
+      .select('created_at, profile_id, clients(prenom, nom), cours(nom, date), profiles(studio_nom)')
+      .order('created_at', { ascending: false }).limit(60),
     admin.from('paiements')
-      .select('created_at, montant, intitule, statut, clients(prenom, nom), profiles(studio_nom)')
-      .order('created_at', { ascending: false }).limit(15),
+      .select('created_at, profile_id, montant, intitule, statut, clients(prenom, nom), profiles(studio_nom)')
+      .order('created_at', { ascending: false }).limit(60),
     admin.from('clients')
-      .select('created_at, prenom, nom, statut, source, profiles(studio_nom)')
-      .order('created_at', { ascending: false }).limit(15),
+      .select('created_at, profile_id, prenom, nom, statut, source, profiles(studio_nom)')
+      .order('created_at', { ascending: false }).limit(60),
     admin.from('cours_essai_demandes')
-      .select('created_at, prenom, statut, profiles(studio_nom)')
-      .order('created_at', { ascending: false }).limit(10),
+      .select('created_at, profile_id, prenom, statut, profiles(studio_nom)')
+      .order('created_at', { ascending: false }).limit(30),
   ]);
+  const horsTest = rows => (rows || []).filter(r => !testIds.has(r.profile_id)).slice(0, 15);
+  const presences = horsTest(rawPresences);
+  const paiements = horsTest(rawPaiements);
+  const clients = horsTest(rawClients);
+  const essais = horsTest(rawEssais);
 
   for (const p of presences || []) {
     events.push({
@@ -221,8 +243,9 @@ export default async function AdminStatsPage() {
   // Client ADMIN (service_role) : stats GLOBALES. Avant : client session →
   // la RLS limitait les comptages aux données du compte admin connecté.
   const supabase = createAdminClient();
-  const stats = await getStats(supabase);
-  const feed = await getActivityFeed(supabase);
+  const testIds = await idsComptesTest(supabase);
+  const stats = await getStats(supabase, testIds);
+  const feed = await getActivityFeed(supabase, testIds);
 
   const currentMonthSignups = stats.signupsByMonth[stats.signupsByMonth.length - 1]?.count ?? 0;
   const prevMonthSignups = stats.signupsByMonth[stats.signupsByMonth.length - 2]?.count ?? 0;
@@ -231,6 +254,9 @@ export default async function AdminStatsPage() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
       <h1 className="admin-title">📈 Statistiques</h1>
+      <p style={{ color: '#64748b', fontSize: '0.8125rem', margin: '-16px 0 0' }}>
+        Hors comptes de test ({testIds.size} exclus : démos et comptes internes).
+      </p>
 
       {/* KPIs */}
       <div className="admin-stat-grid">

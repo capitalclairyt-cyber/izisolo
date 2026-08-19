@@ -24,11 +24,23 @@ const STATUTS_COMPTE = {
 
 function relatif(dateStr) {
   if (!dateStr) return null;
-  const j = Math.floor((Date.now() - new Date(dateStr).getTime()) / 86400000);
-  if (j <= 0) return "aujourd'hui";
+  const min = Math.floor((Date.now() - new Date(dateStr).getTime()) / 60000);
+  if (min < 60) return `il y a ${Math.max(min, 1)} min`;
+  if (min < 24 * 60) return `il y a ${Math.floor(min / 60)} h`;
+  const j = Math.floor(min / (24 * 60));
   if (j === 1) return 'hier';
   if (j < 30) return `il y a ${j} j`;
   return `le ${new Date(dateStr).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}`;
+}
+
+// Activité réelle (v88, pouls du layout ~5 min) : « en ligne » = pouls < 10 min.
+function estEnLigne(ts) {
+  return !!ts && (Date.now() - new Date(ts).getTime()) < 10 * 60 * 1000;
+}
+function heureCourte(ts) {
+  try {
+    return new Date(ts).toLocaleString('fr-FR', { timeZone: 'Europe/Paris', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+  } catch { return ''; }
 }
 
 export default function AdminUsersClient({ initialUsers, comptesEleves = [] }) {
@@ -216,9 +228,15 @@ export default function AdminUsersClient({ initialUsers, comptesEleves = [] }) {
                       {STATUTS_COMPTE[u.compte_statut]?.label || u.compte_statut}
                       {u.compte_statut === 'trial_active' && ` · J-${u.trial_jours_restants}`}
                     </span>
-                    {u.last_sign_in_at && (
+                    {/* Activité RÉELLE (v88, pouls layout ~5 min) d'abord —
+                        last_sign_in_at GoTrue ment pour une session PWA. */}
+                    {(u.derniere_activite_at || u.last_sign_in_at) && (
                       <div style={{ fontSize: '0.7rem', color: '#475569', marginTop: '3px' }}>
-                        vu {relatif(u.last_sign_in_at)}
+                        {estEnLigne(u.derniere_activite_at)
+                          ? <span style={{ color: '#4ade80', fontWeight: 700 }}>🟢 sur IziSolo maintenant</span>
+                          : u.derniere_activite_at
+                            ? <>active {relatif(u.derniere_activite_at)} <span style={{ color: '#334155' }}>({heureCourte(u.derniere_activite_at)})</span></>
+                            : <>vu {relatif(u.last_sign_in_at)}</>}
                       </div>
                     )}
                   </td>

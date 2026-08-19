@@ -40,6 +40,22 @@ export default async function DashboardLayout({ children }) {
     redirect('/onboarding');
   }
 
+  // Pouls d'activité (v88) : horodate la présence RÉELLE de la prof dans
+  // l'app — last_sign_in_at GoTrue ne bouge pas pour une session persistante
+  // (PWA), anti-pattern §12, l'admin sous-comptait l'usage. Throttlé à 5 min
+  // (une navigation active ne fait qu'un UPDATE par tranche) et JAMAIS
+  // bloquant : pré-migration v88, l'erreur 42703 est simplement ignorée.
+  {
+    const derniere = profile.derniere_activite_at ? new Date(profile.derniere_activite_at).getTime() : 0;
+    if (Date.now() - derniere > 5 * 60 * 1000) {
+      await supabase
+        .from('profiles')
+        .update({ derniere_activite_at: new Date().toISOString() })
+        .eq('id', user.id)
+        .then(() => {}, () => {});
+    }
+  }
+
   // Statut du trial 14j (calculé côté serveur). Sérialisable, on convertit
   // les Date en string pour passer à un Client Component.
   const trialRaw = getTrialStatus(profile);

@@ -218,6 +218,10 @@ function FilSupport({ conv, onBack }) {
   const [studio, setStudio] = useState(null);
   // Accusé de lecture (admin only) : dernière ouverture du fil par la PROF.
   const [profLastReadAt, setProfLastReadAt] = useState(null);
+  // « Aucun message » ne doit s'afficher qu'APRÈS le premier chargement —
+  // avant, le fil semblait vide pendant la 1re requête (lambda froide en
+  // prod = quelques secondes, retour Colin 2026-08-19).
+  const [chargement, setChargement] = useState(true);
   const [draft, setDraft] = useState('');
   const [sending, setSending] = useState(false);
   const [err, setErr] = useState('');
@@ -250,6 +254,8 @@ function FilSupport({ conv, onBack }) {
       setErr('');
     } catch (e) {
       setErr(e.message);
+    } finally {
+      setChargement(false);
     }
   }, [conv.id]);
 
@@ -342,7 +348,11 @@ function FilSupport({ conv, onBack }) {
             </div>
           </div>
         ))}
-        {messages.length === 0 && <p style={{ color: '#94a3b8', fontSize: '0.85rem' }}>Aucun message.</p>}
+        {messages.length === 0 && (
+          <p style={{ color: '#94a3b8', fontSize: '0.85rem' }}>
+            {chargement ? '⏳ Chargement du fil…' : 'Aucun message.'}
+          </p>
+        )}
       </div>
 
       {err && <p style={{ color: '#dc2626', fontSize: '0.8rem', margin: '6px 14px' }}>❌ {err}</p>}

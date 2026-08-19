@@ -61,6 +61,20 @@ async function getUsers(supabase) {
 
   const profs = (users || []).map(p => enrichirProfil(p, emailById, lastSignInById, usage));
 
+  // Dernière activité RÉELLE des profs (v88 — pouls posé par le layout
+  // dashboard toutes les ~5 min de présence). Requête SÉPARÉE et défensive :
+  // migration pas appliquée → 42703 avalé, la page vit sur last_sign_in_at
+  // (anti-pattern colonnes fantômes — ne JAMAIS l'ajouter au select principal).
+  try {
+    const { data: acts, error: eActs } = await supabase
+      .from('profiles')
+      .select('id, derniere_activite_at');
+    if (!eActs) {
+      const actById = Object.fromEntries((acts || []).map(a => [a.id, a.derniere_activite_at]));
+      for (const p of profs) p.derniere_activite_at = actById[p.id] || null;
+    }
+  } catch { /* pouls décoratif : jamais bloquant */ }
+
   // ── Comptes ÉLÈVES (demande Colin 2026-07-26) : les auth users SANS profil
   // (role=eleve depuis v57) étaient INVISIBLES dans l'admin — impossible de
   // voir à quel studio un nouveau compte ou une connexion se rattache.

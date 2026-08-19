@@ -20,6 +20,7 @@ import {
   clientIdsNotifiables,
   estNonLuePourAdmin,
   estLuParProf,
+  extraitEmail,
   estErreurMigrationV87,
   SUPPORT_TITRE,
 } from '../../lib/messagerie-support.js';
@@ -103,6 +104,29 @@ test.describe('estLuParProf — accusé de lecture côté admin uniquement', () 
 
   test('message sans date → jamais « lu » par défaut', () => {
     expect(estLuParProf(null, '2026-08-19T10:00:00Z')).toBe(false);
+  });
+});
+
+test.describe('extraitEmail — l\'email est un teaser, pas le message', () => {
+  test('message court → entier, non tronqué', () => {
+    expect(extraitEmail('Bonjour !\nÀ bientôt')).toEqual({ texte: 'Bonjour !\nÀ bientôt', tronque: false });
+  });
+
+  test('plus de 3 lignes → seules les 3 premières partent', () => {
+    const r = extraitEmail('l1\nl2\nl3\nl4\nl5');
+    expect(r.texte).toBe('l1\nl2\nl3');
+    expect(r.tronque).toBe(true);
+  });
+
+  test('une seule ligne interminable → plafond de caractères', () => {
+    const r = extraitEmail('a'.repeat(500));
+    expect(r.texte.length).toBe(240);
+    expect(r.tronque).toBe(true);
+  });
+
+  test('vide → vide, jamais tronqué', () => {
+    expect(extraitEmail('')).toEqual({ texte: '', tronque: false });
+    expect(extraitEmail(null)).toEqual({ texte: '', tronque: false });
   });
 });
 
