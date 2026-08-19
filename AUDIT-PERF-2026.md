@@ -348,9 +348,14 @@ CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_conversations_client ON public.conve
 CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_conversations_cours ON public.conversations (cours_id) WHERE cours_id IS NOT NULL;
 ```
 
-## ANNEXE C — Réécritures RLS (NE PAS appliquer sans avoir exécuté A3 + Advisor
-## « auth_rls_initplan » ; prévues pour être iso-périmètre, à re-vérifier après
-## par EXPLAIN ANALYZE sous rôle authenticated)
+## ANNEXE C — Réécritures RLS
+## ⚠️ VERSION PÉRIMÉE, ne pas coller : la forme `= ANY ((select helper()))`
+## de cette annexe échoue en 42883 « uuid = uuid[] » (Postgres ignore les
+## doubles parenthèses et lit la forme sous-requête — constaté au premier run
+## le 2026-08-19). LA source à appliquer = `migrations-v91-rls-perf.sql`
+## (helpers en SETOF uuid + policies en `IN (select helper())`, sous-plan
+## hashé évalué une fois). Le reste de l'annexe reste utile comme référence
+## de périmètre.
 
 ### C0 — Helpers SECURITY DEFINER + prérequis
 

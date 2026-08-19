@@ -7,7 +7,8 @@
 --   2. Le bras élève « clients par email » = sous-requête qui seq-scannait la
 --      table clients ENTIÈRE (278 028 seq scans constatés le 2026-08-19).
 --      Remplacé par des helpers SECURITY DEFINER STABLE + l'index
---      idx_clients_lower_email (v89) → un `= ANY(initplan)` indexable.
+--      idx_clients_lower_email (v89) → un `IN (select helper())` en sous-plan
+--      hashé, évalué une fois par requête.
 --
 -- Bonus sécurité : les policies élève étaient à rôles {public} avec
 -- `coalesce(auth.email(), '')` → une fiche à email '' aurait été lisible par
@@ -33,13 +34,23 @@
 -- ============================================================================
 
 -- ── C0. Helpers ──────────────────────────────────────────────────────────────
+-- SETOF uuid (pas uuid[]) : la première version en tableaux échouait en
+-- 42883 « uuid = uuid[] » — dans `x = ANY ((select f()))`, Postgres IGNORE
+-- les doubles parenthèses et lit la forme sous-requête, comparant chaque
+-- LIGNE (de type uuid[]) au uuid de gauche. Avec SETOF + `IN (select f())`,
+-- c'est un sous-plan hashé : syntaxe sans ambiguïté, évalué UNE fois par
+-- requête. DROP d'abord : CREATE OR REPLACE ne peut pas changer le type de
+-- retour si un run précédent a laissé les versions uuid[].
+drop function if exists public.mes_cours_ids();
+drop function if exists public.mes_studio_ids();
+drop function if exists public.mes_client_ids();
 
 -- Fiches de l'utilisateur connecté : FK douce v83 D'ABORD, email en secours.
 -- SECURITY DEFINER coupe la récursion RLS (la sous-requête clients ne repaye
--- pas la RLS de clients) ; STABLE = 1 évaluation par requête.
-create or replace function public.mes_client_ids()
-returns uuid[] language sql stable security definer set search_path = public as $$
-  select coalesce(array_agg(id), '{}'::uuid[])
+-- pas la RLS de clients) ; STABLE = optimisable en une évaluation.
+create function public.mes_client_ids()
+returns setof uuid language sql stable security definer set search_path = public as $$
+  select id
   from public.clients
   where auth_user_id = auth.uid()
      or (email is not null and email <> ''
@@ -48,9 +59,9 @@ $$;
 revoke all on function public.mes_client_ids() from public;
 grant execute on function public.mes_client_ids() to authenticated;
 
-create or replace function public.mes_studio_ids()
-returns uuid[] language sql stable security definer set search_path = public as $$
-  select coalesce(array_agg(distinct profile_id), '{}'::uuid[])
+create function public.mes_studio_ids()
+returns setof uuid language sql stable security definer set search_path = public as $$
+  select distinct profile_id
   from public.clients
   where auth_user_id = auth.uid()
      or (email is not null and email <> ''
@@ -60,11 +71,11 @@ revoke all on function public.mes_studio_ids() from public;
 grant execute on function public.mes_studio_ids() to authenticated;
 
 -- Cours où l'élève a une présence (conversations de groupe + messages).
-create or replace function public.mes_cours_ids()
-returns uuid[] language sql stable security definer set search_path = public as $$
-  select coalesce(array_agg(distinct p.cours_id), '{}'::uuid[])
+create function public.mes_cours_ids()
+returns setof uuid language sql stable security definer set search_path = public as $$
+  select distinct p.cours_id
   from public.presences p
-  where p.client_id = any (public.mes_client_ids()) and p.cours_id is not null;
+  where p.client_id in (select public.mes_client_ids()) and p.cours_id is not null;
 $$;
 revoke all on function public.mes_cours_ids() from public;
 grant execute on function public.mes_cours_ids() to authenticated;
@@ -79,7 +90,7 @@ create policy "CRUD presences" on public.presences
 drop policy if exists "Eleve lit ses presences" on public.presences;
 create policy "Eleve lit ses presences" on public.presences
   for select to authenticated
-  using (client_id = any ((select public.mes_client_ids())));
+  using (client_id in (select public.mes_client_ids()));
 
 -- paiements
 drop policy if exists "CRUD paiements" on public.paiements;
@@ -89,7 +100,7 @@ create policy "CRUD paiements" on public.paiements
 drop policy if exists "Eleve lit ses paiements" on public.paiements;
 create policy "Eleve lit ses paiements" on public.paiements
   for select to authenticated
-  using (client_id = any ((select public.mes_client_ids())));
+  using (client_id in (select public.mes_client_ids()));
 
 -- clients (referme aussi le quirk anon « email vide » de v26)
 drop policy if exists "CRUD clients" on public.clients;
@@ -99,7 +110,7 @@ create policy "CRUD clients" on public.clients
 drop policy if exists "Eleve lit ses fiches client" on public.clients;
 create policy "Eleve lit ses fiches client" on public.clients
   for select to authenticated
-  using (id = any ((select public.mes_client_ids())));
+  using (id in (select public.mes_client_ids()));
 
 -- cours
 drop policy if exists "CRUD cours" on public.cours;
@@ -109,7 +120,7 @@ create policy "CRUD cours" on public.cours
 drop policy if exists "Eleve lit cours de ses studios" on public.cours;
 create policy "Eleve lit cours de ses studios" on public.cours
   for select to authenticated
-  using (profile_id = any ((select public.mes_studio_ids())));
+  using (profile_id in (select public.mes_studio_ids()));
 
 -- abonnements
 drop policy if exists "CRUD abonnements" on public.abonnements;
@@ -119,7 +130,7 @@ create policy "CRUD abonnements" on public.abonnements
 drop policy if exists "Eleve lit ses abonnements" on public.abonnements;
 create policy "Eleve lit ses abonnements" on public.abonnements
   for select to authenticated
-  using (client_id = any ((select public.mes_client_ids())));
+  using (client_id in (select public.mes_client_ids()));
 
 -- ── C2. Messagerie (empruntée par l'API RLS ET le moteur Realtime) ──────────
 
@@ -130,11 +141,11 @@ create policy "Pro CRUD ses conversations" on public.conversations
 drop policy if exists "Eleve lit ses conversations 1-to-1" on public.conversations;
 create policy "Eleve lit ses conversations 1-to-1" on public.conversations
   for select to authenticated
-  using (type = 'client' and client_id = any ((select public.mes_client_ids())));
+  using (type = 'client' and client_id in (select public.mes_client_ids()));
 drop policy if exists "Eleve lit conversations cours auxquels inscrit" on public.conversations;
 create policy "Eleve lit conversations cours auxquels inscrit" on public.conversations
   for select to authenticated
-  using (type = 'cours' and cours_id = any ((select public.mes_cours_ids())));
+  using (type = 'cours' and cours_id in (select public.mes_cours_ids()));
 -- NB : type='support' (v87) reste invisible élève par construction — aucun
 -- bras élève ne le couvre.
 
@@ -149,8 +160,8 @@ create policy "Eleve voit messages ses conversations" on public.messages
   for select to authenticated
   using (conversation_id in (
     select c.id from public.conversations c
-    where (c.type = 'client' and c.client_id = any ((select public.mes_client_ids())))
-       or (c.type = 'cours'  and c.cours_id  = any ((select public.mes_cours_ids())))
+    where (c.type = 'client' and c.client_id in (select public.mes_client_ids()))
+       or (c.type = 'cours'  and c.cours_id in (select public.mes_cours_ids()))
   ));
 drop policy if exists "Pro insere messages ses conversations" on public.messages;
 create policy "Pro insere messages ses conversations" on public.messages
@@ -166,7 +177,7 @@ create policy "Eleve insere messages ses conversations" on public.messages
   for insert to authenticated
   with check (
     sender_type = 'eleve'
-    and sender_client_id = any ((select public.mes_client_ids()))
+    and sender_client_id in (select public.mes_client_ids())
     and conversation_id in (
       select c.id from public.conversations c
       where (c.type = 'client' and c.client_id = messages.sender_client_id)
@@ -189,7 +200,7 @@ create policy "Pro CRUD members de ses conversations" on public.conversation_mem
 drop policy if exists "Eleve CRUD ses members" on public.conversation_members;
 create policy "Eleve CRUD ses members" on public.conversation_members
   for all to authenticated
-  using (client_id = any ((select public.mes_client_ids())));
+  using (client_id in (select public.mes_client_ids()));
 
 drop policy if exists reactions_select on public.messages_reactions;
 create policy reactions_select on public.messages_reactions
@@ -199,21 +210,21 @@ create policy reactions_select on public.messages_reactions
     join public.conversation_members cm on cm.conversation_id = m.conversation_id
     where m.id = messages_reactions.message_id
       and (cm.profile_id = (select auth.uid())
-           or cm.client_id = any ((select public.mes_client_ids())))
+           or cm.client_id in (select public.mes_client_ids()))
   ));
 drop policy if exists reactions_insert on public.messages_reactions;
 create policy reactions_insert on public.messages_reactions
   for insert to authenticated
   with check (
        (user_type = 'pro'   and user_id = (select auth.uid()))
-    or (user_type = 'eleve' and user_id = any ((select public.mes_client_ids())))
+    or (user_type = 'eleve' and user_id in (select public.mes_client_ids()))
   );
 drop policy if exists reactions_delete on public.messages_reactions;
 create policy reactions_delete on public.messages_reactions
   for delete to authenticated
   using (
        (user_type = 'pro'   and user_id = (select auth.uid()))
-    or (user_type = 'eleve' and user_id = any ((select public.mes_client_ids())))
+    or (user_type = 'eleve' and user_id in (select public.mes_client_ids()))
   );
 
 -- ── C3. Policies pro-only : (select auth.uid()) + TO authenticated ──────────
