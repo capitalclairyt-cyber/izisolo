@@ -12,15 +12,15 @@
 export const FAQ_ITEMS = [
   {
     q: 'Combien de temps pour mettre en place IziSolo ?',
-    a: "Compte 15 minutes pour créer ton studio, importer tes élèves (CSV ou copier-coller) et caler ton agenda. On t'accompagne par message si tu cales — réponse sous 24 h.",
+    a: "Compte 15 minutes pour créer ton studio, importer tes élèves (CSV, copier-coller, ou photo d'une fiche papier) et caler ton agenda. On t'accompagne par message si tu cales, réponse sous 24 h.",
   },
   {
     q: 'Mes élèves doivent-ils créer un compte ?',
-    a: "Non. Ils peuvent réserver et payer sans compte depuis ton portail public (PWA installable sur leur téléphone). On leur envoie un lien magique par email pour retrouver leurs réservations s'ils le souhaitent.",
+    a: "Non. Ils réservent et payent sans compte depuis ton portail public (PWA installable sur leur téléphone). Un lien magique par email leur permet de retrouver leurs réservations s'ils le souhaitent.",
   },
   {
     q: 'Comment fonctionnent les sondages planning ?',
-    a: "Avant la rentrée (ou quand tu veux), tu crées un sondage avec tes créneaux candidats et tu partages le lien à tes élèves (SMS, WhatsApp, mail). Iels votent en un clic, tu vois les créneaux gagnants se dessiner, et tu transformes les vainqueurs en cours officiels en deux clics. Plus jamais de planning lancé au pif — tu sais exactement ce qui va remplir.",
+    a: "Avant la rentrée (ou quand tu veux), tu crées un sondage avec tes créneaux candidats et tu partages le lien à tes élèves (SMS, WhatsApp, mail). Iels votent en un clic, tu vois les créneaux gagnants se dessiner, et tu transformes les vainqueurs en cours officiels en deux clics. Plus jamais de planning lancé au pif : tu sais exactement ce qui va remplir.",
   },
   {
     q: 'Et si un cours est complet, comment ça se passe ?',
@@ -31,27 +31,31 @@ export const FAQ_ITEMS = [
     a: "Oui, à tous les niveaux. Un message à un élève précis, à tous les inscrits d'un cours, à tous les détenteurs d'un type d'abonnement (les illimités, les carnets de 10…), ou à une sélection libre d'élèves. Tu peux aussi programmer des relances auto pour les paiements en attente, des rappels avant cours, des messages d'anniversaire.",
   },
   {
-    q: 'Et si je veux arrêter ?',
-    a: "Annulation en 1 clic, à tout moment, depuis tes paramètres. Tu peux exporter toutes tes données (élèves, séances, paiements, présences) à n'importe quel moment au format CSV.",
-  },
-  {
     q: 'Comment sont gérés les paiements ?',
-    a: "Tu choisis : encaissement manuel (espèces, chèque, virement, CB en présentiel) avec mini-compta intégrée, OU Stripe Payment Link (plan Complet) pour permettre à tes élèves de payer en CB depuis ton portail. Les fonds Stripe arrivent directement sur ton compte bancaire.",
+    a: "Tu choisis : encaissement manuel (espèces, chèque, virement, CB en présentiel) avec mini-compta intégrée, ou Stripe Payment Link (plan Complet) pour permettre à tes élèves de payer en CB depuis ton portail, y compris à la séance. Les fonds Stripe arrivent directement sur ton compte bancaire.",
   },
   {
     q: 'Quels sont les frais sur les paiements en ligne ?',
     a: "Frais de fonctionnement IziSolo : 1 % du volume payé en ligne via Stripe (ajoutés à ta facture mensuelle, jamais prélevés sur les paiements de tes élèves). À cela s'ajoutent les frais Stripe standard (1.5 % + 0,25 €) qui vont à Stripe directement.",
   },
   {
+    q: 'Et les cours en ligne ?',
+    a: "Badge dédié sur le portail, lieu masqué, et le lien Zoom ou Meet n'est servi qu'aux élèves qui ont réglé ou dont le carnet couvre la séance.",
+  },
+  {
     q: 'Comment IziSolo gère un no-show ou un cours annulé ?',
     a: "Tu paramètres tes propres règles métier dans ton tableau de bord : recrédit du carnet, débit, contact prioritaire à l'élève, etc. IziSolo applique automatiquement, et te remonte les cas ambigus dans une inbox « À traiter » dédiée. Aucun cas ne passe à la trappe.",
   },
   {
+    q: 'Et si je veux arrêter ?',
+    a: "Annulation en 1 clic, à tout moment, depuis tes paramètres. Export de ta base gratuit, pour toujours : élèves, séances, paiements, présences au format CSV. Tes données t'appartiennent.",
+  },
+  {
     q: 'Plusieurs lieux, une équipe : c\'est possible ?',
-    a: "Les lieux, oui — illimités sur un seul compte : ton studio, la salle louée du mardi, la visio du samedi, tout reste synchro. Le mode équipe (plusieurs profs sur un même compte) n'est pas encore disponible : il est sur notre roadmap — écris-nous si c'est important pour toi, ça fait remonter la priorité.",
+    a: "Les lieux, oui : illimités sur un seul compte. Ton studio, la salle louée du mardi, la visio du samedi, tout reste synchro. Le mode équipe (plusieurs profs sur un même compte) n'est pas encore disponible : il est sur notre roadmap. Écris-nous si c'est important pour toi, ça fait remonter la priorité.",
   },
   {
     q: 'Pourquoi pas une app sur l\'App Store ?',
-    a: "Par choix. IziSolo est une PWA (Progressive Web App) : ton studio et le portail élève s'installent sur l'écran d'accueil en un tap, sans téléchargement, sans mise à jour manuelle, sans attendre la validation Apple ou Google. Tu as toujours la dernière version. Tes élèves n'ont rien à installer — ils ouvrent un lien et c'est prêt. Et côté toi, ça marche sur téléphone, tablette et ordi sans rien changer.",
+    a: "Par choix. IziSolo est une PWA (Progressive Web App) : ton studio et le portail élève s'installent sur l'écran d'accueil en un tap, sans téléchargement, sans mise à jour manuelle, sans attendre la validation Apple ou Google. Tu as toujours la dernière version. Tes élèves n'ont rien à installer : ils ouvrent un lien et c'est prêt. Et côté toi, ça marche sur téléphone, tablette et ordi sans rien changer.",
   },
 ];

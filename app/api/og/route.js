@@ -69,7 +69,7 @@ const PALETTES = {
 
 export const GET = withRoute({ auth: 'public' }, async ({ request }) => {
   const { searchParams } = new URL(request.url);
-  const title    = searchParams.get('title')    || 'Moins d\'admin. Plus de présence.';
+  const title    = searchParams.get('title')    || 'Moins de soucis. Plus de tapis.';
   const subtitle = searchParams.get('subtitle') || 'L\'outil de gestion calme et beau pour les indépendant·e·s du bien-être.';
   const eyebrow  = searchParams.get('eyebrow')  || '';
   const paletteKey = searchParams.get('palette') || 'sable';

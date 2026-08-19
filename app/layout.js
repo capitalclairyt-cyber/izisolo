@@ -66,7 +66,7 @@ const caveat = Caveat({
 export const metadata = {
   metadataBase: new URL(baseUrl),
   title: {
-    default: 'IziSolo — Gère ton studio simplement',
+    default: 'IziSolo · Moins de soucis, plus de tapis',
     template: '%s — IziSolo',
   },
   description: "L'outil de gestion calme et beau pour les profs de yoga, pilates, méditation, danse et indépendant·e·s du bien-être. Agenda, élèves, paiements, communication — tout-en-un.",
@@ -81,23 +81,23 @@ export const metadata = {
     type: 'website',
     locale: 'fr_FR',
     siteName: 'IziSolo',
-    title: 'IziSolo — Moins d\'admin. Plus de présence.',
-    description: "L'outil de gestion calme et beau pour les indépendant·e·s du bien-être.",
+    title: 'IziSolo · Moins de soucis, plus de tapis',
+    description: "L'outil de gestion calme et beau pour les indépendant·e·s du bien-être. Créé par Maude, prof de yoga, en France.",
     url: baseUrl,
     images: [
       {
-        url: '/api/og?title=Moins+d%27admin.+Plus+de+pr%C3%A9sence.&subtitle=L%27outil+de+gestion+calme+et+beau+pour+les+ind%C3%A9pendant%C2%B7e%C2%B7s+du+bien-%C3%AAtre.',
+        url: '/api/og?title=Moins+de+soucis.+Plus+de+tapis.&subtitle=L%27outil+de+gestion+calme+et+beau+pour+les+ind%C3%A9pendant%C2%B7e%C2%B7s+du+bien-%C3%AAtre.',
         width: 1200,
         height: 630,
-        alt: 'IziSolo — Moins d\'admin. Plus de présence.',
+        alt: 'IziSolo · Moins de soucis, plus de tapis',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'IziSolo — Moins d\'admin. Plus de présence.',
-    description: "L'outil de gestion calme et beau pour les indépendant·e·s du bien-être.",
-    images: ['/api/og?title=Moins+d%27admin.+Plus+de+pr%C3%A9sence.&subtitle=L%27outil+de+gestion+calme+et+beau+pour+les+ind%C3%A9pendant%C2%B7e%C2%B7s+du+bien-%C3%AAtre.'],
+    title: 'IziSolo · Moins de soucis, plus de tapis',
+    description: "L'outil de gestion calme et beau pour les indépendant·e·s du bien-être. Créé par Maude, prof de yoga, en France.",
+    images: ['/api/og?title=Moins+de+soucis.+Plus+de+tapis.&subtitle=L%27outil+de+gestion+calme+et+beau+pour+les+ind%C3%A9pendant%C2%B7e%C2%B7s+du+bien-%C3%AAtre.'],
   },
 };
 

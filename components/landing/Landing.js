@@ -2,11 +2,15 @@
 
 import { useEffect } from 'react';
 import {
-  Nav, Hero, LogosMarquee, Benefits, ForWhom, Features, MoreFeatures, Comparison, MobileShowcase,
-  Testimonials, Pricing, FAQ, FinalCta, Footer,
+  Nav, Hero, Benefits, Features, MoreFeatures, ForWhom, Founder,
+  Pricing, FAQ, FinalCta, Footer,
 } from './Sections';
 import ScrollReveal from './ScrollReveal';
 
+// Landing v2 « pro » (handoff 2026-08-19) — ordre des sections :
+// Hero product-led → Pourquoi → Fonctionnalités → Petites choses →
+// Pour qui → Fondatrice → Tarifs → FAQ → CTA final. Plus de marquee
+// de faux studios ni de faux témoignages (de vrais retours viendront).
 export default function Landing() {
   // Applique la palette "sable" sur <html> uniquement quand la landing est montée.
   // Au navigate vers /login, /register ou /dashboard, le DOM sera reconstruit avec
@@ -21,14 +25,11 @@ export default function Landing() {
       <Nav />
       <main>
         <Hero />
-        <LogosMarquee />
         <Benefits />
-        <ForWhom />
         <Features />
         <MoreFeatures />
-        <Comparison />
-        <MobileShowcase />
-        <Testimonials />
+        <ForWhom />
+        <Founder />
         <Pricing />
         <FAQ />
         <FinalCta />
