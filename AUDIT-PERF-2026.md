@@ -112,16 +112,24 @@ par n'importe qui**. Les fiches à email NULL ne matchent pas (NULL ≠ '').
 
 ## CATÉGORIE 2 — Avant 50 profs actives
 
-> **STATUT (2026-08-19 tard le soir, go Colin)** : TOUT le volet code est
-> LIVRÉ (build + lint + ratchet route-standards verts ; dashboard + messagerie
-> vérifiés en vrai navigateur session démo sur les chemins de fallback ;
-> 34 routes marketing prouvées STATIQUES au build). Deux migrations attendent
-> Colin : **v90** (RPC agrégées messagerie + purge liste_attente + fiches par
-> email — le code dégrade sur les boucles historiques sans elle) puis **v91**
-> (réécritures RLS — pur SQL, indépendante du déploiement).
-> Après v90 : `verifier-selects` + relire /messagerie du démo.
-> Après v91 : `verifier-selects` + `npx playwright test tests/e2e/parcours-eleve-live.spec.js --workers=1`
-> + naviguer le dashboard démo + Advisor « auth_rls_initplan » au vert.
+> **STATUT : CATÉGORIE 2 SOLDÉE (2026-08-19/20)**. Code livré (build + lint +
+> ratchet verts, 34 routes marketing STATIQUES au build) ET **v90 + v91
+> appliquées par Colin le soir même** (v91 en 2e run : la forme
+> `= ANY ((select …))` du 1er jet échouait en 42883 — corrigée en helpers
+> SETOF + `IN (select …)`). Preuves chemin réel :
+> - `verifier-selects` ✅ (17 RPC) ;
+> - **v90** : messages_non_lus_total = boucle historique (1=1),
+>   conversations_stats = requêtes unitaires sur les 6 convs du démo — seule
+>   divergence ASSUMÉE : `eleve_last_read_at` des convs de GROUPE (l'ancien
+>   code plantait en silence sur .maybeSingle() multi-lignes → null ; la RPC
+>   renvoie max(last_read), plus juste), fiches_par_email = ilike,
+>   purger_liste_attente(1970)=0 ;
+> - **v91** : walkthrough élève live 1/1 (portail → résa invitée → espace →
+>   annulation → messages → PWA → 404 cours privé, zéro requête ≥400,
+>   fixtures nettoyées) + navigation pro complète en vrai navigateur
+>   (dashboard/agenda/élèves/revenus/cas/messagerie, zéro erreur JS, l'API
+>   conversations sur le chemin RPC : 6 convs, non-lus et ✓✓ lecture élève
+>   corrects). Reste à regarder une fois : l'Advisor « auth_rls_initplan ».
 > Resté hors lot (assumé) : push_subscriptions en .ilike (table minuscule),
 > fenêtrage visuel de la page Cours (paginé, pas borné : les stats de séries
 > restent exactes).
