@@ -6,6 +6,7 @@ import { sendPushToEmail, sendPushToUser, claimCronPush } from '@/lib/push-serve
 import { wantsNotif } from '@/lib/notif-prefs';
 import { can } from '@/lib/plan-guard';
 import { reportError } from '@/lib/report';
+import { getVisioCoursMap, lienVisioVisible } from '@/lib/visio';
 
 // Durée max explicite (fluid compute : 300 s = plafond Hobby)
 export const maxDuration = 300;
@@ -30,7 +31,7 @@ export const GET = withRoute({ auth: 'cron' }, async () => {
   // 1. Cours de demain, non annulés (tous studios).
   const { data: coursDemain } = await supabaseAdmin
     .from('cours')
-    .select('id, nom, heure, lieu, profile_id')
+    .select('id, nom, heure, lieu, profile_id, format')
     .eq('date', demain)
     .eq('est_annule', false);
   if (!coursDemain || coursDemain.length === 0) {
@@ -48,7 +49,7 @@ export const GET = withRoute({ auth: 'cron' }, async () => {
     const lot = coursIds.slice(i, i + 200);
     const { data: lotPres, error: presErr } = await supabaseAdmin
       .from('presences')
-      .select('id, cours_id, client_id, statut_pointage, annulation_tardive')
+      .select('id, cours_id, client_id, statut_pointage, annulation_tardive, abonnement_id, type_presence')
       .in('cours_id', lot);
     if (presErr) {
       reportError('[cron/alertes] presences err:', presErr, { route: '/api/cron/alertes' });
@@ -95,6 +96,23 @@ export const GET = withRoute({ auth: 'cron' }, async () => {
 
   const dateStr = new Date(demain + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
 
+  // Cours en ligne (v86) : le lien de visio entre dans le rappel J-1 selon LA
+  // règle unique (lib/visio.lienVisioVisible) — jamais envoyé à une inscrite
+  // dont la séance verrouillée n'est ni couverte ni réglée.
+  const visioIds = coursDemain.filter(c => c.format === 'visio' || c.format === 'hybride').map(c => c.id);
+  const visioMap = await getVisioCoursMap(supabaseAdmin, visioIds);
+  const paidPres = new Set();
+  {
+    const presVisioIds = pres.filter(p => visioMap[p.cours_id]).map(p => p.id);
+    for (let i = 0; i < presVisioIds.length; i += 200) {
+      const lot = presVisioIds.slice(i, i + 200);
+      const { data: paids, error: paidErr } = await supabaseAdmin
+        .from('paiements').select('presence_id').in('presence_id', lot).eq('statut', 'paid');
+      if (paidErr) { reportError('[cron/alertes] paiements visio err:', paidErr, { route: '/api/cron/alertes' }); continue; }
+      for (const x of paids || []) paidPres.add(x.presence_id);
+    }
+  }
+
   // 4. Envoi (email dédupé + push), gaté sur la pref élève rappel_cours
   //    ET sur la capacité du studio (B3b : rappels J-1 = Complet).
   let sent = 0, skipped = 0, prefOff = 0, plansGates = 0;
@@ -111,7 +129,17 @@ export const GET = withRoute({ auth: 'cron' }, async () => {
     if (!wantEmail && !wantPush) { prefOff++; continue; }
 
     const heureStr = cours.heure ? cours.heure.slice(0, 5).replace(':', 'h') : '';
-    const lieuStr = cours.lieu ? ` — ${cours.lieu}` : '';
+    const enLigne = cours.format === 'visio' || cours.format === 'hybride';
+    const visio = enLigne ? (visioMap[p.cours_id] || null) : null;
+    const lienOk = visio && lienVisioVisible(visio, p, paidPres.has(p.id) ? [{ statut: 'paid' }] : []);
+    const lieuStr = enLigne ? ' — en ligne 🖥' : (cours.lieu ? ` — ${cours.lieu}` : '');
+    const ligneVisio = lienOk
+      ? `
+
+🎥 Le lien pour rejoindre la séance : ${visio.lien_visio}`
+      : (visio ? `
+
+Le lien de la séance apparaîtra dans ton espace une fois ta séance réglée.` : '');
 
     try {
       // Email (canal indépendant, dédupé par sendNotifEleve)
@@ -132,7 +160,7 @@ export const GET = withRoute({ auth: 'cron' }, async () => {
               corps:
 `Bonjour {{prenom}},
 
-Petit rappel : tu es inscrit·e à la séance ${cours.nom} demain ${dateStr}${heureStr ? ` à ${heureStr}` : ''}${lieuStr} chez ${profile.studio_nom}.
+Petit rappel : tu es inscrit·e à la séance ${cours.nom} demain ${dateStr}${heureStr ? ` à ${heureStr}` : ''}${lieuStr} chez ${profile.studio_nom}.${ligneVisio}
 
 À demain !`,
             },

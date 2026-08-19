@@ -134,6 +134,11 @@ async function getData(studioSlug, coursId) {
   const canReserve = studioCan(profile, 'reservation_en_ligne');
   const canWaitlist = studioCan(profile, 'liste_attente');
 
+  // Cours en ligne (v86) : le lien de visio ne sort JAMAIS par cette page
+  // publique (select('*') l'embarquerait dans les props de n'importe quel
+  // visiteur). Il ne se sert que dans l'espace élève / rappel J-1, sous verrou.
+  delete cours.lien_visio;
+  delete cours.lien_visio_verrouille;
   return { profile, cours, nbInscrits: nbInscrits || 0, currentUser, alreadyRegistered, prevision, canCancel, canReserve, canWaitlist };
 }
 

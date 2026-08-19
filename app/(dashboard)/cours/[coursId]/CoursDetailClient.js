@@ -18,6 +18,7 @@ import { getRegle } from '@/lib/regles-metier';
 import TypeCoursHint from '@/components/cours/TypeCoursHint';
 import AttachmentPicker from '@/components/messagerie/AttachmentPicker';
 import { resoudreCarnetApplicable } from '@/lib/carnet-resolution';
+import { sanitizeLienVisio } from '@/lib/visio';
 import { can } from '@/lib/plan-guard';
 import { createClient } from '@/lib/supabase';
 import { useToast } from '@/components/ui/ToastProvider';
@@ -143,6 +144,24 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
 
   // ---- Modification de la récurrence ----
   const [showRecurrenceEdit, setShowRecurrenceEdit] = useState(false);
+  // Cours en ligne (v86) — édition du lien de visio, écriture DÉFENSIVE :
+  // migration pas appliquée → toast explicite, rien ne casse.
+  const [visioLien, setVisioLien] = useState(cours.lien_visio || '');
+  const [visioVerrou, setVisioVerrou] = useState(cours.lien_visio_verrouille !== false);
+  const [visioBusy, setVisioBusy] = useState(false);
+  const sauverVisio = async () => {
+    const clean = visioLien.trim() ? sanitizeLienVisio(visioLien) : '';
+    if (visioLien.trim() && !clean) { toast.error('Lien invalide — il faut une URL https (Zoom, Meet…).'); return; }
+    setVisioBusy(true);
+    const supabase = createClient();
+    const { error } = await supabase.from('cours')
+      .update({ lien_visio: clean || null, lien_visio_verrouille: visioVerrou })
+      .eq('id', cours.id);
+    setVisioBusy(false);
+    if (error) toast.error('Enregistrement impossible (migration v86 requise ?) : ' + error.message);
+    else { setVisioLien(clean); toast.success(clean ? 'Lien de visio enregistré' : 'Lien retiré'); }
+  };
+
   const [recurrenceConfirmed, setRecurrenceConfirmed] = useState(false);
   const [savingRecurrence, setSavingRecurrence]     = useState(false);
   const [recurrenceForm, setRecurrenceForm]         = useState({
@@ -704,6 +723,40 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
                 <div>
                   <div className="detail-label">Lieu</div>
                   <div className="detail-value">{cours.lieu}{cours.domicile && ' (domicile)'}</div>
+                </div>
+              </div>
+            )}
+
+            {/* Cours en ligne (v86) : le lien de visio, éditable ici — la prof
+                crée souvent son Zoom APRÈS le cours. Écriture défensive
+                (migration pas appliquée → message clair, rien ne casse). */}
+            {(cours.format === 'visio' || cours.format === 'hybride') && (
+              <div className="detail-row">
+                <span style={{ fontSize: 16 }}>🖥</span>
+                <div style={{ flex: 1 }}>
+                  <div className="detail-label">En ligne — lien de la séance</div>
+                  <div style={{ display: 'flex', gap: 6, marginTop: 4, flexWrap: 'wrap' }}>
+                    <input
+                      className="izi-input"
+                      style={{ flex: 1, minWidth: 220, fontSize: '0.8125rem' }}
+                      value={visioLien}
+                      onChange={e => setVisioLien(e.target.value)}
+                      placeholder="https://zoom.us/j/… (visible selon le verrou)"
+                    />
+                    <button
+                      type="button"
+                      className="izi-btn izi-btn-secondary"
+                      onClick={sauverVisio}
+                      disabled={visioBusy}
+                      style={{ fontSize: '0.8125rem' }}
+                    >
+                      {visioBusy ? '…' : 'Enregistrer'}
+                    </button>
+                  </div>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6, fontSize: '0.75rem', color: 'var(--text-secondary)', cursor: 'pointer' }}>
+                    <input type="checkbox" checked={visioVerrou} onChange={e => setVisioVerrou(e.target.checked)} style={{ accentColor: 'var(--brand)' }} />
+                    Réservé aux séances réglées ou couvertes
+                  </label>
                 </div>
               </div>
             )}

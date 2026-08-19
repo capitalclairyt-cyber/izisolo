@@ -35,8 +35,9 @@ function modeLabel(mode) {
   return map[mode] || mode;
 }
 
-function CoursCard({ presence, profile, studioSlug, onAnnuler, annulEnCours }) {
+function CoursCard({ presence, profile, studioSlug, onAnnuler, annulEnCours, visio = null }) {
   const c = presence.cours;
+  const enLigne = c.format === 'visio' || c.format === 'hybride';
   const [confirmOpen, setConfirmOpen] = useState(false);
   // Heure de Paris (cohérent avec la bascule à-venir/passé côté serveur) : un
   // cours de ce matin ne doit plus être « à venir » (ni proposer Annuler) le soir.
@@ -61,8 +62,26 @@ function CoursCard({ presence, profile, studioSlug, onAnnuler, annulEnCours }) {
         <div className="espace-cours-details">
           <span><Calendar size={13} /> {formatDate(c.date)}</span>
           {c.heure && <span><Clock size={13} /> {formatHeure(c.heure)}{c.duree_minutes ? ` · ${c.duree_minutes} min` : ''}</span>}
-          {c.lieu && <span><MapPin size={13} /> {c.lieu}</span>}
+          {enLigne
+            ? <span style={{ color: '#4f6d8f', fontWeight: 600 }}>🖥 En ligne</span>
+            : (c.lieu && <span><MapPin size={13} /> {c.lieu}</span>)}
         </div>
+        {/* Lien de visio (v86) — le verrou est calculé côté SERVEUR : ici on ne
+            reçoit l'URL que si cette séance y a droit. */}
+        {enLigne && visio?.url && (
+          <a href={visio.url} target="_blank" rel="noopener noreferrer" style={{
+            display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 8,
+            padding: '7px 12px', background: '#eef4fb', border: '1px solid #b9d2ec',
+            borderRadius: 9, color: '#2c5f92', fontWeight: 700, fontSize: '0.8125rem', textDecoration: 'none',
+          }}>
+            🎥 Rejoindre la séance
+          </a>
+        )}
+        {enLigne && visio?.verrouille && (
+          <div style={{ marginTop: 8, fontSize: '0.78rem', color: '#8a6d3b', background: '#fdf6e3', border: '1px solid #f0e0b8', borderRadius: 9, padding: '7px 12px', display: 'inline-block' }}>
+            🔒 Le lien de la séance apparaîtra ici une fois ta séance réglée.
+          </div>
+        )}
       </div>
       <div className="espace-cours-status">
         {presence.annulation_tardive ? (
@@ -165,7 +184,7 @@ function CoursCard({ presence, profile, studioSlug, onAnnuler, annulEnCours }) {
   );
 }
 
-export default function EspaceClient({ profile, client, aVenir, passes, paiements = [], offresStripe = [], abonnements = [], aRegler = [], seancesWorkshopDues = [], annulationsDues = [], unreadMessages = 0, clientPrefs = {}, studioSlug, userEmail, isDemo = false, facturationActive = false, facturesParPaiement = {}, docsInscription = [] }) {
+export default function EspaceClient({ profile, client, aVenir, passes, paiements = [], offresStripe = [], abonnements = [], aRegler = [], seancesWorkshopDues = [], annulationsDues = [], unreadMessages = 0, clientPrefs = {}, studioSlug, userEmail, isDemo = false, facturationActive = false, facturesParPaiement = {}, docsInscription = [], visioParPresence = {} }) {
   const router = useRouter();
   const { toast } = useToast();
   const [notifsOpen, setNotifsOpen] = useState(false);
@@ -650,6 +669,7 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
               studioSlug={studioSlug}
               onAnnuler={handleAnnuler}
               annulEnCours={annulEnCours === p.id}
+              visio={visioParPresence[p.id] || null}
             />
           ))
         )}

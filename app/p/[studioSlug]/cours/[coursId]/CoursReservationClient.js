@@ -326,6 +326,9 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
         <div className="resa-details">
           <div className="resa-detail-row"><Calendar size={15} /><span>{formatDate(cours.date)}</span></div>
           <div className="resa-detail-row"><Clock size={15} /><span>{formatHeure(cours.heure)}{cours.duree_minutes ? ` · ${cours.duree_minutes} min` : ''}</span></div>
+          {(cours.format === 'visio' || cours.format === 'hybride') && (
+            <div className="resa-detail-row">🖥<span>En ligne — le lien de la séance sera dans ton espace élève</span></div>
+          )}
           {cours.lieu && <div className="resa-detail-row"><MapPin size={15} /><span>{cours.lieu}</span></div>}
           {cours.tarif_unitaire > 0 && (
             <div className="resa-detail-row">

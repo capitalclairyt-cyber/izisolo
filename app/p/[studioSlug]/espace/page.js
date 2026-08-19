@@ -6,6 +6,7 @@ import { countUnread } from '@/lib/messagerie';
 import EspaceClient from './EspaceClient';
 import { resoudreFicheEleve } from '@/lib/fiche-eleve';
 import { getDocsInscription } from '@/lib/docs-inscription';
+import { getVisioCoursMap, lienVisioVisible } from '@/lib/visio';
 import { resoudreCarnetApplicable } from '@/lib/carnet-resolution';
 
 // Le template racine ajoute déjà « — IziSolo » ; l'OG studio vient du layout portail.
@@ -204,7 +205,7 @@ async function getData(studioSlug, user) {
       abonnement_id,
       created_at,
       cours:cours_id (
-        id, nom, date, heure, duree_minutes, lieu, type_cours, est_annule, tarif_unitaire, carnets_acceptes
+        id, nom, date, heure, duree_minutes, lieu, type_cours, est_annule, tarif_unitaire, carnets_acceptes, format
       )
     `)
     .eq('client_id', client.id)
@@ -358,7 +359,36 @@ async function getData(studioSlug, user) {
   // Documents d'inscription (v85) — requête séparée défensive (colonne absente → [])
   const docsInscription = await getDocsInscription(supabase, profile.id);
 
-  return { profile, client, aVenir, passes, paiements: paiements || [], offresStripe: offresStripe || [], abonnements: abonnements || [], aRegler, seancesWorkshopDues, annulationsDues, unreadMessages, clientPrefs, facturationActive, facturesParPaiement, docsInscription };
+  // Cours en ligne (v86) — le verrou du lien se calcule ICI, côté serveur :
+  // l'URL ne part JAMAIS vers le client pour une séance non couverte/réglée.
+  // visioParPresence : presenceId → url (uniquement si visible) ou
+  // { verrouille: true } (le cours a un lien mais cette séance ne l'ouvre pas).
+  const visioParPresence = {};
+  {
+    const presVisio = aVenir.filter(p => p.cours?.format === 'visio' || p.cours?.format === 'hybride');
+    if (presVisio.length) {
+      const visioMap = await getVisioCoursMap(supabase, presVisio.map(p => p.cours.id));
+      const presIds = presVisio.map(p => p.id);
+      // Paiements 'paid' rattachés à ces présences (v65) — requête ciblée
+      let paidSet = new Set();
+      if (presIds.length) {
+        const { data: paids } = await supabase
+          .from('paiements')
+          .select('presence_id, statut')
+          .in('presence_id', presIds)
+          .eq('statut', 'paid');
+        paidSet = new Set((paids || []).map(x => x.presence_id));
+      }
+      for (const p of presVisio) {
+        const visio = visioMap[p.cours.id];
+        if (!visio) continue; // pas de lien configuré (ou v86 pas appliquée)
+        const visible = lienVisioVisible(visio, p, paidSet.has(p.id) ? [{ statut: 'paid' }] : []);
+        visioParPresence[p.id] = visible ? { url: visio.lien_visio } : { verrouille: true };
+      }
+    }
+  }
+
+  return { profile, client, aVenir, passes, paiements: paiements || [], offresStripe: offresStripe || [], abonnements: abonnements || [], aRegler, seancesWorkshopDues, annulationsDues, unreadMessages, clientPrefs, facturationActive, facturesParPaiement, docsInscription, visioParPresence };
 }
 
 export default async function EspacePage({ params, searchParams }) {
@@ -431,6 +461,7 @@ export default async function EspacePage({ params, searchParams }) {
       facturationActive={data.facturationActive || false}
       facturesParPaiement={data.facturesParPaiement || {}}
       docsInscription={data.docsInscription || []}
+      visioParPresence={data.visioParPresence || {}}
       studioSlug={studioSlug}
       userEmail={user.email}
     />

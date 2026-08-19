@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { parseDate, toDateStr, semainesEntre } from '@/lib/dates';
+import { sanitizeLienVisio } from '@/lib/visio';
 import { getAllTypesFromCategories, normalizeTypesCours } from '@/lib/utils';
 import {
   estJourFerie, getPeriodeVacances, ZONES_VACANCES,
@@ -227,6 +228,10 @@ function NouveauCoursInner() {
     // Workshop / évènement payant à l'unité (v35)
     tarif_unitaire: '',           // ex: 30 (€) — NULL/vide = cours régulier
     carnets_acceptes: false,      // v82 — cours MIXTE : tarif = filet, carnets compatibles décomptent
+    // Cours en ligne (v18 format + v86 lien, feedback Ariana 2026-08-19)
+    format: 'presentiel',         // 'presentiel' | 'visio'
+    lien_visio: '',               // URL Zoom/Meet — servie via lib/visio.js selon le verrou
+    lien_visio_verrouille: true,  // true = lien réservé aux séances réglées/couvertes
     // Récurrence
     frequence: preFreq,
     jours_semaine: [],
@@ -316,7 +321,7 @@ function NouveauCoursInner() {
       if (fromId) {
         const { data: source } = await supabase
           .from('cours')
-          .select('nom, type_cours, heure, duree_minutes, lieu_id, capacite_max, client_pro_id, notes, tarif_unitaire, carnets_acceptes, visibilite, domicile')
+          .select('nom, type_cours, heure, duree_minutes, lieu_id, capacite_max, client_pro_id, notes, tarif_unitaire, carnets_acceptes, visibilite, domicile, format')
           .eq('id', fromId)
           .eq('profile_id', user.id)
           .maybeSingle();
@@ -337,6 +342,7 @@ function NouveauCoursInner() {
             // et un cours 🔒 privé en cours PUBLIC listé sur le portail.
             tarif_unitaire: source.tarif_unitaire != null ? String(source.tarif_unitaire) : (prev.tarif_unitaire || ''),
             carnets_acceptes: source.carnets_acceptes === true,
+            format: source.format || 'presentiel',
             visibilite: source.visibilite || prev.visibilite || 'public',
             // date reste à dateInitiale (aujourd'hui ou ?date=...) — le prof choisit la nouvelle date
           }));
@@ -435,6 +441,19 @@ function NouveauCoursInner() {
     }
   };
 
+  // Cours en ligne (v86) : le lien s'écrit dans une requête SÉPARÉE et
+  // défensive après la création — tant que la migration n'est pas appliquée,
+  // un insert qui nommerait la colonne tuerait la création entière (42703).
+  const estVisio = form.format === 'visio';
+  const poserLienVisio = async (supabase, ids) => {
+    const lienVisioClean = estVisio ? sanitizeLienVisio(form.lien_visio) : '';
+    if (!estVisio || !lienVisioClean || !ids?.length) return;
+    const { error: eVisio } = await supabase.from('cours')
+      .update({ lien_visio: lienVisioClean, lien_visio_verrouille: form.lien_visio_verrouille !== false })
+      .in('id', ids);
+    if (eVisio) toast.warning('Cours créé, mais le lien visio n\'a pas pu être enregistré (migration v86 requise).');
+  };
+
   // Création effective (sans vérification doublon)
   const doCreate = async () => {
     setLoading(true);
@@ -458,8 +477,9 @@ function NouveauCoursInner() {
           date: form.date,
           heure: form.heure || null,
           duree_minutes: form.duree_minutes ? parseInt(form.duree_minutes) : 60,
-          lieu: lieuxFiltres.find(l => l.id === form.lieu_id)?.nom || null,
-          lieu_id: form.lieu_id || null,
+          lieu: estVisio ? null : (lieuxFiltres.find(l => l.id === form.lieu_id)?.nom || null),
+          lieu_id: estVisio ? null : (form.lieu_id || null),
+          format: form.format || 'presentiel', // v18 — colonne existante, insert direct sûr
           client_pro_id: form.client_pro_id || null,
           capacite_max: form.capacite_max ? parseInt(form.capacite_max) : null,
           notes: form.notes || null,
@@ -470,6 +490,7 @@ function NouveauCoursInner() {
           ...domicileFields,
         }).select('id').single();
         if (error) throw error;
+        await poserLienVisio(supabase, newCours ? [newCours.id] : []);
 
         if (isDomicile && newCours) {
           // Erreur LUE (audit 2026-07-25 : l'insert muet créait le cours SANS
@@ -522,8 +543,9 @@ function NouveauCoursInner() {
             date: toDateStr(d),
             heure: form.heure || null,
             duree_minutes: form.duree_minutes ? parseInt(form.duree_minutes) : 60,
-            lieu: lieuxFiltres.find(l => l.id === form.lieu_id)?.nom || null,
-            lieu_id: form.lieu_id || null,
+            lieu: estVisio ? null : (lieuxFiltres.find(l => l.id === form.lieu_id)?.nom || null),
+            lieu_id: estVisio ? null : (form.lieu_id || null),
+            format: form.format || 'presentiel', // v18 — colonne existante
             client_pro_id: form.client_pro_id || null,
             capacite_max: form.capacite_max ? parseInt(form.capacite_max) : null,
             recurrence_parent_id: recurrence.id,
@@ -545,6 +567,7 @@ function NouveauCoursInner() {
             await supabase.from('recurrences').delete().eq('id', recurrence.id);
             throw coursErr;
           }
+          await poserLienVisio(supabase, (createdCours || []).map(c => c.id));
 
           if (isDomicile && createdCours?.length > 0) {
             const { error: presErr } = await supabase.from('presences').insert(
@@ -802,7 +825,58 @@ function NouveauCoursInner() {
           </div>
         </div>
 
-        {/* Lieu (dropdown intelligent) */}
+        {/* Où se passe ce cours ? (v18 format réveillé par le feedback Ariana
+            2026-08-19 : « un atelier en ligne, mes élèves vont croire que
+            c'est en présentiel ») */}
+        <div className="form-group">
+          <label className="form-label"><MapPin size={14} /> Où se passe ce cours ?</label>
+          <div className="paie-choix-row">
+            {[
+              { value: 'presentiel', label: 'En présentiel' },
+              { value: 'visio', label: '🖥 En ligne' },
+            ].map(f => (
+              <button
+                key={f.value}
+                type="button"
+                className={`paie-choix-btn ${(form.format || 'presentiel') === f.value ? 'active' : ''}`}
+                onClick={() => setForm(prev => ({ ...prev, format: f.value }))}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+          {form.format === 'visio' && (
+            <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <input
+                className="izi-input"
+                type="url"
+                value={form.lien_visio}
+                onChange={handleChange('lien_visio')}
+                placeholder="Lien de la séance (Zoom, Meet…) — https://…"
+              />
+              <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, cursor: 'pointer', fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                <input
+                  type="checkbox"
+                  checked={form.lien_visio_verrouille !== false}
+                  onChange={e => setForm(prev => ({ ...prev, lien_visio_verrouille: e.target.checked }))}
+                  style={{ marginTop: 2, accentColor: 'var(--brand)' }}
+                />
+                <span>Réserver le lien aux séances réglées ou couvertes</span>
+              </label>
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '0 0 0 24px', lineHeight: 1.5 }}>
+                {form.lien_visio_verrouille !== false
+                  ? <>Le lien n'apparaît (espace élève + rappel de la veille) que si la séance est <strong>couverte par un carnet/abo</strong>, <strong>réglée</strong> (encaissée en 1 clic), ou <strong>offerte/essai</strong>. Les autres voient « le lien apparaîtra une fois ta séance réglée ».</>
+                  : <>Décochée : toutes les inscrites voient le lien — pour un cours gratuit ou ouvert.</>}
+              </p>
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '0 0 0 2px' }}>
+                💡 Le prix, lui, se règle plus bas dans « Comment se paie ce cours ? ».
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Lieu (dropdown intelligent) — masqué pour un cours en ligne */}
+        {form.format !== 'visio' && (
         <div className="form-group">
           <label className="form-label"><MapPin size={14} /> Lieu</label>
           {!showNewLieu ? (
@@ -838,6 +912,7 @@ function NouveauCoursInner() {
             </div>
           )}
         </div>
+        )}
 
         {/* Fréquence — seulement en mode régulier (le choix unique/régulier
             est fait plus haut). On masque l'option « unique » ici. */}

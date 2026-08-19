@@ -412,6 +412,9 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
                     <span>{formatHeure(prochainCours.heure)}</span>
                   </>
                 )}
+                {(prochainCours.format === 'visio' || prochainCours.format === 'hybride') && (
+                  <div className="hero-meta-item">🖥 <span>En ligne</span></div>
+                )}
                 {prochainCours.lieu && (
                   <>
                     <span className="portail-next-cours-sep">·</span>
@@ -602,7 +605,9 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
                       <div className="portail-cours-nom">{c.nom}</div>
                       <div className="portail-cours-details">
                         <span><Clock size={12} /> {formatHeure(c.heure)}{c.duree_minutes ? ` · ${c.duree_minutes}min` : ''}</span>
-                        {c.lieu && <span><MapPin size={12} /> {c.lieu}</span>}
+                        {(c.format === 'visio' || c.format === 'hybride') && <span>🖥 En ligne</span>}
+                        {(c.format === 'visio' || c.format === 'hybride') && <span>🖥 En ligne</span>}
+                    {c.lieu && <span><MapPin size={12} /> {c.lieu}</span>}
                         {c.type_cours && <span className={`portail-tag portail-tag-${tone}`}>{c.type_cours}</span>}
                         {Number(c.tarif_unitaire) > 0 && (
                           <span className="portail-tag portail-tag-amber">{Number(c.tarif_unitaire).toFixed(2).replace('.', ',').replace(',00', '')} €{c.carnets_acceptes === true ? ' ou carnet' : ' / séance'}</span>
