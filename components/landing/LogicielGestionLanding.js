@@ -74,7 +74,10 @@ export default function LogicielGestionLanding() {
       <FinalCta />
       <Footer />
 
-      <style jsx>{`
+      {/* Global exprès : .lg-btn habille des <Link> (composants custom) que
+          styled-jsx scoped ne hashe pas — en scoped, les CTA de cette page
+          SEO s'affichaient en liens bleus navigateur (sweep 2026-08-19). */}
+      <style jsx global>{`
         .lg-page { background: var(--c-bg, #fdfbf7); color: var(--c-ink, #2a2320); }
         .lg-hero {
           max-width: 820px; margin: 0 auto; padding: 72px 20px 40px; text-align: center;

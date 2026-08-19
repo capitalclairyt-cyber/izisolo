@@ -122,8 +122,12 @@ export default function AccountStatusBanner({ profile }) {
 }
 
 function BannerStyle() {
+  // Global OBLIGATOIRE : ce composant ne contient QUE le style — en scoped,
+  // son hash ne peut matcher aucun élément du bandeau (rendus par un AUTRE
+  // composant), et .acc-cta habille des <Link> que styled-jsx ne hashe pas.
+  // En scoped, TOUT le bandeau était nu (sweep liens hors charte 2026-08-19).
   return (
-    <style jsx>{`
+    <style jsx global>{`
       .acc-banner {
         display: flex; align-items: center; gap: 10px;
         padding: 10px 14px;

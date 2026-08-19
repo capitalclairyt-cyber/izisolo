@@ -278,7 +278,11 @@ export default function ImporterClientsPage() {
         </div>
       )}
 
-      <style jsx>{`
+      {/* Global exprès : .imp-back habille un <Link> (composant custom) que
+          styled-jsx scoped ne hashe pas — en scoped, la règle ne matchait
+          jamais et « Retour aux élèves » s'affichait en lien bleu navigateur
+          (sweep liens hors charte, retour Colin 2026-08-19). */}
+      <style jsx global>{`
         .imp-wrap{max-width:760px}
         .imp-back{display:inline-flex;align-items:center;gap:6px;color:var(--text-secondary,#888);
           font-size:.875rem;text-decoration:none;margin-bottom:14px}

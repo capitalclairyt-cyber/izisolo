@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   BookOpen, CalendarDays, Users, Wallet, ClipboardList, Globe,
-  LifeBuoy, MessageSquarePlus, ArrowRight, Package, Inbox,
+  LifeBuoy, MessageSquarePlus, ArrowRight, ArrowLeft, Package, Inbox,
   MessageSquare, FileText, Smartphone, CalendarClock, Hourglass, Search, X,
   Sparkles, ListOrdered
 } from 'lucide-react';
@@ -254,10 +255,38 @@ export default function AidePage() {
   // sections sont rendues, leur textContent EST la vérité (étapes comprises) —
   // pas de double source à maintenir. La FAQ /support est fouillée en plus
   // (content/faq-support), résultats en liens #faq-N.
+  const router = useRouter();
   const [query, setQuery] = useState('');
   const [sectionsVisibles, setSectionsVisibles] = useState(null); // null = toutes
   const [faqTrouvees, setFaqTrouvees] = useState([]);
   const indexRef = useRef(null); // [{id, texte normalisé}] — construit au 1er caractère
+
+  // ── Défilement vers l'ancre (#offres, #pointage…) — retour Colin 2026-08-19 :
+  // les « ? » contextuels ouvraient le guide EN HAUT. Sur une navigation client
+  // App Router, le scroll natif vers le hash rate (la cible n'est pas encore
+  // committée au moment où Next tente le scroll). On le refait nous-mêmes au
+  // mount (double rAF = après le commit complet, + une 2e passe qui rattrape
+  // un décalage de layout) et à chaque changement de hash.
+  useEffect(() => {
+    const versAncre = () => {
+      const id = decodeURIComponent((window.location.hash || '').slice(1));
+      if (!id) return;
+      const aller = () => document.getElementById(id)?.scrollIntoView({ block: 'start' });
+      requestAnimationFrame(() => requestAnimationFrame(aller));
+      setTimeout(aller, 250);
+    };
+    versAncre();
+    window.addEventListener('hashchange', versAncre);
+    return () => window.removeEventListener('hashchange', versAncre);
+  }, []);
+
+  // Retour vers la page d'où vient le « ? » (retour Colin 2026-08-19 : arrivé
+  // sur le guide, aucun moyen de revenir). Ouvert en direct (nouvel onglet,
+  // lien d'email) → retomber sur le dashboard.
+  const retour = () => {
+    if (window.history.length > 1) router.back();
+    else router.push('/dashboard');
+  };
 
   const chercher = (q) => {
     setQuery(q);
@@ -281,6 +310,9 @@ export default function AidePage() {
   return (
     <div className="aide-page">
       <div className="aide-header">
+        <button type="button" onClick={retour} className="aide-back" aria-label="Revenir à la page précédente" title="Revenir où j'étais">
+          <ArrowLeft size={18} />
+        </button>
         <div className="aide-header-icon"><BookOpen size={22} /></div>
         <div>
           <h1>Guide de démarrage</h1>
@@ -395,6 +427,15 @@ export default function AidePage() {
         .aide-page { display: flex; flex-direction: column; gap: 20px; padding-bottom: 80px; }
 
         .aide-header { display: flex; align-items: flex-start; gap: 14px; }
+        .aide-back {
+          width: 38px; height: 38px; border-radius: var(--radius-sm); flex-shrink: 0;
+          border: 1px solid var(--border); background: var(--bg-card);
+          display: flex; align-items: center; justify-content: center;
+          color: var(--text-secondary); cursor: pointer;
+          transition: color 0.15s, border-color 0.15s;
+          margin-top: 3px;
+        }
+        .aide-back:hover { color: var(--brand); border-color: var(--brand); }
         .aide-header-icon {
           width: 44px; height: 44px; border-radius: 12px; flex-shrink: 0;
           background: var(--brand-light, #f7ecec); color: var(--brand);

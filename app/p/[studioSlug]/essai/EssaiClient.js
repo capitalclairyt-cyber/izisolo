@@ -139,7 +139,10 @@ export default function EssaiClient({ profile, cours, docs = [], studioSlug, pre
           </Link>
         </div>
 
-        <style jsx>{`
+        {/* Global exprès : .essai-back-link habille un <Link> (composant
+            custom) que styled-jsx scoped ne hashe pas — en scoped, la règle
+            ne matchait jamais → lien bleu navigateur (sweep 2026-08-19). */}
+        <style jsx global>{`
           .essai-confirm {
             background: white; border-radius: 18px; padding: 40px 24px;
             text-align: center; box-shadow: 0 2px 12px rgba(0,0,0,0.06);
@@ -360,7 +363,9 @@ export default function EssaiClient({ profile, cours, docs = [], studioSlug, pre
         )}
       </form>
 
-      <style jsx>{`
+      {/* Global exprès : .essai-back-link habille un <Link> (composant
+          custom) que styled-jsx scoped ne hashe pas (sweep 2026-08-19). */}
+      <style jsx global>{`
         .essai-back-link {
           display: inline-flex; align-items: center; gap: 6px;
           color: #888; font-size: 0.875rem; text-decoration: none;

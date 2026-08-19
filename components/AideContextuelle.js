@@ -19,7 +19,12 @@ export default function AideContextuelle({ ancre, titre = 'Ouvrir le tuto de cet
   return (
     <Link href={`/aide#${ancre}`} className="aide-ctx" title={titre} aria-label={titre}>
       <CircleHelp size={17} />
-      <style jsx>{`
+      {/* ⚠️ jsx GLOBAL obligatoire : la classe de scope styled-jsx n'est posée
+          que sur les éléments DOM natifs, pas sur le <a> rendu par <Link> —
+          en scopé, la règle ne matchait JAMAIS et le « ? » s'affichait en
+          lien bleu navigateur (retour Colin 2026-08-19, même piège § 12 que
+          l'img sidebar). */}
+      <style jsx global>{`
         .aide-ctx {
           display: inline-flex; align-items: center; justify-content: center;
           width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;

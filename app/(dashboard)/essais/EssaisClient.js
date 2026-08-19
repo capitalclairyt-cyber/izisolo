@@ -93,7 +93,10 @@ export default function EssaisClient({ profile, demandes: initialDemandes }) {
         </Link>
         {/* Le « ? » sert SURTOUT ici : comprendre la feature avant de l'activer
             (cas Patricia — essai jamais activé, peut-être jamais compris) */}
-        <Link href="/aide#cours-essai" className="aide-ctx" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 10, fontSize: '0.8125rem', fontWeight: 600, color: 'var(--brand)' }}>
+        {/* Pas de className « aide-ctx » ici : cette classe est désormais
+            GLOBALE (le rond 28px du « ? » des headers) — elle écraserait ce
+            lien texte. Les styles inline suffisent. */}
+        <Link href="/aide#cours-essai" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 10, fontSize: '0.8125rem', fontWeight: 600, color: 'var(--brand)' }}>
           Comment ça marche ? Le tuto →
         </Link>
       </EmptyState>

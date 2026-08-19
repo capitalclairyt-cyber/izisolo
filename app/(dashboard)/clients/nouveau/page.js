@@ -543,7 +543,7 @@ export default function NouveauClient() {
                     <p className="photo-import-hint">
                       {photoDispo
                         ? <>Carte de visite, fiche papier ou capture d'écran — l'IA pré-remplit, tu vérifies.</>
-                        : <>✨ Réservé au plan Complet — <a href="/parametres?tab=abonnement" style={{ fontWeight: 600 }}>passe en Complet</a> pour pré-remplir les fiches depuis une photo.</>}
+                        : <>✨ Réservé au plan Complet — <a href="/parametres?tab=abonnement" style={{ fontWeight: 600, color: 'var(--brand)' }}>passe en Complet</a> pour pré-remplir les fiches depuis une photo.</>}
                     </p>
                   </>
                 );
