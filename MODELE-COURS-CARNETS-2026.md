@@ -6,6 +6,23 @@
 > DB. Les non-recos du §4 restent des non-recos. Reste connu : la dérivation
 > « à percevoir » côté PROF (Revenus) n'a pas la prévision mixte (surestimation
 > temporaire jusqu'au pointage) — à symétriser au prochain passage Revenus.
+>
+> **AJOUT 2026-08-20 — bloc « Payable avec » sur la fiche du cours** (2 feedbacks
+> Camille du matin même : voir ET choisir quels carnets/abos couvrent le cours).
+> Affichage : la fiche liste chaque offre du catalogue avec son verdict
+> (`coursCouvert`, délégué à la formule du pointage) selon le régime (carnets /
+> atelier pur / mixte / sans type = « couvert par tout », alerte). Édition A
+> retenue : cocher/décocher bascule `offres.types_cours_autorises` via
+> `basculerTypeCouverture` (lib/coherence-offres, spec CI) — JAMAIS de
+> périmètre par cours (la non-reco §4 tient : l'analyse « double route »
+> chiffrée en session l'a re-confirmée — nullable `abonnements.offre_id`,
+> double système type+uuid, ~10 surfaces prédictives). Pièges fermés par le
+> helper : vider la liste inverserait le sens (vide = tous) → refus
+> `dernier_type` ; décocher une offre « tous » fige le catalogue du moment
+> (confirmation honnête : effet global + snapshot des carnets vendus).
+> Preuve navigateur 21/21 (`scripts/proof-couverture-cours.mjs`, re-runnable).
+> Collatéral : la ligne Tarif de la fiche disait « ne décompte aucun carnet »
+> même sur un mixte — corrigée.
 
 > Déclencheur : question de Colin — « une prof peut-elle mettre au planning un
 > cours qui accepte plusieurs types d'abonnements ET un paiement à l'unité

@@ -84,6 +84,33 @@ export default async function CoursDetailPage({ params, searchParams }) {
     .eq('id', user.id)
     .single();
 
+  // Catalogue des offres décomptables (bloc « Payable avec » — feedback
+  // Camille 2026-08-20) : la couverture se calcule côté client via
+  // lib/coherence-offres (la formule du pointage). cours_unique = legacy,
+  // jamais décompté → exclu.
+  const { data: offresCatalogue } = await supabase
+    .from('offres')
+    .select('id, nom, type, types_cours_autorises')
+    .eq('profile_id', user.id)
+    .eq('actif', true)
+    .in('type', ['carnet', 'abonnement'])
+    .order('nom');
+
+  // Combien de séances à venir partagent ce type ? (l'édition de couverture
+  // vaut pour TOUTES — le chiffre honnête va dans la confirmation)
+  let nbSeancesType = 0;
+  if (cours.type_cours) {
+    const n = new Date();
+    const aujourdHui = `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`;
+    const { count } = await supabase
+      .from('cours')
+      .select('id', { count: 'exact', head: true })
+      .eq('profile_id', user.id)
+      .eq('type_cours', cours.type_cours)
+      .gte('date', aujourdHui);
+    nbSeancesType = count || 0;
+  }
+
   // Si récurrent, compter les occurrences restantes
   let nbOccurrences = 0;
   if (cours.recurrence_parent_id) {
@@ -107,6 +134,8 @@ export default async function CoursDetailPage({ params, searchParams }) {
       listeAttente={listeAttente}
       abosParClient={abosParClient}
       paiementsSeance={paiementsSeance}
+      offresCatalogue={offresCatalogue || []}
+      nbSeancesType={nbSeancesType}
     />
   );
 }

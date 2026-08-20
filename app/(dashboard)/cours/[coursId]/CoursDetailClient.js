@@ -17,6 +17,7 @@ import { seanceDeltaChangementType } from '@/lib/pointage-delta';
 import { getRegle } from '@/lib/regles-metier';
 import { sanitizeLienPaiement } from '@/lib/paiement-seance';
 import TypeCoursHint from '@/components/cours/TypeCoursHint';
+import CouvertureCours from '@/components/cours/CouvertureCours';
 import AttachmentPicker from '@/components/messagerie/AttachmentPicker';
 import { resoudreCarnetApplicable } from '@/lib/carnet-resolution';
 import { sanitizeLienVisio } from '@/lib/visio';
@@ -26,7 +27,7 @@ import { useToast } from '@/components/ui/ToastProvider';
 import HeureSelect from '@/components/ui/HeureSelect';
 import { SMS_ENABLED } from '@/lib/constantes';
 
-export default function CoursDetailClient({ cours, presences, lieux, profile, nbOccurrences, autoEdit, listeAttente = [], abosParClient = {}, paiementsSeance = [] }) {
+export default function CoursDetailClient({ cours, presences, lieux, profile, nbOccurrences, autoEdit, listeAttente = [], abosParClient = {}, paiementsSeance = [], offresCatalogue = [], nbSeancesType = 0 }) {
   const router = useRouter();
   const { toast } = useToast();
   const [editing, setEditing] = useState(autoEdit || false);
@@ -788,7 +789,9 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
                 <div className="detail-label">Tarif</div>
                 <div className="detail-value">
                   {argent.tarif
-                    ? `${argent.tarif} € à la séance — ne décompte aucun carnet`
+                    ? (cours.carnets_acceptes === true
+                        ? `${argent.tarif} € à la séance — les carnets compatibles décomptent (mixte)`
+                        : `${argent.tarif} € à la séance — ne décompte aucun carnet`)
                     : 'Couvert par les carnets / abonnements'}
                 </div>
               </div>
@@ -946,6 +949,19 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
           </div>
         )}
       </div>
+
+      {/* Payable avec — qui couvre cette séance (feedback Camille 2026-08-20).
+          Masqué en édition : le type peut y changer, le bloc se recalcule à la
+          sortie. L'édition d'une couverture écrit dans L'OFFRE (édition A). */}
+      {!editing && (
+        <CouvertureCours
+          cours={cours}
+          offres={offresCatalogue}
+          typesCours={typesCours}
+          nbSeancesType={nbSeancesType}
+          onChoisirType={() => setEditing(true)}
+        />
+      )}
 
       </div>{/* /cours-left */}
       <div className="cours-right">

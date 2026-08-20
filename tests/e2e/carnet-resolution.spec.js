@@ -143,7 +143,7 @@ test('carnets_acceptes explicitement false / sans tarif → aucun effet', () => 
 // resoudreCarnetApplicable — ces tests verrouillent que les diagnostics
 // suivent la formule (notamment « cours sans type = toujours accepté »).
 // ═══════════════════════════════════════════════════════════════════════════
-import { coursCouvert, analyserRestrictionOffre, diagnostiquerOffres } from '../../lib/coherence-offres.js';
+import { coursCouvert, analyserRestrictionOffre, diagnostiquerOffres, basculerTypeCouverture } from '../../lib/coherence-offres.js';
 
 test.describe('coherence-offres — couverture par restriction', () => {
   test('non restreinte → couvre tout (typé, autre type, sans type)', () => {
@@ -207,5 +207,55 @@ test.describe('coherence-offres — analyse et diagnostic', () => {
       [{ id: '1', nom: 'Abo Yoga', type: 'abonnement', actif: true, types_cours_autorises: ['yoga'] }],
       [COURS_YOGA]
     )).toHaveLength(0);
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// basculerTypeCouverture — le geste « cocher/décocher » du bloc « Payable
+// avec » de la fiche du cours (édition A, 2026-08-20). L'écriture va TOUJOURS
+// dans offres.types_cours_autorises ; ces tests verrouillent les 2 pièges :
+// vider la liste inverse le sens (vide = « tous »), et restreindre une offre
+// « tous » fige le catalogue du moment.
+// ═══════════════════════════════════════════════════════════════════════════
+test.describe('basculerTypeCouverture — édition de la couverture depuis un cours', () => {
+  const CATALOGUE = ['yoga', 'renfo', 'pilates'];
+
+  test('offre restreinte : retirer puis remettre le type (aller-retour)', () => {
+    const off = basculerTypeCouverture(['yoga', 'renfo'], 'yoga', CATALOGUE);
+    expect(off).toEqual({ ok: true, types: ['renfo'] });
+    const on = basculerTypeCouverture(off.types, 'yoga', CATALOGUE);
+    expect(on).toEqual({ ok: true, types: ['renfo', 'yoga'] });
+  });
+
+  test('offre « tous » décochée → restreinte au reste du catalogue (jamais de liste vide)', () => {
+    expect(basculerTypeCouverture(null, 'yoga', CATALOGUE))
+      .toEqual({ ok: true, types: ['renfo', 'pilates'] });
+    expect(basculerTypeCouverture([], 'renfo', CATALOGUE))
+      .toEqual({ ok: true, types: ['yoga', 'pilates'] });
+    // catalogue réduit au seul type du cours → inexprimable, refus
+    expect(basculerTypeCouverture(null, 'yoga', ['yoga']))
+      .toEqual({ ok: false, raison: 'catalogue_insuffisant' });
+    expect(basculerTypeCouverture(null, 'yoga', []))
+      .toEqual({ ok: false, raison: 'catalogue_insuffisant' });
+  });
+
+  test('dernier type retiré = REFUS (liste vide redeviendrait « tous », inversion)', () => {
+    expect(basculerTypeCouverture(['yoga'], 'yoga', CATALOGUE))
+      .toEqual({ ok: false, raison: 'dernier_type' });
+  });
+
+  test('cours sans type = refus (rien à basculer)', () => {
+    expect(basculerTypeCouverture(['yoga'], null, CATALOGUE)).toEqual({ ok: false, raison: 'sans_type' });
+    expect(basculerTypeCouverture(null, '', CATALOGUE)).toEqual({ ok: false, raison: 'sans_type' });
+  });
+
+  test('le résultat reste cohérent avec coursCouvert (le verdict suit la bascule)', () => {
+    // OFF : yoga couvert avant, plus après
+    const off = basculerTypeCouverture(null, 'yoga', CATALOGUE);
+    expect(coursCouvert(off.types, COURS_YOGA)).toBe(false);
+    expect(coursCouvert(off.types, COURS_RENFO)).toBe(true);
+    // ON : renfo pas couvert avant, couvert après
+    const on = basculerTypeCouverture(['yoga'], 'renfo', CATALOGUE);
+    expect(coursCouvert(on.types, COURS_RENFO)).toBe(true);
   });
 });
