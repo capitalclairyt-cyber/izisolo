@@ -4,6 +4,7 @@
 import { withRoute } from '@/lib/api-route';
 import { createAdminClient } from '@/lib/supabase-admin';
 import { finaliserDemande, emailConfirmationVisiteur } from '@/lib/essai';
+import { prixEssai, getEssaiPrixParType } from '@/lib/essai-tarif';
 import { buildPortailMagicLink } from '@/lib/portail-magic-link';
 import { sendPushToEmail } from '@/lib/push-server';
 import { sendEmail } from '@/lib/email';
@@ -75,9 +76,11 @@ export const POST = withRoute({ auth: 'active' }, async ({ request, params, auth
       // Email confirmation au visiteur
       const { data: cours } = await supabaseAdmin
         .from('cours')
-        .select('id, nom, date, heure, lieu')
+        .select('id, nom, type_cours, date, heure, lieu')
         .eq('id', demande.cours_id)
         .single();
+      // Tarif d'essai par type (v92, lecture défensive — null pré-migration)
+      const surchargesEssai = await getEssaiPrixParType(supabaseAdmin, profile.id);
       // Accès direct à l'espace pour l'invité validé (comme la réservation).
       const magicLink = await buildPortailMagicLink({ email: demande.email, studioSlug: profile.studio_slug });
       emailConfirmationVisiteur({
@@ -87,7 +90,7 @@ export const POST = withRoute({ auth: 'active' }, async ({ request, params, auth
         email: demande.email,
         cours,
         paiement: profile.essai_paiement,
-        prix: profile.essai_prix,
+        prix: prixEssai(profile, cours?.type_cours, surchargesEssai),
         stripeLink: profile.essai_paiement === 'stripe' ? profile.essai_stripe_payment_link : null,
         magicLink,
       });

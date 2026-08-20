@@ -8,6 +8,7 @@ import { toneForCours } from '@/lib/tones';
 import ScrollReveal from '@/components/landing/ScrollReveal';
 import { useToast } from '@/components/ui/ToastProvider';
 import { matchRecherche } from '@/lib/utils';
+import { essaiVarieParType, minPrixEssai } from '@/lib/essai-tarif';
 
 // next/image ne peut optimiser que les hosts déclarés dans
 // next.config.mjs → images.remotePatterns (AUDIT-PERF 2.9 : la couverture
@@ -83,7 +84,7 @@ function PlacesBadge({ capacite, inscrits, afficherInscrits = true }) {
   return <span className="portail-tag portail-tag-green">Places disponibles</span>;
 }
 
-export default function PortailHome({ profile, cours, offresStripe = [], offresPubliques = [], sondageActif = null, studioSlug, isPreview = false, isDemo = false, currentClient = null, reservedCoursIds = [], canReserve = true, essaiVisible = true }) {
+export default function PortailHome({ profile, cours, offresStripe = [], offresPubliques = [], sondageActif = null, studioSlug, isPreview = false, isDemo = false, currentClient = null, reservedCoursIds = [], canReserve = true, essaiVisible = true, surchargesEssai = null }) {
   // Suffixe de query pour préserver le mode demo dans les liens internes
   const demoQS = isDemo ? '?demo=1' : '';
 
@@ -474,9 +475,12 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
           <div className="portail-essai-cta-icon">✨</div>
           <div className="portail-essai-cta-body">
             <div className="portail-essai-cta-title">
+              {/* Tarif par type (v92) : « dès X € » quand le prix varie selon le cours */}
               {profile.essai_paiement === 'gratuit'
                 ? 'Réserve ton cours d\'essai offert'
-                : `Réserve ton cours d\'essai · ${profile.essai_prix}€`}
+                : essaiVarieParType(profile, surchargesEssai)
+                  ? `Réserve ton cours d\'essai · dès ${minPrixEssai(profile, surchargesEssai)}€`
+                  : `Réserve ton cours d\'essai · ${profile.essai_prix}€`}
             </div>
             <div className="portail-essai-cta-sub">
               Découvre le studio dans l'ambiance d'un vrai cours.

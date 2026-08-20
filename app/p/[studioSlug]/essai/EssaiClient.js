@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { ArrowLeft, Calendar, Clock, MapPin, CheckCircle, AlertCircle, Loader, Sparkles, ExternalLink } from 'lucide-react';
 import { useToast } from '@/components/ui/ToastProvider';
 import { toneForCours } from '@/lib/tones';
+import { prixEssai, essaiVarieParType, minPrixEssai } from '@/lib/essai-tarif';
 
 const JOURS = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
 const MOIS = ['jan', 'fév', 'mar', 'avr', 'mai', 'jun', 'jul', 'aoû', 'sep', 'oct', 'nov', 'déc'];
@@ -20,7 +21,7 @@ function formatHeure(h) {
   return mm === '00' ? `${parseInt(hh)}h` : `${parseInt(hh)}h${mm}`;
 }
 
-export default function EssaiClient({ profile, cours, docs = [], studioSlug, preselectedCoursId }) {
+export default function EssaiClient({ profile, cours, docs = [], studioSlug, preselectedCoursId, surchargesEssai = null }) {
   const { toast } = useToast();
   const [coursId, setCoursId] = useState(preselectedCoursId || '');
   const [prenom, setPrenom] = useState('');
@@ -214,8 +215,14 @@ export default function EssaiClient({ profile, cours, docs = [], studioSlug, pre
           <p className="essai-intro">{profile.essai_message}</p>
         )}
         <div className="essai-paiement-tag">
+          {/* Tarif par type (v92) : le prix suit la séance choisie ; avant le
+              choix, « dès X € » si le tarif varie selon le type. */}
           {profile.essai_paiement === 'gratuit'   && '🎁 Cours d\'essai offert'}
-          {profile.essai_paiement === 'sur_place' && `💰 ${profile.essai_prix}€ à régler sur place`}
+          {profile.essai_paiement === 'sur_place' && (selectedCours
+            ? `💰 ${prixEssai(profile, selectedCours.type_cours, surchargesEssai)}€ à régler sur place`
+            : essaiVarieParType(profile, surchargesEssai)
+              ? `💰 dès ${minPrixEssai(profile, surchargesEssai)}€ à régler sur place (selon le cours)`
+              : `💰 ${profile.essai_prix}€ à régler sur place`)}
           {profile.essai_paiement === 'stripe'    && `💳 ${profile.essai_prix}€ — paiement en ligne sécurisé`}
         </div>
       </div>

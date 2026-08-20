@@ -9,6 +9,7 @@ import { studioCan } from '@/lib/plan-guard';
 import { presenceOccupePlace, compterPlacesOccupeesParCours } from '@/lib/presences';
 import { coursDejaCommence } from '@/lib/dates';
 import { reportError } from '@/lib/report';
+import { getEssaiPrixParType } from '@/lib/essai-tarif';
 
 export async function generateMetadata({ params }) {
   const { studioSlug } = await params;
@@ -159,6 +160,9 @@ async function getStudioData(studioSlug) {
     sondageActif: sondageActif || null,
     currentClient,
     reservedCoursIds,
+    // Tarif d'essai par type (v92, lecture défensive — null pré-migration) :
+    // le CTA essai de la home affiche « dès X € » quand le tarif varie.
+    surchargesEssai: await getEssaiPrixParType(supabase, profile.id),
   };
 }
 
@@ -207,6 +211,7 @@ export default async function PortailPage({ params, searchParams }) {
       isDemo={isDemo}
       currentClient={data.currentClient}
       reservedCoursIds={data.reservedCoursIds}
+      surchargesEssai={data.surchargesEssai}
       canReserve={studioCan(profile, 'reservation_en_ligne')}
       essaiVisible={studioCan(profile, 'cours_essai')}
     />

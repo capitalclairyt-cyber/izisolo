@@ -150,7 +150,7 @@ function CompletAvecListeAttente({ cours, studioSlug, currentUser }) {
   );
 }
 
-export default function CoursReservationClient({ cours, profile, nbInscrits, studioSlug, currentUser, alreadyRegistered = false, prevision = null, canCancel = false, canReserve = true, canWaitlist = false }) {
+export default function CoursReservationClient({ cours, profile, nbInscrits, studioSlug, currentUser, alreadyRegistered = false, prevision = null, canCancel = false, canReserve = true, canWaitlist = false, prixEssaiCours = null }) {
   const { toast } = useToast();
   const [nom, setNom]       = useState(currentUser?.nom || '');
   const [email, setEmail]   = useState(currentUser?.email || '');
@@ -393,9 +393,11 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
           <div className="resa-essai-icon">✨</div>
           <div className="resa-essai-body">
             <div className="resa-essai-title">
+              {/* prixEssaiCours = prix de CETTE séance (tarif par type v92),
+                  calculé serveur ; fallback prix unique si prop absente. */}
               {profile.essai_paiement === 'gratuit'
                 ? 'Premier cours offert'
-                : `Premier cours d'essai · ${profile.essai_prix}€`}
+                : `Premier cours d'essai · ${prixEssaiCours ?? profile.essai_prix}€`}
             </div>
             <div className="resa-essai-sub">
               Tu n'es pas encore client·e ? Profite d'un cours d'essai pour découvrir le studio.

@@ -8,6 +8,7 @@ import { useToast } from '@/components/ui/ToastProvider';
 import { toneForCours } from '@/lib/tones';
 import Pagination, { usePagination } from '@/components/ui/Pagination';
 import EmptyState from '@/components/ui/EmptyState';
+import { essaiVarieParType } from '@/lib/essai-tarif';
 
 const STATUT_CONFIG = {
   en_attente:  { label: 'En attente',  tone: 'sand'     },
@@ -34,7 +35,7 @@ function timeAgo(iso) {
   return `il y a ${Math.floor(diff / 86400)}j`;
 }
 
-export default function EssaisClient({ profile, demandes: initialDemandes }) {
+export default function EssaisClient({ profile, demandes: initialDemandes, surchargesEssai = null }) {
   const { toast } = useToast();
   const [demandes, setDemandes] = useState(initialDemandes);
   const [filterStatut, setFilterStatut] = useState('en_attente');
@@ -111,6 +112,7 @@ export default function EssaisClient({ profile, demandes: initialDemandes }) {
           <p className="essais-subtitle">
             Mode : <strong>{profile.essai_mode === 'auto' ? 'Automatique' : profile.essai_mode === 'semi' ? 'Semi-auto' : 'Manuel'}</strong> ·
             Paiement : <strong>{profile.essai_paiement === 'gratuit' ? 'Gratuit' : profile.essai_paiement === 'sur_place' ? `${profile.essai_prix}€ sur place` : `${profile.essai_prix}€ Stripe`}</strong>
+            {essaiVarieParType(profile, surchargesEssai) && <> · varie selon le type de cours</>}
           </p>
         </div>
         <Link href="/parametres" className="essais-config-link">

@@ -2,6 +2,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { createServerClient } from '@/lib/supabase-server';
 import { studioCan } from '@/lib/plan-guard';
 import { getDocsInscription } from '@/lib/docs-inscription';
+import { getEssaiPrixParType } from '@/lib/essai-tarif';
 import { resolveClientInfo, filterCoursVisibles } from '@/lib/visibilite';
 import { compterPlacesOccupeesParCours } from '@/lib/presences';
 import { notFound } from 'next/navigation';
@@ -73,7 +74,11 @@ async function getData(studioSlug) {
   // toute la page. getDocsInscription → [] dans ce cas.
   const docs = await getDocsInscription(supabase, profile.id);
 
-  return { profile, cours, docs };
+  // Tarif d'essai par type (v92) — même pattern défensif que les docs :
+  // pré-migration, null = prix unique, rien ne casse.
+  const surchargesEssai = await getEssaiPrixParType(supabase, profile.id);
+
+  return { profile, cours, docs, surchargesEssai };
 }
 
 export default async function EssaiPage({ params, searchParams }) {
@@ -87,6 +92,7 @@ export default async function EssaiPage({ params, searchParams }) {
       profile={data.profile}
       cours={data.cours}
       docs={data.docs}
+      surchargesEssai={data.surchargesEssai}
       studioSlug={studioSlug}
       preselectedCoursId={sp?.cours || null}
     />

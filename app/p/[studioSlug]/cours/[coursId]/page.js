@@ -5,6 +5,7 @@ import CoursReservationClient from './CoursReservationClient';
 import { canSeeCours, resolveClientInfo } from '@/lib/visibilite';
 import { studioCan } from '@/lib/plan-guard';
 import { resoudreFicheEleve } from '@/lib/fiche-eleve';
+import { prixEssai, getEssaiPrixParType } from '@/lib/essai-tarif';
 import { compterPlacesOccupees } from '@/lib/presences';
 import { resoudreCarnetApplicable } from '@/lib/carnet-resolution';
 import { ogPortail } from '@/lib/portail-metadata';
@@ -139,7 +140,13 @@ async function getData(studioSlug, coursId) {
   // visiteur). Il ne se sert que dans l'espace élève / rappel J-1, sous verrou.
   delete cours.lien_visio;
   delete cours.lien_visio_verrouille;
-  return { profile, cours, nbInscrits: nbInscrits || 0, currentUser, alreadyRegistered, prevision, canCancel, canReserve, canWaitlist };
+
+  // Tarif d'essai par type (v92, lecture défensive) : le CTA « Premier cours
+  // d'essai » affiche le prix DE CETTE séance, calculé côté serveur.
+  const surchargesEssai = await getEssaiPrixParType(supabase, profile.id);
+  const prixEssaiCours = prixEssai(profile, cours.type_cours, surchargesEssai);
+
+  return { profile, cours, nbInscrits: nbInscrits || 0, currentUser, alreadyRegistered, prevision, canCancel, canReserve, canWaitlist, prixEssaiCours };
 }
 
 export async function generateMetadata({ params }) {
@@ -184,6 +191,7 @@ export default async function CoursDetailPortailPage({ params }) {
       canCancel={data.canCancel}
       canReserve={data.canReserve}
       canWaitlist={data.canWaitlist}
+      prixEssaiCours={data.prixEssaiCours}
     />
   );
 }

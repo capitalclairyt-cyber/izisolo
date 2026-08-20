@@ -17,6 +17,7 @@ import { genererSlugStudioUnique } from '@/lib/slug-studio';
 import { validerSiret } from '@/lib/validation';
 import { MENTION_TVA_DEFAUT } from '@/lib/factures';
 import { sanitizeDocs } from '@/lib/docs-inscription';
+import { sanitizeEssaiPrixParType } from '@/lib/essai-tarif';
 // import BackgroundDecor — retiré, plus utilisé (apparences supprimées)
 
 // Normalise une URL utilisateur :
@@ -78,7 +79,7 @@ const CARTES = {
                   'faq_publique', 'instagram_url', 'facebook_url', 'website_url'],
   docs:          ['docs_inscription'],
   visibilite:    ['visibilite_default', 'afficher_inscrits'],
-  essai:         ['essai_actif', 'essai_mode', 'essai_paiement', 'essai_prix', 'essai_stripe_payment_link', 'essai_message'],
+  essai:         ['essai_actif', 'essai_mode', 'essai_paiement', 'essai_prix', 'essai_prix_par_type', 'essai_stripe_payment_link', 'essai_message'],
   paiement:      ['stripe_webhook_secret'],
   seuils_prof:   ['alerte_paiement_attente_jours'],
   seuils:        ['alerte_seances_seuil', 'alerte_expiration_jours'],
@@ -122,6 +123,9 @@ const SERIALIZERS = {
   essai_mode:                v => v || 'manuel',
   essai_paiement:            v => v || 'gratuit',
   essai_prix:                v => parseFloat(v) || 0,
+  // v92 — undefined (colonne pas encore migrée, jamais touchée) doit RESTER
+  // undefined : supabase-js l'omet du payload, la carte se sauve pré-migration.
+  essai_prix_par_type:       v => (v === undefined ? undefined : sanitizeEssaiPrixParType(v)),
   essai_stripe_payment_link: v => v || null,
   essai_message:             v => v || null,
   visibilite_default:        v => v || 'public',

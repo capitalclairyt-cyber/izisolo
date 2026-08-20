@@ -6,6 +6,7 @@
 // ════════════════════════════════════════════════════════════════════════════
 
 import { Zap } from 'lucide-react';
+import { getAllTypesFromCategories } from '@/lib/utils';
 
 export default function CoursEssaiSection({ profile, setProfile, setDirty }) {
   const set = (field) => (val) => {
@@ -15,6 +16,19 @@ export default function CoursEssaiSection({ profile, setProfile, setDirty }) {
   const actif = profile?.essai_actif === true;
   const mode  = profile?.essai_mode || 'manuel';
   const paiement = profile?.essai_paiement || 'gratuit';
+
+  // Tarif par type de cours (v92, retour Kim 2026-08-20 : essai particulier
+  // ≠ essai collectif). L'éditeur lit BRUT (règle bible : un input montre le
+  // vide, pas le défaut) — la sanitization vit dans le serializer de la carte.
+  const typesCours = getAllTypesFromCategories(profile?.types_cours);
+  const surcharges = (profile?.essai_prix_par_type && typeof profile.essai_prix_par_type === 'object')
+    ? profile.essai_prix_par_type : {};
+  const setSurcharge = (type) => (val) => {
+    const next = { ...surcharges };
+    if (val === '' || val == null) delete next[type];
+    else next[type] = val;
+    set('essai_prix_par_type')(Object.keys(next).length > 0 ? next : null);
+  };
 
   return (
     <div className="section izi-card">
@@ -112,6 +126,35 @@ export default function CoursEssaiSection({ profile, setProfile, setDirty }) {
             </div>
           )}
 
+          {/* Tarif par type de cours (v92) — sur place uniquement : un lien
+              Stripe porte UN prix, un tarif variable y mentirait. */}
+          {paiement === 'sur_place' && typesCours.length > 0 && (
+            <div className="form-group">
+              <label className="form-label">Un prix différent selon le type de cours ? (optionnel)</label>
+              <span className="form-hint" style={{ display: 'block', margin: '0 0 8px' }}>
+                Laisse vide pour appliquer le prix ci-dessus. Exemple : essai collectif à un prix,
+                essai particulier à un autre.
+              </span>
+              <div className="essai-types-grid">
+                {typesCours.map(type => (
+                  <label key={type} className="essai-type-row">
+                    <span className="essai-type-nom">{type}</span>
+                    <input
+                      type="number"
+                      step="0.5"
+                      min="0"
+                      className="izi-input essai-type-prix"
+                      value={surcharges[type] ?? ''}
+                      onChange={e => setSurcharge(type)(e.target.value)}
+                      placeholder={String(profile?.essai_prix || 0)}
+                    />
+                    <span className="essai-type-euro">€</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Stripe Payment Link */}
           {paiement === 'stripe' && (
             <div className="form-group">
@@ -174,6 +217,11 @@ export default function CoursEssaiSection({ profile, setProfile, setDirty }) {
           display: flex; flex-direction: column; gap: 16px;
         }
         .essai-radio-group { display: flex; flex-direction: column; gap: 6px; }
+        .essai-types-grid { display: flex; flex-direction: column; gap: 6px; }
+        .essai-type-row { display: flex; align-items: center; gap: 8px; }
+        .essai-type-nom { flex: 1; font-size: 0.875rem; color: var(--text-primary); }
+        .essai-type-prix { width: 90px; text-align: right; }
+        .essai-type-euro { font-size: 0.875rem; color: var(--text-muted); }
         .essai-radio-opt {
           display: flex; align-items: flex-start; gap: 10px;
           padding: 10px 12px; border: 1.5px solid var(--border);

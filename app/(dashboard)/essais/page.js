@@ -1,5 +1,6 @@
 import { createServerClient } from '@/lib/supabase-server';
 import { redirect } from 'next/navigation';
+import { getEssaiPrixParType } from '@/lib/essai-tarif';
 import EssaisClient from './EssaisClient';
 
 export const metadata = { title: 'Demandes de cours d\'essai' };
@@ -38,7 +39,10 @@ export default async function EssaisPage() {
     cours: coursById.get(d.cours_id) || null,
   }));
 
+  // Tarif d'essai par type (v92, lecture défensive — null pré-migration)
+  const surchargesEssai = await getEssaiPrixParType(supabase, user.id);
+
   return (
-    <EssaisClient profile={profile} demandes={demandes} />
+    <EssaisClient profile={profile} demandes={demandes} surchargesEssai={surchargesEssai} />
   );
 }

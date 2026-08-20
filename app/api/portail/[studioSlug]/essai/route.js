@@ -10,6 +10,7 @@ import { studioCan } from '@/lib/plan-guard';
 import { reportError } from '@/lib/report';
 import { canSeeCours, resolveClientInfo } from '@/lib/visibilite';
 import { coursDejaCommence } from '@/lib/dates';
+import { prixEssai, getEssaiPrixParType } from '@/lib/essai-tarif';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -112,7 +113,7 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
   // 2. Cours
   const { data: cours } = await supabaseAdmin
     .from('cours')
-    .select('id, nom, date, heure, lieu, est_annule, profile_id, visibilite')
+    .select('id, nom, type_cours, date, heure, lieu, est_annule, profile_id, visibilite')
     .eq('id', coursId)
     .eq('profile_id', profile.id)
     .single();
@@ -214,6 +215,10 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
 
   // 6. Emails (non-bloquants)
   const stripeLink = profile.essai_paiement === 'stripe' ? profile.essai_stripe_payment_link : null;
+  // Tarif d'essai par type de cours (v92) — lecture défensive : pré-migration,
+  // surcharges = null et prixEssai retombe sur essai_prix (comportement d'avant).
+  const surchargesEssai = await getEssaiPrixParType(supabaseAdmin, profile.id);
+  const prixEssaiCours = prixEssai(profile, cours.type_cours, surchargesEssai);
   const proWantsEmail = wantsNotif(profile.notif_prefs, 'essai_demande', 'prof', 'email');
   if (isManuel) {
     emailEnAttenteVisiteur({ profileNom: profile.studio_nom, prenom, email, cours });
@@ -228,7 +233,7 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
       email,
       cours,
       paiement: profile.essai_paiement,
-      prix: profile.essai_prix,
+      prix: prixEssaiCours,
       stripeLink,
       proEmail: profile.email_contact,
       adresse: profile.adresse,
@@ -245,7 +250,7 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
     ok: true,
     status: isManuel ? 'en_attente' : 'finalisee',
     paiement: profile.essai_paiement,
-    prix: profile.essai_prix,
+    prix: prixEssaiCours,
     stripePaymentLink: stripeLink,
     message: profile.essai_message,
   });
