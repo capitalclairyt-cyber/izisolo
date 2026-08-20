@@ -145,7 +145,10 @@ function AssignerOffreModal({ client, onClose, onSuccess }) {
         // apparaissent en « à percevoir » et s'encaissent un par un.
         const echId = crypto.randomUUID();
         paiements = versements.map((v, i) => {
-          const encaisse = i === 0 && premierEncaisse;
+          // Encaissé + mode PAR VERSEMENT (2026-08-20) — même mapping que
+          // VenteOffreModal ; fallback legacy premierEncaisse par sécurité.
+          const encaisse = v.encaisse != null ? v.encaisse === true : (i === 0 && premierEncaisse);
+          const mode = encaisse ? (v.mode || modePaiement || null) : null;
           return {
             client_id: client.id,
             offre_id: isLibre ? null : selectedOffre.id,
@@ -154,10 +157,10 @@ function AssignerOffreModal({ client, onClose, onSuccess }) {
             type: isLibre ? null : selectedOffre.type,
             montant: v.montant,
             statut: encaisse ? 'paid' : 'pending',
-            mode: encaisse ? modePaiement : null,
+            mode,
             date: v.date,
-            notes: encaisse ? (notes || null) : null,
-            numero_cheque: encaisse && numeroCheque ? numeroCheque : null,
+            notes: encaisse && i === 0 ? (notes || null) : null,
+            numero_cheque: mode === 'cheque' && numeroCheque ? numeroCheque : null,
           };
         });
       } else {

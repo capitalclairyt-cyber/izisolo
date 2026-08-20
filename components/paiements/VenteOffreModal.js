@@ -138,7 +138,11 @@ export default function VenteOffreModal({ offre: offreInitiale = null, onClose, 
       if (multiVersement && versements.length > 1) {
         const echId = crypto.randomUUID();
         paiements = versements.map((v, i) => {
-          const encaisse = i === 0 && premierEncaisse;
+          // Encaissé + mode PAR VERSEMENT (2026-08-20) — PaiementStep garantit
+          // qu'une ligne encaissée a son mode ; fallback legacy premierEncaisse
+          // si des versements sans le champ arrivaient encore.
+          const encaisse = v.encaisse != null ? v.encaisse === true : (i === 0 && premierEncaisse);
+          const mode = encaisse ? (v.mode || modePaiement || null) : null;
           return {
             client_id: selectedClient.id,
             offre_id: offre.id,
@@ -147,10 +151,10 @@ export default function VenteOffreModal({ offre: offreInitiale = null, onClose, 
             type: offre.type,
             montant: v.montant,
             statut: encaisse ? 'paid' : 'pending',
-            mode: encaisse ? modePaiement : null,
+            mode,
             date: v.date,
-            notes: encaisse ? (notes || null) : null,
-            numero_cheque: encaisse && numeroCheque ? numeroCheque : null,
+            notes: encaisse && i === 0 ? (notes || null) : null,
+            numero_cheque: mode === 'cheque' && numeroCheque ? numeroCheque : null,
           };
         });
       } else {

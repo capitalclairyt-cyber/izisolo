@@ -30,6 +30,11 @@ function generateVersements(total, nb, rythmeMonths = 1) {
     return {
       montant: i === 0 ? +(base + reste).toFixed(2) : base,
       date: d.toISOString().split('T')[0],
+      // Encaissement PAR VERSEMENT (question Colin 2026-08-20 : « 80 € en
+      // liquide et 43 € en CB ») : chaque ligne dit si elle est déjà réglée
+      // et COMMENT — le mode n'a pas de défaut (fix Kim, même philosophie).
+      encaisse: i === 0,
+      mode: '',
     };
   });
 }
@@ -56,10 +61,9 @@ export default function PaiementStep({
   const [numeroCheque, setNumeroCheque] = useState('');
   const [notes, setNotes] = useState('');
   // Mode de règlement : 'paye' (encaissé maintenant), 'aregler' (impayé, à
-  // régler plus tard), 'multi' (échéancier en plusieurs fois).
+  // régler plus tard), 'multi' (échéancier en plusieurs fois — l'encaissé et
+  // le mode vivent PAR VERSEMENT depuis le 2026-08-20).
   const [reglement, setReglement] = useState('paye');
-  // Pour l'échéancier : le 1er versement est-il déjà encaissé ?
-  const [premierEncaisse, setPremierEncaisse] = useState(true);
   const [nbVersements, setNbVersements] = useState(3);
   const [rythme, setRythme] = useState(1);
   const [versements, setVersements] = useState([]);
@@ -84,9 +88,11 @@ export default function PaiementStep({
     setVersements(prev => prev.map((v, i) => i === idx ? { ...v, [field]: field === 'montant' ? (parseFloat(value) || 0) : value } : v));
   };
 
-  // Le mode est requis dès qu'un montant est encaissé MAINTENANT : « payé »,
-  // ou échéancier dont le 1er versement est déjà encaissé.
-  const modeRequis = !isAregler && !(isMulti && !premierEncaisse);
+  // Le mode GLOBAL n'est requis que pour « payé maintenant » (paiement simple) ;
+  // en échéancier, chaque versement encaissé porte SON mode.
+  const modeRequis = !isAregler && !isMulti;
+  const chequeQuelquePart = (modeRequis && modePaiement === 'cheque')
+    || (isMulti && versements.some(v => v.encaisse && v.mode === 'cheque'));
 
   const handleConfirm = () => {
     if (!montant || parseFloat(montant) < 0) return;
@@ -98,6 +104,10 @@ export default function PaiementStep({
       setError('Comment as-tu été payée ? Choisis le mode de règlement (espèces, chèque, virement, CB).');
       return;
     }
+    if (isMulti && versements.some(v => v.encaisse && !v.mode)) {
+      setError('Un versement encaissé doit dire comment : choisis son mode (espèces, chèque, virement, CB).');
+      return;
+    }
     setError('');
     onConfirm({
       montant: parseFloat(montant),
@@ -105,7 +115,8 @@ export default function PaiementStep({
       notes: notes.trim() || null,
       numeroCheque: numeroCheque.trim() || null,
       reglement,               // 'paye' | 'aregler' | 'multi'
-      premierEncaisse,         // pour l'échéancier
+      // compat : dérivé des lignes (l'encaissé vit par versement désormais)
+      premierEncaisse: isMulti ? versements[0]?.encaisse === true : true,
       versements: isMulti ? versements : [],
     });
   };
@@ -242,11 +253,6 @@ export default function PaiementStep({
             ))}
           </div>
 
-          <label className="premier-encaisse-row">
-            <input type="checkbox" checked={premierEncaisse} onChange={e => setPremierEncaisse(e.target.checked)} />
-            Le 1<sup>er</sup> versement est déjà encaissé
-          </label>
-
           {/* Arrondi aux euros (appel Patricia 2026-08-18) : versements entiers,
               le 1er absorbe le reliquat pour que le total reste exact.
               Montants toujours modifiables à la main ensuite. */}
@@ -272,29 +278,57 @@ export default function PaiementStep({
             </button>
           )}
 
+          {/* Encaissé + mode PAR VERSEMENT (2026-08-20) : « 80 € en liquide et
+              43 € en CB le même jour » se fait en un geste. Un versement coché
+              « Payé » exige son mode (aucun défaut — fix Kim). */}
           <div className="multi-v-list">
-            {versements.map((v, i) => {
-              const encaisse = i === 0 && premierEncaisse;
-              return (
-                <div key={i} className="multi-v-row">
-                  <span className="multi-v-label">{i === 0 ? "Auj." : `#${i + 1}`}</span>
+            {versements.map((v, i) => (
+              <div key={i} className="multi-v-row">
+                <span className="multi-v-label">{i === 0 ? "Auj." : `#${i + 1}`}</span>
+                <input
+                  type="date"
+                  className="izi-input multi-v-date-input"
+                  value={v.date}
+                  onChange={e => updateVersement(i, 'date', e.target.value)}
+                />
+                <input
+                  type="number" step="0.01" min="0"
+                  className="izi-input multi-v-montant-input"
+                  value={v.montant}
+                  onChange={e => updateVersement(i, 'montant', e.target.value)}
+                />
+                <label className="multi-v-enc" title="Ce versement est déjà réglé">
                   <input
-                    type="date"
-                    className="izi-input multi-v-date-input"
-                    value={v.date}
-                    onChange={e => updateVersement(i, 'date', e.target.value)}
+                    type="checkbox"
+                    checked={v.encaisse === true}
+                    onChange={e => { updateVersement(i, 'encaisse', e.target.checked); setError(''); }}
                   />
-                  <input
-                    type="number" step="0.01" min="0"
-                    className="izi-input multi-v-montant-input"
-                    value={v.montant}
-                    onChange={e => updateVersement(i, 'montant', e.target.value)}
-                  />
-                  <span className={`multi-v-statut ${encaisse ? 'paid' : 'pending'}`}>{encaisse ? 'Payé' : 'À venir'}</span>
-                </div>
-              );
-            })}
+                  Payé
+                </label>
+                {v.encaisse === true ? (
+                  <select
+                    className="izi-input multi-v-mode"
+                    value={v.mode || ''}
+                    onChange={e => { updateVersement(i, 'mode', e.target.value); setError(''); }}
+                    aria-label={`Mode de règlement du versement ${i + 1}`}
+                  >
+                    <option value="">Mode ?</option>
+                    {MODES_PAIEMENT.map(m => (
+                      <option key={m.value} value={m.value}>{m.label}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <span className="multi-v-statut pending">À venir</span>
+                )}
+              </div>
+            ))}
           </div>
+          {isMulti && chequeQuelquePart && (
+            <>
+              <div className="paiement-section-label">N° de chèque</div>
+              <input className="izi-input" type="text" value={numeroCheque} onChange={e => setNumeroCheque(e.target.value)} placeholder="Ex : 0012345" />
+            </>
+          )}
           {(() => {
             const sum = versements.reduce((s, v) => s + (typeof v.montant === 'number' ? v.montant : parseFloat(v.montant) || 0), 0);
             const total = parseFloat(montant) || 0;
@@ -333,10 +367,12 @@ export default function PaiementStep({
           cursor: pointer; transition: all 0.15s;
         }
         .reglement-btn.active { border-color: var(--brand, #B87333); background: var(--brand-light, #f7efe6); color: var(--brand-700, #8c5826); }
-        .premier-encaisse-row {
-          display: flex; align-items: center; gap: 8px; margin: 10px 0 4px;
-          font-size: 0.8125rem; color: var(--text-secondary, #6B5D52); cursor: pointer;
+        .multi-v-enc {
+          display: flex; align-items: center; gap: 4px; white-space: nowrap;
+          font-size: 0.75rem; color: var(--text-secondary, #6B5D52); cursor: pointer;
         }
+        .multi-v-enc input { accent-color: var(--brand, #B87333); }
+        .multi-v-mode { width: 96px; font-size: 0.78rem !important; padding: 6px 4px !important; }
         .multi-arrondir-btn {
           align-self: flex-start; margin: 2px 0 6px;
           background: none; border: 1px dashed var(--brand-200, #e8d3bd); border-radius: 99px;
