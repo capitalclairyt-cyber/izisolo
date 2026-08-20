@@ -125,7 +125,21 @@ try {
   await attendre(800);
   const hintPaye = await page.getByText('rien n\'est demandé à l\'élève').count();
   assert(hintPaye > 0, 'sous-texte « argent déjà reçu, rien demandé à l\'élève » visible sous Payé maintenant');
+
+  // Plus AUCUN mode présélectionné (le cœur du retour Kim : « aucune info de
+  // paiement renseignée » et pourtant un encaissement espèces enregistré).
+  assert(await page.locator('.mode-btn.active').count() === 0, 'aucun mode de règlement présélectionné');
+  // Montant garanti non vide (une offre du démo peut avoir un prix vide → bouton désactivé)
+  await page.locator('.montant-input').fill('50');
+  await page.getByRole('button', { name: /Valider le paiement/ }).click();
+  await attendre(500);
+  assert(await page.getByText('Comment as-tu été payée ?').count() > 0, 'valider sans mode = refus explicite (aucune vente écrite)');
   await page.screenshot({ path: join(OUT, '3-paiement-step-hint.png') });
+  await page.locator('.mode-btn', { hasText: 'Espèces' }).click();
+  await attendre(300);
+  assert(await page.getByText('Comment as-tu été payée ?').count() === 0, 'choisir un mode lève le refus');
+  assert(await page.locator('.mode-btn.active').count() === 1, 'le mode choisi est bien marqué actif');
+  // On NE valide pas : aucune vente témoin à purger.
 
   // ═══ 3. Modale « Nouveau type » : discipline OU format ═══
   console.log('\n— 3. /cours/nouveau : un type peut être un FORMAT —');

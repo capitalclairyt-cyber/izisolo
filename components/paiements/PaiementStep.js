@@ -47,7 +47,12 @@ export default function PaiementStep({
   submitting = false,
 }) {
   const [montant, setMontant] = useState(isLibre ? '' : String(offrePrix || ''));
-  const [modePaiement, setModePaiement] = useState('especes');
+  // Retour Kim 2026-08-20 : « aucune info de paiement renseignée » et pourtant
+  // un encaissement enregistré — parce que TOUT était présélectionné (« Payé
+  // maintenant » + « Espèces »). Le mode n'a plus de défaut : déclarer COMMENT
+  // l'argent est arrivé est le geste conscient minimal avant d'écrire « payé »
+  // (ces lignes partent dans l'export comptable et les factures v84).
+  const [modePaiement, setModePaiement] = useState('');
   const [numeroCheque, setNumeroCheque] = useState('');
   const [notes, setNotes] = useState('');
   // Mode de règlement : 'paye' (encaissé maintenant), 'aregler' (impayé, à
@@ -79,10 +84,18 @@ export default function PaiementStep({
     setVersements(prev => prev.map((v, i) => i === idx ? { ...v, [field]: field === 'montant' ? (parseFloat(value) || 0) : value } : v));
   };
 
+  // Le mode est requis dès qu'un montant est encaissé MAINTENANT : « payé »,
+  // ou échéancier dont le 1er versement est déjà encaissé.
+  const modeRequis = !isAregler && !(isMulti && !premierEncaisse);
+
   const handleConfirm = () => {
     if (!montant || parseFloat(montant) < 0) return;
     if (isLibre && !intituleLibre.trim()) {
       setError('Saisis un intitulé pour la prestation libre.');
+      return;
+    }
+    if (modeRequis && !modePaiement) {
+      setError('Comment as-tu été payée ? Choisis le mode de règlement (espèces, chèque, virement, CB).');
       return;
     }
     setError('');
@@ -153,8 +166,10 @@ export default function PaiementStep({
         </p>
       )}
 
-      {/* Mode de paiement — masqué si "à régler plus tard" (rien n'est encaissé) */}
-      {!isAregler && (
+      {/* Mode de paiement — affiché seulement si un montant est encaissé
+          maintenant (masqué : « à régler plus tard », échéancier sans 1er
+          versement encaissé). Aucune présélection : choisir = déclarer. */}
+      {modeRequis && (
         <>
           <div className="paiement-section-label">Mode de règlement</div>
           <div className="mode-grid">
@@ -163,7 +178,7 @@ export default function PaiementStep({
                 key={value}
                 type="button"
                 className={`mode-btn ${modePaiement === value ? 'active' : ''}`}
-                onClick={() => setModePaiement(value)}
+                onClick={() => { setModePaiement(value); setError(''); }}
               >
                 <Icon size={18} />
                 <span>{label}</span>
