@@ -11,7 +11,7 @@ export default async function OffresPage() {
     { data: profile },
   ] = await Promise.all([
     supabase.from('offres').select('*').eq('profile_id', user.id).order('ordre'),
-    supabase.from('profiles').select('metier, vocabulaire, plan, trial_started_at, stripe_subscription_status').eq('id', user.id).single(),
+    supabase.from('profiles').select('metier, vocabulaire, plan, trial_started_at, stripe_subscription_status, afficher_tarifs, studio_slug').eq('id', user.id).single(),
   ]);
 
   const planKey = effectivePlan(profile);

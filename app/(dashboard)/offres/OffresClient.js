@@ -97,6 +97,105 @@ function DiagnosticOffres({ offres }) {
   );
 }
 
+// ── Grille tarifaire invisible sur le portail (retour Kim 2026-08-20 : la
+// prof a conclu « l'élève n'a pas accès à mes tarifs » alors que le réglage
+// existe, à FALSE par défaut depuis v14 et enterré dans Paramètres → Ma page).
+// Dès qu'un catalogue existe, on propose le geste en 1 clic — même écriture
+// directe de profiles que la sauvegarde par carte des Paramètres (B2e).
+function TarifsPortailHint({ profile, offres }) {
+  const [visible, setVisible] = useState(false);
+  const [fait, setFait] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [erreur, setErreur] = useState('');
+
+  useEffect(() => {
+    const actives = (offres || []).filter(o => o.actif !== false && o.type !== 'cours_unique');
+    if (actives.length === 0) return;
+    if (profile?.afficher_tarifs === true) return;
+    try { if (localStorage.getItem('izi_tarifs_portail_hint_off') === '1') return; } catch { /* privé */ }
+    setVisible(true);
+  }, [offres, profile]);
+
+  if (!visible) return null;
+
+  const activer = async () => {
+    setBusy(true);
+    setErreur('');
+    try {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      const { error } = await supabase.from('profiles').update({ afficher_tarifs: true }).eq('id', user.id);
+      if (error) throw error;
+      setFait(true);
+    } catch (e) {
+      setErreur(e.message || 'La modification a échoué');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const masquer = () => {
+    try { localStorage.setItem('izi_tarifs_portail_hint_off', '1'); } catch { /* privé */ }
+    setVisible(false);
+  };
+
+  return (
+    <div className="izi-card tarhint animate-fade-in">
+      {fait ? (
+        <div className="tarhint-body">
+          <span>✓ C&apos;est fait : ta grille tarifaire est visible sur ton portail.</span>
+          {profile?.studio_slug && (
+            <a className="tarhint-btn" href={`/p/${profile.studio_slug}`} target="_blank" rel="noopener noreferrer">
+              Voir ma page <ArrowRight size={14} />
+            </a>
+          )}
+        </div>
+      ) : (
+        <>
+          <div className="tarhint-body">
+            <span>
+              👀 <strong>Tes élèves ne voient pas encore ta grille tarifaire.</strong> Tes offres
+              existent, mais ton portail ne les affiche pas tant que « Afficher mes tarifs »
+              est désactivé (Paramètres → Ma page).
+            </span>
+            <button type="button" className="tarhint-btn" onClick={activer} disabled={busy}>
+              {busy ? 'Activation…' : 'Afficher ma grille sur mon portail'}
+            </button>
+          </div>
+          {erreur && <p className="tarhint-err">{erreur}</p>}
+          <button type="button" className="tarhint-close" onClick={masquer} aria-label="Ne plus afficher">
+            <X size={15} />
+          </button>
+        </>
+      )}
+      {/* Global (préfixe tarhint-) : règle 2026-08-19, classes sur composants
+          possibles à terme — préfixe unique, zéro collision. */}
+      <style jsx global>{`
+        .tarhint { position: relative; border-left: 3px solid var(--brand, #B87333); }
+        .tarhint-body {
+          display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+          font-size: 0.8438rem; color: var(--text-secondary, #6B5D52); line-height: 1.5;
+        }
+        .tarhint-body > span { flex: 1; min-width: 220px; }
+        .tarhint-body strong { color: var(--text-primary, #3D3229); }
+        .tarhint-btn {
+          display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
+          background: var(--brand, #B87333); color: #fff; border: none; border-radius: 10px;
+          padding: 8px 14px; font-size: 0.8125rem; font-weight: 600; font-family: inherit;
+          cursor: pointer; text-decoration: none;
+        }
+        .tarhint-btn:hover { background: var(--brand-700, #8c5826); }
+        .tarhint-btn[disabled] { opacity: 0.6; cursor: default; }
+        .tarhint-err { margin: 8px 0 0; font-size: 0.78rem; color: var(--hot, #E8722A); }
+        .tarhint-close {
+          position: absolute; top: 8px; right: 8px; background: none; border: none;
+          color: var(--text-muted, #9A8C7E); cursor: pointer; padding: 4px; line-height: 0;
+        }
+      `}</style>
+    </div>
+  );
+}
+
 export default function OffresClient({ offres, profile, planKey, limiteOffres }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -219,6 +318,7 @@ export default function OffresClient({ offres, profile, planKey, limiteOffres })
         </div>
       )}
 
+      <TarifsPortailHint profile={profile} offres={offres} />
       <DiagnosticOffres offres={offres} />
       <div className="page-header animate-fade-in">
         <div className="page-header-left">

@@ -727,11 +727,18 @@ function NouveauCoursInner() {
           <div className="modal-overlay" onClick={() => { setShowNewType(false); setNewTypeName(''); }}>
             <div className="modal-box" onClick={e => e.stopPropagation()}>
               <h3 className="modal-title">Nouveau type de cours</h3>
+              {/* Retour Kim 2026-08-20 : les types seedés « styles de yoga »
+                  laissaient croire que le FORMAT (collectif / particulier)
+                  n'était pas exprimable — alors que les types sont libres. */}
+              <p className="form-hint" style={{ margin: '0 0 10px', lineHeight: 1.5 }}>
+                Un type peut être une discipline (Vinyasa, Pilates…) <strong>ou un format</strong> (Collectif,
+                Semi-privé, Particulier) : c&apos;est lui qui décide quels carnets couvrent quels cours.
+              </p>
               <input
                 className="izi-input"
                 value={newTypeName}
                 onChange={e => setNewTypeName(e.target.value)}
-                placeholder="Ex : Pilates, Danse, Éveil corporel…"
+                placeholder="Ex : Pilates, Collectif, Semi-privé, Particulier…"
                 autoFocus
                 onKeyDown={e => {
                   if (e.key === 'Enter') { e.preventDefault(); saveNewType(); }

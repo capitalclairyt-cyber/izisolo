@@ -143,6 +143,15 @@ export default function PaiementStep({
           </button>
         ))}
       </div>
+      {/* Retour Kim 2026-08-20 : « Payé maintenant » (le défaut) a été lu comme
+          « l'élève va payer » → notification d'encaissement jugée fausse. On dit
+          explicitement que ce mode = argent déjà reçu, rien demandé à l'élève. */}
+      {reglement === 'paye' && (
+        <p className="montant-hint" style={{ marginTop: 6 }}>
+          Tu as déjà reçu ce montant (espèces, chèque, virement…) : il est enregistré
+          direct dans tes revenus, rien n&apos;est demandé à l&apos;élève.
+        </p>
+      )}
 
       {/* Mode de paiement — masqué si "à régler plus tard" (rien n'est encaissé) */}
       {!isAregler && (
