@@ -1,6 +1,6 @@
 ---
 title: "Logiciel de gestion pour studio de yoga : 10 critères clés"
-description: "Comment choisir le bon logiciel de gestion pour ton studio de yoga en 2026 : 10 critères qui comptent vraiment, 5 red flags à fuir, 7 questions avant de signer."
+description: "Comment choisir le bon logiciel de gestion pour ton studio de yoga en 2026 : 10 critères qui comptent vraiment, 7 red flags à fuir, 7 questions avant de signer."
 date: 2026-01-18
 updated: 2026-08-21
 author: "Maude (IziSolo)"
@@ -24,7 +24,7 @@ Tu vas chercher un logiciel pour ton studio. Tu vas tomber sur 15 options. Tu va
 
 **3 mois plus tard, tu vas vouloir partir.** Parce que l'élève qui a abandonné en cours d'inscription. Parce que le portail bug sur mobile. Parce que tu te rends compte qu'il y a une commission cachée de 5 % sur chaque paiement. Parce que le support met 6 jours à te répondre.
 
-Le choix du logiciel n'est pas un choix de prix. C'est un **choix d'expérience**, la tienne et celle de tes élèves, pour 12-36 mois. Voici la méthode pour ne pas se tromper, structurée autour des **10 critères qui comptent vraiment**, des **5 red flags à fuir**, et des **7 questions à poser avant de signer**.
+Le choix du logiciel n'est pas un choix de prix. C'est un **choix d'expérience**, la tienne et celle de tes élèves, pour 12-36 mois. Voici la méthode pour ne pas se tromper, structurée autour des **10 critères qui comptent vraiment**, des **7 red flags à fuir**, et des **7 questions à poser avant de signer**.
 
 <figure class="article-figure">
   <img src="/blog/hero-choisir-logiciel.jpg" alt="Prof de yoga allongée sur le dos en savasana sur un tapis sombre" loading="lazy" />
@@ -144,7 +144,7 @@ Attention : certains logiciels facturent les SMS séparément (0,05-0,12 € par
 
 Sans ça, tu repasses 4-8 heures par an à tout reconstruire dans Excel.
 
-## Les 5 red flags à fuir
+## Les 7 red flags à fuir
 
 ### 🚩 Pas de site public consultable du portail élève
 Si le logiciel ne te montre pas un portail élève réel (juste des screenshots marketing), c'est suspect. **Demande l'URL d'un portail studio réel actuellement en production**.
@@ -157,6 +157,12 @@ Si tu signes 12 mois ferme et que ça ne marche pas après 2 mois, tu paies 10 m
 
 ### 🚩 Demande de carte bancaire pour l'essai "gratuit"
 Si le logiciel demande ta CB pour le "essai gratuit" et te facture automatiquement à J+15 si tu n'annules pas → c'est un piège à friction. Un vrai essai gratuit ne demande pas la CB.
+
+### 🚩 "Gratuit" avec commission sur chaque paiement
+Un forfait à 0 € qui prélève 4 ou 5 % sur chaque encaissement n'est pas gratuit : c'est un abonnement indexé sur ta réussite. À 500 € encaissés par mois, 4 % = 20 €/mois, soit plus cher que la plupart des abonnements fixes du marché. Et plus tu remplis tes cours, plus tu paies. **Fais le calcul à TON volume avant de signer** (notre [calculateur](/calculateur) le fait pour n'importe quel outil), et vérifie ce que deviennent les espèces et les chèques dans ce modèle.
+
+### 🚩 Des témoignages qui sentent le neuf
+Des avis dithyrambiques postés la même semaine, des profils sans historique qui ne parlent que de cet outil, des captures d'écran de conversations privées invérifiables : méfiance. Un outil sûr de lui n'a pas besoin de se fabriquer des fans. **Les vraies preuves** : un portail élève réel consultable, un essai sans carte, et des utilisatrices identifiables qui répondent quand tu leur écris. Bonus de transparence : quand quelqu'un te recommande un outil, demande-lui simplement s'il a un lien avec.
 
 ### 🚩 Pas de chat support, juste un formulaire qui te rappelle "sous 48h ouvrés"
 Le jour où tu auras un bug avant un cours, tu auras besoin d'une réponse en 10-30 minutes. Si le seul canal support est un formulaire async, change.
