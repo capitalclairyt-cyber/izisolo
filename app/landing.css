@@ -742,6 +742,13 @@ section.tight { padding-block: clamp(48px, 6vw, 80px); }
   box-shadow: var(--shadow-md);
 }
 .feat-photo { aspect-ratio: 5 / 4; overflow: hidden; box-shadow: var(--shadow-md); }
+/* Rangée avec réel produit (ReelPhone) : le panneau abandonne le 5/4 et
+   s'adapte à la hauteur du téléphone ; la largeur du cadre est fixée ICI
+   (le composant suit en 9:16). */
+.feat-shot-reel { aspect-ratio: auto; padding: 24px 0; }
+/* Double classe = spécificité (0,3,0) : bat le width:100% scopé styled-jsx
+   du composant (.reel-phone.jsx-hash = (0,2,0)), peu importe l'ordre. */
+.feat-shot.feat-shot-reel .reel-phone { width: min(60%, 230px); }
 @media (max-width: 760px) {
   .feat { grid-template-columns: 1fr; }
   .feat.flip .feat-media { order: 0; }

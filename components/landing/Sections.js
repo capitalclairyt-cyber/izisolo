@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { IziSoloLogo, WaveOrnament } from './Brand';
+import ReelPhone from './ReelPhone';
 import { FAQ_ITEMS } from '@/content/faq';
 
 /* ================================================================
@@ -242,8 +243,17 @@ export function Features() {
           ]}
           media={(
             <>
-              <div className="feat-shot"><Image src={SCREENS.revenus.src} alt={SCREENS.revenus.alt} width={1280} height={800} sizes="(max-width: 760px) 90vw, 440px" /></div>
-              <span className="badge">547 € ce mois</span>
+              {/* Réel produit auto-hébergé (compressé ~3 Mo, muet, sous-titres
+                  incrustés) — remplace la capture statique. Le master vit dans
+                  ressources/ (gitignoré) ; workflow : cf. ReelPhone.js. */}
+              <div className="feat-shot feat-shot-reel">
+                <ReelPhone
+                  src="/videos/reel-paiement-plusieurs-fois.mp4"
+                  poster="/videos/reel-paiement-plusieurs-fois-poster.jpg"
+                  titre="Démo en 35 secondes : vendre un carnet payé en plusieurs fois et suivre chaque versement"
+                />
+              </div>
+              <span className="badge">En 3 fois, sans y penser</span>
             </>
           )}
         />

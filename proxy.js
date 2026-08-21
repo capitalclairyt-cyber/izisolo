@@ -140,6 +140,8 @@ export async function proxy(request) {
     pathname.startsWith('/sw.js') ||
     pathname.startsWith('/icons/') ||
     pathname.startsWith('/illustrations/') ||
+    pathname.startsWith('/videos/') || // réels produit de la landing (ReelPhone)
+
     pathname === '/'
   ) {
     return NextResponse.next();
@@ -181,6 +183,6 @@ export const config = {
   matcher: [
     // illustrations/ exclu comme icons/ (AUDIT-PERF cat 1.6) : l'image de la
     // Sidebar déclenchait une vérification GoTrue à chaque affichage.
-    '/((?!_next/static|_next/image|favicon.ico|manifest.json|manifest-admin.json|sw.js|icons/|illustrations/).*)',
+    '/((?!_next/static|_next/image|favicon.ico|manifest.json|manifest-admin.json|sw.js|icons/|illustrations/|videos/).*)',
   ],
 };
