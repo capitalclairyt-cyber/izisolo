@@ -62,9 +62,9 @@ export const metadata = {
   metadataBase: new URL(baseUrl),
   title: {
     default: 'IziSolo · Moins de soucis, plus de tapis',
-    template: '%s — IziSolo',
+    template: '%s · IziSolo',
   },
-  description: "L'outil de gestion calme et beau pour les profs de yoga, pilates, méditation, danse et indépendant·e·s du bien-être. Agenda, élèves, paiements, communication — tout-en-un.",
+  description: "L'outil de gestion calme et beau pour les profs de yoga, pilates, méditation, danse et indépendant·e·s du bien-être. Agenda, élèves, paiements, communication : tout-en-un.",
   applicationName: 'IziSolo',
   manifest: '/manifest.json',
   // Via metadata (et pas un <link> en dur dans le <head>) pour que le segment

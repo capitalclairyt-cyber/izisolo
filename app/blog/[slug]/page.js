@@ -146,7 +146,7 @@ export default async function ArticlePage({ params }) {
                   IziSolo, l'app pour gérer ton studio <em>en 5 minutes par jour</em>.
                 </h3>
                 <p>
-                  Agenda, élèves, paiements, portail public — tout-en-un.
+                  Agenda, élèves, paiements, portail public : tout-en-un.
                   14 jours d'essai sans CB, dès 15 €/mois.
                 </p>
                 <Link href="/" className="btn btn-primary btn-lg">Découvrir IziSolo →</Link>

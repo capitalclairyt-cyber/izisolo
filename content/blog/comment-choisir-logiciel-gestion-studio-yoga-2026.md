@@ -2,14 +2,14 @@
 title: "Logiciel de gestion pour studio de yoga : 10 critères clés"
 description: "Comment choisir le bon logiciel de gestion pour ton studio de yoga en 2026 : 10 critères qui comptent vraiment, 5 red flags à fuir, 7 questions avant de signer."
 date: 2026-01-18
-updated: 2026-05-21
+updated: 2026-08-21
 author: "Colin (IziSolo)"
 tags: ["outils", "gestion", "logiciel", "studio"]
 image: /blog/hero-choisir-logiciel.jpg
 excerpt: "Tu vas chercher un logiciel de gestion pour ton studio. Tu vas tomber sur 15 options. Tu vas regarder le prix. Tu vas choisir le moins cher. 3 mois plus tard, tu vas vouloir partir. Voici comment éviter ça."
 faq:
   - question: "Quels critères pour choisir un logiciel de gestion de studio yoga ?"
-    answer: "Les 5 critères critiques (par ordre d'importance) : (1) mobile-first — tu vas l'utiliser sur ton téléphone en début de cours, ça doit être instantané ; (2) portail élève sans création de compte obligatoire — l'élève doit pouvoir réserver et payer en 3 clics, sans mot de passe à retenir ; (3) pricing transparent — pas de commission cachée sur les paiements, pas de frais d'activation, pas de surfacturation au volume d'élèves ; (4) export des données possible à tout moment — tu pars quand tu veux, tu pars avec tes données ; (5) support qui répond en moins de 24h par chat, pas un formulaire de contact bloqué 5 jours."
+    answer: "Les 5 critères critiques (par ordre d'importance) : (1) mobile-first : tu vas l'utiliser sur ton téléphone en début de cours, ça doit être instantané ; (2) portail élève sans création de compte obligatoire : l'élève doit pouvoir réserver et payer en 3 clics, sans mot de passe à retenir ; (3) pricing transparent : pas de commission cachée sur les paiements, pas de frais d'activation, pas de surfacturation au volume d'élèves ; (4) export des données possible à tout moment : tu pars quand tu veux, tu pars avec tes données ; (5) support qui répond en moins de 24h par chat, pas un formulaire de contact bloqué 5 jours."
   - question: "Combien coûte un logiciel de gestion de studio yoga ?"
     answer: "Entre 0 € (gratuit limité) et 90 €/mois (solutions chaînes/franchises) en 2026. Pour un·e prof solo, la bonne fourchette est 17-30 €/mois. En dessous c'est souvent un outil incomplet (manque le paiement intégré, manque les carnets, manque le portail élève public). Au-dessus c'est généralement une solution conçue pour les chaînes commerciales (Mindbody, Bsport) avec des fonctionnalités lourdes inutiles pour un·e solo. Méfie-toi des commissions cachées : certains logiciels affichent 15 €/mois mais prennent 5 % sur chaque paiement encaissé via leur plateforme."
   - question: "Comment tester un logiciel avant de s'engager ?"
@@ -17,18 +17,18 @@ faq:
   - question: "Faut-il un logiciel français ou un logiciel international ?"
     answer: "Un logiciel français pour 99 % des profs solo en France. Pourquoi : (1) RGPD compliance native (les hébergeurs européens, le délégué DPO, etc.) ; (2) URSSAF + facturation française gérées d'usine (numéro SIRET, exonération TVA franchise en base, etc.) ; (3) support en français en horaires français ; (4) connaissance des modes de paiement locaux (Stripe Payment Link plutôt que des solutions US). Les logiciels US (Mindbody, Acuity) sont surdimensionnés pour ton cas et mal adaptés à la fiscalité française."
   - question: "Comment migrer d'un logiciel à un autre sans perdre ses élèves ?"
-    answer: "Trois étapes : (1) exporte tes données depuis l'ancien logiciel — tous les bons logiciels permettent un export CSV ou JSON ; (2) importe dans le nouveau via l'import CSV (en général 30 min de mapping + validation) ; (3) garde l'ancien logiciel actif 2-4 semaines en parallèle pour gérer la transition (les élèves qui ont leur lien de réservation habituel basculent progressivement vers le nouveau portail). Compte 4-6 h de travail total. Pas un drame, mais à anticiper proprement."
+    answer: "Trois étapes : (1) exporte tes données depuis l'ancien logiciel (tous les bons logiciels permettent un export CSV ou JSON) ; (2) importe dans le nouveau via l'import CSV (en général 30 min de mapping + validation) ; (3) garde l'ancien logiciel actif 2-4 semaines en parallèle pour gérer la transition (les élèves qui ont leur lien de réservation habituel basculent progressivement vers le nouveau portail). Compte 4-6 h de travail total. Pas un drame, mais à anticiper proprement."
 ---
 
 Tu vas chercher un logiciel pour ton studio. Tu vas tomber sur 15 options. Tu vas regarder le prix. Tu vas choisir le moins cher.
 
 **3 mois plus tard, tu vas vouloir partir.** Parce que l'élève qui a abandonné en cours d'inscription. Parce que le portail bug sur mobile. Parce que tu te rends compte qu'il y a une commission cachée de 5 % sur chaque paiement. Parce que le support met 6 jours à te répondre.
 
-Le choix du logiciel n'est pas un choix de prix. C'est un **choix d'expérience** — la tienne et celle de tes élèves — pour 12-36 mois. Voici la méthode pour ne pas se tromper, structurée autour des **10 critères qui comptent vraiment**, des **5 red flags à fuir**, et des **7 questions à poser avant de signer**.
+Le choix du logiciel n'est pas un choix de prix. C'est un **choix d'expérience**, la tienne et celle de tes élèves, pour 12-36 mois. Voici la méthode pour ne pas se tromper, structurée autour des **10 critères qui comptent vraiment**, des **5 red flags à fuir**, et des **7 questions à poser avant de signer**.
 
 <figure class="article-figure">
   <img src="/blog/hero-choisir-logiciel.jpg" alt="Prof de yoga allongée sur le dos en savasana sur un tapis sombre" loading="lazy" />
-  <figcaption>Bien choisir un outil, c'est gagner du calme pour ton métier — pas en perdre.</figcaption>
+  <figcaption>Bien choisir un outil, c'est gagner du calme pour ton métier, pas en perdre.</figcaption>
 </figure>
 
 ## La trappe des features
@@ -43,7 +43,7 @@ Le piège le plus classique du choix de logiciel : comparer les listes de foncti
 2. **À quel point elles sont rapides** à utiliser (1 tap vs 5 taps)
 3. **À quel point elles s'intègrent entre elles** sans double-saisie
 
-Une feature qui demande 5 tap pour pointer une présence te coûte 60 secondes par cours × 12 cours par semaine × 4 semaines = **48 minutes par mois rien que pour pointer**. Une feature à 1 tap te coûte 10 minutes. Quintuple la différence — la liste des features ne le dit jamais.
+Une feature qui demande 5 tap pour pointer une présence te coûte 60 secondes par cours × 12 cours par semaine × 4 semaines = **48 minutes par mois rien que pour pointer**. Une feature à 1 tap te coûte 10 minutes. Quintuple la différence. La liste des features ne le dit jamais.
 
 ## Les 10 critères qui comptent vraiment
 
@@ -67,7 +67,7 @@ Question piège : combien coûte vraiment l'abonnement ? Beaucoup de logiciels a
 - **Commission sur chaque paiement** (souvent 2-5 % du chiffre d'affaires encaissé)
 - **Frais d'activation** (50-200 € one-shot à l'inscription)
 - **Surfacturation au volume d'élèves** (gratuit jusqu'à 30 élèves, puis 1 €/élève additionnel)
-- **Modules optionnels** (paiement en ligne, mini-compta, SMS) — séparément facturés
+- **Modules optionnels** (paiement en ligne, mini-compta, SMS) facturés séparément
 
 Le bon pricing : **un abonnement fixe**, transparent, qui couvre tout. Pas de surprise sur la facture du mois 3.
 
@@ -129,7 +129,7 @@ Attention : certains logiciels facturent les SMS séparément (0,05-0,12 € par
 
 <figure class="article-figure">
   <img src="/blog/mid-choisir-logiciel.jpg" alt="Prof de yoga en posture latérale, ambiance moderne et premium avec mobilier design" loading="lazy" />
-  <figcaption>Un bon outil te suit dans ton rythme — pas l'inverse.</figcaption>
+  <figcaption>Un bon outil te suit dans ton rythme, pas l'inverse.</figcaption>
 </figure>
 
 ### 10. Mini-compta intégrée et export comptable
@@ -137,8 +137,9 @@ Attention : certains logiciels facturent les SMS séparément (0,05-0,12 € par
 À la fin de l'année, ton expert-comptable (ou toi-même si tu n'en as pas) doit reconstruire ton chiffre d'affaires. Le logiciel doit te fournir :
 
 - **Récap mensuel** des encaissements par mode de paiement (CB, espèces, chèque, virement)
-- **Export CSV** mis en forme pour l'import en comptabilité
-- **Reçus PDF** automatiques pour les paiements en ligne (à fournir aux élèves)
+- **Export CSV** mis en forme pour l'import en comptabilité, filtrable par période et par mode
+- **De vraies factures numérotées** (pas un simple reçu) : dès qu'une élève passe par un CSE ou une mutuelle, on lui demandera une facture conforme avec ton SIRET et une numérotation séquentielle. Vérifie que l'outil sait la produire, et qu'un re-téléchargement redonne le MÊME document, même numéro
+- **Le paiement en plusieurs fois suivi** : si tu acceptes « 3 chèques » ou « la moitié maintenant, le reste le mois prochain », l'outil doit porter l'échéancier (dates, montants, mode par versement), pas ta mémoire
 - **Bilan annuel** des cours donnés, élèves actifs, taux de remplissage
 
 Sans ça, tu repasses 4-8 heures par an à tout reconstruire dans Excel.
@@ -231,4 +232,4 @@ Le pire choix, c'est de rester sur Excel + 4 outils décousus parce que "tu n'as
 
 ---
 
-*Pour aller plus loin : lis aussi [Excel vs logiciel pour gérer ses élèves](/blog/excel-vs-logiciel-gestion-eleves-prof-yoga) pour comprendre quand basculer, et [comment fixer tes tarifs](/blog/comment-fixer-tarifs-prof-yoga-2026) pour aligner ton outil avec ta stratégie de prix.*
+*Pour aller plus loin : lis aussi [Excel vs logiciel pour gérer ses élèves](/blog/excel-vs-logiciel-gestion-eleves-prof-yoga) pour comprendre quand basculer, et [comment fixer tes tarifs](/blog/comment-fixer-tarifs-prof-yoga-2026) pour aligner ton outil avec ta stratégie de prix. Et si tu hésites entre deux outils précis, on a publié [un comparatif IziSolo vs Momoyoga](/blog/izisolo-vs-momoyoga-comparatif-2026), chiffres datés et sourcés, forces des deux côtés comprises.*
