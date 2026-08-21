@@ -1,36 +1,36 @@
-﻿Prénom;Nom;Email;Téléphone;Notes
-Fanny;Thomas;fanny.thomas@example.com;0604332181;dos fragile
-Mathilde;Bernard;mathilde.bernard@example.com;0601338908;
-Morgane;Morel;morgane.morel@example.com;0686379402;vient avec sa sœur
-Mathilde;Simon;mathilde.simon@example.com;0642351161;
-Bérénice;Laurent;bérénice.laurent@example.com;0694078161;dos fragile
-Marine;Bonnet;marine.bonnet@example.com;0695931034;
-Bérénice;Durand;bérénice.durand@example.com;0616475255;
-Audrey;Leroy;audrey.leroy@example.com;0619283276;
-Maëlle;Morel;maëlle.morel@example.com;0683503056;
-Emma;Petit;emma.petit@example.com;0695376724;
-Laura;Mercier;laura.mercier@example.com;0688496965;
-Chloé;Bertrand;chloé.bertrand@example.com;0671012269;
-Lucie;Lefebvre;lucie.lefebvre@example.com;0697848018;niveau avancé
-Pauline;Dupont;pauline.dupont@example.com;0651462704;dos fragile
-Elise;Richard;elise.richard@example.com;0681489325;niveau avancé
-Manon;Roux;manon.roux@example.com;0680957015;niveau avancé
-Nadia;Moreau;nadia.moreau@example.com;0630391171;niveau avancé
-Sophie;Dupont;sophie.dupont@example.com;0622782489;préfère le matin
-Sarah;Legrand;sarah.legrand@example.com;0683465787;
-Laura;Durand;laura.durand@example.com;0615098393;
-Emma;André;emma.andré@example.com;0603105183;
-Audrey;David;audrey.david@example.com;0638299737;niveau avancé
-Mathilde;Petit;mathilde.petit@example.com;0611656670;vient avec sa sœur
-Fanny;Morel;fanny.morel@example.com;0610651333;dos fragile
-Charlotte;Robert;charlotte.robert@example.com;0662473178;
-Julie;Morel;julie.morel@example.com;0680132677;
-Bérénice;Lefebvre;bérénice.lefebvre@example.com;0602606474;préfère le matin
-Morgane;Mercier;morgane.mercier@example.com;0687234309;vient avec sa sœur
-Sophie;Bernard;sophie.bernard@example.com;0650097882;
-Amandine;Dubois;amandine.dubois@example.com;0621913619;
-Marion;Fournier;marion.fournier@example.com;0609169985;
-Sarah;Girard;sarah.girard@example.com;0653462475;niveau avancé
-Marie;Lambert;marie.lambert@example.com;0611223344;cours du mardi
-Marie;Lambert;m.lambert.pro@example.com;0655667788;la kiné, cours du samedi
-Camille;Martin;camille.martin@example.com;0699887766;DOUBLON volontaire
+﻿Prénom;Nom;Email;Téléphone;Date de naissance;Adresse;Notes
+Julie;Vincent;julie.vincent@example.com;0696030824;14/03/2002;74 place du Marche, 69001 Lyon;dos fragile
+Ingrid;Girard;ingrid.girard@example.com;0621993518;23/02/2004;80 chemin des Vignes, 69001 Lyon;préfère le matin
+Audrey;Roux;audrey.roux@example.com;0665797543;26/03/1983;74 place du Marche, 69001 Lyon;dos fragile
+Justine;Martinez;justine.martinez@example.com;0657491186;06/06/1977;54 rue des Lilas, 69100 Villeurbanne;vient avec sa sœur
+Emma;Dupont;emma.dupont@example.com;0689555979;26/08/1972;35 rue des Ecoles, 69001 Lyon;vient avec sa sœur
+Audrey;Dubois;audrey.dubois@example.com;0604974650;15/06/1978;15 rue des Ecoles, 69300 Caluire-et-Cuire;
+Sarah;Dupont;sarah.dupont@example.com;0642366712;15/07/2003;114 rue de la Republique, 69003 Lyon;niveau avancé
+Mathilde;François;mathilde.francois@example.com;0684656321;06/03/1982;2 rue des Ecoles, 69004 Lyon;niveau avancé
+Marion;Richard;marion.richard@example.com;0644026859;19/06/1976;80 allee des Tilleuls, 69300 Caluire-et-Cuire;vient avec sa sœur
+Coralie;Bernard;coralie.bernard@example.com;0678666617;21/07/1971;9 chemin des Vignes, 69004 Lyon;préfère le matin
+Manon;Thomas;manon.thomas@example.com;0659010928;04/06/1969;112 chemin des Vignes, 69001 Lyon;dos fragile
+Lucie;Robert;lucie.robert@example.com;0645957117;15/08/1998;11 rue de la Republique, 69003 Lyon;
+Coralie;Simon;coralie.simon@example.com;0647280385;05/12/2002;98 impasse du Moulin, 69001 Lyon;
+Fanny;François;fanny.francois@example.com;0614852538;18/09/1989;79 chemin des Vignes, 69004 Lyon;niveau avancé
+Laura;Bonnet;laura.bonnet@example.com;0663387500;26/05/1998;25 rue du Stade, 69003 Lyon;dos fragile
+Anaïs;Garcia;anais.garcia@example.com;0655131373;11/04/1998;116 rue Victor Hugo, 69300 Caluire-et-Cuire;niveau avancé
+Camille;David;camille.david@example.com;0651163726;26/11/1989;103 rue du Stade, 69001 Lyon;préfère le matin
+Charlotte;Lefebvre;charlotte.lefebvre@example.com;0612220297;26/11/1977;106 rue Victor Hugo, 69300 Caluire-et-Cuire;préfère le matin
+Audrey;Legrand;audrey.legrand@example.com;0652882001;17/12/1976;112 chemin des Vignes, 69100 Villeurbanne;niveau avancé
+Bérénice;Petit;berenice.petit@example.com;0604348395;09/09/1994;8 rue du Stade, 69004 Lyon;
+Solène;Garcia;solene.garcia@example.com;0698682828;17/01/1996;78 rue des Lilas, 69004 Lyon;niveau avancé
+Nadia;Robert;nadia.robert@example.com;0622791805;22/09/2001;62 avenue Jean Jaures, 69300 Caluire-et-Cuire;dos fragile
+Julie;Durand;julie.durand@example.com;0634018780;25/02/1996;79 impasse du Moulin, 69003 Lyon;dos fragile
+Amandine;Petit;amandine.petit@example.com;0647887838;09/09/1980;18 boulevard Gambetta, 69100 Villeurbanne;
+Lucie;Garcia;lucie.garcia@example.com;0651361341;25/03/1991;33 rue de la Republique, 69004 Lyon;préfère le matin
+Laura;Mercier;laura.mercier@example.com;0616723268;13/06/1994;46 rue Pasteur, 69004 Lyon;
+Coralie;Laurent;coralie.laurent@example.com;0605877065;17/10/1986;9 avenue Jean Jaures, 69300 Caluire-et-Cuire;niveau avancé
+Laura;Martinez;laura.martinez@example.com;0611440242;27/07/1984;20 impasse du Moulin, 69100 Villeurbanne;dos fragile
+Marion;David;marion.david@example.com;0651402614;01/11/1973;11 rue Victor Hugo, 69003 Lyon;niveau avancé
+Laura;Dubois;laura.dubois@example.com;0641705864;20/03/1970;91 chemin des Vignes, 69300 Caluire-et-Cuire;
+Manon;Leroy;manon.leroy@example.com;0602344834;15/09/1979;45 rue des Lilas, 69003 Lyon;
+Julie;Martin;julie.martin@example.com;0608838737;04/11/1995;70 boulevard Gambetta, 69100 Villeurbanne;dos fragile
+Marie;Lambert;marie.lambert@example.com;0611223344;03/05/1985;12 rue des Lilas, 69004 Lyon;cours du mardi
+Marie;Lambert;m.lambert.pro@example.com;0655667788;19/11/1978;7 avenue Jean Jaures, 69003 Lyon;la kine, cours du samedi
+Camille;Martin;camille.martin@example.com;0699887766;14/02/1992;3 place du Marche, 69001 Lyon;DOUBLON volontaire

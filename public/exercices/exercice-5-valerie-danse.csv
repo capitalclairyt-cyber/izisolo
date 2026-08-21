@@ -1,59 +1,59 @@
-﻿Email,Niveau,Téléphone,Nom,Prénom,Notes
-chloe.martin@example.com,intermédiaire,0779911838,Martin,Chloé,gaucher(ère)
-morgane.martinez@example.com,débutant,0713542784,Martinez,Morgane,certificat médical fourni
-bertille.bonnet@example.com,avancé,0784124118,Bonnet,Bertille,
-marion.fournier@example.com,éveil,0735348740,Fournier,Marion,
-isaure.leroy@example.com,éveil,0700524278,Leroy,Isaure,
-louane.martin@example.com,éveil,0711280598,Martin,Louane,
-pauline.bernard@example.com,éveil,0745053315,Bernard,Pauline,certificat médical fourni
-garance.mercier@example.com,intermédiaire,0723226025,Mercier,Garance,inscrite aussi au gala
-sophie.richard@example.com,intermédiaire,0716073375,Richard,Sophie,gaucher(ère)
-charlotte.martin@example.com,avancé,0736541458,Martin,Charlotte,inscrite aussi au gala
-julie.thomas@example.com,avancé,0742940196,Thomas,Julie,gaucher(ère)
-berenice.fournier@example.com,intermédiaire,0781693406,Fournier,Bérénice,
-coralie.michel@example.com,éveil,0715951484,Michel,Coralie,
-fanny.lefebvre@example.com,avancé,0748236629,Lefebvre,Fanny,certificat médical fourni
-nadia.roux@example.com,éveil,0704436995,Roux,Nadia,inscrite aussi au gala
-solene.girard@example.com,débutant,0738721489,Girard,Solène,gaucher(ère)
-heloise.dupont@example.com,débutant,0734332003,Dupont,Héloïse,inscrite aussi au gala
-maelle.michel@example.com,éveil,0793676320,Michel,Maëlle,
-charlotte.richard@example.com,avancé,0787083172,Richard,Charlotte,inscrite aussi au gala
-augustin.martinez@example.com,avancé,0779868727,Martinez,Augustin,inscrite aussi au gala
-augustin.durand@example.com,avancé,0748734714,Durand,Augustin,
-audrey.simon@example.com,éveil,0781223623,Simon,Audrey,
-ingrid.simon@example.com,débutant,0787603669,Simon,Ingrid,
-josephine.martinez@example.com,intermédiaire,0796705466,Martinez,Joséphine,certificat médical fourni
-iris.durand@example.com,intermédiaire,0746706562,Durand,Iris,inscrite aussi au gala
-garance.roux@example.com,intermédiaire,0706990162,Roux,Garance,inscrite aussi au gala
-lea.leroy@example.com,avancé,0765375564,Leroy,Léa,inscrite aussi au gala
-isaure.dubois@example.com,intermédiaire,0770805310,Dubois,Isaure,
-lucie.bonnet@example.com,éveil,0709232719,Bonnet,Lucie,
-basile.leroy@example.com,débutant,0752991241,Leroy,Basile,certificat médical fourni
-oceane.vincent@example.com,débutant,0766319314,Vincent,Océane,
-eloi.vincent@example.com,éveil,0705865185,Vincent,Éloi,
-heloise.david@example.com,avancé,0716572628,David,Héloïse,
-garance.lambert@example.com,avancé,0787769453,Lambert,Garance,
-marceline.garcia@example.com,intermédiaire,0737996507,Garcia,Marceline,gaucher(ère)
-iris.petit@example.com,intermédiaire,0754549480,Petit,Iris,certificat médical fourni
-manon.durand@example.com,avancé,0767837770,Durand,Manon,
-charlotte.lefebvre@example.com,avancé,0734957885,Lefebvre,Charlotte,inscrite aussi au gala
-morgane.andre@example.com,intermédiaire,0774443135,André,Morgane,
-lucie.petit@example.com,intermédiaire,0774989413,Petit,Lucie,gaucher(ère)
-coralie.richard@example.com,intermédiaire,0740824008,Richard,Coralie,gaucher(ère)
-philomene.françois@example.com,intermédiaire,0771094777,François,Philomène,gaucher(ère)
-leontine.david@example.com,avancé,0711671902,David,Léontine,
-laura.roux@example.com,avancé,0769993867,Roux,Laura,inscrite aussi au gala
-leontine.vincent@example.com,intermédiaire,0764990913,Vincent,Léontine,
-amandine.girard@example.com,éveil,0712328120,Girard,Amandine,inscrite aussi au gala
-basile.fournier@example.com,intermédiaire,0774034471,Fournier,Basile,
-amandine.lambert@example.com,débutant,0793618324,Lambert,Amandine,
-lea.richard@example.com,éveil,0749947174,Richard,Léa,
-sophie.bertrand@example.com,avancé,0787719065,Bertrand,Sophie,certificat médical fourni
-julie.dubois@example.com,éveil,0739904902,Dubois,Julie,inscrite aussi au gala
-apolline.michel@example.com,avancé,0771756551,Michel,Apolline,
-ingrid.andre@example.com,avancé,0774680715,André,Ingrid,gaucher(ère)
-laura.dupont@example.com,avancé,0768087603,Dupont,Laura,certificat médical fourni
-garance.dupont@example.com,éveil,0777034824,Dupont,Garance,inscrite aussi au gala
-laura.martin@example.com,intermédiaire,0793248086,Martin,Laura,
-isaure.legrand@example.com,éveil,0717127484,Legrand,Isaure,inscrite aussi au gala
-zoe.durand@example.com,avancé,0778263982,Durand,Zoé,
+﻿Email,Niveau,Téléphone,Adresse,Nom,Prénom,Notes
+audrey.roux@example.com,avancé,0753043520,49 avenue Jean Jaures 35510 Cesson-Sevigne,Roux,Audrey,inscrite aussi au gala
+ninon.morel@example.com,débutant,0733801412,76 rue des Lilas 35760 Saint-Gregoire,Morel,Ninon,inscrite aussi au gala
+oceane.moreau@example.com,intermédiaire,0731982965,20 place du Marche 35760 Saint-Gregoire,Moreau,Océane,
+emma.bonnet@example.com,intermédiaire,0786828890,11 rue des Lilas 35200 Rennes,Bonnet,Emma,
+philomene.laurent@example.com,débutant,0716780083,34 rue des Lilas 35760 Saint-Gregoire,Laurent,Philomène,inscrite aussi au gala
+celestin.legrand@example.com,intermédiaire,0788181741,31 rue du Stade 35510 Cesson-Sevigne,Legrand,Célestin,
+celestin.morel@example.com,avancé,0777617409,10 rue Victor Hugo 35200 Rennes,Morel,Célestin,
+amandine.morel@example.com,intermédiaire,0749920707,87 avenue Jean Jaures 35510 Cesson-Sevigne,Morel,Amandine,
+come.david@example.com,débutant,0748477718,40 avenue Jean Jaures 35200 Rennes,David,Côme,inscrite aussi au gala
+marion.garcia@example.com,avancé,0718746331,19 rue du Stade 35000 Rennes,Garcia,Marion,certificat medical fourni
+coralie.robert@example.com,éveil,0798415377,4 rue de la Republique 35760 Saint-Gregoire,Robert,Coralie,
+come.garcia@example.com,éveil,0764265651,1 rue Pasteur 35510 Cesson-Sevigne,Garcia,Côme,gaucher(ere)
+laura.legrand@example.com,débutant,0730445166,47 boulevard Gambetta 35000 Rennes,Legrand,Laura,gaucher(ere)
+sophie.thomas@example.com,éveil,0704234685,48 boulevard Gambetta 35200 Rennes,Thomas,Sophie,
+marceline.roux@example.com,intermédiaire,0783106792,63 rue des Lilas 35510 Cesson-Sevigne,Roux,Marceline,certificat medical fourni
+elodie.david@example.com,éveil,0765444463,62 impasse du Moulin 35510 Cesson-Sevigne,David,Elodie,
+laura.richard@example.com,intermédiaire,0721387837,58 boulevard Gambetta 35510 Cesson-Sevigne,Richard,Laura,
+justine.dubois@example.com,éveil,0725815354,3 rue du Stade 35200 Rennes,Dubois,Justine,inscrite aussi au gala
+ingrid.mercier@example.com,intermédiaire,0783645074,17 allee des Tilleuls 35510 Cesson-Sevigne,Mercier,Ingrid,certificat medical fourni
+manon.leroy@example.com,éveil,0736676402,55 rue du Stade 35000 Rennes,Leroy,Manon,inscrite aussi au gala
+camille.dubois@example.com,éveil,0768773132,67 allee des Tilleuls 35200 Rennes,Dubois,Camille,
+manon.roux@example.com,débutant,0700239042,68 allee des Tilleuls 35510 Cesson-Sevigne,Roux,Manon,inscrite aussi au gala
+sarah.dubois@example.com,éveil,0748936439,2 impasse du Moulin 35000 Rennes,Dubois,Sarah,gaucher(ere)
+sophie.simon@example.com,éveil,0737838306,8 rue des Lilas 35510 Cesson-Sevigne,Simon,Sophie,
+marceline.girard@example.com,éveil,0761436537,90 rue Pasteur 35000 Rennes,Girard,Marceline,
+coralie.girard@example.com,éveil,0763048137,40 chemin des Vignes 35200 Rennes,Girard,Coralie,
+charlotte.leroy@example.com,intermédiaire,0741979237,86 rue des Lilas 35760 Saint-Gregoire,Leroy,Charlotte,certificat medical fourni
+nadia.bernard@example.com,débutant,0730926002,58 rue du Stade 35760 Saint-Gregoire,Bernard,Nadia,gaucher(ere)
+manon.legrand@example.com,intermédiaire,0725328704,48 rue Pasteur 35760 Saint-Gregoire,Legrand,Manon,inscrite aussi au gala
+sarah.martin@example.com,débutant,0714156183,46 place du Marche 35760 Saint-Gregoire,Martin,Sarah,inscrite aussi au gala
+lea.andre@example.com,intermédiaire,0773587355,4 allee des Tilleuls 35760 Saint-Gregoire,André,Léa,inscrite aussi au gala
+felicie.morel@example.com,avancé,0760607104,9 rue Victor Hugo 35200 Rennes,Morel,Félicie,gaucher(ere)
+garance.bernard@example.com,éveil,0745440910,14 rue des Ecoles 35200 Rennes,Bernard,Garance,
+balthazar.lefebvre@example.com,avancé,0746727204,78 chemin des Vignes 35200 Rennes,Lefebvre,Balthazar,gaucher(ere)
+maelle.laurent@example.com,avancé,0791836236,84 rue des Lilas 35000 Rennes,Laurent,Maëlle,inscrite aussi au gala
+elodie.michel@example.com,intermédiaire,0711491316,58 rue de la Republique 35760 Saint-Gregoire,Michel,Elodie,
+ingrid.garcia@example.com,avancé,0793814449,48 place du Marche 35510 Cesson-Sevigne,Garcia,Ingrid,
+lucie.garcia@example.com,intermédiaire,0732332493,9 boulevard Gambetta 35510 Cesson-Sevigne,Garcia,Lucie,gaucher(ere)
+ninon.bertrand@example.com,intermédiaire,0731701073,48 rue des Lilas 35760 Saint-Gregoire,Bertrand,Ninon,gaucher(ere)
+laura.bernard@example.com,débutant,0739931582,78 place du Marche 35760 Saint-Gregoire,Bernard,Laura,
+sarah.morel@example.com,intermédiaire,0799530552,27 place du Marche 35000 Rennes,Morel,Sarah,
+heloise.martin@example.com,débutant,0756529413,64 impasse du Moulin 35000 Rennes,Martin,Héloïse,inscrite aussi au gala
+ingrid.thomas@example.com,éveil,0768281264,37 allee des Tilleuls 35760 Saint-Gregoire,Thomas,Ingrid,gaucher(ere)
+lea.moreau@example.com,intermédiaire,0795660536,27 rue des Lilas 35760 Saint-Gregoire,Moreau,Léa,inscrite aussi au gala
+berenice.thomas@example.com,éveil,0716957220,71 rue de la Republique 35000 Rennes,Thomas,Bérénice,
+manon.vincent@example.com,éveil,0795822542,9 avenue Jean Jaures 35200 Rennes,Vincent,Manon,inscrite aussi au gala
+augustin.lambert@example.com,intermédiaire,0734207509,12 rue du Stade 35760 Saint-Gregoire,Lambert,Augustin,certificat medical fourni
+philomene.lambert@example.com,intermédiaire,0739693729,6 boulevard Gambetta 35200 Rennes,Lambert,Philomène,certificat medical fourni
+elise.laurent@example.com,avancé,0712330805,50 rue Victor Hugo 35000 Rennes,Laurent,Elise,inscrite aussi au gala
+albane.michel@example.com,éveil,0749366578,23 rue des Lilas 35760 Saint-Gregoire,Michel,Albane,
+maelle.durand@example.com,débutant,0779727611,46 boulevard Gambetta 35200 Rennes,Durand,Maëlle,gaucher(ere)
+felicie.garcia@example.com,intermédiaire,0788002158,7 impasse du Moulin 35000 Rennes,Garcia,Félicie,inscrite aussi au gala
+julie.francois@example.com,avancé,0719132742,9 rue Pasteur 35200 Rennes,François,Julie,certificat medical fourni
+elodie.simon@example.com,avancé,0794724873,79 impasse du Moulin 35510 Cesson-Sevigne,Simon,Elodie,
+coralie.bernard@example.com,avancé,0732624562,15 impasse du Moulin 35510 Cesson-Sevigne,Bernard,Coralie,
+leontine.garcia@example.com,intermédiaire,0788914865,49 rue Pasteur 35510 Cesson-Sevigne,Garcia,Léontine,certificat medical fourni
+coralie.simon@example.com,avancé,0717329048,40 allee des Tilleuls 35510 Cesson-Sevigne,Simon,Coralie,certificat medical fourni
+achille.martin@example.com,intermédiaire,0703249668,7 rue de la Republique 35510 Cesson-Sevigne,Martin,Achille,inscrite aussi au gala
