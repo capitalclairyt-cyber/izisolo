@@ -80,12 +80,14 @@ On te doit cette section, et elle est sincère :
 ## Ce qu'IziSolo fait différemment
 
 - **Le français de bout en bout, jusque dans la paperasse.** De vraies factures numérotées conformes, activées avec ton simple SIRET, mention TVA de la franchise en base comprise. Un export comptable filtrable par période, mode et offre. Le vocabulaire de ton métier, pas une traduction.
-- **Tout l'argent, pas seulement la CB.** Espèces, chèques, virements, encaissés en 1 clic et rangés dans ta mini-compta. Le paiement en plusieurs fois avec un vrai échéancier : chaque versement a sa date, son montant, son mode, et « à percevoir » te dit toujours qui doit quoi.
+- **Tout l'argent, pas seulement la CB.** Espèces, chèques, virements, encaissés en 1 clic et rangés dans ta mini-compta, et « à percevoir » te dit toujours qui doit quoi.
+- **Le paiement en plusieurs fois, en vrai.** Un carnet vendu en 2 à 10 fois avec un véritable échéancier : chaque versement a sa date, son montant et SON mode de règlement. L'élève te donne le premier en espèces et paie le suivant en carte ? C'est prévu. Les montants tombent sur des virgules ? Un bouton les arrondit aux euros. Et rien ne repose sur ta mémoire.
+- **Le premier contact soigné.** Un cours d'essai paramétrable, avec un tarif d'essai par type de cours si tu le veux. Tes documents d'inscription (questionnaire santé, CGV, règlement) proposés dès le formulaire d'essai et dans l'espace élève. Et pour te faire connaître : ton QR code prêt à imprimer, jusqu'à l'affiche A4 pour la porte du studio.
 - **Les galères gérées pour toi.** No-show, annulation tardive, paiement en attente : chaque cas arrive dans une boîte dédiée, se règle en 2 clics, et reste annulable 7 jours. C'est la partie du métier que personne n'aime, alors on l'a industrialisée.
-- **La communication intégrée.** Messagerie avec tes élèves, annonces par cours, sondages planning dont les créneaux gagnants deviennent des cours en 2 clics, et un email envoyé à l'élève dès que tu écris, avec ta vraie adresse en réponse.
-- **Un portail à ton nom, installable sans store.** Tes élèves réservent, annulent selon TES règles, et retrouvent carnets, paiements et factures dans leur espace. QR code à imprimer et planning intégrable sur ton site inclus, quel que soit le plan.
+- **La communication intégrée, avec les petites attentions.** Messagerie avec tes élèves, annonces par cours, sondages planning dont les créneaux gagnants deviennent des cours en 2 clics, un email envoyé à l'élève dès que tu écris, avec ta vraie adresse en réponse. Et l'app te souffle les anniversaires du jour et de demain, pour que le petit mot vienne de toi, pas d'un robot.
+- **Un portail à ton nom, installable sans store.** Tes élèves réservent, annulent selon TES règles, et retrouvent carnets, paiements et factures dans leur espace. Planning intégrable sur ton site inclus, quel que soit le plan.
 - **Le support par les fondateurs.** Une messagerie support intégrée à l'app, et derrière, Colin et moi. Pas de ticket anonyme.
-- **Tes données t'appartiennent, vraiment.** L'export CSV de ta base élèves est gratuit pour toutes, même si ton compte est gelé. La portabilité n'est pas une option payante.
+- **Tes données t'appartiennent, vraiment.** Import CSV à l'arrivée (et même une fiche remplie depuis une photo), fusion des doublons en 1 clic, et l'export CSV de ta base gratuit pour toutes, même si ton compte est gelé. La portabilité n'est pas une option payante.
 
 ## Ce que Momoyoga a et qu'IziSolo n'a pas
 
