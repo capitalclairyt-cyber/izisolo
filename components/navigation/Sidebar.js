@@ -404,11 +404,6 @@ export default function Sidebar({ studioNom = 'Mon Studio', vocabulaire = {}, il
         }
 
         /* === ILLUSTRATION === */
-        /* Décorative : on la masque sur écran court pour garantir l'accès à
-           tout le menu (Support, Paramètres) + au footer sur petits téléphones. */
-        @media (max-height: 760px) {
-          .sidebar-illustration { display: none; }
-        }
         .sidebar-illustration {
           flex: 1;
           display: flex;
@@ -417,6 +412,18 @@ export default function Sidebar({ studioNom = 'Mon Studio', vocabulaire = {}, il
           padding: 12px 20px;
           min-height: 60px;
           overflow: hidden;
+        }
+        /* Décorative : jamais dans le tiroir mobile (elle écrasait la nav et
+           laissait un bandeau beige au-dessus de Déconnexion), et masquée sur
+           écran court en desktop. ⚠️ Ces media queries doivent rester APRÈS la
+           règle de base : à spécificité égale c'est l'ordre source qui gagne,
+           une media query n'ajoute rien — avant, le display:flex ci-dessus
+           annulait le masquage en silence. */
+        @media (max-width: 1023px) {
+          .sidebar-illustration { display: none; }
+        }
+        @media (max-height: 760px) {
+          .sidebar-illustration { display: none; }
         }
         .sidebar-illustration img {
           max-width: 100%;
@@ -443,6 +450,9 @@ export default function Sidebar({ studioNom = 'Mon Studio', vocabulaire = {}, il
           padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
           border-top: 1px solid rgba(232, 224, 216, 0.5);
           flex-shrink: 0;
+          /* Épingle Déconnexion en bas quand l'illustration est masquée
+             (sinon le footer remontait sous le dernier item de nav) */
+          margin-top: auto;
         }
         .sidebar-logout {
           border: none;
