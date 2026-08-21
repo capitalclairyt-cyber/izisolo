@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { isAdminEmail } from '@/lib/admin';
 import { estHoteAdmin, hotePrincipal } from '@/lib/admin-host';
 import { nbRoutinesEnRetard } from '@/lib/routines-ops';
+import { nbTodoHaute } from '@/lib/todo-ops';
 import './admin.css';
 
 // PWA admin dédiée : sur les pages /admin, le manifest est celui de
@@ -129,6 +130,15 @@ export default async function AdminLayout({ children }) {
               </span>
             )}
           </Link>
+          <Link href="/admin/todo" className="admin-nav-item">
+            ✅ To-do
+            {nbTodoHaute() > 0 && (
+              <span style={{ marginLeft: '6px', background: '#3f2d1f', color: '#fb923c', borderRadius: '999px', padding: '1px 7px', fontSize: '0.7rem', fontWeight: 700 }}>
+                {nbTodoHaute()}
+              </span>
+            )}
+          </Link>
+          <Link href="/admin/guides" className="admin-nav-item">📖 Guides démo</Link>
           <Link href="/admin/demo" className="admin-nav-item">🎬 Démo</Link>
           <Link href="/admin/securite" className="admin-nav-item">🔐 Sécurité</Link>
         </nav>

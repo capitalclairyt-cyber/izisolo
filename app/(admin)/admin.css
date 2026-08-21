@@ -103,3 +103,21 @@ body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sa
   .admin-nav-item { padding: 6px 10px; font-size: 0.8rem; }
   .admin-main { padding: 16px; }
 }
+
+/* ─── Rendu markdown des guides (/admin/guides) — thème sombre admin ─── */
+.admin-md { max-width: 780px; color: #cbd5e1; font-size: 0.9rem; line-height: 1.65; }
+.admin-md h2 { color: #e2e8f0; font-size: 1.1rem; margin: 28px 0 10px; border-bottom: 1px solid #2d2d3f; padding-bottom: 6px; }
+.admin-md h3 { color: #e2e8f0; font-size: 0.95rem; margin: 20px 0 8px; }
+.admin-md p { margin: 0 0 12px; }
+.admin-md ul, .admin-md ol { margin: 0 0 12px; padding-left: 22px; }
+.admin-md li { margin-bottom: 6px; }
+.admin-md blockquote { border-left: 3px solid #3b4a6b; background: #1a1a28; padding: 10px 14px; margin: 0 0 14px; border-radius: 0 8px 8px 0; color: #94a3b8; }
+.admin-md blockquote p { margin: 0 0 6px; }
+.admin-md code { background: #1e1e2e; border: 1px solid #2d2d3f; border-radius: 5px; padding: 1px 5px; font-size: 0.8rem; }
+.admin-md table { width: 100%; border-collapse: collapse; margin: 0 0 14px; font-size: 0.85rem; }
+.admin-md th { text-align: left; padding: 8px 10px; border-bottom: 1px solid #2d2d3f; color: #64748b; }
+.admin-md td { padding: 8px 10px; border-bottom: 1px solid #1e1e2e; vertical-align: top; }
+.admin-md hr { border: none; border-top: 1px solid #2d2d3f; margin: 20px 0; }
+.admin-md strong { color: #e2e8f0; }
+.admin-md a { color: #60a5fa; }
+.admin-md em { color: #94a3b8; }
