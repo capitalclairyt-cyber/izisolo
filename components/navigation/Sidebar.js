@@ -234,7 +234,11 @@ export default function Sidebar({ studioNom = 'Mon Studio', vocabulaire = {}, il
         .sidebar {
           display: flex;
           flex-direction: column;
-          height: 100vh;
+          height: 100vh; /* secours vieux navigateurs */
+          /* 100dvh : hauteur RÉELLE visible sur mobile. En 100vh, la barre d'URL
+             du navigateur repoussait le footer (Déconnexion) sous l'écran, et
+             overflow:hidden le rendait inatteignable. Même fix que la messagerie. */
+          height: 100dvh;
           background: #faf6f0; /* crème warm Claude Design */
           border-right: 1px solid #ecdfd5;
           z-index: 50;
@@ -435,6 +439,8 @@ export default function Sidebar({ studioNom = 'Mon Studio', vocabulaire = {}, il
         /* === FOOTER === */
         .sidebar-footer {
           padding: 4px 8px 12px;
+          /* PWA installée iOS : la barre home recouvre le bas de l'écran */
+          padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
           border-top: 1px solid rgba(232, 224, 216, 0.5);
           flex-shrink: 0;
         }
