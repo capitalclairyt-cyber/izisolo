@@ -10,7 +10,7 @@ import './admin.css';
 
 // PWA admin dédiée : sur les pages /admin, le manifest est celui de
 // « IziSolo Admin » (icône sombre distincte, start_url /admin) → installée
-// depuis admin.izisolo.fr, l'admin devient sa propre app sur l'écran
+// depuis capsule.izisolo.fr, l'admin devient sa propre app sur l'écran
 // d'accueil, séparée de l'app studio (sessions par hôte, cf. lib/admin-host).
 export const metadata = {
   title: { default: 'IziSolo Admin', template: '%s — IziSolo Admin' },

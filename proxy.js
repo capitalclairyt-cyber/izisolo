@@ -69,7 +69,7 @@ export async function proxy(request) {
     return NextResponse.redirect(url, 308);
   }
 
-  // ── Hôte admin dédié (admin.izisolo.fr) ──────────────────────────────────
+  // ── Hôte admin dédié (capsule.izisolo.fr) ────────────────────────────────
   // Session Supabase séparée par hôte : l'admin vit ici, les sessions studio
   // sur l'hôte principal — les deux coexistent dans le même navigateur.
   // Surface volontairement minimale : admin + auth + API + assets, tout le
