@@ -119,6 +119,9 @@ export default function AdminUsersClient({ initialUsers, comptesEleves = [] }) {
           <h1 className="admin-title" style={{ marginBottom: '4px' }}>👥 Utilisateurs</h1>
           <p style={{ color: '#64748b', fontSize: '0.875rem', margin: 0 }}>{users.length} profs · {comptesEleves.length} comptes élèves</p>
         </div>
+        <Link href="/admin/studios/nouveau" style={{ padding: '9px 16px', borderRadius: '9px', background: '#1c3a2e', color: '#4ade80', fontWeight: 700, fontSize: '0.8125rem', textDecoration: 'none' }}>
+          🎁 Créer un studio (concierge)
+        </Link>
       </div>
 
       {/* Plan summary pills */}

@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { createAdminClient } from '@/lib/supabase-admin';
 import { fetchAllRows, estCompteTest } from '@/lib/admin-stats';
 import { getAccountStatus, getTrialStatus } from '@/lib/trial';
+import ConciergeActions from './ConciergeActions';
 
 export const dynamic = 'force-dynamic';
 
@@ -181,6 +182,7 @@ export default async function AdminStudioPage({ params }) {
             </a>
           )}
         </div>
+        <ConciergeActions profileId={profil.id} />
         <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', color: '#64748b', fontSize: '0.78rem' }}>
           <span>Inscrite le {fmtDate(profil.created_at)}</span>
           <span style={{ color: lastSignIn && (Date.now() - new Date(lastSignIn).getTime()) < 7 * 86400000 ? '#4ade80' : '#64748b' }}>

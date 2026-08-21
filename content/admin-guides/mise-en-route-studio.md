@@ -5,8 +5,10 @@ maj: 2026-08-21
 ---
 
 > Le but : qu'elle ressorte avec un studio qui TOURNE, pas un compte vide.
-> Deux formats possibles : en visio avec elle (elle pilote, partage d'écran,
-> on guide) ou en autonomie guidée (on lui envoie ce parcours, la checklist
+> Trois formats possibles : en visio avec elle (elle pilote, partage d'écran,
+> on guide), en CONCIERGE (l'équipe crée le studio via /admin/studios/nouveau,
+> le paramètre pour elle, puis lui envoie le lien d'appropriation ; les étapes
+> 1 et 2 sont alors faites PAR NOUS) ou en autonomie guidée (on lui envoie ce parcours, la checklist
 > du tableau de bord fait le reste). Durée réaliste en visio : 30 à 45 min
 > pour l'essentiel (étapes 1 à 6), le reste en autonomie.
 >

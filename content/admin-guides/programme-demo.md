@@ -70,7 +70,11 @@ Voir le guide **Questions & réponses** (section dédiée, avec les chiffres con
 
 ### 32-42 min : « On crée TON studio ? » (la bascule)
 
-🪷 Elle va sur izisolo.fr, essai 14 jours sans carte, elle partage son écran.
+Deux formats, au choix selon la personne :
+
+🪷 **Autonomie guidée** : elle va sur izisolo.fr, essai 14 jours sans carte, elle partage son écran et c'est elle qui clique.
+
+🪷 **Concierge** : tu crées son studio TOI-MÊME depuis /admin/studios/nouveau (prénom, email, nom du studio, activité : 30 secondes, avec son accord), tu ouvres le lien de connexion dans un autre navigateur et tu paramètres devant elle. En fin d'appel : bouton « Envoyer le lien d'appropriation », elle choisit son mot de passe, le studio est à elle.
 
 🪷 Ensemble : le premier **cours récurrent** (son vrai cours du lundi) + l'**import CSV** si elle a sa liste (« exporte-la de ton ancien outil, les accents passent, on n'écrase jamais »).
 
