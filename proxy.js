@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
+import { estHoteAdmin } from '@/lib/admin-host';
 
 // Routes publiques (pas besoin d'auth)
 //   - Auth flows : login, register, onboarding, mot de passe
@@ -68,6 +69,35 @@ export async function proxy(request) {
     return NextResponse.redirect(url, 308);
   }
 
+  // ── Hôte admin dédié (admin.izisolo.fr) ──────────────────────────────────
+  // Session Supabase séparée par hôte : l'admin vit ici, les sessions studio
+  // sur l'hôte principal — les deux coexistent dans le même navigateur.
+  // Surface volontairement minimale : admin + auth + API + assets, tout le
+  // reste (landing, portails, dashboard studio) est renvoyé vers /admin.
+  if (estHoteAdmin(host)) {
+    // Atterrissages : racine et /dashboard (cible par défaut du login) → /admin.
+    // Un non-admin qui atteint /admin est renvoyé vers l'hôte PRINCIPAL par le
+    // layout admin (pas ici) — sinon /dashboard→/admin→/dashboard bouclerait.
+    if (pathname === '/' || pathname.startsWith('/dashboard')) {
+      return NextResponse.redirect(new URL('/admin', request.url));
+    }
+    const autorisee =
+      pathname.startsWith('/admin') || // couvre aussi /admin-mfa (challenge TOTP)
+      pathname.startsWith('/login') ||
+      pathname.startsWith('/auth/') ||
+      pathname.startsWith('/mot-de-passe-oublie') ||
+      pathname.startsWith('/nouveau-mot-de-passe') ||
+      pathname.startsWith('/offline') ||
+      pathname.startsWith('/api/') ||
+      pathname.startsWith('/_next/') ||
+      pathname.startsWith('/manifest');
+    if (!autorisee) {
+      return NextResponse.redirect(new URL('/admin', request.url));
+    }
+    // On laisse continuer : login/auth passent par PUBLIC_ROUTES, /admin par le
+    // contrôle d'auth générique en bas (non connecté → /login?redirect=/admin).
+  }
+
   // ── Pages marketing : redirections légères, SANS appel réseau ────────────
   if (MARKETING_EXACT.includes(pathname) || MARKETING_PREFIXES.some(p => pathname.startsWith(p))) {
     // Cas spéciaux de la home : liens de confirmation email Supabase dont le
@@ -106,7 +136,7 @@ export async function proxy(request) {
     PUBLIC_ROUTES.some(r => pathname.startsWith(r)) ||
     pathname.startsWith('/api/') ||
     pathname.startsWith('/_next/') ||
-    pathname.startsWith('/manifest.json') ||
+    pathname.startsWith('/manifest') || // manifest.json + manifest-admin.json (PWA admin)
     pathname.startsWith('/sw.js') ||
     pathname.startsWith('/icons/') ||
     pathname.startsWith('/illustrations/') ||
@@ -151,6 +181,6 @@ export const config = {
   matcher: [
     // illustrations/ exclu comme icons/ (AUDIT-PERF cat 1.6) : l'image de la
     // Sidebar déclenchait une vérification GoTrue à chaque affichage.
-    '/((?!_next/static|_next/image|favicon.ico|manifest.json|sw.js|icons/|illustrations/).*)',
+    '/((?!_next/static|_next/image|favicon.ico|manifest.json|manifest-admin.json|sw.js|icons/|illustrations/).*)',
   ],
 };

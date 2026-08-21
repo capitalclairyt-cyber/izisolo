@@ -67,6 +67,10 @@ export const metadata = {
   description: "L'outil de gestion calme et beau pour les profs de yoga, pilates, méditation, danse et indépendant·e·s du bien-être. Agenda, élèves, paiements, communication — tout-en-un.",
   applicationName: 'IziSolo',
   manifest: '/manifest.json',
+  // Via metadata (et pas un <link> en dur dans le <head>) pour que le segment
+  // (admin) puisse la remplacer par l'icône de la PWA admin — un <link> JSX
+  // s'imposerait sur TOUTES les pages, metadata enfant ou pas.
+  icons: { apple: '/icons/icon-192.png' },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
@@ -109,7 +113,6 @@ export default function RootLayout({ children }) {
   return (
     <html lang="fr" className={`${instrumentSerif.variable} ${fraunces.variable} ${inter.variable} ${jetMono.variable}`}>
       <head>
-        <link rel="apple-touch-icon" href="/icons/icon-192.png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         {/*
           AUTH FRAGMENT CATCHER (inline) — s'exécute AVANT React et AVANT hydration.

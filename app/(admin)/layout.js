@@ -1,15 +1,52 @@
 import { createServerClient } from '@/lib/supabase-server';
 import { redirect } from 'next/navigation';
+import { headers } from 'next/headers';
 import Link from 'next/link';
 import { isAdminEmail } from '@/lib/admin';
+import { estHoteAdmin, hotePrincipal } from '@/lib/admin-host';
 import './admin.css';
+
+// PWA admin dédiée : sur les pages /admin, le manifest est celui de
+// « IziSolo Admin » (icône sombre distincte, start_url /admin) → installée
+// depuis admin.izisolo.fr, l'admin devient sa propre app sur l'écran
+// d'accueil, séparée de l'app studio (sessions par hôte, cf. lib/admin-host).
+export const metadata = {
+  title: { default: 'IziSolo Admin', template: '%s — IziSolo Admin' },
+  manifest: '/manifest-admin.json',
+  robots: { index: false, follow: false },
+  appleWebApp: { capable: true, statusBarStyle: 'black-translucent', title: 'IziSolo Admin' },
+  icons: { apple: '/icons/icon-admin-180.png' },
+};
+
+export const viewport = { themeColor: '#1a1612' };
 
 export default async function AdminLayout({ children }) {
   const supabase = await createServerClient();
   const { data: { user } } = await supabase.auth.getUser();
 
+  // Sur l'hôte admin, « /dashboard » RELATIF est renvoyé vers /admin par le
+  // proxy : tout lien/redirect vers l'app studio doit viser l'hôte principal.
+  const h = await headers();
+  const host = h.get('host') || '';
+  const surHoteAdmin = estHoteAdmin(host);
+  const proto = h.get('x-forwarded-proto') || (host.includes('localhost') ? 'http' : 'https');
+  const urlRetourApp = surHoteAdmin ? `${proto}://${hotePrincipal(host)}/dashboard` : '/dashboard';
+
   if (!user || !isAdminEmail(user.email)) {
-    redirect('/dashboard');
+    redirect(urlRetourApp);
+  }
+
+  // ── MFA TOTP : un compte admin qui a ACTIVÉ la double authentification
+  // (facteur vérifié) doit présenter une session aal2 — sinon, challenge.
+  // Fail-open assumé : sans facteur enrôlé (ou API en erreur), jamais bloquant.
+  // Téléphone perdu : node scripts/admin-mfa-reset.mjs <email> (service_role).
+  let mfaRequise = false;
+  try {
+    const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    mfaRequise = aal?.currentLevel === 'aal1' && aal?.nextLevel === 'aal2';
+  } catch { /* fail-open */ }
+  if (mfaRequise) {
+    redirect('/admin-mfa');
   }
 
   // Compteur de feedbacks non triés (badge nav) — jamais bloquant.
@@ -84,10 +121,12 @@ export default async function AdminLayout({ children }) {
           </Link>
           <Link href="/admin/erreurs" className="admin-nav-item">🚨 Erreurs</Link>
           <Link href="/admin/demo" className="admin-nav-item">🎬 Démo</Link>
+          <Link href="/admin/securite" className="admin-nav-item">🔐 Sécurité</Link>
         </nav>
 
         <div className="admin-sidebar-footer">
-          <Link href="/dashboard" className="admin-back-app">← Retour à l'app</Link>
+          {/* <a> volontaire : l'URL peut être absolue (hôte principal) */}
+          <a href={urlRetourApp} className="admin-back-app">← Retour à l'app</a>
           <div className="admin-user">{user.email}</div>
         </div>
       </aside>
