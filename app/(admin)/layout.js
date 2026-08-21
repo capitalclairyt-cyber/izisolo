@@ -4,6 +4,7 @@ import { headers } from 'next/headers';
 import Link from 'next/link';
 import { isAdminEmail } from '@/lib/admin';
 import { estHoteAdmin, hotePrincipal } from '@/lib/admin-host';
+import { nbRoutinesEnRetard } from '@/lib/routines-ops';
 import './admin.css';
 
 // PWA admin dédiée : sur les pages /admin, le manifest est celui de
@@ -120,6 +121,14 @@ export default async function AdminLayout({ children }) {
             )}
           </Link>
           <Link href="/admin/erreurs" className="admin-nav-item">🚨 Erreurs</Link>
+          <Link href="/admin/routines" className="admin-nav-item">
+            📋 Travail récurrent
+            {nbRoutinesEnRetard() > 0 && (
+              <span style={{ marginLeft: '6px', background: '#3f1f1f', color: '#f87171', borderRadius: '999px', padding: '1px 7px', fontSize: '0.7rem', fontWeight: 700 }}>
+                {nbRoutinesEnRetard()}
+              </span>
+            )}
+          </Link>
           <Link href="/admin/demo" className="admin-nav-item">🎬 Démo</Link>
           <Link href="/admin/securite" className="admin-nav-item">🔐 Sécurité</Link>
         </nav>
