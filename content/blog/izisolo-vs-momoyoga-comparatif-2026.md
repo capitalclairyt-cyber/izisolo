@@ -131,3 +131,5 @@ Et si tu veux voir IziSolo en vrai : [essai 14 jours, sans carte bancaire](/regi
 ---
 
 *Méthode et sources : chiffres et fonctionnalités Momoyoga relevés le 21 août 2026 sur momoyoga.com (pages Tarifs, affichages mensuel et annuel, et Notre histoire). Chiffres IziSolo : izisolo.fr, grille en vigueur. Momoyoga est une marque de son éditeur, qui n'a ni relu ni approuvé ce comparatif. Une erreur, un chiffre qui a bougé ? Écris-nous : bonjour@izisolo.fr, on corrige vite.*
+
+*La série des comparatifs : [bsport](/blog/izisolo-vs-bsport-comparatif-2026) · [Eversports](/blog/izisolo-vs-eversports-comparatif-2026) · [Mindbody](/blog/izisolo-vs-mindbody-comparatif-2026) · [Mirandaflow](/blog/izisolo-vs-mirandaflow-comparatif-2026) · [Calendly pour des cours ?](/blog/calendly-pour-profs-de-yoga-2026)*
