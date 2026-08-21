@@ -1,12 +1,12 @@
 ---
-title: "IziSolo vs Momoyoga : le comparatif honnête (2026)"
-description: "IziSolo ou Momoyoga pour gérer tes cours en 2026 ? Prix relevés et datés, frais sur les paiements calculés, forces réelles des deux outils, et un « choisis-les si » sincère."
+title: "IziSolo vs Momoyoga : prix, avis et comparatif honnête (2026)"
+description: "Momoyoga : prix 2026, forfaits, frais et avis honnête face à IziSolo, l'alternative française. Comparatif complet, chiffres relevés et datés, forces réelles des deux outils."
 date: 2026-08-21
 updated: 2026-08-21
 author: "Maude (IziSolo)"
 tags: ["outils", "comparatif", "logiciel", "gestion"]
 image: /blog/hero-izisolo-momoyoga.jpg
-excerpt: "Ce comparatif est écrit par IziSolo, donc on commence par la transparence : voici la méthode, les chiffres datés et sourcés, ce que Momoyoga fait très bien, et pour qui chaque outil est le bon choix."
+excerpt: "Prix de Momoyoga relevés et datés, ses vraies forces, celles d'IziSolo l'alternative française, et un « choisis-les si » sincère. Écrit par IziSolo, transparence en tête d'article."
 faq:
   - question: "Momoyoga est-il vraiment gratuit ?"
     answer: "Oui, Momoyoga propose un vrai forfait à 0 € (relevé le 21 août 2026 sur momoyoga.com). Il faut connaître ses conditions : 5 % de frais de plateforme sur chaque paiement en ligne (en plus des frais Stripe), 2 abonnements ou pass de cours maximum, 1 billet payant par évènement, et des fonctions comme la liste d'attente, les fenêtres d'annulation ou l'export des données réservées aux forfaits payants. Pour un usage très léger sans paiement en ligne, il peut suffire. Dès que tu encaisses en ligne, les 5 % se comparent au prix d'un abonnement payant."
@@ -14,11 +14,15 @@ faq:
     answer: "IziSolo : 15 €/mois (Essentiel) ou 29 €/mois (Complet), sans engagement, essai 14 jours sans carte bancaire. Momoyoga (relevé le 21 août 2026) : gratuit avec 5 % de frais de plateforme sur les paiements en ligne, Standard à 39 €/mois (ou 29 €/mois en payant l'année d'avance), Plus à 79 €/mois (59 €/mois en annuel), et une offre sur mesure à partir de 179 €/mois en annuel."
   - question: "Peut-on migrer de Momoyoga vers IziSolo sans perdre ses élèves ?"
     answer: "Oui. Momoyoga liste une fonction d'export des élèves, enseignants et commandes sur ses forfaits Standard et Plus. Côté IziSolo, l'import CSV mappe automatiquement les colonnes (prénom, nom, email, téléphone, notes), avec aperçu avant validation, puis un écran d'invitation groupée envoie à chaque élève son lien d'accès au portail. Compte 30 minutes à 1 heure pour une base de quelques dizaines d'élèves."
+  - question: "Momoyoga : quel avis en 2026 ?"
+    answer: "Momoyoga est un outil mûr : plus de 10 ans d'existence, 25 000 enseignants revendiqués, une application mobile native pour les élèves, de la vidéo à la demande dès le forfait gratuit et le prélèvement automatique des abonnements sur le forfait Plus. À regarder de près avant de signer : les 5 % de frais de plateforme sur chaque paiement en ligne du forfait gratuit, et des prix mensuels de 39 € (Standard) à 79 € (Plus), ramenés à 29 et 59 € en payant l'année d'avance (relevé du 21 août 2026). Le meilleur avis restera le tien : l'essai est gratuit 14 jours, teste tes propres cas d'usage."
+  - question: "Quelle alternative française à Momoyoga ?"
+    answer: "IziSolo est une alternative française pensée pour les indépendant·es (yoga, pilates, danse, méditation, coaching) : 15 ou 29 € par mois sans engagement, suivi de tous les encaissements sans frais (espèces, chèques, virements, paiement en plusieurs fois), vraies factures conformes avec ton SIRET, et support en français assuré par les fondateurs. On est juge et partie pour le dire, donc fais parler les essais : 14 jours chez les deux, sur tes vrais cas."
   - question: "IziSolo propose-t-il une application mobile comme Momoyoga ?"
     answer: "Différemment. Momoyoga a une application mobile native pour les élèves (App Store et Google Play). IziSolo fonctionne en PWA : le portail de ton studio s'installe sur l'écran d'accueil du téléphone (élèves ET prof), sans passer par un store, avec ton nom et tes couleurs. Pas de téléchargement à demander à tes élèves, mais pas non plus de présence dans les stores."
 ---
 
-Tu compares des logiciels pour gérer tes cours, et deux noms reviennent : Momoyoga, l'acteur international historique, et IziSolo, l'outil français. Ce comparatif existe parce qu'on nous pose la question en démo, régulièrement, et qu'on préfère y répondre par écrit, chiffres sous les yeux.
+Tu cherches un avis sur Momoyoga, le détail de ses prix 2026, ou une alternative française pour gérer tes cours ? Ce comparatif répond aux trois, chiffres sous les yeux. Il existe parce qu'on nous pose la question en démo, régulièrement, entre Momoyoga, l'acteur international historique, et IziSolo, l'outil français.
 
 ## D'abord, la transparence
 
@@ -37,7 +41,7 @@ Notre méthode pour rester honnêtes :
 
 **IziSolo** est un outil français, pensé pour les praticien·nes indépendant·es du mouvement et du bien-être (yoga, mais aussi pilates, danse, méditation, coaching, thérapies). Sa spécialité : suivre TOUT ton argent, y compris les espèces, les chèques, les virements et les paiements en plusieurs fois, pas seulement la carte bancaire en ligne.
 
-## Les prix, relevés le 21 août 2026
+## Les prix de Momoyoga et d'IziSolo en 2026, relevés le 21 août
 
 | | IziSolo | Momoyoga |
 |---|---|---|
@@ -77,7 +81,7 @@ On te doit cette section, et elle est sincère :
 - **Les intégrations** : PayPal, Urban Sports Club, Mailchimp, et plusieurs comptes administrateurs sur le forfait Plus.
 - **La maturité** : plus de 10 ans d'existence, des milliers de studios, un produit rodé.
 
-## Ce qu'IziSolo fait différemment
+## IziSolo, l'alternative française : ce qu'on fait différemment
 
 - **Le français de bout en bout, jusque dans la paperasse.** De vraies factures numérotées conformes, activées avec ton simple SIRET, mention TVA de la franchise en base comprise. Un export comptable filtrable par période, mode et offre. Le vocabulaire de ton métier, pas une traduction.
 - **Tout l'argent, pas seulement la CB.** Espèces, chèques, virements, encaissés en 1 clic et rangés dans ta mini-compta, et « à percevoir » te dit toujours qui doit quoi.
@@ -114,7 +118,7 @@ La crédibilité d'un comparatif se joue ici, alors sans détour :
 - les no-shows, annulations tardives et impayés te pèsent et tu veux qu'on te les mâche ;
 - tu veux un prix fixe sans engagement, et un support qui te répond en français, dans l'app.
 
-## Et si tu changes d'avis ?
+## Migrer de Momoyoga vers IziSolo (ou l'inverse)
 
 Dans un sens : Momoyoga liste l'export des élèves et des commandes sur ses forfaits Standard et Plus, et notre import CSV re-mappe automatiquement les colonnes, avec aperçu avant validation et invitation groupée de tes élèves ensuite. Dans l'autre sens : notre export est gratuit, toujours, même compte gelé. Un outil qui te retient par tes données ne mérite pas de te retenir.
 

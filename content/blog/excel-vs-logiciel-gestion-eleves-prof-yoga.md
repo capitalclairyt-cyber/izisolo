@@ -202,3 +202,7 @@ Pour les autres, Excel reste très bien.
 ---
 
 *Tu hésites encore ? Lis aussi notre article sur [combien gagne réellement un·e prof de yoga indépendant·e en France en 2026](/blog/combien-gagne-prof-yoga-france-2026) — où on détaille pourquoi le taux de remplissage et la trésorerie d'avance (= les carnets) sont les vrais leviers de revenu.*
+
+---
+
+*Tu compares des outils précis ? On a publié [un comparatif IziSolo vs Momoyoga](/blog/izisolo-vs-momoyoga-comparatif-2026), chiffres relevés et datés, forces des deux côtés comprises, et [un guide pour choisir en 10 critères](/blog/comment-choisir-logiciel-gestion-studio-yoga-2026).*
