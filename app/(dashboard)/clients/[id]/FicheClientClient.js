@@ -20,6 +20,7 @@ import { STATUTS_CLIENT, STATUTS_ABONNEMENT, STATUTS_PAIEMENT } from '@/lib/cons
 import { statutCompteEleve, formatDateRelative } from '@/lib/eleve-statut';
 import { moisFacturables } from '@/lib/factures';
 import { createClient } from '@/lib/supabase';
+import { calcProRata as calcProRataLib } from '@/lib/prorata';
 import { useToast } from '@/components/ui/ToastProvider';
 import PaiementStep from '@/components/paiements/PaiementStep';
 import { AdresseDisplay } from '@/components/forms/AdresseInput';
@@ -43,19 +44,14 @@ function calcDateFin(dureeJours) {
   return d.toISOString().split('T')[0];
 }
 
-function calcProRata(offre) {
-  if (!offre.pro_rata_actif || !offre.date_debut || !offre.date_fin || !offre.prix) return null;
-  const today = new Date();
-  const debut = new Date(offre.date_debut);
-  const fin = new Date(offre.date_fin);
-  if (today <= debut) return null;
-  const limite = offre.pro_rata_date_limite ? new Date(offre.pro_rata_date_limite) : fin;
-  if (today > limite) return null;
-  const totalSemaines = Math.max(1, Math.round((fin - debut) / (7 * 86400000)));
-  const resteSemaines = Math.max(0, Math.round((fin - today) / (7 * 86400000)));
-  if (resteSemaines <= 0) return null;
-  return Math.round((parseFloat(offre.prix) / totalSemaines) * resteSemaines * 2) / 2;
-}
+// Pro-rata : calcul unique lib/prorata (2026-08-21, fin des copies divergentes).
+const calcProRataOffre = (offre) => calcProRataLib({
+  actif: offre.pro_rata_actif,
+  dateDebut: offre.date_debut,
+  dateFin: offre.date_fin,
+  prix: offre.prix,
+  dateLimite: offre.pro_rata_date_limite || null,
+});
 
 function formatPeriode(d1, d2) {
   if (!d1 || !d2) return null;
@@ -235,7 +231,7 @@ function AssignerOffreModal({ client, onClose, onSuccess }) {
               <div className="offre-list">
                 {offres.map(offre => {
                   const TypeIcon = TYPE_ICONS[offre.type] || Package;
-                  const prorata = offre.type === 'abonnement' ? calcProRata(offre) : null;
+                  const prorata = offre.type === 'abonnement' ? calcProRataOffre(offre) : null;
                   const periode = offre.type === 'abonnement' ? formatPeriode(offre.date_debut, offre.date_fin) : null;
                   return (
                     <button key={offre.id} className="offre-choice-btn" onClick={() => selectOffre(offre)} type="button">
@@ -247,11 +243,11 @@ function AssignerOffreModal({ client, onClose, onSuccess }) {
                           {offre.type === 'abonnement' && (periode || `${offre.duree_jours}j`)}
                           {offre.type === 'cours_unique' && 'Séance unique'}
                         </span>
-                        {prorata && <span className="offre-choice-prorata">Pro-rata : {formatMontant(prorata)}</span>}
+                        {prorata && <span className="offre-choice-prorata">Pro-rata : {formatMontant(prorata.montant)} ({prorata.resteSemaines} sem. restantes sur {prorata.totalSemaines})</span>}
                       </div>
                       <div className="offre-choice-prix-col">
                         <span className={`offre-choice-prix ${prorata ? 'offre-prix-barre' : ''}`}>{formatMontant(offre.prix)}</span>
-                        {prorata && <span className="offre-choice-prix offre-prix-prorata">{formatMontant(prorata)}</span>}
+                        {prorata && <span className="offre-choice-prix offre-prix-prorata">{formatMontant(prorata.montant)}</span>}
                       </div>
                       <ChevronRight size={16} style={{ color: 'var(--text-muted)' }} />
                     </button>
@@ -282,12 +278,13 @@ function AssignerOffreModal({ client, onClose, onSuccess }) {
 
         {/* Step 2 — Paiement (composant partagé) */}
         {step === 'paiement' && selectedOffre && (() => {
-          const prorata = !isLibre && selectedOffre.type === 'abonnement' ? calcProRata(selectedOffre) : null;
+          const prorata = !isLibre && selectedOffre.type === 'abonnement' ? calcProRataOffre(selectedOffre) : null;
           return (
             <PaiementStep
               offreNom={selectedOffre.nom}
               clientNom={[client.prenom, client.nom_structure || client.nom].filter(Boolean).join(' ')}
-              offrePrix={prorata || selectedOffre.prix}
+              offrePrix={prorata ? prorata.montant : selectedOffre.prix}
+              prixDetail={prorata ? `Pro-rata : ${prorata.resteSemaines} semaine${prorata.resteSemaines > 1 ? 's' : ''} restante${prorata.resteSemaines > 1 ? 's' : ''} sur ${prorata.totalSemaines} (prix plein ${selectedOffre.prix} €)` : null}
               isLibre={isLibre}
               intituleLibre={intituleLibre}
               onIntituleLibreChange={setIntituleLibre}

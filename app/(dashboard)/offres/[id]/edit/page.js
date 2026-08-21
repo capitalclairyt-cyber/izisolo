@@ -8,7 +8,8 @@ import {
   ToggleLeft, ToggleRight, Loader2, Info,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase';
-import { getAllTypesFromCategories } from '@/lib/utils';
+import { getAllTypesFromCategories, formatMontant } from '@/lib/utils';
+import { calcProRata, aujourdhuiISO } from '@/lib/prorata';
 import { useToast } from '@/components/ui/ToastProvider';
 import CoherenceTypesHint from '@/components/offres/CoherenceTypesHint';
 
@@ -117,6 +118,13 @@ export default function EditOffre({ params }) {
         payload.date_debut = dateDebut || null;
         payload.date_fin = dateFin || null;
         payload.duree_jours = joursValidite || null;
+        // Même garde qu'à la création : « Nombre fixe » vide ne repart
+        // JAMAIS en illimité silencieux.
+        if (!illimite && (!seances || parseInt(seances) < 1)) {
+          toast.warning('Indique le nombre de séances incluses, ou choisis « Illimitées ».');
+          setSaving(false);
+          return;
+        }
         payload.seances = (!illimite && seances) ? parseInt(seances) : null;
         payload.seances_par_semaine = seancesParSemaine ? parseInt(seancesParSemaine) : null;
         payload.inclut_vacances = inclutVacances;
@@ -261,12 +269,12 @@ export default function EditOffre({ params }) {
             {joursValidite > 0 && (
               <div className="eo-info-pill">
                 <Info size={13} />
-                {Math.round(joursValidite / 7)} semaines · {joursValidite} jours
+                Durée : {Math.round(joursValidite / 7)} semaines · {joursValidite} jours
               </div>
             )}
 
             <div className="eo-field">
-              <label className="eo-label">Séances incluses</label>
+              <label className="eo-label">Séances incluses <span className="eo-optional">(le TOTAL sur la période)</span></label>
               <div className="eo-toggle-row">
                 <button type="button" className={`eo-toggle-btn ${illimite ? 'active' : ''}`} onClick={() => setIllimite(true)}>Illimitées</button>
                 <button type="button" className={`eo-toggle-btn ${!illimite ? 'active' : ''}`} onClick={() => setIllimite(false)}>Nombre fixe</button>
@@ -278,7 +286,7 @@ export default function EditOffre({ params }) {
 
             <div className="eo-row">
               <div className="eo-field">
-                <label className="eo-label">Séances / semaine</label>
+                <label className="eo-label">Séances / semaine <span className="eo-optional">(cadence max, indépendante du total)</span></label>
                 <div className="eo-chips">
                   <button type="button" className={`eo-chip ${!seancesParSemaine ? 'active' : ''}`} onClick={() => setSeancesParSemaine('')}>
                     Libre
@@ -341,6 +349,21 @@ export default function EditOffre({ params }) {
                     onChange={e => setProRataDateLimite(e.target.value)}
                     style={{ maxWidth: 220 }}
                   />
+                  {(() => {
+                    const today = aujourdhuiISO();
+                    const r = calcProRata({ dateDebut, dateFin, prix, dateRef: today, dateLimite: proRataDateLimite || null });
+                    const totalSem = Math.max(1, Math.round((joursValidite || 0) / 7));
+                    if (!prix || !dateDebut || !dateFin) return null;
+                    return (
+                      <div className="eo-info-pill" style={{ display: 'block', marginTop: 8 }}>
+                        Prix / semaine : <strong>{formatMontant(parseFloat(prix) / totalSem)}</strong> ({formatMontant(parseFloat(prix))} ÷ {totalSem} semaines).{' '}
+                        {r
+                          ? <>Aujourd'hui : reste <strong>{r.resteSemaines} semaine{r.resteSemaines > 1 ? 's' : ''}</strong> sur {r.totalSemaines} → pro-rata <strong>{formatMontant(r.montant)}</strong> (arrondi aux 0,50 €).</>
+                          : <>Aujourd'hui : {today <= dateDebut ? 'prix plein (période pas commencée)' : 'souscription fermée (date limite passée ou période finie)'}.</>}
+                        {' '}La durée totale ne bouge pas : ce sont les semaines restantes qui baissent.
+                      </div>
+                    );
+                  })()}
                 </>
               )}
             </div>

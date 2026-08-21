@@ -14,6 +14,7 @@ import CoherenceTypesHint from '@/components/offres/CoherenceTypesHint';
 import { formatMontant, getAllTypesFromCategories } from '@/lib/utils';
 import { PLANS } from '@/lib/constantes';
 import { effectivePlan } from '@/lib/trial';
+import { calcProRata, joursEntreISO, semainesEntreISO, aujourdhuiISO } from '@/lib/prorata';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 // « Cours à l'unité » retiré de la création (audit cohérence 2026-07-22, spec
@@ -39,30 +40,10 @@ const PRESETS_DUREE_CARNET = [
 ];
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
-function joursDiff(d1, d2) {
-  // d1, d2 : strings YYYY-MM-DD
-  if (!d1 || !d2) return null;
-  const diff = new Date(d2) - new Date(d1);
-  return Math.round(diff / (1000 * 60 * 60 * 24));
-}
-
-function semainesDiff(d1, d2) {
-  const j = joursDiff(d1, d2);
-  if (j === null) return null;
-  return Math.max(0, Math.round(j / 7));
-}
-
-function calcProRata(dateDebut, dateFin, prixTotal, dateRef) {
-  // dateRef = aujourd'hui ou la date de souscription
-  if (!dateDebut || !dateFin || !prixTotal || !dateRef) return null;
-  const totalSemaines = semainesDiff(dateDebut, dateFin);
-  if (!totalSemaines) return null;
-  const resteSemaines = semainesDiff(dateRef, dateFin);
-  if (resteSemaines <= 0) return null;
-  const prixSemaine = parseFloat(prixTotal) / totalSemaines;
-  // Arrondi au 0.50€ le plus proche
-  return Math.round(prixSemaine * resteSemaines * 2) / 2;
-}
+// Pro-rata : calcul unique dans lib/prorata (2026-08-21 — était dupliqué et
+// divergent entre création, vente et fiche élève).
+const joursDiff = joursEntreISO;
+const semainesDiff = semainesEntreISO;
 
 function formatDate(s) {
   if (!s) return '';
@@ -175,7 +156,7 @@ export default function NouvelleOffre() {
   // Calculs dérivés
   const totalSemaines  = semainesDiff(dateDebut, dateFin);
   const joursValidite  = joursDiff(dateDebut, dateFin);
-  const today          = new Date().toISOString().split('T')[0];
+  const today          = aujourdhuiISO();
 
   // Remise carnet
   const remisePct = (() => {
@@ -187,11 +168,11 @@ export default function NouvelleOffre() {
   })();
 
   const prixProRata = proRataActif
-    ? calcProRata(dateDebut, dateFin, prix, today)
+    ? calcProRata({ dateDebut, dateFin, prix, dateRef: today, dateLimite: proRataDateLimite || null })
     : null;
 
   const prixProRataLimite = proRataActif && proRataDateLimite
-    ? calcProRata(dateDebut, dateFin, prix, proRataDateLimite)
+    ? calcProRata({ dateDebut, dateFin, prix, dateRef: proRataDateLimite, dateLimite: proRataDateLimite })
     : null;
 
   // Soumission
@@ -215,6 +196,13 @@ export default function NouvelleOffre() {
       }
       if (proRataActif && !proRataDateLimite) {
         toast.warning('Indique la date limite de souscription au pro-rata.');
+        return;
+      }
+      // Piège silencieux fermé (retour Colin 2026-08-21) : « Nombre fixe »
+      // avec un champ vide partait en base comme ILLIMITÉ, sans un mot —
+      // et l'édition réaffichait « Illimitées » en toute logique.
+      if (!illimite && (!seancesAbo || parseInt(seancesAbo) < 1)) {
+        toast.warning('Indique le nombre de séances incluses, ou choisis « Illimitées ».');
         return;
       }
     }
@@ -495,13 +483,13 @@ export default function NouvelleOffre() {
             {totalSemaines !== null && totalSemaines > 0 && (
               <div className="no-info-pill">
                 <Info size={13} />
-                {totalSemaines} semaines · {joursValidite} jours
+                Durée : {totalSemaines} semaines · {joursValidite} jours
               </div>
             )}
 
             {/* Séances */}
             <div className="no-field">
-              <label className="no-label">Séances incluses</label>
+              <label className="no-label">Séances incluses <span style={{ fontWeight: 400, color: 'var(--text-muted)' }}>(le TOTAL sur la période)</span></label>
               <div className="no-illimite-row">
                 <button
                   type="button"
@@ -533,7 +521,7 @@ export default function NouvelleOffre() {
             {/* Cadence + vacances */}
             <div className="no-row">
               <div className="no-field">
-                <label className="no-label">Séances / semaine</label>
+                <label className="no-label">Séances / semaine <span style={{ fontWeight: 400, color: 'var(--text-muted)' }}>(cadence max, indépendante du total)</span></label>
                 <div className="no-semaine-chips">
                   {['1','2','3'].map(n => (
                     <button
@@ -625,21 +613,30 @@ export default function NouvelleOffre() {
                         <Calculator size={14} /> Aperçu du calcul
                       </div>
                       <div className="no-prorata-line">
-                        <span>Prix / semaine</span>
+                        <span>Prix / semaine ({formatMontant(parseFloat(prix))} ÷ {totalSemaines} semaines)</span>
                         <strong>{formatMontant(parseFloat(prix) / totalSemaines)}</strong>
                       </div>
                       {prixProRata !== null && (
                         <div className="no-prorata-line highlight">
-                          <span>Pro-rata aujourd'hui ({formatDate(today)})</span>
-                          <strong>{formatMontant(prixProRata)}</strong>
+                          <span>Aujourd'hui ({formatDate(today)}) : reste {prixProRata.resteSemaines} semaine{prixProRata.resteSemaines > 1 ? 's' : ''} sur {prixProRata.totalSemaines}</span>
+                          <strong>{formatMontant(prixProRata.montant)}</strong>
+                        </div>
+                      )}
+                      {prixProRata === null && (
+                        <div className="no-prorata-line">
+                          <span>Aujourd'hui ({formatDate(today)})</span>
+                          <strong>{today <= dateDebut ? 'prix plein (période pas commencée)' : 'souscription fermée'}</strong>
                         </div>
                       )}
                       {prixProRataLimite !== null && proRataDateLimite && (
                         <div className="no-prorata-line">
-                          <span>Pro-rata à la date limite ({formatDate(proRataDateLimite)})</span>
-                          <strong>{formatMontant(prixProRataLimite)}</strong>
+                          <span>À la date limite ({formatDate(proRataDateLimite)}) : reste {prixProRataLimite.resteSemaines} semaine{prixProRataLimite.resteSemaines > 1 ? 's' : ''}</span>
+                          <strong>{formatMontant(prixProRataLimite.montant)}</strong>
                         </div>
                       )}
+                      <p className="form-hint" style={{ margin: '6px 0 0' }}>
+                        Le pro-rata = prix ÷ semaines totales × semaines restantes au jour de la vente, arrondi aux 0,50 €. La durée totale ne bouge pas : ce sont les semaines restantes qui baissent chaque semaine.
+                      </p>
                     </div>
                   )}
                 </div>

@@ -8,6 +8,7 @@ import {
 import { formatMontant, matchRecherche } from '@/lib/utils';
 import { createClient } from '@/lib/supabase';
 import PaiementStep from '@/components/paiements/PaiementStep';
+import { calcProRata } from '@/lib/prorata';
 
 /**
  * VenteOffreModal — LE tunnel de vente d'une offre, partagé entre pages.
@@ -40,20 +41,16 @@ function calcDateFin(dureeJours) {
   return d.toISOString().split('T')[0];
 }
 
-// Pro-rata abonnement (même calcul que la fiche client)
-function calcProRata(offre) {
-  if (!offre.pro_rata_actif || !offre.date_debut || !offre.date_fin || !offre.prix) return null;
-  const today = new Date();
-  const debut = new Date(offre.date_debut);
-  const fin = new Date(offre.date_fin);
-  if (today <= debut) return null;
-  const limite = offre.pro_rata_date_limite ? new Date(offre.pro_rata_date_limite) : fin;
-  if (today > limite) return null;
-  const totalSemaines = Math.max(1, Math.round((fin - debut) / (7 * 86400000)));
-  const resteSemaines = Math.max(0, Math.round((fin - today) / (7 * 86400000)));
-  if (resteSemaines <= 0) return null;
-  return Math.round((parseFloat(offre.prix) / totalSemaines) * resteSemaines * 2) / 2;
-}
+// Pro-rata abonnement : calcul unique lib/prorata (2026-08-21 — la copie
+// locale comparait « aujourd'hui » avec l'heure courante, l'aperçu de
+// création à minuit : montants divergents possibles en limite de semaine).
+const proRataOffre = (offre) => calcProRata({
+  actif: offre.pro_rata_actif,
+  dateDebut: offre.date_debut,
+  dateFin: offre.date_fin,
+  prix: offre.prix,
+  dateLimite: offre.pro_rata_date_limite || null,
+});
 
 export default function VenteOffreModal({ offre: offreInitiale = null, onClose, onSuccess }) {
   // 'offre' (si pas d'offre fournie) | 'client' | 'paiement'
@@ -299,14 +296,15 @@ export default function VenteOffreModal({ offre: offreInitiale = null, onClose, 
 
         {/* Step 2 — Paiement (composant partagé avec la fiche client) */}
         {step === 'paiement' && selectedClient && offre && (() => {
-          const prorata = offre.type === 'abonnement' ? calcProRata(offre) : null;
+          const prorata = offre.type === 'abonnement' ? proRataOffre(offre) : null;
           return (
             <>
               {error && <p className="error-msg" style={{ margin: '10px 16px 0' }}>{error}</p>}
               <PaiementStep
                 offreNom={offre.nom}
                 clientNom={displayName(selectedClient)}
-                offrePrix={prorata || offre.prix}
+                offrePrix={prorata ? prorata.montant : offre.prix}
+                prixDetail={prorata ? `Pro-rata : ${prorata.resteSemaines} semaine${prorata.resteSemaines > 1 ? 's' : ''} restante${prorata.resteSemaines > 1 ? 's' : ''} sur ${prorata.totalSemaines} (prix plein ${offre.prix} €)` : null}
                 onConfirm={handleConfirm}
                 submitting={submitting}
               />

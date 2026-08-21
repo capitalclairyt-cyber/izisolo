@@ -45,6 +45,7 @@ export default function PaiementStep({
   offreNom,
   clientNom,
   offrePrix,
+  prixDetail = null, // ex. détail du pro-rata, affiché sous le montant
   isLibre = false,
   intituleLibre = '',
   onIntituleLibreChange,
@@ -224,6 +225,9 @@ export default function PaiementStep({
       </div>
       {!isLibre && parseFloat(montant) !== offrePrix && montant && (
         <p className="montant-hint">Prix catalogue : {formatMontant(offrePrix)}</p>
+      )}
+      {prixDetail && (
+        <p className="montant-hint">{prixDetail}</p>
       )}
 
       {isAregler && (
