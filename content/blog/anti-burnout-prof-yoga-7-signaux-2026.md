@@ -3,7 +3,7 @@ title: "Burnout du prof de yoga : 7 signaux à surveiller"
 description: "40 % des profs de yoga arrêtent en 5 ans — souvent par burnout silencieux. Les 7 signaux qui doivent t'alerter et 8 leviers concrets pour t'en sortir à temps."
 date: 2026-04-22
 updated: 2026-04-22
-author: "Colin (IziSolo)"
+author: "Maude (IziSolo)"
 tags: ["bien-être", "burnout", "prof yoga", "santé mentale"]
 image: /icons/hero-cocoon.png
 excerpt: "40 % des profs de yoga indépendant·e·s abandonnent leur activité dans les 5 ans qui suivent l'installation. Pas par manque de talent — par burnout silencieux. Le piège : tu enseignes la respiration, la présence, le calme — donc tu ne t'autorises pas à ne pas aller bien. Voici les 7 signaux à surveiller et les 8 leviers de récupération."

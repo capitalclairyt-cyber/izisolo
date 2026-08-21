@@ -3,7 +3,7 @@ title: "Démarcher les écoles primaires pour proposer du yoga enfants (méthode
 description: "Méthode pas-à-pas pour démarcher les écoles primaires et obtenir des conventions yoga enfants : calendrier annuel, email d'approche, démonstration gratuite, négociation, convention. Templates inclus."
 date: 2026-05-24
 updated: 2026-05-24
-author: "Colin (IziSolo)"
+author: "Maude (IziSolo)"
 tags: ["yoga", "enfants", "écoles", "prospection", "conventions"]
 image: /blog/hero-yoga-enfants.jpg
 excerpt: "Décrocher une convention avec une école primaire pour intervenir en yoga enfants est un cycle long mais rentable : 6 à 9 mois entre le 1er email et le 1er cours payant. Voici la méthode complète, du calendrier annuel aux clauses de la convention."

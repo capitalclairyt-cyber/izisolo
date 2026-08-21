@@ -3,7 +3,7 @@ title: "Tarifs yoga enfants 2026 : école, mairie, studio, stage"
 description: "Combien facturer un cours de yoga enfants en 2026 ? Fourchettes réelles par cadre — école, périscolaire, studio, stage, cours particulier — et comment les fixer."
 date: 2026-05-24
 updated: 2026-05-24
-author: "Colin (IziSolo)"
+author: "Maude (IziSolo)"
 tags: ["yoga", "enfants", "tarifs", "écoles", "stages"]
 image: /blog/hero-yoga-enfants.jpg
 excerpt: "Combien facturer un cours de yoga enfants en 2026 ? La question revient à chaque démarrage et à chaque renégociation. Les fourchettes varient du simple au quadruple selon le cadre — école, mairie, studio, stage. Voici les chiffres réels, par typologie."

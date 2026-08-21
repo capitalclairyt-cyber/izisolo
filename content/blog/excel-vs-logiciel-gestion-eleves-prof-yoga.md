@@ -3,7 +3,7 @@ title: "Excel ou logiciel pour gérer ses élèves de yoga ? (2026)"
 description: "Combien d'heures perds-tu à gérer tes élèves sur Excel ? Comparatif honnête Excel vs logiciel dédié pour prof de yoga : coûts, temps perdu, quand basculer."
 date: 2025-07-22
 updated: 2026-05-21
-author: "Colin (IziSolo)"
+author: "Maude (IziSolo)"
 tags: ["organisation", "outils", "gestion-temps"]
 image: /blog/hero-excel-vs-logiciel.jpg
 excerpt: "8 h par semaine. C'est le temps moyen qu'une prof indépendante passe à gérer ses élèves sur Excel + Google Calendar + WhatsApp + une appli de paiement. Voici le comparatif honnête entre faire avec Excel et basculer sur un logiciel — y compris les cas où Excel reste un meilleur choix."

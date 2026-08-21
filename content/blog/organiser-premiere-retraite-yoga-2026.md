@@ -3,7 +3,7 @@ title: "Organiser ta première retraite yoga : guide complet pour profs solo (20
 description: "Méthode complète pour organiser ta première retraite yoga en tant que prof indépendant·e : formats, choix du lieu, tarification, marketing, logistique. Tableaux chiffrés, exemple complet, erreurs à éviter."
 date: 2026-02-14
 updated: 2026-05-21
-author: "Colin (IziSolo)"
+author: "Maude (IziSolo)"
 tags: ["yoga", "retraite", "organisation", "événementiel"]
 image: /blog/hero-retraites-yoga.jpg
 excerpt: "Une retraite week-end bien organisée, c'est 800 à 2 500 € net en 48h, plus du bouche-à-oreille qui amène 3-6 nouveaux élèves réguliers. Mais 80 % des profs qui tentent leur première retraite se brûlent les ailes — sous-pricing, lieu inadapté, ambition de programmation excessive. Voici la méthode."

@@ -3,7 +3,7 @@ title: "Logiciel de gestion pour studio de yoga : 10 critères clés"
 description: "Comment choisir le bon logiciel de gestion pour ton studio de yoga en 2026 : 10 critères qui comptent vraiment, 5 red flags à fuir, 7 questions avant de signer."
 date: 2026-01-18
 updated: 2026-08-21
-author: "Colin (IziSolo)"
+author: "Maude (IziSolo)"
 tags: ["outils", "gestion", "logiciel", "studio"]
 image: /blog/hero-choisir-logiciel.jpg
 excerpt: "Tu vas chercher un logiciel de gestion pour ton studio. Tu vas tomber sur 15 options. Tu vas regarder le prix. Tu vas choisir le moins cher. 3 mois plus tard, tu vas vouloir partir. Voici comment éviter ça."

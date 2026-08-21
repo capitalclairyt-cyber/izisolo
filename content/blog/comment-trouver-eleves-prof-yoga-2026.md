@@ -3,7 +3,7 @@ title: "Comment trouver tes 100 premiers élèves quand on démarre prof de yoga
 description: "Méthode complète pour trouver ses premiers élèves en tant que prof de yoga indépendant·e. 5 canaux d'acquisition hiérarchisés par ROI, tactiques concrètes, erreurs à éviter, roadmap 90 jours."
 date: 2025-12-03
 updated: 2026-05-21
-author: "Colin (IziSolo)"
+author: "Maude (IziSolo)"
 tags: ["yoga", "acquisition", "marketing", "démarrage"]
 image: /blog/hero-trouver-eleves.jpg
 excerpt: "3 élèves la 1ère séance, 0 la 2e — c'est la vraie aventure du démarrage. La plupart des profs croient que la solution est Instagram. C'est l'erreur la plus coûteuse. Voici les 5 canaux qui amènent vraiment les 100 premiers élèves, hiérarchisés par ROI, avec les tactiques concrètes pour chacun."

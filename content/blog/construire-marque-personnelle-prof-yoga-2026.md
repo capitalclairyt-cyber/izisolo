@@ -3,7 +3,7 @@ title: "Marque personnelle de prof de yoga : la méthode simple"
 description: "Construire ta marque perso de prof de yoga sans devenir influenceuse : trouver ton angle distinctif, une identité visuelle minimale et un ton qui te ressemble."
 date: 2026-03-08
 updated: 2026-05-21
-author: "Colin (IziSolo)"
+author: "Maude (IziSolo)"
 tags: ["yoga", "branding", "marque-perso", "communication"]
 image: /icons/persona-yoga.jpg
 excerpt: "Tu n'as pas besoin de devenir une influenceuse Instagram pour avoir une marque perso forte. Tu as besoin de 3 choses simples : un angle distinctif (ce que tu fais que personne d'autre ne fait pareil), une identité visuelle cohérente (palette + polices + 1 séance photo), et un ton de voix qui te ressemble vraiment. Voici la méthode complète, sans BS marketing."

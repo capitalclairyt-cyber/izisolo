@@ -3,7 +3,7 @@ title: "Premier cours de yoga enfant : la structure type par âge"
 description: "La structure minute par minute d'un premier cours de yoga enfant selon l'âge (4-5, 6-9, 10-12 ans) : préparation, déroulé, erreurs à éviter."
 date: 2026-05-24
 updated: 2026-05-24
-author: "Colin (IziSolo)"
+author: "Maude (IziSolo)"
 tags: ["yoga", "enfants", "pédagogie", "premier cours"]
 image: /blog/hero-yoga-enfants.jpg
 excerpt: "Le premier cours de yoga enfant détermine 50 % de la rétention. Si les enfants partent enchanté·e·s, ils reviendront et entraineront leurs ami·e·s. Si la séance est ennuyeuse ou stressante, 80 % ne reviendront pas. Voici la structure minute par minute par tranche d'âge."

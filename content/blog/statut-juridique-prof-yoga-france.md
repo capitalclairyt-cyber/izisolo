@@ -3,7 +3,7 @@ title: "Statut juridique prof de yoga : micro, EI, EURL ou SASU ?"
 description: "Micro-entreprise, EI, EURL, SASU : quel statut choisir pour prof de yoga ? Seuils, cotisations, BIC/BNC, code APE et le moment précis pour changer."
 date: 2025-09-10
 updated: 2026-05-21
-author: "Colin (IziSolo)"
+author: "Maude (IziSolo)"
 tags: ["juridique", "auto-entrepreneur", "fiscalité"]
 image: /blog/hero-statut-juridique.jpg
 excerpt: "Pour 85 % des profs de yoga qui démarrent, la micro-entreprise (auto-entrepreneur) est le bon choix. Mais pas pour tout le monde, et pas pour toujours. Ce guide détaille les 4 statuts pertinents, leurs seuils, leurs charges, et le moment précis où il devient intéressant de changer."
