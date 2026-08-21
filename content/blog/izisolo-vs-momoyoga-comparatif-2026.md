@@ -3,7 +3,7 @@ title: "IziSolo vs Momoyoga : le comparatif honnête (2026)"
 description: "IziSolo ou Momoyoga pour gérer tes cours en 2026 ? Prix relevés et datés, frais sur les paiements calculés, forces réelles des deux outils, et un « choisis-les si » sincère."
 date: 2026-08-21
 updated: 2026-08-21
-author: "Colin (IziSolo)"
+author: "Maude (IziSolo)"
 tags: ["outils", "comparatif", "logiciel", "gestion"]
 image: /blog/hero-izisolo-momoyoga.jpg
 excerpt: "Ce comparatif est écrit par IziSolo, donc on commence par la transparence : voici la méthode, les chiffres datés et sourcés, ce que Momoyoga fait très bien, et pour qui chaque outil est le bon choix."
@@ -22,7 +22,7 @@ Tu compares des logiciels pour gérer tes cours, et deux noms reviennent : Momoy
 
 ## D'abord, la transparence
 
-Cette page est écrite par IziSolo. Je m'appelle Colin, j'ai cofondé l'outil avec Maude, prof de yoga. Nous sommes donc juge et partie, et tu as raison de garder ça en tête en lisant.
+Cette page est écrite par IziSolo. Je m'appelle Maude, je suis prof de yoga et j'ai cofondé l'outil avec Colin. Nous sommes donc juge et partie, et tu as raison de garder ça en tête en lisant.
 
 Notre méthode pour rester honnêtes :
 
@@ -84,7 +84,7 @@ On te doit cette section, et elle est sincère :
 - **Les galères gérées pour toi.** No-show, annulation tardive, paiement en attente : chaque cas arrive dans une boîte dédiée, se règle en 2 clics, et reste annulable 7 jours. C'est la partie du métier que personne n'aime, alors on l'a industrialisée.
 - **La communication intégrée.** Messagerie avec tes élèves, annonces par cours, sondages planning dont les créneaux gagnants deviennent des cours en 2 clics, et un email envoyé à l'élève dès que tu écris, avec ta vraie adresse en réponse.
 - **Un portail à ton nom, installable sans store.** Tes élèves réservent, annulent selon TES règles, et retrouvent carnets, paiements et factures dans leur espace. QR code à imprimer et planning intégrable sur ton site inclus, quel que soit le plan.
-- **Le support par les fondateurs.** Une messagerie support intégrée à l'app, et derrière, Maude et moi. Pas de ticket anonyme.
+- **Le support par les fondateurs.** Une messagerie support intégrée à l'app, et derrière, Colin et moi. Pas de ticket anonyme.
 - **Tes données t'appartiennent, vraiment.** L'export CSV de ta base élèves est gratuit pour toutes, même si ton compte est gelé. La portabilité n'est pas une option payante.
 
 ## Ce que Momoyoga a et qu'IziSolo n'a pas
