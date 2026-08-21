@@ -43,7 +43,7 @@ const SECTIONS = [
       <>Va dans <strong>Cours &amp; Évènements</strong> → <strong>« Créer un cours »</strong>.</>,
       <>Renseigne le nom, le jour, l'heure, la durée, le lieu et la capacité. Le <strong>type de cours</strong> (Hatha, Vinyasa…) est optionnel mais utile si tes carnets ne valent que pour certains cours.</>,
       <>Choisis la <strong>fréquence</strong> — hebdomadaire, tous les 15 jours, mensuelle — et une <strong>date de fin</strong> (fin de trimestre, fin de saison…). IziSolo génère toutes les séances d'un coup, en tenant compte des vacances si tu le souhaites.</>,
-      <>Quand la série se termine : ne recrée rien ! Ouvre l'écran des cours récurrents et clique sur l'icône <strong>📅+</strong> de la série → nouvelle date de fin, et les séances repartent avec les mêmes réglages.</>,
+      <>Série trop courte, trop longue, ou l'été à ajouter ? Ne recrée rien ! Ouvre l'écran des cours récurrents et clique sur l'icône <strong>📅+</strong> de la série → nouvelle date de fin dans les deux sens : plus loin = les séances se créent (mêmes réglages), plus proche = les séances vides se suppriment (jamais une séance avec des inscrites), et la case « pendant les vacances » comble les trous de l'été.</>,
     ],
     astuce: 'Pour un atelier ponctuel ou un stage, crée un cours unique avec un tarif à l\'unité — tes élèves le voient « à X € la séance » sur ton portail, carnet ou pas.',
   },

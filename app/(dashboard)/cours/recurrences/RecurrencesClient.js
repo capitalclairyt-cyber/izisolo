@@ -57,8 +57,13 @@ export default function RecurrencesClient({ recurrences: initialRecurrences, cou
   const [savingEdit, setSavingEdit] = useState(false);
   const typesCours = getAllTypesFromCategories(profile?.types_cours);
 
-  // ── Prolonger la série (retour Maude 2026-07-23 : ses séries finissaient le
-  // 3 juillet et elle recréait chaque cours À LA MAIN — il manquait le geste).
+  // ── Ajuster la série (né « Prolonger », retour Maude 2026-07-23 ; étendu le
+  // 2026-08-21, retour Colin : réduire une série obligeait à la supprimer et
+  // la recréer — perte des inscrits et de l'historique). Le même panneau gère
+  // désormais les DEUX sens : nouvelle date de fin plus loin = création des
+  // occurrences manquantes, plus proche = suppression des séances au-delà
+  // (JAMAIS une séance avec inscrits ou historique), et le comblement des
+  // trous de la fenêtre existante (case vacances) grâce à la dédup complète.
   const [prolonger, setProlonger] = useState(false);
   const [prolongerFin, setProlongerFin] = useState('');
   const [prolongeant, setProlongeant] = useState(false);
@@ -66,6 +71,11 @@ export default function RecurrencesClient({ recurrences: initialRecurrences, cou
   // serveur (+365 j, cap PostgREST 1000) pouvait manquer des occurrences →
   // la dédup laissait passer des doublons à la prolongation (B1b).
   const [prolongerExistantes, setProlongerExistantes] = useState(null);
+  // Occurrences FUTURES {id, date} (candidates à la réduction) + séances
+  // protégées (historique pointé ou réservation active) : jamais supprimées
+  // par l'ajustement. Erreur de lecture = tout protégé (fail-closed).
+  const [prolongerFutures, setProlongerFutures] = useState([]);
+  const [prolongerProteges, setProlongerProteges] = useState(new Set());
   // Une série « hors vacances » prolongée sur l'été donnerait 0 séance (été =
   // 04/07→31/08 dans le référentiel). Or c'est exactement le cas d'usage de
   // Maude : des cours d'été. Cette case permet d'outrepasser l'exclusion POUR
@@ -347,7 +357,7 @@ export default function RecurrencesClient({ recurrences: initialRecurrences, cou
     }
   };
 
-  // ── Prolonger la série ────────────────────────────────────────────────────
+  // ── Ajuster la série (générateur commun) ─────────────────────────────────
   // Génère les occurrences manquantes jusqu'à la nouvelle date de fin, avec
   // EXACTEMENT les règles de la création (cours/nouveau calculerDates) :
   // jour ancré sur date_debut, parité bimensuelle ancrée sur date_debut,
@@ -399,47 +409,123 @@ export default function RecurrencesClient({ recurrences: initialRecurrences, cou
     const datesExistantes = prolongerExistantes
       ? [...prolongerExistantes]
       : coursDeRec.map(c => c.date);
-    const dernieres = [...datesExistantes].sort();
-    const derniere = dernieres[dernieres.length - 1] || null;
-    let depuis = today;
-    if (derniere && derniere >= today) {
-      const d = new Date(derniere + 'T12:00:00');
-      d.setDate(d.getDate() + 1);
-      depuis = toISO(d);
-    }
-    if (prolongerFin < depuis) return { incluses: [], exclues: [], depuis };
+    // Génération depuis AUJOURD'HUI (et plus depuis la dernière occurrence) :
+    // la dédup complète skippe l'existant, et c'est ce qui permet de COMBLER
+    // les trous de la fenêtre déjà créée (ex. cocher « pendant les vacances »
+    // sur une série qui les excluait : les dates d'été manquantes ressortent).
+    const depuis = today;
     const dejaPris = new Set(datesExistantes);
-    return { ...genererDatesProlongation(selected, depuis, prolongerFin, dejaPris, prolongerInclureVacances), depuis };
-  }, [prolonger, selected, prolongerFin, coursDeRec, prolongerInclureVacances, prolongerExistantes]);
+    const generation = prolongerFin >= depuis
+      ? genererDatesProlongation(selected, depuis, prolongerFin, dejaPris, prolongerInclureVacances)
+      : { incluses: [], exclues: [] };
+    // Réduction : les occurrences futures APRÈS la nouvelle fin. Celles avec
+    // inscrits ou historique sont conservées (à annuler individuellement,
+    // pour que les élèves soient prévenues) — les vides sont supprimables.
+    const auDela = prolongerFutures.filter(c => c.date > prolongerFin);
+    const supprimables = auDela.filter(c => !prolongerProteges.has(c.id));
+    const conservees = auDela.filter(c => prolongerProteges.has(c.id));
+    return { ...generation, depuis, supprimables, conservees };
+  }, [prolonger, selected, prolongerFin, coursDeRec, prolongerInclureVacances, prolongerExistantes, prolongerFutures, prolongerProteges]);
 
   const ouvrirProlonger = async () => {
     if (!selected) return;
-    // Suggestion par défaut : +8 semaines à partir d'aujourd'hui.
-    const d = new Date();
-    d.setDate(d.getDate() + 7 * 8);
-    setProlongerFin(toISO(d));
+    // Par défaut : la fin ACTUELLE de la série (les deux sens sont possibles),
+    // sinon la dernière occurrence connue, sinon +8 semaines.
+    const dernieresConnues = coursDeRec.map(c => c.date).sort();
+    let finDefaut = selected.date_fin || dernieresConnues[dernieresConnues.length - 1];
+    if (!finDefaut || finDefaut < toISO(new Date())) {
+      const d = new Date();
+      d.setDate(d.getDate() + 7 * 8);
+      finDefaut = toISO(d);
+    }
+    setProlongerFin(finDefaut);
     setProlongerInclureVacances(false);
     setProlongerExistantes(null);
+    setProlongerFutures([]);
+    setProlongerProteges(new Set());
     setProlonger(true);
-    // Dédup sur les dates RÉELLES de la série, sans fenêtre ni cap.
+    // Dédup sur les dates RÉELLES de la série, sans fenêtre ni cap — et ids
+    // des occurrences futures pour la réduction.
     const supabase = createClient();
     const { data, error } = await supabase
       .from('cours')
-      .select('date')
+      .select('id, date')
       .eq('recurrence_parent_id', selected.id);
-    if (!error && data) setProlongerExistantes(new Set(data.map(c => c.date)));
-    else if (error) toast.error('Lecture des séances existantes impossible : ' + error.message);
+    if (error || !data) {
+      if (error) toast.error('Lecture des séances existantes impossible : ' + error.message);
+      return;
+    }
+    setProlongerExistantes(new Set(data.map(c => c.date)));
+    const today = toISO(new Date());
+    const futures = data.filter(c => c.date >= today);
+    setProlongerFutures(futures);
+    // Séances protégées : historique pointé/sanctionné OU réservation active.
+    // Erreur de lecture → TOUT protégé (fail-closed, aucune suppression).
+    if (futures.length > 0) {
+      const { data: presRows, error: presErr } = await supabase
+        .from('presences')
+        .select('cours_id, statut_pointage, annulation_tardive')
+        .in('cours_id', futures.map(c => c.id));
+      if (presErr) {
+        setProlongerProteges(new Set(futures.map(c => c.id)));
+        toast.error('Lecture des inscriptions impossible — la réduction est désactivée par prudence : ' + presErr.message);
+      } else {
+        const proteges = new Set();
+        for (const p of (presRows || [])) {
+          const histo = ['present', 'absent', 'excuse', 'absent_compte'].includes(p.statut_pointage) || p.annulation_tardive;
+          if (histo || presenceEstReservationActive(p)) proteges.add(p.cours_id);
+        }
+        setProlongerProteges(proteges);
+      }
+    }
   };
 
   const prolongerSerie = async () => {
-    if (!selected || !previewProlongation || previewProlongation.incluses.length === 0) return;
-    // Pas d'insertion tant que la dédup complète n'est pas chargée (le fetch
+    if (!selected || !previewProlongation) return;
+    const { incluses, supprimables, conservees } = previewProlongation;
+    const rienAFaire = incluses.length === 0 && supprimables.length === 0
+      && (selected.date_fin || null) === prolongerFin;
+    if (rienAFaire) return;
+    // Pas d'écriture tant que la dédup complète n'est pas chargée (le fetch
     // de l'ouverture du panneau prend < 1 s ; en cas d'échec, un toast l'a dit).
     if (!prolongerExistantes) { toast.error('Un instant — vérification des séances existantes…'); return; }
+    // Réduction : confirmation honnête (les vides seulement, les protégées
+    // restent et sont annoncées).
+    if (supprimables.length > 0) {
+      const ok = confirm(
+        `${supprimables.length} séance${supprimables.length > 1 ? 's' : ''} SANS inscrite ni historique après le ${prolongerFin.split('-').reverse().join('/')} ser${supprimables.length > 1 ? 'ont' : 'a'} supprimée${supprimables.length > 1 ? 's' : ''}.`
+        + (conservees.length > 0
+          ? `\n\n${conservees.length} séance${conservees.length > 1 ? 's' : ''} avec inscrites ou historique ${conservees.length > 1 ? 'sont' : 'est'} CONSERVÉE${conservees.length > 1 ? 'S' : ''} : annule-les depuis le détail du cours pour prévenir les élèves.`
+          : '')
+        + '\n\nContinuer ?'
+      );
+      if (!ok) return;
+    }
     setProlongeant(true);
     const supabase = createClient();
     try {
       const { data: { user } } = await supabase.auth.getUser();
+
+      // ── Réduction : suppression des occurrences vides au-delà de la fin ──
+      let nbSupprimees = 0;
+      if (supprimables.length > 0) {
+        const ids = supprimables.map(c => c.id);
+        const { error: delErr } = await supabase.from('cours').delete().in('id', ids);
+        if (delErr) throw new Error('Suppression échouée : ' + delErr.message);
+        nbSupprimees = ids.length;
+        const idsSet = new Set(ids);
+        const datesSupprimees = new Set(supprimables.map(c => c.date));
+        setCours(prev => prev.filter(c => !idsSet.has(c.id)));
+        setProlongerFutures(prev => prev.filter(c => !idsSet.has(c.id)));
+        setProlongerExistantes(prev => {
+          const s = new Set(prev || []);
+          for (const d of datesSupprimees) s.delete(d);
+          return s;
+        });
+      }
+      // ── Extension / comblement : création des occurrences manquantes ──
+      let crees = [];
+      if (incluses.length > 0) {
       // Champs portés par les COURS (pas par la récurrence) : recopiés du
       // cours le plus récent de la série (lieu texte, visibilité, tarif à la
       // séance) — même logique que l'ajout d'occurrence manuel.
@@ -451,7 +537,7 @@ export default function RecurrencesClient({ recurrences: initialRecurrences, cou
         .limit(1)
         .maybeSingle();
 
-      const rows = previewProlongation.incluses.map(iso => ({
+      const rows = incluses.map(iso => ({
         profile_id: user.id,
         nom: selected.nom,
         type_cours: selected.type_cours || null,
@@ -477,15 +563,16 @@ export default function RecurrencesClient({ recurrences: initialRecurrences, cou
         } : {}),
       }));
 
-      const { data: crees, error } = await supabase
+      const { data: inseres, error } = await supabase
         .from('cours')
         .insert(rows)
         .select('id, nom, date, heure, recurrence_parent_id, est_annule');
       if (error) throw error;
+      crees = inseres || [];
 
       // Domicile : inscrire l'élève d'office sur chaque nouvelle occurrence
       // (comme à la création de la série) — erreur LUE.
-      if (selected.domicile && selected.client_id && crees?.length > 0) {
+      if (selected.domicile && selected.client_id && crees.length > 0) {
         const { error: presErr } = await supabase.from('presences').insert(
           crees.map(c => ({ profile_id: user.id, cours_id: c.id, client_id: selected.client_id }))
         );
@@ -495,24 +582,31 @@ export default function RecurrencesClient({ recurrences: initialRecurrences, cou
       // L'état local est mis à jour DÈS l'insert réussi : si l'update de
       // date_fin échoue ensuite, un re-clic ne peut plus dupliquer (la dédup
       // voit les nouvelles dates) — avant : « Erreur » + re-clic = doublons.
-      setCours(prev => [...prev, ...(crees || [])].sort((a, b) => a.date.localeCompare(b.date)));
+      setCours(prev => [...prev, ...crees].sort((a, b) => a.date.localeCompare(b.date)));
       setProlongerExistantes(prev => {
         const s = new Set(prev || []);
-        for (const c of (crees || [])) s.add(c.date);
+        for (const c of crees) s.add(c.date);
         return s;
       });
+      setProlongerFutures(prev => [...prev, ...crees.map(c => ({ id: c.id, date: c.date }))]);
+      } // fin incluses > 0
 
       const { error: recErr } = await supabase
         .from('recurrences')
         .update({ date_fin: prolongerFin })
         .eq('id', selected.id);
       if (recErr) {
-        toast.warning(`Séances créées, mais la date de fin de la série n'a pas pu être enregistrée (${recErr.message}).`);
+        toast.warning(`Séances ajustées, mais la date de fin de la série n'a pas pu être enregistrée (${recErr.message}).`);
       } else {
         setRecurrences(prev => prev.map(r => r.id === selected.id ? { ...r, date_fin: prolongerFin } : r));
       }
       setProlonger(false);
-      toast.success(`Série prolongée : ${crees?.length || 0} séance${(crees?.length || 0) > 1 ? 's' : ''} créée${(crees?.length || 0) > 1 ? 's' : ''} jusqu'au ${new Date(prolongerFin + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })} ✓`);
+      const morceaux = [];
+      if (crees.length > 0) morceaux.push(`${crees.length} séance${crees.length > 1 ? 's' : ''} créée${crees.length > 1 ? 's' : ''}`);
+      if (nbSupprimees > 0) morceaux.push(`${nbSupprimees} supprimée${nbSupprimees > 1 ? 's' : ''}`);
+      if (conservees.length > 0) morceaux.push(`${conservees.length} conservée${conservees.length > 1 ? 's' : ''} (inscrites/historique)`);
+      const finLabel = new Date(prolongerFin + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
+      toast.success(`Série ajustée jusqu'au ${finLabel} : ${morceaux.length ? morceaux.join(' · ') : 'date de fin mise à jour'} ✓`);
     } catch (err) {
       toast.error('Erreur : ' + err.message);
     } finally {
@@ -591,7 +685,7 @@ export default function RecurrencesClient({ recurrences: initialRecurrences, cou
                   </div>
                 </div>
                 <div className="rec-detail-actions">
-                  <button type="button" onClick={ouvrirProlonger} className="rec-icon-btn rec-prolonger-btn" title="Prolonger la série (générer les prochaines séances)">
+                  <button type="button" onClick={ouvrirProlonger} className="rec-icon-btn rec-prolonger-btn" title="Ajuster la série (prolonger, réduire, vacances)">
                     <CalendarPlus size={16} />
                   </button>
                   <button type="button" onClick={ouvrirEdition} className="rec-icon-btn" title="Modifier le nom et le type">
@@ -648,15 +742,16 @@ export default function RecurrencesClient({ recurrences: initialRecurrences, cou
               </div>
             )}
 
-            {/* ── Prolonger la série ── */}
+            {/* ── Ajuster la série (prolonger, réduire, combler) ── */}
             {prolonger && !editing && (
               <div className="rec-prolonger-panel">
                 <div className="rec-edit-label" style={{ marginBottom: 6 }}>
-                  <CalendarPlus size={14} style={{ verticalAlign: '-2px' }} /> Prolonger la série jusqu'au…
+                  <CalendarPlus size={14} style={{ verticalAlign: '-2px' }} /> Ajuster la série : fin au…
                 </div>
                 {selected.date_fin && (
                   <p className="rec-prolonger-info">
                     Fin actuelle : <strong>{new Date(selected.date_fin + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</strong>
+                    <em> — plus loin = séances créées, plus proche = séances vides supprimées.</em>
                   </p>
                 )}
                 <input
@@ -682,17 +777,28 @@ export default function RecurrencesClient({ recurrences: initialRecurrences, cou
                 )}
                 {previewProlongation && (
                   <p className="rec-prolonger-preview">
-                    {previewProlongation.incluses.length > 0 ? (
+                    {previewProlongation.incluses.length > 0 && (
                       <>
                         <strong>{previewProlongation.incluses.length} séance{previewProlongation.incluses.length > 1 ? 's' : ''}</strong> ser{previewProlongation.incluses.length > 1 ? 'ont' : 'a'} créée{previewProlongation.incluses.length > 1 ? 's' : ''}
                         {' '}({freqLabel(selected)}{selected.heure ? ` à ${selected.heure.slice(0, 5)}` : ''})
                         {previewProlongation.exclues.length > 0 && (
                           <> — {previewProlongation.exclues.length} exclue{previewProlongation.exclues.length > 1 ? 's' : ''} ({[...new Set(previewProlongation.exclues.map(e => e.raison))].join(' + ')})</>
                         )}
-                        .
+                        .{' '}
                       </>
-                    ) : (
-                      <>Aucune séance à créer sur cette période{previewProlongation.exclues.length > 0 ? ` (${previewProlongation.exclues.length} date${previewProlongation.exclues.length > 1 ? 's' : ''} exclue${previewProlongation.exclues.length > 1 ? 's' : ''} : vacances/fériés)` : ''}.</>
+                    )}
+                    {previewProlongation.supprimables.length > 0 && (
+                      <>
+                        <strong>{previewProlongation.supprimables.length} séance{previewProlongation.supprimables.length > 1 ? 's' : ''} vide{previewProlongation.supprimables.length > 1 ? 's' : ''}</strong> après cette date ser{previewProlongation.supprimables.length > 1 ? 'ont' : 'a'} supprimée{previewProlongation.supprimables.length > 1 ? 's' : ''}.{' '}
+                      </>
+                    )}
+                    {previewProlongation.conservees.length > 0 && (
+                      <>
+                        <strong>{previewProlongation.conservees.length} séance{previewProlongation.conservees.length > 1 ? 's' : ''}</strong> avec inscrites ou historique ser{previewProlongation.conservees.length > 1 ? 'ont' : 'a'} conservée{previewProlongation.conservees.length > 1 ? 's' : ''} : annule-les depuis le détail du cours pour prévenir les élèves.{' '}
+                      </>
+                    )}
+                    {previewProlongation.incluses.length === 0 && previewProlongation.supprimables.length === 0 && previewProlongation.conservees.length === 0 && (
+                      <>Rien à créer ni à supprimer sur cette période{previewProlongation.exclues.length > 0 ? ` (${previewProlongation.exclues.length} date${previewProlongation.exclues.length > 1 ? 's' : ''} exclue${previewProlongation.exclues.length > 1 ? 's' : ''} : vacances/fériés)` : ''}.</>
                     )}
                   </p>
                 )}
@@ -704,9 +810,18 @@ export default function RecurrencesClient({ recurrences: initialRecurrences, cou
                     type="button"
                     className="izi-btn izi-btn-primary"
                     onClick={prolongerSerie}
-                    disabled={prolongeant || !previewProlongation || previewProlongation.incluses.length === 0}
+                    disabled={prolongeant || !previewProlongation
+                      || (previewProlongation.incluses.length === 0
+                        && previewProlongation.supprimables.length === 0
+                        && (selected.date_fin || null) === prolongerFin)}
                   >
-                    <CalendarPlus size={16} /> {prolongeant ? 'Création…' : `Créer ${previewProlongation?.incluses.length || 0} séance${(previewProlongation?.incluses.length || 0) > 1 ? 's' : ''}`}
+                    <CalendarPlus size={16} /> {prolongeant ? 'Ajustement…'
+                      : previewProlongation && (previewProlongation.incluses.length > 0 || previewProlongation.supprimables.length > 0)
+                        ? [
+                            previewProlongation.incluses.length > 0 ? `+${previewProlongation.incluses.length}` : null,
+                            previewProlongation.supprimables.length > 0 ? `−${previewProlongation.supprimables.length}` : null,
+                          ].filter(Boolean).join(' · ') + ' — Ajuster'
+                        : 'Ajuster la série'}
                   </button>
                 </div>
               </div>

@@ -14,7 +14,7 @@
 export const FAQ_SUPPORT = [
   {
     q: "Comment créer un cours qui se répète chaque semaine ?",
-    a: "Va dans Cours & Évènements → « Créer un cours », choisis une fréquence (hebdomadaire, tous les 15 jours, mensuelle) et une date de fin : IziSolo génère toutes les séances d'un coup. Pour prolonger une série qui se termine (rentrée, nouveau trimestre), ouvre l'écran des cours récurrents et clique sur l'icône 📅+ de la série.",
+    a: "Va dans Cours & Évènements → « Créer un cours », choisis une fréquence (hebdomadaire, tous les 15 jours, mensuelle) et une date de fin : IziSolo génère toutes les séances d'un coup. Pour ajuster une série (la prolonger à la rentrée, la raccourcir, ou ajouter les séances d'été), ouvre l'écran des cours récurrents et clique sur l'icône 📅+ de la série : la nouvelle date de fin marche dans les deux sens, et les séances avec des inscrites ne sont jamais supprimées.",
     lien: { href: '/aide#premier-cours', label: 'Voir le pas-à-pas' },
   },
   {
