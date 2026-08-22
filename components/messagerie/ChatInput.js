@@ -61,6 +61,21 @@ export default function ChatInput({ onSend, disabled = false, placeholder = "Éc
     return () => document.removeEventListener('mousedown', handler);
   }, [emojiOpen]);
 
+  // Auto-grandissement : la hauteur posée EN LIGNE bat le CSS, donc les bornes
+  // doivent être les mêmes des deux côtés. Desktop : départ ~3 lignes, plafond
+  // 240 px. Mobile : 1 ligne, plafond 140 px (le clavier mange l'écran).
+  // Cf. .ci-textarea plus bas — une seule vérité, deux écritures.
+  const bornes = () => (typeof window !== 'undefined' && window.innerWidth <= 640
+    ? { base: 38, max: 140 }
+    : { base: 78, max: 240 });
+
+  const ajusterHauteur = (ta) => {
+    if (!ta) return;
+    const { base, max } = bornes();
+    ta.style.height = 'auto';
+    ta.style.height = Math.min(Math.max(ta.scrollHeight, base), max) + 'px';
+  };
+
   const insertEmoji = (emoji) => {
     const ta = taRef.current;
     if (!ta) {
@@ -76,8 +91,7 @@ export default function ChatInput({ onSend, disabled = false, placeholder = "Éc
       ta.focus();
       const pos = start + emoji.length;
       ta.setSelectionRange(pos, pos);
-      ta.style.height = 'auto';
-      ta.style.height = Math.min(ta.scrollHeight, 140) + 'px';
+      ajusterHauteur(ta);
     });
   };
 
@@ -85,8 +99,7 @@ export default function ChatInput({ onSend, disabled = false, placeholder = "Éc
     if (initialText && !text) {
       setText(initialText);
       if (taRef.current) {
-        taRef.current.style.height = 'auto';
-        taRef.current.style.height = Math.min(taRef.current.scrollHeight, 140) + 'px';
+        ajusterHauteur(taRef.current);
       }
     }
   }, [initialText]);
@@ -135,7 +148,7 @@ export default function ChatInput({ onSend, disabled = false, placeholder = "Éc
       });
       setText('');
       setAttachments([]);
-      if (taRef.current) taRef.current.style.height = 'auto';
+      if (taRef.current) ajusterHauteur(taRef.current);
     } catch (err) {
       toast.error('Erreur envoi : ' + err.message);
     } finally {
@@ -150,12 +163,9 @@ export default function ChatInput({ onSend, disabled = false, placeholder = "Éc
     }
   };
 
-  // Auto-resize textarea
   const handleTextChange = (e) => {
     setText(e.target.value);
-    const ta = e.target;
-    ta.style.height = 'auto';
-    ta.style.height = Math.min(ta.scrollHeight, 140) + 'px';
+    ajusterHauteur(e.target);
   };
 
   return (
@@ -291,6 +301,12 @@ export default function ChatInput({ onSend, disabled = false, placeholder = "Éc
         .ci-row {
           display: flex; align-items: flex-end; gap: 6px;
         }
+        /* « La cellule d'écriture est toute petite » (retour Camille
+           2026-08-21, le même que celui qui a fait grandir le composeur admin).
+           Sur DESKTOP, la boîte naît sur ~3 lignes : on y écrit un vrai
+           message à ses élèves, pas un SMS. Sur mobile (voir la media query
+           plus bas), elle reste sur une ligne — l'écran est petit, le clavier
+           mange la moitié de la hauteur, et l'auto-grandissement suffit. */
         .ci-textarea {
           flex: 1;
           padding: 8px 12px;
@@ -299,11 +315,16 @@ export default function ChatInput({ onSend, disabled = false, placeholder = "Éc
           background: var(--bg-soft, #faf8f5);
           font-size: 0.875rem;
           font-family: inherit;
-          resize: none;
+          resize: vertical;
           outline: none;
           line-height: 1.4;
-          min-height: 38px;
-          max-height: 140px;
+          min-height: 78px;
+          max-height: 240px;
+        }
+        /* Exception mobile APRÈS la règle de base : à sélecteur égal, c'est
+           l'ordre source qui tranche, pas la media query (bible §12). */
+        @media (max-width: 640px) {
+          .ci-textarea { min-height: 38px; max-height: 140px; resize: none; }
         }
         .ci-textarea:focus { border-color: var(--brand); background: white; }
         .ci-textarea:disabled { opacity: 0.5; }

@@ -7,7 +7,7 @@ import {
   ArrowLeft, Save, Calendar, Clock, MapPin, Users, Repeat, UserPlus,
   Trash2, AlertTriangle, CheckCircle2, Edit3, X, Copy,
   ChevronDown, ChevronUp, Mail, Send, ShieldAlert, Smartphone, CheckCheck, Lock,
-  Home, Navigation, Euro, MessageSquare,
+  Home, Navigation, Euro, MessageSquare, CalendarPlus, ArrowRight,
 } from 'lucide-react';
 import AideContextuelle from '@/components/AideContextuelle';
 import { formatHeure, getAllTypesFromCategories } from '@/lib/utils';
@@ -1230,6 +1230,23 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
 
           {showRecurrenceEdit && (
             <div className="recurrence-edit-panel">
+              {/* Ce panneau change ce que SONT les séances (nom, heure, lieu,
+                  tarif), jamais COMBIEN il y en a. La date de fin vit sur
+                  l'écran des séries. Retour Léa 2026-08-21 : « toujours pas
+                  possible de modifier le nombre de cours d'une série » — elle
+                  cherchait ici, et rien n'y menait. */}
+              <Link
+                href={`/cours/recurrences?rec=${cours.recurrence_parent_id}&ajuster=1`}
+                className="recurrence-ajuster-lien"
+              >
+                <CalendarPlus size={15} />
+                <span>
+                  <strong>Changer le nombre de séances</strong>
+                  Rallonger la série, la raccourcir, ou combler les vacances : ça se règle sur l&apos;écran de tes séries.
+                </span>
+                <ArrowRight size={15} />
+              </Link>
+
               {/* Avertissement fort */}
               <div className="recurrence-warning">
                 <ShieldAlert size={28} className="recurrence-warning-icon" />
@@ -2264,6 +2281,21 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
         }
 
         /* Warning banner — fort, rouge/orange */
+        /* Lien vers l'écran des séries. Bloc déjà GLOBAL, donc le <Link> est
+           bien atteint (piège styled-jsx × composants, bible §12). */
+        .recurrence-ajuster-lien {
+          display: flex; align-items: center; gap: 10px;
+          padding: 12px 14px; margin-bottom: 14px;
+          border: 1px solid var(--border); border-radius: var(--radius-md);
+          background: var(--bg-card); text-decoration: none;
+          color: var(--text-primary);
+        }
+        .recurrence-ajuster-lien:hover { border-color: var(--brand); }
+        .recurrence-ajuster-lien > svg:first-child { color: var(--brand); flex-shrink: 0; }
+        .recurrence-ajuster-lien > svg:last-child { color: var(--text-muted); flex-shrink: 0; }
+        .recurrence-ajuster-lien span { flex: 1; min-width: 0; font-size: 0.8125rem; color: var(--text-muted); line-height: 1.4; }
+        .recurrence-ajuster-lien strong { display: block; font-size: 0.875rem; color: var(--text-primary); }
+
         .recurrence-warning {
           display: flex;
           gap: 14px;

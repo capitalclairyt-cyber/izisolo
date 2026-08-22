@@ -595,7 +595,11 @@ function NouveauCoursInner() {
         }
       }
 
-      router.push('/agenda');
+      // Agenda positionné sur la date du cours CRÉÉ, pas sur aujourd'hui
+      // (retour Léa 2026-08-21) : une série qui démarre en septembre renvoyait
+      // sur un agenda vide, sans rien montrer de ce qu'on venait de créer.
+      // Pour une récurrence, form.date est la première occurrence.
+      router.push(form.date ? `/agenda?date=${form.date}` : '/agenda');
       router.refresh();
     } catch (err) {
       toast.error('Erreur : ' + err.message);
@@ -648,7 +652,17 @@ function NouveauCoursInner() {
   return (
     <div className="nouveau-cours">
       <div className="page-header animate-fade-in">
-        <Link href={domicileClient ? `/clients/${domicileClient.id}` : '/agenda'} className="back-btn"><ArrowLeft size={20} /></Link>
+        {/* Retour à l'écran D'OÙ L'ON VIENT (retour Léa 2026-08-21 : « le bouton
+            précédent ouvre l'agenda »). On arrive presque toujours de Cours &
+            Évènements ; l'agenda n'est le bon retour que si le lien portait une
+            date (le « + » d'une case de l'agenda). */}
+        <Link
+          href={
+            domicileClient ? `/clients/${domicileClient.id}`
+              : (searchParams.get('date') ? `/agenda?date=${searchParams.get('date')}` : '/cours')
+          }
+          className="back-btn"
+        ><ArrowLeft size={20} /></Link>
         <div>
           <h1>{domicileClient ? 'Cours à domicile' : 'Nouveau cours'}</h1>
           {searchParams.get('date') && !domicileClient && (

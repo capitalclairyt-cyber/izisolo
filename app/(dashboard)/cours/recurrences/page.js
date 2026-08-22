@@ -16,6 +16,10 @@ export default async function RecurrencesPage({ searchParams }) {
   const sp = await searchParams;
   const initialRecId = sp?.rec || null;
   const autoEdit = sp?.edit === '1';
+  // ?ajuster=1 : ouvre directement le panneau « Ajuster la série »
+  // (lien depuis la fiche d'un cours — retour Léa 2026-08-21 : elle cherchait
+  // le nombre de séances depuis le cours, où rien ne mène à cet écran).
+  const autoAjuster = sp?.ajuster === '1';
 
   // Charger les récurrences du profil + leurs cours générés (pour compteur + calendrier)
   const today = new Date().toISOString().slice(0, 10);
@@ -54,6 +58,7 @@ export default async function RecurrencesPage({ searchParams }) {
       profile={profile || {}}
       initialRecId={initialRecId}
       autoEdit={autoEdit}
+      autoAjuster={autoAjuster}
     />
   );
 }

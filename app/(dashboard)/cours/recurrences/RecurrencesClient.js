@@ -38,7 +38,7 @@ function freqLabel(rec) {
   return rec.frequence;
 }
 
-export default function RecurrencesClient({ recurrences: initialRecurrences, cours: initialCours, profile, initialRecId = null, autoEdit = false }) {
+export default function RecurrencesClient({ recurrences: initialRecurrences, cours: initialCours, profile, initialRecId = null, autoEdit = false, autoAjuster = false }) {
   const router = useRouter();
   const { toast } = useToast();
   const [recurrences, setRecurrences] = useState(initialRecurrences);
@@ -131,6 +131,10 @@ export default function RecurrencesClient({ recurrences: initialRecurrences, cou
       setEditForm({ nom: selected.nom || '', type_cours: selected.type_cours || '' });
       setEditing(true);
     }
+    // ?ajuster=1 : on arrive depuis la fiche d'un cours, où la prof cherchait
+    // le nombre de séances de sa série (retour Léa 2026-08-21). On ouvre le
+    // panneau directement plutôt que de la laisser le chercher ici aussi.
+    if (autoAjuster && selected) setProlonger(true);
     // au montage uniquement
   }, []);
 

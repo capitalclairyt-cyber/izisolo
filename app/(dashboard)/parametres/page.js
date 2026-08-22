@@ -801,7 +801,14 @@ export default function Parametres() {
           <>
           <div className="section izi-card">
             <div className="section-top"><div className="section-icon"><MapPin size={20} /></div><h2>Mes lieux</h2></div>
-            <p className="section-desc">Les salles et espaces où tu donnes tes cours.</p>
+            {/* Seule carte de l'écran SANS bouton Enregistrer : chaque lieu est
+                écrit dès la validation du modal. Sans le dire, ça se lit comme
+                « rien n'est sauvé » — retour Léa 2026-08-21, qui est repartie
+                chercher un bouton sur un autre sous-onglet. */}
+            <p className="section-desc">
+              Les salles et espaces où tu donnes tes cours.
+              <br />Chaque lieu est enregistré dès que tu l&apos;ajoutes ou le modifies, il n&apos;y a rien d&apos;autre à valider.
+            </p>
 
             {lieux.length > 0 ? (
               <div className="lieux-list">
