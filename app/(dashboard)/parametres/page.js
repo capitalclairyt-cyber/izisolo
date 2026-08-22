@@ -6,7 +6,7 @@ import {
   Save, User, Building2, Bell, MapPin,
   Plus, X, Trash2, Crown, Mail, Home,
   Eye, Zap, ToggleLeft, ToggleRight, Cake,
-  Loader2, Pencil, FileText,
+  Loader2, Pencil, FileText, Landmark,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase';
 import { useToast } from '@/components/ui/ToastProvider';
@@ -18,6 +18,9 @@ import { validerSiret } from '@/lib/validation';
 import { MENTION_TVA_DEFAUT } from '@/lib/factures';
 import { sanitizeDocs } from '@/lib/docs-inscription';
 import { sanitizeEssaiPrixParType } from '@/lib/essai-tarif';
+import {
+  REGIMES, PERIODICITES, configUrssafAffichee, sanitizeConfigUrssaf,
+} from '@/lib/urssaf';
 // import BackgroundDecor — retiré, plus utilisé (apparences supprimées)
 
 // Normalise une URL utilisateur :
@@ -73,6 +76,7 @@ const CARTES = {
   profil:        ['prenom', 'nom', 'email_contact', 'telephone', 'adresse'],
   activite:      ['studio_nom', 'ville', 'metier'],
   facturation:   ['facturation_raison_sociale', 'facturation_siret', 'facturation_mention_tva'],
+  urssaf:        ['urssaf_config'],
   champs:        ['client_fields_config'],
   page:          ['photo_couverture_focal_y', 'bio', 'philosophie', 'formations', 'annees_experience',
                   'horaires_studio', 'horaires_studio_jours', 'afficher_tarifs', 'afficher_horaires',
@@ -95,6 +99,9 @@ const SERIALIZERS = {
   facturation_raison_sociale: v => v || null,
   facturation_siret:         v => (v ? String(v).replace(/\s/g, '') : null),
   facturation_mention_tva:   v => v || null,
+  // La config URSSAF n'est JAMAIS écrite brute : sanitize = taux bornés,
+  // régime/périodicité de la liste blanche, défauts du régime si difforme.
+  urssaf_config:             v => sanitizeConfigUrssaf(v),
   alerte_seances_seuil:      v => parseInt(v) || 2,
   alerte_expiration_jours:   v => parseInt(v) || 7,
   alerte_paiement_attente_jours: v => parseInt(v) || 14,
@@ -330,6 +337,23 @@ export default function Parametres() {
     if (carte) marquer(carte);
   };
 
+  // urssaf_config est un JSONB : on édite une CLÉ à la fois sur l'objet
+  // affiché (défauts compris) — jamais un champ à plat. Changer de régime
+  // recale les taux proposés, sauf si la prof les a déjà personnalisés.
+  const setUrssaf = (cle, valeur) => {
+    setProfile(prev => {
+      const cur = configUrssafAffichee(prev?.urssaf_config);
+      const next = { ...cur, [cle]: valeur };
+      if (cle === 'regime' && REGIMES[valeur]) {
+        const ancien = REGIMES[cur.regime] || {};
+        if (cur.taux_cotisations === ancien.taux) next.taux_cotisations = REGIMES[valeur].taux;
+        if (cur.taux_cfp === ancien.taux_cfp)     next.taux_cfp = REGIMES[valeur].taux_cfp;
+      }
+      return { ...prev, urssaf_config: next };
+    });
+    marquer('urssaf');
+  };
+
   // Garde des modifs non enregistrées : géré par <UnsavedChangesGuard />
   // (popstate retour navigateur + beforeunload tab close + modal pretty).
   // L'ancien handleDiscard (« annuler les modifs ») était mort depuis le
@@ -458,6 +482,11 @@ export default function Parametres() {
         return next;
       });
       router.refresh();
+    } else if (error.code === '42703') {
+      // Colonne absente = migration pas encore appliquée. Message honnête
+      // plutôt qu'un « Erreur : column ... does not exist » illisible.
+      toast.error('Ce réglage attend une mise à jour de la base. Préviens-nous, on s\'en occupe.');
+      console.warn('[parametres] colonne manquante sur la carte', carte, ':', error.message);
     } else {
       toast.error('Erreur : ' + error.message);
     }
@@ -646,6 +675,123 @@ export default function Parametres() {
               </p>
             </div>
             <BtnSauver carte="facturation" />
+          </div>
+            );
+          })()}
+
+          {/* Ma déclaration URSSAF (v93) — les réglages qui alimentent le bloc
+              de la page Revenus, l'estimation et le rappel d'échéance. Tant
+              que cette carte n'est pas enregistrée, urssaf_config est NULL :
+              aucune estimation affichée, aucun email envoyé. */}
+          {subTab.profil === 'activite' && (() => {
+            const u = configUrssafAffichee(profile.urssaf_config);
+            const configuree = !!sanitizeConfigUrssaf(profile.urssaf_config);
+            return (
+          <div className="section izi-card">
+            <div className="section-top"><div className="section-icon"><Landmark size={20} /></div><h2>Ma déclaration URSSAF</h2></div>
+            <p className="section-desc">
+              Dis-nous comment tu déclares : IziSolo te prépare le montant à recopier à chaque échéance,
+              sur la page <strong>Revenus</strong>. On compte ce que tu as <strong>réellement encaissé</strong>,
+              jamais ce qui est encore dû.
+            </p>
+
+            <div className="form-group">
+              <label className="form-label">Ton régime</label>
+              <select className="izi-input" value={u.regime} onChange={e => setUrssaf('regime', e.target.value)}>
+                {Object.entries(REGIMES).map(([k, r]) => (
+                  <option key={k} value={k}>{r.label}</option>
+                ))}
+              </select>
+              <p className="form-hint">{REGIMES[u.regime]?.hint}</p>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Tu déclares</label>
+              <select className="izi-input" value={u.periodicite} onChange={e => setUrssaf('periodicite', e.target.value)}>
+                {Object.entries(PERIODICITES).map(([k, p]) => (
+                  <option key={k} value={k}>{p.label}</option>
+                ))}
+              </select>
+              <p className="form-hint">
+                Le choix que tu as fait à ta création d'entreprise. Il fixe tes échéances.
+              </p>
+            </div>
+
+            {u.regime !== 'autre' && (
+              <>
+                <div className="urssaf-taux-row">
+                  <div className="form-group">
+                    <label className="form-label">Taux de cotisations</label>
+                    <div className="urssaf-pct">
+                      <input
+                        className="izi-input" type="number" step="0.1" min="0" max="100"
+                        value={u.taux_cotisations}
+                        onChange={e => setUrssaf('taux_cotisations', e.target.value)}
+                      />
+                      <span>%</span>
+                    </div>
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Formation pro (CFP)</label>
+                    <div className="urssaf-pct">
+                      <input
+                        className="izi-input" type="number" step="0.05" min="0" max="100"
+                        value={u.taux_cfp}
+                        onChange={e => setUrssaf('taux_cfp', e.target.value)}
+                      />
+                      <span>%</span>
+                    </div>
+                  </div>
+                </div>
+                <p className="form-hint" style={{ marginTop: '-4px' }}>
+                  Ces taux changent d&apos;une année à l&apos;autre et selon ta caisse de retraite.
+                  Recopie ceux de ton compte <a href="https://www.autoentrepreneur.urssaf.fr" target="_blank" rel="noopener noreferrer">autoentrepreneur.urssaf.fr</a>.
+                  Ce que t&apos;affiche IziSolo reste une estimation, jamais un montant officiel.
+                </p>
+
+                <div className="form-group">
+                  <label className="izi-check">
+                    <input
+                      type="checkbox"
+                      checked={!!u.versement_liberatoire}
+                      onChange={e => setUrssaf('versement_liberatoire', e.target.checked)}
+                    />
+                    <span>J&apos;ai opté pour le versement libératoire de l&apos;impôt</span>
+                  </label>
+                  {u.versement_liberatoire && (
+                    <div className="urssaf-pct" style={{ marginTop: 8, maxWidth: 160 }}>
+                      <input
+                        className="izi-input" type="number" step="0.1" min="0" max="10"
+                        value={u.taux_liberatoire}
+                        onChange={e => setUrssaf('taux_liberatoire', e.target.value)}
+                      />
+                      <span>%</span>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+
+            <div className="form-group">
+              <label className="izi-check">
+                <input
+                  type="checkbox"
+                  checked={u.rappel_email !== false}
+                  onChange={e => setUrssaf('rappel_email', e.target.checked)}
+                />
+                <span>Préviens-moi par email quand c&apos;est l&apos;heure de déclarer</span>
+              </label>
+              <p className="form-hint">
+                Un seul email par période, le lendemain de sa clôture, avec le montant déjà calculé.
+              </p>
+            </div>
+
+            {!configuree && (
+              <p className="form-hint" style={{ color: 'var(--c-accent-deep, #8a5a2b)' }}>
+                Enregistre pour activer ton récapitulatif sur la page Revenus.
+              </p>
+            )}
+            <BtnSauver carte="urssaf" />
           </div>
             );
           })()}
@@ -1228,6 +1374,15 @@ export default function Parametres() {
         .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         .form-group { display: flex; flex-direction: column; gap: 6px; }
         .form-label { font-size: 0.8125rem; font-weight: 600; color: var(--text-secondary); }
+
+        /* Déclaration URSSAF (v93) */
+        .izi-check { display: flex; align-items: flex-start; gap: 8px; cursor: pointer; font-size: 0.8125rem; font-weight: 600; color: var(--text-primary); }
+        .izi-check input { margin-top: 2px; accent-color: var(--brand); flex-shrink: 0; }
+        .urssaf-taux-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .urssaf-pct { display: flex; align-items: center; gap: 6px; }
+        .urssaf-pct .izi-input { flex: 1; min-width: 0; }
+        .urssaf-pct span { font-size: 0.875rem; font-weight: 600; color: var(--text-muted); }
+        @media (max-width: 560px) { .urssaf-taux-row { grid-template-columns: 1fr; } }
 
         /* Types de cours */
         .chips-list { display: flex; flex-wrap: wrap; gap: 6px; }

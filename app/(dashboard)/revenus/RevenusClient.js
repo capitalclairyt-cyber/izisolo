@@ -13,6 +13,9 @@ import { createClient } from '@/lib/supabase';
 import { useToast } from '@/components/ui/ToastProvider';
 import Pagination, { usePagination } from '@/components/ui/Pagination';
 import EmptyState from '@/components/ui/EmptyState';
+import DeclarationUrssaf from '@/components/revenus/DeclarationUrssaf';
+import { periodesDeclarables, aujourdhuiParis } from '@/lib/urssaf';
+import { normaliserMode, labelMode } from '@/lib/modes-paiement';
 
 const MODES = [
   { value: 'especes',  label: 'Espèces',  Icon: Banknote },
@@ -34,6 +37,20 @@ const PERIODES = [
   { value: 'annee',    label: 'Cette année' },
   { value: '12mois',   label: '12 derniers mois' },
 ];
+
+// Périodes CIVILES pour l'export (v93). Les chips ci-dessus sont des fenêtres
+// glissantes : « 3 derniers mois » n'est JAMAIS un trimestre au sens URSSAF.
+// Calculées à l'ouverture de la modale, pas au module (le rendu serveur et le
+// client doivent voir la même date).
+function periodesCivilesExport() {
+  const today = aujourdhuiParis();
+  return {
+    trimestres: periodesDeclarables({ periodicite: 'trimestrielle' }, today, 6).filter(p => p.cloturee),
+    mois:       periodesDeclarables({ periodicite: 'mensuelle' }, today, 12).filter(p => p.cloturee),
+    annees:     [Number(today.slice(0, 4)), Number(today.slice(0, 4)) - 1]
+      .map(a => ({ id: `A-${a}`, label: `Année ${a}` })),
+  };
+}
 
 function clientName(c) {
   if (!c) return null;
@@ -110,7 +127,7 @@ export default function RevenusClient({ paiements: initialPaiements, seancesDues
 
   const filtered = useMemo(() => {
     return periodeFilt.filter(p => {
-      if (filterMode && p.mode !== filterMode) return false;
+      if (filterMode && normaliserMode(p.mode) !== filterMode) return false;
       if (filterStatut && p.statut !== filterStatut) return false;
       return true;
     });
@@ -134,8 +151,13 @@ export default function RevenusClient({ paiements: initialPaiements, seancesDues
 
     const parMode = {};
     for (const m of MODES) parMode[m.value] = 0;
+    // Normalisé : la base contient « Espèces » ET « especes » (le pointage
+    // écrivait les libellés). Le test `parMode[p.mode] !== undefined` jetait
+    // en silence le mode le PLUS fréquent — la tuile affichait 0 € d'espèces
+    // à une prof qui n'encaisse quasiment qu'en liquide.
     for (const p of paid) {
-      if (parMode[p.mode] !== undefined) parMode[p.mode] += parseFloat(p.montant || 0);
+      const m = normaliserMode(p.mode);
+      if (parMode[m] !== undefined) parMode[m] += parseFloat(p.montant || 0);
     }
 
     const stripeCount = paid.filter(p => p.stripe_session_id).length;
@@ -182,7 +204,7 @@ export default function RevenusClient({ paiements: initialPaiements, seancesDues
     setEditModal(paiement);
     setEditForm({
       montant: String(paiement.montant),
-      mode: paiement.mode || 'especes',
+      mode: normaliserMode(paiement.mode),
       date: paiement.date || '',
       date_encaissement: paiement.date_encaissement || '',
       notes: paiement.notes || '',
@@ -237,7 +259,7 @@ export default function RevenusClient({ paiements: initialPaiements, seancesDues
 
   const openEncaisser = (paiement) => {
     setEncaisserModal(paiement);
-    setEncaisserMode(paiement.mode || 'especes');
+    setEncaisserMode(normaliserMode(paiement.mode));
     setEncaisserDate(new Date().toISOString().slice(0, 10));
     setEncaisserNotes('');
   };
@@ -278,8 +300,14 @@ export default function RevenusClient({ paiements: initialPaiements, seancesDues
   const [exportOffre, setExportOffre] = useState('');     // '' = toutes | uuid | 'aucune'
   const [offresExport, setOffresExport] = useState(null); // null = pas chargées
   const [exporting, setExporting] = useState(false);
+  // Base de calcul : 'encaissement' = assiette URSSAF (trésorerie), le défaut.
+  // 'vente' = l'ancien comportement (date de facturation), conservé pour qui
+  // rapproche ses factures plutôt que sa banque.
+  const [exportBase, setExportBase] = useState('encaissement');
+  const [civiles, setCiviles] = useState(null);
 
   const openExport = () => {
+    setCiviles(periodesCivilesExport());
     // Préremplir depuis les filtres courants de la page (continuité)
     setExportPeriode(periode);
     setExportStatut(filterStatut || '');
@@ -308,6 +336,7 @@ export default function RevenusClient({ paiements: initialPaiements, seancesDues
     }
     const params = new URLSearchParams({
       ...(libre ? { from: exportFrom, to: exportTo } : { periode: exportPeriode }),
+      base: exportBase,
       ...(exportMode ? { mode: exportMode } : {}),
       ...(exportStatut ? { statut: exportStatut } : {}),
       ...(exportOffre ? { offre: exportOffre } : {}),
@@ -328,8 +357,8 @@ export default function RevenusClient({ paiements: initialPaiements, seancesDues
       const a = document.createElement('a');
       a.href = url;
       a.download = libre
-        ? `izisolo-paiements-${exportFrom}-au-${exportTo}.csv`
-        : `izisolo-paiements-${new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Paris' })}.csv`;
+        ? `izisolo-encaissements-${exportFrom}-au-${exportTo}.csv`
+        : `izisolo-encaissements-${exportPeriode}.csv`;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -399,6 +428,10 @@ export default function RevenusClient({ paiements: initialPaiements, seancesDues
           </div>
         </div>
       </div>
+
+      {/* Déclaration URSSAF (v93) — le chiffre à recopier, calculé côté serveur
+          (la page ne tient que 12 mois de paiements). */}
+      <DeclarationUrssaf />
 
       {/* Récap par mode */}
       {stats.countPaid > 0 && (
@@ -607,7 +640,7 @@ export default function RevenusClient({ paiements: initialPaiements, seancesDues
                     </div>
                     <div className="paiement-meta">
                       {p.intitule && clientName(p.clients) && <>{p.intitule} · </>}
-                      {formatDate(p.date)} · {p.mode || '—'}
+                      {formatDate(p.date)} · {labelMode(p.mode)}
                       {p.statut === 'paid' && p.date_encaissement && p.date_encaissement !== p.date && (
                         <> · encaissé le {formatDate(p.date_encaissement)}</>
                       )}
@@ -790,20 +823,33 @@ export default function RevenusClient({ paiements: initialPaiements, seancesDues
 
             <div className="enc-field">
               <label>Période</label>
-              <div className="export-chips">
-                {PERIODES.map(p => (
-                  <button key={p.value} type="button"
-                    className={`enc-mode-btn ${exportPeriode === p.value ? 'active' : ''}`}
-                    onClick={() => setExportPeriode(p.value)}>
-                    {p.label}
-                  </button>
-                ))}
-                <button type="button"
-                  className={`enc-mode-btn ${exportPeriode === 'libre' ? 'active' : ''}`}
-                  onClick={() => setExportPeriode('libre')}>
-                  Dates libres…
-                </button>
-              </div>
+              <select className="izi-input" value={exportPeriode} onChange={e => setExportPeriode(e.target.value)}>
+                <optgroup label="Périodes de déclaration (calendrier civil)">
+                  {(civiles?.trimestres || []).map(p => (
+                    <option key={p.id} value={p.id}>{p.label}</option>
+                  ))}
+                  {(civiles?.annees || []).map(p => (
+                    <option key={p.id} value={p.id}>{p.label}</option>
+                  ))}
+                </optgroup>
+                <optgroup label="Mois civils">
+                  {(civiles?.mois || []).map(p => (
+                    <option key={p.id} value={p.id}>{p.label}</option>
+                  ))}
+                </optgroup>
+                <optgroup label="Vue rapide (fenêtres glissantes)">
+                  {PERIODES.map(p => (
+                    <option key={p.value} value={p.value}>{p.label}</option>
+                  ))}
+                </optgroup>
+                <optgroup label="Sur mesure">
+                  <option value="libre">Dates libres…</option>
+                </optgroup>
+              </select>
+              <p className="export-hint">
+                Pour l&apos;URSSAF, choisis un trimestre ou un mois <strong>civil</strong> :
+                « 3 derniers mois » est une fenêtre glissante, jamais un trimestre.
+              </p>
               {exportPeriode === 'libre' && (
                 <div className="export-dates-row">
                   <label className="export-date-lbl">du
@@ -814,6 +860,27 @@ export default function RevenusClient({ paiements: initialPaiements, seancesDues
                   </label>
                 </div>
               )}
+            </div>
+
+            <div className="enc-field">
+              <label>Compter chaque paiement à sa date…</label>
+              <div className="export-chips">
+                <button type="button"
+                  className={`enc-mode-btn ${exportBase === 'encaissement' ? 'active' : ''}`}
+                  onClick={() => setExportBase('encaissement')}>
+                  d&apos;encaissement
+                </button>
+                <button type="button"
+                  className={`enc-mode-btn ${exportBase === 'vente' ? 'active' : ''}`}
+                  onClick={() => setExportBase('vente')}>
+                  de vente
+                </button>
+              </div>
+              <p className="export-hint">
+                {exportBase === 'encaissement'
+                  ? "C'est l'assiette de l'URSSAF : un chèque vendu le 28 septembre et déposé le 3 octobre compte en octobre."
+                  : 'La date à laquelle tu as facturé, même si tu as encaissé plus tard. Utile pour rapprocher tes factures.'}
+              </p>
             </div>
 
             <div className="enc-field">
@@ -1133,6 +1200,7 @@ export default function RevenusClient({ paiements: initialPaiements, seancesDues
         .enc-mode-btn.active { border-color: var(--brand); background: var(--brand-light); color: var(--brand-700); }
         .enc-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px; }
         .export-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+        .export-hint { font-size: 0.75rem; color: var(--text-muted); margin: 6px 0 0; line-height: 1.4; }
         .export-dates-row { display: flex; gap: 10px; margin-top: 10px; }
         .export-date-lbl { flex: 1; display: flex; flex-direction: column; gap: 4px; font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); }
 

@@ -7,7 +7,7 @@ import {
   BookOpen, CalendarDays, Users, Wallet, ClipboardList, Globe,
   LifeBuoy, MessageSquarePlus, ArrowRight, ArrowLeft, Package, Inbox,
   MessageSquare, FileText, Smartphone, CalendarClock, Hourglass, Search, X,
-  Sparkles, ListOrdered
+  Sparkles, ListOrdered, Landmark
 } from 'lucide-react';
 import { FAQ_SUPPORT } from '@/content/faq-support';
 
@@ -184,6 +184,21 @@ const SECTIONS = [
       <>Une erreur ? <strong>« Annuler la facture »</strong> depuis la fiche élève : le numéro est brûlé (jamais réutilisé), les paiements redeviennent facturables.</>,
     ],
     astuce: 'La mention TVA proposée par défaut est celle de la franchise en base (art. 293 B du CGI) — modifie-la dans la même carte si ton régime est différent.',
+  },
+  {
+    id: 'urssaf',
+    icon: Landmark,
+    titre: 'Ta déclaration URSSAF',
+    intro: 'Le montant à recopier, sa date limite, et le registre que tu dois tenir. Sans ressortir la calculette.',
+    etapes: [
+      <>Une fois : <strong>Paramètres → Profil &amp; studio → Activité</strong>, carte <strong>« Ma déclaration URSSAF »</strong> — ton régime, si tu déclares au mois ou au trimestre, et tes taux (recopie-les depuis ton compte autoentrepreneur.urssaf.fr, ils changent d&apos;une année à l&apos;autre).</>,
+      <>Ensuite, sur <strong>Revenus</strong>, le bloc <strong>« Ma déclaration URSSAF »</strong> affiche le montant encaissé de la période close, arrondi à l&apos;euro comme le formulaire l&apos;attend. Bouton <strong>Copier</strong>, tu colles, c&apos;est fait.</>,
+      <>IziSolo compte à la <strong>date d&apos;encaissement</strong>, pas à la date de vente : un chèque encaissé le 3 octobre compte en octobre, même si tu l&apos;as vendu fin septembre. C&apos;est la règle de la micro-entreprise.</>,
+      <>Le montant à déclarer est ce que <strong>l&apos;élève a payé</strong>, pas ce qui arrive sur ton compte après les frais bancaires. En micro, les frais ne se déduisent pas.</>,
+      <>« Voir le détail » te donne l&apos;estimation de tes cotisations et le <strong>livre des recettes</strong> en PDF : le registre chronologique obligatoire, celui qu&apos;on te réclame en cas de contrôle.</>,
+      <>Pour ton comptable, le bouton <strong>Export</strong> en haut de Revenus sort le détail en tableur, avec total, ventilation par mois et par mode de règlement. Choisis un <strong>trimestre ou un mois civil</strong> : « 3 derniers mois » est une fenêtre glissante, pas un trimestre.</>,
+    ],
+    astuce: 'IziSolo ne connaît que ce que tu y enregistres. Si tu encaisses aussi ailleurs (un remplacement en studio, un atelier ponctuel), ajoute-le avant de déclarer.',
   },
   {
     id: 'page-publique',

@@ -5,6 +5,10 @@ import { getTrialStatus } from '@/lib/trial';
 import { sendEmail } from '@/lib/email';
 import { reportError } from '@/lib/report';
 import { choisirEmailOnboarding, renderEmailOnboarding } from '@/lib/onboarding-emails';
+import {
+  rappelUrssafDuJour, renderEmailUrssaf, filtreDateComptable,
+  totauxPaiements, aujourdhuiParis,
+} from '@/lib/urssaf';
 
 // Durée max explicite (fluid compute : 300 s = plafond Hobby)
 export const maxDuration = 300;
@@ -337,6 +341,92 @@ export const GET = withRoute({ auth: 'cron' }, async () => {
     reportError('[cron/expirations] onboarding section:', e?.message);
   }
 
+  // ── Rappel de déclaration URSSAF (v93, 2026-08-22) ──
+  // UN email par période close, dans les 5 jours suivant sa clôture (fenêtre
+  // plutôt que « le 1er » pile : un cron raté ne coûte pas un trimestre).
+  // Dédup par claim emails_envoyes (type 'urssaf', ref profileId:T3-2026),
+  // libéré si l'envoi échoue. N'existe QUE pour les profils qui ont réglé leur
+  // déclaration (urssaf_config non NULL) et laissé le rappel activé.
+  let urssafRappels = 0;
+  try {
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.izisolo.fr';
+    const aujourdhui = aujourdhuiParis();
+
+    // Lecture défensive : pré-v93 la colonne n'existe pas → section sautée,
+    // jamais bloquante pour le reste du cron.
+    const { data: profs, error: profsErr } = await supabaseAdmin
+      .from('profiles')
+      .select('id, prenom, email_contact, urssaf_config')
+      .not('urssaf_config', 'is', null);
+    if (profsErr) throw profsErr;
+
+    for (const prof of (profs || [])) {
+      try {
+        const periode = rappelUrssafDuJour(prof.urssaf_config, aujourdhui);
+        if (!periode) continue;
+
+        let to = prof.email_contact;
+        if (!to) {
+          try {
+            const { data: { user: authUser } } = await supabaseAdmin.auth.admin.getUserById(prof.id);
+            to = authUser?.email || null;
+          } catch { /* compte auth introuvable : skip */ }
+        }
+        if (!to) continue;
+
+        // Claim AVANT le calcul et l'envoi (un cron re-joué ne double-envoie pas)
+        const ref = `${prof.id}:${periode.id}`;
+        const { data: claim, error: clErr } = await supabaseAdmin
+          .from('emails_envoyes')
+          .upsert(
+            { type: 'urssaf', destinataire: to.toLowerCase(), ref },
+            { onConflict: 'type,destinataire,ref', ignoreDuplicates: true }
+          )
+          .select('id');
+        if (clErr) throw clErr;
+        if ((claim || []).length === 0) continue; // déjà envoyé
+
+        // Total encaissé de la période — paginé, comme partout où de l'argent
+        // s'additionne (un total tronqué à 1000 lignes serait faux en silence).
+        const paiements = [];
+        for (let page = 0; page < 20; page++) {
+          const { data: lot, error: payErr } = await supabaseAdmin
+            .from('paiements')
+            .select('montant, mode, date, date_encaissement, commission_montant')
+            .eq('profile_id', prof.id)
+            .eq('statut', 'paid')
+            .or(filtreDateComptable(periode.from, periode.to))
+            .order('id', { ascending: true })
+            .range(page * 1000, page * 1000 + 999);
+          if (payErr) throw payErr;
+          paiements.push(...(lot || []));
+          if (!lot || lot.length < 1000) break;
+        }
+        const totaux = totauxPaiements(paiements, 'encaissement');
+
+        const { subject, html } = renderEmailUrssaf({
+          prenom: prof.prenom, periode, total: totaux.brut, config: prof.urssaf_config, appUrl,
+        });
+        const r = await sendEmail({ categorie: 'notification', to, subject, html });
+        if (!r.ok) {
+          await supabaseAdmin.from('emails_envoyes').delete()
+            .match({ type: 'urssaf', destinataire: to.toLowerCase(), ref })
+            .then(() => {}, () => {});
+          if (!r.skipped) {
+            reportError('[cron/expirations] rappel urssaf envoi échoué:', String(r.error || 'send failed'), { route: '/api/cron/expirations' });
+          }
+          continue;
+        }
+        urssafRappels++;
+      } catch (e) {
+        reportError('[cron/expirations] rappel urssaf err', prof.id, e?.message);
+      }
+    }
+  } catch (e) {
+    // Inclut le cas « colonne urssaf_config absente » (v93 pas encore appliquée).
+    reportError('[cron/expirations] section rappel urssaf:', e?.message);
+  }
+
   return NextResponse.json({
     expires: data?.length || 0,
     epuises: epuises?.length || 0,
@@ -348,6 +438,7 @@ export const GET = withRoute({ auth: 'cron' }, async () => {
     onboardingJ1,
     onboardingJ3,
     onboardingJ7,
+    urssafRappels,
     timestamp: new Date().toISOString(),
   });
 });

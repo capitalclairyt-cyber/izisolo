@@ -28,6 +28,7 @@ const estTimeout = (err) =>
   err?.name === 'AbortError' || /abort|timeout/i.test(String(err?.message || ''));
 import { resoudreCarnetApplicable } from '@/lib/carnet-resolution';
 import { useToast } from '@/components/ui/ToastProvider';
+import { MODES_REGLEMENT, MODES_ORDRE, normaliserMode, labelMode } from '@/lib/modes-paiement';
 
 
 // ─────────────────────────────────────────────────────────
@@ -62,7 +63,12 @@ function PaymentModal({ presence, coursNom, coursDate, montantDefaut = '', paiem
   );
   // Espèces par défaut : c'est le mode réel du terrain (retour Maude — CB en
   // dur lui faisait enregistrer de faux paiements carte).
-  const [mode, setMode]         = useState(paiementExistant?.mode || 'Espèces');
+  // ⚠️ On stocke la CLÉ ('especes'), pas le libellé : cet écran écrivait
+  // « Espèces » en base, orthographe que ni la tuile « encaissé par mode » ni
+  // le filtre de l'export comptable ne reconnaissaient (v93).
+  const [mode, setMode]         = useState(normaliserMode(paiementExistant?.mode) === 'autre'
+    ? 'especes'
+    : normaliserMode(paiementExistant?.mode));
   // Note compta optionnelle + « règlement supplémentaire » (cas du mari de
   // Marie-Pierre, 2026-07-31 : une élève règle DEUX séances — la 2e ligne
   // n'est pas liée à la présence, elle vit en compta avec sa note).
@@ -195,13 +201,12 @@ function PaymentModal({ presence, coursNom, coursDate, montantDefaut = '', paiem
               </div>
 
               <div className="pm-modes">
-                {['Espèces', 'CB', 'Chèque', 'Virement'].map(m => (
-                  <button key={m} className={`pm-mode-btn ${mode === m ? 'selected' : ''}`} onClick={() => setMode(m)}>
-                    {m === 'CB'       && <CreditCard size={13} />}
-                    {m === 'Espèces'  && <span>💶</span>}
-                    {m === 'Chèque'   && <span>📝</span>}
-                    {m === 'Virement' && <span>🔁</span>}
-                    {m}
+                {MODES_ORDRE.map(cle => (
+                  <button key={cle} className={`pm-mode-btn ${mode === cle ? 'selected' : ''}`} onClick={() => setMode(cle)}>
+                    {cle === 'CB'
+                      ? <CreditCard size={13} />
+                      : <span>{MODES_REGLEMENT[cle].emoji}</span>}
+                    {MODES_REGLEMENT[cle].label}
                   </button>
                 ))}
               </div>
@@ -463,7 +468,7 @@ function PresenceCard({ presence, resolvedCarnet, estPayAsYouGo, paye, paiement,
                   >
                     ✓ {paiement?.montant != null
                       ? `${Number(paiement.montant).toFixed(2).replace('.', ',').replace(',00', '')} €`
-                      : 'Payé'}{paiement?.mode ? ` · ${paiement.mode}` : ''}
+                      : 'Payé'}{paiement?.mode ? ` · ${labelMode(paiement.mode)}` : ''}
                   </button>
                 )
                 : <span className="pres-aregler">À régler</span>
