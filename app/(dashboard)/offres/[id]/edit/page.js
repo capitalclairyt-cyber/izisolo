@@ -8,14 +8,15 @@ import {
   ToggleLeft, ToggleRight, Loader2, Info,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase';
-import { getAllTypesFromCategories, formatMontant } from '@/lib/utils';
+import { getAllTypesFromCategories, formatMontant, formatDate } from '@/lib/utils';
 import { calcProRata, aujourdhuiISO } from '@/lib/prorata';
+import { estPeriodeGlissante, finGlissanteISO } from '@/lib/offres-periode';
 import { useToast } from '@/components/ui/ToastProvider';
 import CoherenceTypesHint from '@/components/offres/CoherenceTypesHint';
 
 const TYPES = [
   { value: 'carnet',       label: 'Carnet de séances', Icon: Ticket,        desc: 'Ex : 10 cours pour 120 €' },
-  { value: 'abonnement',   label: 'Abonnement',        Icon: CalendarCheck, desc: 'Ex : Annuel sept.–juin' },
+  { value: 'abonnement',   label: 'Abonnement',        Icon: CalendarCheck, desc: 'Ex : mensuel, ou saison sept.–juin' },
   { value: 'cours_unique', label: "Cours à l'unité",   Icon: Zap,           desc: 'Ex : Drop-in 15 €' },
 ];
 
@@ -33,6 +34,11 @@ export default function EditOffre({ params }) {
   const [seances, setSeances] = useState('');
   const [dateDebut, setDateDebut] = useState('');
   const [dateFin, setDateFin] = useState('');
+  // Mode de période (cf. lib/offres-periode) : déduit de l'offre au chargement,
+  // pour qu'un abonnement mensuel ne se retransforme pas en saison à la
+  // première sauvegarde.
+  const [periodeMode, setPeriodeMode] = useState('fixe');
+  const [dureeGlissante, setDureeGlissante] = useState('30');
   const [illimite, setIllimite] = useState(true);
   const [seancesParSemaine, setSeancesParSemaine] = useState(''); // '' = pas de cap
   const [inclutVacances, setInclutVacances] = useState(true);
@@ -65,6 +71,9 @@ export default function EditOffre({ params }) {
       setSeances(data.seances ? String(data.seances) : '');
       setDateDebut(data.date_debut || '');
       setDateFin(data.date_fin || '');
+      const glissante = data.type === 'abonnement' && estPeriodeGlissante(data);
+      setPeriodeMode(glissante ? 'glissante' : 'fixe');
+      setDureeGlissante(glissante ? String(data.duree_jours) : '30');
       setIllimite(data.type === 'abonnement' ? !data.seances : true);
       // '' = pas de cap hebdo. (Avant : défaut '1' → sauvegarder ajoutait
       // silencieusement un cap 1x/sem à un abo qui n'en avait pas, et la
@@ -96,9 +105,16 @@ export default function EditOffre({ params }) {
     e.preventDefault();
     if (!nom.trim() || !prix) return;
 
-    if (type === 'abonnement' && (!dateDebut || !dateFin)) {
-      toast.warning('Les dates sont obligatoires pour un abonnement.');
-      return;
+    if (type === 'abonnement') {
+      if (periodeMode === 'glissante') {
+        if (!dureeGlissante || parseInt(dureeGlissante) < 1) {
+          toast.warning('Indique la durée de l\'abonnement, en jours.');
+          return;
+        }
+      } else if (!dateDebut || !dateFin) {
+        toast.warning('Les dates sont obligatoires pour un abonnement à dates fixes.');
+        return;
+      }
     }
 
     setSaving(true);
@@ -115,9 +131,10 @@ export default function EditOffre({ params }) {
         payload.duree_jours = carnetDureeJours ? parseInt(carnetDureeJours) : null;
         payload.prix_unitaire_ref = prixUnitaireRef ? parseFloat(prixUnitaireRef) : null;
       } else if (type === 'abonnement') {
-        payload.date_debut = dateDebut || null;
-        payload.date_fin = dateFin || null;
-        payload.duree_jours = joursValidite || null;
+        const glissante = periodeMode === 'glissante';
+        payload.date_debut = glissante ? null : (dateDebut || null);
+        payload.date_fin = glissante ? null : (dateFin || null);
+        payload.duree_jours = glissante ? parseInt(dureeGlissante) : (joursValidite || null);
         // Même garde qu'à la création : « Nombre fixe » vide ne repart
         // JAMAIS en illimité silencieux.
         if (!illimite && (!seances || parseInt(seances) < 1)) {
@@ -128,8 +145,10 @@ export default function EditOffre({ params }) {
         payload.seances = (!illimite && seances) ? parseInt(seances) : null;
         payload.seances_par_semaine = seancesParSemaine ? parseInt(seancesParSemaine) : null;
         payload.inclut_vacances = inclutVacances;
-        payload.pro_rata_actif = proRataActif;
-        payload.pro_rata_date_limite = (proRataActif && proRataDateLimite) ? proRataDateLimite : null;
+        // Pas de pro-rata en glissant (cf. lib/offres-periode) : on l'éteint
+        // plutôt que de laisser un réglage inerte sur l'offre.
+        payload.pro_rata_actif = glissante ? false : proRataActif;
+        payload.pro_rata_date_limite = (!glissante && proRataActif && proRataDateLimite) ? proRataDateLimite : null;
       } else if (type === 'cours_unique') {
         payload.seances = 1;
       }
@@ -158,7 +177,11 @@ export default function EditOffre({ params }) {
   };
 
   const canSubmit = nom.trim() && prix && (
-    type !== 'abonnement' || (dateDebut && dateFin && joursValidite > 0)
+    type !== 'abonnement' || (
+      periodeMode === 'glissante'
+        ? parseInt(dureeGlissante) >= 1
+        : (dateDebut && dateFin && joursValidite > 0)
+    )
   );
 
   if (loading) {
@@ -256,21 +279,55 @@ export default function EditOffre({ params }) {
         {/* Abonnement */}
         {type === 'abonnement' && (
           <>
-            <div className="eo-row">
-              <div className="eo-field">
-                <label className="eo-label">Début *</label>
-                <input className="izi-input" type="date" value={dateDebut} onChange={e => setDateDebut(e.target.value)} />
+            <div className="eo-field">
+              <label className="eo-label">Quelle période couvre cet abonnement ?</label>
+              <div className="eo-toggle-row">
+                <button type="button" className={`eo-toggle-btn ${periodeMode === 'glissante' ? 'active' : ''}`} onClick={() => setPeriodeMode('glissante')}>À partir de la vente</button>
+                <button type="button" className={`eo-toggle-btn ${periodeMode === 'fixe' ? 'active' : ''}`} onClick={() => setPeriodeMode('fixe')}>Dates fixes</button>
               </div>
-              <div className="eo-field">
-                <label className="eo-label">Fin *</label>
-                <input className="izi-input" type="date" value={dateFin} min={dateDebut || undefined} onChange={e => setDateFin(e.target.value)} />
-              </div>
+              <span className="form-hint">
+                {periodeMode === 'glissante'
+                  ? 'Chaque élève démarre le jour où tu lui vends. Une seule offre à créer, vendable toute l\'année.'
+                  : 'Tout le monde a les mêmes dates, comme une saison de septembre à juin.'}
+              </span>
             </div>
-            {joursValidite > 0 && (
-              <div className="eo-info-pill">
-                <Info size={13} />
-                Durée : {Math.round(joursValidite / 7)} semaines · {joursValidite} jours
+
+            {periodeMode === 'glissante' ? (
+              <div className="eo-field">
+                <label className="eo-label">Durée <span className="eo-optional">(en jours)</span></label>
+                <input
+                  className="izi-input"
+                  type="number" min="1"
+                  value={dureeGlissante}
+                  onChange={e => setDureeGlissante(e.target.value)}
+                  style={{ maxWidth: 220 }}
+                />
+                {finGlissanteISO(dureeGlissante) && (
+                  <div className="eo-info-pill">
+                    <Info size={13} />
+                    Vendu aujourd'hui, il irait jusqu'au {formatDate(finGlissanteISO(dureeGlissante))}
+                  </div>
+                )}
               </div>
+            ) : (
+              <>
+                <div className="eo-row">
+                  <div className="eo-field">
+                    <label className="eo-label">Début *</label>
+                    <input className="izi-input" type="date" value={dateDebut} onChange={e => setDateDebut(e.target.value)} />
+                  </div>
+                  <div className="eo-field">
+                    <label className="eo-label">Fin *</label>
+                    <input className="izi-input" type="date" value={dateFin} min={dateDebut || undefined} onChange={e => setDateFin(e.target.value)} />
+                  </div>
+                </div>
+                {joursValidite > 0 && (
+                  <div className="eo-info-pill">
+                    <Info size={13} />
+                    Durée : {Math.round(joursValidite / 7)} semaines · {joursValidite} jours
+                  </div>
+                )}
+              </>
             )}
 
             <div className="eo-field">
@@ -325,6 +382,7 @@ export default function EditOffre({ params }) {
               </div>
             </div>
 
+            {periodeMode === 'fixe' && (
             <div className="eo-field">
               <label className="eo-label">
                 Pro-rata en cours de période <span className="eo-optional">(optionnel)</span>
@@ -367,6 +425,7 @@ export default function EditOffre({ params }) {
                 </>
               )}
             </div>
+            )}
           </>
         )}
 

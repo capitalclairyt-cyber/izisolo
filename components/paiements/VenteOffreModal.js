@@ -9,6 +9,7 @@ import { formatMontant, matchRecherche } from '@/lib/utils';
 import { createClient } from '@/lib/supabase';
 import PaiementStep from '@/components/paiements/PaiementStep';
 import { calcProRata } from '@/lib/prorata';
+import { bornesVente } from '@/lib/offres-periode';
 
 /**
  * VenteOffreModal — LE tunnel de vente d'une offre, partagé entre pages.
@@ -33,13 +34,6 @@ import { calcProRata } from '@/lib/prorata';
  */
 
 const TYPE_ICONS = { carnet: Ticket, abonnement: CalendarCheck, cours_unique: Zap };
-
-function calcDateFin(dureeJours) {
-  if (!dureeJours) return null;
-  const d = new Date();
-  d.setDate(d.getDate() + dureeJours);
-  return d.toISOString().split('T')[0];
-}
 
 // Pro-rata abonnement : calcul unique lib/prorata (2026-08-21 — la copie
 // locale comparait « aujourd'hui » avec l'heure courante, l'aperçu de
@@ -125,8 +119,9 @@ export default function VenteOffreModal({ offre: offreInitiale = null, onClose, 
         offre_id: offre.id,
         offre_nom: offre.nom,
         type: offre.type,
-        date_debut: offre.date_debut || today,
-        date_fin: offre.date_fin || calcDateFin(offre.duree_jours),
+        // Bornes : dates de l'offre (période fixe) ou aujourd'hui + durée
+        // (abonnement glissant). Source unique lib/offres-periode.
+        ...bornesVente(offre),
         seances_total: offre.seances || null,
         types_cours_autorises: offre.types_cours_autorises || null,
       };

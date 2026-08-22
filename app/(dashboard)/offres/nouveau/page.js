@@ -15,6 +15,7 @@ import { formatMontant, getAllTypesFromCategories } from '@/lib/utils';
 import { PLANS } from '@/lib/constantes';
 import { effectivePlan } from '@/lib/trial';
 import { calcProRata, joursEntreISO, semainesEntreISO, aujourdhuiISO } from '@/lib/prorata';
+import { finGlissanteISO } from '@/lib/offres-periode';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 // « Cours à l'unité » retiré de la création (audit cohérence 2026-07-22, spec
@@ -26,11 +27,21 @@ import { calcProRata, joursEntreISO, semainesEntreISO, aujourdhuiISO } from '@/l
 // Les offres cours_unique existantes restent lisibles/attribuables (legacy).
 const TYPES = [
   { value: 'carnet',      label: 'Carnet de séances', Icon: Ticket,      desc: 'Ex : 10 cours pour 120€' },
-  { value: 'abonnement',  label: 'Abonnement',         Icon: CalendarCheck, desc: 'Ex : Annuel sept.–juin' },
+  { value: 'abonnement',  label: 'Abonnement',         Icon: CalendarCheck, desc: 'Ex : mensuel, ou saison sept.–juin' },
 ];
 
 // Presets séances carnet
 const PRESETS_SEANCES = [5, 10, 15];
+
+// Presets de durée pour un abonnement à durée glissante (en jours). On annonce
+// « 1 mois = 30 jours » plutôt qu'un « même jour du mois suivant » : c'est ce
+// que la vente calcule réellement, et un abonnement qui ment sur sa date de fin
+// se paie en litige avec l'élève.
+const PRESETS_DUREE_ABO = [
+  { jours: 30,  label: '1 mois' },
+  { jours: 90,  label: '3 mois' },
+  { jours: 365, label: '1 an' },
+];
 
 // Presets durée de validité carnet (en jours)
 const PRESETS_DUREE_CARNET = [
@@ -76,7 +87,13 @@ export default function NouvelleOffre() {
   const [typesCoursDisponibles, setTypesCoursDisponibles] = useState([]); // liste des types existants
   const [typesCoursAutorises, setTypesCoursAutorises] = useState([]);     // sélection ([] = tous)
 
-  // Abonnement
+  // Abonnement — deux façons de borner la période (2026-08-22, retour Colin :
+  // « si on met comme date que le mois de septembre on ne va pas refaire ça
+  // douze fois »). 'fixe' = une saison, dates communes à toutes ; 'glissante'
+  // = N jours à partir de la vente, l'abonnement mensuel qu'on crée UNE fois.
+  // Défaut 'fixe' : c'est le comportement historique, on ne déplace personne.
+  const [periodeMode, setPeriodeMode] = useState('fixe');
+  const [dureeGlissante, setDureeGlissante] = useState('30');
   const [dateDebut, setDateDebut]     = useState('');
   const [dateFin, setDateFin]         = useState('');
   const [seancesAbo, setSeancesAbo]   = useState(''); // '' = illimité
@@ -139,6 +156,8 @@ export default function NouvelleOffre() {
     setPrixUnitaireRef('');
     setCarnetDureeJours('');
     setCarnetDureeCustom(false);
+    setPeriodeMode('fixe');
+    setDureeGlissante('30');
   };
 
   // Séances preset (carnet)
@@ -186,17 +205,24 @@ export default function NouvelleOffre() {
     }
 
     if (type === 'abonnement') {
-      if (!dateDebut || !dateFin) {
-        toast.warning('Les dates de début et de fin sont obligatoires pour un abonnement.');
-        return;
-      }
-      if (joursValidite <= 0) {
-        toast.warning('La date de fin doit être après la date de début.');
-        return;
-      }
-      if (proRataActif && !proRataDateLimite) {
-        toast.warning('Indique la date limite de souscription au pro-rata.');
-        return;
+      if (periodeMode === 'glissante') {
+        if (!dureeGlissante || parseInt(dureeGlissante) < 1) {
+          toast.warning('Indique la durée de l\'abonnement, en jours.');
+          return;
+        }
+      } else {
+        if (!dateDebut || !dateFin) {
+          toast.warning('Les dates de début et de fin sont obligatoires pour un abonnement à dates fixes.');
+          return;
+        }
+        if (joursValidite <= 0) {
+          toast.warning('La date de fin doit être après la date de début.');
+          return;
+        }
+        if (proRataActif && !proRataDateLimite) {
+          toast.warning('Indique la date limite de souscription au pro-rata.');
+          return;
+        }
       }
       // Piège silencieux fermé (retour Colin 2026-08-21) : « Nombre fixe »
       // avec un champ vide partait en base comme ILLIMITÉ, sans un mot —
@@ -232,14 +258,21 @@ export default function NouvelleOffre() {
       }
 
       if (type === 'abonnement') {
-        payload.date_debut          = dateDebut || null;
-        payload.date_fin            = dateFin   || null;
-        payload.duree_jours         = joursValidite || null;
+        // Glissante : AUCUNE date sur l'offre, c'est la vente qui les pose.
+        // C'est exactement ce que lit estPeriodeGlissante() et ce que le
+        // portail et la fiche élève savaient déjà afficher.
+        const glissante = periodeMode === 'glissante';
+        payload.date_debut          = glissante ? null : (dateDebut || null);
+        payload.date_fin            = glissante ? null : (dateFin   || null);
+        payload.duree_jours         = glissante ? parseInt(dureeGlissante) : (joursValidite || null);
         payload.seances             = (!illimite && seancesAbo) ? parseInt(seancesAbo) : null;
         payload.seances_par_semaine = seancesParSemaine ? parseInt(seancesParSemaine) : null;
         payload.inclut_vacances     = inclutVacances;
-        payload.pro_rata_actif      = proRataActif;
-        payload.pro_rata_date_limite = (proRataActif && proRataDateLimite) ? proRataDateLimite : null;
+        // Le pro-rata fait payer les semaines RESTANTES d'une période commune :
+        // il n'a aucun sens en glissant, où chacune démarre à sa date de vente.
+        // On l'écrit false plutôt que de laisser passer un réglage inerte.
+        payload.pro_rata_actif      = glissante ? false : proRataActif;
+        payload.pro_rata_date_limite = (!glissante && proRataActif && proRataDateLimite) ? proRataDateLimite : null;
       }
 
       if (stripePaymentLink.trim()) {
@@ -267,7 +300,11 @@ export default function NouvelleOffre() {
   };
 
   const canSubmit = nom.trim() && prix && !planLimitReached && (
-    type !== 'abonnement' || (dateDebut && dateFin && joursValidite > 0)
+    type !== 'abonnement' || (
+      periodeMode === 'glissante'
+        ? parseInt(dureeGlissante) >= 1
+        : (dateDebut && dateFin && joursValidite > 0)
+    )
   );
 
   return (
@@ -458,33 +495,100 @@ export default function NouvelleOffre() {
         {/* ══════════════════ ABONNEMENT ══════════════════ */}
         {type === 'abonnement' && (
           <>
-            {/* Dates */}
-            <div className="no-row">
-              <div className="no-field">
-                <label className="no-label">Début *</label>
-                <input
-                  className="izi-input"
-                  type="date"
-                  value={dateDebut}
-                  onChange={e => setDateDebut(e.target.value)}
-                />
+            {/* Comment la période se compte */}
+            <div className="no-field">
+              <label className="no-label">Quelle période couvre cet abonnement ?</label>
+              <div className="no-illimite-row">
+                <button
+                  type="button"
+                  className={`no-toggle-btn ${periodeMode === 'glissante' ? 'active' : ''}`}
+                  onClick={() => setPeriodeMode('glissante')}
+                >
+                  À partir de la vente
+                </button>
+                <button
+                  type="button"
+                  className={`no-toggle-btn ${periodeMode === 'fixe' ? 'active' : ''}`}
+                  onClick={() => setPeriodeMode('fixe')}
+                >
+                  Dates fixes
+                </button>
               </div>
-              <div className="no-field">
-                <label className="no-label">Fin *</label>
-                <input
-                  className="izi-input"
-                  type="date"
-                  value={dateFin}
-                  min={dateDebut || undefined}
-                  onChange={e => setDateFin(e.target.value)}
-                />
-              </div>
+              <span className="form-hint">
+                {periodeMode === 'glissante'
+                  ? 'Chaque élève démarre le jour où tu lui vends. Tu crées ton abonnement mensuel une seule fois, il reste vendable toute l\'année.'
+                  : 'Tout le monde a les mêmes dates, comme une saison de septembre à juin.'}
+              </span>
             </div>
-            {totalSemaines !== null && totalSemaines > 0 && (
-              <div className="no-info-pill">
-                <Info size={13} />
-                Durée : {totalSemaines} semaines · {joursValidite} jours
+
+            {periodeMode === 'glissante' ? (
+              <div className="no-field">
+                <label className="no-label">Durée</label>
+                <div className="no-semaine-chips">
+                  {PRESETS_DUREE_ABO.map(p => (
+                    <button
+                      key={p.jours}
+                      type="button"
+                      className={`no-chip ${dureeGlissante === String(p.jours) ? 'active' : ''}`}
+                      onClick={() => setDureeGlissante(String(p.jours))}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    className={`no-chip ${!PRESETS_DUREE_ABO.some(p => String(p.jours) === dureeGlissante) ? 'active' : ''}`}
+                    onClick={() => setDureeGlissante('')}
+                  >
+                    Autre
+                  </button>
+                </div>
+                {!PRESETS_DUREE_ABO.some(p => String(p.jours) === dureeGlissante) && (
+                  <input
+                    className="izi-input no-custom-input"
+                    type="number" min="1"
+                    placeholder="Nombre de jours"
+                    value={dureeGlissante}
+                    onChange={e => setDureeGlissante(e.target.value)}
+                  />
+                )}
+                {finGlissanteISO(dureeGlissante) && (
+                  <div className="no-info-pill">
+                    <Info size={13} />
+                    Vendu aujourd'hui, il irait jusqu'au {formatDate(finGlissanteISO(dureeGlissante))}
+                  </div>
+                )}
               </div>
+            ) : (
+              <>
+                <div className="no-row">
+                  <div className="no-field">
+                    <label className="no-label">Début *</label>
+                    <input
+                      className="izi-input"
+                      type="date"
+                      value={dateDebut}
+                      onChange={e => setDateDebut(e.target.value)}
+                    />
+                  </div>
+                  <div className="no-field">
+                    <label className="no-label">Fin *</label>
+                    <input
+                      className="izi-input"
+                      type="date"
+                      value={dateFin}
+                      min={dateDebut || undefined}
+                      onChange={e => setDateFin(e.target.value)}
+                    />
+                  </div>
+                </div>
+                {totalSemaines !== null && totalSemaines > 0 && (
+                  <div className="no-info-pill">
+                    <Info size={13} />
+                    Durée : {totalSemaines} semaines · {joursValidite} jours
+                  </div>
+                )}
+              </>
             )}
 
             {/* Séances */}
@@ -566,7 +670,8 @@ export default function NouvelleOffre() {
               </div>
             </div>
 
-            {/* Pro-rata */}
+            {/* Pro-rata — période fixe UNIQUEMENT (cf. payload) */}
+            {periodeMode === 'fixe' && (
             <div className="no-field">
               <div className="no-prorata-header">
                 <div>
@@ -642,6 +747,7 @@ export default function NouvelleOffre() {
                 </div>
               )}
             </div>
+            )}
           </>
         )}
 

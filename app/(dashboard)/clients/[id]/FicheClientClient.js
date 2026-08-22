@@ -18,6 +18,7 @@ import { formatDate, formatMontant } from '@/lib/utils';
 import { getVocabulaire } from '@/lib/vocabulaire';
 import { STATUTS_CLIENT, STATUTS_ABONNEMENT, STATUTS_PAIEMENT } from '@/lib/constantes';
 import { statutCompteEleve, formatDateRelative } from '@/lib/eleve-statut';
+import { bornesVente } from '@/lib/offres-periode';
 import { moisFacturables } from '@/lib/factures';
 import { createClient } from '@/lib/supabase';
 import { calcProRata as calcProRataLib } from '@/lib/prorata';
@@ -37,13 +38,6 @@ const MODES_PAIEMENT = [
 ];
 
 // ─── Helper : calcule la date de fin selon durée en jours ───────────────────
-function calcDateFin(dureeJours) {
-  if (!dureeJours) return null;
-  const d = new Date();
-  d.setDate(d.getDate() + dureeJours);
-  return d.toISOString().split('T')[0];
-}
-
 // Pro-rata : calcul unique lib/prorata (2026-08-21, fin des copies divergentes).
 const calcProRataOffre = (offre) => calcProRataLib({
   actif: offre.pro_rata_actif,
@@ -127,8 +121,9 @@ function AssignerOffreModal({ client, onClose, onSuccess }) {
         offre_id: selectedOffre.id,
         offre_nom: selectedOffre.nom,
         type: selectedOffre.type,
-        date_debut: selectedOffre.date_debut || today,
-        date_fin: selectedOffre.date_fin || calcDateFin(selectedOffre.duree_jours),
+        // Bornes : dates de l'offre (période fixe) ou aujourd'hui + durée
+        // (abonnement glissant). Source unique lib/offres-periode.
+        ...bornesVente(selectedOffre),
         seances_total: selectedOffre.seances || null,
         types_cours_autorises: selectedOffre.types_cours_autorises || null,
       };
