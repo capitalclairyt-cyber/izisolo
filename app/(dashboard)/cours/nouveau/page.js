@@ -30,6 +30,33 @@ const FREQUENCES = [
   { value: 'personnalise', label: 'Personnalisé', desc: 'Choisis les jours' },
 ];
 
+// Libellés au long : l'aperçu doit pouvoir DIRE le jour (« tous les mercredis »),
+// pas seulement l'afficher en chips abrégées au milieu de huit dates.
+const JOURS_LONGS = {
+  1: 'lundis', 2: 'mardis', 3: 'mercredis', 4: 'jeudis',
+  5: 'vendredis', 6: 'samedis', 7: 'dimanches',
+};
+
+// Jour de la semaine d'une date ISO, en 1=lundi … 7=dimanche (parseDate évite
+// le décalage UTC qui décale d'un jour près de minuit).
+function jourDeLaSemaine(dateISO) {
+  if (!dateISO) return null;
+  const d = parseDate(dateISO).getDay();
+  return d === 0 ? 7 : d;
+}
+
+// Prochaine date >= dateISO qui tombe un jour cible. Sert au recalage quand la
+// prof choisit un jour de série : on ne recule JAMAIS (une série ne doit pas
+// démarrer avant la date qu'elle a saisie), on avance de 0 à 6 jours.
+function prochaineOccurrenceJour(dateISO, jourCible) {
+  if (!dateISO || !jourCible) return dateISO;
+  const d = parseDate(dateISO);
+  const actuel = d.getDay() === 0 ? 7 : d.getDay();
+  const delta = (jourCible - actuel + 7) % 7;
+  d.setDate(d.getDate() + delta);
+  return toDateStr(d);
+}
+
 const JOURS_SEMAINE = [
   { value: 1, label: 'Lun' },
   { value: 2, label: 'Mar' },
@@ -126,12 +153,33 @@ function RecurrencePreview({ form }) {
 
   const apercu = incluses.slice(0, 8);
   const restantes = incluses.length - apercu.length;
+
+  // La règle, dite avant les dates (retour Colin 2026-08-22 : Maude a créé une
+  // série du mercredi qui est partie tous les samedis — l'info était à l'écran,
+  // mais en chips abrégées sous un titre qui ne parlait que de quantité).
+  const jourSerie = jourDeLaSemaine(form.date);
+  const depuis = form.date
+    ? parseDate(form.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })
+    : null;
+  const regleLisible = (() => {
+    if (form.frequence === 'quotidien') return `Tous les jours, à partir du ${depuis}`;
+    if (form.frequence === 'hebdomadaire') return `Tous les ${JOURS_LONGS[jourSerie]}, à partir du ${depuis}`;
+    if (form.frequence === 'bimensuel') return `Un ${JOURS_LONGS[jourSerie]?.replace(/s$/, '')} sur deux, à partir du ${depuis}`;
+    if (form.frequence === 'mensuel') return `Le ${parseDate(form.date).getDate()} de chaque mois, à partir du ${depuis}`;
+    if (form.frequence === 'personnalise') {
+      const js = (form.jours_semaine || []).map(j => JOURS_LONGS[j]).filter(Boolean);
+      if (!js.length) return null;
+      return `Les ${js.join(' et ')}, à partir du ${depuis}`;
+    }
+    return null;
+  })();
   const motif = form.mode_fin === 'count'
     ? `${incluses.length} cours seront créés`
     : `${incluses.length} cours jusqu'au ${form.date_fin ? parseDate(form.date_fin).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' }) : '…'}`;
 
   return (
     <div className="rec-preview">
+      {regleLisible && <div className="rec-preview-regle">{regleLisible}</div>}
       <div className="rec-preview-head">
         <strong>{motif}</strong>
         {exclues.length > 0 && (
@@ -962,6 +1010,33 @@ function NouveauCoursInner() {
         </div>
         )}
 
+        {/* Jour de la série (hebdo / bimensuel) — retour Colin 2026-08-22.
+            Le jour était DÉDUIT de la date de début et jamais montré comme un
+            choix : démarrer un samedi fabriquait une série du samedi en silence,
+            et rien ne permettait de la corriger ensuite. Changer le jour ici
+            recale la première séance sur sa prochaine occurrence, sans jamais
+            reculer dans le passé. */}
+        {(form.frequence === 'hebdomadaire' || form.frequence === 'bimensuel') && (
+          <div className="form-group">
+            <label className="form-label">Quel jour ?</label>
+            <div className="jours-grid">
+              {JOURS_SEMAINE.map(j => (
+                <button
+                  key={j.value}
+                  type="button"
+                  className={`jour-btn ${jourDeLaSemaine(form.date) === j.value ? 'selected' : ''}`}
+                  onClick={() => setForm(prev => ({ ...prev, date: prochaineOccurrenceJour(prev.date, j.value) }))}
+                >
+                  {j.label}
+                </button>
+              ))}
+            </div>
+            <span className="form-hint">
+              La première séance se cale sur le prochain {JOURS_LONGS[jourDeLaSemaine(form.date)]?.replace(/s$/, '') || 'jour choisi'}, la date ci-dessus suit.
+            </span>
+          </div>
+        )}
+
         {/* Jours de la semaine (si personnalisé) */}
         {form.frequence === 'personnalise' && (
           <div className="form-group">
@@ -1261,6 +1336,12 @@ function NouveauCoursInner() {
           border-color: #fcd34d;
           color: #78350f;
           font-size: 0.875rem;
+        }
+        .rec-preview-regle {
+          font-weight: 700;
+          font-size: 0.9375rem;
+          color: var(--text-primary);
+          margin-bottom: 6px;
         }
         .rec-preview-head {
           display: flex; justify-content: space-between; align-items: center;
