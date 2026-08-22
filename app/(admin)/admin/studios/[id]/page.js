@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase-admin';
 import { fetchAllRows, estCompteTest } from '@/lib/admin-stats';
 import { getAccountStatus, getTrialStatus } from '@/lib/trial';
 import ConciergeActions from './ConciergeActions';
+import ZoneDangereuse from './ZoneDangereuse';
 
 export const dynamic = 'force-dynamic';
 
@@ -259,6 +260,11 @@ export default async function AdminStudioPage({ params }) {
           </div>
         ))}
       </div>
+
+      {/* Suppression définitive — en BAS de page, après tout ce qui permet de
+          juger si ce studio est vivant. Les comptes d'entraînement de Maude
+          se suppriment ici (demande Colin 2026-08-22). */}
+      <ZoneDangereuse profileId={profil.id} studioNom={profil.studio_nom} />
     </div>
   );
 }
