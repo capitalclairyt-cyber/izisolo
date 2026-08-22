@@ -18,7 +18,7 @@
  * Usage : node scripts/proof-declaration-ecran.mjs [dossier-sortie]
  */
 import { createClient } from '@supabase/supabase-js';
-import { readFileSync, mkdirSync } from 'node:fs';
+import { readFileSync, mkdirSync, existsSync, statSync, writeFileSync, unlinkSync } from 'node:fs';
 import { join } from 'node:path';
 import { periodeTrimestre, aujourdhuiParis } from '../lib/urssaf.js';
 
@@ -43,6 +43,17 @@ const assert = (cond, label) => {
   else { ko++; console.log(`  ❌ ${label}`); }
 };
 const attendre = ms => new Promise(r => setTimeout(r, ms));
+
+async function evaluer(page, fn, essais = 5) {
+  for (let i = 0; i < essais; i++) {
+    try { return await page.evaluate(fn); }
+    catch (e) {
+      if (!/context was destroyed|navigation/i.test(e.message) || i === essais - 1) throw e;
+      await attendre(1500);
+    }
+  }
+  return null;
+}
 
 async function lireTexte(page, essais = 5) {
   for (let i = 0; i < essais; i++) {
@@ -78,6 +89,21 @@ async function sessionCookies(email) {
   else for (let i = 0; i * 3180 < value.length; i++) cookies.push({ name: `${nom}.${i}`, value: value.slice(i * 3180, (i + 1) * 3180) });
   return { cookies, userId: otpData.session.user.id };
 }
+
+// Verrou : deux runs qui se chevauchent prennent chacun leur photo du plan
+// démo et se marchent dessus à la restauration (déjà vu : le démo est resté en
+// « pro »). Un run mort libère le verrou au bout de 15 min.
+const VERROU = join(process.env.TEMP || '.', 'izisolo-proof-declaration.lock');
+if (existsSync(VERROU)) {
+  const age = Date.now() - statSync(VERROU).mtimeMs;
+  if (age < 15 * 60 * 1000) {
+    console.error(`⛔ un autre run est en cours depuis ${Math.round(age / 1000)} s (${VERROU}). Attends sa fin.`);
+    process.exit(1);
+  }
+}
+writeFileSync(VERROU, String(process.pid));
+const libererVerrou = () => { try { unlinkSync(VERROU); } catch { /* déjà parti */ } };
+process.on('exit', libererVerrou);
 
 for (let i = 0; i < 60; i++) {
   try { const r = await fetch(`${BASE}/login`); if (r.ok) break; } catch { /* pas prêt */ }
@@ -155,7 +181,7 @@ try {
   // Les <Link> de la page sont stylés par un bloc GLOBAL : en scopé, la règle
   // ne les atteindrait pas et ils sortiraient en lien bleu souligné. On juge
   // sur le style CALCULÉ, jamais sur la présence d'une classe (piège maison).
-  const styleRetour = await page.evaluate(() => {
+  const styleRetour = await evaluer(page, () => {
     const el = document.querySelector('.decl-retour');
     if (!el) return null;
     const cs = getComputedStyle(el);
@@ -171,7 +197,7 @@ try {
   console.log('\n— 2. Les mêmes chiffres partout —');
   const recap = await (await page.request.get(`${BASE}/api/urssaf/recap?periode=${T.id}`)).json();
   const arrondi = Math.round(recap.totaux.brut);
-  const nbLignes = await page.evaluate(() => document.querySelectorAll('.decl-table tbody tr').length);
+  const nbLignes = await evaluer(page, () => document.querySelectorAll('.decl-table tbody tr').length);
   assert(new RegExp(`${arrondi}\\s*€`).test(txt), `la page affiche ${arrondi} €, comme le récap`);
   assert(nbLignes === recap.totaux.nombre,
     `${nbLignes} lignes affichées = ${recap.totaux.nombre} encaissements comptés`);
@@ -202,7 +228,7 @@ try {
     .then(() => true, () => false);
   assert(lienModale, 'la modale d\'export propose aussi l\'affichage à l\'écran');
   if (lienModale) {
-    const style = await page.evaluate(() => {
+    const style = await evaluer(page, () => {
       const cs = getComputedStyle(document.querySelector('.export-lien-ecran'));
       return { poids: cs.fontWeight, deco: cs.textDecorationLine };
     });
@@ -290,7 +316,7 @@ try {
     }
     assert(histo, 'le bloc Revenus affiche « Mes déclarations »');
     if (histo) {
-      const txtHisto = await page.evaluate(() => document.querySelector('.urssaf-histo').innerText);
+      const txtHisto = await evaluer(page, () => document.querySelector('.urssaf-histo').innerText);
       assert(new RegExp(T.label.split(' (')[0]).test(txtHisto) && /Déclarée/i.test(txtHisto),
         `la période y figure comme déclarée (${txtHisto.split('\n').slice(0, 3).join(' / ')})`);
       await page.screenshot({ path: join(OUT, '4-historique.png') });
