@@ -624,6 +624,8 @@ export default function PointageClient({ cours, presences: initialPresences, tou
   // veut pas rouvrir le modal à chaque élève.
   const [selectedToAdd, setSelectedToAdd]   = useState([]);
   const [addingBatch, setAddingBatch]       = useState(false);
+  // Porte du verrou temporel, ouverte à la main pour CETTE séance (cf. plus bas).
+  const [anticipe, setAnticipe]             = useState(false);
 
   // Mise à jour de l'heure toutes les 30s
   useEffect(() => {
@@ -647,14 +649,48 @@ export default function PointageClient({ cours, presences: initialPresences, tou
   // Bloqué si > 15 min avant le cours — ou si la séance est ANNULÉE (B1b,
   // rouge : une séance annulée restait 100 % pointable → un « présent »
   // re-décomptait les carnets d'un cours qui n'a pas eu lieu).
+  //
+  // Le verrou temporel a une PORTE depuis le 2026-08-22 (retour Colin) : il
+  // fermait deux usages légitimes. Une démo qui déroule quatre semaines de vie
+  // de studio ne pouvait RIEN pointer (dans le compte de démo, les séances
+  // passées naissent déjà pointées et toutes les suivantes sont verrouillées) ;
+  // et la prof qui sait dès aujourd'hui que Julie ne viendra pas jeudi devait
+  // attendre jeudi pour le noter. Le défaut reste fermé — la règle « on pointe
+  // sur le tapis » tient —, mais l'ouvrir est un geste explicite et confirmé,
+  // qui laisse un avertissement à l'écran tant qu'on est sur la séance.
+  // Volontairement NON persisté : chaque séance à venir se rouvre à la main,
+  // pour qu'un pointage anticipé reste une exception, jamais un réglage.
   const estAnnule = !!cours.est_annule;
-  const locked = estAnnule || minutesAvant > 15;
+  const verrouTemporel = minutesAvant > 15;
+  const locked = estAnnule || (verrouTemporel && !anticipe);
   // "Live" si dans la fenêtre [-15min, +120min]
   const isLive = !estAnnule && minutesAvant <= 15 && minutesAvant > -120;
 
-  const lockLabel = minutesAvant > 60
-    ? `Disponible dans ${Math.floor(minutesAvant / 60)}h${minutesAvant % 60 > 0 ? String(minutesAvant % 60).padStart(2, '0') : ''}`
-    : `Disponible dans ${minutesAvant} min`;
+  // Au-delà de deux jours, « 143h20 » ne se lit pas : on compte en jours (la
+  // porte du verrou rend les séances lointaines beaucoup plus visibles ici).
+  const delaiLabel = minutesAvant > 2880
+    ? `${Math.round(minutesAvant / 1440)} jours`
+    : minutesAvant > 60
+      ? `${Math.floor(minutesAvant / 60)}h${minutesAvant % 60 > 0 ? String(minutesAvant % 60).padStart(2, '0') : ''}`
+      : `${minutesAvant} min`;
+  const lockLabel = `Disponible dans ${delaiLabel}`;
+
+  // Ouvrir le pointage d'une séance à venir. La confirmation dit la seule chose
+  // qui compte vraiment : les carnets se décomptent tout de suite.
+  const ouvrirAnticipe = useCallback(() => {
+    const quand = coursDateTime
+      ? coursDateTime.toLocaleString('fr-FR', {
+          weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit',
+        })
+      : 'plus tard';
+    const ok = confirm([
+      `Cette séance n'a pas encore eu lieu : ${quand}.`,
+      'Ce que tu coches maintenant décompte les carnets tout de suite, comme si la séance'
+      + ' avait eu lieu. Tu pourras corriger après coup, le crédit sera rendu.',
+      'Ouvrir le pointage quand même ?',
+    ].join('\n\n'));
+    if (ok) setAnticipe(true);
+  }, [coursDateTime]);
 
   // ── Règles d'annulation ────────────────────────────────
   // Une seule loi (B2a) : délai résolu par le module partagé (défauts +
@@ -1265,6 +1301,19 @@ export default function PointageClient({ cours, presences: initialPresences, tou
           <div>
             <strong>Pointage pas encore disponible</strong>
             <span>{lockLabel} · Le pointage s'ouvre 15 min avant le début</span>
+            <button type="button" className="lock-force" onClick={ouvrirAnticipe}>
+              Pointer quand même
+            </button>
+          </div>
+        </div>
+      )}
+      {/* ─── Pointage anticipé assumé (la porte a été ouverte) ─── */}
+      {anticipe && verrouTemporel && !estAnnule && (
+        <div className="lock-banner lock-banner-warn animate-fade-in">
+          <AlertTriangle size={16} />
+          <div>
+            <strong>Séance à venir · pointage anticipé</strong>
+            <span>Elle commence dans {delaiLabel}. Ce que tu coches ici décompte les carnets tout de suite.</span>
           </div>
         </div>
       )}
@@ -1713,6 +1762,33 @@ export default function PointageClient({ cours, presences: initialPresences, tou
         .lock-banner svg { flex-shrink: 0; margin-top: 1px; color: var(--text-muted); }
         .lock-banner strong { display: block; font-size: 0.9rem; font-weight: 700; }
         .lock-banner span   { font-size: 0.8125rem; opacity: 0.8; }
+        .lock-banner-warn {
+          background: #fffbeb;
+          border-color: #fde68a;
+          color: #92400e;
+        }
+        .lock-banner-warn svg { color: #b45309; }
+        .lock-force {
+          /* block + fit-content : le bouton passe à la ligne sous le texte du
+             bandeau (le span est inline, un inline-block se collait à la suite
+             de « avant le début ») sans élargir sa zone tactile à toute la
+             largeur du bandeau. */
+          display: block;
+          width: fit-content;
+          text-align: left;
+          margin-top: 10px;
+          padding: 0;
+          background: none;
+          border: none;
+          font: inherit;
+          font-size: 0.8125rem;
+          font-weight: 700;
+          color: var(--text-secondary);
+          text-decoration: underline;
+          text-underline-offset: 3px;
+          cursor: pointer;
+        }
+        .lock-force:hover { color: var(--text-primary); }
 
         /* ── Stats 4 colonnes ── */
         .stats-grid {
