@@ -38,6 +38,10 @@ const PERIODES = [
   { value: '12mois',   label: '12 derniers mois' },
 ];
 
+// Une période qui a une page de détail dédiée : les ids civils de lib/urssaf.
+// Les valeurs héritées ('mois', '3mois'…) et les dates libres n'en ont pas.
+const PERIODE_CIVILE_RE = /^(T[1-4]-\d{4}|M-\d{4}-\d{2}|A-\d{4})$/;
+
 // Périodes CIVILES pour l'export (v93). Les chips ci-dessus sont des fenêtres
 // glissantes : « 3 derniers mois » n'est JAMAIS un trimestre au sens URSSAF.
 // Calculées à l'ouverture de la modale, pas au module (le rendu serveur et le
@@ -922,6 +926,20 @@ export default function RevenusClient({ paiements: initialPaiements, seancesDues
               </select>
             </div>
 
+            {/* Télécharger n'est pas une obligation (demande Colin 2026-08-22) :
+                une période CIVILE s'ouvre à l'écran, imprimable, avec le détail
+                ligne à ligne. Les fenêtres glissantes et les dates libres n'ont
+                pas de page dédiée, elles restent au CSV. */}
+            {PERIODE_CIVILE_RE.test(exportPeriode) && (
+              <p className="export-hint">
+                Pas envie d&apos;un fichier ?{' '}
+                <Link href={`/revenus/declaration/${exportPeriode}`} className="export-lien-ecran">
+                  Affiche cette période à l&apos;écran
+                </Link>{' '}
+                : le détail, les totaux, et l&apos;impression si besoin.
+              </p>
+            )}
+
             <div className="enc-actions">
               <button onClick={() => setExportModal(false)} className="izi-btn izi-btn-ghost" disabled={exporting}>
                 Annuler
@@ -1201,6 +1219,9 @@ export default function RevenusClient({ paiements: initialPaiements, seancesDues
         .enc-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px; }
         .export-chips { display: flex; gap: 6px; flex-wrap: wrap; }
         .export-hint { font-size: 0.75rem; color: var(--text-muted); margin: 6px 0 0; line-height: 1.4; }
+        /* Vise un Link (composant) : ça ne marche QUE parce que ce bloc est en
+           style jsx GLOBAL. En scopé, la règle ne matcherait jamais. */
+        .export-lien-ecran { font-weight: 700; color: var(--brand); text-decoration: underline; }
         .export-dates-row { display: flex; gap: 10px; margin-top: 10px; }
         .export-date-lbl { flex: 1; display: flex; flex-direction: column; gap: 4px; font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); }
 

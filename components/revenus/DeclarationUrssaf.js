@@ -15,11 +15,12 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { Landmark, Copy, Check, Loader2, FileText, ChevronDown, ExternalLink } from 'lucide-react';
+import { Landmark, Copy, Check, Loader2, FileText, ChevronDown, ExternalLink, Eye, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { useToast } from '@/components/ui/ToastProvider';
 import AideContextuelle from '@/components/AideContextuelle';
 import { formatMontant } from '@/lib/utils';
 import { montantFr } from '@/lib/urssaf';
+import { texteEcart, STATUTS } from '@/lib/declaration-archive';
 
 export default function DeclarationUrssaf() {
   const toast = useToast();
@@ -169,6 +170,18 @@ export default function DeclarationUrssaf() {
         </div>
       )}
 
+      {data.ecart && (
+        <div className="urssaf-ecart">
+          <AlertTriangle size={14} /> {texteEcart(data.ecart)}
+        </div>
+      )}
+
+      <div className="urssaf-liens">
+        <Link href={`/revenus/declaration/${periode.id}`} className="urssaf-cta">
+          <Eye size={15} /> Voir le détail à l&apos;écran
+        </Link>
+      </div>
+
       <button className="urssaf-toggle" onClick={() => setDetail(d => !d)} aria-expanded={detail}>
         <ChevronDown size={14} style={{ transform: detail ? 'rotate(180deg)' : 'none' }} />
         {detail ? 'Masquer le détail' : 'Voir le détail et les documents'}
@@ -210,6 +223,22 @@ export default function DeclarationUrssaf() {
                 <div key={mois} className="urssaf-mois-row">
                   <span>{mois}</span><strong>{formatMontant(m)}</strong>
                 </div>
+              ))}
+            </div>
+          )}
+
+          {(data.historique || []).some(h => h.periode.cloturee) && (
+            <div className="urssaf-histo">
+              <div className="urssaf-histo-titre">Mes déclarations</div>
+              {data.historique.filter(h => h.periode.cloturee).map(h => (
+                <Link key={h.periode.id} href={`/revenus/declaration/${h.periode.id}`} className="urssaf-histo-ligne">
+                  <span className="urssaf-histo-label">{h.periode.label}</span>
+                  <span className={`urssaf-histo-statut st-${h.statut}`}>
+                    {h.statut === 'declaree' && <CheckCircle2 size={12} />}
+                    {STATUTS[h.statut]?.label || h.statut}
+                    {h.montantDeclare != null ? ` · ${h.montantDeclare} €` : ''}
+                  </span>
+                </Link>
               ))}
             </div>
           )}
@@ -258,6 +287,10 @@ export default function DeclarationUrssaf() {
         .urssaf-mois { display: flex; flex-direction: column; gap: 2px; }
         .urssaf-mois-row { display: flex; justify-content: space-between; font-size: 0.8125rem; color: var(--text-secondary); }
         .urssaf-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+        .urssaf-ecart { display: flex; align-items: flex-start; gap: 7px; font-size: 0.8125rem; background: #fef3c7; color: #92400e; border-radius: var(--radius-md); padding: 8px 10px; }
+        .urssaf-liens { display: flex; gap: 10px; flex-wrap: wrap; }
+        .urssaf-histo { display: flex; flex-direction: column; gap: 2px; }
+        .urssaf-histo-titre { font-size: 0.8125rem; font-weight: 700; color: var(--text-primary); margin-bottom: 4px; }
         @media (max-width: 480px) {
           .urssaf-montant { font-size: 1.75rem; }
           .urssaf-copy { width: 100%; justify-content: center; }
@@ -287,6 +320,22 @@ function StylesGlobaux() {
       .urssaf-invite span { flex: 1; min-width: 0; }
       .urssaf-invite > svg:first-child { color: var(--brand); flex-shrink: 0; }
       .urssaf-invite > svg:last-child { color: var(--text-muted); flex-shrink: 0; }
+      .urssaf-cta {
+        display: inline-flex; align-items: center; gap: 7px;
+        padding: 8px 14px; border-radius: var(--radius-full);
+        border: 1px solid var(--brand); color: var(--brand);
+        font-size: 0.8125rem; font-weight: 700; text-decoration: none;
+      }
+      .urssaf-cta:hover { background: var(--brand-light); }
+      .urssaf-histo-ligne {
+        display: flex; align-items: center; justify-content: space-between; gap: 10px;
+        padding: 6px 8px; border-radius: var(--radius-md);
+        text-decoration: none; font-size: 0.8125rem; color: var(--text-secondary);
+      }
+      .urssaf-histo-ligne:hover { background: var(--brand-light); }
+      .urssaf-histo-statut { display: inline-flex; align-items: center; gap: 4px; font-weight: 600; color: var(--text-muted); }
+      .urssaf-histo-statut.st-declaree { color: #166534; }
+      .urssaf-histo-statut.st-en_retard { color: #b91c1c; }
       .urssaf-lien { font-size: 0.8125rem; font-weight: 600; color: var(--brand); text-decoration: none; }
       .urssaf-lien:hover { text-decoration: underline; }
     `}</style>

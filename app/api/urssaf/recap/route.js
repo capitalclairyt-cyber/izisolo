@@ -4,6 +4,7 @@ import {
   filtreDateComptable, totauxPaiements, periodeParId, periodesDeclarables,
   aujourdhuiParis, sanitizeConfigUrssaf, estimationCotisations,
 } from '@/lib/urssaf';
+import { historique, ecartDepuisDeclaration } from '@/lib/declaration-archive';
 
 // ============================================================================
 // Récapitulatif de déclaration URSSAF — LE chiffre à recopier.
@@ -73,6 +74,20 @@ export const GET = withRoute({ auth: 'user' }, async ({ request, auth }) => {
   const totaux = totauxPaiements(paiements, 'encaissement');
   const estimation = config ? estimationCotisations(totaux.brut, config) : null;
 
+  // Archive (v94) : lecture DÉFENSIVE et séparée — sans la table, le bloc perd
+  // son historique mais garde son chiffre, qui est l'essentiel.
+  let archives = [];
+  try {
+    const { data, error } = await supabase
+      .from('declarations_urssaf')
+      .select('periode_id, consultations, derniere_consultation_at, declaree_at, montant_declare')
+      .eq('profile_id', user.id)
+      .order('periode_debut', { ascending: false })
+      .limit(24);
+    if (error) throw error;
+    archives = data || [];
+  } catch { /* pré-v94 : historique vide, jamais bloquant */ }
+
   return Response.json({
     periode,
     periodes,
@@ -81,5 +96,7 @@ export const GET = withRoute({ auth: 'user' }, async ({ request, auth }) => {
     configuree: !!config,
     migrationManquante,
     aujourdhui: today,
+    historique: historique(periodes, archives, today),
+    ecart: ecartDepuisDeclaration(archives.find(a => a.periode_id === periode.id), totaux.brut),
   });
 });
