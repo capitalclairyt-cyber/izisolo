@@ -27,6 +27,10 @@ const signalEcriture = () =>
 const estTimeout = (err) =>
   err?.name === 'AbortError' || /abort|timeout/i.test(String(err?.message || ''));
 import { resoudreCarnetApplicable } from '@/lib/carnet-resolution';
+import {
+  occurrencesCibles, lignesInscription, resumeInscription, apercuPortee,
+  PORTEE_SEULE, PORTEE_TOUTES, PORTEE_N,
+} from '@/lib/inscription-serie';
 import { useToast } from '@/components/ui/ToastProvider';
 import { MODES_REGLEMENT, MODES_ORDRE, normaliserMode, labelMode } from '@/lib/modes-paiement';
 
@@ -309,7 +313,7 @@ function PaymentModal({ presence, coursNom, coursDate, montantDefaut = '', paiem
 // ─────────────────────────────────────────────────────────
 //  Carte de présence (split cell)
 // ─────────────────────────────────────────────────────────
-function PresenceCard({ presence, resolvedCarnet, estPayAsYouGo, paye, paiement, onMarquer, onPayer, onTypePresence, onExcuserTardive, onRelier, coursInfo, loading, locked, impaye, ptard, nbDettes, essaisRestants }) {
+function PresenceCard({ presence, resolvedCarnet, estPayAsYouGo, paye, paiement, onMarquer, onPayer, onTypePresence, onExcuserTardive, onRelier, onDesinscrire, coursInfo, loading, locked, impaye, ptard, nbDettes, essaisRestants }) {
   const [showTypeMenu, setShowTypeMenu] = useState(false);
 
   // Fermer le menu au premier clic en dehors
@@ -494,20 +498,23 @@ function PresenceCard({ presence, resolvedCarnet, estPayAsYouGo, paye, paiement,
           )}
         </div>
 
-        {/* Bouton ··· type de séance (discret, derrière un tap) */}
-        {!locked && (
+        {/* Bouton ··· (discret, derrière un tap). Rendu MÊME sous verrou : le
+            verrou borne le marquage présent/absent, pas la composition de la
+            liste — « Ajouter des élèves » est dispo à tout moment, retirer
+            doit l'être aussi (retour Maude 2026-08-23). */}
+        {(
           <div className="tp-more-wrap">
             <button
               className={`tp-more-btn ${typeP !== 'normal' ? 'tp-more-active' : ''}`}
               onClick={e => { e.stopPropagation(); setShowTypeMenu(s => !s); }}
-              title="Type de séance"
-              aria-label="Type de séance"
+              title="Actions"
+              aria-label="Actions sur cette inscription"
             >
               ···
             </button>
             {showTypeMenu && (
               <div className="tp-menu" onClick={e => e.stopPropagation()}>
-                {[
+                {!locked && [
                   { val: 'normal', label: 'Normal',           hint: null },
                   { val: 'essai',  label: '🎟 Cours d\'essai', hint: essaisRestants !== null ? `${essaisRestants} restant${essaisRestants !== 1 ? 's' : ''}` : null },
                   { val: 'offert', label: '🎁 Cours offert',   hint: null },
@@ -525,7 +532,7 @@ function PresenceCard({ presence, resolvedCarnet, estPayAsYouGo, paye, paiement,
                 {/* ── Choix du carnet (B2f lot C, R3) : quel carnet décompter,
                     ou « à l'unité » sur un cours à tarif. Seulement pour une
                     séance normale, pas payée, pas annulée/tardive. */}
-                {typeP === 'normal' && !paye && !presence.annulation_tardive
+                {!locked && typeP === 'normal' && !paye && !presence.annulation_tardive
                   && !['annule', 'declinee'].includes(presence.statut_pointage)
                   && ((presence.client_abos || []).length > 0 || Number(coursInfo?.tarif_unitaire) > 0) && (
                   <>
@@ -564,6 +571,18 @@ function PresenceCard({ presence, resolvedCarnet, estPayAsYouGo, paye, paiement,
                     )}
                   </>
                 )}
+
+                {/* Retirer de la séance — inscription faite par erreur ou pour
+                    un test. La route DELETE rend la séance au carnet si elle
+                    avait été décomptée, refuse si un encaissement est lié, et
+                    promeut la liste d'attente. */}
+                <div className="tpm-sep">Cette inscription</div>
+                <button
+                  className="tp-menu-item tpm-danger"
+                  onClick={() => { onDesinscrire?.(presence); setShowTypeMenu(false); }}
+                >
+                  <span className="tpm-label">🗑 Retirer de la séance</span>
+                </button>
               </div>
             )}
           </div>
@@ -626,6 +645,83 @@ export default function PointageClient({ cours, presences: initialPresences, tou
   const [addingBatch, setAddingBatch]       = useState(false);
   // Porte du verrou temporel, ouverte à la main pour CETTE séance (cf. plus bas).
   const [anticipe, setAnticipe]             = useState(false);
+
+  // ── Inscrire sur la série (retour Maude 2026-08-23) ───
+  // « On doit pouvoir inscrire l'élève soi même sur toute la récurrence des
+  // cours ». Les occurrences ne se chargent qu'à l'OUVERTURE du modal : le
+  // pointage est un écran de terrain, il ne paie pas cette requête à chaque
+  // fois qu'on l'ouvre pour cocher trois présences.
+  const [portee, setPortee]                 = useState(PORTEE_SEULE);
+  const [porteeNb, setPorteeNb]             = useState(4);
+  const [occurrencesSerie, setOccurrencesSerie] = useState(null); // null = pas chargées
+
+  useEffect(() => {
+    if (!showAddModal || !cours.recurrence_parent_id || occurrencesSerie) return;
+    let annule = false;
+    (async () => {
+      const supabase = createClient();
+      const { data, error } = await supabase
+        .from('cours')
+        .select('id, date, est_annule')
+        .eq('recurrence_parent_id', cours.recurrence_parent_id)
+        .order('date');
+      if (annule) return;
+      // En cas d'échec : aucune série proposée, plutôt qu'une portée fausse.
+      setOccurrencesSerie(error ? [] : (data || []));
+    })();
+    return () => { annule = true; };
+  }, [showAddModal, cours.recurrence_parent_id, occurrencesSerie]);
+
+  const aujourdhuiISO = useMemo(() => {
+    const n = new Date();
+    return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`;
+  }, []);
+
+  // Un essai est UNE séance par nature : on ne propose pas d'en semer douze.
+  const serieProposable = !!cours.recurrence_parent_id && addTypePresence !== 'essai';
+  const ciblesSerie = useMemo(() => occurrencesCibles({
+    occurrences: occurrencesSerie || [],
+    coursActuel: { id: cours.id, date: cours.date },
+    portee, nb: porteeNb, aujourdhui: aujourdhuiISO,
+  }), [occurrencesSerie, cours.id, cours.date, portee, porteeNb, aujourdhuiISO]);
+  const nbSeancesAVenir = useMemo(() => occurrencesCibles({
+    occurrences: occurrencesSerie || [],
+    coursActuel: { id: cours.id, date: cours.date },
+    portee: PORTEE_TOUTES, aujourdhui: aujourdhuiISO,
+  }).length, [occurrencesSerie, cours.id, cours.date, aujourdhuiISO]);
+
+  /**
+   * Inscrit les élèves sur les séances À VENIR choisies, en plus de celle-ci.
+   * Dédup contre l'existant : re-valider ne fabrique pas de doublon.
+   */
+  const inscrireSurLaSerie = async (clientIds) => {
+    if (!serieProposable || ciblesSerie.length === 0 || clientIds.length === 0) return;
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    const coursIds = ciblesSerie.map(c => c.id);
+    const { data: deja, error: eDeja } = await supabase
+      .from('presences')
+      .select('cours_id, client_id')
+      .in('cours_id', coursIds)
+      .in('client_id', clientIds);
+    if (eDeja) {
+      toast.error('Inscription sur la série impossible : ' + eDeja.message);
+      return;
+    }
+    const { lignes, ignorees } = lignesInscription({
+      cibles: ciblesSerie, clientIds, dejaInscrits: deja || [],
+      profileId: user.id, typePresence: addTypePresence,
+    });
+    if (lignes.length === 0) {
+      toast.info('Ces élèves étaient déjà inscrites sur les séances à venir.');
+      return;
+    }
+    const { error } = await supabase.from('presences').insert(lignes);
+    if (error) { toast.error('Inscription sur la série impossible : ' + error.message); return; }
+    toast.success(resumeInscription({
+      nbEleves: clientIds.length, nbSeances: ciblesSerie.length, ignorees,
+    }));
+  };
 
   // Mise à jour de l'heure toutes les 30s
   useEffect(() => {
@@ -1012,8 +1108,45 @@ export default function PointageClient({ cours, presences: initialPresences, tou
     setSelectedToAdd([]);
     setAddTypePresence('normal');
     setAddMode('search');
+    setPortee(PORTEE_SEULE);
     setNewClientForm({ prenom: '', nom: '', email: '', telephone: '' });
   };
+
+  /**
+   * Retirer un·e élève de CETTE séance (retour Maude 2026-08-23 : « on ne peut
+   * pas enlever un élève soi même ajouté à un cours »). Ajouter était possible
+   * ici, retirer ne l'était que depuis la fiche du cours : une inscription
+   * faite par erreur ou pour un test restait à l'écran.
+   *
+   * La route DELETE existante fait le travail délicat : recrédit de la séance
+   * SEULEMENT si elle a réellement été décomptée, refus si un encaissement est
+   * lié, et promotion de la liste d'attente. On ne le refait pas ici.
+   */
+  const desinscrire = useCallback(async (presence) => {
+    const nom = `${presence.clients?.prenom || ''} ${presence.clients?.nom || ''}`.trim() || 'cette personne';
+    const compte = (presence.statut_pointage || 'inscrit') !== 'inscrit';
+    const avertissement = compte
+      ? `\n\nCette séance a déjà été pointée : si un carnet a été décompté, la séance lui sera rendue.`
+      : '';
+    if (!window.confirm(`Retirer ${nom} de cette séance ?${avertissement}`)) return;
+
+    setActionLoading(presence.id);
+    try {
+      const res = await fetch(`/api/presences/${presence.id}`, { method: 'DELETE' });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json.error || 'Suppression impossible.');
+      setPresences(prev => prev.filter(p => p.id !== presence.id));
+      const suite = [
+        json.recredite ? 'séance rendue au carnet' : null,
+        json.promu ? 'une personne de la liste d\'attente a pris la place' : null,
+      ].filter(Boolean).join(' · ');
+      toast.success(`${nom} retirée de la séance${suite ? ` (${suite})` : ''}.`);
+    } catch (e) {
+      toast.error(String(e.message || e));
+    } finally {
+      setActionLoading(null);
+    }
+  }, [toast]);
 
   // ── Sélection multiple d'élèves existants ─────────────
   const toggleSelectAdd = (id) =>
@@ -1054,6 +1187,7 @@ export default function PointageClient({ cours, presences: initialPresences, tou
       });
       setPresences(prev => [...prev, ...enriched]);
     }
+    await inscrireSurLaSerie(selectedToAdd);
     fermerAddModal();
   };
 
@@ -1140,6 +1274,9 @@ export default function PointageClient({ cours, presences: initialPresences, tou
       pres.client_abos = (connu.abonnements || []).filter(a => a.statut === 'actif');
     }
     setPresences(prev => [...prev, pres]);
+    // Une nouvelle élève qui arrive sur un cours récurrent est justement celle
+    // pour qui « toute la série » compte le plus : le choix vaut ici aussi.
+    await inscrireSurLaSerie([client.id]);
     setAddingNew(false);
     fermerAddModal();
   };
@@ -1482,6 +1619,7 @@ export default function PointageClient({ cours, presences: initialPresences, tou
                 onTypePresence={handleTypePresence}
                 onExcuserTardive={handleExcuserTardive}
                 onRelier={handleRelier}
+                onDesinscrire={desinscrire}
                 coursInfo={{ type_cours: cours.type_cours, tarif_unitaire: cours.tarif_unitaire, carnets_acceptes: cours.carnets_acceptes }}
                 loading={actionLoading === p.id}
                 locked={locked}
@@ -1536,6 +1674,54 @@ export default function PointageClient({ cours, presences: initialPresences, tou
                 </span>
               )}
             </div>
+
+            {/* Portée : cette séance, ou aussi les suivantes de la série
+                (retour Maude 2026-08-23). Proposée seulement s'il RESTE des
+                séances à venir — sinon la question n'a pas de réponse utile. */}
+            {serieProposable && nbSeancesAVenir > 0 && (
+              <div className="add-portee">
+                <span className="add-type-label">Inscrire sur :</span>
+                <div className="add-portee-btns">
+                  <button
+                    className={`add-type-btn ${portee === PORTEE_SEULE ? 'selected' : ''}`}
+                    onClick={() => setPortee(PORTEE_SEULE)}
+                  >
+                    Cette séance
+                  </button>
+                  <button
+                    className={`add-type-btn ${portee === PORTEE_N ? 'selected' : ''}`}
+                    onClick={() => setPortee(PORTEE_N)}
+                  >
+                    Les {porteeNb} prochaines
+                  </button>
+                  <button
+                    className={`add-type-btn ${portee === PORTEE_TOUTES ? 'selected' : ''}`}
+                    onClick={() => setPortee(PORTEE_TOUTES)}
+                  >
+                    Toute la série ({nbSeancesAVenir})
+                  </button>
+                </div>
+                {portee === PORTEE_N && (
+                  <input
+                    type="range" min="1" max={nbSeancesAVenir} value={Math.min(porteeNb, nbSeancesAVenir)}
+                    onChange={e => setPorteeNb(parseInt(e.target.value, 10))}
+                    className="add-portee-range"
+                    aria-label="Nombre de séances à venir"
+                  />
+                )}
+                <div className="add-portee-apercu">
+                  {apercuPortee({
+                    portee, cibles: ciblesSerie,
+                    nbEleves: Math.max(1, selectedToAdd.length),
+                  })}
+                </div>
+              </div>
+            )}
+            {serieProposable && addTypePresence === 'essai' && (
+              <div className="add-portee-apercu" style={{ margin: '0 16px 10px' }}>
+                Un cours d&apos;essai vaut pour une séance : il ne se pose pas sur toute la série.
+              </div>
+            )}
 
             {/* ── Onglet : élève existant ── */}
             {addMode === 'search' && (
@@ -2384,6 +2570,8 @@ export default function PointageClient({ cours, presences: initialPresences, tou
         }
         .tp-menu-item:hover   { background: var(--cream-dark); }
         .tp-menu-item.selected { color: var(--brand); font-weight: 600; }
+        .tp-menu-item.tpm-danger { color: #b91c1c; }
+        .tp-menu-item.tpm-danger:hover { background: #fee2e2; }
         .tpm-label { flex: 1; }
         .tpm-hint  { font-size: 0.7rem; color: var(--text-muted); }
         .tpm-sep {
@@ -2418,6 +2606,13 @@ export default function PointageClient({ cours, presences: initialPresences, tou
         .add-type-btn.selected.atp-normal { border-color: var(--brand); background: var(--brand-light); color: var(--brand-700); }
         .add-type-btn.selected.atp-essai  { border-color: #fbbf24; background: #fffbeb; color: #92400e; }
         .add-type-btn.selected.atp-offert { border-color: #a78bfa; background: #f5f3ff; color: #5b21b6; }
+        .add-portee {
+          display: flex; flex-direction: column; gap: 8px;
+          padding: 10px 16px 12px; border-bottom: 1px solid var(--border);
+        }
+        .add-portee-btns { display: flex; gap: 6px; flex-wrap: wrap; }
+        .add-portee-range { width: 100%; max-width: 260px; accent-color: var(--brand); }
+        .add-portee-apercu { font-size: 0.78rem; color: var(--text-muted); line-height: 1.45; }
         .add-type-hint {
           font-size: 0.7rem; color: var(--text-muted);
           margin-left: 2px;
