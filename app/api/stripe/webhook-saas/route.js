@@ -1,40 +1,67 @@
 import { withRoute } from '@/lib/api-route';
 import { createAdminClient } from '@/lib/supabase-admin';
 import Stripe from 'stripe';
+import { STRIPE_API_VERSION } from '@/lib/stripe-api-version';
 import { reportError } from '@/lib/report';
+import { planDepuisSubscription, finPeriodeISO } from '@/lib/stripe-abonnement';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 /**
- * Webhook Stripe pour les abonnements SaaS Mélutek.
+ * Webhook Stripe des abonnements SaaS (la prof paie IziSolo).
  *
- * Env vars requises :
- *   - STRIPE_SECRET_KEY (Mélutek)
- *   - STRIPE_WEBHOOK_SECRET_SAAS (signing secret du webhook configuré sur Stripe)
+ * ⚠️ À ne pas confondre avec /api/stripe/webhook, qui est le webhook ÉLÈVE :
+ * celui-là vit sur le compte Stripe de chaque prof et lit son secret depuis
+ * profiles.stripe_webhook_secret. Ici, c'est NOTRE compte, un seul secret.
  *
- * À configurer sur dashboard.stripe.com côté MÉLUTEK :
- *   Endpoint : https://www.izisolo.fr/api/stripe/webhook-saas
- *   Events :
- *     - checkout.session.completed
- *     - customer.subscription.created
- *     - customer.subscription.updated
- *     - customer.subscription.deleted
- *     - invoice.payment_failed
+ * Env vars requises : STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET_SAAS.
+ * Endpoint : https://www.izisolo.fr/api/stripe/webhook-saas (TOUJOURS www,
+ * sans www un redirect 307 casse la signature).
+ *
+ * Events écoutés : checkout.session.completed, customer.subscription.created,
+ * customer.subscription.updated, customer.subscription.deleted,
+ * invoice.payment_failed.
+ *
+ * ── Deux règles apprises à l'audit du 2026-08-22, à ne pas défaire ──────────
+ *
+ * 1. TOUTE écriture est VÉRIFIÉE. supabase-js ne LÈVE pas sur une erreur SQL :
+ *    il résout avec { data, error }. Un `await supabase.update()` sans lecture
+ *    de `error` avale une colonne inconnue, un CHECK violé ou un 0 ligne, et le
+ *    try/catch autour ne sert à rien. Le scénario : la prof paie, l'update
+ *    échoue, la route rend 200, l'event est marqué traité, et le rejeu de
+ *    Stripe (3 jours) est neutralisé par la déduplication. Argent encaissé,
+ *    plan jamais activé, zéro trace.
+ *
+ * 2. L'ORDRE des events n'est PAS garanti et un event peut être rejoué. D'où :
+ *    stripe_customer_id écrit par tous les bras qui le connaissent, `deleted`
+ *    borné à l'abonnement réellement en cours, et le marqueur d'idempotence
+ *    posé SEULEMENT si le traitement a abouti.
  */
 
-function adminClient() {
-  return createAdminClient();
+const echoue = async (etape, details) => {
+  // await : la lambda gèle dès la réponse rendue, un reportError non attendu
+  // n'atteint jamais erreurs_app (lib/report.js le documente).
+  await reportError(`[webhook-saas] ${etape}`, details);
+  return new Response('Handler error', { status: 500 }); // 500 → Stripe rejoue
+};
+
+/** Applique un update sur profiles et EXIGE qu'il ait touché une ligne. */
+async function majProfil(supabase, filtre, valeurs, contexte) {
+  let q = supabase.from('profiles').update(valeurs);
+  for (const [col, val] of Object.entries(filtre)) q = q.eq(col, val);
+  const { error, count } = await q.select('id', { count: 'exact' });
+  if (error) return { ok: false, raison: `erreur SQL : ${error.message}`, contexte };
+  if (!count) return { ok: false, raison: 'aucune ligne touchée', contexte };
+  return { ok: true, count };
 }
 
-// auth:'public' : l'authentification est la SIGNATURE Stripe, vérifiée dans
-// le handler sur le body brut (que le wrapper ne consomme jamais sans schema).
 export const POST = withRoute({ auth: 'public' }, async ({ request }) => {
   if (!process.env.STRIPE_SECRET_KEY || !process.env.STRIPE_WEBHOOK_SECRET_SAAS) {
     return new Response('Stripe SaaS not configured', { status: 503 });
   }
 
-  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2025-09-30.clover' });
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: STRIPE_API_VERSION });
 
   const rawBody = await request.text();
   const signature = request.headers.get('stripe-signature');
@@ -43,29 +70,27 @@ export const POST = withRoute({ auth: 'public' }, async ({ request }) => {
   try {
     event = stripe.webhooks.constructEvent(rawBody, signature, process.env.STRIPE_WEBHOOK_SECRET_SAAS);
   } catch (err) {
-    reportError('[webhook-saas] signature failed:', err.message);
+    await reportError('[webhook-saas] signature failed:', err.message);
     return new Response(`Signature failed: ${err.message}`, { status: 400 });
   }
 
-  const supabase = adminClient();
+  const supabase = createAdminClient();
 
-  // ─── Idempotency : ne pas retraiter un event déjà reçu ─────────────────
-  // Stripe peut redélivrer (timeout, replay, etc.). Sans ça, un event
-  // customer.subscription.deleted rejoué APRÈS un nouveau checkout pourrait
-  // downgrade un client qui vient de re-souscrire. Cf. audit sécurité I3.
-  // Table créée par migration v37 ; try/catch silencieux si pas encore
-  // appliquée (fallback : on accepte le risque temporairement).
-  try {
-    const { data: alreadyProcessed } = await supabase
-      .from('stripe_events_processed')
-      .select('event_id')
-      .eq('event_id', event.id)
-      .maybeSingle();
-    if (alreadyProcessed) {
-      return Response.json({ received: true, deduped: true });
-    }
-  } catch {
-    // table pas encore créée → on continue (best effort)
+  // ─── Idempotence ────────────────────────────────────────────────────────
+  // Stripe redélivre (timeout, replay). Sans ça, un customer.subscription.deleted
+  // rejoué après un nouveau checkout dégraderait une prof qui vient de
+  // re-souscrire. Table créée par la migration v37.
+  const { data: dejaTraite, error: eDedup } = await supabase
+    .from('stripe_events_processed')
+    .select('event_id')
+    .eq('event_id', event.id)
+    .maybeSingle();
+  if (eDedup) {
+    // La table manque ou est illisible : on le DIT, au lieu du try/catch muet
+    // d'avant qui laissait croire à une déduplication inexistante.
+    await reportError('[webhook-saas] déduplication indisponible', { event: event.id, error: eDedup.message });
+  } else if (dejaTraite) {
+    return Response.json({ received: true, deduped: true });
   }
 
   try {
@@ -74,103 +99,106 @@ export const POST = withRoute({ auth: 'public' }, async ({ request }) => {
         const session = event.data.object;
         const profileId = session.metadata?.profile_id || session.client_reference_id;
         if (!profileId) {
-          // Un paiement SaaS encaissé qui n'active aucun plan = grave et
-          // invisible avant ce sprint (break muet + 200). Alerte erreurs_app.
-          reportError('[webhook-saas] checkout.session.completed SANS profile_id:', session.id);
-          break;
+          // Un paiement SaaS encaissé qui n'active aucun plan : grave, et
+          // invisible tant que ce bras se contentait d'un break muet.
+          return await echoue('checkout.session.completed SANS profile_id', { session: session.id });
         }
-        // Stocker stripe_customer_id pour retrouver le client lors des prochains events
         if (session.customer) {
-          await supabase
-            .from('profiles')
-            .update({ stripe_customer_id: session.customer })
-            .eq('id', profileId);
+          const r = await majProfil(supabase, { id: profileId }, { stripe_customer_id: session.customer }, 'checkout');
+          if (!r.ok) return await echoue('checkout : stripe_customer_id non écrit', { ...r, profileId });
         }
         break;
       }
+
       case 'customer.subscription.created':
       case 'customer.subscription.updated': {
         const sub = event.data.object;
         const profileId = sub.metadata?.profile_id;
-        const plan = sub.metadata?.plan; // 'solo' | 'pro' | 'premium'
-        if (!profileId || !plan) break;
-        // À la souscription, le trial in-app devient irrelevant (Stripe gère
-        // sa propre logique trial). On ne nullify PAS trial_started_at pour
-        // garder l'historique, mais le helper effectivePlan() retournera le
-        // plan Stripe (sub active) au lieu de 'pro' trial. Aussi on remet à
-        // false les flags reminder pour permettre un futur trial sur un
-        // autre cycle si jamais (edge case).
-        await supabase
-          .from('profiles')
-          .update({
-            plan,
+        // Le plan vient du PRICE, pas de la metadata figée à la création : sans
+        // ça, une prof qui monte en Complet depuis le portail paierait 29 €
+        // en restant bridée en Essentiel (la metadata ne bouge pas).
+        const plan = planDepuisSubscription(sub);
+
+        if (!profileId) {
+          // Abonnement créé à la main dans le Dashboard (dépannage courant) :
+          // on rattrape par le customer plutôt que d'ignorer en silence.
+          if (!sub.customer) return await echoue('subscription sans profile_id ni customer', { sub: sub.id });
+          const r = await majProfil(supabase, { stripe_customer_id: sub.customer }, {
+            ...(plan ? { plan } : {}),
             stripe_subscription_id: sub.id,
             stripe_subscription_status: sub.status,
-            stripe_current_period_end: sub.current_period_end
-              ? new Date(sub.current_period_end * 1000).toISOString()
-              : null,
-          })
-          .eq('id', profileId);
+            stripe_current_period_end: finPeriodeISO(sub),
+          }, 'subscription par customer');
+          if (!r.ok) return await echoue('subscription : rattachement par customer impossible', { ...r, sub: sub.id, customer: sub.customer });
+          break;
+        }
+
+        if (!plan) return await echoue('plan indéterminable depuis le price', { sub: sub.id, price: sub.items?.data?.[0]?.price?.id });
+
+        const r = await majProfil(supabase, { id: profileId }, {
+          plan,
+          // Écrit ici AUSSI : l'ordre des events n'est pas garanti, et si
+          // checkout.session.completed se perd, la prof se retrouve abonnée
+          // sans customer, donc sans accès au portail.
+          ...(sub.customer ? { stripe_customer_id: sub.customer } : {}),
+          stripe_subscription_id: sub.id,
+          stripe_subscription_status: sub.status,
+          stripe_current_period_end: finPeriodeISO(sub),
+        }, 'subscription');
+        if (!r.ok) return await echoue('subscription : profil non mis à jour', { ...r, profileId, sub: sub.id });
         break;
       }
+
       case 'customer.subscription.deleted': {
         const sub = event.data.object;
         const profileId = sub.metadata?.profile_id;
-        if (!profileId) break;
+        if (!profileId) {
+          if (!sub.customer) return await echoue('deleted sans profile_id ni customer', { sub: sub.id });
+          break;
+        }
 
-        // ⚠️ NE PAS downgrade vers 'free' — `free` est désormais le plan
-        // INTERNE EXEMPTÉ FULL-ACCESS (réservé Colin/Maude/démos), pas un
-        // plan gratuit-restreint comme avant la refonte 2026-05-05.
+        // `plan` reste sur le dernier plan payé : c'est `stripe_subscription_status`
+        // qui fait foi pour l'accès (lib/trial.js), et garder le plan permet de
+        // proposer la bonne re-souscription. On ne descend PAS vers 'free', qui
+        // est le plan interne exempté (Colin, Maude, démos).
         //
-        // Au lieu de ça, on bascule vers 'solo' (plan d'entrée payant).
-        // L'abo étant marqué 'canceled', l'utilisateur sera invité à
-        // re-souscrire via la page /parametres. Tant qu'il ne paie pas,
-        // les triggers DB v32 lui appliqueront les limites Solo (40 élèves,
-        // 1 lieu) — il pourra continuer à voir ses données mais pas en
-        // ajouter au-delà des limites Solo.
-        //
-        // À implémenter plus tard : un état "subscription_expired" qui
-        // affiche un bandeau "ton abo a expiré, re-souscris" + bloque
-        // certaines features critiques (mailing, SMS, Stripe Payment Link).
-        await supabase
-          .from('profiles')
-          .update({
-            plan: 'solo',
-            stripe_subscription_status: 'canceled',
-            stripe_subscription_id: null,
-          })
-          .eq('id', profileId);
+        // Le filtre sur stripe_subscription_id est essentiel : un `deleted`
+        // livré après un `created` (ordre non garanti, ou rejeu) gèlerait une
+        // prof qui vient de re-souscrire.
+        const r = await majProfil(supabase, { id: profileId, stripe_subscription_id: sub.id }, {
+          stripe_subscription_status: 'canceled',
+          stripe_subscription_id: null,
+        }, 'deleted');
+        if (!r.ok) {
+          // Pas une erreur : c'est le cas normal quand l'abonnement supprimé
+          // n'est plus celui en cours. On le note sans faire rejouer Stripe.
+          await reportError('[webhook-saas] deleted ignoré (abonnement plus en cours)', { profileId, sub: sub.id, raison: r.raison });
+        }
         break;
       }
+
       case 'invoice.payment_failed': {
-        const invoice = event.data.object;
-        const customerId = invoice.customer;
-        if (!customerId) break;
-        await supabase
-          .from('profiles')
-          .update({ stripe_subscription_status: 'past_due' })
-          .eq('stripe_customer_id', customerId);
+        // On n'écrit RIEN ici, volontairement. L'ancien code basculait en
+        // 'past_due' sur le seul customer : n'importe quelle facture ponctuelle
+        // affichait le bandeau rouge à une prof qui paie très bien, et l'event
+        // pouvait écraser un 'active' plus récent. Le statut faisant foi arrive
+        // par customer.subscription.updated, que Stripe envoie de toute façon.
         break;
       }
     }
 
-    // Marquer l'event comme traité pour idempotency (best effort)
-    try {
-      await supabase
-        .from('stripe_events_processed')
-        .insert({ event_id: event.id, event_type: event.type });
-    } catch (e) {
-      // Marqueur d'idempotence raté = l'event pourrait être retraité au
-      // retry Stripe. Non-bloquant, mais on veut le VOIR dans erreurs_app.
-      reportError('[webhook-saas] insert stripe_events_processed:', e);
+    // Marqueur d'idempotence : posé SEULEMENT maintenant, c'est-à-dire
+    // seulement si le traitement a abouti (tous les échecs ont rendu 500).
+    const { error: eMarque } = await supabase
+      .from('stripe_events_processed')
+      .insert({ event_id: event.id, event_type: event.type });
+    if (eMarque && eMarque.code !== '23505') {
+      // 23505 = déjà marqué par une livraison concurrente : c'est très bien.
+      await reportError('[webhook-saas] marqueur d\'idempotence non posé', { event: event.id, error: eMarque.message });
     }
 
     return Response.json({ received: true });
   } catch (err) {
-    // On garde le 500 pour que Stripe rejoue l'event, mais on ne renvoie pas
-    // le détail de l'erreur (le message brut peut fuiter des infos internes).
-    // Le détail reste loggé côté serveur.
-    reportError('[webhook-saas] handler error:', err);
-    return new Response('Handler error', { status: 500 });
+    return await echoue('handler error', err);
   }
 });

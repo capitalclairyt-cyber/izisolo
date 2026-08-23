@@ -15,6 +15,7 @@
 
 import { withRoute } from '@/lib/api-route';
 import Stripe from 'stripe';
+import { STRIPE_API_VERSION } from '@/lib/stripe-api-version';
 import { reportError } from '@/lib/report';
 
 export const runtime = 'nodejs';
@@ -46,15 +47,23 @@ export const POST = withRoute({ auth: 'user' }, async ({ auth }) => {
   }
 
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-    apiVersion: '2025-09-30.clover',
+    apiVersion: STRIPE_API_VERSION,
   });
 
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.izisolo.fr';
 
   try {
+    // Une configuration de portail créée par l'API naît is_default:false.
+    // Sans la nommer, Stripe cherche « la configuration par défaut », qui
+    // n'existe que si quelqu'un a cliqué « Save » dans le Dashboard : la route
+    // répondait alors 503 à une prof en past_due, c'est-à-dire exactement au
+    // moment où elle vient changer sa carte. Le script de setup imprime cet id.
     const session = await stripe.billingPortal.sessions.create({
       customer: profile.stripe_customer_id,
-      return_url: `${baseUrl}/parametres`,
+      return_url: `${baseUrl}/parametres?tab=abonnement`,
+      ...(process.env.STRIPE_PORTAL_CONFIG_ID
+        ? { configuration: process.env.STRIPE_PORTAL_CONFIG_ID }
+        : {}),
     });
     return Response.json({ url: session.url });
   } catch (err) {

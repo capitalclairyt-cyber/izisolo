@@ -25,6 +25,7 @@
  */
 import { createClient } from '@supabase/supabase-js';
 import Stripe from 'stripe';
+import { STRIPE_API_VERSION } from '../lib/stripe-api-version.js';
 import { readFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -43,7 +44,7 @@ const env = Object.fromEntries(
 );
 const PROJECT_REF = new URL(env.NEXT_PUBLIC_SUPABASE_URL).hostname.split('.')[0];
 const admin = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
-const stripe = new Stripe('sk_dummy_for_signature_only', { apiVersion: '2025-09-30.clover' });
+const stripe = new Stripe('sk_dummy_for_signature_only', { apiVersion: STRIPE_API_VERSION });
 
 let ok = 0, ko = 0;
 const assert = (cond, label) => {

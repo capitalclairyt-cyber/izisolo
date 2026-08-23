@@ -1,8 +1,8 @@
 import { z } from 'zod';
 import { withRoute } from '@/lib/api-route';
-import { TRIAL_DAYS } from '@/lib/constantes';
-import { getTrialStatus } from '@/lib/trial';
+import { estCompteTest } from '@/lib/admin-stats';
 import Stripe from 'stripe';
+import { STRIPE_API_VERSION } from '@/lib/stripe-api-version';
 import { reportError } from '@/lib/report';
 
 export const runtime = 'nodejs';
@@ -23,11 +23,14 @@ export const runtime = 'nodejs';
  *     un checkout premium répond « plan indisponible », c'est voulu)
  *   - NEXT_PUBLIC_APP_URL
  *
- * Body : { plan: 'solo'|'pro'|'premium', periode: 'mensuel' }
+ * Body : { plan: 'solo'|'pro', periode: 'mensuel' }
  */
 
+// 'premium' (ex-Studio) est LEGACY : plus jamais vendu, aucun Product ni Price
+// créé côté Stripe. Le laisser dans l'enum rendait un 500 qui nommait des env
+// vars internes à qui le demandait.
 const schema = z.object({
-  plan: z.enum(['solo', 'pro', 'premium']),
+  plan: z.enum(['solo', 'pro']),
   periode: z.enum(['mensuel']), // 'annuel' désactivé temporairement
 });
 
@@ -38,10 +41,12 @@ const PRICE_IDS = {
   pro: {
     mensuel: process.env.STRIPE_PRICE_ID_PRO_MENSUEL,
   },
-  premium: {
-    mensuel: process.env.STRIPE_PRICE_ID_PREMIUM_MENSUEL,
-  },
 };
+
+// Un abonnement déjà vivant : re-souscrire créerait un SECOND abonnement chez
+// Stripe, facturé immédiatement, et le webhook écraserait l'id du premier —
+// qui continuerait de débiter en étant devenu invisible dans l'app.
+const STATUTS_ABONNEE = ['active', 'trialing', 'past_due'];
 
 export const POST = withRoute({ auth: 'user' }, async ({ request, auth }) => {
   const { user, supabase } = auth;
@@ -75,31 +80,47 @@ export const POST = withRoute({ auth: 'user' }, async ({ request, auth }) => {
   // Récupérer le profile (pour stripe_customer_id existant + état du trial)
   const { data: profile } = await supabase
     .from('profiles')
-    .select('id, stripe_customer_id, email_contact, plan, trial_started_at, stripe_subscription_status')
+    .select('id, stripe_customer_id, plan, trial_started_at, stripe_subscription_status, studio_slug, studio_nom')
     .eq('id', user.id)
     .single();
 
+  // ── Trois refus, avant que Stripe ne voie quoi que ce soit ───────────────
+  // (a) Déjà abonnée : sinon double prélèvement, et le premier abonnement
+  //     devient invisible tout en continuant de débiter.
+  if (STATUTS_ABONNEE.includes(profile?.stripe_subscription_status)) {
+    return Response.json({
+      error: 'Tu as déjà un abonnement en cours. Gère-le depuis « Gérer mon abonnement ».',
+      code: 'DEJA_ABONNEE',
+    }, { status: 409 });
+  }
+
+  // (b) Comptes internes : le démo est en plan 'free', donc getTrialStatus rend
+  //     active:false, donc AUCUN trial_end n'est posé — un clic curieux pendant
+  //     une démo débiterait pour de vrai, immédiatement.
+  if (profile?.plan === 'free' || estCompteTest({ email: user.email, studio_slug: profile?.studio_slug, studio_nom: profile?.studio_nom })) {
+    return Response.json({
+      error: 'Ce compte est un compte de démonstration : il ne peut pas souscrire.',
+      code: 'COMPTE_TEST',
+    }, { status: 403 });
+  }
+
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-    apiVersion: '2025-09-30.clover',
+    apiVersion: STRIPE_API_VERSION,
   });
 
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.izisolo.fr';
 
-  // Calcul du trial restant : si l'user souscrit AVANT la fin de son
-  // trial in-app (14j à partir de signup), Stripe doit respecter le temps
-  // restant (pas le re-démarrer à 14j). On utilise `trial_end` (timestamp
-  // Unix de la fin) au lieu de `trial_period_days`.
-  // Si le trial est déjà expiré → pas de trial Stripe (paiement immédiat).
-  // Si trial actif → trial Stripe = même endsAt que celui in-app.
-  const trialStatus = getTrialStatus(profile);
+  // AUCUN trial Stripe (décision Colin 2026-08-22) : les 14 jours sont déjà
+  // comptés par IziSolo, la prof paie le jour où elle décide de rester.
+  //
+  // Ce choix supprime un bug qui frappait au pire moment : l'ancien code posait
+  // trial_end dès que `daysLeft >= 2`, or daysLeft est un Math.ceil — à 25 h
+  // restantes il vaut 2, et Stripe REFUSE un trial_end à moins de 48 h. Le
+  // checkout rendait donc 500 pendant les dernières 24 h d'essai, c'est-à-dire
+  // le jour de l'email de relance J-1, le pic de conversion.
   const subscriptionData = {
     metadata: { profile_id: user.id, plan, periode },
   };
-  if (trialStatus.active && trialStatus.endsAt && trialStatus.daysLeft >= 2) {
-    subscriptionData.trial_end = Math.floor(trialStatus.endsAt.getTime() / 1000);
-  }
-  // Si trial < 2 jours, expiré, ou ineligible → pas de trial Stripe, paiement immédiat
-  // (Stripe exige trial_end >= now + 48h)
 
   try {
     const session = await stripe.checkout.sessions.create({
@@ -107,7 +128,10 @@ export const POST = withRoute({ auth: 'user' }, async ({ request, auth }) => {
       payment_method_types: ['card'],
       line_items: [{ price: priceId, quantity: 1 }],
       customer: profile?.stripe_customer_id || undefined,
-      customer_email: !profile?.stripe_customer_id ? (profile?.email_contact || user.email) : undefined,
+      // user.email et JAMAIS email_contact : ce dernier est le contact PUBLIC
+      // du studio, modifiable et videable. Les reçus et les relances d'impayé
+      // doivent arriver sur la boîte avec laquelle elle se connecte.
+      customer_email: !profile?.stripe_customer_id ? user.email : undefined,
       client_reference_id: user.id,
       metadata: {
         profile_id: user.id,
@@ -115,9 +139,15 @@ export const POST = withRoute({ auth: 'user' }, async ({ request, auth }) => {
         periode,
       },
       subscription_data: subscriptionData,
-      success_url: `${baseUrl}/parametres?abo=success`,
-      cancel_url: `${baseUrl}/parametres?abo=cancel`,
+      // La session revient dans l'URL : l'écran peut CONSTATER l'abonnement au
+      // lieu d'annoncer « activé » sur la foi d'une redirection, même quand le
+      // webhook a échoué.
+      success_url: `${baseUrl}/parametres?tab=abonnement&abo=success&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${baseUrl}/parametres?tab=abonnement&abo=cancel`,
       allow_promotion_codes: true,
+    }, {
+      // Double clic sur « Passer à Complet » : une seule session créée.
+      idempotencyKey: `checkout-saas:${user.id}:${plan}:${periode}`,
     });
 
     return Response.json({ url: session.url });
