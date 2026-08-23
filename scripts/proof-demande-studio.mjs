@@ -100,7 +100,16 @@ try {
 
   // Visiteuse ANONYME : aucun cookie. C'est la seule façon de prouver que la
   // page passe le proxy default-deny.
-  const ctx = await browser.newContext({ viewport: { width: 1100, height: 1200 } });
+  //
+  // IP de documentation (RFC 5737) DIFFÉRENTE à chaque run : le rate limit
+  // anti-bot du guichet est de 5 requêtes par heure et par IP, et il n'est pas
+  // le sujet ici. Sans ça, deux répétitions du script dans la même heure
+  // finissent en 429 sur la vraie soumission (constaté).
+  const ipRun = `203.0.113.${(Math.floor(Date.now() / 1000) % 250) + 1}`;
+  const ctx = await browser.newContext({
+    viewport: { width: 1100, height: 1200 },
+    extraHTTPHeaders: { 'x-forwarded-for': ipRun },
+  });
   const page = await ctx.newPage();
   const BRUIT_CONNU = [/unique "key" prop.*OuterLayoutRouter/s, /status of 40[03]/];
   const erreursConsole = [];
@@ -159,7 +168,9 @@ try {
   const emailTemoin = `preuve-guichet-${Date.now()}@example.com`;
   await page.locator('.cms-champ input').first().fill(`${MARQUEUR} Lea`);
   await page.locator('input[type="email"]').fill(emailTemoin);
-  await page.locator('.cms-champ input').nth(3).fill(`${MARQUEUR} Studio`);
+  // Par placeholder, jamais par position : compter les inputs a rempli le
+  // champ Téléphone au premier run (le select Activité décale les index).
+  await page.getByPlaceholder("Ex : L'Atelier Soleil").fill(`${MARQUEUR} Studio`);
   await page.locator('.cms-champ textarea').first().fill('Hatha lundi 18h30 salle des fetes');
   await page.screenshot({ path: join(OUT, 'B-formulaire.png'), fullPage: true });
   await page.getByRole('button', { name: /On me monte mon studio/ }).click();
