@@ -39,6 +39,29 @@ function generateVersements(total, nb, rythmeMonths = 1) {
   });
 }
 
+/**
+ * Découpe un montant en N encaissements du MÊME jour, tous réglés, chacun
+ * attendant son moyen de paiement (retour Colin 2026-08-23 : « permettre de
+ * sélectionner plusieurs types de paiement, chèque + cb + virement »).
+ *
+ * Ce n'est pas un échéancier : rien n'est étalé dans le temps, c'est une seule
+ * vente réglée en deux ou trois fois le même jour. En base ce sont bien N
+ * encaissements distincts, chacun avec SON mode — c'est ce que la compta et
+ * la déclaration URSSAF doivent voir (un chèque et une CB ne se déclarent pas
+ * comme une ligne mixte qui n'existe pas).
+ */
+function decouperEnMoyens(total, nb) {
+  const base = Math.floor((total / nb) * 100) / 100;
+  const reste = Math.round((total - base * nb) * 100) / 100;
+  const today = new Date().toISOString().split('T')[0];
+  return Array.from({ length: nb }, (_, i) => ({
+    montant: i === 0 ? +(base + reste).toFixed(2) : base,
+    date: today,
+    encaisse: true,
+    mode: '',
+  }));
+}
+
 export { generateVersements, MODES_PAIEMENT };
 
 export default function PaiementStep({
@@ -72,6 +95,9 @@ export default function PaiementStep({
 
   const isMulti = reglement === 'multi';
   const isAregler = reglement === 'aregler';
+  // Réglé le même jour avec plusieurs moyens (80 € espèces + 43 € CB).
+  // Techniquement des versements comme les autres, d'où la réutilisation.
+  const isMultiMode = reglement === 'multimode';
 
   const regenerate = (nb = nbVersements, r = rythme) => {
     if (montant) setVersements(generateVersements(parseFloat(montant), nb, r));
@@ -80,6 +106,18 @@ export default function PaiementStep({
   const selectReglement = (mode) => {
     setReglement(mode);
     if (mode === 'multi') regenerate();
+    if (mode === 'multimode' && montant) setVersements(decouperEnMoyens(parseFloat(montant), 2));
+  };
+
+  const ajouterMoyen = () => {
+    if (versements.length >= 4) return;
+    setVersements(decouperEnMoyens(parseFloat(montant) || 0, versements.length + 1));
+    setError('');
+  };
+  const retirerMoyen = () => {
+    if (versements.length <= 2) return;
+    setVersements(decouperEnMoyens(parseFloat(montant) || 0, versements.length - 1));
+    setError('');
   };
 
   const changeNbVersements = (n) => { setNbVersements(n); regenerate(n, rythme); };
@@ -91,9 +129,12 @@ export default function PaiementStep({
 
   // Le mode GLOBAL n'est requis que pour « payé maintenant » (paiement simple) ;
   // en échéancier, chaque versement encaissé porte SON mode.
-  const modeRequis = !isAregler && !isMulti;
+  const modeRequis = !isAregler && !isMulti && !isMultiMode;
   const chequeQuelquePart = (modeRequis && modePaiement === 'cheque')
-    || (isMulti && versements.some(v => v.encaisse && v.mode === 'cheque'));
+    || ((isMulti || isMultiMode) && versements.some(v => v.encaisse && v.mode === 'cheque'));
+  const sommeVersements = versements.reduce(
+    (s, v) => s + (typeof v.montant === 'number' ? v.montant : parseFloat(v.montant) || 0), 0);
+  const sommeJuste = Math.abs(sommeVersements - (parseFloat(montant) || 0)) < 0.02;
 
   const handleConfirm = () => {
     if (!montant || parseFloat(montant) < 0) return;
@@ -105,8 +146,14 @@ export default function PaiementStep({
       setError('Comment as-tu été payée ? Choisis le mode de règlement (espèces, chèque, virement, CB).');
       return;
     }
-    if (isMulti && versements.some(v => v.encaisse && !v.mode)) {
+    if ((isMulti || isMultiMode) && versements.some(v => v.encaisse && !v.mode)) {
       setError('Un versement encaissé doit dire comment : choisis son mode (espèces, chèque, virement, CB).');
+      return;
+    }
+    // Un échéancier peut être ajusté plus tard ; un règlement du jour, non :
+    // si les moyens ne font pas le compte, l'encaissement écrit est faux.
+    if (isMultiMode && !sommeJuste) {
+      setError('Le détail des moyens ne fait pas le montant total. Ajuste les lignes.');
       return;
     }
     setError('');
@@ -115,10 +162,13 @@ export default function PaiementStep({
       modePaiement,
       notes: notes.trim() || null,
       numeroCheque: numeroCheque.trim() || null,
-      reglement,               // 'paye' | 'aregler' | 'multi'
+      // 'multimode' sort en 'multi' : côté base ce sont N encaissements du
+      // même jour, chacun avec son mode — exactement ce que les consommateurs
+      // (vendre_offre, fiche élève) savent déjà écrire. Rien à changer chez eux.
+      reglement: isMultiMode ? 'multi' : reglement,   // 'paye' | 'aregler' | 'multi'
       // compat : dérivé des lignes (l'encaissé vit par versement désormais)
-      premierEncaisse: isMulti ? versements[0]?.encaisse === true : true,
-      versements: isMulti ? versements : [],
+      premierEncaisse: (isMulti || isMultiMode) ? versements[0]?.encaisse === true : true,
+      versements: (isMulti || isMultiMode) ? versements : [],
     });
   };
 
@@ -126,7 +176,10 @@ export default function PaiementStep({
   const MODES_REGLEMENT = [
     { value: 'paye',    label: 'Payé maintenant' },
     { value: 'aregler', label: 'À régler plus tard' },
-    ...(!isLibre ? [{ value: 'multi', label: 'En plusieurs fois' }] : []),
+    ...(!isLibre ? [
+      { value: 'multimode', label: 'Plusieurs moyens' },
+      { value: 'multi', label: 'En plusieurs fois' },
+    ] : []),
   ];
 
   const btnLabel = isAregler ? "Attribuer l'offre (à régler)"
@@ -235,6 +288,57 @@ export default function PaiementStep({
           L'offre est attribuée tout de suite. Le montant apparaît en « à percevoir »
           — tu l'encaisses en un clic quand l'élève règle.
         </p>
+      )}
+
+      {/* Plusieurs moyens le même jour — ni échéancier, ni dette */}
+      {isMultiMode && (
+        <>
+          <p className="montant-hint">
+            Une seule vente, réglée aujourd&apos;hui en plusieurs fois. Chaque ligne
+            part en compta avec SON moyen de paiement.
+          </p>
+          <div className="multi-v-list">
+            {versements.map((v, i) => (
+              <div key={i} className="multi-v-row">
+                <span className="multi-v-label">#{i + 1}</span>
+                <input
+                  type="number" step="0.01" min="0"
+                  className="izi-input multi-v-montant-input"
+                  value={v.montant}
+                  onChange={e => { updateVersement(i, 'montant', e.target.value); setError(''); }}
+                />
+                <select
+                  className="izi-input mm-mode"
+                  value={v.mode || ''}
+                  onChange={e => { updateVersement(i, 'mode', e.target.value); setError(''); }}
+                  aria-label={`Moyen de paiement ${i + 1}`}
+                >
+                  <option value="">Moyen ?</option>
+                  {MODES_PAIEMENT.map(m => (
+                    <option key={m.value} value={m.value}>{m.label}</option>
+                  ))}
+                </select>
+              </div>
+            ))}
+          </div>
+          <div className="mm-actions">
+            <button type="button" className="mm-btn" onClick={ajouterMoyen} disabled={versements.length >= 4}>
+              + Ajouter un moyen
+            </button>
+            {versements.length > 2 && (
+              <button type="button" className="mm-btn" onClick={retirerMoyen}>Retirer</button>
+            )}
+          </div>
+          {chequeQuelquePart && (
+            <>
+              <div className="paiement-section-label">N° de chèque</div>
+              <input className="izi-input" type="text" value={numeroCheque} onChange={e => setNumeroCheque(e.target.value)} placeholder="Ex : 0012345" />
+            </>
+          )}
+          <div className={`multi-total ${sommeJuste ? 'ok' : 'warn'}`}>
+            Total : {formatMontant(sommeVersements)} / {formatMontant(parseFloat(montant) || 0)}
+          </div>
+        </>
       )}
 
       {/* Échéancier — détail des versements */}
@@ -377,6 +481,14 @@ export default function PaiementStep({
         }
         .multi-v-enc input { accent-color: var(--brand, #B87333); }
         .multi-v-mode { width: 96px; font-size: 0.78rem !important; padding: 6px 4px !important; }
+        .mm-mode { flex: 1; font-size: 0.82rem !important; padding: 6px 8px !important; }
+        .mm-actions { display: flex; gap: 8px; margin-top: 8px; }
+        .mm-btn {
+          background: none; border: 1px dashed var(--border); border-radius: 8px;
+          padding: 6px 10px; font-size: 0.78rem; font-weight: 600;
+          color: var(--text-secondary); cursor: pointer;
+        }
+        .mm-btn:disabled { opacity: 0.45; cursor: default; }
         .multi-arrondir-btn {
           align-self: flex-start; margin: 2px 0 6px;
           background: none; border: 1px dashed var(--brand-200, #e8d3bd); border-radius: 99px;

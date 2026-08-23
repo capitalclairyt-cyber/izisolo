@@ -213,6 +213,9 @@ export default function RevenusClient({ paiements: initialPaiements, seancesDues
       date_encaissement: paiement.date_encaissement || '',
       notes: paiement.notes || '',
       statut: paiement.statut || 'pending',
+      // v95 : « je déclare à part ». Naît à false pour les paiements
+      // antérieurs à la migration (colonne absente = undefined).
+      exclu_compta: paiement.exclu_compta === true,
     });
   };
 
@@ -230,13 +233,18 @@ export default function RevenusClient({ paiements: initialPaiements, seancesDues
           date_encaissement: editForm.date_encaissement || null,
           notes: editForm.notes || null,
           statut: editForm.statut,
+          // Envoye SEULEMENT s'il a change : pre-v95 la colonne n'existe pas
+          // et PostgREST refuserait toute la requete, donc toute modification
+          // de montant ou de date, pour un drapeau que personne n'a touche.
+          ...(editForm.exclu_compta === (editModal.exclu_compta === true)
+            ? {} : { exclu_compta: editForm.exclu_compta === true }),
         }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Erreur');
       setPaiements(prev => prev.map(p =>
         p.id === editModal.id
-          ? { ...p, montant: parseFloat(editForm.montant), mode: editForm.mode, date: editForm.date, date_encaissement: editForm.date_encaissement, notes: editForm.notes, statut: editForm.statut }
+          ? { ...p, montant: parseFloat(editForm.montant), mode: editForm.mode, date: editForm.date, date_encaissement: editForm.date_encaissement, notes: editForm.notes, statut: editForm.statut, exclu_compta: editForm.exclu_compta === true }
           : p
       ));
       toast.success('Paiement modifié !');
@@ -1026,6 +1034,29 @@ export default function RevenusClient({ paiements: initialPaiements, seancesDues
               />
             </div>
 
+            {/* « Je déclare à part » (v95, demande Colin) : l'encaissement
+                reste enregistré ici — l'élève garde son historique, le carnet
+                son décompte — mais sort de la déclaration URSSAF, du livre des
+                recettes et de la base déclarée de l'export. Chacun de ces
+                documents annonce ce qu'il a écarté. */}
+            <div className="enc-field">
+              <label>Ma comptabilité</label>
+              <label className="rev-horscompta">
+                <input
+                  type="checkbox"
+                  checked={editForm.exclu_compta === true}
+                  onChange={e => setEditForm(f => ({ ...f, exclu_compta: e.target.checked }))}
+                />
+                <span>
+                  Ne pas faire apparaître dans ma compta
+                  <span className="rev-horscompta-sub">
+                    Je déclare cet encaissement à part. Il reste enregistré dans IziSolo, mais il sort
+                    de ta déclaration URSSAF et de ton livre des recettes.
+                  </span>
+                </span>
+              </label>
+            </div>
+
             <div className="enc-field">
               <label>Statut</label>
               <div className="enc-modes">
@@ -1203,6 +1234,15 @@ export default function RevenusClient({ paiements: initialPaiements, seancesDues
           padding: 12px 14px; margin-bottom: 16px; font-size: 0.875rem;
         }
         .enc-field { margin-bottom: 14px; }
+        .rev-horscompta {
+          display: flex; align-items: flex-start; gap: 8px; cursor: pointer;
+          font-size: 0.82rem; font-weight: 600; color: var(--text-secondary);
+        }
+        .rev-horscompta input { margin-top: 3px; accent-color: var(--brand); flex-shrink: 0; }
+        .rev-horscompta-sub {
+          display: block; font-weight: 400; font-size: 0.74rem;
+          color: var(--text-muted); margin-top: 2px;
+        }
         .enc-field label {
           display: block; font-size: 0.8125rem; font-weight: 600;
           color: var(--text-secondary); margin-bottom: 6px;

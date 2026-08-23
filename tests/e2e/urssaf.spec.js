@@ -22,6 +22,7 @@ import {
   sanitizeConfigUrssaf, configUrssafAffichee, urssafConfigure,
   estimationCotisations, totauxPaiements, montantFr,
   rappelUrssafDuJour, renderEmailUrssaf, REGIMES,
+  mentionExclusions, retirerExclus,
 } from '../../lib/urssaf.js';
 import {
   construireLivreRecettes, referencePiece, origineClient, livreEnCsv, libelleMois,
@@ -389,5 +390,85 @@ test.describe('Livre des recettes', () => {
     expect(l.lignes).toEqual([]);
     expect(l.total).toBe(0);
     expect(libelleMois('2026-09')).toBe('septembre 2026');
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// v95 — « Ne pas faire apparaître dans ma compta, je déclare à part »
+//
+// La règle non négociable : un document qui écarte des lignes DOIT dire
+// lesquelles. Un registre muet sur ses exclusions se prétend complet alors
+// qu'il ne l'est pas, et c'est ce mensonge-là qu'on refuse d'écrire.
+// ═══════════════════════════════════════════════════════════════════════════
+test.describe('retirerExclus — l\'assiette sans les lignes écartées', () => {
+  const paiements = [
+    { id: 'a', montant: 50 }, { id: 'b', montant: 30 }, { id: 'c', montant: 20 },
+  ];
+
+  test('les paiements exclus sortent, les autres restent dans l\'ordre', () => {
+    const restants = retirerExclus(paiements, { ids: new Set(['b']) });
+    expect(restants.map(p => p.id)).toEqual(['a', 'c']);
+  });
+
+  test('aucune exclusion : le lot est rendu tel quel', () => {
+    expect(retirerExclus(paiements, { ids: new Set() })).toHaveLength(3);
+    expect(retirerExclus(paiements, null)).toHaveLength(3);
+    expect(retirerExclus(paiements, undefined)).toHaveLength(3);
+  });
+
+  test('pré-migration (colonne absente) : rien n\'est exclu, jamais une erreur', () => {
+    // lireExclusions renvoie ce contrat quand exclu_compta n'existe pas.
+    const indisponible = { ids: new Set(), nb: 0, montant: 0, disponible: false };
+    expect(retirerExclus(paiements, indisponible)).toHaveLength(3);
+  });
+
+  test('lot vide ou absent : jamais un plantage sur un document', () => {
+    expect(retirerExclus([], { ids: new Set(['a']) })).toEqual([]);
+    expect(retirerExclus(null, { ids: new Set(['a']) })).toEqual([]);
+  });
+});
+
+test.describe('mentionExclusions — le document annonce ce qu\'il ne contient pas', () => {
+  test('elle dit le nombre ET le montant', () => {
+    const m = mentionExclusions({ nb: 2, montant: 145.5 });
+    expect(m).toContain('2 encaissements');
+    expect(m).toContain('145,50');
+    expect(m).toContain('je déclare à part');
+  });
+
+  test('accord au singulier', () => {
+    expect(mentionExclusions({ nb: 1, montant: 40 })).toContain('1 encaissement volontairement exclu ');
+  });
+
+  test('aucune exclusion : aucune phrase (on ne salit pas un document propre)', () => {
+    expect(mentionExclusions({ nb: 0, montant: 0 })).toBe('');
+    expect(mentionExclusions({})).toBe('');
+    expect(mentionExclusions()).toBe('');
+  });
+
+  test('pas de tiret quadratin (règle de rédaction maison)', () => {
+    expect(mentionExclusions({ nb: 3, montant: 90 })).not.toContain('—');
+  });
+});
+
+test.describe('le livre des recettes porte la mention', () => {
+  test('un registre amputé le dit sur lui-même', () => {
+    const livre = construireLivreRecettes({
+      paiements: [{ id: 'p1', montant: 60, mode: 'especes', date: '2026-09-10', date_encaissement: '2026-09-10' }],
+      periode: { id: 'T3-2026', label: 'T3 2026', from: '2026-07-01', to: '2026-09-30' },
+      exclusions: { nb: 1, montant: 40 },
+    });
+    expect(livre.total).toBe(60);
+    expect(livre.mentionExclusions).toContain('1 encaissement');
+    expect(livreEnCsv(livre)).toContain('40,00');
+  });
+
+  test('sans exclusion, le registre ne porte aucune mention', () => {
+    const livre = construireLivreRecettes({
+      paiements: [{ id: 'p1', montant: 60, mode: 'especes', date: '2026-09-10' }],
+      periode: { id: 'T3-2026', label: 'T3 2026', from: '2026-07-01', to: '2026-09-30' },
+    });
+    expect(livre.mentionExclusions).toBe('');
+    expect(livreEnCsv(livre)).not.toContain('exclu');
   });
 });

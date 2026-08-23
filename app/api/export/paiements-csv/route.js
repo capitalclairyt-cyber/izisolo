@@ -4,6 +4,7 @@ import {
   dateComptable, moisComptable, filtreDateComptable, totauxPaiements,
   periodeParId, aujourdhuiParis, montantFr,
   sanitizeConfigUrssaf, estimationCotisations, REGIMES,
+  lireExclusions, retirerExclus, mentionExclusions,
 } from '@/lib/urssaf';
 import { normaliserMode, labelMode } from '@/lib/modes-paiement';
 
@@ -206,7 +207,16 @@ export const GET = withRoute({ auth: 'user', plan: 'export_compta' }, async ({ r
     configUrssaf = sanitizeConfigUrssaf(data?.urssaf_config);
   } catch { /* pré-v93 : pas d'estimation dans le récap */ }
 
+  // v95 : ce que la prof a sorti de sa déclaration. Rien n'est retiré du
+  // TABLEAU (l'export comptable doit montrer tout l'argent reçu) ; c'est la
+  // BASE DÉCLARÉE qui les ignore, et le récap dit lesquels. Intersection en
+  // JS plutôt qu'un second filtre daté : exact quelle que soit la base
+  // choisie (encaissement ou vente).
+  const exclusions = await lireExclusions(supabase, user.id);
+  const retenus = retirerExclus(paiements, exclusions);
+  const exclusIci = paiements.length - retenus.length;
   const totaux = totauxPaiements(paiements, base);
+  const totauxDeclares = exclusIci > 0 ? totauxPaiements(retenus, base) : totaux;
 
   // ── Le tableau ────────────────────────────────────────────────────────────
   const headers = [
@@ -221,6 +231,7 @@ export const GET = withRoute({ auth: 'user', plan: 'export_compta' }, async ({ r
     'Frais IziSolo',
     'Statut',
     'Facture n°',
+    ...(exclusIci > 0 ? ['Dans ma déclaration'] : []),
     'Notes',
   ];
 
@@ -241,6 +252,7 @@ export const GET = withRoute({ auth: 'user', plan: 'export_compta' }, async ({ r
       montantFr(p.commission_montant),
       STATUT_FR[p.statut] || p.statut || '',
       numeroFacture.get(p.id) || '',
+      ...(exclusIci > 0 ? [exclusions.ids.has(p.id) ? 'non' : 'oui'] : []),
       p.notes || '',
     ]);
   });
@@ -252,7 +264,7 @@ export const GET = withRoute({ auth: 'user', plan: 'export_compta' }, async ({ r
     '', '', '', '', '', '',
     montantFr(totaux.brut),
     montantFr(totaux.frais),
-    '', '', '',
+    '', '', ...(exclusIci > 0 ? [''] : []), '',
   ]);
 
   // ── Le récapitulatif ──────────────────────────────────────────────────────
@@ -286,12 +298,23 @@ export const GET = withRoute({ auth: 'user', plan: 'export_compta' }, async ({ r
     ligne(["Les frais Stripe ne sont pas connus d'IziSolo, retrouve-les dans ton tableau de bord Stripe."]),
   );
 
+  // v95 : deux totaux valent mieux qu'un total ambigu. Le premier dit l'argent
+  // reçu, le second ce qui part dans la déclaration.
+  if (exclusIci > 0) {
+    recap.push(
+      '',
+      ligne([mentionExclusions({ nb: exclusIci, montant: Math.round((totaux.brut - totauxDeclares.brut) * 100) / 100 })]),
+      ligne(['Base déclarée (hors exclusions)', montantFr(totauxDeclares.brut)]),
+      ligne(['Ces encaissements restent enregistrés dans IziSolo : tu as choisi de les déclarer par ailleurs.']),
+    );
+  }
+
   if (filterStatut !== 'paid') {
     recap.push(ligne(['⚠ Cet export contient des paiements non réglés : ne déclare que ce qui est encaissé.']));
   }
 
   if (configUrssaf && configUrssaf.regime !== 'autre' && filterStatut === 'paid') {
-    const est = estimationCotisations(totaux.brut, configUrssaf);
+    const est = estimationCotisations(totauxDeclares.brut, configUrssaf);
     recap.push(
       '',
       ligne(['ESTIMATION (non contractuelle, vérifie sur urssaf.fr)']),

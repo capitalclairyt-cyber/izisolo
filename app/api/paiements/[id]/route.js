@@ -25,6 +25,10 @@ const updateSchema = z.object({
   notes: z.string().trim().max(500).nullable().optional(),
   numero_cheque: z.string().trim().max(100).nullable().optional(),
   statut: z.enum(['paid', 'pending', 'overdue']).optional(),
+  // v95 : « ne pas faire apparaître dans ma compta, je déclare à part ».
+  // Volontairement HORS de champsFactures : sortir un encaissement de sa
+  // déclaration ne rend pas faux le justificatif remis à l'élève.
+  exclu_compta: z.boolean().optional(),
 });
 
 export const PATCH = withRoute({ auth: 'active', schema: updateSchema }, async ({ params, auth, body }) => {
@@ -64,6 +68,7 @@ export const PATCH = withRoute({ auth: 'active', schema: updateSchema }, async (
   if (body.notes !== undefined) update.notes = body.notes;
   if (body.numero_cheque !== undefined) update.numero_cheque = body.numero_cheque;
   if (body.statut !== undefined) update.statut = body.statut;
+  if (body.exclu_compta !== undefined) update.exclu_compta = body.exclu_compta;
 
   if (Object.keys(update).length === 0) {
     return Response.json({ error: 'Rien à modifier' }, { status: 400 });
@@ -76,6 +81,24 @@ export const PATCH = withRoute({ auth: 'active', schema: updateSchema }, async (
     .eq('profile_id', user.id);
 
   if (updateErr) {
+    // Pré-v95 : la colonne exclu_compta n'existe pas encore. PostgREST refuse
+    // alors TOUTE la requête — le reste de la modification (montant, date,
+    // mode) partirait à la poubelle avec elle. On rejoue donc sans le drapeau,
+    // puis on dit franchement ce qui n'a pas pu être enregistré.
+    // ⚠️ Deux codes possibles : 42703 vient de Postgres, PGRST204 du cache de
+    // schéma PostgREST — c'est celui-là qu'on reçoit en pratique.
+    const colonneAbsente = ['42703', 'PGRST204'].includes(updateErr.code)
+      || /exclu_compta/.test(updateErr.message || '');
+    if (colonneAbsente && update.exclu_compta !== undefined) {
+      const { exclu_compta: _ignore, ...reste } = update;
+      if (Object.keys(reste).length > 0) {
+        await supabase.from('paiements').update(reste).eq('id', id).eq('profile_id', user.id);
+      }
+      return Response.json({
+        error: "Ce réglage arrive avec une mise à jour de la base qui n'est pas encore appliquée. Le reste de tes modifications est enregistré ; cet encaissement reste dans ta déclaration pour l'instant.",
+        code: 'MIGRATION_MANQUANTE',
+      }, { status: 503 });
+    }
     return Response.json({ error: "Erreur lors de la modification" }, { status: 500 });
   }
 

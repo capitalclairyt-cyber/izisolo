@@ -4,6 +4,7 @@ import { reportError } from '@/lib/report';
 import {
   periodeParId, aujourdhuiParis, filtreDateComptable, totauxPaiements,
   dateComptable, sanitizeConfigUrssaf, estimationCotisations,
+  lireExclusions, retirerExclus,
 } from '@/lib/urssaf';
 import { construireSnapshot, statutPeriode, ecartDepuisDeclaration } from '@/lib/declaration-archive';
 import DeclarationClient from './DeclarationClient';
@@ -80,7 +81,11 @@ export default async function DeclarationPage({ params }) {
     }))
     .sort((a, b) => (a.date === b.date ? String(a.id).localeCompare(String(b.id)) : String(a.date).localeCompare(String(b.date))));
 
-  const totaux = totauxPaiements(paiements, 'encaissement');
+  // v95 : les encaissements « je déclare à part » sortent de l'assiette,
+  // mais la page annonce combien et pour quel montant — un chiffre à
+  // recopier ne doit jamais cacher ce qu'il a écarté.
+  const exclusions = await lireExclusions(supabase, user.id, periode);
+  const totaux = totauxPaiements(retirerExclus(paiements, exclusions), 'encaissement');
   const estimation = config ? estimationCotisations(totaux.brut, config) : null;
 
   // Archive : lecture défensive (v94 peut ne pas être appliquée).
@@ -98,7 +103,8 @@ export default async function DeclarationPage({ params }) {
   return (
     <DeclarationClient
       periode={periode}
-      lignes={lignes}
+      lignes={lignes.filter(l => !exclusions.ids.has(l.id))}
+      exclusions={{ nb: exclusions.nb, montant: exclusions.montant }}
       totaux={totaux}
       estimation={estimation}
       config={config}

@@ -3,6 +3,7 @@ import { reportError } from '@/lib/report';
 import {
   filtreDateComptable, totauxPaiements, periodeParId, periodesDeclarables,
   aujourdhuiParis, sanitizeConfigUrssaf, estimationCotisations,
+  lireExclusions, retirerExclus,
 } from '@/lib/urssaf';
 import { historique, ecartDepuisDeclaration } from '@/lib/declaration-archive';
 
@@ -56,7 +57,7 @@ export const GET = withRoute({ auth: 'user' }, async ({ request, auth }) => {
   for (let page = 0; page < 20; page++) {
     const { data: lot, error } = await supabase
       .from('paiements')
-      .select('montant, mode, date, date_encaissement, commission_montant')
+      .select('id, montant, mode, date, date_encaissement, commission_montant')
       .eq('profile_id', user.id)
       .eq('statut', 'paid')
       .or(filtreDateComptable(periode.from, periode.to))
@@ -71,7 +72,10 @@ export const GET = withRoute({ auth: 'user' }, async ({ request, auth }) => {
     if (!lot || lot.length < 1000) break;
   }
 
-  const totaux = totauxPaiements(paiements, 'encaissement');
+  // v95 : ce que la prof a sorti de sa déclaration (« je déclare à part »).
+  // Lecture séparée et défensive : sans la colonne, rien n'est exclu.
+  const exclusions = await lireExclusions(supabase, user.id, periode);
+  const totaux = totauxPaiements(retirerExclus(paiements, exclusions), 'encaissement');
   const estimation = config ? estimationCotisations(totaux.brut, config) : null;
 
   // Archive (v94) : lecture DÉFENSIVE et séparée — sans la table, le bloc perd
@@ -93,6 +97,7 @@ export const GET = withRoute({ auth: 'user' }, async ({ request, auth }) => {
     periodes,
     totaux,
     estimation,
+    exclusions: { nb: exclusions.nb, montant: exclusions.montant },
     configuree: !!config,
     migrationManquante,
     aujourdhui: today,

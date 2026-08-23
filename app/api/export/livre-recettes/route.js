@@ -1,6 +1,9 @@
 import { withRoute } from '@/lib/api-route';
 import { reportError } from '@/lib/report';
-import { filtreDateComptable, periodeParId, periodeAnnee, aujourdhuiParis } from '@/lib/urssaf';
+import {
+  filtreDateComptable, periodeParId, periodeAnnee, aujourdhuiParis,
+  lireExclusions, retirerExclus,
+} from '@/lib/urssaf';
 import { construireLivreRecettes, livreEnCsv } from '@/lib/livre-recettes';
 import { genererLivreRecettesPdf } from '@/lib/livre-recettes-pdf';
 import { reponsePdf } from '@/lib/facture-pdf';
@@ -46,6 +49,11 @@ export const GET = withRoute({ auth: 'user' }, async ({ request, auth }) => {
     if (!lot || lot.length < 1000) break;
   }
 
+  // v95 : les encaissements que la prof déclare à part sortent du registre,
+  // et le registre le dit en toutes lettres (cf. construireLivreRecettes).
+  const exclusions = await lireExclusions(supabase, user.id, periode);
+  const retenus = retirerExclus(paiements, exclusions);
+
   // Références de pièce : le numéro de facture v84 quand il existe. Défensif —
   // sans lui, la référence retombe sur l'identifiant court du paiement.
   const numeros = new Map();
@@ -83,7 +91,7 @@ export const GET = withRoute({ auth: 'user' }, async ({ request, auth }) => {
     emetteur = { nom: 'Mon studio' };
   }
 
-  const livre = construireLivreRecettes({ paiements, numeros, periode, emetteur });
+  const livre = construireLivreRecettes({ paiements: retenus, numeros, periode, emetteur, exclusions });
   const base = `izisolo-livre-recettes-${periode.id}`;
 
   if (format === 'csv') {

@@ -132,5 +132,25 @@ export default async function RevenusPage() {
     date: p.cours.date,
   }));
 
-  return <RevenusClient paiements={paiements || []} seancesDues={seancesDues} annulationsDues={annulationsDues} />;
+  // v95 « je déclare à part » : lecture SÉPARÉE et défensive. La colonne
+  // exclu_compta ne va JAMAIS dans le select principal — absente, elle ferait
+  // échouer toute la page (42703) et les totaux d'argent disparaîtraient sans
+  // un mot. Sans elle : aucun paiement marqué, comme avant v95.
+  let exclusIds = [];
+  try {
+    const { data, error } = await supabase
+      .from('paiements')
+      .select('id')
+      .eq('profile_id', user.id)
+      .eq('exclu_compta', true)
+      .limit(5000);
+    if (error) throw error;
+    exclusIds = (data || []).map(p => p.id);
+  } catch { /* pré-v95 : rien d'exclu */ }
+  const exclus = new Set(exclusIds);
+  const paiementsAvecFlag = (paiements || []).map(p => (
+    exclus.has(p.id) ? { ...p, exclu_compta: true } : p
+  ));
+
+  return <RevenusClient paiements={paiementsAvecFlag} seancesDues={seancesDues} annulationsDues={annulationsDues} />;
 }

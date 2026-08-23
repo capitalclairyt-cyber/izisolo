@@ -15,6 +15,7 @@ const fmtJour = (d) => (d ? String(d).slice(0, 10).split('-').reverse().join('/'
 
 export default function DeclarationClient({
   periode, lignes, totaux, estimation, config, emetteur, archive, statut: statutInitial, ecart, snapshot,
+  exclusions = { nb: 0, montant: 0 },
 }) {
   const { toast } = useToast();
   const [copie, setCopie] = useState(false);
@@ -139,6 +140,14 @@ export default function DeclarationClient({
             <div className="decl-meta">
               {totaux.nombre} encaissement{totaux.nombre > 1 ? 's' : ''} · total exact {formatMontant(totaux.brut)}
             </div>
+            {/* v95 : ce que la prof a sorti de sa compta. Le montant à recopier
+                ne cache jamais ce qu'il a écarté. */}
+            {exclusions.nb > 0 && (
+              <div className="decl-exclus">
+                {exclusions.nb} encaissement{exclusions.nb > 1 ? 's' : ''} mis hors compta
+                {' '}({formatMontant(exclusions.montant)}) : tu les déclares à part, ils ne sont pas dans ce total.
+              </div>
+            )}
           </div>
           <div className="decl-hero-actions">
             <button onClick={copier} className="izi-btn izi-btn-primary">
@@ -280,6 +289,10 @@ export default function DeclarationClient({
         .decl-studio { font-size: 1.0625rem; font-weight: 800; color: var(--text-primary); }
         .decl-titre { font-size: 1rem; font-weight: 700; color: var(--brand); }
         .decl-meta { font-size: 0.8125rem; color: var(--text-muted); }
+        .decl-exclus {
+          font-size: 0.78rem; color: #854d0e; background: var(--warning-light, #F5EBD2);
+          border-radius: 8px; padding: 6px 10px; margin-top: 8px; max-width: 520px;
+        }
         .decl-hero { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
         .decl-label { font-size: 0.75rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
         .decl-montant { font-size: 2.5rem; font-weight: 800; color: var(--brand); line-height: 1.1; margin: 2px 0; }
