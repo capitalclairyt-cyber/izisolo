@@ -62,6 +62,18 @@ export default async function AdminLayout({ children }) {
     if (!error && count) nbFeedbacksNew = count;
   } catch { /* table absente ou env manquante : badge à 0 */ }
 
+  // Demandes de studio en attente (badge nav, v96) — jamais bloquant.
+  // Le badge compte les « nouvelle » : c'est la promesse de 48 h qui court.
+  let nbDemandesNew = 0;
+  try {
+    const { createAdminClient } = await import('@/lib/supabase-admin');
+    const { count, error } = await createAdminClient()
+      .from('demandes_studio')
+      .select('id', { count: 'exact', head: true })
+      .eq('statut', 'nouvelle');
+    if (!error && count) nbDemandesNew = count;
+  } catch { /* table absente (pré-v96) : badge à 0 */ }
+
   // Fils support « à répondre » (badge nav messagerie, v87) — jamais bloquant.
   let nbSupportNonLus = 0;
   try {
@@ -110,6 +122,14 @@ export default async function AdminLayout({ children }) {
             {nbSupportNonLus > 0 && (
               <span style={{ marginLeft: '6px', background: '#4a2e10', color: '#f5b878', borderRadius: '999px', padding: '1px 7px', fontSize: '0.7rem', fontWeight: 700 }}>
                 {nbSupportNonLus}
+              </span>
+            )}
+          </Link>
+          <Link href="/admin/demandes" className="admin-nav-item">
+            🎁 Demandes
+            {nbDemandesNew > 0 && (
+              <span style={{ marginLeft: '6px', background: '#3a2e14', color: '#fbbf24', borderRadius: '999px', padding: '1px 7px', fontSize: '0.7rem', fontWeight: 700 }}>
+                {nbDemandesNew}
               </span>
             )}
           </Link>

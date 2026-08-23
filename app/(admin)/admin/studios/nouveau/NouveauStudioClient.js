@@ -15,11 +15,15 @@ const METIERS = [
   ['autre', 'Autre'],
 ];
 
-export default function NouveauStudioClient() {
-  const [prenom, setPrenom] = useState('');
-  const [email, setEmail] = useState('');
-  const [studioNom, setStudioNom] = useState('');
-  const [metier, setMetier] = useState('yoga');
+export default function NouveauStudioClient({ initial = {} }) {
+  const [prenom, setPrenom] = useState(initial.prenom || '');
+  const [email, setEmail] = useState(initial.email || '');
+  const [studioNom, setStudioNom] = useState(initial.studioNom || '');
+  // Le métier arrive d'une demande publique : on ne garde que s'il fait
+  // partie de la liste, sinon « autre » plutôt qu'un select vide et muet.
+  const [metier, setMetier] = useState(
+    METIERS.some(([v]) => v === initial.metier) ? initial.metier : (initial.metier ? 'autre' : 'yoga')
+  );
   const [occupe, setOccupe] = useState(false);
   const [erreur, setErreur] = useState('');
   const [resultat, setResultat] = useState(null); // { profileId, slug, loginLink }

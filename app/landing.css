@@ -540,6 +540,18 @@ section.tight { padding-block: clamp(48px, 6vw, 80px); }
 .hero-trust .pic { width: 34px; height: 34px; overflow: hidden; flex: 0 0 auto; }
 .hero-trust b { color: var(--c-ink); font-weight: 500; }
 
+/* Porte de sortie sous le CTA du hero : mention, pas second bouton (v96) */
+.hero-concierge {
+  margin: 14px 0 0;
+  font-size: 0.9rem;
+  color: var(--c-ink-muted);
+}
+.hero-concierge a {
+  color: var(--c-accent-deep);
+  font-weight: 600;
+  text-underline-offset: 3px;
+}
+
 /* Cadre produit : barre navigateur + 3 captures, fondu vers le bg */
 .hero-product { margin-top: clamp(44px, 5vw, 68px); position: relative; }
 .hero-product .frame {

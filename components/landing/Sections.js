@@ -122,6 +122,11 @@ export function Hero() {
           <Link href="/register" className="btn btn-primary btn-lg">Essayer 14 jours · sans CB →</Link>
           <Link href="/login" className="btn btn-ghost btn-lg">Se connecter</Link>
         </div>
+        {/* Mention discrète, pas un second CTA de même poids : deux boutons
+            égaux se neutralisent. Le détail vit dans sa propre section. */}
+        <p className="hero-concierge">
+          Pas le temps de tout paramétrer ? <Link href="/creer-mon-studio">On monte ton studio pour toi, gratuitement</Link>.
+        </p>
         <div className="hero-trust">
           {/* Photo placeholder : à remplacer par une vraie photo de Maude */}
           <span className="pic blob-a">
@@ -342,6 +347,69 @@ export function ForWhom() {
 }
 
 /* ---- FONDATRICE ---------------------------------------------- */
+// « On crée ton studio » (v96, 2026-08-23) — le guichet public de la
+// création concierge que l'équipe fait déjà en visio depuis le 21/08. Ce qui a
+// coûté une bêta (Kim, partie sur un concurrent pour la rentrée), c'est le
+// temps de mise en route, pas le produit.
+export function Concierge() {
+  return (
+    <section className="section rule-top" id="concierge">
+      <div className="wrap conc-grid">
+        <div>
+          <span className="eyebrow mono">Mise en route</span>
+          <h2 className="conc-h2">On monte ton studio,<br /><span className="accent">tu ouvres les yeux dessus</span></h2>
+          <p className="conc-lead">
+            Le plus dur, ce n&apos;est pas l&apos;outil : c&apos;est de trouver la soirée pour tout
+            saisir. Alors on le fait à ta place. Tu nous donnes ton planning et tes tarifs,
+            on te livre ton studio prêt à l&apos;emploi sous 48 h ouvrées.
+          </p>
+          <ul className="conc-liste">
+            <li>Tes cours et tes récurrences, déjà créés</li>
+            <li>Tes carnets et tes abonnements, déjà paramétrés</li>
+            <li>Tes lieux, ton portail élève, ta page publique</li>
+            <li>Tes élèves si tu nous envoies ta liste, sinon tu les ajoutes quand tu veux</li>
+          </ul>
+          <Link href="/creer-mon-studio" className="btn btn-primary btn-lg">On me monte mon studio →</Link>
+          <p className="conc-note">Gratuit, sans engagement. C&apos;est Maude qui s&apos;en occupe.</p>
+        </div>
+        <div className="conc-carte">
+          <div className="conc-etape"><b>1.</b> Tu remplis un formulaire, cinq minutes</div>
+          <div className="conc-etape"><b>2.</b> On te répond et on construit</div>
+          <div className="conc-etape"><b>3.</b> Tu reçois ton accès, tout est en place</div>
+        </div>
+      </div>
+      <style jsx>{`
+        .conc-grid { display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 48px; align-items: center; }
+        .conc-h2 {
+          font-family: var(--font-display), serif; font-weight: 400;
+          font-size: clamp(1.9rem, 3.4vw, 2.7rem); line-height: 1.1;
+          margin: 12px 0 16px; color: var(--c-ink);
+        }
+        .conc-h2 .accent { color: var(--c-accent-deep); }
+        .conc-lead { color: var(--c-ink-soft); line-height: 1.6; margin: 0 0 18px; }
+        .conc-liste { list-style: none; padding: 0; margin: 0 0 26px; }
+        .conc-liste li {
+          position: relative; padding-left: 24px; margin-bottom: 9px;
+          color: var(--c-ink); font-size: 0.95rem;
+        }
+        .conc-liste li::before {
+          content: '✓'; position: absolute; left: 0; color: var(--c-accent-deep); font-weight: 700;
+        }
+        .conc-note { font-size: 0.85rem; color: var(--c-ink-soft); margin: 12px 0 0; }
+        .conc-carte {
+          display: flex; flex-direction: column; gap: 12px;
+          background: var(--c-bg-sage, #eef1ea); border-radius: 20px; padding: 28px;
+        }
+        .conc-etape { font-size: 0.95rem; color: var(--c-ink); line-height: 1.5; }
+        .conc-etape b { color: var(--c-accent-deep); margin-right: 6px; }
+        @media (max-width: 860px) {
+          .conc-grid { grid-template-columns: 1fr; gap: 28px; }
+        }
+      `}</style>
+    </section>
+  );
+}
+
 export function Founder() {
   return (
     <section className="rule-top zen">
