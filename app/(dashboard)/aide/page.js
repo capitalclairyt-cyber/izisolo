@@ -14,23 +14,31 @@ import { FAQ_SUPPORT } from '@/content/faq-support';
 /**
  * /aide — Guide de démarrage (2026-08-01, plan « aide utilisateur » validé Colin).
  *
- * 15 parcours pas-à-pas. Historique : 5 d'origine (frictions d'activation
+ * 16 parcours pas-à-pas. Historique : 5 d'origine (frictions d'activation
  * MESURÉES — récurrence non adoptée, drop-off à l'ajout d'élèves), + 4 « vie
  * du studio » le 2026-08-17 (offres, À traiter, messagerie, factures),
  * + #installer, #agenda, #regles-annulation et l'échéancier détaillé le
  * 2026-08-18 (appel Patricia + feedbacks 9-10/08), + #carnets-abos,
  * #cours-essai, #liste-attente le 2026-08-18 (état des lieux aide : la
- * gestion APRÈS la vente et la machine à prospects n'étaient pas documentées).
+ * gestion APRÈS la vente et la machine à prospects n'étaient pas documentées),
+ * + #urssaf le 2026-08-22 (v93/v94), + le SWEEP du 2026-08-23 (règle immuable
+ * Colin, cf. CLAUDE.md §2) : cours en visio v86 + déblocage CB, porte
+ * « Pointer quand même », retrait/portée d'inscription au pointage, abo
+ * « À partir de la vente » + cadence des séances, demandes d'offre v97,
+ * « Plusieurs moyens », échéancier « Payé » par versement, « J'ai déclaré »
+ * v94, « Ne pas faire apparaître dans ma compta » v95, tarif d'essai par
+ * type v92, « Jour de la semaine », fil « 💬 Équipe IziSolo ».
  * Ancres stables : #premier-cours, #agenda, #eleves, #offres, #encaisser,
  * #carnets-abos, #pointage, #cas-a-traiter, #regles-annulation, #messagerie,
- * #factures, #page-publique, #cours-essai, #liste-attente, #installer —
- * liées depuis la FAQ de /support, la checklist du dashboard, les emails
- * J+1/J+3, la bannière d'installation et les « ? » contextuels des pages
- * (components/AideContextuelle).
+ * #factures, #urssaf, #page-publique, #cours-essai, #liste-attente,
+ * #installer — liées depuis la FAQ de /support, la checklist du dashboard,
+ * les emails J+1/J+3, la bannière d'installation et les « ? » contextuels
+ * des pages (components/AideContextuelle).
  *
- * Règle d'or : chaque étape cite le VRAI libellé d'écran (nav Sidebar,
- * onglets Paramètres vérifiés) — si un écran est renommé, ce guide DOIT
- * suivre. Contenu statique volontairement (zéro requête, zéro API).
+ * Règle d'or : chaque étape cite le VRAI libellé d'écran (vérifié contre le
+ * composant qui le rend) — si un écran est renommé, ce guide DOIT suivre,
+ * dans le MÊME lot que la modif (règle immuable 2026-08-23). Contenu
+ * statique volontairement (zéro requête, zéro API).
  */
 
 const SECTIONS = [
@@ -41,9 +49,10 @@ const SECTIONS = [
     intro: 'La base de ton planning : un cours créé une fois, toutes les séances générées d\'un coup.',
     etapes: [
       <>Va dans <strong>Cours &amp; Évènements</strong> → <strong>« Créer un cours »</strong>.</>,
-      <>Renseigne le nom, le jour, l'heure, la durée, le lieu et la capacité. Le <strong>type de cours</strong> (Hatha, Vinyasa…) est optionnel mais utile si tes carnets ne valent que pour certains cours.</>,
-      <>Choisis la <strong>fréquence</strong> — hebdomadaire, tous les 15 jours, mensuelle — et une <strong>date de fin</strong> (fin de trimestre, fin de saison…). IziSolo génère toutes les séances d'un coup, en tenant compte des vacances si tu le souhaites.</>,
-      <>Série trop courte, trop longue, ou l'été à ajouter ? Ne recrée rien ! Ouvre l'écran des cours récurrents et clique sur l'icône <strong>📅+</strong> de la série → nouvelle date de fin dans les deux sens : plus loin = les séances se créent (mêmes réglages), plus proche = les séances vides se suppriment (jamais une séance avec des inscrites), et la case « pendant les vacances » comble les trous de l'été.</>,
+      <>Renseigne le nom, l'heure, la durée, le lieu et la capacité. Le <strong>type de cours</strong> (Hatha, Vinyasa…) est optionnel mais utile si tes carnets ne valent que pour certains cours.</>,
+      <>Un cours en visio ? <strong>« Où se passe ce cours ? »</strong> → <strong>« 🖥 En ligne »</strong> : colle ton lien Zoom ou Meet à la place du lieu. La case <strong>« Réserver le lien aux séances réglées ou couvertes »</strong> fait le tri à ta place : le lien n'apparaît dans l'espace d'une élève (et dans le rappel de la veille) que si sa séance est couverte par un carnet, réglée (un paiement CB le débloque tout seul) ou offerte/essai.</>,
+      <>Choisis la <strong>fréquence</strong> (hebdomadaire, tous les 15 jours, mensuelle) et coche le jour dans <strong>« Quel jour ? »</strong> : l'aperçu te dit la règle en toutes lettres, « Tous les mercredis, à partir du 26 août ». Pose enfin une <strong>date de fin</strong> (fin de trimestre, fin de saison…) : IziSolo génère toutes les séances d'un coup, en tenant compte des vacances si tu le souhaites.</>,
+      <>Série trop courte, trop longue, ou l'été à ajouter ? Ne recrée rien ! Ouvre l'écran des cours récurrents et clique sur l'icône <strong>📅+</strong> de la série (le lien <strong>« Changer le nombre de séances »</strong> de la fiche du cours y mène aussi) → nouvelle date de fin dans les deux sens : plus loin = les séances se créent (mêmes réglages), plus proche = les séances vides se suppriment (jamais une séance avec des inscrites), et la case « pendant les vacances » comble les trous de l'été.</>,
     ],
     astuce: 'Pour un atelier ponctuel ou un stage, crée un cours unique avec un tarif à l\'unité — tes élèves le voient « à X € la séance » sur ton portail, carnet ou pas.',
   },
@@ -55,6 +64,7 @@ const SECTIONS = [
     etapes: [
       <>Depuis l'<strong>Agenda</strong> (ou Cours &amp; Évènements), ouvre la séance concernée. L'icône <strong>crayon</strong> modifie <strong>cette séance seulement</strong> — changer l'heure du mardi 12 ne touche pas les autres mardis.</>,
       <>Pour changer l'horaire, le lieu ou le nom de <strong>toutes</strong> les séances à venir : bouton <strong>« Modifier toute la série »</strong> sur la page de la séance.</>,
+      <>Le cours change de <strong>jour</strong> à la rentrée ? Toujours dans « Modifier toute la série », le bloc <strong>« Jour de la semaine »</strong> décale chaque séance à venir sur le nouveau jour : inscriptions, paiements et historique suivent, et l'aperçu t'annonce tout avant de confirmer.</>,
       <><strong>« Annuler cette séance »</strong> : les inscrit·es sont prévenu·es par email et les crédits restitués selon ta règle « Cours annulé ». La séance <strong>reste visible, barrée</strong>, sur ton agenda — c'est voulu : c'est ce qui informe tes élèves du changement.</>,
       <>Tu veux la faire disparaître complètement ? Après l'annulation, la <strong>corbeille</strong> la supprime. Attention : l'annulation est définitive, une séance annulée ne se ré-active pas — au besoin, recrée-la.</>,
       <>Une place se libère grâce à une annulation d'élève ? La <strong>liste d'attente</strong> est promue automatiquement (ou manuellement si tu as choisi ce mode dans tes règles).</>,
@@ -80,11 +90,13 @@ const SECTIONS = [
     titre: 'Construis ton catalogue d\'offres',
     intro: 'Ce que tu vends — carnets, abonnements — et ce qui n\'a pas besoin d\'offre du tout.',
     etapes: [
-      <>Page <strong>Offres</strong> → <strong>« Créer une offre »</strong>. Deux types : <strong>Carnet de séances</strong> (ex : 10 cours pour 120 €) ou <strong>Abonnement</strong> (mensuel, trimestriel, annuel — illimité ou plafonné à X séances par semaine).</>,
+      <>Page <strong>Offres</strong> → <strong>« Créer une offre »</strong>. Deux types : <strong>Carnet de séances</strong> (ex : 10 cours pour 120 €) ou <strong>Abonnement</strong>, à <strong>« Dates fixes »</strong> pour une saison (sept.–juin) ou <strong>« À partir de la vente »</strong> (1 mois, 3 mois, 1 an) : chaque vente démarre alors à sa propre date, et ton abo mensuel se crée une seule fois.</>,
+      <>Pour un abonnement, dis ce que l'élève pourra faire : <strong>« Autant qu'elle veut »</strong> (aucune limite), un nombre de fois <strong>par semaine</strong>, ou un <strong>nombre de séances</strong> au total. La cadence choisie s'affiche ensuite partout : ta page Offres, ta grille publique et l'espace de l'élève.</>,
       <>Pour un carnet, choisis sa <strong>validité</strong> (3 mois, 6 mois, sans limite…) : passée la date, il expire — et tes règles décident quoi faire d'une réservation qui dépasse.</>,
-      <><strong>« Vaut pour quels cours ? »</strong> : par défaut, l'offre couvre tous tes cours. Restreins par type (Hatha, Fitball…) si ton carnet yoga ne doit pas payer tes ateliers.</>,
+      <><strong>« Vaut pour quels cours ? »</strong> : par défaut, l'offre couvre tous tes cours. Restreins par type (Hatha, Fitball…) si ton carnet yoga ne doit pas payer tes ateliers. Le bloc <strong>« 🎟️ Payable avec »</strong> de la fiche de chaque cours te montre à tout moment qui le couvre, et ses cases se corrigent sur place.</>,
       <>La <strong>séance à l'unité</strong> (drop-in, atelier, stage) n'a pas besoin d'offre : mets un <strong>tarif à l'unité</strong> directement sur le cours à sa création — tes élèves voient « à X € la séance » sur ton portail, et tu encaisses au pointage.</>,
       <>Tarif à l'unité <em>et</em> carnets sur le même cours ? Coche <strong>« Accepter aussi les carnets/abos compatibles »</strong> : celles dont le carnet couvre ce type décomptent une séance, les autres paient le tarif.</>,
+      <>Tes élèves voient <strong>tout ton catalogue</strong> dans leur espace, et ta page publique l'affiche aussi si tu actives ta grille (bannière <strong>« Afficher ma grille sur mon portail »</strong>). Sans paiement en ligne, une élève peut <strong>« Demander »</strong> une offre : la demande atterrit en tête de ta page Offres, où <strong>« Attribuer l'offre »</strong> ouvre la vente directement sur le règlement et « Écarter » la retire. Rien n'est encaissé ni réservé tant que tu n'as pas fait la vente.</>,
     ],
     astuce: 'Modifier une offre plus tard ne change rien aux carnets déjà vendus : chaque vente fige ses conditions (cours couverts, validité) au moment de l\'achat.',
   },
@@ -95,8 +107,8 @@ const SECTIONS = [
     intro: 'La vente en trois clics depuis la fiche élève, le suivi dans Revenus.',
     etapes: [
       <>Ton catalogue est prêt ? (Sinon, remonte d'une section : <a href="#offres">Construis ton catalogue</a>.) Pour vendre : <strong>fiche élève</strong> → <strong>« Ajouter une offre »</strong>.</>,
-      <>Trois modes de règlement : <strong>payé maintenant</strong>, <strong>à régler plus tard</strong>, ou <strong>en plusieurs fois</strong>.</>,
-      <><strong>« En plusieurs fois »</strong> ouvre l'échéancier : choisis <strong>2× à 10×</strong> et le rythme, coche « Le 1<sup>er</sup> versement est déjà encaissé » si l'élève règle le premier aujourd'hui. Chaque versement a sa <strong>date et son montant modifiables</strong> ligne par ligne, et <strong>« Arrondir aux euros »</strong> supprime les centimes (ex : 425 € en 3× → 141 + 142 + 142).</>,
+      <>Choisis le règlement : <strong>payé maintenant</strong>, <strong>à régler plus tard</strong>, <strong>en plusieurs fois</strong>, ou <strong>« Plusieurs moyens »</strong> quand l'élève panache le même jour (80 € en espèces + 43 € en CB) : chaque moyen fait sa propre ligne dans ta compta, et le total doit tomber juste. Le mode de règlement se déclare à chaque fois : IziSolo ne présélectionne jamais comment l'argent est arrivé.</>,
+      <><strong>« En plusieurs fois »</strong> ouvre l'échéancier : choisis <strong>2× à 10×</strong> et le rythme. Chaque versement se règle ligne par ligne : sa <strong>date</strong>, son <strong>montant</strong>, la case <strong>« Payé »</strong> s'il est déjà encaissé, avec <strong>son propre mode de règlement</strong> (le premier en espèces, le suivant en CB : ça marche). Et <strong>« Arrondir aux euros »</strong> supprime les centimes (ex : 425 € en 3× → 141 + 142 + 142).</>,
       <>« À régler plus tard » et les versements à venir ne sont pas des oublis : ils t'attendent dans <strong>Revenus → « À percevoir »</strong>, encaissables en un clic (espèces, chèque, virement, CB) — chacun à sa date.</>,
       <>Avec le plan Complet, ajoute un <strong>lien de paiement Stripe</strong> à tes offres : tes élèves paient en ligne depuis ton portail, tu n'as plus rien à courir.</>,
     ],
@@ -122,10 +134,10 @@ const SECTIONS = [
     titre: 'Le pointage au quotidien',
     intro: 'Le geste central d\'IziSolo : un clic par élève, et les carnets, absences et paiements suivent tout seuls.',
     etapes: [
-      <>Le jour J : depuis l'<strong>Accueil</strong> (bloc « Aujourd'hui ») ou l'<strong>Agenda</strong>, ouvre la séance → <strong>« Pointer »</strong>.</>,
+      <>Le jour J : depuis l'<strong>Accueil</strong> (bloc « Aujourd'hui ») ou l'<strong>Agenda</strong>, ouvre la séance → <strong>« Pointer »</strong>. Elle s'ouvre au pointage 15 minutes avant l'heure ; pour pointer plus tôt (une absence annoncée à l'avance, par exemple), le bandeau propose <strong>« Pointer quand même »</strong> : les carnets se décomptent alors immédiatement, et corriger reste possible.</>,
       <>Un clic par élève — présent·e, absent·e, excusé·e. Le carnet se décompte automatiquement (les séances d'essai et offertes, elles, ne décomptent jamais rien).</>,
-      <>Quelqu'un débarque sans fiche ? <strong>« Ajouter des élèves »</strong> crée la fiche à la volée, sans quitter le pointage.</>,
-      <>Pour corriger : menu <strong>···</strong> sur la ligne → « Décompter sur » le bon carnet, ou « À l'unité » ; tu peux aussi encaisser la séance directement depuis la ligne.</>,
+      <>Quelqu'un débarque sans fiche ? <strong>« Ajouter des élèves »</strong> crée la fiche à la volée, sans quitter le pointage. Et si le cours fait partie d'une série, <strong>« Inscrire sur : »</strong> te laisse choisir la portée : <strong>« Cette séance »</strong>, « Les N prochaines » ou <strong>« Toute la série »</strong>, avec un aperçu qui dit combien d'inscriptions ça crée.</>,
+      <>Pour corriger : menu <strong>···</strong> sur la ligne → « Décompter sur » le bon carnet, « À l'unité », ou <strong>« 🗑 Retirer de la séance »</strong> : l'inscription s'en va, et la séance est rendue au carnet si elle avait été décomptée (jamais si un encaissement y est lié). Tu peux aussi encaisser la séance directement depuis la ligne.</>,
       <>Les absences suivent <strong>tes</strong> règles (Paramètres → Règles) : les cas ambigus remontent dans <strong>« À traiter »</strong> et tu tranches — « Excuser » re-crédite la séance.</>,
     ],
     astuce: 'Réseau capricieux en studio ? Si un pointage ne passe pas, IziSolo te le dit clairement et rien n\'est perdu — réessaie simplement.',
@@ -168,6 +180,7 @@ const SECTIONS = [
       <>Pour une info collective, bouton <strong>« Annoncer »</strong> : choisis les destinataires — <strong>tous tes élèves</strong>, les <strong>inscrit·es d'un cours</strong>, les <strong>habitué·es d'un type</strong>, les <strong>détenteurs d'une offre</strong>, ou une <strong>sélection libre</strong> — avec aperçu de la liste avant envoi.</>,
       <>Chaque cours a aussi son <strong>canal</strong> : les inscrit·es y sont ajoutées automatiquement — parfait pour « mardi, on est en salle 2 ».</>,
       <>Tu hésites entre deux créneaux ? <strong>Sondage planning</strong> : propose 3 à 8 créneaux, partage le lien à tes élèves, elles cochent ceux où elles viendraient — et tu transformes les gagnants en série en un clic.</>,
+      <>Et pour nous écrire, à nous : le fil <strong>« 💬 Équipe IziSolo »</strong> est épinglé en tête de ta messagerie. Ta question arrive directement chez l'équipe, et la réponse revient dans le même fil (tu es aussi prévenue par email).</>,
     ],
     astuce: 'L\'annonce est l\'outil de la rentrée : « les inscriptions sont ouvertes, réserve tes cours de septembre » + le lien de ton portail, à tout le monde d\'un coup.',
   },
@@ -195,10 +208,10 @@ const SECTIONS = [
       <>Ensuite, sur <strong>Revenus</strong>, le bloc <strong>« Ma déclaration URSSAF »</strong> affiche le montant encaissé de la période close, arrondi à l&apos;euro comme le formulaire l&apos;attend. Bouton <strong>Copier</strong>, tu colles, c&apos;est fait.</>,
       <>IziSolo compte à la <strong>date d&apos;encaissement</strong>, pas à la date de vente : un chèque encaissé le 3 octobre compte en octobre, même si tu l&apos;as vendu fin septembre. C&apos;est la règle de la micro-entreprise.</>,
       <>Le montant à déclarer est ce que <strong>l&apos;élève a payé</strong>, pas ce qui arrive sur ton compte après les frais bancaires. En micro, les frais ne se déduisent pas.</>,
-      <>« Voir le détail » te donne l&apos;estimation de tes cotisations et le <strong>livre des recettes</strong> en PDF : le registre chronologique obligatoire, celui qu&apos;on te réclame en cas de contrôle.</>,
+      <><strong>« Voir le détail à l&apos;écran »</strong> ouvre ta déclaration complète : ventilations par mois et par mode, détail ligne à ligne, impression. Le bouton <strong>« J&apos;ai déclaré ces X € »</strong> y archive le montant du moment : si une correction ultérieure fait bouger une période déjà déclarée, IziSolo t&apos;affiche l&apos;écart. Et « Voir le détail et les documents » déplie l&apos;estimation de tes cotisations, l&apos;historique de tes déclarations et le <strong>livre des recettes</strong> en PDF : le registre chronologique obligatoire, celui qu&apos;on te réclame en cas de contrôle.</>,
       <>Pour ton comptable, le bouton <strong>Export</strong> en haut de Revenus sort le détail en tableur, avec total, ventilation par mois et par mode de règlement. Choisis un <strong>trimestre ou un mois civil</strong> : « 3 derniers mois » est une fenêtre glissante, pas un trimestre.</>,
     ],
-    astuce: 'IziSolo ne connaît que ce que tu y enregistres. Si tu encaisses aussi ailleurs (un remplacement en studio, un atelier ponctuel), ajoute-le avant de déclarer.',
+    astuce: 'IziSolo ne connaît que ce que tu y enregistres. Si tu encaisses aussi ailleurs (un remplacement en studio, un atelier ponctuel), ajoute-le avant de déclarer. Et à l\'inverse, un encaissement que tu déclares déjà autrement se coche « Ne pas faire apparaître dans ma compta » (en modifiant le paiement sur Revenus) : il reste dans l\'historique de l\'élève, mais sort de ta déclaration et du livre des recettes, qui l\'annoncent noir sur blanc.',
   },
   {
     id: 'page-publique',
@@ -221,7 +234,7 @@ const SECTIONS = [
     intro: 'Le premier contact d\'une future élève — une demande, une fiche créée, et toi qui choisis le niveau d\'automatisation.',
     etapes: [
       <>Réglages : <strong>Paramètres → Portail public → « Cours d'essai »</strong>. Active-le, puis choisis le <strong>mode de validation</strong> : <strong>Automatique</strong> (validée immédiatement), <strong>Semi-automatique</strong> (validée + tu es notifiée), ou <strong>Manuel</strong> (tu valides ou refuses chaque demande depuis l'app).</>,
-      <>Choisis aussi le <strong>paiement</strong> de l'essai — gratuit, ou payant (sur place, ou en ligne) — et ton message d'accueil.</>,
+      <>Choisis aussi le <strong>paiement</strong> de l'essai (gratuit, ou payant : sur place ou en ligne) et ton message d'accueil. En paiement sur place, <strong>« Un prix différent selon le type de cours ? »</strong> te laisse poser un tarif par type : l'essai collectif à un prix, le particulier à un autre.</>,
       <>Côté visiteuse : ta page publique propose le cours d'essai. Sa demande <strong>crée sa fiche</strong> (statut prospect) et t'alerte dans ta cloche. Les cours complets ne sont jamais proposés.</>,
       <>En mode manuel, les demandes t'attendent dans <strong>« Cours d'essai »</strong> (nav, avec la pastille) : accepter ou refuser en un clic.</>,
       <>L'élève reçoit sa confirmation par email, avec un lien <strong>« Accéder à mon espace »</strong> — son compte existe, sans mot de passe à créer.</>,
@@ -266,7 +279,7 @@ const normaliser = (s) => (s || '').toLowerCase().normalize('NFD').replace(/[̀-
 export default function AidePage() {
   // ── Recherche instantanée (2026-08-18, décision Colin — le pont AVANT tout
   // chatbot : contenu statique fouillé côté client, zéro IA, zéro coût, zéro
-  // hallucination). L'index des tutos se construit depuis le DOM : les 12
+  // hallucination). L'index des tutos se construit depuis le DOM : toutes les
   // sections sont rendues, leur textContent EST la vérité (étapes comprises) —
   // pas de double source à maintenir. La FAQ /support est fouillée en plus
   // (content/faq-support), résultats en liens #faq-N.

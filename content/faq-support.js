@@ -11,6 +11,10 @@
 // L'ancienne FAQ promettait des choses fausses (« factures générées
 // automatiquement », « export en bas de Paramètres ») — plus jamais ça :
 // chaque réponse a été vérifiée contre l'écran qu'elle décrit.
+// Sweep 2026-08-23 (règle immuable « le centre d'aide suit chaque modif ») :
+// +6 questions (visio, demande d'offre, plusieurs moyens, jour de série,
+// URSSAF, joindre l'équipe) AJOUTÉES EN FIN de liste — les ancres /support#faq-N
+// sont indexées par position, on n'insère jamais au milieu.
 export const FAQ_SUPPORT = [
   {
     q: "Comment créer un cours qui se répète chaque semaine ?",
@@ -54,7 +58,7 @@ export const FAQ_SUPPORT = [
   },
   {
     q: "Comment faire payer un abonnement en plusieurs fois ?",
-    a: "Le paiement en plusieurs fois se choisit au moment de la VENTE (pas à la création de l'offre) : fiche élève → « Ajouter une offre » → « En plusieurs fois », ou bouton « Vendre » sur les pages Offres et Carnets & abos. Tu choisis 2× à 10×, le rythme, et chaque versement est modifiable — avec un bouton « Arrondir aux euros ».",
+    a: "Le paiement en plusieurs fois se choisit au moment de la VENTE (pas à la création de l'offre) : fiche élève → « Ajouter une offre » → « En plusieurs fois », ou bouton « Vendre » sur les pages Offres et Carnets & abos. Tu choisis 2× à 10× et le rythme, puis chaque versement se règle ligne par ligne : sa date, son montant, la case « Payé » s'il est déjà encaissé, avec son propre mode de règlement. Le bouton « Arrondir aux euros » supprime les centimes.",
     lien: { href: '/aide#encaisser', label: 'Voir le pas-à-pas' },
   },
   {
@@ -98,6 +102,41 @@ export const FAQ_SUPPORT = [
   },
   {
     q: "Comment gérer mon abonnement IziSolo ?",
-    a: "Paramètres → Abonnement IziSolo. Pour une facture ou une question de facturation, écris-nous à bonjour@izisolo.fr — on te répond vite.",
+    a: "Paramètres → Abonnement IziSolo. Pour une facture ou une question de facturation, écris-nous depuis ta messagerie (fil « 💬 Équipe IziSolo ») ou à bonjour@izisolo.fr : on te répond vite.",
+  },
+  {
+    // Cours en ligne v86 + déblocage CB par séance (2026-08-19, cas Ariana).
+    q: "Comment donner un cours en visio (Zoom, Meet) ?",
+    a: "À la création du cours (ou en le modifiant), « Où se passe ce cours ? » → « 🖥 En ligne » : tu colles ton lien Zoom ou Meet à la place du lieu, et le cours porte un badge 🖥 sur ton portail. La case « Réserver le lien aux séances réglées ou couvertes » protège ton lien : une élève ne le voit dans son espace (et le rappel de la veille) que si sa séance est couverte par un carnet, réglée ou offerte. Un paiement CB de la séance le débloque tout seul.",
+    lien: { href: '/aide#premier-cours', label: 'Voir le pas-à-pas' },
+  },
+  {
+    // Demande d'offre v97 (2026-08-23).
+    q: "Une élève veut un carnet : comment ça se passe depuis son espace ?",
+    a: "Son espace liste tout ton catalogue (« Les offres du studio »). Si l'offre a un lien de paiement Stripe, elle paie en ligne et le carnet s'attribue tout seul. Sinon elle clique « Demander » : la demande atterrit en tête de ta page Offres, et « Attribuer l'offre » ouvre la vente directement sur le règlement (espèces, chèque, CB, en plusieurs fois…). Rien n'est débité ni réservé tant que tu n'as pas validé la vente.",
+    lien: { href: '/aide#offres', label: 'Voir le pas-à-pas' },
+  },
+  {
+    // « Plusieurs moyens » (2026-08-23).
+    q: "Comment encaisser un règlement moitié chèque, moitié CB ?",
+    a: "Au moment de la vente, choisis « Plusieurs moyens » : tu découpes le montant entre les moyens utilisés le même jour (80 € en espèces + 43 € en CB, par exemple). Chaque moyen fait sa propre ligne dans ta compta, comme ton livre des recettes l'attend, et IziSolo refuse un découpage qui ne fait pas le total.",
+    lien: { href: '/aide#encaisser', label: 'Voir le pas-à-pas' },
+  },
+  {
+    // Le cas exact de Maude (2026-08-22/23) : série née le mauvais jour.
+    q: "Mon cours récurrent est sur le mauvais jour : comment le changer ?",
+    a: "Ouvre une séance de la série → « Modifier toute la série » → bloc « Jour de la semaine » : chaque séance à venir est décalée sur le nouveau jour, en gardant les inscriptions, les paiements et l'historique. L'aperçu t'annonce le déplacement avant de confirmer, et te dit s'il y a des élèves à prévenir. (À la création, le jour se choisit avec « Quel jour ? », indépendamment de la date de début.)",
+    lien: { href: '/aide#agenda', label: 'Voir le pas-à-pas' },
+  },
+  {
+    // URSSAF v93/v94 (2026-08-22).
+    q: "Combien dois-je déclarer à l'URSSAF ce trimestre ?",
+    a: "Configure une fois ta déclaration (Paramètres → Profil & studio → Activité, carte « Ma déclaration URSSAF » : régime, périodicité, taux), puis le bloc « Ma déclaration URSSAF » de la page Revenus affiche le montant de la période close, arrondi à l'euro, avec un bouton Copier. « Voir le détail à l'écran » ouvre la déclaration complète, et « J'ai déclaré ces X € » archive le montant : si ta compta bouge après coup, IziSolo t'affiche l'écart.",
+    lien: { href: '/aide#urssaf', label: 'Voir le pas-à-pas' },
+  },
+  {
+    // Fil support v87 (2026-08-19).
+    q: "Comment joindre l'équipe IziSolo ?",
+    a: "Trois portes : le fil « 💬 Équipe IziSolo » épinglé en tête de ta Messagerie (ta question arrive directement chez nous, on te répond dans le même fil), le bouton « Donner du feedback » en haut à droite pour un bug ou une idée, ou un email à bonjour@izisolo.fr. Dans tous les cas, un humain lit et répond.",
   },
 ];

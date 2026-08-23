@@ -12,6 +12,8 @@ import { CircleHelp, ChevronDown, ChevronUp } from 'lucide-react';
  * Même philosophie que /aide côté prof : réponses courtes, chaque libellé
  * vérifié contre l'écran qu'il décrit (« Annuler », « Mes paiements »,
  * « En pause jusqu'au… », « Facture du mois »…). Statique, zéro requête.
+ * Sweep 2026-08-23 (règle immuable « le centre d'aide suit chaque modif ») :
+ * + lien visio (v86) et + « Les offres du studio » / « Demander » (v97).
  *
  * @param {string} studioNom   nom du studio (les réponses parlent de « ton studio »)
  * @param {string} studioSlug  pour les liens internes (messages)
@@ -29,12 +31,20 @@ export default function AideEleve({ studioNom = 'ton studio', studioSlug }) {
       r: <>Ici même, dans <strong>« Mes prochains cours »</strong> : bouton <strong>« Annuler »</strong> sur la séance. Dans le délai d'annulation de {studioNom}, ta séance est rendue ; passé ce délai, c'est la règle du studio qui s'applique (séance décomptée ou due) — elle t'est rappelée avant de confirmer.</>,
     },
     {
+      q: 'Où est le lien de mon cours en visio ?',
+      r: <>Sur une séance 🖥 en ligne, le lien s'affiche dans <strong>« Mes prochains cours »</strong> (et dans l'email de rappel de la veille). Si tu lis « le lien apparaîtra une fois ta séance réglée », c'est que {studioNom} réserve le lien aux places réglées ou couvertes par un carnet : règle ta place (le bouton CB s'en charge quand il est proposé) et il se débloque tout seul.</>,
+    },
+    {
       q: 'Comment lire mon carnet ou mon abonnement ?',
       r: <>Le bloc de tes carnets affiche les <strong>séances restantes</strong>, la <strong>validité</strong>, et « ⏸ En pause jusqu'au… » le cas échéant. Bon à savoir : une séance se décompte quand le studio fait l'appel — pas au moment où tu réserves. Annuler à temps ne te coûte donc jamais une séance.</>,
     },
     {
       q: 'J\'ai un montant « à régler » — c\'est quoi ?',
-      r: <>C'est ce que tu dois à {studioNom} : un paiement convenu « à régler plus tard », un versement d'un paiement en plusieurs fois, ou une séance payable à l'unité. Tu règles directement auprès du studio (espèces, chèque, virement, CB) — ou en ligne si la section « Acheter en ligne » est proposée.</>,
+      r: <>C'est ce que tu dois à {studioNom} : un paiement convenu « à régler plus tard », un versement d'un paiement en plusieurs fois, ou une séance payable à l'unité. Tu règles directement auprès du studio (espèces, chèque, virement, CB), ou en ligne quand un bouton <strong>« 💳 Payer par CB »</strong> accompagne la ligne.</>,
+    },
+    {
+      q: 'Comment acheter un carnet ou un abonnement ?',
+      r: <>La section <strong>« Les offres du studio »</strong> de ton espace liste tout le catalogue. Tu paies en ligne quand le bouton le propose ; sinon, <strong>« Demander »</strong> prévient {studioNom} : rien n'est débité, rien n'est réservé, le studio revient vers toi pour valider et convenir du règlement.</>,
     },
     {
       q: 'Comment obtenir un reçu ou une facture ?',
