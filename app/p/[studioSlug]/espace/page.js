@@ -165,16 +165,19 @@ async function getData(studioSlug, user) {
 
   // Client lié à ce studio (v83 : FK douce d'abord — l'espace survit à un
   // changement d'email de la fiche) + offres Stripe en parallèle
-  const [client, { data: offresStripe }] = await Promise.all([
+  const [client, { data: offresToutes }] = await Promise.all([
     resoudreFicheEleve(supabase, profile.id, user, 'id, prenom, nom, email, telephone, adresse_postale, ville'),
     supabase
       .from('offres')
-      .select('id, nom, type, prix, seances, seances_par_semaine, stripe_payment_link')
+      .select('id, nom, type, prix, seances, seances_par_semaine, duree_jours, stripe_payment_link')
       .eq('profile_id', profile.id)
       .eq('actif', true)
-      .not('stripe_payment_link', 'is', null)
       .order('ordre'),
   ]);
+  // Deux listes tirées de la même : celles qui s'achètent en ligne tout de
+  // suite, et le catalogue complet dont on peut FAIRE LA DEMANDE (v97).
+  const offresStripe = (offresToutes || []).filter(o => o.stripe_payment_link);
+  const offresCatalogue = offresToutes || [];
 
   if (!client) {
     return { profile, client: null, aVenir: [], passes: [], paiements: [], offresStripe: offresStripe || [], abonnements: [], aRegler: [] };
@@ -398,7 +401,7 @@ async function getData(studioSlug, user) {
     }
   }
 
-  return { profile, client, aVenir, passes, paiements: paiements || [], offresStripe: offresStripe || [], abonnements: abonnements || [], aRegler, seancesWorkshopDues, annulationsDues, unreadMessages, clientPrefs, facturationActive, facturesParPaiement, docsInscription, visioParPresence };
+  return { profile, client, aVenir, passes, paiements: paiements || [], offresStripe: offresStripe || [], offresCatalogue, abonnements: abonnements || [], aRegler, seancesWorkshopDues, annulationsDues, unreadMessages, clientPrefs, facturationActive, facturesParPaiement, docsInscription, visioParPresence };
 }
 
 export default async function EspacePage({ params, searchParams }) {
@@ -462,6 +465,7 @@ export default async function EspacePage({ params, searchParams }) {
       passes={data.passes || []}
       paiements={data.paiements || []}
       offresStripe={data.offresStripe || []}
+      offresCatalogue={data.offresCatalogue || []}
       abonnements={data.abonnements || []}
       aRegler={data.aRegler || []}
       seancesWorkshopDues={data.seancesWorkshopDues || []}

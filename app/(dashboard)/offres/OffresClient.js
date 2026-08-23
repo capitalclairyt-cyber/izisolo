@@ -10,6 +10,8 @@ import {
 import AideContextuelle from '@/components/AideContextuelle';
 import { formatMontant } from '@/lib/utils';
 import { libelleSeances } from '@/lib/offres-seances';
+import { resumeDemande } from '@/lib/demande-offre';
+import { useToast } from '@/components/ui/ToastProvider';
 import { toneForOffre } from '@/lib/tones';
 import { TYPES_OFFRE } from '@/lib/constantes';
 import { createClient } from '@/lib/supabase';
@@ -197,11 +199,49 @@ function TarifsPortailHint({ profile, offres }) {
   );
 }
 
-export default function OffresClient({ offres, profile, planKey, limiteOffres }) {
+export default function OffresClient({ offres, profile, planKey, limiteOffres, demandes: demandesInit = [] }) {
   const router = useRouter();
+  const { toast } = useToast();
   const searchParams = useSearchParams();
   const [deleting, setDeleting] = useState(null);
   const [assignModalOffre, setAssignModalOffre] = useState(null); // offre sélectionnée pour le modal
+  // Demandes d'élèves (v97) : une intention d'achat, pas une vente. La prof
+  // valide en passant par le tunnel habituel, où elle choisit le règlement.
+  const [demandes, setDemandes] = useState(demandesInit);
+  const [demandeEnCours, setDemandeEnCours] = useState(null);   // { demande, client }
+  const [traitement, setTraitement] = useState('');
+
+  const marquerDemande = async (id, statut) => {
+    setTraitement(id);
+    try {
+      const res = await fetch(`/api/demandes-offre/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ statut }),
+      });
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'Erreur');
+      setDemandes(prev => prev.filter(d => d.id !== id));
+    } catch (e) {
+      toast.error(String(e.message || e));
+    } finally {
+      setTraitement('');
+    }
+  };
+
+  // Attribuer : on ouvre le tunnel de vente sur l'offre demandée, avec l'élève
+  // déjà désignée quand elle a une fiche. Une prospecte sans fiche passe par
+  // l'étape de choix : c'est là que la prof la crée, comme d'habitude.
+  const attribuerDepuisDemande = (demande) => {
+    const offre = offres.find(o => o.id === demande.offre_id);
+    if (!offre) { toast.error('Cette offre n\'existe plus.'); return; }
+    setDemandeEnCours({
+      demande,
+      client: demande.clients
+        ? { id: demande.clients.id, prenom: demande.clients.prenom, nom: demande.clients.nom, type_client: 'particulier' }
+        : null,
+    });
+    setAssignModalOffre(offre);
+  };
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
 
   // ?creee=<id> (retour de « Créer une offre ») → bannière « Vendre cette
@@ -300,6 +340,53 @@ export default function OffresClient({ offres, profile, planKey, limiteOffres })
 
   return (
     <div className="offres-page">
+      {/* Demandes d'élèves (v97) — en tête : c'est de l'argent qui attend
+          un geste, ça ne se range pas en bas de page. */}
+      {demandes.length > 0 && (
+        <div className="dem-bloc">
+          <div className="dem-titre">
+            🛒 {demandes.length} demande{demandes.length > 1 ? 's' : ''} d&apos;élève{demandes.length > 1 ? 's' : ''}
+          </div>
+          <p className="dem-sous">
+            Rien n&apos;est encaissé : tu attribues l&apos;offre et tu choisis le règlement.
+          </p>
+          {demandes.map(d => {
+            const offre = offres.find(o => o.id === d.offre_id);
+            const r = resumeDemande(d);
+            return (
+              <div key={d.id} className="dem-ligne">
+                <div className="dem-info">
+                  <div className="dem-nom">
+                    {r.nom}
+                    {r.prospect && <span className="dem-badge">pas encore de fiche</span>}
+                  </div>
+                  <div className="dem-offre">
+                    {offre ? offre.nom : 'Offre supprimée'} · {r.quand}
+                  </div>
+                  {d.message && <div className="dem-message">« {d.message} »</div>}
+                </div>
+                <div className="dem-actions">
+                  <button
+                    className="izi-btn izi-btn-primary dem-btn"
+                    onClick={() => attribuerDepuisDemande(d)}
+                    disabled={!offre || traitement === d.id}
+                  >
+                    Attribuer l&apos;offre
+                  </button>
+                  <button
+                    className="dem-btn dem-btn-ghost"
+                    onClick={() => marquerDemande(d.id, 'refusee')}
+                    disabled={traitement === d.id}
+                  >
+                    Écarter
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
       {/* Bannière post-création : proposer la vente tout de suite */}
       {offreCreee && (
         <div className="izi-card offre-creee-banner animate-fade-in">
@@ -433,8 +520,16 @@ export default function OffresClient({ offres, profile, planKey, limiteOffres })
       {assignModalOffre && (
         <VenteOffreModal
           offre={assignModalOffre}
-          onClose={() => setAssignModalOffre(null)}
-          onSuccess={() => { setAssignModalOffre(null); router.refresh(); }}
+          clientInitial={demandeEnCours?.client || null}
+          onClose={() => { setAssignModalOffre(null); setDemandeEnCours(null); }}
+          onSuccess={() => {
+            // La vente est faite : la demande sort de la file. Si elle échoue,
+            // la demande reste — on ne raye jamais une intention non honorée.
+            if (demandeEnCours?.demande?.id) marquerDemande(demandeEnCours.demande.id, 'acceptee');
+            setAssignModalOffre(null);
+            setDemandeEnCours(null);
+            router.refresh();
+          }}
         />
       )}
 
@@ -448,6 +543,33 @@ export default function OffresClient({ offres, profile, planKey, limiteOffres })
         .section { display: flex; flex-direction: column; gap: 8px; }
         .section-title { font-size: 0.8125rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); }
         .offres-list { display: flex; flex-direction: column; gap: 8px; }
+        .dem-bloc {
+          background: var(--brand-light, #f7efe6); border: 1px solid var(--brand-200, #e8d3bd);
+          border-radius: var(--radius-lg, 14px); padding: 14px 16px;
+          display: flex; flex-direction: column; gap: 10px;
+        }
+        .dem-titre { font-size: 0.95rem; font-weight: 700; color: var(--brand-700, #8c5826); }
+        .dem-sous { font-size: 0.78rem; color: var(--text-muted); margin: -6px 0 0; }
+        .dem-ligne {
+          display: flex; align-items: flex-start; justify-content: space-between;
+          gap: 12px; flex-wrap: wrap;
+          background: var(--bg-card, #fff); border-radius: var(--radius-md, 10px); padding: 10px 12px;
+        }
+        .dem-info { min-width: 0; }
+        .dem-nom { font-size: 0.9rem; font-weight: 700; color: var(--text-primary); }
+        .dem-badge {
+          margin-left: 8px; font-size: 0.68rem; font-weight: 600;
+          background: var(--warning-light, #F5EBD2); color: #854d0e;
+          border-radius: 999px; padding: 1px 8px;
+        }
+        .dem-offre { font-size: 0.8rem; color: var(--text-secondary); margin-top: 2px; }
+        .dem-message { font-size: 0.78rem; color: var(--text-muted); margin-top: 4px; font-style: italic; }
+        .dem-actions { display: flex; gap: 6px; align-items: center; }
+        .dem-btn { font-size: 0.8rem; padding: 7px 12px; white-space: nowrap; }
+        .dem-btn-ghost {
+          background: none; border: 1px solid var(--border); border-radius: 999px;
+          color: var(--text-secondary); cursor: pointer;
+        }
         .offre-card { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-left: 6px solid transparent; flex-wrap: wrap; }
         .offre-card--rose     { background: var(--tone-rose-bg);     border-left-color: var(--tone-rose-accent); }
         .offre-card--sage     { background: var(--tone-sage-bg);     border-left-color: var(--tone-sage-accent); }

@@ -13,6 +13,7 @@ import { evaluerAnnulation, formatDateLimite } from '@/lib/regles-metier';
 import { moisFacturables } from '@/lib/factures';
 import { toneForCours, toneForPaiement } from '@/lib/tones';
 import { libelleSeances } from '@/lib/offres-seances';
+import { confirmationEleve } from '@/lib/demande-offre';
 import AideEleve from '@/components/portail/AideEleve';
 
 const STRIPE_TYPE_ICONS = { carnet: Ticket, abonnement: CalendarCheck, cours_unique: Zap };
@@ -185,7 +186,7 @@ function CoursCard({ presence, profile, studioSlug, onAnnuler, annulEnCours, vis
   );
 }
 
-export default function EspaceClient({ profile, client, aVenir, passes, paiements = [], offresStripe = [], abonnements = [], aRegler = [], seancesWorkshopDues = [], annulationsDues = [], unreadMessages = 0, clientPrefs = {}, studioSlug, userEmail, isDemo = false, facturationActive = false, facturesParPaiement = {}, docsInscription = [], visioParPresence = {} }) {
+export default function EspaceClient({ profile, client, aVenir, passes, paiements = [], offresStripe = [], offresCatalogue = [], abonnements = [], aRegler = [], seancesWorkshopDues = [], annulationsDues = [], unreadMessages = 0, clientPrefs = {}, studioSlug, userEmail, isDemo = false, facturationActive = false, facturesParPaiement = {}, docsInscription = [], visioParPresence = {} }) {
   const router = useRouter();
   const { toast } = useToast();
   const [notifsOpen, setNotifsOpen] = useState(false);
@@ -193,6 +194,32 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
   const [annuleIds, setAnnuleIds]       = useState([]);
   const [errMsg, setErrMsg]             = useState('');
   const [loggingOut, setLoggingOut]     = useState(false);
+  // « Je veux cette offre » (v97) : une DEMANDE, pas un achat. Rien n'est
+  // débité, rien n'est réservé — la prof valide et encaisse comme elle veut.
+  const [demandeEnCours, setDemandeEnCours] = useState('');
+  const [demandesFaites, setDemandesFaites] = useState({}); // offreId -> message
+
+  const demanderOffre = async (offre) => {
+    if (demandeEnCours) return;
+    setDemandeEnCours(offre.id);
+    try {
+      const res = await fetch(`/api/portail/${studioSlug}/demander-offre`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ offreId: offre.id }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json.error || 'Demande impossible pour le moment.');
+      setDemandesFaites(prev => ({
+        ...prev,
+        [offre.id]: json.message || confirmationEleve({ offreNom: offre.nom, studioNom: profile?.studio_nom }),
+      }));
+    } catch (e) {
+      toast.error(String(e.message || e));
+    } finally {
+      setDemandeEnCours('');
+    }
+  };
 
   // Coordonnées éditables par l'élève (téléphone / adresse / ville).
   // `coords` est la source d'affichage ET d'édition → reste à jour après save
@@ -995,44 +1022,70 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
         </div>
       )}
 
-      {/* Section "Acheter en ligne" via Stripe — uniquement si offres avec Payment Link */}
-      {offresStripe.length > 0 && (
+{/* Les offres du studio (v97). Avant, cette section n'existait QUE pour les
+          offres portant un Payment Link Stripe : une prof sans Stripe n'avait
+          rien à montrer, donc rien à vendre. Désormais tout le catalogue est
+          là, avec le geste qui correspond : payer en ligne quand c'est
+          possible, DEMANDER sinon (la prof valide et encaisse à sa façon). */}
+      {(offresCatalogue.length > 0 || offresStripe.length > 0) && (
         <div style={{ marginTop: 28, paddingTop: 20, borderTop: '1px solid #f0ebe8' }}>
           <h2 className="espace-section-title">
-            <CreditCard size={16} style={{ color: '#635bff' }} /> Acheter en ligne
+            <CreditCard size={16} style={{ color: '#635bff' }} /> Les offres du studio
           </h2>
           <p style={{ fontSize: '0.8125rem', color: '#888', margin: '0 0 12px' }}>
-            Recharge ton carnet ou souscris à un abonnement par CB.
+            Recharge ton carnet ou souscris à un abonnement.
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {offresStripe.map(o => {
+            {(offresCatalogue.length > 0 ? offresCatalogue : offresStripe).map(o => {
               const Icon = STRIPE_TYPE_ICONS[o.type] || Ticket;
-              const url = userEmail
+              const url = o.stripe_payment_link && userEmail
                 ? `${o.stripe_payment_link}?prefilled_email=${encodeURIComponent(userEmail)}`
                 : o.stripe_payment_link;
+              const detail = o.type === 'abonnement'
+                ? libelleSeances(o)
+                : (o.seances ? `${o.seances} séance${o.seances > 1 ? 's' : ''}` : null);
+              const demandee = demandesFaites[o.id];
+
+              if (url) {
+                return (
+                  <a key={o.id} href={url} target="_blank" rel="noopener noreferrer" className="espace-stripe-card">
+                    <div className="espace-stripe-icon"><Icon size={16} /></div>
+                    <div className="espace-stripe-info">
+                      <div className="espace-stripe-nom">{o.nom}</div>
+                      {detail && <div className="espace-stripe-meta">{detail}</div>}
+                    </div>
+                    <div className="espace-stripe-prix">{o.prix}€</div>
+                  </a>
+                );
+              }
               return (
-                <a
-                  key={o.id}
-                  href={url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="espace-stripe-card"
-                >
+                <div key={o.id} className="espace-stripe-card" style={{ cursor: 'default' }}>
                   <div className="espace-stripe-icon"><Icon size={16} /></div>
                   <div className="espace-stripe-info">
                     <div className="espace-stripe-nom">{o.nom}</div>
-                    {o.type === 'abonnement'
-                      ? <div className="espace-stripe-meta">{libelleSeances(o)}</div>
-                      : o.seances && <div className="espace-stripe-meta">{o.seances} séance{o.seances > 1 ? 's' : ''}</div>}
+                    {detail && <div className="espace-stripe-meta">{detail}</div>}
+                    {demandee && <div className="espace-demande-ok">{demandee}</div>}
                   </div>
                   <div className="espace-stripe-prix">{o.prix}€</div>
-                </a>
+                  {!demandee && (
+                    <button
+                      type="button"
+                      className="espace-demander-btn"
+                      onClick={() => demanderOffre(o)}
+                      disabled={demandeEnCours === o.id}
+                    >
+                      {demandeEnCours === o.id ? '…' : 'Demander'}
+                    </button>
+                  )}
+                </div>
               );
             })}
           </div>
-          <p style={{ fontSize: '0.7rem', color: '#aaa', textAlign: 'center', margin: '12px 0 0' }}>
-            🔒 Paiement sécurisé via Stripe
-          </p>
+          {offresStripe.length > 0 && (
+            <p style={{ fontSize: '0.7rem', color: '#aaa', textAlign: 'center', margin: '12px 0 0' }}>
+              🔒 Paiement sécurisé via Stripe
+            </p>
+          )}
         </div>
       )}
 
@@ -1181,6 +1234,13 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
         .espace-stripe-nom { font-weight: 600; font-size: 0.9375rem; color: #1a1a2e; }
         .espace-stripe-meta { font-size: 0.75rem; color: #888; margin-top: 2px; }
         .espace-stripe-prix { font-weight: 700; font-size: 1rem; color: #635bff; }
+        .espace-demander-btn {
+          border: 1.5px solid #b87333; background: #fff; color: #8c5826;
+          border-radius: 999px; padding: 7px 14px; font-size: 0.8rem;
+          font-weight: 700; cursor: pointer; white-space: nowrap; flex-shrink: 0;
+        }
+        .espace-demander-btn:disabled { opacity: 0.5; cursor: default; }
+        .espace-demande-ok { font-size: 0.74rem; color: #6B9A6B; line-height: 1.4; margin-top: 3px; }
 
         /* Paiements */
         .paiement-row {

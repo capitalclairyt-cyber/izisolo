@@ -46,15 +46,19 @@ const proRataOffre = (offre) => calcProRata({
   dateLimite: offre.pro_rata_date_limite || null,
 });
 
-export default function VenteOffreModal({ offre: offreInitiale = null, onClose, onSuccess }) {
+export default function VenteOffreModal({ offre: offreInitiale = null, clientInitial = null, onClose, onSuccess }) {
   // 'offre' (si pas d'offre fournie) | 'client' | 'paiement'
-  const [step, setStep] = useState(offreInitiale ? 'client' : 'offre');
+  // clientInitial (v97) : la vente part d'une DEMANDE d'élève, on sait déjà
+  // qui et quoi — on ouvre droit sur le règlement, le seul choix qui reste.
+  const [step, setStep] = useState(
+    offreInitiale ? (clientInitial ? 'paiement' : 'client') : 'offre'
+  );
   const [offre, setOffre] = useState(offreInitiale);
   const [offres, setOffres] = useState(null); // null = pas encore chargées
   const [clients, setClients] = useState([]);
   const [loadingClients, setLoadingClients] = useState(true);
   const [search, setSearch] = useState('');
-  const [selectedClient, setSelectedClient] = useState(null);
+  const [selectedClient, setSelectedClient] = useState(clientInitial);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 

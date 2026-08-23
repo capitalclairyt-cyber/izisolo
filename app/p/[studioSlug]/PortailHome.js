@@ -10,6 +10,7 @@ import { useToast } from '@/components/ui/ToastProvider';
 import { matchRecherche } from '@/lib/utils';
 import { essaiVarieParType, minPrixEssai } from '@/lib/essai-tarif';
 import { libelleSeances } from '@/lib/offres-seances';
+import { confirmationEleve } from '@/lib/demande-offre';
 
 // next/image ne peut optimiser que les hosts déclarés dans
 // next.config.mjs → images.remotePatterns (AUDIT-PERF 2.9 : la couverture
@@ -177,6 +178,36 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState('');
   const [tab, setTab] = useState('cours'); // 'cours' | 'propos' | 'tarifs' | 'infos'
+  // « Je veux cette offre » depuis la grille publique (v97). Une visiteuse
+  // n'est pas connectée : on lui demande le minimum pour que la prof puisse
+  // la RECONTACTER, et rien de plus. Aucun paiement, aucun compte à créer.
+  const [demandeOffreId, setDemandeOffreId] = useState('');
+  const [demandeForm, setDemandeForm] = useState({ prenom: '', email: '' });
+  const [demandeEtat, setDemandeEtat] = useState({});   // offreId -> 'envoi' | message | 'erreur:…'
+
+  const envoyerDemandeOffre = async (offre) => {
+    if (!demandeForm.prenom.trim() || !demandeForm.email.trim()) {
+      setDemandeEtat(p => ({ ...p, [offre.id]: 'erreur:Ton prénom et ton email, pour que le studio puisse te répondre.' }));
+      return;
+    }
+    setDemandeEtat(p => ({ ...p, [offre.id]: 'envoi' }));
+    try {
+      const res = await fetch(`/api/portail/${studioSlug}/demander-offre`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ offreId: offre.id, prenom: demandeForm.prenom, email: demandeForm.email }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json.error || 'Demande impossible pour le moment.');
+      setDemandeEtat(p => ({
+        ...p,
+        [offre.id]: json.message || confirmationEleve({ offreNom: offre.nom, studioNom: profile?.studio_nom }),
+      }));
+      setDemandeOffreId('');
+    } catch (e) {
+      setDemandeEtat(p => ({ ...p, [offre.id]: 'erreur:' + String(e.message || e) }));
+    }
+  };
   const [viewMode, setViewMode] = useState('week'); // 'week' | 'list'
   const [weekStart, setWeekStart] = useState(() => {
     // Ancrée sur la 1re séance à venir si elle existe (décision Colin
@@ -791,6 +822,44 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
                     <div className="portail-price-sub">{sub}</div>
                   </div>
                   <div className="portail-price-prix">{o.prix}€</div>
+
+                  {/* Demander cette offre : le studio la reçoit et revient
+                      vers elle pour le règlement. Rien n'est débité ici. */}
+                  {(() => {
+                    const etat = demandeEtat[o.id];
+                    if (etat && etat !== 'envoi' && !etat.startsWith('erreur:')) {
+                      return <div className="pp-demande-ok">✓ {etat}</div>;
+                    }
+                    if (demandeOffreId !== o.id) {
+                      return (
+                        <button type="button" className="pp-demande-btn" onClick={() => setDemandeOffreId(o.id)}>
+                          Demander cette offre
+                        </button>
+                      );
+                    }
+                    return (
+                      <div className="pp-demande-form" onClick={e => e.stopPropagation()}>
+                        <input
+                          className="pp-demande-input" placeholder="Ton prénom"
+                          value={demandeForm.prenom}
+                          onChange={e => setDemandeForm(f => ({ ...f, prenom: e.target.value }))}
+                        />
+                        <input
+                          className="pp-demande-input" type="email" placeholder="Ton email"
+                          value={demandeForm.email}
+                          onChange={e => setDemandeForm(f => ({ ...f, email: e.target.value }))}
+                        />
+                        <button
+                          type="button" className="pp-demande-btn pp-demande-envoi"
+                          onClick={() => envoyerDemandeOffre(o)}
+                          disabled={etat === 'envoi'}
+                        >
+                          {etat === 'envoi' ? 'Envoi…' : 'Envoyer ma demande'}
+                        </button>
+                        {etat?.startsWith('erreur:') && <div className="pp-demande-err">{etat.slice(7)}</div>}
+                      </div>
+                    );
+                  })()}
                 </div>
               );
             })}
@@ -1541,6 +1610,25 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
         .portail-price-nom { font-weight: 600; font-size: 0.9375rem; color: #1a1a2e; }
         .portail-price-sub { font-size: 0.75rem; color: #888; margin-top: 2px; }
         .portail-price-prix {
+        .pp-demande-btn {
+          grid-column: 1 / -1; margin-top: 10px;
+          border: 1.5px solid var(--c-accent, #b87333); background: transparent;
+          color: var(--c-accent-deep, #8c5826); border-radius: 999px;
+          padding: 9px 16px; font: inherit; font-size: 0.85rem; font-weight: 700;
+          cursor: pointer; width: 100%;
+        }
+        .pp-demande-btn:disabled { opacity: 0.55; cursor: default; }
+        .pp-demande-envoi { background: var(--c-accent-deep, #8c5826); color: #fff; border-color: transparent; }
+        .pp-demande-form { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
+        .pp-demande-input {
+          font: inherit; font-size: 0.85rem; padding: 9px 12px;
+          border: 1px solid var(--c-accent-tint, #e8dccb); border-radius: 10px; background: #fff;
+        }
+        .pp-demande-ok {
+          grid-column: 1 / -1; margin-top: 10px; font-size: 0.78rem; line-height: 1.45;
+          color: #3f6b46; background: #eef4ee; border-radius: 10px; padding: 8px 10px;
+        }
+        .pp-demande-err { font-size: 0.75rem; color: #8c2f0d; }
           font-family: 'Instrument Serif', Georgia, serif;
           font-weight: 400;
           font-size: 1.6rem;

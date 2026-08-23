@@ -14,6 +14,21 @@ export default async function OffresPage() {
     supabase.from('profiles').select('metier, vocabulaire, plan, trial_started_at, stripe_subscription_status, afficher_tarifs, studio_slug').eq('id', user.id).single(),
   ]);
 
+  // Demandes d'élèves en attente (v97) — lecture DÉFENSIVE et séparée : sans
+  // la table, la page des offres continue de marcher, sans file d'attente.
+  let demandes = [];
+  try {
+    const { data, error } = await supabase
+      .from('demandes_offre')
+      .select('id, offre_id, client_id, prenom, nom, email, message, created_at, clients(id, prenom, nom, email)')
+      .eq('profile_id', user.id)
+      .eq('statut', 'nouvelle')
+      .order('created_at', { ascending: false })
+      .limit(50);
+    if (error) throw error;
+    demandes = data || [];
+  } catch { /* pré-v97 : aucune file, jamais bloquant */ }
+
   const planKey = effectivePlan(profile);
   const plan = planConfig(planKey);
 
@@ -23,6 +38,7 @@ export default async function OffresPage() {
       profile={profile}
       planKey={planKey}
       limiteOffres={plan.limiteOffres}
+      demandes={demandes}
     />
   );
 }
