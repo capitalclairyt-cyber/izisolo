@@ -14,8 +14,8 @@ export default function CGUPage() {
         IziSolo est une plateforme de gestion en ligne (SaaS) destinée exclusivement
         aux professionnels indépendants exerçant dans les domaines du yoga, pilates,
         danse, méditation, coaching, thérapies manuelles et toute discipline du
-        bien-être et du mouvement. Elle est éditée par <strong>Atelier Mélusine</strong>,
-        SASU au capital de 1 000 €, dont les coordonnées complètes figurent dans les{' '}
+        bien-être et du mouvement. Elle est éditée par <strong>Maude Yoga</strong>,
+        entreprise individuelle, dont les coordonnées complètes figurent dans les{' '}
         <a href="/legal/mentions">mentions légales</a> (ci-après «{' '}
         <strong>l'Éditeur</strong> »).
       </p>
@@ -122,7 +122,7 @@ export default function CGUPage() {
       <p>
         L'application IziSolo, son code source, son architecture, son design, ses
         textes, illustrations, marques et logos sont la propriété exclusive
-        d'Atelier Mélusine. Toute reproduction, représentation, adaptation,
+        de Maude Yoga. Toute reproduction, représentation, adaptation,
         traduction, modification ou diffusion, totale ou partielle, par quelque
         procédé que ce soit, est strictement interdite sans autorisation écrite
         préalable.

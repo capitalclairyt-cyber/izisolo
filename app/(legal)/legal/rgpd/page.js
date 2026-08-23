@@ -15,9 +15,9 @@ export default function RGPDPage() {
 
       <h2>1. Responsable de traitement</h2>
       <p>
-        La société <strong>Atelier Mélusine</strong>, SASU au capital de 1 000 €,
-        SIREN 889 060 901, dont le siège social est situé 146 Rue Elsa Triolet, 38260
-        La Côte-Saint-André, France (ci-après « <strong>l'Éditeur</strong> » ou
+        <strong>Maude Yoga</strong>, entreprise individuelle, SIREN 520 888 967,
+        dont l'adresse professionnelle est Montgontier, 38260 Gillonnay,
+        France (ci-après « <strong>l'Éditeur</strong> » ou
         « <strong>nous</strong> »), est responsable du traitement des données
         personnelles relatives aux utilisateurs professionnels du service IziSolo
         (« <strong>vous</strong> », « <strong>le Client</strong> »).
@@ -269,7 +269,7 @@ export default function RGPDPage() {
       </p>
       <ul>
         <li>par email : <a href="mailto:bonjour@izisolo.fr">bonjour@izisolo.fr</a></li>
-        <li>par courrier : Atelier Mélusine — DPO, 146 Rue Elsa Triolet, 38260 La Côte-Saint-André</li>
+        <li>par courrier : Maude Yoga, Montgontier, 38260 Gillonnay</li>
       </ul>
     </div>
   );

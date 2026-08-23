@@ -18,19 +18,18 @@ export default function MentionsLegalesPage() {
         <a href="https://www.izisolo.fr">izisolo.fr</a>, est éditée par :
       </p>
       <p>
-        <strong>Atelier Mélusine</strong> — SASU au capital de 1 000 €<br />
-        Siège social : 146 Rue Elsa Triolet, 38260 La Côte-Saint-André, France<br />
-        Numéro SIREN : 889 060 901<br />
-        Numéro de TVA intracommunautaire : FR02 889 060 901<br />
-        Représentée par son Président<br />
+        <strong>Maude Yoga</strong> — entreprise individuelle<br />
+        Montgontier, 38260 Gillonnay, France<br />
+        SIREN : 520 888 967<br />
+        TVA non applicable, article 293 B du Code général des impôts<br />
         Adresse électronique :{' '}
         <a href="mailto:bonjour@izisolo.fr">bonjour@izisolo.fr</a>
       </p>
 
       <h2>2. Directeur de la publication</h2>
       <p>
-        Le Président de la SASU Atelier Mélusine est responsable de la publication des
-        contenus diffusés sur le site IziSolo.
+        Maude Pontet, pour Maude Yoga, est responsable de la publication des contenus
+        diffusés sur le site IziSolo.
       </p>
 
       <h2>3. Hébergement et infrastructure</h2>
@@ -57,7 +56,7 @@ export default function MentionsLegalesPage() {
 
       <h2>4. Sous-traitants techniques</h2>
       <p>
-        Atelier Mélusine recourt aux prestataires suivants pour le fonctionnement du
+        Maude Yoga recourt aux prestataires suivants pour le fonctionnement du
         service. La liste détaillée et les pays de traitement figurent dans la{' '}
         <a href="/legal/rgpd">Politique de confidentialité</a> :
       </p>
@@ -72,7 +71,7 @@ export default function MentionsLegalesPage() {
         L'ensemble du site et de l'application IziSolo, en ce compris sans limitation
         l'architecture logicielle, le code source, le design, les illustrations,
         photographies, marques, logos, textes et bases de données structurelles, est la
-        propriété exclusive de la société <strong>Atelier Mélusine</strong> ou fait
+        propriété exclusive de <strong>Maude Yoga</strong> ou fait
         l'objet d'une autorisation d'utilisation. Ces éléments sont protégés par le Code
         de la propriété intellectuelle, le droit des marques, le droit des bases de
         données et l'ensemble des conventions internationales applicables.
@@ -81,7 +80,7 @@ export default function MentionsLegalesPage() {
         Toute reproduction, représentation, modification, adaptation, traduction,
         diffusion, exploitation commerciale, intégration ou rétro-ingénierie, totale ou
         partielle, par quelque procédé que ce soit, sans autorisation écrite préalable
-        d'Atelier Mélusine, est strictement interdite et constitue une contrefaçon
+        de Maude Yoga, est strictement interdite et constitue une contrefaçon
         sanctionnée par les articles L.335-2 et suivants du Code de la propriété
         intellectuelle.
       </p>
@@ -89,7 +88,7 @@ export default function MentionsLegalesPage() {
       <h2>6. Marques</h2>
       <p>
         « IziSolo », son logo et ses signes distinctifs sont des marques, déposées ou en
-        cours de dépôt, dont Atelier Mélusine détient les droits exclusifs. Toute
+        cours de dépôt, dont Maude Yoga détient les droits exclusifs. Toute
         utilisation non autorisée engage la responsabilité civile et pénale de son
         auteur.
       </p>
@@ -98,7 +97,7 @@ export default function MentionsLegalesPage() {
       <p>
         Le traitement des données personnelles est décrit dans notre{' '}
         <a href="/legal/rgpd">Politique de confidentialité</a>. Le responsable du
-        traitement est Atelier Mélusine. Conformément au RGPD et à la loi Informatique
+        traitement est Maude Yoga. Conformément au RGPD et à la loi Informatique
         et Libertés, vous disposez de droits sur vos données personnelles, exercés via{' '}
         <a href="mailto:bonjour@izisolo.fr">bonjour@izisolo.fr</a>.
       </p>
@@ -117,7 +116,7 @@ export default function MentionsLegalesPage() {
         Les présentes mentions légales sont régies par le droit français. Tout
         différend relatif à leur interprétation ou à leur exécution relève de la
         compétence exclusive des tribunaux du ressort de la Cour d'appel de Grenoble
-        (siège social d'Atelier Mélusine), nonobstant pluralité de défendeurs ou appel
+        (adresse professionnelle de Maude Yoga), nonobstant pluralité de défendeurs ou appel
         en garantie.
       </p>
 

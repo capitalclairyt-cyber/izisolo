@@ -68,8 +68,8 @@ export default function UnsubscribeConfirmPage() {
         borderTop: '1px solid #eee', fontSize: '0.8rem', color: '#aaa',
       }}>
         <p>
-          Atelier Mélusine — SASU au capital de 1 000 € — SIREN 889 060 901<br />
-          146 Rue Elsa Triolet, 38260 La Côte-Saint-André
+          Maude Yoga — entreprise individuelle — SIREN 520 888 967<br />
+          Montgontier, 38260 Gillonnay
         </p>
       </div>
     </div>

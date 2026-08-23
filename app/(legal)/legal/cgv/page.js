@@ -25,9 +25,10 @@ export default function CGVPage() {
         Les services d'abonnement à la plateforme IziSolo sont commercialisés par :
       </p>
       <p>
-        <strong>Atelier Mélusine</strong> — SASU au capital de 1 000 €<br />
-        Siège social : 146 Rue Elsa Triolet, 38260 La Côte-Saint-André<br />
-        SIREN : 889 060 901<br />
+        <strong>Maude Yoga</strong> — entreprise individuelle<br />
+        Montgontier, 38260 Gillonnay, France<br />
+        SIREN : 520 888 967<br />
+        TVA non applicable, article 293 B du Code général des impôts<br />
         Contact :{' '}
         <a href="mailto:bonjour@izisolo.fr">bonjour@izisolo.fr</a>
       </p>
@@ -54,9 +55,10 @@ export default function CGVPage() {
       <h2>3. Offres et tarifs</h2>
       <p>
         Les caractéristiques essentielles, limitations et tarifs de chaque offre
-        d'abonnement (Solo, Pro, Studio et toute offre future) sont décrits sur la
+        d'abonnement (Essentiel, Complet et toute offre future) sont décrits sur la
         page de tarification accessible sur le site et au moment de la souscription.
-        Les prix sont exprimés en euros, hors TVA le cas échéant.
+        Les prix sont exprimés en euros et sont nets de taxe : la TVA n'est pas
+        applicable, en application de l'article 293 B du Code général des impôts.
       </p>
       <p>
         L'Éditeur se réserve le droit de modifier ses offres et tarifs à tout moment.
@@ -96,9 +98,10 @@ export default function CGVPage() {
       </p>
       <p>
         Une facture est émise automatiquement à chaque paiement réussi et mise à
-        disposition dans l'espace personnel du Client. Pour les besoins de facturation
-        spécifiques (TVA intracommunautaire, mention d'un numéro de commande), le
-        Client peut écrire à{' '}
+        disposition dans l'espace personnel du Client. La facture ne comporte pas de
+        TVA, l'Éditeur relevant de la franchise en base prévue à l'article 293 B du
+        Code général des impôts. Pour toute mention particulière à faire figurer sur
+        la facture (numéro de commande, référence interne), le Client peut écrire à{' '}
         <a href="mailto:bonjour@izisolo.fr">bonjour@izisolo.fr</a>.
       </p>
 

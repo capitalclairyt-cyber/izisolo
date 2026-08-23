@@ -21,6 +21,10 @@ const PUBLIC_ROUTES = [
   '/embed/',                // planning intégrable iframé sur les sites des profs (B2g)
   '/widget.js',             // loader du planning intégrable, chargé par les sites tiers (B2g)
   '/legal/',                // CGU/CGV/Mentions/RGPD
+  '/unsubscribe',           // désinscription email : le destinataire n'est PAS connecté
+                            // (l'en-tête List-Unsubscribe de lib/email.js pointe ici, et
+                            // /api/unsubscribe y redirige après traitement — sans cette
+                            // ligne, se désinscrire menait à l'écran de connexion)
   '/profs-de-yoga', '/profs-de-pilates', '/profs-de-meditation', '/profs-de-danse',
   '/coachs-bien-etre', '/therapeutes', '/sophrologues',
   '/prof-yoga-',            // /prof-yoga-paris, /prof-yoga-lyon, futures villes
