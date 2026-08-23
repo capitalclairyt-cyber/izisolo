@@ -14,6 +14,7 @@ import { moisFacturables } from '@/lib/factures';
 import { toneForCours, toneForPaiement } from '@/lib/tones';
 import { libelleSeances } from '@/lib/offres-seances';
 import { confirmationEleve } from '@/lib/demande-offre';
+import { epcQrPayload, formatIban } from '@/lib/reglement';
 import AideEleve from '@/components/portail/AideEleve';
 
 const STRIPE_TYPE_ICONS = { carnet: Ticket, abonnement: CalendarCheck, cours_unique: Zap };
@@ -186,10 +187,15 @@ function CoursCard({ presence, profile, studioSlug, onAnnuler, annulEnCours, vis
   );
 }
 
-export default function EspaceClient({ profile, client, aVenir, passes, paiements = [], offresStripe = [], offresCatalogue = [], abonnements = [], aRegler = [], seancesWorkshopDues = [], annulationsDues = [], unreadMessages = 0, clientPrefs = {}, studioSlug, userEmail, isDemo = false, facturationActive = false, facturesParPaiement = {}, docsInscription = [], visioParPresence = {} }) {
+export default function EspaceClient({ profile, client, aVenir, passes, paiements = [], offresStripe = [], offresCatalogue = [], abonnements = [], aRegler = [], seancesWorkshopDues = [], annulationsDues = [], unreadMessages = 0, clientPrefs = {}, studioSlug, userEmail, isDemo = false, facturationActive = false, facturesParPaiement = {}, docsInscription = [], visioParPresence = {}, ribStudio = null, refVirement = null }) {
   const router = useRouter();
   const { toast } = useToast();
   const [notifsOpen, setNotifsOpen] = useState(false);
+  // « Comment régler ? » (v98) : RIB du studio + référence + QR SEPA. Le QR
+  // est généré au premier clic (import dynamique de `qrcode`, déjà en dep).
+  const [reglerOpen, setReglerOpen] = useState(false);
+  const [qrUrl, setQrUrl] = useState(null);
+  const [ibanCopie, setIbanCopie] = useState(false);
   const [annulEnCours, setAnnulEnCours] = useState(null);
   const [annuleIds, setAnnuleIds]       = useState([]);
   const [errMsg, setErrMsg]             = useState('');
@@ -933,6 +939,103 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
             )}
             À régler directement avec ton studio (sur place ou selon ses modalités habituelles).
           </p>
+          {/* « Comment régler ? » (v98) : le RIB du studio, la référence de
+              virement et un QR SEPA à scanner avec l'application bancaire.
+              Sans RIB : les options sur place, au moins l'élève sait quoi faire. */}
+          <button
+            type="button"
+            onClick={async () => {
+              setReglerOpen(true);
+              if (ribStudio && !qrUrl) {
+                try {
+                  const QRCode = (await import('qrcode')).default;
+                  const payload = epcQrPayload({
+                    titulaire: ribStudio.titulaire,
+                    iban: ribStudio.iban,
+                    bic: ribStudio.bic,
+                    montant: totalDu > 0 ? totalDu : null,
+                    reference: refVirement,
+                  });
+                  if (payload) setQrUrl(await QRCode.toDataURL(payload, { margin: 1, width: 240 }));
+                } catch { /* pas de QR : le RIB en texte suffit */ }
+              }
+            }}
+            style={{
+              marginTop: 10, background: 'white', border: '1px solid #e8d5b5',
+              color: '#b45309', borderRadius: 99, padding: '8px 16px',
+              fontWeight: 700, fontSize: '0.8125rem', cursor: 'pointer', fontFamily: 'inherit',
+            }}
+          >
+            💡 Comment régler ?
+          </button>
+
+          {reglerOpen && (
+            <div
+              style={{ position: 'fixed', inset: 0, background: 'rgba(26,26,46,0.45)', zIndex: 80, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
+              onClick={e => { if (e.target === e.currentTarget) setReglerOpen(false); }}
+            >
+              <div style={{ background: 'white', borderRadius: 16, maxWidth: 420, width: '100%', padding: '20px 18px', maxHeight: '85vh', overflowY: 'auto' }}>
+                <h3 style={{ margin: '0 0 4px', fontSize: '1.05rem', color: '#1a1a2e' }}>Comment régler ?</h3>
+                {totalDu > 0 && (
+                  <p style={{ margin: '0 0 12px', fontSize: '0.875rem', color: '#666' }}>
+                    Total à régler : <strong style={{ color: '#b45309' }}>{totalDu.toFixed(2).replace('.', ',')} €</strong>
+                  </p>
+                )}
+                {ribStudio ? (
+                  <div style={{ background: '#faf8f5', border: '1px solid #eee5d8', borderRadius: 12, padding: '12px 14px', marginBottom: 12 }}>
+                    <div style={{ fontWeight: 700, fontSize: '0.8125rem', color: '#1a1a2e', marginBottom: 6 }}>🏦 Par virement</div>
+                    <div style={{ fontSize: '0.8125rem', color: '#555', lineHeight: 1.6 }}>
+                      Titulaire : <strong>{ribStudio.titulaire}</strong><br />
+                      IBAN : <strong style={{ fontFamily: 'monospace', fontSize: '0.78rem' }}>{formatIban(ribStudio.iban)}</strong>{' '}
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            await navigator.clipboard.writeText(ribStudio.iban);
+                            setIbanCopie(true);
+                            setTimeout(() => setIbanCopie(false), 2000);
+                          } catch { /* clipboard refusé : l'IBAN reste sélectionnable */ }
+                        }}
+                        style={{ background: 'none', border: '1px solid #e8d5b5', borderRadius: 99, padding: '2px 10px', fontSize: '0.7rem', fontWeight: 700, color: '#b45309', cursor: 'pointer', fontFamily: 'inherit' }}
+                      >
+                        {ibanCopie ? '✓ Copié' : 'Copier'}
+                      </button>
+                      {ribStudio.bic && <><br />BIC : <strong style={{ fontFamily: 'monospace', fontSize: '0.78rem' }}>{ribStudio.bic}</strong></>}
+                    </div>
+                    {refVirement && (
+                      <p style={{ margin: '10px 0 0', fontSize: '0.78rem', color: '#b45309', lineHeight: 1.5 }}>
+                        Indique la référence <strong>{refVirement}</strong> dans le libellé du virement :
+                        c&apos;est elle qui permet à {profile?.studio_nom || 'ton studio'} de reconnaître ton règlement.
+                      </p>
+                    )}
+                    {qrUrl && (
+                      <div style={{ textAlign: 'center', marginTop: 12 }}>
+                        {/* data URL générée localement : next/image n'apporte rien ici */}
+                        <img src={qrUrl} alt="QR code de virement SEPA" width={180} height={180} style={{ borderRadius: 8 }} />
+                        <p style={{ margin: '6px 0 0', fontSize: '0.72rem', color: '#999' }}>
+                          Scanne avec ton application bancaire : le virement se préremplit
+                          (si ta banque le propose).
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                ) : null}
+                <div style={{ background: '#faf8f5', border: '1px solid #eee5d8', borderRadius: 12, padding: '12px 14px' }}>
+                  <div style={{ fontWeight: 700, fontSize: '0.8125rem', color: '#1a1a2e', marginBottom: 4 }}>💶 Sur place</div>
+                  <p style={{ margin: 0, fontSize: '0.8125rem', color: '#555', lineHeight: 1.5 }}>
+                    En espèces ou par chèque, directement auprès de {profile?.studio_nom || 'ton studio'} (au prochain cours, par exemple).
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setReglerOpen(false)}
+                  style={{ marginTop: 14, width: '100%', background: '#1a1a2e', color: 'white', border: 'none', borderRadius: 99, padding: '10px 0', fontWeight: 700, fontSize: '0.875rem', cursor: 'pointer', fontFamily: 'inherit' }}
+                >
+                  Fermer
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

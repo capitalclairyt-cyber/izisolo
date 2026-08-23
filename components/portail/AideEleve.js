@@ -40,7 +40,7 @@ export default function AideEleve({ studioNom = 'ton studio', studioSlug }) {
     },
     {
       q: 'J\'ai un montant « à régler » — c\'est quoi ?',
-      r: <>C'est ce que tu dois à {studioNom} : un paiement convenu « à régler plus tard », un versement d'un paiement en plusieurs fois, ou une séance payable à l'unité. Tu règles directement auprès du studio (espèces, chèque, virement, CB), ou en ligne quand un bouton <strong>« 💳 Payer par CB »</strong> accompagne la ligne.</>,
+      r: <>C'est ce que tu dois à {studioNom} : un paiement convenu « à régler plus tard », un versement d'un paiement en plusieurs fois, ou une séance payable à l'unité. Le bouton <strong>« 💡 Comment régler ? »</strong> t'affiche les options : le RIB du studio avec ta référence de virement et un QR à scanner avec ton application bancaire (si le studio l'a fourni), ou espèces et chèque sur place. Et quand un bouton <strong>« 💳 Payer par CB »</strong> accompagne la ligne, tu peux régler en ligne.</>,
     },
     {
       q: 'Comment acheter un carnet ou un abonnement ?',

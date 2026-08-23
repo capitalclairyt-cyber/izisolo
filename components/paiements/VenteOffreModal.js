@@ -11,6 +11,7 @@ import PaiementStep from '@/components/paiements/PaiementStep';
 import { calcProRata } from '@/lib/prorata';
 import { bornesVente } from '@/lib/offres-periode';
 import { solderDemandesApresVente } from '@/lib/demande-offre';
+import { lireReglementConfig, preselectionEmail } from '@/lib/reglement';
 
 /**
  * VenteOffreModal — LE tunnel de vente d'une offre, partagé entre pages.
@@ -62,6 +63,9 @@ export default function VenteOffreModal({ offre: offreInitiale = null, clientIni
   const [selectedClient, setSelectedClient] = useState(clientInitial);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  // Config « règlement par virement » (v98) — lue défensivement : pré-migration
+  // la colonne est inconnue → null → le bloc email propose espèces/chèque.
+  const [reglementCfg, setReglementCfg] = useState(null);
 
   useEffect(() => {
     const load = async () => {
@@ -73,7 +77,7 @@ export default function VenteOffreModal({ offre: offreInitiale = null, clientIni
       const [{ data: cls }, offresRes] = await Promise.all([
         supabase
           .from('clients')
-          .select('id, prenom, nom, nom_structure, type_client, statut, telephone')
+          .select('id, prenom, nom, nom_structure, type_client, statut, telephone, email')
           .eq('profile_id', user.id)
           .order('nom'),
         offreInitiale ? Promise.resolve(null) : supabase
@@ -87,6 +91,11 @@ export default function VenteOffreModal({ offre: offreInitiale = null, clientIni
       setClients(cls || []);
       setLoadingClients(false);
       if (offresRes) setOffres(offresRes.data || []);
+      try {
+        const { data: cfg, error: cfgErr } = await supabase
+          .from('profiles').select('reglement_config').eq('id', user.id).maybeSingle();
+        if (!cfgErr) setReglementCfg(lireReglementConfig(cfg));
+      } catch { /* pré-v98 : pas de RIB, le bloc email reste utilisable */ }
     };
     load();
   }, [offreInitiale]);
@@ -110,7 +119,7 @@ export default function VenteOffreModal({ offre: offreInitiale = null, clientIni
   // Même construction que la fiche client (AssignerOffreModal.handleConfirm) :
   // abonnement avec dates de l'OFFRE + snapshot types_cours_autorises, paiements
   // paid/pending/échéancier — le tout persisté par la RPC atomique vendre_offre.
-  const handleConfirm = async ({ montant, modePaiement, notes, numeroCheque, reglement = 'paye', premierEncaisse = true, versements = [] }) => {
+  const handleConfirm = async ({ montant, modePaiement, notes, numeroCheque, reglement = 'paye', premierEncaisse = true, versements = [], emailReglement = null }) => {
     if (!selectedClient || !offre) return;
     setSubmitting(true);
     setError('');
@@ -183,6 +192,21 @@ export default function VenteOffreModal({ offre: offreInitiale = null, clientIni
       // ça, la file de /offres garde une demande « À traiter » déjà vendue —
       // et « Attribuer l'offre » fabriquerait un doublon. Jamais bloquant.
       await solderDemandesApresVente(supabase, { clientId: selectedClient.id, offreId: offre.id });
+
+      // Email « comment régler » (v98) : la variante choisie dans le tunnel
+      // part vers l'élève avec le montant encore dû. Fire-and-forget : la
+      // vente est enregistrée, un email raté ne doit pas la faire douter.
+      if (emailReglement) {
+        const pendings = (versements || []).filter(v => v.encaisse !== true).map(v => ({ date: v.date, montant: parseFloat(v.montant) || 0 }));
+        const montantDu = pendings.length ? pendings.reduce((s, v) => s + v.montant, 0) : montant;
+        if (montantDu > 0) {
+          fetch('/api/paiements/email-reglement', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ clientId: selectedClient.id, variante: emailReglement, intitule: offre.nom, montant: montantDu, versements: pendings }),
+          }).catch(e => console.warn('[email-reglement]', e));
+        }
+      }
 
       onSuccess();
     } catch (err) {
@@ -312,6 +336,15 @@ export default function VenteOffreModal({ offre: offreInitiale = null, clientIni
                 prixDetail={prorata ? `Pro-rata : ${prorata.resteSemaines} semaine${prorata.resteSemaines > 1 ? 's' : ''} restante${prorata.resteSemaines > 1 ? 's' : ''} sur ${prorata.totalSemaines} (prix plein ${offre.prix} €)` : null}
                 onConfirm={handleConfirm}
                 submitting={submitting}
+                emailCtx={(() => {
+                  const pre = preselectionEmail(reglementCfg);
+                  return {
+                    actif: pre.actif && !!selectedClient?.email,
+                    presel: pre.presel,
+                    ribOk: !!reglementCfg?.rib,
+                    prenom: selectedClient?.prenom || '',
+                  };
+                })()}
               />
             </>
           );

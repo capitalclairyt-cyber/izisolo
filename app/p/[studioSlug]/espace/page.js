@@ -9,6 +9,7 @@ import { getDocsInscription } from '@/lib/docs-inscription';
 import { getVisioCoursMap, lienVisioVisible } from '@/lib/visio';
 import { resoudreCarnetApplicable } from '@/lib/carnet-resolution';
 import { urlPaiementSeance } from '@/lib/paiement-seance';
+import { lireReglementConfig, referenceVirement } from '@/lib/reglement';
 import { studioCan } from '@/lib/plan-guard';
 
 // Le template racine ajoute déjà « — IziSolo » ; l'OG studio vient du layout portail.
@@ -344,6 +345,26 @@ async function getData(studioSlug, user) {
       .maybeSingle();
     if (!factErr && String(fact?.facturation_siret || '').trim()) facturationActive = true;
   }
+  // Règlement par virement (v98) — même règle : requête SÉPARÉE et défensive,
+  // la colonne ne va JAMAIS dans un select principal. Sans migration ou sans
+  // RIB : le bouton « Comment régler ? » ne propose que espèces/chèque.
+  let ribStudio = null;
+  let refVirement = null;
+  {
+    try {
+      const { data: reg, error: regErr } = await supabase
+        .from('profiles')
+        .select('reglement_config')
+        .eq('id', profile.id)
+        .maybeSingle();
+      if (!regErr) {
+        const cfgReglement = lireReglementConfig(reg);
+        ribStudio = cfgReglement?.rib || null;
+      }
+    } catch { /* pré-v98 */ }
+    refVirement = referenceVirement(client?.id);
+  }
+
   let facturesParPaiement = {};
   if (facturationActive && (paiements || []).length > 0) {
     const { data: liaisons, error: liErr } = await supabase
@@ -401,7 +422,7 @@ async function getData(studioSlug, user) {
     }
   }
 
-  return { profile, client, aVenir, passes, paiements: paiements || [], offresStripe: offresStripe || [], offresCatalogue, abonnements: abonnements || [], aRegler, seancesWorkshopDues, annulationsDues, unreadMessages, clientPrefs, facturationActive, facturesParPaiement, docsInscription, visioParPresence };
+  return { profile, client, aVenir, passes, paiements: paiements || [], offresStripe: offresStripe || [], offresCatalogue, abonnements: abonnements || [], aRegler, seancesWorkshopDues, annulationsDues, unreadMessages, clientPrefs, facturationActive, facturesParPaiement, docsInscription, visioParPresence, ribStudio, refVirement };
 }
 
 export default async function EspacePage({ params, searchParams }) {
@@ -475,6 +496,8 @@ export default async function EspacePage({ params, searchParams }) {
       facturationActive={data.facturationActive || false}
       facturesParPaiement={data.facturesParPaiement || {}}
       docsInscription={data.docsInscription || []}
+      ribStudio={data.ribStudio || null}
+      refVirement={data.refVirement || null}
       visioParPresence={data.visioParPresence || {}}
       studioSlug={studioSlug}
       userEmail={user.email}

@@ -21,6 +21,7 @@ import { sanitizeEssaiPrixParType } from '@/lib/essai-tarif';
 import {
   REGIMES, PERIODICITES, configUrssafAffichee, sanitizeConfigUrssaf,
 } from '@/lib/urssaf';
+import { sanitizeReglementConfig } from '@/lib/reglement';
 // import BackgroundDecor — retiré, plus utilisé (apparences supprimées)
 
 // Normalise une URL utilisateur :
@@ -76,6 +77,7 @@ const CARTES = {
   profil:        ['prenom', 'nom', 'email_contact', 'telephone', 'adresse'],
   activite:      ['studio_nom', 'ville', 'metier'],
   facturation:   ['facturation_raison_sociale', 'facturation_siret', 'facturation_mention_tva'],
+  reglement:     ['reglement_config'],
   urssaf:        ['urssaf_config'],
   champs:        ['client_fields_config'],
   page:          ['photo_couverture_focal_y', 'bio', 'philosophie', 'formations', 'annees_experience',
@@ -102,6 +104,9 @@ const SERIALIZERS = {
   // La config URSSAF n'est JAMAIS écrite brute : sanitize = taux bornés,
   // régime/périodicité de la liste blanche, défauts du régime si difforme.
   urssaf_config:             v => sanitizeConfigUrssaf(v),
+  // v98 — même règle : IBAN validé mod-97 (un IBAN faux est JETÉ), modes de
+  // la liste blanche. undefined pré-migration → omis du payload (pattern v92).
+  reglement_config:          v => (v === undefined ? undefined : sanitizeReglementConfig(v)),
   alerte_seances_seuil:      v => parseInt(v) || 2,
   alerte_expiration_jours:   v => parseInt(v) || 7,
   alerte_paiement_attente_jours: v => parseInt(v) || 14,
@@ -171,6 +176,7 @@ import AbonnementCheckout from './sections/AbonnementCheckout';
 import ReglesAnnulationSection from './sections/ReglesAnnulationSection';
 import PagePubliqueSection from './sections/PagePubliqueSection';
 import DocsInscriptionSection from './sections/DocsInscriptionSection';
+import ReglementSection from './sections/ReglementSection';
 import StripePaiementSection from './sections/StripePaiementSection';
 import VisibiliteSection from './sections/VisibiliteSection';
 import CoursEssaiSection from './sections/CoursEssaiSection';
@@ -684,6 +690,16 @@ export default function Parametres() {
           </div>
             );
           })()}
+
+          {/* Règlement par virement (v98) — RIB + email « comment régler » */}
+          {subTab.profil === 'activite' && (
+            <ReglementSection
+              profile={profile}
+              setProfile={setProfile}
+              setDirty={() => marquer('reglement')}
+              boutonSauver={<BtnSauver carte="reglement" />}
+            />
+          )}
 
           {/* Ma déclaration URSSAF (v93) — les réglages qui alimentent le bloc
               de la page Revenus, l'estimation et le rappel d'échéance. Tant

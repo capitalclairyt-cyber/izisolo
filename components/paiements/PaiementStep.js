@@ -74,6 +74,9 @@ export default function PaiementStep({
   onIntituleLibreChange,
   onConfirm,
   submitting = false,
+  // Email « comment régler » (v98) : { actif, presel, ribOk, prenom } — fourni
+  // par le modal appelant (qui lit profiles.reglement_config). null = pas de bloc.
+  emailCtx = null,
 }) {
   const [montant, setMontant] = useState(isLibre ? '' : String(offrePrix || ''));
   // Retour Kim 2026-08-20 : « aucune info de paiement renseignée » et pourtant
@@ -92,6 +95,9 @@ export default function PaiementStep({
   const [rythme, setRythme] = useState(1);
   const [versements, setVersements] = useState([]);
   const [error, setError] = useState('');
+  // Quel email « comment régler » partira après la vente (v98) : '' = aucun.
+  // Présélection selon le réglage de la prof (auto / je choisis / jamais).
+  const [emailChoisi, setEmailChoisi] = useState(emailCtx?.presel || '');
 
   const isMulti = reglement === 'multi';
   const isAregler = reglement === 'aregler';
@@ -136,6 +142,12 @@ export default function PaiementStep({
     (s, v) => s + (typeof v.montant === 'number' ? v.montant : parseFloat(v.montant) || 0), 0);
   const sommeJuste = Math.abs(sommeVersements - (parseFloat(montant) || 0)) < 0.02;
 
+  // L'email « comment régler » n'a de sens que s'il reste quelque chose à
+  // régler : « à régler plus tard », ou un échéancier avec des versements à
+  // venir. « Plusieurs moyens » est tout encaissé par construction.
+  const emailPossible = !!emailCtx?.actif
+    && (isAregler || (isMulti && versements.some(v => v.encaisse !== true)));
+
   const handleConfirm = () => {
     if (!montant || parseFloat(montant) < 0) return;
     if (isLibre && !intituleLibre.trim()) {
@@ -169,6 +181,8 @@ export default function PaiementStep({
       // compat : dérivé des lignes (l'encaissé vit par versement désormais)
       premierEncaisse: (isMulti || isMultiMode) ? versements[0]?.encaisse === true : true,
       versements: (isMulti || isMultiMode) ? versements : [],
+      // Email « comment régler » (v98) : la variante choisie, ou null.
+      emailReglement: emailPossible && emailChoisi ? emailChoisi : null,
     });
   };
 
@@ -455,6 +469,49 @@ export default function PaiementStep({
         placeholder="N° chèque, référence virement..."
       />
 
+      {/* Email « comment régler » (v98, demande Colin 2026-08-23) : la prof
+          choisit ce qui part vers l'élève après la vente — virement (RIB +
+          référence), espèces ou chèque au studio, ou rien. Présélection selon
+          son réglage Paramètres (part tout seul / je choisis / jamais). */}
+      {emailPossible && (
+        <>
+          <div className="paiement-section-label">
+            ✉️ Prévenir {emailCtx?.prenom || 'l\'élève'} par email : comment régler ?
+          </div>
+          <div className="email-reg-row">
+            <button
+              type="button"
+              className={`reglement-btn ${emailChoisi === 'virement' ? 'active' : ''}`}
+              onClick={() => setEmailChoisi(emailChoisi === 'virement' ? '' : 'virement')}
+              disabled={!emailCtx?.ribOk}
+              title={emailCtx?.ribOk ? 'Envoie ton RIB avec une référence de virement' : 'Renseigne d\'abord ton RIB dans Paramètres (carte « Règlement par virement »)'}
+            >
+              🏦 Virement (RIB)
+            </button>
+            <button
+              type="button"
+              className={`reglement-btn ${emailChoisi === 'especes' ? 'active' : ''}`}
+              onClick={() => setEmailChoisi(emailChoisi === 'especes' ? '' : 'especes')}
+            >
+              💶 Espèces au studio
+            </button>
+            <button
+              type="button"
+              className={`reglement-btn ${emailChoisi === 'cheque' ? 'active' : ''}`}
+              onClick={() => setEmailChoisi(emailChoisi === 'cheque' ? '' : 'cheque')}
+            >
+              🖊 Chèque au studio
+            </button>
+          </div>
+          <p className="montant-hint" style={{ marginTop: 4 }}>
+            {emailChoisi
+              ? 'L\'email partira tout seul après la vente, avec le montant dû.'
+              : 'Rien de coché = aucun email envoyé.'}
+            {!emailCtx?.ribOk && ' Pour proposer le virement, renseigne ton RIB dans Paramètres.'}
+          </p>
+        </>
+      )}
+
       {error && <p className="error-msg">{error}</p>}
 
       <button
@@ -475,6 +532,9 @@ export default function PaiementStep({
           cursor: pointer; transition: all 0.15s;
         }
         .reglement-btn.active { border-color: var(--brand, #B87333); background: var(--brand-light, #f7efe6); color: var(--brand-700, #8c5826); }
+        .reglement-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+        .email-reg-row { display: flex; gap: 6px; flex-wrap: wrap; }
+        .email-reg-row .reglement-btn { flex: 1 1 30%; min-width: 120px; }
         .multi-v-enc {
           display: flex; align-items: center; gap: 4px; white-space: nowrap;
           font-size: 0.75rem; color: var(--text-secondary, #6B5D52); cursor: pointer;

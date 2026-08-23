@@ -20,6 +20,7 @@ import { STATUTS_CLIENT, STATUTS_ABONNEMENT, STATUTS_PAIEMENT } from '@/lib/cons
 import { statutCompteEleve, formatDateRelative } from '@/lib/eleve-statut';
 import { bornesVente } from '@/lib/offres-periode';
 import { resumeDemande, solderDemandesApresVente } from '@/lib/demande-offre';
+import { lireReglementConfig, preselectionEmail } from '@/lib/reglement';
 import { moisFacturables } from '@/lib/factures';
 import { createClient } from '@/lib/supabase';
 import { calcProRata as calcProRataLib } from '@/lib/prorata';
@@ -75,6 +76,8 @@ function AssignerOffreModal({ client, onClose, onSuccess, offreInitialeId = null
   const [selectedOffre, setSelectedOffre] = useState(null);
   const [intituleLibre, setIntituleLibre] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  // Config « règlement par virement » (v98) — lecture défensive pré-migration.
+  const [reglementCfg, setReglementCfg] = useState(null);
 
   const isLibre = selectedOffre?.id === '__libre__';
 
@@ -102,6 +105,11 @@ function AssignerOffreModal({ client, onClose, onSuccess, offreInitialeId = null
         if (off) { setSelectedOffre(off); setStep('paiement'); }
       }
       setLoadingOffres(false);
+      try {
+        const { data: cfg, error: cfgErr } = await supabase
+          .from('profiles').select('reglement_config').eq('id', user.id).maybeSingle();
+        if (!cfgErr) setReglementCfg(lireReglementConfig(cfg));
+      } catch { /* pré-v98 : pas de RIB, le bloc email reste utilisable */ }
     };
     load();
   }, []);
@@ -114,7 +122,7 @@ function AssignerOffreModal({ client, onClose, onSuccess, offreInitialeId = null
     setStep('paiement');
   };
 
-  const handleConfirm = async ({ montant, modePaiement, notes, numeroCheque, reglement = 'paye', premierEncaisse = true, versements = [] }) => {
+  const handleConfirm = async ({ montant, modePaiement, notes, numeroCheque, reglement = 'paye', premierEncaisse = true, versements = [], emailReglement = null }) => {
     if (!selectedOffre) return;
     setSubmitting(true);
     try {
@@ -197,6 +205,26 @@ function AssignerOffreModal({ client, onClose, onSuccess, offreInitialeId = null
       // Cécile, 2026-08-23 : vente par la fiche, demande restée « nouvelle »).
       if (!isLibre) {
         await solderDemandesApresVente(supabase, { clientId: client.id, offreId: selectedOffre.id });
+      }
+
+      // Email « comment régler » (v98) : la variante choisie dans le tunnel
+      // part avec le montant encore dû. Fire-and-forget : la vente est faite.
+      if (emailReglement) {
+        const pendings = (versements || []).filter(v => v.encaisse !== true).map(v => ({ date: v.date, montant: parseFloat(v.montant) || 0 }));
+        const montantDu = pendings.length ? pendings.reduce((s, v) => s + v.montant, 0) : montant;
+        if (montantDu > 0) {
+          fetch('/api/paiements/email-reglement', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              clientId: client.id,
+              variante: emailReglement,
+              intitule: isLibre ? intituleLibre.trim() : selectedOffre.nom,
+              montant: montantDu,
+              versements: pendings,
+            }),
+          }).catch(e => console.warn('[email-reglement]', e));
+        }
       }
 
       onSuccess();
@@ -299,6 +327,15 @@ function AssignerOffreModal({ client, onClose, onSuccess, offreInitialeId = null
               isLibre={isLibre}
               intituleLibre={intituleLibre}
               onIntituleLibreChange={setIntituleLibre}
+              emailCtx={(() => {
+                const pre = preselectionEmail(reglementCfg);
+                return {
+                  actif: pre.actif && !!client.email,
+                  presel: pre.presel,
+                  ribOk: !!reglementCfg?.rib,
+                  prenom: client.prenom || '',
+                };
+              })()}
               onConfirm={handleConfirm}
               submitting={submitting}
             />

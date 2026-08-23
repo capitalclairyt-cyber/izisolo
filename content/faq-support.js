@@ -139,4 +139,10 @@ export const FAQ_SUPPORT = [
     q: "Comment joindre l'équipe IziSolo ?",
     a: "Trois portes : le fil « 💬 Équipe IziSolo » épinglé en tête de ta Messagerie (ta question arrive directement chez nous, on te répond dans le même fil), le bouton « Donner du feedback » en haut à droite pour un bug ou une idée, ou un email à bonjour@izisolo.fr. Dans tous les cas, un humain lit et répond.",
   },
+  {
+    // Règlement par virement (v98, 2026-08-23).
+    q: "Comment envoyer mon RIB à une élève pour un virement ?",
+    a: "Renseigne-le une fois : Paramètres → Profil & studio → Activité, carte « Règlement par virement » (IBAN vérifié à la saisie). Ensuite, à chaque vente « à régler plus tard », tu choisis l'email qui part tout seul : « Virement (RIB) » envoie ton IBAN avec une référence de virement (pour reconnaître le règlement sur ton relevé), et l'espace de l'élève affiche aussi le RIB avec un QR code à scanner avec son application bancaire. Tu peux aussi régler ça en automatique (carte « Règlement par virement », « il part tout seul »).",
+    lien: { href: '/aide#encaisser', label: 'Voir le pas-à-pas' },
+  },
 ];
