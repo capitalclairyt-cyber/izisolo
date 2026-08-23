@@ -98,7 +98,12 @@ const purger = async () => {
   const ofIds = (of || []).map(o => o.id);
   const { data: cl } = await admin.from('clients').select('id').eq('profile_id', profileId).ilike('nom', `${MARQUEUR}%`);
   const clIds = (cl || []).map(c => c.id);
-  if (V97 && ofIds.length) await admin.from('demandes_offre').delete().in('offre_id', ofIds);
+  // Les demandes AVANT les fiches : la FK est `on delete set null`, supprimer
+  // l'élève d'abord laisserait une demande anonyme impossible à retrouver.
+  if (V97) {
+    if (ofIds.length) await admin.from('demandes_offre').delete().in('offre_id', ofIds);
+    if (clIds.length) await admin.from('demandes_offre').delete().in('client_id', clIds);
+  }
   if (clIds.length) {
     await admin.from('paiements').delete().in('client_id', clIds);
     await admin.from('abonnements').delete().in('client_id', clIds);
@@ -162,7 +167,12 @@ try {
   assert(/les offres du studio/i.test(texteEspace), 'la section « Les offres du studio » existe');
   assert(texteEspace.includes(`${MARQUEUR} Carnet 10`),
     'une offre SANS lien Stripe y figure (avant : invisible pour l\'eleve)');
-  const btnDemander = pageEleve.locator('.espace-demander-btn').first();
+  // Le bouton DE CETTE offre, jamais le premier venu : le catalogue du démo
+  // en contient plusieurs, et cliquer au hasard posait une demande sur une
+  // vraie offre du studio (puis, la fiche témoin supprimée, la FK
+  // `on delete set null` laissait une ligne orpheline en prod).
+  const carteOffre = pageEleve.locator('.espace-stripe-card').filter({ hasText: `${MARQUEUR} Carnet 10` }).first();
+  const btnDemander = carteOffre.locator('.espace-demander-btn');
   assert(await btnDemander.count() === 1, 'et elle porte un bouton « Demander »');
   await pageEleve.screenshot({ path: join(OUT, 'A-espace-offres.png'), fullPage: true });
 
