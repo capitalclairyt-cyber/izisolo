@@ -13,6 +13,7 @@ import { test, expect } from '@playwright/test';
 import {
   sanitizeDemandeOffre, nomDemandeur, emailDemandeur, estProspect,
   confirmationEleve, resumeDemande, STATUTS_DEMANDE_OFFRE,
+  solderDemandesApresVente,
 } from '../../lib/demande-offre.js';
 
 test.describe('sanitizeDemandeOffre — deux portes, une exigence', () => {
@@ -119,5 +120,49 @@ test.describe('ce que la prof voit', () => {
 
   test('les trois états, et eux seuls (le CHECK de v97 les fige)', () => {
     expect(Object.keys(STATUTS_DEMANDE_OFFRE)).toEqual(['nouvelle', 'acceptee', 'refusee']);
+  });
+});
+
+// ─── La vente range la file, quel que soit son chemin (2026-08-23) ─────────
+// Cas réel Maude/Cécile : vente faite depuis la FICHE (pas depuis la file de
+// /offres) → la demande restait « nouvelle » pour toujours, et « Attribuer
+// l'offre » aurait revendu un doublon. Toute vente réussie doit solder les
+// demandes « nouvelle » du couple (client, offre).
+test.describe('solderDemandesApresVente — la vente range la file', () => {
+  const fauxSupabase = (reponse = { data: [{ id: 'd1' }] }) => {
+    const appels = { table: null, update: null, filtres: [] };
+    const chaine = {
+      update(v) { appels.update = v; return chaine; },
+      eq(col, val) { appels.filtres.push([col, val]); return chaine; },
+      select() { return Promise.resolve(reponse); },
+    };
+    return { from(t) { appels.table = t; return chaine; }, appels };
+  };
+
+  test('marque « acceptee » les demandes « nouvelle » du couple client + offre, et elles seules', async () => {
+    const sb = fauxSupabase();
+    const n = await solderDemandesApresVente(sb, { clientId: 'c1', offreId: 'o1' });
+    expect(n).toBe(1);
+    expect(sb.appels.table).toBe('demandes_offre');
+    expect(sb.appels.update.statut).toBe('acceptee');
+    expect(sb.appels.update.traitee_at).toBeTruthy();
+    expect(sb.appels.filtres).toContainEqual(['client_id', 'c1']);
+    expect(sb.appels.filtres).toContainEqual(['offre_id', 'o1']);
+    expect(sb.appels.filtres).toContainEqual(['statut', 'nouvelle']);
+  });
+
+  test('jamais bloquant : la vente est déjà enregistrée', async () => {
+    expect(await solderDemandesApresVente(null, { clientId: 'c', offreId: 'o' })).toBe(0);
+    expect(await solderDemandesApresVente(fauxSupabase(), { clientId: null, offreId: 'o' })).toBe(0);
+    expect(await solderDemandesApresVente(fauxSupabase(), { clientId: 'c', offreId: null })).toBe(0);
+    expect(await solderDemandesApresVente(fauxSupabase(), {})).toBe(0);
+    const casse = { from() { throw new Error('relation demandes_offre does not exist'); } };
+    expect(await solderDemandesApresVente(casse, { clientId: 'c', offreId: 'o' })).toBe(0);
+  });
+
+  test('un paiement libre (sans offre) ne touche pas la file', async () => {
+    const sb = fauxSupabase();
+    await solderDemandesApresVente(sb, { clientId: 'c1', offreId: undefined });
+    expect(sb.appels.table).toBe(null);
   });
 });

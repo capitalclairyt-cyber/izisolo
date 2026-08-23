@@ -190,7 +190,11 @@ try {
     assert(/Demande envoyée/.test(apres), 'l\'ecran confirme une DEMANDE');
     assert(/rien n'est réservé|Rien n'est débité/i.test(apres),
       'et dit noir sur blanc que rien n\'est debite ni reserve');
-    assert(!/achet/i.test(apres.split('Demande envoyée')[1] || ''), 'il ne parle jamais d\'achat');
+    // La CONFIRMATION (les ~250 car. qui suivent « Demande envoyée ») ne parle
+    // jamais d'achat. Plus bas dans la page, la mini-aide élève a le DROIT de
+    // répondre à « Comment acheter un carnet ou un abonnement ? » (sweep centre
+    // d'aide 2026-08-23) : c'est la promesse de la confirmation qu'on verrouille.
+    assert(!/achet/i.test((apres.split('Demande envoyée')[1] || '').slice(0, 250)), 'la confirmation ne parle jamais d\'achat');
     await pageEleve.screenshot({ path: join(OUT, 'B-demande-envoyee.png'), fullPage: true });
 
     // ══ C. En base : une intention, et RIEN d'autre ═════════════════════════

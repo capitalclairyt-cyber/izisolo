@@ -113,7 +113,7 @@ export const FAQ_SUPPORT = [
   {
     // Demande d'offre v97 (2026-08-23).
     q: "Une élève veut un carnet : comment ça se passe depuis son espace ?",
-    a: "Son espace liste tout ton catalogue (« Les offres du studio »). Si l'offre a un lien de paiement Stripe, elle paie en ligne et le carnet s'attribue tout seul. Sinon elle clique « Demander » : la demande atterrit en tête de ta page Offres, et « Attribuer l'offre » ouvre la vente directement sur le règlement (espèces, chèque, CB, en plusieurs fois…). Rien n'est débité ni réservé tant que tu n'as pas validé la vente.",
+    a: "Son espace liste tout ton catalogue (« Les offres du studio »). Si l'offre a un lien de paiement Stripe, elle paie en ligne et le carnet s'attribue tout seul. Sinon elle clique « Demander » : la demande atterrit en tête de ta page Offres et sur la fiche de l'élève, et ta cloche t'y amène (« Voir la demande »). « Attribuer l'offre » ouvre la vente directement sur le règlement (espèces, chèque, CB, en plusieurs fois…). Rien n'est débité ni réservé tant que tu n'as pas validé la vente.",
     lien: { href: '/aide#offres', label: 'Voir le pas-à-pas' },
   },
   {

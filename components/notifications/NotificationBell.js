@@ -13,6 +13,10 @@ const TYPE_CONFIG = {
   nouveau_client:   { color: '#0891b2', bg: '#ecfeff', border: '#a5f3fc' },
   reservation:      { color: '#059669', bg: '#ecfdf5', border: '#a7f3d0' },
   essai_demande:    { color: '#c2410c', bg: '#fff7ed', border: '#fed7aa' },
+  // Né muet (v97) : ajouté au catalogue notif_prefs sans branche ici → style
+  // par défaut et clic → /dashboard, la prof seule avec sa notif (Maude,
+  // 2026-08-23). Un type de cloche N'EXISTE que s'il a style + clic + bouton.
+  offre_demande:    { color: '#9333ea', bg: '#faf5ff', border: '#e9d5ff' },
   // Types qui existaient sans style ni action (audit 2026-07-25)
   liste_attente:    { color: '#0d9488', bg: '#f0fdfa', border: '#99f6e4' },
   pointage_rappel:  { color: '#4f46e5', bg: '#eef2ff', border: '#c7d2fe' },
@@ -186,6 +190,13 @@ export default function NotificationBell() {
       return;
     }
 
+    // Demande d'offre (v97) — la file en tête de la page Offres, où la prof
+    // attribue (vente directe sur le règlement) ou écarte.
+    if (notif.type === 'offre_demande') {
+      router.push('/offres');
+      return;
+    }
+
     // Liste d'attente (inscription ou promotion) — la page dédiée.
     if (notif.type === 'liste_attente') {
       router.push('/liste-attente');
@@ -258,6 +269,12 @@ export default function NotificationBell() {
           )}
           {notif.type === 'essai_demande' && (
             <button className="nb-action-btn secondary"
+                    onClick={() => handleAction(notif, 'voir')}>
+              <ExternalLink size={12} /> Voir la demande
+            </button>
+          )}
+          {notif.type === 'offre_demande' && (
+            <button className="nb-action-btn primary"
                     onClick={() => handleAction(notif, 'voir')}>
               <ExternalLink size={12} /> Voir la demande
             </button>

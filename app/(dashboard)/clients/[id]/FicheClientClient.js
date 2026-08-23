@@ -19,6 +19,7 @@ import { getVocabulaire } from '@/lib/vocabulaire';
 import { STATUTS_CLIENT, STATUTS_ABONNEMENT, STATUTS_PAIEMENT } from '@/lib/constantes';
 import { statutCompteEleve, formatDateRelative } from '@/lib/eleve-statut';
 import { bornesVente } from '@/lib/offres-periode';
+import { resumeDemande, solderDemandesApresVente } from '@/lib/demande-offre';
 import { moisFacturables } from '@/lib/factures';
 import { createClient } from '@/lib/supabase';
 import { calcProRata as calcProRataLib } from '@/lib/prorata';
@@ -66,7 +67,7 @@ const OFFRE_LIBRE = {
   prix: 0,
 };
 
-function AssignerOffreModal({ client, onClose, onSuccess }) {
+function AssignerOffreModal({ client, onClose, onSuccess, offreInitialeId = null }) {
   const { toast } = useToast();
   const [step, setStep] = useState('offre'); // 'offre' | 'paiement'
   const [offres, setOffres] = useState([]);
@@ -93,6 +94,13 @@ function AssignerOffreModal({ client, onClose, onSuccess }) {
         .eq('actif', true)
         .order('ordre');
       setOffres(data || []);
+      // Ouvert depuis une demande d'offre (v97) : l'élève a déjà choisi, le
+      // tunnel s'ouvre DIRECTEMENT sur le règlement — même principe que la
+      // file de /offres (clientInitial de VenteOffreModal).
+      if (offreInitialeId) {
+        const off = (data || []).find(o => o.id === offreInitialeId);
+        if (off) { setSelectedOffre(off); setStep('paiement'); }
+      }
       setLoadingOffres(false);
     };
     load();
@@ -181,6 +189,14 @@ function AssignerOffreModal({ client, onClose, onSuccess }) {
       });
       if (error || !result?.ok) {
         throw (error || new Error(result?.reason || 'Vente non enregistrée'));
+      }
+
+      // La vente honore une éventuelle demande d'offre en attente (v97) : sans
+      // ça, la file de /offres garde une demande « À traiter » déjà vendue —
+      // et « Attribuer l'offre » fabriquerait un doublon (cas réel Maude/
+      // Cécile, 2026-08-23 : vente par la fiche, demande restée « nouvelle »).
+      if (!isLibre) {
+        await solderDemandesApresVente(supabase, { clientId: client.id, offreId: selectedOffre.id });
       }
 
       onSuccess();
@@ -296,12 +312,33 @@ function AssignerOffreModal({ client, onClose, onSuccess }) {
 // ═══════════════════════════════════════════════════════════════════════════
 // Composant principal
 // ═══════════════════════════════════════════════════════════════════════════
-export default function FicheClientClient({ client, profile, abonnements: abosInit, presences, paiements: paiementsInit = [], lieux, statutCompte = null, facturationActive = false, facturesParPaiement = {} }) {
+export default function FicheClientClient({ client, profile, abonnements: abosInit, presences, paiements: paiementsInit = [], lieux, statutCompte = null, facturationActive = false, facturesParPaiement = {}, demandesOffre = [] }) {
   const router = useRouter();
   const { toast } = useToast();
   const vocab = getVocabulaire(profile?.metier || 'yoga', profile?.vocabulaire);
   const [activeTab, setActiveTab] = useState('abonnements');
   const [showAssignerModal, setShowAssignerModal] = useState(false);
+  // Demande d'offre (v97) : « Attribuer » précharge le tunnel sur SON offre ;
+  // la vérité des demandes vit côté serveur (prop), router.refresh() la suit.
+  const [demandePreselect, setDemandePreselect] = useState(null);
+  const [ecartement, setEcartement] = useState(null);
+  const ecarterDemande = async (id) => {
+    setEcartement(id);
+    try {
+      const res = await fetch(`/api/demandes-offre/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ statut: 'refusee' }),
+      });
+      if (!res.ok) throw new Error();
+      toast.success('Demande écartée.');
+      router.refresh();
+    } catch {
+      toast.error('Impossible d\'écarter la demande, réessaie.');
+    } finally {
+      setEcartement(null);
+    }
+  };
   const [abonnements, setAbonnements] = useState(abosInit);
   const [paiements, setPaiements] = useState(paiementsInit);
   // Factures émises par paiement (v84) : { paiementId: { id, numero } }.
@@ -1087,6 +1124,43 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
         </div>
       )}
 
+      {/* Demande d'offre en attente (v97, 2026-08-23) : avant, la demande ne
+          vivait QUE dans la file de /offres — la prof qui ouvrait la fiche de
+          l'élève ne voyait rien (cas Maude/Cécile, « seule avec sa notif »).
+          Au-dessus des onglets : c'est de l'argent qui attend un geste. */}
+      {(demandesOffre || []).length > 0 && (
+        <div className="izi-card dem-fiche animate-slide-up">
+          {demandesOffre.map(d => (
+            <div key={d.id} className="dem-fiche-ligne">
+              <div className="dem-fiche-txt">
+                <span className="dem-fiche-titre">🛒 Demande d'offre à traiter</span>
+                <span className="dem-fiche-detail">
+                  {client.prenom || 'Cette élève'} a demandé « {d.offres?.nom || 'une offre'} »
+                  {d.offres?.prix != null ? ` (${formatMontant(d.offres.prix)})` : ''} · {resumeDemande(d).quand}.
+                  {' '}Rien n'est encaissé ni réservé tant que tu n'as pas fait la vente.
+                </span>
+                {d.message && <span className="dem-fiche-message">« {d.message} »</span>}
+              </div>
+              <div className="dem-fiche-actions">
+                <button
+                  className="izi-btn izi-btn-primary"
+                  onClick={() => { setDemandePreselect(d); setShowAssignerModal(true); }}
+                >
+                  Attribuer l&apos;offre
+                </button>
+                <button
+                  className="dem-fiche-ghost"
+                  onClick={() => ecarterDemande(d.id)}
+                  disabled={ecartement === d.id}
+                >
+                  {ecartement === d.id ? '…' : 'Écarter'}
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Tabs */}
       <div className="tabs-bar animate-slide-up">
         <button
@@ -1502,8 +1576,15 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
       {showAssignerModal && (
         <AssignerOffreModal
           client={client}
-          onClose={() => setShowAssignerModal(false)}
-          onSuccess={handleOffreAdded}
+          offreInitialeId={demandePreselect?.offre_id || null}
+          onClose={() => { setShowAssignerModal(false); setDemandePreselect(null); }}
+          onSuccess={() => {
+            setDemandePreselect(null);
+            handleOffreAdded();
+            // Le bandeau « demande d'offre » vit dans les props SERVEUR :
+            // handleOffreAdded ne recharge que abos/paiements côté client.
+            router.refresh();
+          }}
         />
       )}
 
@@ -2223,6 +2304,18 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
         .empty-mini { text-align: center; padding: 24px; color: var(--text-muted); font-size: 0.875rem; }
 
         .abo-card { padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; }
+
+        /* Demande d'offre en attente (v97) — bandeau au-dessus des onglets */
+        .dem-fiche { border-left: 3px solid #9333ea; display: flex; flex-direction: column; gap: 12px; padding: 14px 16px; }
+        .dem-fiche-ligne { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+        .dem-fiche-txt { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1 1 260px; }
+        .dem-fiche-titre { font-weight: 700; font-size: 0.875rem; color: var(--text-primary); }
+        .dem-fiche-detail { font-size: 0.8125rem; color: var(--text-secondary); line-height: 1.45; }
+        .dem-fiche-message { font-size: 0.8125rem; color: var(--text-muted); font-style: italic; }
+        .dem-fiche-actions { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
+        .dem-fiche-ghost { background: none; border: 1px solid var(--border); border-radius: 99px; padding: 8px 14px; font-size: 0.8125rem; font-weight: 600; color: var(--text-secondary); cursor: pointer; font-family: inherit; }
+        .dem-fiche-ghost:hover { border-color: #b91c1c; color: #b91c1c; }
+        .dem-fiche-ghost:disabled { opacity: 0.6; cursor: wait; }
         .abo-nom-btn {
           display: inline-flex; align-items: center; gap: 3px;
           background: none; border: none; padding: 0; cursor: pointer;

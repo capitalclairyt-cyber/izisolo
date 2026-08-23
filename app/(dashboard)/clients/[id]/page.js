@@ -56,6 +56,22 @@ export default async function FicheClientPage({ params }) {
     }
   }
 
+  // Demandes d'offre en attente de CET élève (v97) — lecture DÉFENSIVE et
+  // séparée : sans la table, la fiche vit sans bandeau. Le nom/prix viennent
+  // de la jointure (une demande n'est pas une vente : rien n'est figé).
+  let demandesOffre = [];
+  try {
+    const { data, error } = await supabase
+      .from('demandes_offre')
+      .select('id, offre_id, message, created_at, offres(id, nom, prix)')
+      .eq('profile_id', user.id)
+      .eq('client_id', id)
+      .eq('statut', 'nouvelle')
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    demandesOffre = data || [];
+  } catch { /* pré-v97 : pas de bandeau, jamais bloquant */ }
+
   // Fetch lieux linked to this client pro
   let lieux = [];
   if (client.type_client && client.type_client !== 'particulier') {
@@ -78,6 +94,7 @@ export default async function FicheClientPage({ params }) {
       statutCompte={statutCompte}
       facturationActive={facturationActive}
       facturesParPaiement={facturesParPaiement}
+      demandesOffre={demandesOffre}
     />
   );
 }

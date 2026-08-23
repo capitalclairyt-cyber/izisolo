@@ -10,6 +10,7 @@ import { createClient } from '@/lib/supabase';
 import PaiementStep from '@/components/paiements/PaiementStep';
 import { calcProRata } from '@/lib/prorata';
 import { bornesVente } from '@/lib/offres-periode';
+import { solderDemandesApresVente } from '@/lib/demande-offre';
 
 /**
  * VenteOffreModal — LE tunnel de vente d'une offre, partagé entre pages.
@@ -177,6 +178,11 @@ export default function VenteOffreModal({ offre: offreInitiale = null, clientIni
       if (rpcErr || !result?.ok) {
         throw (rpcErr || new Error(result?.reason || 'Vente non enregistrée'));
       }
+
+      // La vente honore une éventuelle demande d'offre en attente (v97) : sans
+      // ça, la file de /offres garde une demande « À traiter » déjà vendue —
+      // et « Attribuer l'offre » fabriquerait un doublon. Jamais bloquant.
+      await solderDemandesApresVente(supabase, { clientId: selectedClient.id, offreId: offre.id });
 
       onSuccess();
     } catch (err) {
