@@ -2603,6 +2603,13 @@ export default function PointageClient({ cours, presences: initialPresences, tou
           font-size: 0.75rem; font-weight: 600;
           cursor: pointer; transition: all 0.15s;
         }
+        /* État sélectionné de BASE (retour Maude 2026-08-23 : « le bouton
+           choisi doit se mettre en orange »). Il n'existait qu'en combinaison
+           avec .atp-normal / .atp-essai / .atp-offert : les boutons de portée
+           de série, qui ne portent aucune de ces classes, ne changeaient
+           strictement pas d'apparence une fois cliqués. Les trois variantes
+           ci-dessous restent plus spécifiques, elles gardent leurs couleurs. */
+        .add-type-btn.selected { border-color: var(--brand); background: var(--brand-light); color: var(--brand-700); }
         .add-type-btn.selected.atp-normal { border-color: var(--brand); background: var(--brand-light); color: var(--brand-700); }
         .add-type-btn.selected.atp-essai  { border-color: #fbbf24; background: #fffbeb; color: #92400e; }
         .add-type-btn.selected.atp-offert { border-color: #a78bfa; background: #f5f3ff; color: #5b21b6; }

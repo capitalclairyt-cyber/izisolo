@@ -246,8 +246,31 @@ try {
   const texteP = await portee.innerText();
   assert(/Toute la série \(2\)/.test(texteP),
     `le choix annonce 2 seances a venir : ni la passee, ni l'annulee (lu : « ${texteP.replace(/\n/g, ' | ').slice(0, 120)} »)`);
+  // Le bouton choisi doit SE VOIR (retour Maude 2026-08-23 : « le bouton
+  // choisi doit se mettre en orange »). L'état .selected n'existait qu'en
+  // combinaison avec .atp-normal/.atp-essai/.atp-offert : les boutons de
+  // portée, qui ne portent aucune de ces classes, ne changeaient pas d'un
+  // pixel une fois cliqués. On juge sur le style CALCULÉ, jamais sur la
+  // présence d'une classe (piège maison).
+  const styleBouton = (nom) => page.evaluate((n) => {
+    const b = [...document.querySelectorAll('.add-portee .add-type-btn')]
+      .find(x => x.textContent.includes(n));
+    if (!b) return null;
+    const cs = getComputedStyle(b);
+    return { fond: cs.backgroundColor, bordure: cs.borderTopColor, texte: cs.color };
+  }, nom);
+
+  const avantClic = await styleBouton('Toute la série');
   await portee.getByRole('button', { name: /Toute la série/ }).click();
   await attendre(400);
+  const apresClic = await styleBouton('Toute la série');
+  const nonChoisi = await styleBouton('Cette séance');
+  assert(!!avantClic && !!apresClic, 'les boutons de portee sont lisibles');
+  assert(apresClic.fond !== avantClic.fond || apresClic.bordure !== avantClic.bordure,
+    `le bouton choisi CHANGE d'apparence (fond ${avantClic.fond} -> ${apresClic.fond})`);
+  assert(apresClic.fond !== nonChoisi.fond || apresClic.bordure !== nonChoisi.bordure,
+    'et il se distingue de celui qui n\'est pas choisi');
+
   const apercu = await page.locator('.add-portee-apercu').first().innerText();
   assert(/2 séances à venir/.test(apercu), `l'apercu dit ce qui va se passer (« ${apercu.trim()} »)`);
   await page.screenshot({ path: join(OUT, 'B-portee-serie.png'), fullPage: true });
