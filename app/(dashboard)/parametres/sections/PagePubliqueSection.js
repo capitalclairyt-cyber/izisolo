@@ -524,7 +524,11 @@ export default function PagePubliqueSection({ profile, setProfile, setDirty }) {
         }
         .page-pub-workflow-info { font-size: 0.8125rem; color: var(--text-secondary); flex: 1; min-width: 220px; }
         .page-pub-workflow-info strong { color: var(--text-primary); font-weight: 600; }
-        .page-pub-workflow-actions { display: flex; gap: 6px; flex-shrink: 0; }
+        /* wrap + max-width : sur mobile, la paire de boutons (QR + aperçu) est
+           plus large que la carte — avec flex-shrink:0 sans wrap, « Voir
+           l'aperçu » débordait de 79 px du bloc (retour Colin 2026-08-23,
+           mesuré 375px). Les boutons se replient l'un sous l'autre. */
+        .page-pub-workflow-actions { display: flex; gap: 6px; flex-wrap: wrap; min-width: 0; max-width: 100%; }
         .emb-integrer {
           padding: 12px 14px; margin: 0 0 16px;
           background: var(--bg-soft, #faf8f5);
