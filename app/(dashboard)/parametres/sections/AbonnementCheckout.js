@@ -13,6 +13,15 @@ import { useState } from 'react';
 import { Check } from 'lucide-react';
 
 export default function AbonnementCheckout({ currentPlan, profile }) {
+  // Un abonnement qui VIT (pas la colonne plan, qui vaut 'solo' par défaut
+  // depuis v56 même pendant l'essai).
+  const aUnAbonnement = ['active', 'trialing', 'past_due']
+    .includes(profile?.stripe_subscription_status);
+
+  // Plan interne tout-inclus et gratuit (Maude, Colin, bêta-testeuses choisies).
+  // Souscrire n'aurait aucun sens, et la route refuse de toute façon : autant
+  // que l'écran le dise au lieu d'ouvrir un formulaire de paiement.
+  const estOfferte = profile?.plan === 'free';
   const [loading, setLoading] = useState(null); // 'solo' | 'pro' | 'premium'
   const [portalLoading, setPortalLoading] = useState(false);
 
@@ -163,9 +172,28 @@ export default function AbonnementCheckout({ currentPlan, profile }) {
         .abo-banner-cta:disabled { opacity: 0.6; cursor: wait; }
       `}</style>
 
+      {estOfferte && (
+        <div className="izi-card" style={{
+          background: 'var(--bg-soft, #faf8f5)', border: '1px dashed var(--border)',
+          padding: '14px 16px', marginBottom: 14,
+        }}>
+          <strong style={{ fontSize: '0.9rem' }}>Ton accès est offert 🌿</strong>
+          <p style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', margin: '4px 0 0', lineHeight: 1.5 }}>
+            Tu as toutes les fonctionnalités, sans limite et sans rien à payer. Il n'y a
+            donc rien à souscrire ici. Si un jour tu veux basculer sur un abonnement
+            normal, écris-nous.
+          </p>
+        </div>
+      )}
+
       <div className="plans-grid">
         {PLANS_PUB.map(p => {
-          const isCurrent = currentPlan === p.id;
+          // « Plan actuel » se lit sur l'ABONNEMENT, jamais sur profile.plan.
+          // La migration v56 pose default 'solo' : toute prof en essai a donc
+          // plan='solo' en base, et la carte Essentiel naissait désactivée avec
+          // « Plan actuel ». La moitié de la grille était invendable, sans une
+          // seule erreur dans les logs.
+          const isCurrent = aUnAbonnement && currentPlan === p.id;
           const isDisabled = p.comingSoon === true;
           return (
             <div
@@ -178,7 +206,7 @@ export default function AbonnementCheckout({ currentPlan, profile }) {
               <div className="plan-tagline">{p.tagline}</div>
               <div className="plan-price">
                 <span className="plan-amount">{p.prixMensuel} €</span>
-                <span className="plan-period">/mois TTC</span>
+                <span className="plan-period">/mois</span>
               </div>
               <p className="plan-desc">{p.pitch}</p>
               <ul className="plan-features">
@@ -196,8 +224,8 @@ export default function AbonnementCheckout({ currentPlan, profile }) {
                 <p className="plan-bonus">✦ {p.bonus}</p>
               )}
               <button
-                onClick={() => !isDisabled && subscribe(p.id)}
-                disabled={isCurrent || loading === p.id || isDisabled}
+                onClick={() => !isDisabled && !estOfferte && subscribe(p.id)}
+                disabled={isCurrent || loading === p.id || isDisabled || estOfferte}
                 className={`izi-btn ${p.recommended ? 'izi-btn-primary' : 'izi-btn-secondary'} plan-cta`}
                 title={isDisabled ? 'Plan bientôt disponible' : ''}
               >
@@ -207,7 +235,11 @@ export default function AbonnementCheckout({ currentPlan, profile }) {
                     ? 'Plan actuel'
                     : loading === p.id
                       ? 'Redirection…'
-                      : (currentPlan && currentPlan !== 'free' ? `Passer à ${p.nom}` : `Démarrer mes 14 jours gratuits`)
+                      : estOfferte
+                        ? 'Ton accès est offert'
+                        : aUnAbonnement
+                          ? `Passer à ${p.nom}`
+                          : `Choisir ${p.nom}`
                 }
               </button>
             </div>
@@ -216,7 +248,7 @@ export default function AbonnementCheckout({ currentPlan, profile }) {
       </div>
 
       <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 14, textAlign: 'center' }}>
-        Tarifs TTC. Frais Stripe natifs (1,5 % + 0,25 €) toujours dus à Stripe.
+        TVA non applicable (art. 293 B du CGI). Frais Stripe natifs (1,5 % + 0,25 €) toujours dus à Stripe.
         Les frais IziSolo (1 % sur le paiement en ligne, plan Complet) viennent en plus.
       </p>
     </div>

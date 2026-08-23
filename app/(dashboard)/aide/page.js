@@ -269,6 +269,22 @@ const SECTIONS = [
     ],
     astuce: 'Tes élèves ont la même magie : leur espace s\'installe pareil depuis ton portail — une bannière le leur propose, avec les mêmes étapes.',
   },
+  {
+    id: 'abonnement',
+    icon: Wallet,
+    titre: 'Ton abonnement IziSolo',
+    intro: 'Choisir ta formule, profiter de l\'offre de lancement, changer de carte ou récupérer tes factures.',
+    etapes: [
+      <>Tu as <strong>14 jours d\'essai</strong>, sans carte bancaire, avec toutes les fonctionnalités. Rien ne se déclenche tout seul à la fin : c\'est toi qui choisis de rester, quand tu veux.</>,
+      <><strong>Paramètres</strong> → onglet <strong>Abonnement IziSolo</strong> → la carte de la formule qui te va → <strong>« Choisir »</strong>. Deux formules : <strong>Essentiel</strong> à 15 € par mois, et <strong>Complet</strong> à 29 € par mois, qui ajoute la boucle élève (paiement en ligne, réservation, cours en visio).</>,
+      <>Sur la page de paiement, clique <strong>« Ajouter un code promotionnel »</strong> et saisis <strong>LANCEMENT50</strong> : tu paies <strong>moitié prix pendant 3 mois</strong>. Le code est réservé à une première souscription, alors ne l\'oublie pas ce jour-là.</>,
+      <>Le prélèvement démarre <strong>le jour où tu souscris</strong>, pas à la fin de tes 14 jours : tes jours d\'essai sont déjà comptés par IziSolo, on ne t\'en fait pas payer deux fois. Ensuite, c\'est tous les mois à la même date.</>,
+      <>Une fois abonnée, le bouton devient <strong>« Gérer mon abonnement »</strong> : il ouvre l\'espace sécurisé de Stripe où tu <strong>changes de carte</strong>, <strong>télécharges tes factures</strong>, <strong>passes d\'Essentiel à Complet</strong> (ou l\'inverse) et <strong>résilies</strong> si tu le souhaites. Rien de tout ça ne passe par nous : c\'est ta carte, c\'est ton espace.</>,
+      <>Si tu résilies, ton abonnement va <strong>jusqu\'au bout du mois déjà payé</strong>. Ensuite tes données restent, mais tu ne peux plus créer de nouvelles élèves, cours ou offres tant que tu ne reviens pas. <strong>Tu peux exporter ta base élève à tout moment</strong>, même après, depuis la page Élèves : elle est à toi.</>,
+      <>Un paiement qui échoue (carte expirée, plafond) ne coupe rien du jour au lendemain : tu reçois un message, ton accès continue, et tu mets ta carte à jour depuis « Gérer mon abonnement ».</>,
+    ],
+    astuce: 'Les factures de ton abonnement portent la mention « TVA non applicable, article 293 B du CGI » : c\'est normal, et c\'est exactement ce que ton comptable attend d\'une entreprise en franchise.',
+  },
 ];
 
 // Recherche insensible aux accents, à la casse ET aux apostrophes : le contenu

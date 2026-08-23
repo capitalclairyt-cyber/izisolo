@@ -166,6 +166,7 @@ import PushToggle from '@/components/push/PushToggle';
 import NotifPrefsPanel from '@/components/push/NotifPrefsPanel';
 import ChampsElevesSection from './sections/ChampsElevesSection';
 import NotifsElevesSection from './sections/NotifsElevesSection';
+import AideContextuelle from '@/components/AideContextuelle';
 import AbonnementCheckout from './sections/AbonnementCheckout';
 import ReglesAnnulationSection from './sections/ReglesAnnulationSection';
 import PagePubliqueSection from './sections/PagePubliqueSection';
@@ -208,7 +209,12 @@ export default function Parametres() {
   useEffect(() => {
     const abo = searchParams.get('abo');
     if (abo === 'success') {
-      toast.success('🎉 Abonnement activé ! Bienvenue dans IziSolo Pro.');
+      // Pas « Bienvenue dans IziSolo Pro » : « Pro » est une clé DB, bannie des
+      // surfaces prof depuis la grille du 2026-07-27, et le message annonçait le
+      // mauvais plan une fois sur deux. Le nom exact arrive avec le webhook, qui
+      // peut être en retard de quelques secondes : on reste juste plutôt que
+      // d'affirmer un plan qu'on ne connaît pas encore.
+      toast.success('🎉 Paiement reçu, merci ! Ton abonnement s\'active dans quelques secondes.');
       setActiveTab('abonnement');
       router.replace('/parametres?tab=abonnement', { scroll: false });
     } else if (abo === 'cancel') {
@@ -1243,6 +1249,12 @@ export default function Parametres() {
       {/* ============================================ */}
       {activeTab === 'abonnement' && (
         <div className="tab-content animate-fade-in">
+
+          {/* Règle immuable du projet : toute section du guide reçoit son « ? »
+              sur la page qu'elle décrit. */}
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 6 }}>
+            <AideContextuelle ancre="abonnement" titre="Ouvrir le tuto « Ton abonnement IziSolo »" />
+          </div>
 
           {/* Plan actuel — dynamique selon le plan EFFECTIF (incluant trial) */}
           {(() => {
