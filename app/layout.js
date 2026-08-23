@@ -3,6 +3,7 @@ import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { Instrument_Serif, Fraunces, Inter, JetBrains_Mono } from 'next/font/google';
 import AuthFragmentCatcher from '@/components/auth/AuthFragmentCatcher';
+import RegisterSW from '@/components/pwa/RegisterSW';
 import { getOrganizationSchema, getWebSiteSchema } from '@/lib/seo';
 
 const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.izisolo.fr';
@@ -159,6 +160,10 @@ export default function RootLayout({ children }) {
       </head>
       <body>
         <AuthFragmentCatcher />
+        {/* next-pwa 5.6 n'enregistre RIEN en App Router (son register vit dans
+            l'entry `main` du Pages Router, jamais chargée) — on enregistre le
+            SW nous-mêmes. Cf. components/pwa/RegisterSW.js, 2026-08-23. */}
+        <RegisterSW />
         {children}
         <Analytics />
         <SpeedInsights />
