@@ -16,6 +16,9 @@ import { compterPlacesOccupees, presenceOccupePlace, presenceEstReservationActiv
 import { seanceDeltaChangementType } from '@/lib/pointage-delta';
 import { getRegle } from '@/lib/regles-metier';
 import { sanitizeLienPaiement } from '@/lib/paiement-seance';
+import {
+  JOURS_SEMAINE, JOUR_LONG, serieDeplacable, planDeplacement, apercuDeplacement, decalerJours,
+} from '@/lib/serie-jour';
 import TypeCoursHint from '@/components/cours/TypeCoursHint';
 import CouvertureCours from '@/components/cours/CouvertureCours';
 import AttachmentPicker from '@/components/messagerie/AttachmentPicker';
@@ -176,6 +179,56 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
     carnets_acceptes: cours.carnets_acceptes === true,
     stripe_payment_link_unit: cours.stripe_payment_link_unit || '',
   });
+
+  // ── Changer le JOUR de la série (retour Colin 2026-08-23 : « on devrait
+  // avoir la modif du jour sur cet écran pour les cours récurrents »).
+  // Le 22/08, le jour est devenu un choix à la CRÉATION ; ici c'est le
+  // rattrapage d'une série déjà créée. Les séances ne sont pas régénérées,
+  // elles se DÉCALENT : elles portent des inscrites et de l'historique.
+  // Les occurrences ne se chargent qu'à l'ouverture du panneau — la fiche
+  // d'un cours n'a pas à payer cette requête à chaque visite.
+  const [occurrencesSerie, setOccurrencesSerie] = useState(null); // null = pas encore chargées
+  const [jourVise, setJourVise] = useState(null);
+  const recurrenceCfg = cours.recurrence || null;
+
+  useEffect(() => {
+    if (!showRecurrenceEdit || !cours.recurrence_parent_id || occurrencesSerie) return;
+    let annule = false;
+    (async () => {
+      const supabase = createClient();
+      const n = new Date();
+      const today = `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`;
+      const { data, error } = await supabase
+        .from('cours')
+        .select('id, date, presences(id, statut_pointage, annulation_tardive)')
+        .eq('recurrence_parent_id', cours.recurrence_parent_id)
+        .gte('date', today)
+        .order('date');
+      if (annule) return;
+      if (error) { setOccurrencesSerie([]); return; } // pas de jour proposé plutôt qu'un plan faux
+      setOccurrencesSerie((data || []).map(o => ({
+        id: o.id,
+        date: o.date,
+        // Formule v74 (lib/presences) : une annulation tardive n'occupe pas
+        // de place, mais on parle ici d'élèves à prévenir — même filtre, on
+        // ne compte pas celles qui ne viendront pas.
+        inscrites: compterPlacesOccupees(o.presences),
+      })));
+    })();
+    return () => { annule = true; };
+  }, [showRecurrenceEdit, cours.recurrence_parent_id, occurrencesSerie]);
+
+  const deplacable = useMemo(() => serieDeplacable({
+    frequence: recurrenceCfg?.frequence,
+    joursSemaine: recurrenceCfg?.jours_semaine,
+    occurrences: occurrencesSerie || [],
+  }), [recurrenceCfg, occurrencesSerie]);
+
+  const planJour = useMemo(() => (
+    deplacable.ok && jourVise && jourVise !== deplacable.jourActuel
+      ? planDeplacement({ occurrences: occurrencesSerie || [], jourVise })
+      : null
+  ), [deplacable, jourVise, occurrencesSerie]);
 
   // ---- Message aux participants ----
   const [showMessageModal, setShowMessageModal] = useState(false);
@@ -446,8 +499,42 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
         .eq('id', cours.recurrence_parent_id);
       if (e2) throw e2;
 
+      // 3. Changement de JOUR — en DERNIER : les deux updates ci-dessus
+      //    filtrent sur les dates actuelles. On décale chaque séance à venir
+      //    du même nombre de jours ; aucune n'est supprimée ni recréée, donc
+      //    les inscrites, les paiements et l'historique suivent tout seuls.
+      if (planJour?.delta) {
+        const LOT = 8;
+        for (let i = 0; i < planJour.mouvements.length; i += LOT) {
+          const lot = planJour.mouvements.slice(i, i + LOT);
+          const res = await Promise.all(lot.map(m =>
+            supabase.from('cours').update({ date: m.vers }).eq('id', m.id)
+          ));
+          const err = res.find(r => r.error)?.error;
+          if (err) throw err;
+        }
+        // La config suit le mouvement, sinon la prochaine génération
+        // (« Ajuster la série ») retomberait sur l'ancien jour — et en
+        // bimensuel sur l'autre semaine, puisque la parité s'ancre sur
+        // date_debut.
+        const majRec = { jours_semaine: [jourVise] };
+        if (recurrenceCfg?.date_debut) majRec.date_debut = decalerJours(recurrenceCfg.date_debut, planJour.delta);
+        if (recurrenceCfg?.date_fin) majRec.date_fin = decalerJours(recurrenceCfg.date_fin, planJour.delta);
+        const { error: e3 } = await supabase
+          .from('recurrences').update(majRec).eq('id', cours.recurrence_parent_id);
+        if (e3) throw e3;
+
+        if (planJour.nbInscrites > 0) {
+          toast.warning(`Série déplacée au ${JOUR_LONG[jourVise]}. ${planJour.nbInscrites} inscription${planJour.nbInscrites > 1 ? 's' : ''} ont suivi : pense à prévenir ces élèves.`);
+        } else {
+          toast.success(`Série déplacée au ${JOUR_LONG[jourVise]}.`);
+        }
+      }
+
       setShowRecurrenceEdit(false);
       setRecurrenceConfirmed(false);
+      setJourVise(null);
+      setOccurrencesSerie(null); // rechargées au prochain ouvrir : les dates ont bougé
       router.refresh();
     } catch (err) {
       toast.error('Erreur : ' + err.message);
@@ -1264,6 +1351,39 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
 
               {/* Formulaire série */}
               <div className="recurrence-form">
+                {/* Le jour d'abord : c'est le réglage le plus structurant, et
+                    celui qui manquait (retour Colin 2026-08-23). */}
+                <div className="form-group">
+                  <label className="form-label"><Calendar size={14} /> Jour de la semaine</label>
+                  {occurrencesSerie === null ? (
+                    <span className="jour-serie-hint">Lecture des séances à venir…</span>
+                  ) : !deplacable.ok ? (
+                    <span className="jour-serie-hint">{deplacable.raison}</span>
+                  ) : (
+                    <>
+                      <div className="type-chips">
+                        {JOURS_SEMAINE.map(j => (
+                          <button
+                            key={j.value}
+                            type="button"
+                            className={`chip ${(jourVise || deplacable.jourActuel) === j.value ? 'selected' : ''}`}
+                            onClick={() => setJourVise(j.value)}
+                          >
+                            {j.label}
+                          </button>
+                        ))}
+                      </div>
+                      {planJour ? (
+                        <div className="jour-serie-apercu">{apercuDeplacement(planJour)}</div>
+                      ) : (
+                        <span className="jour-serie-hint">
+                          Tes séances à venir tombent le {JOUR_LONG[deplacable.jourActuel]}. Choisis un autre jour pour les décaler toutes.
+                        </span>
+                      )}
+                    </>
+                  )}
+                </div>
+
                 <div className="form-group">
                   <label className="form-label">Nom du cours</label>
                   <input className="izi-input" type="text"
@@ -1368,7 +1488,10 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
                 <input type="checkbox"
                   checked={recurrenceConfirmed}
                   onChange={e => setRecurrenceConfirmed(e.target.checked)} />
-                <span>Je confirme vouloir modifier les <strong>{nbOccurrences} prochaines séances</strong> de cette série</span>
+                <span>
+                  Je confirme vouloir modifier les <strong>{nbOccurrences} prochaines séances</strong> de cette série
+                  {planJour ? <> et les <strong>déplacer au {JOUR_LONG[jourVise]}</strong></> : null}
+                </span>
               </label>
 
               <div className="recurrence-actions">
@@ -1937,6 +2060,12 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
            date et heure jusqu'à l'illisible (retours Maude, 08/2026). */
         @media (max-width: 480px) {
           .form-row { grid-template-columns: 1fr; }
+        }
+        .jour-serie-hint { font-size: 0.75rem; color: var(--text-muted); }
+        .jour-serie-apercu {
+          font-size: 0.78rem; font-weight: 600; color: #854d0e;
+          background: var(--warning-light, #F5EBD2);
+          border-radius: 8px; padding: 8px 10px; margin-top: 6px;
         }
         .type-chips {
           display: flex;

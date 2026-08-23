@@ -3,6 +3,9 @@
 import { useState, useEffect, useMemo, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { parseDate, toDateStr, semainesEntre } from '@/lib/dates';
+import {
+  JOURS_SEMAINE, JOUR_LONG_PLURIEL, jourDeLaSemaine, prochaineOccurrenceJour,
+} from '@/lib/serie-jour';
 import { sanitizeLienVisio } from '@/lib/visio';
 import { sanitizeLienPaiement } from '@/lib/paiement-seance';
 import { getAllTypesFromCategories, normalizeTypesCours } from '@/lib/utils';
@@ -30,42 +33,11 @@ const FREQUENCES = [
   { value: 'personnalise', label: 'Personnalisé', desc: 'Choisis les jours' },
 ];
 
-// Libellés au long : l'aperçu doit pouvoir DIRE le jour (« tous les mercredis »),
-// pas seulement l'afficher en chips abrégées au milieu de huit dates.
-const JOURS_LONGS = {
-  1: 'lundis', 2: 'mardis', 3: 'mercredis', 4: 'jeudis',
-  5: 'vendredis', 6: 'samedis', 7: 'dimanches',
-};
-
-// Jour de la semaine d'une date ISO, en 1=lundi … 7=dimanche (parseDate évite
-// le décalage UTC qui décale d'un jour près de minuit).
-function jourDeLaSemaine(dateISO) {
-  if (!dateISO) return null;
-  const d = parseDate(dateISO).getDay();
-  return d === 0 ? 7 : d;
-}
-
-// Prochaine date >= dateISO qui tombe un jour cible. Sert au recalage quand la
-// prof choisit un jour de série : on ne recule JAMAIS (une série ne doit pas
-// démarrer avant la date qu'elle a saisie), on avance de 0 à 6 jours.
-function prochaineOccurrenceJour(dateISO, jourCible) {
-  if (!dateISO || !jourCible) return dateISO;
-  const d = parseDate(dateISO);
-  const actuel = d.getDay() === 0 ? 7 : d.getDay();
-  const delta = (jourCible - actuel + 7) % 7;
-  d.setDate(d.getDate() + delta);
-  return toDateStr(d);
-}
-
-const JOURS_SEMAINE = [
-  { value: 1, label: 'Lun' },
-  { value: 2, label: 'Mar' },
-  { value: 3, label: 'Mer' },
-  { value: 4, label: 'Jeu' },
-  { value: 5, label: 'Ven' },
-  { value: 6, label: 'Sam' },
-  { value: 7, label: 'Dim' },
-];
+// Libellés, jour d'une date et recalage : lib/serie-jour.js (source unique
+// depuis le 2026-08-23 — la même loi sert à CHANGER le jour d'une série déjà
+// créée, et deux copies de « on avance de 0 à 6 jours, jamais en arrière »
+// finiraient par diverger).
+const JOURS_LONGS = JOUR_LONG_PLURIEL;
 
 // Generator partagé : renvoie { incluses, exclues } selon mode + exclusions vacances/feries.
 // mode === 'count'   → on s'arrête après nb_occurrences dates incluses (max 1 an de garde)
