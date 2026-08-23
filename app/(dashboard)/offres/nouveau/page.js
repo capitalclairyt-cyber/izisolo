@@ -16,6 +16,9 @@ import { PLANS } from '@/lib/constantes';
 import { effectivePlan } from '@/lib/trial';
 import { calcProRata, joursEntreISO, semainesEntreISO, aujourdhuiISO } from '@/lib/prorata';
 import { finGlissanteISO } from '@/lib/offres-periode';
+import {
+  MODE_ILLIMITE, MODE_CADENCE, MODE_TOTAL, payloadSeances, apercuSeances,
+} from '@/lib/offres-seances';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 // « Cours à l'unité » retiré de la création (audit cohérence 2026-07-22, spec
@@ -96,9 +99,16 @@ export default function NouvelleOffre() {
   const [dureeGlissante, setDureeGlissante] = useState('30');
   const [dateDebut, setDateDebut]     = useState('');
   const [dateFin, setDateFin]         = useState('');
-  const [seancesAbo, setSeancesAbo]   = useState(''); // '' = illimité
-  const [illimite, setIllimite]       = useState(true);
-  const [seancesParSemaine, setSeancesParSemaine] = useState('1');
+  // Ce que l'abonnement donne droit à faire : UNE question à trois branches
+  // (2026-08-23, retour Colin — « illimité c'est sans limite mais on demande
+  // ensuite combien de séances par semaine »). Deux champs indépendants
+  // vivaient là, dont une cadence à 1×/semaine PAR DÉFAUT que plus aucun écran
+  // n'affichait ensuite : 7 des 13 abonnements de la prod sont nés
+  // « illimités » et bloqués à une séance par semaine, en silence.
+  // Défaut désormais : illimité pour de vrai, aucune des deux colonnes posée.
+  const [modeSeancesAbo, setModeSeancesAbo] = useState(MODE_ILLIMITE);
+  const [seancesAbo, setSeancesAbo]   = useState('');              // total sur la période
+  const [seancesParSemaine, setSeancesParSemaine] = useState('');  // cadence max ('' = sans limite)
   const [inclutVacances, setInclutVacances]       = useState(true);
   const [proRataActif, setProRataActif]           = useState(false);
   const [proRataDateLimite, setProRataDateLimite] = useState('');
@@ -173,6 +183,9 @@ export default function NouvelleOffre() {
   };
 
   // Calculs dérivés
+  // '' (sans limite) n'est PAS « Autre » : sinon la puce Autre s'allumerait sur
+  // un total sans cadence, et son champ libre s'ouvrirait pour rien.
+  const cadenceCustom = !!seancesParSemaine && !['1','2','3'].includes(seancesParSemaine);
   const totalSemaines  = semainesDiff(dateDebut, dateFin);
   const joursValidite  = joursDiff(dateDebut, dateFin);
   const today          = aujourdhuiISO();
@@ -224,11 +237,15 @@ export default function NouvelleOffre() {
           return;
         }
       }
-      // Piège silencieux fermé (retour Colin 2026-08-21) : « Nombre fixe »
-      // avec un champ vide partait en base comme ILLIMITÉ, sans un mot —
-      // et l'édition réaffichait « Illimitées » en toute logique.
-      if (!illimite && (!seancesAbo || parseInt(seancesAbo) < 1)) {
-        toast.warning('Indique le nombre de séances incluses, ou choisis « Illimitées ».');
+      // Piège silencieux fermé (retour Colin 2026-08-21) : un mode chiffré
+      // avec un champ vide partait en base comme ILLIMITÉ, sans un mot, et
+      // l'édition réaffichait « Illimitées » en toute logique.
+      if (modeSeancesAbo === MODE_TOTAL && (!seancesAbo || parseInt(seancesAbo) < 1)) {
+        toast.warning('Indique le nombre total de séances, ou choisis « Autant qu\'elle veut ».');
+        return;
+      }
+      if (modeSeancesAbo === MODE_CADENCE && (!seancesParSemaine || parseInt(seancesParSemaine) < 1)) {
+        toast.warning('Indique combien de séances par semaine, ou choisis « Autant qu\'elle veut ».');
         return;
       }
     }
@@ -265,8 +282,12 @@ export default function NouvelleOffre() {
         payload.date_debut          = glissante ? null : (dateDebut || null);
         payload.date_fin            = glissante ? null : (dateFin   || null);
         payload.duree_jours         = glissante ? parseInt(dureeGlissante) : (joursValidite || null);
-        payload.seances             = (!illimite && seancesAbo) ? parseInt(seancesAbo) : null;
-        payload.seances_par_semaine = seancesParSemaine ? parseInt(seancesParSemaine) : null;
+        // Les deux colonnes s'écrivent ENSEMBLE, par le traducteur que
+        // l'édition relit (lib/offres-seances) : un abonnement « illimité » ne
+        // peut plus repartir avec une cadence restée à l'écran.
+        Object.assign(payload, payloadSeances({
+          mode: modeSeancesAbo, total: seancesAbo, cadence: seancesParSemaine,
+        }));
         payload.inclut_vacances     = inclutVacances;
         // Le pro-rata fait payer les semaines RESTANTES d'une période commune :
         // il n'a aucun sens en glissant, où chacune démarre à sa date de vente.
@@ -591,83 +612,116 @@ export default function NouvelleOffre() {
               </>
             )}
 
-            {/* Séances */}
+            {/* ── Ce que l'abonnement donne droit à faire ──────────────────────
+                UNE question, trois branches (2026-08-23, retour Colin). Avant :
+                « Séances incluses » et « Séances / semaine » posées côte à côte,
+                donc « Illimitées » qui réclamait quand même une cadence, et un
+                abonnement « 1 fois par semaine » qui obligeait à calculer son
+                total. Les deux colonnes n'ont pas changé, la question si. */}
             <div className="no-field">
-              <label className="no-label">Séances incluses <span style={{ fontWeight: 400, color: 'var(--text-muted)' }}>(le TOTAL sur la période)</span></label>
-              <div className="no-illimite-row">
-                <button
-                  type="button"
-                  className={`no-toggle-btn ${illimite ? 'active' : ''}`}
-                  onClick={() => setIllimite(true)}
-                >
-                  Illimitées
-                </button>
-                <button
-                  type="button"
-                  className={`no-toggle-btn ${!illimite ? 'active' : ''}`}
-                  onClick={() => setIllimite(false)}
-                >
-                  Nombre fixe
-                </button>
+              <label className="no-label">Que peut faire l'élève avec cet abonnement ?</label>
+              <div className="no-mode-grid">
+                {[
+                  { value: MODE_ILLIMITE, titre: "Autant qu'elle veut",  desc: 'Aucune limite' },
+                  { value: MODE_CADENCE,  titre: 'X fois par semaine',   desc: 'Sans total à calculer' },
+                  { value: MODE_TOTAL,    titre: 'Un nombre de séances', desc: 'Ex : 32 sur la saison' },
+                ].map(m => (
+                  <button
+                    key={m.value}
+                    type="button"
+                    className={`no-mode-btn ${modeSeancesAbo === m.value ? 'active' : ''}`}
+                    onClick={() => {
+                      setModeSeancesAbo(m.value);
+                      // Revenir d'un total « sans limite » vers la cadence ne doit
+                      // pas laisser le champ vide : elle EST la règle dans ce mode.
+                      if (m.value === MODE_CADENCE && !seancesParSemaine) setSeancesParSemaine('1');
+                    }}
+                  >
+                    <span className="no-mode-titre">{m.titre}</span>
+                    <span className="no-mode-desc">{m.desc}</span>
+                  </button>
+                ))}
               </div>
-              {!illimite && (
+
+              {modeSeancesAbo === MODE_TOTAL && (
                 <input
                   className="izi-input"
                   type="number"
                   min="1"
-                  placeholder="Ex : 32 séances"
+                  placeholder="Ex : 32 séances sur toute la période"
                   value={seancesAbo}
                   onChange={e => setSeancesAbo(e.target.value)}
                 />
               )}
+
+              {(modeSeancesAbo === MODE_CADENCE || modeSeancesAbo === MODE_TOTAL) && (
+                <>
+                  <label className="no-label no-label-sub">
+                    {modeSeancesAbo === MODE_TOTAL
+                      ? <>Cadence maximale <span className="no-label-hint">(facultatif)</span></>
+                      : 'Combien de fois par semaine ?'}
+                  </label>
+                  <div className="no-semaine-chips">
+                    {modeSeancesAbo === MODE_TOTAL && (
+                      <button
+                        type="button"
+                        className={`no-chip ${!seancesParSemaine ? 'active' : ''}`}
+                        onClick={() => setSeancesParSemaine('')}
+                      >
+                        Sans limite
+                      </button>
+                    )}
+                    {['1','2','3'].map(n => (
+                      <button
+                        key={n}
+                        type="button"
+                        className={`no-chip ${seancesParSemaine === n ? 'active' : ''}`}
+                        onClick={() => setSeancesParSemaine(n)}
+                      >
+                        {n}×/sem
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      className={`no-chip ${cadenceCustom ? 'active' : ''}`}
+                      onClick={() => setSeancesParSemaine('4')}
+                    >
+                      Autre
+                    </button>
+                  </div>
+                  {cadenceCustom && (
+                    <input
+                      className="izi-input no-custom-input"
+                      type="number" min="1"
+                      placeholder="Nb séances/semaine"
+                      value={seancesParSemaine}
+                      onChange={e => setSeancesParSemaine(e.target.value)}
+                      style={{ maxWidth: 160 }}
+                    />
+                  )}
+                </>
+              )}
+
+              {/* Ce que la vente promettra vraiment, en toutes lettres. */}
+              <div className="no-info-pill">
+                <Info size={13} />
+                {apercuSeances({ mode: modeSeancesAbo, total: seancesAbo, cadence: seancesParSemaine })}
+              </div>
             </div>
 
-            {/* Cadence + vacances */}
-            <div className="no-row">
-              <div className="no-field">
-                <label className="no-label">Séances / semaine <span style={{ fontWeight: 400, color: 'var(--text-muted)' }}>(cadence max, indépendante du total)</span></label>
-                <div className="no-semaine-chips">
-                  {['1','2','3'].map(n => (
-                    <button
-                      key={n}
-                      type="button"
-                      className={`no-chip ${seancesParSemaine === n ? 'active' : ''}`}
-                      onClick={() => setSeancesParSemaine(n)}
-                    >
-                      {n}×/sem
-                    </button>
-                  ))}
-                  <button
-                    type="button"
-                    className={`no-chip ${!['1','2','3'].includes(seancesParSemaine) ? 'active' : ''}`}
-                    onClick={() => setSeancesParSemaine('')}
-                  >
-                    Autre
-                  </button>
-                </div>
-                {!['1','2','3'].includes(seancesParSemaine) && (
-                  <input
-                    className="izi-input no-custom-input"
-                    type="number" min="1"
-                    placeholder="Nb séances/semaine"
-                    value={seancesParSemaine}
-                    onChange={e => setSeancesParSemaine(e.target.value)}
-                  />
-                )}
-              </div>
-              <div className="no-field">
-                <label className="no-label">Vacances scolaires</label>
-                <button
-                  type="button"
-                  className="no-vacances-toggle"
-                  onClick={() => setInclutVacances(v => !v)}
-                >
-                  {inclutVacances
-                    ? <><ToggleRight size={22} style={{ color: 'var(--brand)' }} /> Incluses</>
-                    : <><ToggleLeft  size={22} style={{ color: 'var(--text-muted)' }} /> Exclues</>
-                  }
-                </button>
-              </div>
+            {/* Vacances */}
+            <div className="no-field">
+              <label className="no-label">Vacances scolaires</label>
+              <button
+                type="button"
+                className="no-vacances-toggle"
+                onClick={() => setInclutVacances(v => !v)}
+              >
+                {inclutVacances
+                  ? <><ToggleRight size={22} style={{ color: 'var(--brand)' }} /> Incluses</>
+                  : <><ToggleLeft  size={22} style={{ color: 'var(--text-muted)' }} /> Exclues</>
+                }
+              </button>
             </div>
 
             {/* Pro-rata — période fixe UNIQUEMENT (cf. payload) */}
@@ -1030,6 +1084,23 @@ export default function NouvelleOffre() {
         }
         .no-toggle-btn.active { border-color: var(--brand); background: var(--brand-light); color: var(--brand-700); }
         .no-illimite-row { display: flex; gap: 8px; }
+
+        /* Choix « que peut faire l'élève » */
+        .no-mode-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+        .no-mode-btn {
+          display: flex; flex-direction: column; gap: 2px; text-align: left;
+          padding: 10px 12px; border-radius: var(--radius-md);
+          border: 1.5px solid var(--border); background: var(--bg-card);
+          cursor: pointer; transition: all var(--transition-fast);
+        }
+        .no-mode-btn.active { border-color: var(--brand); background: var(--brand-light); }
+        .no-mode-titre { font-size: 0.8125rem; font-weight: 700; color: var(--text-secondary); }
+        .no-mode-btn.active .no-mode-titre { color: var(--brand-700); }
+        .no-mode-desc { font-size: 0.7rem; font-weight: 500; color: var(--text-muted); }
+        .no-label-sub { margin-top: 2px; }
+        @media (max-width: 640px) {
+          .no-mode-grid { grid-template-columns: 1fr; }
+        }
 
         /* Chips semaines */
         .no-semaine-chips { display: flex; gap: 6px; flex-wrap: wrap; }

@@ -9,6 +9,7 @@ import ScrollReveal from '@/components/landing/ScrollReveal';
 import { useToast } from '@/components/ui/ToastProvider';
 import { matchRecherche } from '@/lib/utils';
 import { essaiVarieParType, minPrixEssai } from '@/lib/essai-tarif';
+import { libelleSeances } from '@/lib/offres-seances';
 
 // next/image ne peut optimiser que les hosts déclarés dans
 // next.config.mjs → images.remotePatterns (AUDIT-PERF 2.9 : la couverture
@@ -770,9 +771,11 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
           <div className="portail-prices-grid">
             {offresPubliques.map(o => {
               const Icon = TYPE_ICONS[o.type] || Ticket;
+              // Ce à quoi l'abonnement donne droit, avant de payer : une
+              // cadence de 1×/semaine ne doit pas se découvrir à la 2e résa.
               const sub =
                 o.type === 'carnet'      ? `Carnet de ${o.seances} séances` :
-                o.type === 'abonnement'  ? (o.duree_jours ? `Abonnement ${o.duree_jours} jours` : 'Abonnement') :
+                o.type === 'abonnement'  ? [libelleSeances(o), o.duree_jours ? `${o.duree_jours} jours` : null].filter(Boolean).join(' · ') :
                                             'Cours à l\'unité';
               const handleSpotlight = (e) => {
                 const r = e.currentTarget.getBoundingClientRect();
@@ -898,7 +901,9 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
                   </div>
                   <div className="portail-stripe-card-info">
                     <div className="portail-stripe-card-nom">{o.nom}</div>
-                    {o.seances && (
+                    {o.type === 'abonnement' ? (
+                      <div className="portail-stripe-card-meta">{libelleSeances(o)}</div>
+                    ) : o.seances && (
                       <div className="portail-stripe-card-meta">{o.seances} séance{o.seances > 1 ? 's' : ''}</div>
                     )}
                   </div>

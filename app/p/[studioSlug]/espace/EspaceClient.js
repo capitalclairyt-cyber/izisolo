@@ -12,6 +12,7 @@ import { useToast } from '@/components/ui/ToastProvider';
 import { evaluerAnnulation, formatDateLimite } from '@/lib/regles-metier';
 import { moisFacturables } from '@/lib/factures';
 import { toneForCours, toneForPaiement } from '@/lib/tones';
+import { libelleSeances } from '@/lib/offres-seances';
 import AideEleve from '@/components/portail/AideEleve';
 
 const STRIPE_TYPE_ICONS = { carnet: Ticket, abonnement: CalendarCheck, cours_unique: Zap };
@@ -1020,7 +1021,9 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
                   <div className="espace-stripe-icon"><Icon size={16} /></div>
                   <div className="espace-stripe-info">
                     <div className="espace-stripe-nom">{o.nom}</div>
-                    {o.seances && <div className="espace-stripe-meta">{o.seances} séance{o.seances > 1 ? 's' : ''}</div>}
+                    {o.type === 'abonnement'
+                      ? <div className="espace-stripe-meta">{libelleSeances(o)}</div>
+                      : o.seances && <div className="espace-stripe-meta">{o.seances} séance{o.seances > 1 ? 's' : ''}</div>}
                   </div>
                   <div className="espace-stripe-prix">{o.prix}€</div>
                 </a>

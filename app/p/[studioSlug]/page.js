@@ -64,7 +64,7 @@ async function getStudioData(studioSlug) {
   const offresAffichables = profile.afficher_tarifs
     ? supabase
         .from('offres')
-        .select('id, nom, type, prix, seances, duree_jours, stripe_payment_link')
+        .select('id, nom, type, prix, seances, seances_par_semaine, duree_jours, stripe_payment_link')
         .eq('profile_id', profile.id)
         .eq('actif', true)
         .order('ordre')
@@ -96,7 +96,7 @@ async function getStudioData(studioSlug) {
       .limit(240),
     supabase
       .from('offres')
-      .select('id, nom, type, prix, seances, duree_jours, stripe_payment_link')
+      .select('id, nom, type, prix, seances, seances_par_semaine, duree_jours, stripe_payment_link')
       .eq('profile_id', profile.id)
       .eq('actif', true)
       .not('stripe_payment_link', 'is', null)

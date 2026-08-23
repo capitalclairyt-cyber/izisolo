@@ -11,6 +11,9 @@ import { createClient } from '@/lib/supabase';
 import { getAllTypesFromCategories, formatMontant, formatDate } from '@/lib/utils';
 import { calcProRata, aujourdhuiISO } from '@/lib/prorata';
 import { estPeriodeGlissante, finGlissanteISO } from '@/lib/offres-periode';
+import {
+  MODE_ILLIMITE, MODE_CADENCE, MODE_TOTAL, modeSeances, payloadSeances, apercuSeances,
+} from '@/lib/offres-seances';
 import { useToast } from '@/components/ui/ToastProvider';
 import CoherenceTypesHint from '@/components/offres/CoherenceTypesHint';
 
@@ -39,7 +42,9 @@ export default function EditOffre({ params }) {
   // première sauvegarde.
   const [periodeMode, setPeriodeMode] = useState('fixe');
   const [dureeGlissante, setDureeGlissante] = useState('30');
-  const [illimite, setIllimite] = useState(true);
+  // Le mode remplace le booléen « illimité » : la cadence n'est plus une
+  // question à part (cf. lib/offres-seances, retour Colin 2026-08-23).
+  const [modeSeancesAbo, setModeSeancesAbo] = useState(MODE_ILLIMITE);
   const [seancesParSemaine, setSeancesParSemaine] = useState(''); // '' = pas de cap
   const [inclutVacances, setInclutVacances] = useState(true);
   const [stripePaymentLink, setStripePaymentLink] = useState('');
@@ -74,7 +79,10 @@ export default function EditOffre({ params }) {
       const glissante = data.type === 'abonnement' && estPeriodeGlissante(data);
       setPeriodeMode(glissante ? 'glissante' : 'fixe');
       setDureeGlissante(glissante ? String(data.duree_jours) : '30');
-      setIllimite(data.type === 'abonnement' ? !data.seances : true);
+      // Une offre existante se rouvre dans SON mode, cadence comprise : les
+  // abonnements « illimités » nés capés à 1×/sem s'affichent désormais pour
+  // ce qu'ils sont (« 1 fois par semaine »), au lieu de le cacher.
+      setModeSeancesAbo(data.type === 'abonnement' ? modeSeances(data) : MODE_ILLIMITE);
       // '' = pas de cap hebdo. (Avant : défaut '1' → sauvegarder ajoutait
       // silencieusement un cap 1x/sem à un abo qui n'en avait pas, et la
       // réservation portail bloquait les élèves au-delà.)
@@ -100,6 +108,8 @@ export default function EditOffre({ params }) {
   }
 
   const joursValidite = joursDiff(dateDebut, dateFin);
+  // '' (sans limite) n'est pas « Autre » — cf. formulaire de création.
+  const cadenceCustom = !!seancesParSemaine && !['1', '2', '3'].includes(seancesParSemaine);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -135,15 +145,21 @@ export default function EditOffre({ params }) {
         payload.date_debut = glissante ? null : (dateDebut || null);
         payload.date_fin = glissante ? null : (dateFin || null);
         payload.duree_jours = glissante ? parseInt(dureeGlissante) : (joursValidite || null);
-        // Même garde qu'à la création : « Nombre fixe » vide ne repart
+        // Même garde qu'à la création : un mode chiffré laissé vide ne repart
         // JAMAIS en illimité silencieux.
-        if (!illimite && (!seances || parseInt(seances) < 1)) {
-          toast.warning('Indique le nombre de séances incluses, ou choisis « Illimitées ».');
+        if (modeSeancesAbo === MODE_TOTAL && (!seances || parseInt(seances) < 1)) {
+          toast.warning('Indique le nombre total de séances.');
           setSaving(false);
           return;
         }
-        payload.seances = (!illimite && seances) ? parseInt(seances) : null;
-        payload.seances_par_semaine = seancesParSemaine ? parseInt(seancesParSemaine) : null;
+        if (modeSeancesAbo === MODE_CADENCE && (!seancesParSemaine || parseInt(seancesParSemaine) < 1)) {
+          toast.warning('Indique combien de séances par semaine.');
+          setSaving(false);
+          return;
+        }
+        Object.assign(payload, payloadSeances({
+          mode: modeSeancesAbo, total: seances, cadence: seancesParSemaine,
+        }));
         payload.inclut_vacances = inclutVacances;
         // Pas de pro-rata en glissant (cf. lib/offres-periode) : on l'éteint
         // plutôt que de laisser un réglage inerte sur l'offre.
@@ -330,47 +346,93 @@ export default function EditOffre({ params }) {
               </>
             )}
 
+            {/* Ce que l'abonnement donne droit à faire — même question qu'à la
+                création, même traducteur (lib/offres-seances). */}
             <div className="eo-field">
-              <label className="eo-label">Séances incluses <span className="eo-optional">(le TOTAL sur la période)</span></label>
-              <div className="eo-toggle-row">
-                <button type="button" className={`eo-toggle-btn ${illimite ? 'active' : ''}`} onClick={() => setIllimite(true)}>Illimitées</button>
-                <button type="button" className={`eo-toggle-btn ${!illimite ? 'active' : ''}`} onClick={() => setIllimite(false)}>Nombre fixe</button>
+              <label className="eo-label">Que peut faire l'élève avec cet abonnement ?</label>
+              <div className="eo-mode-grid">
+                {[
+                  { value: MODE_ILLIMITE, titre: "Autant qu'elle veut",  desc: 'Aucune limite' },
+                  { value: MODE_CADENCE,  titre: 'X fois par semaine',   desc: 'Sans total à calculer' },
+                  { value: MODE_TOTAL,    titre: 'Un nombre de séances', desc: 'Ex : 32 sur la saison' },
+                ].map(m => (
+                  <button
+                    key={m.value}
+                    type="button"
+                    className={`eo-mode-btn ${modeSeancesAbo === m.value ? 'active' : ''}`}
+                    onClick={() => {
+                      setModeSeancesAbo(m.value);
+                      if (m.value === MODE_CADENCE && !seancesParSemaine) setSeancesParSemaine('1');
+                    }}
+                  >
+                    <span className="eo-mode-titre">{m.titre}</span>
+                    <span className="eo-mode-desc">{m.desc}</span>
+                  </button>
+                ))}
               </div>
-              {!illimite && (
-                <input className="izi-input" type="number" min="1" value={seances} onChange={e => setSeances(e.target.value)} placeholder="Ex : 32" />
+
+              {modeSeancesAbo === MODE_TOTAL && (
+                <input
+                  className="izi-input" type="number" min="1"
+                  value={seances}
+                  onChange={e => setSeances(e.target.value)}
+                  placeholder="Ex : 32 séances sur toute la période"
+                />
               )}
+
+              {(modeSeancesAbo === MODE_CADENCE || modeSeancesAbo === MODE_TOTAL) && (
+                <>
+                  <label className="eo-label">
+                    {modeSeancesAbo === MODE_TOTAL
+                      ? <>Cadence maximale <span className="eo-optional">(facultatif)</span></>
+                      : 'Combien de fois par semaine ?'}
+                  </label>
+                  <div className="eo-chips">
+                    {modeSeancesAbo === MODE_TOTAL && (
+                      <button
+                        type="button"
+                        className={`eo-chip ${!seancesParSemaine ? 'active' : ''}`}
+                        onClick={() => setSeancesParSemaine('')}
+                      >
+                        Sans limite
+                      </button>
+                    )}
+                    {['1', '2', '3'].map(n => (
+                      <button
+                        key={n}
+                        type="button"
+                        className={`eo-chip ${seancesParSemaine === n ? 'active' : ''}`}
+                        onClick={() => setSeancesParSemaine(n)}
+                      >
+                        {n}x/sem
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      className={`eo-chip ${cadenceCustom ? 'active' : ''}`}
+                      onClick={() => setSeancesParSemaine('4')}
+                    >
+                      Autre
+                    </button>
+                  </div>
+                  {cadenceCustom && (
+                    <input
+                      className="izi-input"
+                      type="number" min="1"
+                      value={seancesParSemaine}
+                      onChange={e => setSeancesParSemaine(e.target.value)}
+                      style={{ maxWidth: 120, marginTop: 6 }}
+                    />
+                  )}
+                </>
+              )}
+
+              <div className="eo-apercu">
+                {apercuSeances({ mode: modeSeancesAbo, total: seances, cadence: seancesParSemaine })}
+              </div>
             </div>
 
             <div className="eo-row">
-              <div className="eo-field">
-                <label className="eo-label">Séances / semaine <span className="eo-optional">(cadence max, indépendante du total)</span></label>
-                <div className="eo-chips">
-                  <button type="button" className={`eo-chip ${!seancesParSemaine ? 'active' : ''}`} onClick={() => setSeancesParSemaine('')}>
-                    Libre
-                  </button>
-                  {['1', '2', '3'].map(n => (
-                    <button key={n} type="button" className={`eo-chip ${seancesParSemaine === n ? 'active' : ''}`} onClick={() => setSeancesParSemaine(n)}>
-                      {n}x/sem
-                    </button>
-                  ))}
-                  <button
-                    type="button"
-                    className={`eo-chip ${seancesParSemaine && !['1', '2', '3'].includes(seancesParSemaine) ? 'active' : ''}`}
-                    onClick={() => setSeancesParSemaine('4')}
-                  >
-                    Autre
-                  </button>
-                </div>
-                {seancesParSemaine && !['1', '2', '3'].includes(seancesParSemaine) && (
-                  <input
-                    className="izi-input"
-                    type="number" min="1"
-                    value={seancesParSemaine}
-                    onChange={e => setSeancesParSemaine(e.target.value)}
-                    style={{ maxWidth: 120, marginTop: 6 }}
-                  />
-                )}
-              </div>
               <div className="eo-field">
                 <label className="eo-label">Vacances scolaires</label>
                 <button type="button" className="eo-vacances-toggle" onClick={() => setInclutVacances(v => !v)}>
@@ -550,6 +612,25 @@ export default function EditOffre({ params }) {
         }
         .eo-toggle-btn.active { border-color: var(--brand); background: var(--brand-light); color: var(--brand-700); }
 
+        .eo-mode-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+        .eo-mode-btn {
+          display: flex; flex-direction: column; gap: 2px; text-align: left;
+          padding: 10px 12px; border-radius: var(--radius-md);
+          border: 1.5px solid var(--border); background: var(--bg-card);
+          cursor: pointer; transition: all var(--transition-fast);
+        }
+        .eo-mode-btn.active { border-color: var(--brand); background: var(--brand-light); }
+        .eo-mode-titre { font-size: 0.8125rem; font-weight: 700; color: var(--text-secondary); }
+        .eo-mode-btn.active .eo-mode-titre { color: var(--brand-700); }
+        .eo-mode-desc { font-size: 0.7rem; font-weight: 500; color: var(--text-muted); }
+        .eo-apercu {
+          font-size: 0.8125rem; font-weight: 600; color: var(--brand-700);
+          background: var(--brand-light); border-radius: var(--radius-full);
+          padding: 5px 12px; align-self: flex-start;
+        }
+        @media (max-width: 640px) {
+          .eo-mode-grid { grid-template-columns: 1fr; }
+        }
         .eo-chips { display: flex; gap: 6px; flex-wrap: wrap; }
         .eo-chip {
           padding: 6px 12px; border-radius: var(--radius-full);

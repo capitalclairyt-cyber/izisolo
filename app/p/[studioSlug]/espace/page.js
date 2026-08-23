@@ -169,7 +169,7 @@ async function getData(studioSlug, user) {
     resoudreFicheEleve(supabase, profile.id, user, 'id, prenom, nom, email, telephone, adresse_postale, ville'),
     supabase
       .from('offres')
-      .select('id, nom, type, prix, seances, stripe_payment_link')
+      .select('id, nom, type, prix, seances, seances_par_semaine, stripe_payment_link')
       .eq('profile_id', profile.id)
       .eq('actif', true)
       .not('stripe_payment_link', 'is', null)

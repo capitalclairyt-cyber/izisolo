@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import AideContextuelle from '@/components/AideContextuelle';
 import { formatMontant } from '@/lib/utils';
+import { libelleSeances } from '@/lib/offres-seances';
 import { toneForOffre } from '@/lib/tones';
 import { TYPES_OFFRE } from '@/lib/constantes';
 import { createClient } from '@/lib/supabase';
@@ -244,7 +245,9 @@ export default function OffresClient({ offres, profile, planKey, limiteOffres })
           <div className="offre-nom">{offre.nom}</div>
           <div className="offre-details">
             <span className={`izi-badge tone-${tone}-bg`}>{typeInfo.label || offre.type}</span>
-            {offre.seances && <span className="offre-seances">{offre.seances} séance{offre.seances > 1 ? 's' : ''}</span>}
+            {offre.type === 'abonnement'
+              ? <span className="offre-seances">{libelleSeances(offre)}</span>
+              : offre.seances && <span className="offre-seances">{offre.seances} séance{offre.seances > 1 ? 's' : ''}</span>}
             {offre.duree_jours && <span className="offre-duree">{offre.duree_jours}j</span>}
           </div>
         </div>
