@@ -86,11 +86,22 @@ try {
   console.log('\n— 1. RegisterSW : le service worker s\'active à l\'arrivée —');
   await page.goto(`${BASE}/parametres?tab=notifications`, { waitUntil: 'domcontentloaded', timeout: 120000 });
   await page.waitForSelector('text=Mes notifications', { timeout: 90000 });
+  // Ce que RegisterSW promet : l'ENREGISTREMENT sans geste. L'ACTIVATION, elle,
+  // dépend du premier précache (0 s en local, 30-90 s en prod sur profil
+  // neuf) — c'est précisément pour ça qu'enablePush attend puis parle
+  // (retour Maude 2026-08-24). On assert l'enregistrement, on CHRONOMÈTRE
+  // l'activation à titre informatif.
+  const debutSw = Date.now();
+  const swEnregistre = await attendre(() => page.evaluate(async () => {
+    const reg = await navigator.serviceWorker.getRegistration();
+    return reg ? (reg.active ? 'actif' : 'en installation') : null;
+  }), 30000);
+  c('SW ENREGISTRÉ sans aucun geste (RegisterSW)', !!swEnregistre, swEnregistre || 'jamais enregistré');
   const swActif = await attendre(() => page.evaluate(async () => {
     const reg = await navigator.serviceWorker.getRegistration();
     return reg?.active ? reg.active.scriptURL : null;
-  }), 30000);
-  c('SW enregistré ET actif sans aucun geste', !!swActif, swActif || 'jamais actif');
+  }), 120000);
+  console.log(`  [info] SW actif après ~${Math.round((Date.now() - debutSw) / 1000)} s (${swActif ? 'précache terminé' : 'PAS actif après 120 s'})`);
 
   // ── 2. Le bouton se rend ───────────────────────────────────────────────────
   console.log('\n— 2. Le bouton « Activer les notifications » existe enfin —');
