@@ -41,6 +41,13 @@ export default function PushPrompt({ audience = 'eleve' }) {
   const [state, setState] = useState('hidden');
   const [dismissed, setDismissed] = useState(true);
   const [installEvent, setInstallEvent] = useState(null);
+  // ⚠️ TOUS les hooks AVANT le `return null` conditionnel plus bas. Ce useState
+  // a vécu quelques heures après le return (ajout du 2026-08-24 matin) : au
+  // montage le composant rendait null (5 hooks), puis l'effect passait la
+  // bannière en 'ask' et le re-rendu en comptait 6 → React jette (« Rendered
+  // more hooks ») → error boundary « Une erreur est survenue » sur TOUT le
+  // dashboard, en boucle, pour quiconque a la bannière à afficher.
+  const [msg, setMsg] = useState('');
   const capteurPose = useRef(false);
 
   useEffect(() => {
@@ -103,7 +110,6 @@ export default function PushPrompt({ audience = 'eleve' }) {
   // puis la bannière revenait à son état initial sans un mot — le SW de la
   // toute première visite précache encore le build, subscribe est impossible
   // tant qu'il n'est pas actif).
-  const [msg, setMsg] = useState('');
   const activer = async () => {
     setState('busy');
     setMsg('');
