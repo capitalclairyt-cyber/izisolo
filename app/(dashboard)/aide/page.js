@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import {
   BookOpen, CalendarDays, Users, Wallet, ClipboardList, Globe,
@@ -39,12 +40,19 @@ import { FAQ_SUPPORT } from '@/content/faq-support';
  * composant qui le rend) — si un écran est renommé, ce guide DOIT suivre,
  * dans le MÊME lot que la modif (règle immuable 2026-08-23). Contenu
  * statique volontairement (zéro requête, zéro API).
+ *
+ * Illustrations (2026-08-24, demande Colin) : une capture RÉELLE par tuto,
+ * prises sur le compte démo Atelier Soleil fraîchement refreshé, contre la
+ * prod — `node scripts/shoot-aide-illustrations.mjs` → public/icons/aide/
+ * (re-runnable ; FAB feedback masqué à la capture). À REFAIRE quand l'UI
+ * d'un écran illustré change (même discipline que les captures landing).
  */
 
 const SECTIONS = [
   {
     id: 'premier-cours',
     icon: CalendarDays,
+    capture: { src: '/icons/aide/premier-cours.png', w: 2320, h: 1520 },
     titre: 'Ton premier cours récurrent',
     intro: 'La base de ton planning : un cours créé une fois, toutes les séances générées d\'un coup.',
     etapes: [
@@ -59,6 +67,7 @@ const SECTIONS = [
   {
     id: 'agenda',
     icon: CalendarClock,
+    capture: { src: '/icons/aide/agenda.png', w: 2320, h: 1520 },
     titre: 'Modifier, déplacer, annuler une séance',
     intro: 'La vie réelle bouge — ton planning suit, sans jamais casser le reste de la série.',
     etapes: [
@@ -74,6 +83,7 @@ const SECTIONS = [
   {
     id: 'eleves',
     icon: Users,
+    capture: { src: '/icons/aide/eleves.png', w: 2320, h: 1520 },
     titre: 'Fais entrer tes élèves',
     intro: 'Ta liste d\'élèves en quelques minutes, même depuis un autre outil ou un tableur.',
     etapes: [
@@ -87,6 +97,7 @@ const SECTIONS = [
   {
     id: 'offres',
     icon: Package,
+    capture: { src: '/icons/aide/offres.png', w: 2320, h: 1520 },
     titre: 'Construis ton catalogue d\'offres',
     intro: 'Ce que tu vends — carnets, abonnements — et ce qui n\'a pas besoin d\'offre du tout.',
     etapes: [
@@ -103,6 +114,7 @@ const SECTIONS = [
   {
     id: 'encaisser',
     icon: Wallet,
+    capture: { src: '/icons/aide/encaisser.png', w: 1040, h: 1368 },
     titre: 'Vends tes carnets et abos',
     intro: 'La vente en trois clics depuis la fiche élève, le suivi dans Revenus.',
     etapes: [
@@ -118,6 +130,7 @@ const SECTIONS = [
   {
     id: 'carnets-abos',
     icon: BookOpen,
+    capture: { src: '/icons/aide/carnets-abos.png', w: 2320, h: 1520 },
     titre: 'Les carnets au quotidien',
     intro: 'Après la vente : suivre, mettre en pause, corriger — sur la fiche de l\'élève et dans « Carnets & abos ».',
     etapes: [
@@ -132,6 +145,7 @@ const SECTIONS = [
   {
     id: 'pointage',
     icon: ClipboardList,
+    capture: { src: '/icons/aide/pointage.png', w: 2320, h: 1520 },
     titre: 'Le pointage au quotidien',
     intro: 'Le geste central d\'IziSolo : un clic par élève, et les carnets, absences et paiements suivent tout seuls.',
     etapes: [
@@ -146,6 +160,7 @@ const SECTIONS = [
   {
     id: 'cas-a-traiter',
     icon: Inbox,
+    capture: { src: '/icons/aide/cas-a-traiter.png', w: 2320, h: 1520 },
     titre: 'L\'inbox « À traiter »',
     intro: 'Tout ce qui demande une décision de ta part atterrit au même endroit — tu tranches en un clic, IziSolo fait le reste.',
     etapes: [
@@ -160,6 +175,7 @@ const SECTIONS = [
   {
     id: 'regles-annulation',
     icon: Hourglass,
+    capture: { src: '/icons/aide/regles-annulation.png', w: 2320, h: 1520 },
     titre: 'Ton délai d\'annulation, côté élève',
     intro: 'Une seule règle à poser — l\'app l\'affiche, l\'applique et t\'évite les conversations pénibles.',
     etapes: [
@@ -174,6 +190,7 @@ const SECTIONS = [
   {
     id: 'messagerie',
     icon: MessageSquare,
+    capture: { src: '/icons/aide/messagerie.png', w: 2320, h: 1520 },
     titre: 'Préviens tes élèves',
     intro: 'Fini les infos éparpillées entre SMS et WhatsApp : tout part d\'IziSolo, et chacune reçoit un email avec le lien pour répondre.',
     etapes: [
@@ -188,6 +205,7 @@ const SECTIONS = [
   {
     id: 'factures',
     icon: FileText,
+    capture: { src: '/icons/aide/factures.png', w: 1728, h: 1210 },
     titre: 'Reçus et factures',
     intro: 'Tes élèves se servent seules : reçu simple par défaut, vraie facture dès que ton SIRET est renseigné.',
     etapes: [
@@ -202,6 +220,7 @@ const SECTIONS = [
   {
     id: 'urssaf',
     icon: Landmark,
+    capture: { src: '/icons/aide/urssaf.png', w: 2320, h: 1520 },
     titre: 'Ta déclaration URSSAF',
     intro: 'Le montant à recopier, sa date limite, et le registre que tu dois tenir. Sans ressortir la calculette.',
     etapes: [
@@ -217,6 +236,7 @@ const SECTIONS = [
   {
     id: 'page-publique',
     icon: Globe,
+    capture: { src: '/icons/aide/page-publique.jpg', w: 2320, h: 1520 },
     titre: 'Ta page publique',
     intro: 'Ta vitrine izisolo.fr/p/ton-studio : planning, réservation, cours d\'essai — sans site à construire.',
     etapes: [
@@ -231,6 +251,7 @@ const SECTIONS = [
   {
     id: 'cours-essai',
     icon: Sparkles,
+    capture: { src: '/icons/aide/cours-essai.png', w: 2320, h: 1520 },
     titre: 'Le cours d\'essai, ta porte d\'entrée',
     intro: 'Le premier contact d\'une future élève — une demande, une fiche créée, et toi qui choisis le niveau d\'automatisation.',
     etapes: [
@@ -245,6 +266,7 @@ const SECTIONS = [
   {
     id: 'liste-attente',
     icon: ListOrdered,
+    capture: { src: '/icons/aide/liste-attente.png', w: 2320, h: 1520 },
     titre: 'La liste d\'attente',
     intro: 'Un cours complet ne perd plus personne : la file se remplit toute seule et se vide dès qu\'une place se libère.',
     etapes: [
@@ -259,6 +281,7 @@ const SECTIONS = [
   {
     id: 'installer',
     icon: Smartphone,
+    capture: { src: '/icons/aide/installer.png', w: 780, h: 1688 },
     titre: 'Installe l\'appli sur ton téléphone',
     intro: 'IziSolo s\'installe comme une vraie app — sans App Store, sans téléchargement. Une icône sur ton écran d\'accueil, et tu restes connectée.',
     etapes: [
@@ -433,6 +456,18 @@ export default function AidePage() {
             <h2>{section.titre}</h2>
           </div>
           <p className="aide-intro">{section.intro}</p>
+          {section.capture && (
+            <div className={`aide-shot ${section.capture.h > section.capture.w ? 'aide-shot-portrait' : ''}`}>
+              <Image
+                src={section.capture.src}
+                alt={`Capture d'écran — ${section.titre}`}
+                width={section.capture.w}
+                height={section.capture.h}
+                sizes="(max-width: 860px) 100vw, 760px"
+                loading="lazy"
+              />
+            </div>
+          )}
           <ol className="aide-steps">
             {section.etapes.map((etape, i) => (
               <li key={i}>{etape}</li>
@@ -530,6 +565,13 @@ export default function AidePage() {
         }
         .aide-section-head h2 { font-size: 1.05rem; font-weight: 700; margin: 0; color: var(--text-primary); }
         .aide-intro { margin: 0 0 14px; font-size: 0.875rem; color: var(--text-secondary); line-height: 1.5; }
+
+        .aide-shot {
+          margin: 0 0 16px; border: 1px solid var(--border); border-radius: 10px;
+          overflow: hidden; background: var(--bg-soft, #f8f9fa); line-height: 0;
+        }
+        .aide-shot img { width: 100%; height: auto; display: block; }
+        .aide-shot-portrait { max-width: 400px; margin-inline: 0 auto; }
 
         .aide-steps { margin: 0; padding: 0 0 0 2px; list-style: none; counter-reset: aide-step; display: flex; flex-direction: column; gap: 12px; }
         .aide-steps li {

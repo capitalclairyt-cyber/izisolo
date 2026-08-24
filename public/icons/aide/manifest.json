@@ -1,0 +1,82 @@
+{
+  "premier-cours": {
+    "w": 2320,
+    "h": 1520,
+    "ext": "png"
+  },
+  "agenda": {
+    "w": 2320,
+    "h": 1520,
+    "ext": "png"
+  },
+  "eleves": {
+    "w": 2320,
+    "h": 1520,
+    "ext": "png"
+  },
+  "offres": {
+    "w": 2320,
+    "h": 1520,
+    "ext": "png"
+  },
+  "encaisser": {
+    "w": 1040,
+    "h": 1368,
+    "ext": "png"
+  },
+  "carnets-abos": {
+    "w": 2320,
+    "h": 1520,
+    "ext": "png"
+  },
+  "pointage": {
+    "w": 2320,
+    "h": 1520,
+    "ext": "png"
+  },
+  "cas-a-traiter": {
+    "w": 2320,
+    "h": 1520,
+    "ext": "png"
+  },
+  "regles-annulation": {
+    "w": 2320,
+    "h": 1520,
+    "ext": "png"
+  },
+  "messagerie": {
+    "w": 2320,
+    "h": 1520,
+    "ext": "png"
+  },
+  "factures": {
+    "w": 1728,
+    "h": 1210,
+    "ext": "png"
+  },
+  "urssaf": {
+    "w": 2320,
+    "h": 1520,
+    "ext": "png"
+  },
+  "cours-essai": {
+    "w": 2320,
+    "h": 1520,
+    "ext": "png"
+  },
+  "liste-attente": {
+    "w": 2320,
+    "h": 1520,
+    "ext": "png"
+  },
+  "page-publique": {
+    "w": 2320,
+    "h": 1520,
+    "ext": "jpg"
+  },
+  "installer": {
+    "w": 780,
+    "h": 1688,
+    "ext": "png"
+  }
+}
