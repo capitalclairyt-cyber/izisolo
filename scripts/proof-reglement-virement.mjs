@@ -182,6 +182,10 @@ try {
 
   // ── C. L'espace élève : « Comment régler ? » ─────────────────────────────
   console.log('\n— C. Espace élève : RIB, référence, QR —');
+  {
+    const { data: dbg } = await svc.from('profiles').select('reglement_config').eq('id', demo.id).maybeSingle();
+    console.log('  [debug] config en base au moment de C :', JSON.stringify(dbg?.reglement_config)?.slice(0, 160));
+  }
   const ctxEleve = await browser.newContext({ viewport: { width: 420, height: 1000 } });
   await ctxEleve.addCookies((await sessionCookies(EMAIL_ELEVE)).map(cc => ({ ...cc, url: BASE, sameSite: 'Lax' })));
   const pageEleve = await ctxEleve.newPage();
@@ -189,9 +193,16 @@ try {
   await pageEleve.waitForSelector('text=À régler', { timeout: 90000 });
   const btnRegler = pageEleve.getByRole('button', { name: /Comment régler \?/ });
   c('le bouton « 💡 Comment régler ? » est rendu', await btnRegler.count() === 1);
-  const modaleOuverte = await clicJusquA(btnRegler, async () => (await pageEleve.locator('text=Sur place').count()) > 0);
-  c('la modale s\'ouvre (options sur place toujours là)', !!modaleOuverte);
+  // ⚠️ effet NON ambigu : « Sur place » matche déjà la phrase permanente de la
+  // section (« sur place ou selon ses modalités habituelles ») — le bouton
+  // « Fermer », lui, n'existe que dans la modale.
+  const modaleOuverte = await clicJusquA(btnRegler, async () => (await pageEleve.getByRole('button', { name: 'Fermer' }).count()) > 0);
+  c('la modale s\'ouvre (bloc « 💶 Sur place » toujours là)', !!modaleOuverte && (await pageEleve.innerText('body')).includes('💶 Sur place'));
   const txtModale = await pageEleve.innerText('body');
+  if (V98 && !txtModale.includes('IBAN')) {
+    const extrait = txtModale.split('\n').filter(l => /régler|Sur place|virement|IBAN|IZI-/i.test(l)).slice(0, 12);
+    console.log('  [debug] modale sans RIB — lignes :', JSON.stringify(extrait));
+  }
   if (V98) {
     c('le RIB est affiché, IBAN par blocs de 4', txtModale.includes('FR14 2004 1010 0505 0001 3M02 606'));
     c('la référence de virement est là (IZI-…)', new RegExp('IZI-' + fiche.id.replace(/-/g, '').slice(0, 6).toUpperCase()).test(txtModale));
