@@ -6,6 +6,21 @@
  * des push et le clic sur la notification (deep-link vers l'espace/dashboard).
  */
 
+// Purge des caches TOXIQUES laissés par les défauts next-pwa 5.6 (règles
+// 'others'/'apis'/'start-url'… retirées le 2026-08-24 : elles cachaient les
+// documents, les navigations RSC et les réponses d'API authentifiées — le
+// dashboard de Maude resservait un payload périmé, « une erreur est
+// survenue »). Retirer une règle ne vide PAS son cache : on les supprime à
+// l'activation, sinon l'espace reste occupé à vie sur chaque appareil.
+const CACHES_TOXIQUES = [
+  'start-url', 'apis', 'others', 'cross-origin', 'next-data',
+  'static-data-assets', 'static-js-assets', 'static-style-assets',
+  'static-font-assets', 'static-audio-assets', 'static-video-assets', 'pages',
+];
+self.addEventListener('activate', (event) => {
+  event.waitUntil(Promise.all(CACHES_TOXIQUES.map((nom) => caches.delete(nom).catch(() => {}))));
+});
+
 self.addEventListener('push', (event) => {
   let data = {};
   try { data = event.data ? event.data.json() : {}; } catch (e) { /* payload non-JSON */ }

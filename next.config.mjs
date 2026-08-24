@@ -1,10 +1,44 @@
 import withPWA from 'next-pwa';
 
+// ⚠️ runtimeCaching EXPLICITE (2026-08-24, dashboard de Maude cassé « une
+// erreur est survenue » à la réouverture) : les DÉFAUTS de next-pwa 5.6
+// cachaient TOUT le same-origin — documents, navigations RSC (`?_rsc=`),
+// et même les réponses d'API AUTHENTIFIÉES (règles 'others' et 'apis',
+// NetworkFirst). Sur une app dynamique redéployée plusieurs fois par jour,
+// le SW ressert des payloads RSC périmés → error boundary, et pourrait
+// resservir des données privées d'une session à l'autre. Personne n'a
+// jamais promis d'offline sur les pages : le SW ne cache QUE les polices
+// et les images. Aucune règle = requête au réseau, le comportement normal.
+// Le nettoyage des caches toxiques existants vit dans worker/index.js.
 const pwaConfig = withPWA({
   dest: 'public',
   register: true,
   skipWaiting: true,
   disable: process.env.NODE_ENV === 'development',
+  cacheStartUrl: false,
+  dynamicStartUrl: false,
+  runtimeCaching: [
+    {
+      urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
+      handler: 'CacheFirst',
+      options: { cacheName: 'google-fonts-webfonts', expiration: { maxEntries: 8, maxAgeSeconds: 365 * 24 * 3600 } },
+    },
+    {
+      urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
+      handler: 'StaleWhileRevalidate',
+      options: { cacheName: 'google-fonts-stylesheets', expiration: { maxEntries: 8, maxAgeSeconds: 24 * 3600 } },
+    },
+    {
+      urlPattern: /\/_next\/image\?url=.+$/i,
+      handler: 'StaleWhileRevalidate',
+      options: { cacheName: 'next-image', expiration: { maxEntries: 96, maxAgeSeconds: 24 * 3600 } },
+    },
+    {
+      urlPattern: /\.(?:jpg|jpeg|gif|png|svg|ico|webp)$/i,
+      handler: 'StaleWhileRevalidate',
+      options: { cacheName: 'static-image-assets', expiration: { maxEntries: 96, maxAgeSeconds: 24 * 3600 } },
+    },
+  ],
 });
 
 // Headers sécurité — X-Frame-Options est géré À PART (B2g) : il s'applique
