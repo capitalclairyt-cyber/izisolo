@@ -144,6 +144,14 @@ export async function proxy(request) {
     pathname.startsWith('/_next/') ||
     pathname.startsWith('/manifest') || // manifest.json + manifest-admin.json (PWA admin)
     pathname.startsWith('/sw.js') ||
+    // Les compagnons du SW (2026-08-24) : sw.js importScripts les DEUX —
+    // sans ces lignes, un visiteur SANS cookie recevait la page de login en
+    // HTML à leur place (default-deny, §12) et l'installation du service
+    // worker échouait pour tous les anonymes ; les sessions passaient, elles,
+    // parce que le proxy laisse passer les cookies valides — d'où des preuves
+    // vertes en session et un trou invisible.
+    pathname.startsWith('/worker-') ||
+    pathname.startsWith('/workbox-') ||
     pathname.startsWith('/icons/') ||
     pathname.startsWith('/illustrations/') ||
     pathname.startsWith('/videos/') || // réels produit de la landing (ReelPhone)
@@ -189,6 +197,6 @@ export const config = {
   matcher: [
     // illustrations/ exclu comme icons/ (AUDIT-PERF cat 1.6) : l'image de la
     // Sidebar déclenchait une vérification GoTrue à chaque affichage.
-    '/((?!_next/static|_next/image|favicon.ico|manifest.json|manifest-admin.json|sw.js|icons/|illustrations/|videos/).*)',
+    '/((?!_next/static|_next/image|favicon.ico|manifest.json|manifest-admin.json|sw.js|worker-|workbox-|icons/|illustrations/|videos/).*)',
   ],
 };
