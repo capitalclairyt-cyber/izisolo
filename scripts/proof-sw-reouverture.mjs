@@ -69,9 +69,18 @@ try {
   // ── Visite 1 : le SW s'installe et s'active (précache + purge) ──────────
   console.log('\n— Visite 1 : installation du SW —');
   const p1 = ctx.pages()[0] || await ctx.newPage();
+  const erreursV1 = [];
+  p1.on('pageerror', e => erreursV1.push(String(e).slice(0, 160)));
   await p1.goto(`${BASE}/dashboard`, { waitUntil: 'domcontentloaded', timeout: 90000 });
+  // ⚠️ Lire APRÈS le re-render des effects (6 s) : une lecture à
+  // domcontentloaded rate une error boundary qui n'apparaît qu'après
+  // l'hydratation — c'est ce qui a rendu cette preuve faussement verte le
+  // 2026-08-24 pendant que le bug de hooks PushPrompt (#310) cassait le
+  // dashboard en prod.
+  await p1.waitForTimeout(6000);
   const corps1 = await p1.innerText('body').catch(() => '');
   c('le dashboard vit à la première visite', !/erreur est survenue/i.test(corps1));
+  c('zéro erreur React à la première visite', !erreursV1.some(e => /Minified React error/i.test(e)), erreursV1.join(' · '));
   const debutActivation = Date.now();
   const actif = await attendre(() => p1.evaluate(async () => {
     const reg = await navigator.serviceWorker.getRegistration();
@@ -86,7 +95,8 @@ try {
   const erreursConsole = [];
   p2.on('pageerror', e => erreursConsole.push(String(e).slice(0, 120)));
   await p2.goto(`${BASE}/dashboard`, { waitUntil: 'domcontentloaded', timeout: 90000 });
-  await p2.waitForTimeout(4000);
+  await p2.waitForTimeout(6000); // même règle : le corps se juge après les effects
+
   const controle = await p2.evaluate(() => !!navigator.serviceWorker.controller);
   c('la page est bien CONTRÔLÉE par le SW (le cas qui cassait)', controle);
   const corps2 = await p2.innerText('body').catch(() => '');

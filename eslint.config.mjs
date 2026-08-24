@@ -5,6 +5,7 @@
 // warnings fantômes qui noyaient les vrais et re-cassaient le plafond à
 // chaque nouvelle feature. La règle ne rapporte rien : elle MARQUE l'usage.
 import react from 'eslint-plugin-react';
+import reactHooks from 'eslint-plugin-react-hooks';
 
 export default [
   {
@@ -91,10 +92,17 @@ export default [
         ecmaFeatures: { jsx: true },
       },
     },
-    plugins: { react },
+    plugins: { react, 'react-hooks': reactHooks },
     rules: {
       'no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
       'react/jsx-uses-vars': 'error',
+      // rules-of-hooks en ERREUR (2026-08-24) : un useState déclaré après un
+      // return conditionnel (PushPrompt) a cassé le dashboard entier en prod
+      // (« Rendered more hooks » #310 → error boundary en boucle). Le plugin
+      // était installé mais jamais branché — cette règle l'aurait bloqué au
+      // commit. exhaustive-deps reste off : des dizaines de deps volontaires
+      // « au montage seulement », un ratchet à froid noierait les vrais bugs.
+      'react-hooks/rules-of-hooks': 'error',
       'no-undef': 'error',
       'no-debugger': 'error',
       'no-console': ['warn', { allow: ['warn', 'error'] }],
