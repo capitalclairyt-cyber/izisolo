@@ -8,7 +8,7 @@ import {
   BookOpen, CalendarDays, Users, Wallet, ClipboardList, Globe,
   LifeBuoy, MessageSquarePlus, ArrowRight, ArrowLeft, Package, Inbox,
   MessageSquare, FileText, Smartphone, CalendarClock, Hourglass, Search, X,
-  Sparkles, ListOrdered, Landmark
+  Sparkles, ListOrdered, Landmark, Palette
 } from 'lucide-react';
 import { FAQ_SUPPORT } from '@/content/faq-support';
 
@@ -243,10 +243,24 @@ const SECTIONS = [
       <>Ton portail est déjà en ligne : <strong>izisolo.fr/p/ton-studio</strong>. Tes élèves y voient ton planning et réservent en ligne (plan Complet).</>,
       <>Réglages dans <strong>Paramètres → Portail public</strong> : ce qui s'affiche (horaires, tarifs), le cours d'essai (validation manuelle ou automatique), tes couleurs.</>,
       <>Partage-le : tuile <strong>Portail</strong> du tableau de bord → lien à copier, message prérédigé WhatsApp/SMS, et <strong>QR code</strong> à imprimer (carte, flyer, affiche A4).</>,
-      <>Tu as un site ? Intègre ton planning directement dessus (un copier-coller) : Paramètres → Portail public → « Ma page ».</>,
+      <>Tu as un site ? Intègre ton <strong>planning</strong> et ta <strong>grille d&apos;offres</strong> directement dessus (un copier-coller chacun) : Paramètres → Portail public → « Ma page ».</>,
       <>Chaque cours a sa <strong>visibilité</strong> : public, réservé aux inscrit·es, aux abonné·es, aux fidèles — ou privé sur invitation.</>,
     ],
     astuce: 'Le cours d\'essai est ta porte d\'entrée : une demande d\'essai crée la fiche, t\'alerte, et l\'élève reçoit la confirmation avec l\'accès à son espace.',
+  },
+  {
+    id: 'apparence-cours',
+    icon: Palette,
+    titre: 'La couleur et la photo de tes cours',
+    intro: 'Chaque type de cours porte sa couleur sur ton planning public, et peut porter une photo. Un atelier peut avoir la sienne.',
+    etapes: [
+      <>Va dans <strong>Paramètres → Portail public → « Types de cours »</strong>. Tu y retrouves tes types (Hatha, Pilates, Atelier…), un par ligne.</>,
+      <>Choisis la <strong>couleur</strong> de chaque type : elle habille ses séances sur ta page publique. Avant, la couleur était devinée à partir du nom, et deux disciplines différentes pouvaient se retrouver de la même couleur sans que tu puisses rien y faire.</>,
+      <>Dépose une <strong>photo</strong> si tu veux : elle habille toutes les séances de ce type, y compris celles que tu créeras plus tard. Rien n&apos;est obligatoire, la couleur seule reste très lisible.</>,
+      <>Pour un atelier qui mérite son image à lui, la photo se met <strong>directement sur la séance</strong> : au moment de créer le cours, champ « Photo de la séance ». Elle passe devant celle du type.</>,
+      <>Tes photos apparaissent sur ta page publique, sur la fiche de chaque séance, et dans le planning que tu as intégré sur ton site.</>,
+    ],
+    astuce: 'Dépose une photo dont tu as les droits. Si des élèves y sont reconnaissables, demande-leur avant : ta page est publique.',
   },
   {
     id: 'cours-essai',

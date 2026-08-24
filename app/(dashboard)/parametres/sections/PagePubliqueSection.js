@@ -62,6 +62,17 @@ export default function PagePubliqueSection({ profile, setProfile, setDirty }) {
   const embSuffixe = urlParams.length ? '?' + urlParams.join('&') : '';
   const snippetWidget = `<script src="${baseUrl}/widget.js" ${attrs.join(' ')} async></script>`;
   const snippetIframe = `<iframe src="${baseUrl}/embed/${studioSlug}${embSuffixe}" style="width:100%;height:900px;border:0;" title="Planning des cours"></iframe>`;
+
+  // Second bloc : « Mes offres » (v99). Mêmes couleurs que le planning (un
+  // studio ne doit pas avoir deux blocs dépareillés sur la même page), sans
+  // l'option d'affichage qui n'a de sens que pour un agenda.
+  const attrsOffres = attrs
+    .filter(a => !a.startsWith('data-affichage'))
+    .concat('data-bloc="offres"');
+  const urlParamsOffres = urlParams.filter(p => !p.startsWith('affichage='));
+  const embSuffixeOffres = urlParamsOffres.length ? '?' + urlParamsOffres.join('&') : '';
+  const snippetOffresWidget = `<script src="${baseUrl}/widget.js" ${attrsOffres.join(' ')} async></script>`;
+  const snippetOffresIframe = `<iframe src="${baseUrl}/embed/${studioSlug}/offres${embSuffixeOffres}" style="width:100%;height:420px;border:0;" title="Offres et tarifs"></iframe>`;
   const copier = async (quoi, txt) => {
     try {
       await navigator.clipboard.writeText(txt);
@@ -282,6 +293,41 @@ export default function PagePubliqueSection({ profile, setProfile, setDirty }) {
           <a href={`/embed/${studioSlug}${embSuffixe}`} target="_blank" rel="noopener noreferrer" className="emb-int-preview">
             Voir le rendu du planning intégrable →
           </a>
+
+          {/* Second bloc (v99) : la grille tarifaire, à coller où elle veut sur
+              son site. Le clic sort de l'iframe vers son portail, onglet
+              Tarifs, où vivent déjà le paiement en ligne et la demande
+              d'offre. */}
+          <div className="emb-int-bloc2">
+            <div className="emb-int-titre">🎟 Et tes offres, si tu veux</div>
+            <p className="emb-int-sous">
+              Le même principe pour ta grille tarifaire. Tes élèves cliquent, elles arrivent
+              sur tes tarifs, et elles peuvent payer en ligne ou te demander l&apos;offre.
+              Ce bloc affiche tes offres actives même si tu as choisi de ne pas montrer tes
+              tarifs sur ta page publique : le coller sur ton site, c&apos;est déjà les publier.
+            </p>
+            <div className="emb-int-row">
+              <div className="emb-int-label">Recommandé, s&apos;ajuste tout seul à la hauteur :</div>
+              <div className="emb-int-snippet">
+                <code>{snippetOffresWidget}</code>
+                <button type="button" className="izi-btn izi-btn-secondary emb-int-copy" onClick={() => copier('offres-widget', snippetOffresWidget)}>
+                  {copie === 'offres-widget' ? '✓ Copié' : 'Copier'}
+                </button>
+              </div>
+            </div>
+            <div className="emb-int-row">
+              <div className="emb-int-label">Si ton site refuse les scripts, iframe simple :</div>
+              <div className="emb-int-snippet">
+                <code>{snippetOffresIframe}</code>
+                <button type="button" className="izi-btn izi-btn-secondary emb-int-copy" onClick={() => copier('offres-iframe', snippetOffresIframe)}>
+                  {copie === 'offres-iframe' ? '✓ Copié' : 'Copier'}
+                </button>
+              </div>
+            </div>
+            <a href={`/embed/${studioSlug}/offres${embSuffixeOffres}`} target="_blank" rel="noopener noreferrer" className="emb-int-preview">
+              Voir le rendu du bloc offres →
+            </a>
+          </div>
         </div>
       )}
 
@@ -536,6 +582,13 @@ export default function PagePubliqueSection({ profile, setProfile, setDirty }) {
         }
         .emb-int-titre { font-size: 0.875rem; font-weight: 700; color: var(--text-primary); }
         .emb-int-desc { font-size: 0.8125rem; color: var(--text-secondary); margin: 4px 0 10px; line-height: 1.5; }
+        /* Second bloc intégrable (v99) : séparé par un filet, pas par une
+           carte de plus — c'est la même conversation « ton site ». */
+        .emb-int-bloc2 {
+          margin-top: 16px; padding-top: 14px;
+          border-top: 1px dashed var(--border);
+        }
+        .emb-int-sous { font-size: 0.8125rem; color: var(--text-secondary); margin: 4px 0 10px; line-height: 1.5; }
         .emb-int-row { margin-bottom: 10px; }
         .emb-int-opts { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-end; margin: 4px 0 8px; }
         .emb-int-opt { display: flex; flex-direction: column; gap: 4px; font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); }

@@ -9,6 +9,7 @@ import { prixEssai, getEssaiPrixParType } from '@/lib/essai-tarif';
 import { compterPlacesOccupees } from '@/lib/presences';
 import { resoudreCarnetApplicable } from '@/lib/carnet-resolution';
 import { ogPortail } from '@/lib/portail-metadata';
+import { chargerVignettesConfig, vignetteCours } from '@/lib/vignette-cours';
 
 async function getData(studioSlug, coursId) {
   // Contenu PUBLIC du portail (studio, cours) + données élève filtrées par
@@ -146,7 +147,14 @@ async function getData(studioSlug, coursId) {
   const surchargesEssai = await getEssaiPrixParType(supabase, profile.id);
   const prixEssaiCours = prixEssai(profile, cours.type_cours, surchargesEssai);
 
-  return { profile, cours, nbInscrits: nbInscrits || 0, currentUser, alreadyRegistered, prevision, canCancel, canReserve, canWaitlist, prixEssaiCours };
+  // v99 — la vignette de CETTE séance (sa photo propre, sinon celle de son
+  // type), résolue côté serveur : le client n'a pas besoin de la carte entière.
+  // `cours` vient d'un select('*'), donc photo_url y est déjà (et simplement
+  // absent tant que la migration n'est pas passée, sans rien casser).
+  const apparence = await chargerVignettesConfig(supabase, profile.id);
+  const vignette = vignetteCours(cours, apparence.vignettes);
+
+  return { profile, cours, nbInscrits: nbInscrits || 0, currentUser, alreadyRegistered, prevision, canCancel, canReserve, canWaitlist, prixEssaiCours, vignette };
 }
 
 export async function generateMetadata({ params }) {
@@ -192,6 +200,7 @@ export default async function CoursDetailPortailPage({ params }) {
       canReserve={data.canReserve}
       canWaitlist={data.canWaitlist}
       prixEssaiCours={data.prixEssaiCours}
+      vignette={data.vignette}
     />
   );
 }

@@ -22,6 +22,7 @@ import {
   REGIMES, PERIODICITES, configUrssafAffichee, sanitizeConfigUrssaf,
 } from '@/lib/urssaf';
 import { sanitizeReglementConfig } from '@/lib/reglement';
+import { sanitizeTonsParType, sanitizeVignettesParType } from '@/lib/vignette-cours';
 // import BackgroundDecor — retiré, plus utilisé (apparences supprimées)
 
 // Normalise une URL utilisateur :
@@ -50,6 +51,7 @@ const SUBTABS = {
   ],
   portail: [
     { id: 'page', label: 'Ma page' },
+    { id: 'apparence', label: 'Types de cours' },
     { id: 'visibilite', label: 'Visibilité' },
     { id: 'essai', label: "Cours d'essai" },
     { id: 'paiement', label: 'Paiement en ligne' },
@@ -84,6 +86,7 @@ const CARTES = {
                   'horaires_studio', 'horaires_studio_jours', 'afficher_tarifs', 'afficher_horaires',
                   'faq_publique', 'instagram_url', 'facebook_url', 'website_url'],
   docs:          ['docs_inscription'],
+  apparence:     ['tons_par_type', 'vignettes_par_type'],
   visibilite:    ['visibilite_default', 'afficher_inscrits'],
   essai:         ['essai_actif', 'essai_mode', 'essai_paiement', 'essai_prix', 'essai_prix_par_type', 'essai_stripe_payment_link', 'essai_message'],
   paiement:      ['stripe_webhook_secret'],
@@ -114,6 +117,11 @@ const SERIALIZERS = {
   stripe_webhook_secret:     v => v || null,
   regles_annulation:         v => v || null,
   docs_inscription:          v => { const s = sanitizeDocs(v); return s.length ? s : null; },
+  // v99 — jamais écrites brutes : tons de la liste blanche, vignettes sur NOS
+  // hosts uniquement (une URL étrangère ferait jeter next/image au rendu).
+  // undefined pré-migration → omis du payload (même patron que v92 / v98).
+  tons_par_type:             v => (v === undefined ? undefined : sanitizeTonsParType(v)),
+  vignettes_par_type:        v => (v === undefined ? undefined : sanitizeVignettesParType(v)),
   notifs_eleves:             v => v || null,
   sms_seuil_mois:            v => (v || v === 0 ? parseInt(v) || null : null),
   photo_couverture_focal_y:  v => (v != null ? parseInt(v) : 50),
@@ -180,6 +188,7 @@ import ReglementSection from './sections/ReglementSection';
 import StripePaiementSection from './sections/StripePaiementSection';
 import VisibiliteSection from './sections/VisibiliteSection';
 import CoursEssaiSection from './sections/CoursEssaiSection';
+import TypesCoursSection from './sections/TypesCoursSection';
 // (PhotoUploader / CoverPhotoEditor / HorairesStudioEditor vivent dans
 //  PagePubliqueSection depuis B2d ; PALETTES retirée — palette imposée brand.)
 
@@ -494,9 +503,11 @@ export default function Parametres() {
         return next;
       });
       router.refresh();
-    } else if (error.code === '42703') {
+    } else if (error.code === '42703' || error.code === 'PGRST204') {
       // Colonne absente = migration pas encore appliquée. Message honnête
       // plutôt qu'un « Erreur : column ... does not exist » illisible.
+      // PGRST204 = le cache de schéma PostgREST, qui ne renvoie PAS 42703 :
+      // sans lui, la carte affichait l'erreur brute (leçon v95, §12).
       toast.error('Ce réglage attend une mise à jour de la base. Préviens-nous, on s\'en occupe.');
       console.warn('[parametres] colonne manquante sur la carte', carte, ':', error.message);
     } else {
@@ -1006,6 +1017,12 @@ export default function Parametres() {
               {/* v85 — documents d'inscription (sa propre carte : save séparé) */}
               <DocsInscriptionSection profile={profile} setProfile={setProfile} setDirty={() => marquer('docs')} />
               <BtnSauver carte="docs" />
+            </>
+          )}
+          {subTab.portail === 'apparence' && (
+            <>
+              <TypesCoursSection profile={profile} setProfile={setProfile} setDirty={() => marquer('apparence')} />
+              <BtnSauver carte="apparence" />
             </>
           )}
           {subTab.portail === 'visibilite' && (

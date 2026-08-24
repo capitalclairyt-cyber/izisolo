@@ -17,9 +17,11 @@ import Link from 'next/link';
 import {
   ArrowLeft, Save, Calendar, Clock, MapPin, Users, Repeat,
   Building2, Plus, ChevronDown, X, AlertTriangle, ExternalLink, Sparkles, Sun,
-  Home, Navigation, Phone,
+  Home, Navigation, Phone, ImageIcon,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase';
+import { chargerPhotosCours } from '@/lib/vignette-cours';
+import PhotoUploader from '@/components/ui/PhotoUploader';
 import HeureSelect from '@/components/ui/HeureSelect';
 import { useToast } from '@/components/ui/ToastProvider';
 import TypeCoursHint from '@/components/cours/TypeCoursHint';
@@ -254,6 +256,9 @@ function NouveauCoursInner() {
     format: 'presentiel',         // 'presentiel' | 'visio'
     lien_visio: '',               // URL Zoom/Meet — servie via lib/visio.js selon le verrou
     lien_visio_verrouille: true,  // true = lien réservé aux séances réglées/couvertes
+    // v99 — photo propre à CETTE séance (ou à toutes celles de la série créée
+    // ici). Vide = la séance porte la vignette de son type (Paramètres).
+    photo_url: '',
     // Récurrence
     frequence: preFreq,
     jours_semaine: [],
@@ -370,6 +375,15 @@ function NouveauCoursInner() {
             visibilite: source.visibilite || prev.visibilite || 'public',
             // date reste à dateInitiale (aujourd'hui ou ?date=...) — le prof choisit la nouvelle date
           }));
+          // v99 — la photo du cours source, chargée À PART : la nommer dans le
+          // select ci-dessus tuerait TOUT le pré-remplissage tant que la
+          // migration n'est pas passée (anti-pattern colonnes fantômes §12).
+          // Sans cette reprise, dupliquer un atelier perdait son image en
+          // silence, exactement comme B1b avait perdu tarif_unitaire.
+          const photos = await chargerPhotosCours(supabase, [fromId]);
+          const photoSource = photos.get(fromId);
+          if (photoSource) setForm(prev => ({ ...prev, photo_url: photoSource }));
+
           if (source.domicile) {
             toast.info('Cours dupliqué (le cours source est à domicile : la copie ne reprend ni l\'élève ni l\'adresse — passe par sa fiche pour un vrai cours à domicile).');
           } else {
@@ -468,6 +482,18 @@ function NouveauCoursInner() {
   // Cours en ligne (v86) : le lien s'écrit dans une requête SÉPARÉE et
   // défensive après la création — tant que la migration n'est pas appliquée,
   // un insert qui nommerait la colonne tuerait la création entière (42703).
+  // v99, même patron que le lien visio ci-dessus et pour la même raison : la
+  // colonne peut ne pas exister encore, et la nommer dans l'INSERT tuerait la
+  // création entière (PGRST204 / 42703 sur tout le payload).
+  const poserPhotoCours = async (supabase, ids) => {
+    const url = (form.photo_url || '').trim();
+    if (!url || !ids?.length) return;
+    const { error: ePhoto } = await supabase.from('cours')
+      .update({ photo_url: url })
+      .in('id', ids);
+    if (ePhoto) toast.warning('Cours créé, mais la photo n\'a pas pu être enregistrée (migration v99 requise).');
+  };
+
   const estVisio = form.format === 'visio';
   const poserLienVisio = async (supabase, ids) => {
     const lienVisioClean = estVisio ? sanitizeLienVisio(form.lien_visio) : '';
@@ -516,6 +542,7 @@ function NouveauCoursInner() {
         }).select('id').single();
         if (error) throw error;
         await poserLienVisio(supabase, newCours ? [newCours.id] : []);
+        await poserPhotoCours(supabase, newCours ? [newCours.id] : []);
 
         if (isDomicile && newCours) {
           // Erreur LUE (audit 2026-07-25 : l'insert muet créait le cours SANS
@@ -594,6 +621,7 @@ function NouveauCoursInner() {
             throw coursErr;
           }
           await poserLienVisio(supabase, (createdCours || []).map(c => c.id));
+          await poserPhotoCours(supabase, (createdCours || []).map(c => c.id));
 
           if (isDomicile && createdCours?.length > 0) {
             const { error: presErr } = await supabase.from('presences').insert(
@@ -1148,6 +1176,31 @@ function NouveauCoursInner() {
         <div className="form-group">
           <label className="form-label">Notes</label>
           <textarea className="izi-input" value={form.notes} onChange={handleChange('notes')} placeholder="Infos complémentaires..." rows={2} style={{ resize: 'vertical' }} />
+        </div>
+
+        {/* Photo de la séance (v99) — l'atelier ponctuel qui mérite son image.
+            PAS de `remplace` ici, volontairement : une duplication fait porter
+            la MÊME url à plusieurs séances, et supprimer le fichier en
+            changeant l'une d'elles casserait l'image des autres. On préfère un
+            fichier orphelin à une image cassée ailleurs. */}
+        <div className="form-group">
+          <label className="form-label">
+            <ImageIcon size={14} style={{ display: 'inline', verticalAlign: '-2px', marginRight: 4 }} />
+            Photo {form.frequence === 'unique' ? 'de la séance' : 'des séances'}
+          </label>
+          <PhotoUploader
+            currentUrl={form.photo_url || null}
+            kind="cours"
+            forme="carre"
+            taille={92}
+            label="Ajouter une photo"
+            onUploaded={(url) => setForm(prev => ({ ...prev, photo_url: url || '' }))}
+          />
+          <span className="form-hint">
+            {form.frequence === 'unique'
+              ? 'Facultatif. Elle passe devant la photo du type de cours, sur cette séance seulement.'
+              : 'Facultatif. Elle sera posée sur toutes les séances créées ici. Sans photo, chaque séance porte celle de son type.'}
+          </span>
         </div>
 
         {/* === Comment se paie ce cours ? ===

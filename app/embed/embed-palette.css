@@ -1,0 +1,48 @@
+/* ════════════════════════════════════════════════════════════════════════════
+   Palettes des blocs intégrables (planning B2g, offres v99).
+   Presets seulement (data-palette) — demande Manon 2026-07-28, son site est
+   lavande/pêche. Défaut sable = les couleurs historiques. Les couleurs libres
+   (data-couleur / data-couleur-2) arrivent en style inline sur la racine et
+   priment sur ces variables, avec plancher de contraste (lib/embed-couleurs).
+
+   Fichier partagé et non dupliqué dans chaque composant : deux copies de la
+   même palette finissent toujours par diverger, et un studio verrait alors ses
+   deux blocs de couleurs différentes sur la même page.
+
+   Le badge « Complet » reste rouge partout : sémantique, pas décoratif.
+   ════════════════════════════════════════════════════════════════════════════ */
+
+.emb {
+  --e-jour: #8a7a68;   /* libellé du jour */
+  --e-deep: #7a4a1e;   /* heure, CTA, liens pied */
+  --e-accent: #c9a227; /* bordure au survol */
+  --e-border: #e8e2d8;
+  --e-tag-bg: #f6efe4;  --e-tag-ink: #7a5c34;
+  --e-prix-bg: #fdf3e0; --e-prix-ink: #9a6b1f;
+  --e-soft: #a09484;   /* durée, pied */
+  --e-ombre: rgba(80, 60, 30, 0.08);
+}
+
+.emb[data-palette='rose'] {
+  --e-jour: #9a6a70; --e-deep: #a04a58; --e-accent: #d08a95;
+  --e-border: #efdde0;
+  --e-tag-bg: #f9ecee;  --e-tag-ink: #8a5560;
+  --e-prix-bg: #fdf0f2; --e-prix-ink: #b06070;
+  --e-soft: #ab9195; --e-ombre: rgba(120, 60, 70, 0.08);
+}
+
+.emb[data-palette='sauge'] {
+  --e-jour: #6f8062; --e-deep: #4a6a3f; --e-accent: #8fa87b;
+  --e-border: #e2e8db;
+  --e-tag-bg: #eef3e8;  --e-tag-ink: #5c7050;
+  --e-prix-bg: #f2f7ec; --e-prix-ink: #6a8a55;
+  --e-soft: #98a48d; --e-ombre: rgba(60, 90, 50, 0.08);
+}
+
+.emb[data-palette='lavande'] {
+  --e-jour: #7a70a0; --e-deep: #5d4f95; --e-accent: #9a8cc8;
+  --e-border: #e6e2f2;
+  --e-tag-bg: #efecf9;  --e-tag-ink: #5f5590;
+  --e-prix-bg: #f4f0fc; --e-prix-ink: #7460b0;
+  --e-soft: #9d95b8; --e-ombre: rgba(80, 70, 130, 0.08);
+}

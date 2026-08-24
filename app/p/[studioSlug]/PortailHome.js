@@ -3,8 +3,8 @@
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { MapPin, Calendar, Clock, Users, ChevronRight, ChevronLeft, Search, CreditCard, Ticket, CalendarCheck, Zap, Instagram, Facebook, Globe, Award, BookOpen, LayoutGrid, List, Check, Loader } from 'lucide-react';
-import { toneForCours } from '@/lib/tones';
+import { MapPin, Calendar, Clock, ChevronRight, ChevronLeft, Search, CreditCard, Ticket, CalendarCheck, Zap, Instagram, Facebook, Globe, Award, BookOpen, LayoutGrid, List, Check, Loader } from 'lucide-react';
+import { toneCours, vignetteCours, altVignette, imageOptimisable } from '@/lib/vignette-cours';
 import ScrollReveal from '@/components/landing/ScrollReveal';
 import { useToast } from '@/components/ui/ToastProvider';
 import { matchRecherche } from '@/lib/utils';
@@ -16,10 +16,9 @@ import { confirmationEleve } from '@/lib/demande-offre';
 // next.config.mjs → images.remotePatterns (AUDIT-PERF 2.9 : la couverture
 // 1920px partait entière sur un mobile 375px). Toute autre URL (vieil upload,
 // lien externe collé) retombe sur <img> brut plutôt qu'une image cassée.
-function photoOptimisable(url) {
-  return typeof url === 'string'
-    && /^https:\/\/[^/]+\.(supabase\.co|public\.blob\.vercel-storage\.com)\//.test(url);
-}
+// Le prédicat vit dans lib/vignette-cours.js depuis v99 : il était sur le point
+// d'exister en double (vignettes de cours + couverture).
+const photoOptimisable = imageOptimisable;
 
 // Helpers semaine
 function getWeekStart(date) {
@@ -86,7 +85,7 @@ function PlacesBadge({ capacite, inscrits, afficherInscrits = true }) {
   return <span className="portail-tag portail-tag-green">Places disponibles</span>;
 }
 
-export default function PortailHome({ profile, cours, offresStripe = [], offresPubliques = [], sondageActif = null, studioSlug, isPreview = false, isDemo = false, currentClient = null, reservedCoursIds = [], canReserve = true, essaiVisible = true, surchargesEssai = null }) {
+export default function PortailHome({ profile, cours, offresStripe = [], offresPubliques = [], sondageActif = null, studioSlug, isPreview = false, isDemo = false, currentClient = null, reservedCoursIds = [], canReserve = true, essaiVisible = true, surchargesEssai = null, tonsParType = null, vignettesParType = null, tabInitial = null }) {
   // Suffixe de query pour préserver le mode demo dans les liens internes
   const demoQS = isDemo ? '?demo=1' : '';
 
@@ -166,6 +165,56 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
     }
     return <ChevronRight size={16} style={{ color: '#ccc' }} />;
   };
+
+  // La carte d'une séance — UNE seule écriture (v99). Elle existait en DEUX
+  // copies, vue liste et vue semaine, et elles avaient déjà divergé : la vue
+  // semaine affichait « 🖥 En ligne » DEUX fois (span dupliqué). Une fonction
+  // de rendu, et non un composant défini ici, pour ne pas fabriquer un nouveau
+  // type de composant à chaque render (même convention que renderCoursAction).
+  const renderCoursCarte = (c) => {
+    const dispo = c.capacite_max ? c.capacite_max - c.nbInscrits : null;
+    const complet = dispo !== null && dispo <= 0;
+    const tone = toneCours(c, tonsParType);
+    const vignette = vignetteCours(c, vignettesParType);
+    const enLigne = c.format === 'visio' || c.format === 'hybride';
+    return (
+      <Link
+        key={c.id}
+        href={`/p/${studioSlug}/cours/${c.id}${demoQS}`}
+        className={`portail-cours-card portail-cours-card--${tone} ${complet ? 'complet' : ''}`}
+      >
+        {vignette && (
+          <span className="portail-cours-vignette" aria-hidden="true">
+            <Image
+              src={vignette}
+              alt={altVignette(c)}
+              width={128}
+              height={128}
+              sizes="64px"
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            />
+          </span>
+        )}
+        <div className="portail-cours-info">
+          <div className="portail-cours-nom">{c.nom}</div>
+          <div className="portail-cours-details">
+            <span><Clock size={12} /> {formatHeure(c.heure)}{c.duree_minutes ? ` · ${c.duree_minutes}min` : ''}</span>
+            {enLigne && <span>🖥 En ligne</span>}
+            {c.lieu && <span><MapPin size={12} /> {c.lieu}</span>}
+            {c.type_cours && <span className={`portail-tag portail-tag-${tone}`}>{c.type_cours}</span>}
+            {Number(c.tarif_unitaire) > 0 && (
+              <span className="portail-tag portail-tag-amber">{Number(c.tarif_unitaire).toFixed(2).replace('.', ',').replace(',00', '')} €{c.carnets_acceptes === true ? ' ou carnet' : ' / séance'}</span>
+            )}
+          </div>
+        </div>
+        <div className="portail-cours-right">
+          <PlacesBadge capacite={c.capacite_max} inscrits={c.nbInscrits} afficherInscrits={profile.afficher_inscrits !== false} />
+          {renderCoursAction(c)}
+        </div>
+      </Link>
+    );
+  };
+
   const hasAbout = !!(profile.bio || profile.philosophie || profile.formations || profile.annees_experience);
   const hasSocial = !!(profile.instagram_url || profile.facebook_url || profile.website_url);
   const faq = Array.isArray(profile.faq_publique) ? profile.faq_publique.filter(f => f?.q && f?.a) : [];
@@ -177,7 +226,12 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
 
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState('');
-  const [tab, setTab] = useState('cours'); // 'cours' | 'propos' | 'tarifs' | 'infos'
+  // 'cours' | 'propos' | 'tarifs' | 'infos'. tabInitial vient de ?tab= : c'est
+  // ce qui permet au bloc « Mes offres » intégré ailleurs de renvoyer DIRECT
+  // sur les tarifs. Onglet inconnu ou masqué (hasTarifs false) → 'cours'.
+  const [tab, setTab] = useState(() => (
+    ['cours', 'propos', 'tarifs', 'infos'].includes(tabInitial) ? tabInitial : 'cours'
+  ));
   // « Je veux cette offre » depuis la grille publique (v97). Une visiteuse
   // n'est pas connectée : on lui demande le minimum pour que la prof puisse
   // la RECONTACTER, et rien de plus. Aucun paiement, aucun compte à créer.
@@ -656,36 +710,7 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
               </div>
               {day.cours.length === 0 ? (
                 <div className="portail-week-day-empty">—</div>
-              ) : day.cours.map(c => {
-                const dispo = c.capacite_max ? c.capacite_max - c.nbInscrits : null;
-                const complet = dispo !== null && dispo <= 0;
-                const tone = toneForCours(c.type_cours);
-                return (
-                  <Link
-                    key={c.id}
-                    href={`/p/${studioSlug}/cours/${c.id}${demoQS}`}
-                    className={`portail-cours-card portail-cours-card--${tone} ${complet ? 'complet' : ''}`}
-                  >
-                    <div className="portail-cours-info">
-                      <div className="portail-cours-nom">{c.nom}</div>
-                      <div className="portail-cours-details">
-                        <span><Clock size={12} /> {formatHeure(c.heure)}{c.duree_minutes ? ` · ${c.duree_minutes}min` : ''}</span>
-                        {(c.format === 'visio' || c.format === 'hybride') && <span>🖥 En ligne</span>}
-                        {(c.format === 'visio' || c.format === 'hybride') && <span>🖥 En ligne</span>}
-                    {c.lieu && <span><MapPin size={12} /> {c.lieu}</span>}
-                        {c.type_cours && <span className={`portail-tag portail-tag-${tone}`}>{c.type_cours}</span>}
-                        {Number(c.tarif_unitaire) > 0 && (
-                          <span className="portail-tag portail-tag-amber">{Number(c.tarif_unitaire).toFixed(2).replace('.', ',').replace(',00', '')} €{c.carnets_acceptes === true ? ' ou carnet' : ' / séance'}</span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="portail-cours-right">
-                      <PlacesBadge capacite={c.capacite_max} inscrits={c.nbInscrits} afficherInscrits={profile.afficher_inscrits !== false} />
-                      {renderCoursAction(c)}
-                    </div>
-                  </Link>
-                );
-              })}
+              ) : day.cours.map(c => renderCoursCarte(c))}
             </div>
           ))}
           {filteredForView.length === 0 && (
@@ -712,34 +737,7 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
       ) : viewMode === 'list' && grouped.map(([date, coursDate]) => (
         <div key={date} className="portail-day-group">
           <div className="portail-day-label">{formatDateCourt(date)}</div>
-          {coursDate.map(c => {
-            const dispo = c.capacite_max ? c.capacite_max - c.nbInscrits : null;
-            const complet = dispo !== null && dispo <= 0;
-            const tone = toneForCours(c.type_cours);
-            return (
-              <Link
-                key={c.id}
-                href={`/p/${studioSlug}/cours/${c.id}${demoQS}`}
-                className={`portail-cours-card portail-cours-card--${tone} ${complet ? 'complet' : ''}`}
-              >
-                <div className="portail-cours-info">
-                  <div className="portail-cours-nom">{c.nom}</div>
-                  <div className="portail-cours-details">
-                    <span><Clock size={12} /> {formatHeure(c.heure)}{c.duree_minutes ? ` · ${c.duree_minutes}min` : ''}</span>
-                    {c.lieu && <span><MapPin size={12} /> {c.lieu}</span>}
-                    {c.type_cours && <span className={`portail-tag portail-tag-${tone}`}>{c.type_cours}</span>}
-                    {Number(c.tarif_unitaire) > 0 && (
-                      <span className="portail-tag portail-tag-amber">{Number(c.tarif_unitaire).toFixed(2).replace('.', ',').replace(',00', '')} €{c.carnets_acceptes === true ? ' ou carnet' : ' / séance'}</span>
-                    )}
-                  </div>
-                </div>
-                <div className="portail-cours-right">
-                  <PlacesBadge capacite={c.capacite_max} inscrits={c.nbInscrits} afficherInscrits={profile.afficher_inscrits !== false} />
-                  {renderCoursAction(c)}
-                </div>
-              </Link>
-            );
-          })}
+          {coursDate.map(c => renderCoursCarte(c))}
         </div>
       ))}
       </>}
@@ -1418,11 +1416,27 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
         }
         .portail-cours-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.1); transform: translateY(-1px); }
         .portail-cours-card.complet { opacity: 0.6; }
+        /* Vignette (v99) : carrée, jamais déformée, et elle ne rétrécit pas le
+           texte (flex-shrink 0 + min-width 0 sur le bloc info). Absente quand
+           la séance n'a ni photo propre ni vignette de type : la carte reprend
+           exactement sa mise en page d'avant. */
+        .portail-cours-vignette {
+          flex-shrink: 0; display: block; line-height: 0;
+          width: 64px; height: 64px;
+          border-radius: 10px; overflow: hidden;
+          background: rgba(0, 0, 0, 0.04);
+        }
         .portail-cours-info { flex: 1; min-width: 0; }
         .portail-cours-nom { font-weight: 700; font-size: 1rem; margin-bottom: 6px; color: #1a1a2e; }
         .portail-cours-details { display: flex; flex-wrap: wrap; gap: 8px; font-size: 0.8125rem; color: #888; align-items: center; }
         .portail-cours-details span { display: flex; align-items: center; gap: 4px; }
         .portail-cours-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+        /* Après la règle de base, jamais avant : à sélecteur égal une media
+           query n'ajoute aucune spécificité, c'est l'ordre qui tranche (§12). */
+        @media (max-width: 540px) {
+          .portail-cours-card { padding: 12px; gap: 10px; }
+          .portail-cours-vignette { width: 52px; height: 52px; }
+        }
 
         /* Réservation 1 clic — bouton + état inscrit + spinner */
         .portail-resa-btn {

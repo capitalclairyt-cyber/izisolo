@@ -8,7 +8,10 @@
 // changement de taille — public/widget.js écoute et ajuste l'iframe.
 // ════════════════════════════════════════════════════════════════════════════
 
-import { useEffect, useRef } from 'react';
+import { useRef } from 'react';
+import Image from 'next/image';
+import { vignetteCours, altVignette } from '@/lib/vignette-cours';
+import { useHauteurEmbed } from '../useHauteurEmbed';
 
 const formatHeure = (h) => (h ? String(h).slice(0, 5).replace(':', 'h') : '');
 const prixTag = (c) => {
@@ -22,26 +25,12 @@ const JOURS_COURTS = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
 export default function EmbedPlanning({
   studioNom, slug, afficherInscrits, canReserve, cours,
   palette = 'sable', couleurs = null, affichage = 'liste',
+  vignettes = null,
 }) {
   const rootRef = useRef(null);
 
-  // Auto-hauteur : à l'affichage + à chaque resize du contenu.
-  // ⚠️ body.scrollHeight, PAS documentElement : dans une iframe, la hauteur
-  // du documentElement ne descend jamais sous celle du viewport — l'embed
-  // renvoyait la hauteur de l'iframe elle-même (700 → 700, jamais rétréci).
-  useEffect(() => {
-    const poster = () => {
-      const h = Math.ceil(document.body.scrollHeight);
-      if (!h) return;
-      // Hauteur seule (rien de sensible) → targetOrigin '*' assumé ; le
-      // widget côté hôte vérifie origine + source + shape avant d'appliquer.
-      window.parent?.postMessage({ source: 'izisolo-embed', slug, height: h }, '*');
-    };
-    poster();
-    const ro = new ResizeObserver(poster);
-    ro.observe(document.body);
-    return () => ro.disconnect();
-  }, [slug]);
+  // Auto-hauteur (partagée avec le bloc « Mes offres »).
+  useHauteurEmbed(slug);
 
   // Groupement par date (les cours arrivent déjà triés date+heure).
   const parDate = [];
@@ -108,6 +97,7 @@ export default function EmbedPlanning({
                   {j.items.length === 0 && <span className="emb-sc-vide">—</span>}
                   {j.items.map(c => {
                     const complet = c.capacite_max && c.nbInscrits >= c.capacite_max;
+                    const vignette = vignetteCours(c, vignettes);
                     return (
                       <a
                         key={c.id}
@@ -116,6 +106,14 @@ export default function EmbedPlanning({
                         target="_blank"
                         rel="noopener noreferrer"
                       >
+                        {/* Colonnes de 96 px minimum : une vignette carrée à
+                            gauche écraserait le texte. Bandeau en haut. */}
+                        {vignette && (
+                          <span className="emb-sc-vign">
+                            <Image src={vignette} alt={altVignette(c)} width={192} height={96} sizes="120px"
+                                   style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          </span>
+                        )}
                         <span className="emb-sc-h">{formatHeure(c.heure)}</span>
                         <span className="emb-sc-nom">{c.nom}</span>
                         {complet
@@ -139,6 +137,7 @@ export default function EmbedPlanning({
           {items.map(c => {
             const complet = c.capacite_max && c.nbInscrits >= c.capacite_max;
             const prix = prixTag(c);
+            const vignette = vignetteCours(c, vignettes);
             return (
               <a
                 key={c.id}
@@ -147,6 +146,12 @@ export default function EmbedPlanning({
                 target="_blank"
                 rel="noopener noreferrer"
               >
+                {vignette && (
+                  <span className="emb-vign">
+                    <Image src={vignette} alt={altVignette(c)} width={112} height={112} sizes="56px"
+                           style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  </span>
+                )}
                 <div className="emb-heure">
                   {formatHeure(c.heure)}
                   {c.duree_minutes ? <span className="emb-duree">{c.duree_minutes} min</span> : null}
@@ -175,7 +180,7 @@ export default function EmbedPlanning({
 
       <div className="emb-pied">
         <a href={`/p/${slug}?src=embed`} target="_blank" rel="noopener noreferrer">
-          Planning {studioNom} — propulsé par <strong>IziSolo</strong>
+          Planning {studioNom}, propulsé par <strong>IziSolo</strong>
         </a>
       </div>
 
@@ -183,40 +188,9 @@ export default function EmbedPlanning({
         html, body { background: transparent; }
       `}</style>
       <style jsx>{`
-        /* Palettes (data-palette, presets seulement — demande Manon 2026-07-28,
-           son site est lavande/pêche). Défaut sable = les couleurs historiques.
-           Le badge « Complet » reste rouge partout (sémantique, pas décoratif). */
-        .emb {
-          --e-jour: #8a7a68;   /* libellé du jour */
-          --e-deep: #7a4a1e;   /* heure, CTA, liens pied */
-          --e-accent: #c9a227; /* bordure au survol */
-          --e-border: #e8e2d8;
-          --e-tag-bg: #f6efe4;  --e-tag-ink: #7a5c34;
-          --e-prix-bg: #fdf3e0; --e-prix-ink: #9a6b1f;
-          --e-soft: #a09484;   /* durée, pied */
-          --e-ombre: rgba(80, 60, 30, 0.08);
-        }
-        .emb[data-palette='rose'] {
-          --e-jour: #9a6a70; --e-deep: #a04a58; --e-accent: #d08a95;
-          --e-border: #efdde0;
-          --e-tag-bg: #f9ecee;  --e-tag-ink: #8a5560;
-          --e-prix-bg: #fdf0f2; --e-prix-ink: #b06070;
-          --e-soft: #ab9195; --e-ombre: rgba(120, 60, 70, 0.08);
-        }
-        .emb[data-palette='sauge'] {
-          --e-jour: #6f8062; --e-deep: #4a6a3f; --e-accent: #8fa87b;
-          --e-border: #e2e8db;
-          --e-tag-bg: #eef3e8;  --e-tag-ink: #5c7050;
-          --e-prix-bg: #f2f7ec; --e-prix-ink: #6a8a55;
-          --e-soft: #98a48d; --e-ombre: rgba(60, 90, 50, 0.08);
-        }
-        .emb[data-palette='lavande'] {
-          --e-jour: #7a70a0; --e-deep: #5d4f95; --e-accent: #9a8cc8;
-          --e-border: #e6e2f2;
-          --e-tag-bg: #efecf9;  --e-tag-ink: #5f5590;
-          --e-prix-bg: #f4f0fc; --e-prix-ink: #7460b0;
-          --e-soft: #9d95b8; --e-ombre: rgba(80, 70, 130, 0.08);
-        }
+        /* Les VARIABLES de palette vivent dans app/embed/embed-palette.css
+           (partagées avec le bloc « Mes offres » v99). Ici, seule la mise en
+           forme du planning. */
         .emb {
           font-family: var(--font-geist-sans, ui-sans-serif, system-ui, sans-serif);
           color: #2a2a2e;
@@ -244,6 +218,18 @@ export default function EmbedPlanning({
           display: flex; flex-direction: column; line-height: 1.2;
         }
         .emb-duree { font-size: 0.6875rem; font-weight: 500; color: var(--e-soft); }
+        /* Vignettes (v99). Vue liste : carré à gauche. Vue semaine : bandeau en
+           haut de la carte, parce que les colonnes tombent à 96 px. */
+        .emb-vign {
+          flex-shrink: 0; display: block; line-height: 0;
+          width: 56px; height: 56px; border-radius: 9px; overflow: hidden;
+          background: rgba(0, 0, 0, 0.04);
+        }
+        .emb-sc-vign {
+          display: block; line-height: 0; width: 100%; height: 44px;
+          border-radius: 6px; overflow: hidden; margin-bottom: 2px;
+          background: rgba(0, 0, 0, 0.04);
+        }
         .emb-corps { flex: 1; min-width: 0; }
         .emb-nom { font-weight: 700; font-size: 0.9375rem; line-height: 1.3; }
         .emb-meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 3px; }
@@ -295,6 +281,7 @@ export default function EmbedPlanning({
           .emb-cours { gap: 8px; padding: 9px 10px; }
           .emb-heure { width: 48px; font-size: 0.875rem; }
           .emb-lieu { display: none; }
+          .emb-vign { width: 46px; height: 46px; }
         }
       `}</style>
     </div>

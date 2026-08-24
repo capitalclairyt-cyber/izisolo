@@ -145,4 +145,16 @@ export const FAQ_SUPPORT = [
     a: "Renseigne-le une fois : Paramètres → Profil & studio → Activité, carte « Règlement par virement » (IBAN vérifié à la saisie). Ensuite, à chaque vente « à régler plus tard », tu choisis l'email qui part tout seul : « Virement (RIB) » envoie ton IBAN avec une référence de virement (pour reconnaître le règlement sur ton relevé), et l'espace de l'élève affiche aussi le RIB avec un QR code à scanner avec son application bancaire. Tu peux aussi régler ça en automatique (carte « Règlement par virement », « il part tout seul »).",
     lien: { href: '/aide#encaisser', label: 'Voir le pas-à-pas' },
   },
+  {
+    // Vignettes de cours (v99, 2026-08-24).
+    q: "Puis-je mettre une photo sur mes cours ?",
+    a: "Oui, à deux niveaux. Par type de cours d'abord : Paramètres → Portail public → « Types de cours », tu choisis la couleur de chaque type et tu peux y déposer une photo. Elle habille toutes les séances de ce type, y compris celles que tu créeras plus tard. Et pour un atelier qui mérite son image à lui, la photo se met directement sur la séance, au moment de la créer : elle passe devant celle du type. Sans photo, la couleur suffit, ta page reste lisible.",
+    lien: { href: '/aide#apparence-cours', label: 'Voir le pas-à-pas' },
+  },
+  {
+    // Second bloc intégrable (v99, 2026-08-24).
+    q: "Puis-je afficher mes tarifs sur mon propre site ?",
+    a: "Oui, comme le planning : Paramètres → Portail public → « Ma page », bloc « Et tes offres, si tu veux ». Tu copies une ligne de code et tu la colles dans un bloc HTML de ton site. Tes offres actives s'affichent avec leur prix, et un clic emmène ton élève sur tes tarifs IziSolo où elle peut payer en ligne ou te demander l'offre. Les deux blocs prennent les mêmes couleurs, pour qu'ils aillent ensemble sur ta page.",
+    lien: { href: '/aide#page-publique', label: 'Voir le pas-à-pas' },
+  },
 ];

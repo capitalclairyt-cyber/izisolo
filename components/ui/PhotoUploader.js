@@ -16,11 +16,25 @@ const QUALITY = 0.85;
  *
  * Props:
  *   currentUrl     : string|null     URL actuelle de la photo
- *   kind           : 'profil'|'couverture'
+ *   kind           : 'profil'|'couverture'|'vignette'|'cours'
+ *                    (les 2 derniers, v99, ne touchent PAS le profil : la route
+ *                     rend l'URL et c'est l'appelant qui l'enregistre)
+ *   remplace       : string|null     URL que ce dépôt remplace, à effacer du Blob
+ *                    (kinds sans colonne : sinon l'ancien fichier reste orphelin)
  *   onUploaded(url): callback après upload réussi (pour mettre à jour le state parent)
  *   label          : texte du bouton si pas de photo
+ *   forme          : 'rond' (avatar, défaut) | 'carre' (vignette de cours)
+ *   taille         : côté de l'aperçu en px (120 par défaut)
  */
-export default function PhotoUploader({ currentUrl, kind = 'profil', onUploaded, label = 'Téléverser une photo' }) {
+export default function PhotoUploader({
+  currentUrl,
+  kind = 'profil',
+  remplace = null,
+  onUploaded,
+  label = 'Téléverser une photo',
+  forme = 'rond',
+  taille = 120,
+}) {
   const inputRef = useRef(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
@@ -55,7 +69,8 @@ export default function PhotoUploader({ currentUrl, kind = 'profil', onUploaded,
       // Upload
       const formData = new FormData();
       formData.append('file', resizedFile);
-      const res = await fetch(`/api/profile/upload-photo?kind=${kind}`, { method: 'POST', body: formData });
+      const qs = remplace ? `&remplace=${encodeURIComponent(remplace)}` : '';
+      const res = await fetch(`/api/profile/upload-photo?kind=${kind}${qs}`, { method: 'POST', body: formData });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Erreur upload');
 
@@ -88,7 +103,12 @@ export default function PhotoUploader({ currentUrl, kind = 'profil', onUploaded,
         style={{ display: 'none' }}
       />
 
-      <div className="photo-uploader-preview">
+      {/* Dimensions et arrondi pilotés par les props, jamais en double dans la
+          feuille de style : une borne définie des deux côtés finit par diverger. */}
+      <div
+        className="photo-uploader-preview"
+        style={{ width: taille, height: taille, borderRadius: forme === 'carre' ? 12 : '50%' }}
+      >
         {displayedUrl ? (
           <img src={displayedUrl} alt="Aperçu" />
         ) : (
@@ -122,7 +142,6 @@ export default function PhotoUploader({ currentUrl, kind = 'profil', onUploaded,
         }
         .photo-uploader-preview {
           position: relative;
-          width: 120px; height: 120px; border-radius: 50%;
           background: var(--bg-soft, #faf8f5);
           border: 1.5px dashed var(--border);
           overflow: hidden;

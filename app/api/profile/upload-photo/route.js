@@ -7,12 +7,26 @@ export const dynamic = 'force-dynamic';
 
 const MAX_BYTES = 2 * 1024 * 1024;     // 2 Mo (le client a déjà resize)
 const ALLOWED = ['image/jpeg', 'image/png', 'image/webp'];
+
+// Deux familles de kinds :
+//  - ceux qui VIVENT dans une colonne de profiles : la route écrit elle-même ;
+//  - ceux que l'appelant range ailleurs (une carte jsonb par type de cours, la
+//    colonne photo_url d'UNE séance — v99) : la route se contente de stocker et
+//    de rendre l'URL, et c'est le formulaire qui l'enregistre en la validant.
 const KIND_FIELDS = { profil: 'photo_url', couverture: 'photo_couverture' };
+const KINDS_SANS_COLONNE = ['vignette', 'cours'];
 
 /**
- * POST /api/profile/upload-photo?kind=profil|couverture
+ * POST /api/profile/upload-photo?kind=profil|couverture|vignette|cours[&remplace=<url>]
  *  body : multipart/form-data { file: File }
- *  → upload Vercel Blob, supprime l'ancienne, update profile.photo_url|photo_couverture
+ *  → upload Vercel Blob, puis :
+ *      profil|couverture  : supprime l'ancienne et met à jour la colonne du profil
+ *      vignette|cours     : rend juste { url }, l'appelant l'enregistre
+ *
+ * `remplace` (kinds sans colonne) : l'URL que cette photo remplace, supprimée du
+ * Blob pour ne pas laisser un orphelin. Contrôle de propriété OBLIGATOIRE sur le
+ * chemin `profiles/<user.id>/` — sans lui, le paramètre serait une primitive de
+ * suppression du fichier de n'importe qui.
  *
  * Variable d'env requise : BLOB_READ_WRITE_TOKEN (Vercel Dashboard → Storage → Blob)
  */
@@ -27,9 +41,9 @@ export const POST = withRoute({ auth: 'user' }, async ({ request, auth }) => {
 
   const url = new URL(request.url);
   const kind = url.searchParams.get('kind') || 'profil';
-  const targetField = KIND_FIELDS[kind];
-  if (!targetField) {
-    return Response.json({ error: 'kind invalide (profil ou couverture)' }, { status: 400 });
+  const targetField = KIND_FIELDS[kind] || null;
+  if (!targetField && !KINDS_SANS_COLONNE.includes(kind)) {
+    return Response.json({ error: 'kind invalide (profil, couverture, vignette ou cours)' }, { status: 400 });
   }
 
   let formData;
@@ -61,16 +75,36 @@ export const POST = withRoute({ auth: 'user' }, async ({ request, auth }) => {
       access: 'public',
       contentType: file.type,
       cacheControlMaxAge: 31536000, // 1 an
+      // Vignettes et photos de séance se déposent parfois en rafale (une par
+      // type) : sans suffixe, deux uploads dans la même milliseconde
+      // partageraient la clé et la seconde écraserait la première.
+      ...(targetField ? {} : { addRandomSuffix: true }),
     });
   } catch (err) {
     reportError('[upload-photo] blob put error:', err);
     return Response.json({ error: 'Erreur lors du téléversement' }, { status: 500 });
   }
 
-  // Supprimer l'ancienne photo si elle est dans notre Blob
-  const ancienneUrl = profile?.[targetField];
-  if (ancienneUrl && ancienneUrl.includes('.public.blob.vercel-storage.com')) {
+  // L'ancienne photo à jeter : celle du profil pour les kinds à colonne, celle
+  // que l'appelant déclare remplacer pour les autres.
+  const ancienneUrl = targetField
+    ? profile?.[targetField]
+    : url.searchParams.get('remplace');
+
+  const estANous = typeof ancienneUrl === 'string'
+    && ancienneUrl.includes('.public.blob.vercel-storage.com')
+    // Propriété prouvée par le chemin (les clés sont `profiles/<uid>/…`) :
+    // sans ce contrôle, `remplace` supprimerait le fichier de n'importe qui.
+    && (targetField || ancienneUrl.includes(`/profiles/${user.id}/`));
+
+  if (estANous) {
     try { await del(ancienneUrl); } catch (e) { console.warn('[upload-photo] cleanup ancienne:', e?.message); }
+  }
+
+  // Kinds sans colonne (vignette par type, photo d'une séance) : c'est
+  // l'appelant qui enregistre, après validation par lib/vignette-cours.js.
+  if (!targetField) {
+    return Response.json({ ok: true, url: blob.url, field: null });
   }
 
   // Update profile

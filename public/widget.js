@@ -1,7 +1,11 @@
-/* IziSolo — widget planning intégrable (B2g).
+/* IziSolo — blocs intégrables (planning B2g, offres v99).
  *
  * Usage (une ligne, dans un bloc HTML de WordPress / Wix / Squarespace…) :
  *   <script src="https://www.izisolo.fr/widget.js" data-studio="mon-studio" async></script>
+ *
+ * Deux blocs, deux scripts (on peut coller les deux sur la même page) :
+ *   data-bloc="planning" (défaut) — l'agenda public
+ *   data-bloc="offres"            — la grille tarifaire
  *
  * Options : data-semaines="4" (fenêtre affichée), data-type="Yoga" (filtre),
  *           data-palette="sable|rose|sauge|lavande" (couleurs du planning),
@@ -31,6 +35,9 @@
     origin = 'https://www.izisolo.fr';
   }
 
+  // Bloc demandé : planning (défaut, rétrocompatible) ou offres.
+  var bloc = script.getAttribute('data-bloc') === 'offres' ? 'offres' : 'planning';
+
   var params = [];
   var semaines = script.getAttribute('data-semaines');
   var type = script.getAttribute('data-type');
@@ -46,13 +53,16 @@
   if (affichage) params.push('affichage=' + encodeURIComponent(affichage));
 
   var iframe = document.createElement('iframe');
-  iframe.src = origin + '/embed/' + encodeURIComponent(studio) + (params.length ? '?' + params.join('&') : '');
-  iframe.title = 'Planning des cours';
+  var chemin = '/embed/' + encodeURIComponent(studio) + (bloc === 'offres' ? '/offres' : '');
+  iframe.src = origin + chemin + (params.length ? '?' + params.join('&') : '');
+  iframe.title = bloc === 'offres' ? 'Offres et tarifs' : 'Planning des cours';
   iframe.loading = 'lazy';
   iframe.style.width = '100%';
   iframe.style.border = '0';
   iframe.style.display = 'block';
-  iframe.style.height = (parseInt(script.getAttribute('data-hauteur'), 10) || 700) + 'px';
+  // Hauteur de départ, corrigée dès le premier message : une grille d'offres
+  // est bien plus courte qu'un planning, 700 px laisserait un trou béant.
+  iframe.style.height = (parseInt(script.getAttribute('data-hauteur'), 10) || (bloc === 'offres' ? 360 : 700)) + 'px';
 
   window.addEventListener('message', function (e) {
     // Garde-fous : bonne origine, bonne iframe (multi-widgets possibles),

@@ -10,6 +10,7 @@ import { presenceOccupePlace, compterPlacesOccupeesParCours } from '@/lib/presen
 import { coursDejaCommence } from '@/lib/dates';
 import { reportError } from '@/lib/report';
 import { getEssaiPrixParType } from '@/lib/essai-tarif';
+import { chargerVignettesConfig, chargerPhotosCours, greffePhotos } from '@/lib/vignette-cours';
 
 export async function generateMetadata({ params }) {
   const { studioSlug } = await params;
@@ -149,12 +150,24 @@ async function getStudioData(studioSlug) {
   // Paris (lib/dates), le calcul local serveur UTC gardait ~2 h de trop.
   const coursFutur = (cours || []).filter(c => !coursDejaCommence(c));
 
+  // v99 — l'identité visuelle du planning : le ton et la vignette de chaque
+  // TYPE de cours (config du studio) plus la photo propre à certaines séances.
+  // Les 3 colonnes se chargent À PART (elles ne vont jamais dans un select
+  // principal, anti-pattern §12), puis les photos sont greffées sur les cours
+  // pour que l'affichage n'ait qu'un seul objet à lire.
+  const [apparence, photosSeances] = await Promise.all([
+    chargerVignettesConfig(supabase, profile.id),
+    chargerPhotosCours(supabase, coursFutur.map(c => c.id)),
+  ]);
+
   return {
     profile,
-    cours: coursFutur.map(c => ({
+    cours: greffePhotos(coursFutur.map(c => ({
       ...c,
       nbInscrits: presencesCounts[c.id] || 0,
-    })),
+    })), photosSeances),
+    tonsParType: apparence.tons,
+    vignettesParType: apparence.vignettes,
     offresStripe: offresStripe || [],
     offresPubliques: offresPubliques || [],
     sondageActif: sondageActif || null,
@@ -199,6 +212,9 @@ export default async function PortailPage({ params, searchParams }) {
     }
   }
 
+  // ?tab=tarifs : le bloc « Mes offres » intégré sur le site de la prof renvoie
+  // ici. Sans ça, la visiteuse atterrissait sur le planning et devait retrouver
+  // l'onglet des tarifs toute seule.
   return (
     <PortailHome
       profile={profile}
@@ -212,6 +228,9 @@ export default async function PortailPage({ params, searchParams }) {
       currentClient={data.currentClient}
       reservedCoursIds={data.reservedCoursIds}
       surchargesEssai={data.surchargesEssai}
+      tonsParType={data.tonsParType}
+      vignettesParType={data.vignettesParType}
+      tabInitial={typeof sp?.tab === 'string' ? sp.tab : null}
       canReserve={studioCan(profile, 'reservation_en_ligne')}
       essaiVisible={studioCan(profile, 'cours_essai')}
     />

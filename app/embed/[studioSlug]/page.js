@@ -6,7 +6,10 @@ import { coursDejaCommence } from '@/lib/dates';
 import { studioCan } from '@/lib/plan-guard';
 import { reportError } from '@/lib/report';
 import EmbedPlanning from './EmbedPlanning';
+import '../embed-palette.css';
 import { parseHexCouleur, deriverCouleursEmbed } from '@/lib/embed-couleurs';
+import { chargerVignettesConfig, chargerPhotosCours, greffePhotos } from '@/lib/vignette-cours';
+import { cacheEmbed } from '@/lib/embed-cache';
 
 // ════════════════════════════════════════════════════════════════════════════
 // B2g — Planning INTÉGRABLE (demande Manon) : la version iframe-able de
@@ -36,35 +39,14 @@ const PALETTES_EMBED = ['sable', 'rose', 'sauge', 'lavande'];
 // 7 colonnes façon semaine complète, jours vides compris — demande Manon).
 const AFFICHAGES_EMBED = ['liste', 'semaine'];
 
-// ── Cache mémoire 120 s par (slug, semaines, type) — AUDIT-PERF cat 2.5 ─────
-// L'embed vit sur les SITES des profs : chaque visiteur du site de Manon
-// coûtait 1 render + 4 requêtes DB. La vue est anonyme par design (aucun
-// cookie) → cache idéal. Mémoire d'instance lambda = best-effort : une
-// instance chaude sert la quasi-totalité du trafic d'un site actif ; à froid
-// on paie le chemin complet, comme avant. (Pas d'API framework : le cache
-// survit aux changements de Next, et 120 s de staleness sur un planning
-// hebdomadaire est invisible.)
-const EMBED_CACHE = new Map(); // key -> { at, data }
+// Cache mémoire 120 s par (slug, semaines, type) — AUDIT-PERF cat 2.5.
+// La mécanique vit dans lib/embed-cache.js depuis v99 : le bloc « Mes offres »
+// a exactement le même besoin, et deux copies auraient divergé.
 const EMBED_CACHE_TTL = 120 * 1000;
-const EMBED_CACHE_MAX = 500;
 
 async function getData(studioSlug, { semaines, type }) {
   const cacheKey = `${studioSlug}|${semaines || ''}|${type || ''}`;
-  const hit = EMBED_CACHE.get(cacheKey);
-  if (hit && Date.now() - hit.at < EMBED_CACHE_TTL) return hit.data;
-
-  const data = await getDataFresh(studioSlug, { semaines, type });
-  if (EMBED_CACHE.size >= EMBED_CACHE_MAX) {
-    // Purge simple : on jette les entrées périmées, sinon la plus vieille.
-    for (const [k, v] of EMBED_CACHE) {
-      if (Date.now() - v.at >= EMBED_CACHE_TTL) EMBED_CACHE.delete(k);
-    }
-    if (EMBED_CACHE.size >= EMBED_CACHE_MAX) {
-      EMBED_CACHE.delete(EMBED_CACHE.keys().next().value);
-    }
-  }
-  EMBED_CACHE.set(cacheKey, { at: Date.now(), data });
-  return data;
+  return cacheEmbed('planning', cacheKey, EMBED_CACHE_TTL, () => getDataFresh(studioSlug, { semaines, type }));
 }
 
 async function getDataFresh(studioSlug, { semaines, type }) {
@@ -127,13 +109,24 @@ async function getDataFresh(studioSlug, { semaines, type }) {
     }
   }
 
+  // v99 — les vignettes (photo par type + photo propre à une séance). Chargées
+  // ICI, donc couvertes par le cache 120 s de l'embed. Les TONS, eux, ne sont
+  // PAS repris : l'embed vit sur le site de la prof et ses couleurs viennent de
+  // data-palette / data-couleur pour s'y fondre. Les photos sont à ses cours,
+  // les couleurs sont à son site.
+  const [apparence, photosSeances] = await Promise.all([
+    chargerVignettesConfig(supabase, profile.id),
+    chargerPhotosCours(supabase, coursIds),
+  ]);
+
   return {
     studioNom: profile.studio_nom,
     slug: profile.studio_slug,
     afficherInscrits: profile.afficher_inscrits !== false,
     // Vitrine Essentiel (B3c) : le planning se voit, la résa se fait en direct.
     canReserve: studioCan(profile, 'reservation_en_ligne'),
-    cours: cours.map(c => ({ ...c, nbInscrits: counts[c.id] || 0 })),
+    cours: greffePhotos(cours.map(c => ({ ...c, nbInscrits: counts[c.id] || 0 })), photosSeances),
+    vignettes: apparence.vignettes,
   };
 }
 

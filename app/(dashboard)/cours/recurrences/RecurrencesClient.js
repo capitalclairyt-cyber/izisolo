@@ -11,6 +11,7 @@ import { createClient } from '@/lib/supabase';
 import { getAllTypesFromCategories } from '@/lib/utils';
 import { semainesEntre } from '@/lib/dates';
 import { presenceEstReservationActive } from '@/lib/presences';
+import { imageOptimisable } from '@/lib/vignette-cours';
 import { useToast } from '@/components/ui/ToastProvider';
 import {
   estPendantVacances, estJourFerie, getPeriodeVacances, ZONES_VACANCES,
@@ -219,6 +220,27 @@ export default function RecurrencesClient({ recurrences: initialRecurrences, cou
     setActionPending(null);
   };
 
+  // v99 — la photo que portent les séances de cette série, recopiée sur les
+  // séances qu'on vient de créer. Chargée et posée À PART, jamais dans le
+  // select du frère ni dans l'insert : pré-migration, nommer la colonne ferait
+  // échouer TOUTE la requête et l'occurrence perdrait au passage son tarif, sa
+  // visibilité et son lieu (exactement le dégât de B1b).
+  const copierPhotoDeLaSerie = async (supabase, recurrenceId, ids) => {
+    if (!ids?.length || !recurrenceId) return;
+    try {
+      const { data: freres, error } = await supabase
+        .from('cours')
+        .select('id, photo_url')
+        .eq('recurrence_parent_id', recurrenceId)
+        .not('photo_url', 'is', null)
+        .limit(1);
+      if (error || !freres?.length) return;
+      const url = freres[0].photo_url;
+      if (!imageOptimisable(url)) return;
+      await supabase.from('cours').update({ photo_url: url }).in('id', ids);
+    } catch { /* colonne absente : les séances porteront la vignette de leur type */ }
+  };
+
   const ajouterCours = async (iso) => {
     if (!selected) return;
     setActionPending(iso);
@@ -287,6 +309,7 @@ export default function RecurrencesClient({ recurrences: initialRecurrences, cou
         });
         if (presErr) toast.warning('Séance créée, mais l\'inscription de l\'élève a échoué : ' + presErr.message);
       }
+      if (data?.id) await copierPhotoDeLaSerie(supabase, selected.id, [data.id]);
       setCours(prev => [...prev, data]);
       toast.success('Séance ajoutée');
     }
@@ -582,6 +605,8 @@ export default function RecurrencesClient({ recurrences: initialRecurrences, cou
         );
         if (presErr) toast.warning('Séances créées, mais inscription de l\'élève échouée : ' + presErr.message);
       }
+
+      if (crees.length > 0) await copierPhotoDeLaSerie(supabase, selected.id, crees.map(c => c.id));
 
       // L'état local est mis à jour DÈS l'insert réussi : si l'update de
       // date_fin échoue ensuite, un re-clic ne peut plus dupliquer (la dédup

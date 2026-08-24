@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
+import { altVignette } from '@/lib/vignette-cours';
 import { Clock, MapPin, Calendar, Users, ArrowLeft, CheckCircle, AlertCircle, Loader, Mail, Shield } from 'lucide-react';
 import { useToast } from '@/components/ui/ToastProvider';
 import { getDelaiPourCours, evaluerAnnulation, formatDateLimite } from '@/lib/regles-metier';
@@ -150,7 +152,7 @@ function CompletAvecListeAttente({ cours, studioSlug, currentUser }) {
   );
 }
 
-export default function CoursReservationClient({ cours, profile, nbInscrits, studioSlug, currentUser, alreadyRegistered = false, prevision = null, canCancel = false, canReserve = true, canWaitlist = false, prixEssaiCours = null }) {
+export default function CoursReservationClient({ cours, profile, nbInscrits, studioSlug, currentUser, alreadyRegistered = false, prevision = null, canCancel = false, canReserve = true, canWaitlist = false, prixEssaiCours = null, vignette = null }) {
   const { toast } = useToast();
   const [nom, setNom]       = useState(currentUser?.nom || '');
   const [email, setEmail]   = useState(currentUser?.email || '');
@@ -343,6 +345,20 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
 
       {/* Fiche cours */}
       <div className="portail-card" style={{ marginBottom: '20px' }}>
+        {/* v99 — la même image que sur la carte du planning : arriver ici depuis
+            une carte illustrée pour tomber sur une page nue faisait un trou. */}
+        {vignette && (
+          <div className="resa-vignette">
+            <Image
+              src={vignette}
+              alt={altVignette(cours)}
+              width={1024}
+              height={576}
+              sizes="(max-width: 640px) 100vw, 620px"
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            />
+          </div>
+        )}
         <h1 style={{ fontSize: '1.375rem', fontWeight: 800, margin: '0 0 6px', color: '#1a1a2e' }}>{cours.nom}</h1>
         {cours.type_cours && (
           <span className="portail-tag portail-tag-rose" style={{ marginBottom: '14px', display: 'inline-block' }}>{cours.type_cours}</span>
@@ -351,7 +367,7 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
           <div className="resa-detail-row"><Calendar size={15} /><span>{formatDate(cours.date)}</span></div>
           <div className="resa-detail-row"><Clock size={15} /><span>{formatHeure(cours.heure)}{cours.duree_minutes ? ` · ${cours.duree_minutes} min` : ''}</span></div>
           {(cours.format === 'visio' || cours.format === 'hybride') && (
-            <div className="resa-detail-row">🖥<span>En ligne — le lien de la séance sera dans ton espace élève</span></div>
+            <div className="resa-detail-row">🖥<span>En ligne, le lien de la séance sera dans ton espace élève</span></div>
           )}
           {cours.lieu && <div className="resa-detail-row"><MapPin size={15} /><span>{cours.lieu}</span></div>}
           {cours.tarif_unitaire > 0 && (
@@ -687,6 +703,11 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
       <style jsx global>{`
         .portail-back-link { display: inline-flex; align-items: center; gap: 6px; color: #888; font-size: 0.875rem; text-decoration: none; margin-bottom: 20px; }
         .portail-back-link:hover { color: #d4a0a0; }
+        .resa-vignette {
+          aspect-ratio: 16 / 9; width: 100%; line-height: 0;
+          border-radius: 12px; overflow: hidden; margin-bottom: 14px;
+          background: rgba(0, 0, 0, 0.04);
+        }
         .resa-details { display: flex; flex-direction: column; gap: 8px; }
         .resa-detail-row { display: flex; align-items: center; gap: 8px; font-size: 0.9375rem; color: #555; }
         .resa-detail-row svg { color: #d4a0a0; flex-shrink: 0; }
