@@ -17,6 +17,24 @@ const pwaConfig = withPWA({
   disable: process.env.NODE_ENV === 'development',
   cacheStartUrl: false,
   dynamicStartUrl: false,
+  // Le précache embarquait TOUT public/ — captures landing, photos persona,
+  // vidéos réels, illustrations du guide (~8 Mo) : l'activation du SW prenait
+  // des MINUTES au premier passage (donc « sw-pending » au clic push), et
+  // chaque déploiement re-téléchargeait le tout sur le forfait mobile des
+  // profs. Personne n'a besoin du marketing hors-ligne : on ne précache que
+  // l'app (chunks) et les petites icônes.
+  // ⚠️ Syntaxe next-pwa 5.6 : patterns de NÉGATION préfixés « ! » (le défaut
+  // de la lib est ['!noprecache/**/*']) — sans le « ! », rien n'est exclu et
+  // ça ne se voit pas (vérifier par grep dans public/sw.js, pas à l'œil).
+  publicExcludes: [
+    '!videos/**/*',
+    '!blog/**/*',
+    '!icons/aide/**/*',
+    '!icons/screen-*.png',
+    '!icons/persona-*.jpg',
+    '!icons/*.jpg',
+    '!icons/hero-*.png',
+  ],
   runtimeCaching: [
     {
       urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
