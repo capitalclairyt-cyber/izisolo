@@ -13,6 +13,9 @@ import { isPushSupported, isIosNonInstalled, getExistingSubscription, enablePush
 export default function PushToggle({ variant = 'default' }) {
   const [state, setState] = useState('loading'); // loading|unsupported|ios|default|granted|denied|busy
   const [mounted, setMounted] = useState(false);
+  // Message d'échec VISIBLE (retour Maude 2026-08-24 : le bouton moulinait
+  // puis revenait à « Activer » sans un mot — plus jamais d'échec muet ici).
+  const [info, setInfo] = useState('');
 
   useEffect(() => {
     setMounted(true);
@@ -28,11 +31,18 @@ export default function PushToggle({ variant = 'default' }) {
 
   const handleEnable = async () => {
     setState('busy');
+    setInfo('');
     const res = await enablePush();
     setState(res === 'granted' ? 'granted' : res === 'denied' ? 'denied' : 'default');
+    if (res === 'sw-pending') {
+      setInfo('L\'appli finit de s\'installer sur cet appareil (première visite) : réessaie dans une minute.');
+    } else if (res === 'error') {
+      setInfo('L\'activation n\'a pas abouti. Réessaie, et si ça continue, dis-le-nous.');
+    }
   };
   const handleDisable = async () => {
     setState('busy');
+    setInfo('');
     await disablePush();
     setState('default');
   };
@@ -56,22 +66,30 @@ export default function PushToggle({ variant = 'default' }) {
   }
 
   return (
-    <button
-      type="button"
-      className={`push-toggle ${state === 'granted' ? 'push-toggle--on' : 'push-toggle--off'} ${variant}`}
-      onClick={state === 'granted' ? handleDisable : handleEnable}
-      disabled={state === 'busy'}
-    >
-      {state === 'busy' ? <Loader2 size={14} className="push-spin" />
-        : state === 'granted' ? <Bell size={14} />
-        : <Bell size={14} />}
-      {state === 'granted' ? 'Notifications activées' : 'Activer les notifications'}
+    <div className={`push-toggle-wrap ${variant}`}>
+      <button
+        type="button"
+        className={`push-toggle ${state === 'granted' ? 'push-toggle--on' : 'push-toggle--off'} ${variant}`}
+        onClick={state === 'granted' ? handleDisable : handleEnable}
+        disabled={state === 'busy'}
+      >
+        {state === 'busy' ? <Loader2 size={14} className="push-spin" />
+          : state === 'granted' ? <Bell size={14} />
+          : <Bell size={14} />}
+        {state === 'granted' ? 'Notifications activées' : 'Activer les notifications'}
+      </button>
+      {info && <p className="push-toggle-info">{info}</p>}
       <style jsx>{styles}</style>
-    </button>
+    </div>
   );
 }
 
 const styles = `
+  .push-toggle-wrap { display: inline-flex; flex-direction: column; gap: 6px; max-width: 100%; }
+  .push-toggle-info {
+    margin: 0; font-size: 0.75rem; line-height: 1.45;
+    color: var(--hot, #b45309); max-width: 340px;
+  }
   .push-toggle {
     display: inline-flex; align-items: center; gap: 7px;
     font-size: 0.8125rem; font-weight: 600;

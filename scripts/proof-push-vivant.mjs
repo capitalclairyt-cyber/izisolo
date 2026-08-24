@@ -102,13 +102,23 @@ try {
   // ── 3. Le clic crée un vrai abonnement ─────────────────────────────────────
   console.log('\n— 3. L\'activation crée l\'abonnement (DB) —');
   const btn = page.locator('.push-toggle').first();
+  let messageAttenteVu = false;
   const active = await attendre(async () => {
     const t = (await btn.innerText().catch(() => '')).trim();
     if (t === 'Notifications activées') return true;
+    // Depuis le retour Maude (2026-08-24) : si le SW précache encore, l'échec
+    // n'est plus muet — le message « finit de s'installer » doit s'afficher.
+    if (!messageAttenteVu) {
+      const corps = await page.innerText('body').catch(() => '');
+      if (corps.includes('finit de s\'installer')) {
+        messageAttenteVu = true;
+        console.log('  [info] ✓ le message « l\'appli finit de s\'installer » s\'affiche pendant l\'attente (plus d\'échec muet)');
+      }
+    }
     await btn.click().catch(() => {});
     await new Promise(r => setTimeout(r, 1200));
     return (await btn.innerText().catch(() => '')).trim() === 'Notifications activées' ? true : null;
-  }, 45000, 400);
+  }, 90000, 400);
   c('le bouton passe « Notifications activées »', !!active);
   const ligne = await attendre(async () => {
     const { data } = await svc.from('push_subscriptions').select('id, role, email, endpoint').eq('user_id', USER_ID);

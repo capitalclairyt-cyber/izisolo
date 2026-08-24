@@ -99,11 +99,20 @@ export default function PushPrompt({ audience = 'eleve' }) {
     setInstallEvent(null); // l'événement ne se rejoue pas
   };
 
+  // Message d'échec VISIBLE (retour Maude 2026-08-24 : « Activer » moulinait
+  // puis la bannière revenait à son état initial sans un mot — le SW de la
+  // toute première visite précache encore le build, subscribe est impossible
+  // tant qu'il n'est pas actif).
+  const [msg, setMsg] = useState('');
   const activer = async () => {
     setState('busy');
+    setMsg('');
     const res = await enablePush();
-    if (res === 'granted') { hide(); }
-    else setState('ask');
+    if (res === 'granted') { hide(); return; }
+    setState('ask');
+    if (res === 'sw-pending') setMsg('L\'appli finit de s\'installer sur cet appareil (première visite) : réessaie dans une minute.');
+    else if (res === 'denied') setMsg('Les notifications sont bloquées dans les réglages du navigateur.');
+    else setMsg('L\'activation n\'a pas abouti, réessaie.');
   };
 
   const pitchInstall = audience === 'prof'
@@ -155,6 +164,7 @@ export default function PushPrompt({ audience = 'eleve' }) {
               </button>
               <button className="pp-later" onClick={hide}>Plus tard</button>
             </div>
+            {msg && <div className="pp-msg">{msg}</div>}
           </>
         )}
       </div>
@@ -174,6 +184,7 @@ export default function PushPrompt({ audience = 'eleve' }) {
         .pp-btn { background: var(--brand, #B87333); color: white; border: none; border-radius: 99px; padding: 8px 16px; font-size: 0.8125rem; font-weight: 700; cursor: pointer; font-family: inherit; }
         .pp-btn:disabled { opacity: 0.7; cursor: wait; }
         .pp-later { background: none; border: none; color: var(--text-muted, #999); font-size: 0.8125rem; cursor: pointer; text-decoration: underline; font-family: inherit; }
+        .pp-msg { margin-top: 8px; font-size: 0.78rem; line-height: 1.45; color: var(--hot, #b45309); }
         .pp-link { color: var(--brand, #B87333); font-size: 0.8125rem; font-weight: 600; text-decoration: underline; }
       `}</style>
     </div>
