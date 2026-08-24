@@ -249,6 +249,30 @@ try {
         assert(b1.srcs.every(s => s && s.includes('/_next/image')),
           'portail : les vignettes passent par l\'optimiseur next/image');
 
+        // Le ton « Encre » pose un fond SOMBRE : on vérifie le style CALCULÉ,
+        // pas la présence d'une classe. C'est ce contrôle qui a rattrapé un nom
+        // de cours écrit en encre foncée sur fond foncé (illisible depuis
+        // toujours pour Méditation et Pranayama).
+        const contraste = await page.evaluate((type) => {
+          const carte = [...document.querySelectorAll('.portail-cours-card--ink')].find(c => c.innerText.includes(type));
+          if (!carte) return null;
+          const nom = carte.querySelector('.portail-cours-nom');
+          const lum = (couleur) => {
+            const [r, g, b] = couleur.match(/\d+(\.\d+)?/g).slice(0, 3).map(Number);
+            const c = [r, g, b].map(v => {
+              const s = v / 255;
+              return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+            });
+            return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+          };
+          const lFond = lum(getComputedStyle(carte).backgroundColor);
+          const lTexte = lum(getComputedStyle(nom).color);
+          const [hi, lo] = lFond > lTexte ? [lFond, lTexte] : [lTexte, lFond];
+          return { ratio: (hi + 0.05) / (lo + 0.05) };
+        }, typeTemoin);
+        assert(contraste && contraste.ratio >= 4.5,
+          `ton Encre : le nom du cours reste lisible sur le fond sombre (contraste ${contraste?.ratio?.toFixed(1)}:1)`);
+
         // 8. photo propre à UNE séance → elle prime
         await admin.from('cours').update({ photo_url: IMG_SEANCE }).eq('id', seanceTemoin.id);
         await attendre(300);
@@ -276,8 +300,40 @@ try {
         assert(b2b.length > 0 && b2b.every(s => s === IMG_TYPE),
           `les ${b2b.length} autres séances de « ${typeTemoin} » gardent la vignette du type`);
 
+        await page.evaluate(() => document.querySelector('.portail-cours-card')?.scrollIntoView({ block: 'center' }));
+        await attendre(600);
+        await page.screenshot({ path: join(OUT, 'portail-semaine-vignettes.png'), fullPage: false });
+
+        // Les DEUX modes d'affichage. La vue semaine range les séances dans des
+        // blocs de jour deux fois moins larges : la vignette y est un bandeau,
+        // sinon le titre se cassait sur quatre lignes. La vue liste garde le
+        // carré à gauche. On mesure, on ne suppose pas.
+        const tailles = await page.evaluate(async () => {
+          const mesure = () => {
+            const v = document.querySelector('.portail-cours-vignette');
+            if (!v) return null;
+            const r = v.getBoundingClientRect();
+            return { l: Math.round(r.width), h: Math.round(r.height) };
+          };
+          const semaine = mesure();
+          const bouton = [...document.querySelectorAll('button')].find(b => b.textContent.trim() === 'Liste');
+          bouton?.click();
+          await new Promise(r => setTimeout(r, 500));
+          return { semaine, liste: mesure(), basculee: !!bouton };
+        });
+        assert(tailles.basculee && tailles.semaine && tailles.liste, 'les deux modes d\'affichage rendent la vignette');
+        assert(tailles.semaine.l > 150 && tailles.semaine.h === 88,
+          `vue semaine : bandeau pleine largeur (${tailles.semaine.l}×${tailles.semaine.h})`);
+        assert(tailles.liste.l === 64 && tailles.liste.h === 64,
+          `vue liste : vignette carrée à gauche (${tailles.liste.l}×${tailles.liste.h})`);
+        await page.evaluate(() => document.querySelector('.portail-cours-card')?.scrollIntoView({ block: 'center' }));
+        await attendre(400);
+        await page.screenshot({ path: join(OUT, 'portail-liste-vignettes.png'), fullPage: false });
+
         // 9. page publique de la séance
         await page.goto(`${BASE}/p/${STUDIO_SLUG}/cours/${seanceTemoin.id}`, { waitUntil: 'networkidle' });
+        await attendre(400);
+        await page.screenshot({ path: join(OUT, 'fiche-cours-avec-image.png'), fullPage: false });
         const b3 = await page.evaluate(() => {
           const img = document.querySelector('.resa-vignette img');
           const src = img?.getAttribute('src') || '';
@@ -285,8 +341,14 @@ try {
         });
         assert(b3 === IMG_SEANCE, 'page publique du cours : la même image en tête de fiche');
 
-        // 10. embed : la vignette oui, le ton non
-        await page.goto(`${BASE}/embed/${STUDIO_SLUG}`, { waitUntil: 'networkidle' });
+        // 10. embed : la vignette oui, le ton non.
+        // ⚠️ L'embed a un cache mémoire de 120 s par (slug, semaines, type) —
+        // la vue chargée en phase A serait resservie telle quelle, SANS la
+        // vignette qu'on vient de poser, et le test échouerait sur un artefact.
+        // On demande donc une autre fenêtre (clé de cache différente). Côté
+        // prof, la conséquence réelle est la même : une photo déposée met
+        // jusqu'à deux minutes à apparaître dans le bloc intégré sur son site.
+        await page.goto(`${BASE}/embed/${STUDIO_SLUG}?semaines=5`, { waitUntil: 'networkidle' });
         const b4 = await page.evaluate(() => ({
           vignettes: document.querySelectorAll('.emb-vign img').length,
           palette: document.querySelector('.emb')?.dataset.palette || null,

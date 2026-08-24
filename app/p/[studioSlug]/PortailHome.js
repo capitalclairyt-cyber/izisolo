@@ -1431,6 +1431,14 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
         .portail-cours-details { display: flex; flex-wrap: wrap; gap: 8px; font-size: 0.8125rem; color: #888; align-items: center; }
         .portail-cours-details span { display: flex; align-items: center; gap: 4px; }
         .portail-cours-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+        /* Vue semaine : les blocs de jour font la moitié de la largeur sur
+           tablette, et la carte y porte déjà un badge de places. Une vignette
+           carrée à gauche laissait au titre une colonne de 60 px, cassée sur
+           quatre lignes. En bandeau (comme dans l'embed), le titre récupère
+           toute la largeur et la carte garde la mise en page qu'elle avait
+           avant, avec une image posée dessus. */
+        .portail-week-day .portail-cours-card { flex-wrap: wrap; }
+        .portail-week-day .portail-cours-vignette { width: 100%; height: 88px; }
         /* Après la règle de base, jamais avant : à sélecteur égal une media
            query n'ajoute aucune spécificité, c'est l'ordre qui tranche (§12). */
         @media (max-width: 540px) {
@@ -1468,6 +1476,13 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
         .portail-cours-card--sand     { background: var(--tone-sand-bg);     border-left-color: var(--tone-sand-accent); }
         .portail-cours-card--lavender { background: var(--tone-lavender-bg); border-left-color: var(--tone-lavender-accent); }
         .portail-cours-card--ink      { background: var(--tone-ink-bg);      border-left-color: var(--tone-ink-bg); }
+        /* Encre = fond SOMBRE : sans ces trois règles, le nom et les détails
+           gardaient leur encre foncée et la carte était illisible. Le bug
+           existait depuis toujours (toneForCours donne « ink » à Méditation et
+           Pranayama) ; v99 le rend choisissable, donc bien plus probable. */
+        .portail-cours-card--ink .portail-cours-nom { color: var(--tone-ink-text); }
+        .portail-cours-card--ink .portail-cours-details { color: rgba(250, 246, 240, 0.72); }
+        .portail-cours-card--ink .portail-cours-details svg { color: rgba(250, 246, 240, 0.72); }
 
         .portail-tag-rose     { background: var(--tone-rose-bg);     color: var(--tone-rose-ink); }
         .portail-tag-sage     { background: var(--tone-sage-bg);     color: var(--tone-sage-ink); }
