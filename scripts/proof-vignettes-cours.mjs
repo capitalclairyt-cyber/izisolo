@@ -387,6 +387,44 @@ try {
     assert(guide.citeLEcran, 'le guide cite le nom EXACT de l\'écran qu\'il décrit');
 
     await pageProf.screenshot({ path: join(OUT, 'guide-apparence.png'), fullPage: false });
+
+    // ═══ PHASE D — le dépôt de photo lui-même ═══════════════════════════════
+    // Le seul morceau du lot qui touche le stockage. On dépose un PNG 1x1 avec
+    // le kind « vignette » (qui n'écrit AUCUNE colonne, contrairement à profil
+    // et couverture), puis on redépose en déclarant remplacer le premier : le
+    // fichier d'avant doit disparaître, sinon chaque changement de photo
+    // laisserait un orphelin de plus dans le Blob.
+    console.log('\n── Phase D : dépôt d\'une photo (stockage réel) ──');
+    const PNG_1x1 = Buffer.from(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+      'base64',
+    );
+    const deposer = async (remplace) => {
+      const res = await pageProf.request.post(
+        `${BASE}/api/profile/upload-photo?kind=vignette${remplace ? `&remplace=${encodeURIComponent(remplace)}` : ''}`,
+        { multipart: { file: { name: 'temoin.png', mimeType: 'image/png', buffer: PNG_1x1 } } },
+      );
+      return { statut: res.status(), corps: await res.json().catch(() => ({})) };
+    };
+
+    const d1 = await deposer(null);
+    if (d1.statut === 503) {
+      console.log('  ⚠️  BLOB_READ_WRITE_TOKEN absent en local : phase D ignorée');
+    } else {
+      assert(d1.statut === 200 && typeof d1.corps.url === 'string', `dépôt accepté (${d1.statut})`);
+      assert(/\.public\.blob\.vercel-storage\.com\//.test(d1.corps.url || ''),
+        'la photo est servie par un host que next/image sait optimiser');
+      assert(d1.corps.field === null, 'le kind « vignette » n\'écrit AUCUNE colonne du profil');
+
+      const d2 = await deposer(d1.corps.url);
+      assert(d2.statut === 200 && d2.corps.url !== d1.corps.url, 'un second dépôt rend une autre URL');
+      await attendre(1200);
+      const ancienne = await fetch(d1.corps.url).then(r => r.status).catch(() => 0);
+      assert(ancienne === 404 || ancienne === 403,
+        `la photo remplacée est supprimée du stockage (${ancienne}), pas laissée orpheline`);
+      console.log(`     (un témoin de 70 octets reste déposé : ${d2.corps.url.split('/').pop()})`);
+    }
+
     await ctx.close();
   }
 } finally {
