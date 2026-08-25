@@ -247,6 +247,7 @@ const SECTIONS = [
       <>Tu as un site ? Intègre ton <strong>planning</strong> et ta <strong>grille d&apos;offres</strong> directement dessus (un copier-coller chacun) : Paramètres → Portail public → « Ma page ». Tes élèves les consultent sans quitter ton site ; au moment de réserver ou de payer, un onglet s&apos;ouvre sur ta page IziSolo (les navigateurs bloquent les connexions et les paiements à l&apos;intérieur d&apos;un site tiers, aucun outil ne fait autrement).</>,
       <>Sur ce même écran, <strong>« Tes couleurs »</strong> : deux codes couleur, et ils habillent le bloc intégré ET ta page publique, pour que ton site et ta page IziSolo soient du même monde. Les textes restent lisibles quoi qu&apos;il arrive, les nuances sont calculées pour ça.</>,
       <>Chaque cours a sa <strong>visibilité</strong> : public, réservé aux inscrit·es, aux abonné·es, aux fidèles — ou privé sur invitation.</>,
+      <>Tu proposes le <strong>même cours à plusieurs horaires</strong> dans la journée ? Ton portail les range sous une seule carte (« 5 créneaux, de 9h30 à 16h ») au lieu d&apos;en empiler cinq. Les horaires restent écrits dessus, et <strong>« Choisir mon heure »</strong> les déplie avec leurs places et leur bouton. Une séance annulée, elle, garde toujours sa propre carte.</>,
     ],
     astuce: 'Le cours d\'essai est ta porte d\'entrée : une demande d\'essai crée la fiche, t\'alerte, et l\'élève reçoit la confirmation avec l\'accès à son espace.',
   },

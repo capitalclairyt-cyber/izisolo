@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { MapPin, Calendar, Clock, ChevronRight, ChevronLeft, Search, CreditCard, Ticket, CalendarCheck, Zap, Instagram, Facebook, Globe, Award, BookOpen, LayoutGrid, List, Check, Loader } from 'lucide-react';
+import { MapPin, Calendar, Clock, ChevronRight, ChevronLeft, ChevronDown, Search, CreditCard, Ticket, CalendarCheck, Zap, Instagram, Facebook, Globe, Award, BookOpen, LayoutGrid, List, Check, Loader } from 'lucide-react';
 import { toneCours, vignetteCours, altVignette, imageOptimisable } from '@/lib/vignette-cours';
 import ScrollReveal from '@/components/landing/ScrollReveal';
 import { useToast } from '@/components/ui/ToastProvider';
@@ -11,6 +11,7 @@ import { matchRecherche } from '@/lib/utils';
 import { essaiVarieParType, minPrixEssai } from '@/lib/essai-tarif';
 import { libelleSeances } from '@/lib/offres-seances';
 import { confirmationEleve } from '@/lib/demande-offre';
+import { grouperSeances, libelleGroupe } from '@/lib/seances-groupees';
 
 // next/image ne peut optimiser que les hosts déclarés dans
 // next.config.mjs → images.remotePatterns (AUDIT-PERF 2.9 : la couverture
@@ -98,6 +99,9 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
   const canQuickBook = !!currentClient && !isPreview && !isDemo;
   const [reserved, setReserved] = useState(() => new Set(reservedCoursIds));
   const [pendingId, setPendingId] = useState(null);
+  // Quels groupes de créneaux sont dépliés (clé = id stable du groupe,
+  // cf. lib/seances-groupees : instable, le pli se refermerait tout seul).
+  const [groupesOuverts, setGroupesOuverts] = useState({});
 
   const handleQuickReserve = async (c) => {
     if (!currentClient || pendingId) return;
@@ -135,6 +139,94 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
   // Rend l'action à droite d'une carte de cours : bouton « Réserver » 1 clic
   // pour un élève reconnu, badge « Inscrit·e » s'il l'est déjà, sinon le chevron
   // classique (visiteur non connecté → la carte mène à la page de réservation).
+  /**
+   * Une carte repliable pour N séances interchangeables de la même journée.
+   *
+   * Née du portail de Melyflow (2026-08-25) : elle n'enseigne que le samedi, et
+   * sa rentrée compte cinq « Cours découverte » au même endroit, au même prix,
+   * à cinq heures différentes. Cinq cartes empilées donnaient l'impression d'un
+   * planning brouillon alors qu'elle propose simplement plusieurs horaires.
+   *
+   * ⚠️ Ce n'est qu'un PLI : chaque créneau garde sa page, sa jauge et son
+   * bouton, et le repli n'enlève rien à ce qu'on peut réserver. Les horaires
+   * sont d'ailleurs écrits DANS l'en-tête, replié compris — sans quoi on
+   * cacherait l'offre derrière un clic, ce qui coûterait des réservations.
+   */
+  const renderGroupe = (item) => {
+    const modele = item.cours[0];
+    const ouvert = !!groupesOuverts[item.id];
+    const tone = toneCours(modele, tonsParType);
+    const vignette = vignetteCours(modele, vignettesParType);
+    const enLigne = modele.format === 'visio' || modele.format === 'hybride';
+    const { resume } = item;
+    return (
+      <div key={item.id} className={`portail-groupe portail-cours-card--${tone} ${resume.toutComplet ? 'complet' : ''}`}>
+        <button
+          type="button"
+          className="portail-groupe-tete"
+          aria-expanded={ouvert}
+          onClick={() => setGroupesOuverts(prev => ({ ...prev, [item.id]: !prev[item.id] }))}
+        >
+          {vignette && (
+            <span className="portail-cours-vignette" aria-hidden="true">
+              <Image
+                src={vignette}
+                alt={altVignette(modele)}
+                width={128}
+                height={128}
+                sizes="64px"
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              />
+            </span>
+          )}
+          <span className="portail-cours-info">
+            <span className="portail-cours-nom">{modele.nom}</span>
+            <span className="portail-cours-details">
+              <span><Clock size={12} /> {libelleGroupe(resume, formatHeure)}</span>
+              {enLigne && <span>🖥 En ligne</span>}
+              {modele.lieu && <span><MapPin size={12} /> {modele.lieu}</span>}
+              {modele.type_cours && <span className={`portail-tag portail-tag-${tone}`}>{modele.type_cours}</span>}
+              {Number(modele.tarif_unitaire) > 0 && (
+                <span className="portail-tag portail-tag-amber">
+                  {Number(modele.tarif_unitaire).toFixed(2).replace('.', ',').replace(',00', '')} €{modele.carnets_acceptes === true ? ' ou carnet' : ' / séance'}
+                </span>
+              )}
+            </span>
+            {/* Les horaires restent LISIBLES sans déplier : le pli range, il ne
+                cache pas l'offre. */}
+            <span className="portail-groupe-heures">
+              {resume.heures.map(h => <span key={h} className="portail-groupe-heure">{formatHeure(h)}</span>)}
+            </span>
+          </span>
+          <span className="portail-groupe-right">
+            {resume.toutComplet
+              ? <span className="portail-groupe-complet">Complet</span>
+              : resume.placesRestantes !== null && (
+                  <span className="portail-groupe-places">
+                    {resume.placesRestantes} place{resume.placesRestantes > 1 ? 's' : ''}
+                  </span>
+                )}
+            <span className="portail-groupe-toggle">
+              {ouvert ? 'Replier' : 'Choisir mon heure'}
+              <ChevronDown size={15} className={ouvert ? 'pivote' : ''} />
+            </span>
+          </span>
+        </button>
+        {ouvert && (
+          <div className="portail-groupe-creneaux">
+            {item.cours.map(c => renderCoursCarte(c, { compact: true }))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  /** Les séances d'UNE journée, repliées quand elles se ressemblent. */
+  const renderJournee = (coursDuJour) =>
+    grouperSeances(coursDuJour).map(item =>
+      item.type === 'groupe' ? renderGroupe(item) : renderCoursCarte(item.cours)
+    );
+
   const renderCoursAction = (c) => {
     // Studio Essentiel (vitrine, B3c) : planning visible, aucun bouton de
     // résa — la carte reste un lien vers la fiche du cours (infos).
@@ -171,12 +263,36 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
   // semaine affichait « 🖥 En ligne » DEUX fois (span dupliqué). Une fonction
   // de rendu, et non un composant défini ici, pour ne pas fabriquer un nouveau
   // type de composant à chaque render (même convention que renderCoursAction).
-  const renderCoursCarte = (c) => {
+  /**
+   * Une carte de séance. En variante `compact` (dans un groupe replié), le nom,
+   * le lieu, l'image et le prix ne sont PAS répétés : l'en-tête du groupe les
+   * porte déjà. Ne reste que ce qui distingue vraiment les créneaux entre eux —
+   * l'heure, la jauge et le bouton.
+   */
+  const renderCoursCarte = (c, { compact = false } = {}) => {
     const dispo = c.capacite_max ? c.capacite_max - c.nbInscrits : null;
     const complet = dispo !== null && dispo <= 0;
     const tone = toneCours(c, tonsParType);
-    const vignette = vignetteCours(c, vignettesParType);
+    const vignette = compact ? null : vignetteCours(c, vignettesParType);
     const enLigne = c.format === 'visio' || c.format === 'hybride';
+    if (compact) {
+      return (
+        <Link
+          key={c.id}
+          href={`/p/${studioSlug}/cours/${c.id}${demoQS}`}
+          className={`portail-creneau ${complet ? 'complet' : ''}`}
+        >
+          <span className="portail-creneau-heure">
+            <Clock size={13} /> {formatHeure(c.heure)}
+            {c.duree_minutes ? <span className="portail-creneau-duree">{c.duree_minutes} min</span> : null}
+          </span>
+          <span className="portail-creneau-right">
+            <PlacesBadge capacite={c.capacite_max} inscrits={c.nbInscrits} afficherInscrits={profile.afficher_inscrits !== false} />
+            {renderCoursAction(c)}
+          </span>
+        </Link>
+      );
+    }
     return (
       <Link
         key={c.id}
@@ -753,7 +869,7 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
               </div>
               {day.cours.length === 0 ? (
                 <div className="portail-week-day-empty">—</div>
-              ) : day.cours.map(c => renderCoursCarte(c))}
+              ) : renderJournee(day.cours)}
             </div>
           ))}
           {semaineCreuse && filteredForView.length > 0 && (
@@ -785,7 +901,7 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
       ) : viewMode === 'list' && grouped.map(([date, coursDate]) => (
         <div key={date} className="portail-day-group">
           <div className="portail-day-label">{formatDateCourt(date)}</div>
-          {coursDate.map(c => renderCoursCarte(c))}
+          {renderJournee(coursDate)}
         </div>
       ))}
       </>}
@@ -1515,6 +1631,95 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
         @media (max-width: 540px) {
           .portail-cours-card { padding: 12px; gap: 10px; }
           .portail-cours-vignette { width: 52px; height: 52px; }
+        }
+
+        /* ── Groupe de créneaux (2026-08-25) ──────────────────────────────
+           Cinq « Cours découverte » du même samedi tenaient cinq cartes. Le
+           groupe les range sous une seule, MAIS écrit les horaires dans
+           l'en-tête : replier ne doit jamais cacher l'offre, seulement la
+           répétition. Le corps déplié ne répète ni le nom, ni le lieu, ni le
+           prix — l'en-tête les porte déjà. */
+        .portail-groupe {
+          background: white; border-radius: 14px; margin-bottom: 8px;
+          box-shadow: 0 1px 6px rgba(0,0,0,0.05);
+          border-left: 6px solid transparent;
+          overflow: hidden;
+        }
+        .portail-groupe.complet { opacity: 0.6; }
+        /* L'en-tête est une ligne QUI SE PLIE : sur un bloc de jour étroit
+           (vue semaine) ou un petit écran, la colonne de droite passe à la
+           ligne au lieu d'écraser le titre à 140 px. Mesuré à 375 px : sans
+           la base de 190 px, les puces d'heures descendaient une par une. */
+        .portail-groupe-tete {
+          display: flex; align-items: center; flex-wrap: wrap; gap: 12px;
+          width: 100%; padding: 16px; border: none; background: none;
+          font: inherit; color: inherit; text-align: left; cursor: pointer;
+          transition: background 0.15s ease;
+        }
+        .portail-groupe-tete:hover { background: rgba(0,0,0,0.025); }
+        .portail-groupe-tete .portail-cours-info { display: flex; flex-direction: column; flex: 1 1 190px; }
+        .portail-groupe-heures {
+          display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px;
+        }
+        .portail-groupe-heure {
+          font-size: 0.75rem; font-weight: 700; color: #6b5a4e;
+          background: rgba(0,0,0,0.05); border-radius: 6px;
+          padding: 2px 7px; font-variant-numeric: tabular-nums;
+        }
+        .portail-groupe-right {
+          display: flex; flex-direction: row; align-items: center; gap: 10px;
+          flex: 0 0 auto; margin-left: auto;
+        }
+        .portail-groupe-places, .portail-groupe-complet {
+          font-size: 0.75rem; font-weight: 700; white-space: nowrap;
+        }
+        .portail-groupe-places { color: #2e7d32; }
+        .portail-groupe-complet { color: #b3261e; }
+        .portail-groupe-toggle {
+          display: inline-flex; align-items: center; gap: 4px;
+          font-size: 0.8125rem; font-weight: 700; color: #b87333; white-space: nowrap;
+        }
+        .portail-groupe-toggle svg { transition: transform 0.18s ease; }
+        .portail-groupe-toggle svg.pivote { transform: rotate(180deg); }
+        .portail-groupe-creneaux {
+          border-top: 1px solid rgba(0,0,0,0.07);
+          padding: 6px 10px 10px;
+        }
+        .portail-creneau {
+          display: flex; align-items: center; justify-content: space-between; gap: 10px;
+          padding: 9px 6px; text-decoration: none; color: inherit;
+          border-radius: 10px; transition: background 0.15s ease;
+        }
+        .portail-creneau + .portail-creneau { border-top: 1px solid rgba(0,0,0,0.05); }
+        .portail-creneau:hover { background: rgba(0,0,0,0.03); }
+        .portail-creneau.complet { opacity: 0.55; }
+        .portail-creneau-heure {
+          display: inline-flex; align-items: center; gap: 6px;
+          font-weight: 700; font-size: 0.9375rem; color: #1a1a2e;
+          font-variant-numeric: tabular-nums;
+        }
+        .portail-creneau-duree { font-weight: 500; font-size: 0.8125rem; color: #999; }
+        .portail-creneau-right { display: flex; align-items: center; gap: 8px; }
+        /* Encre = fond sombre : même correction que sur la carte simple (v99),
+           sinon le nom et les horaires restent illisibles. */
+        .portail-groupe.portail-cours-card--ink .portail-cours-nom { color: var(--tone-ink-text); }
+        .portail-groupe.portail-cours-card--ink .portail-cours-details { color: rgba(250, 246, 240, 0.72); }
+        .portail-groupe.portail-cours-card--ink .portail-cours-details svg { color: rgba(250, 246, 240, 0.72); }
+        .portail-groupe.portail-cours-card--ink .portail-groupe-heure { color: var(--tone-ink-text); background: rgba(250, 246, 240, 0.14); }
+        .portail-groupe.portail-cours-card--ink .portail-groupe-tete:hover { background: rgba(250, 246, 240, 0.06); }
+        /* Les créneaux dépliés retombent sur fond blanc : le corps de la carte
+           n'est pas teinté, seul l'en-tête l'est. */
+        .portail-groupe .portail-groupe-creneaux { background: white; }
+        /* Vue semaine : la vignette y passe en BANDEAU pleine largeur (règle
+           v99, les blocs de jour font la moitié de l'écran). Sans ce
+           flex-wrap, elle mangeait TOUTE la ligne de l'en-tête et laissait au
+           titre une colonne de 0 px — mesuré, pas supposé : le bloc info
+           tombait à width 0 et chaque puce d'heure passait à la ligne. */
+        .portail-week-day .portail-groupe-tete { flex-wrap: wrap; }
+        /* Après la règle de base, jamais avant (§12). */
+        @media (max-width: 540px) {
+          .portail-groupe-tete { padding: 12px; gap: 10px; }
+          .portail-groupe-creneaux { padding: 4px 8px 8px; }
         }
 
         /* Réservation 1 clic — bouton + état inscrit + spinner */

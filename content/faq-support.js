@@ -187,4 +187,11 @@ export const FAQ_SUPPORT = [
     q: "Je ne suis pas en France (Belgique, Luxembourg) : la facturation marche-t-elle ?",
     a: "Oui. Va dans Paramètres → Profil & studio → Activité et choisis ton pays d'exercice en haut de la carte « Facturation ». Le champ s'adapte : « SIRET » en France, « Numéro d'entreprise » en Belgique, « Numéro RCS » au Luxembourg — et c'est ce libellé qui s'imprime sur tes factures. Deux points importants : le bloc « Ma déclaration URSSAF » disparaît, parce que chez toi ce sont tes caisses qui appellent les cotisations et qu'il n'y a rien à déclarer depuis IziSolo (ton export de recettes, lui, reste disponible dans Revenus) ; et la mention de TVA n'est PAS pré-remplie hors de France, parce que nous ne devinons pas ce qui doit figurer sur ta facture. On te propose une formulation courante, mais vérifie-la auprès de ton comptable : c'est ta responsabilité qui est engagée.",
   },
+  {
+    // Retour Melyflow (Belgique), 2026-08-25 — 5 « Cours découverte » le même
+    // samedi. AJOUTÉE EN FIN de liste.
+    q: "Mes cours du même jour se sont regroupés sous une seule carte sur mon portail — c'est normal ?",
+    a: "Oui, et rien n'est perdu. Quand tu proposes plusieurs fois le MÊME cours dans la journée (même nom, même lieu, même tarif, même format), ton portail les range sous une seule carte plutôt que d'en empiler cinq : « 5 créneaux, de 9h30 à 16h ». Les horaires restent écrits sur la carte, et le bouton « Choisir mon heure » les déplie, chacun avec ses places restantes et son bouton de réservation. Deux exceptions volontaires : une séance annulée garde toujours sa propre carte (c'est l'information la plus importante, elle ne doit pas se cacher), et il faut au moins trois créneaux pour que le regroupement se déclenche.",
+    lien: { href: '/aide#page-publique', label: 'Voir le pas-à-pas' },
+  },
 ];

@@ -313,7 +313,8 @@ try {
       profile: profilComplet, facturation, client: fiche, paiements: [paiement],
     });
     const { data: emise, error: eEmise } = await admin.rpc('emettre_facture', {
-      p_profile_id: prof.id, p_paiement_ids: [paiement.id], p_snapshot: snapshot,
+      p_profile_id: prof.id, p_client_id: fiche.id,
+      p_paiement_ids: [paiement.id], p_snapshot: snapshot,
     });
     if (eEmise) throw new Error(`emettre_facture : ${eEmise.message}`);
     check(emise?.ok === true, 'facture émise', emise?.numero_affiche || JSON.stringify(emise));

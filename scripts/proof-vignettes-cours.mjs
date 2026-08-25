@@ -45,6 +45,28 @@ const env = Object.fromEntries(
 const PROJECT_REF = new URL(env.NEXT_PUBLIC_SUPABASE_URL).hostname.split('.')[0];
 const admin = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
 
+/**
+ * Bascule le portail entre « Semaine » et « Liste », et ATTEND l'effet.
+ *
+ * ⚠️ Piège consigné (v100) : waitForSelector trouve un bouton rendu côté
+ * SERVEUR avant que React n'ait attaché son handler — le premier clic part
+ * dans le vide. On re-clique donc jusqu'à ce que le témoin de la vue visée
+ * soit vrai, plutôt que de dormir au hasard.
+ */
+async function basculerVue(page, vue) {
+  const temoin = vue === 'Liste' ? '.portail-day-group' : '.portail-week-day';
+  for (let i = 0; i < 20; i++) {
+    const vrai = await page.evaluate(t => document.querySelectorAll(t).length > 0, temoin);
+    if (vrai) return true;
+    await page.evaluate((v) => {
+      const b = [...document.querySelectorAll('button')].find(x => x.innerText.trim() === v);
+      if (b) b.click();
+    }, vue);
+    await new Promise(r => setTimeout(r, 400));
+  }
+  return false;
+}
+
 // Session prof réelle (magic link → cookie @supabase/ssr), comme les autres
 // preuves : on veut l'écran que la prof voit, pas une approximation.
 async function sessionCookies(email) {
@@ -200,13 +222,18 @@ try {
       const IMG_SEANCE = urlsReelles[1];
 
       // Séance témoin : la première séance publique à venir qui porte un type.
+      // ⚠️ `gt` et non `gte` : une séance d'AUJOURD'HUI peut avoir déjà commencé,
+      // et le portail ne l'affiche plus (il filtre sur l'heure courante). En la
+      // choisissant comme témoin, la preuve cherchait à l'écran une carte que la
+      // page n'avait aucune raison de rendre — elle passait le matin et échouait
+      // l'après-midi, sans que rien n'ait changé dans le produit.
       const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Paris' });
       const { data: seances } = await admin
         .from('cours')
         .select('id, nom, type_cours, date, visibilite, photo_url')
         .eq('profile_id', studio.id)
         .eq('est_annule', false)
-        .gte('date', today)
+        .gt('date', today)
         .not('type_cours', 'is', null)
         .order('date')
         .limit(40);
@@ -232,6 +259,10 @@ try {
         await attendre(300);
 
         await page.goto(`${BASE}/p/${STUDIO_SLUG}`, { waitUntil: 'networkidle' });
+        // Vue LISTE : elle porte 60 jours. La vue semaine, elle, s'ancre sur la
+        // première séance à venir — le type témoin peut très bien tomber la
+        // semaine d'après, et la preuve chercherait une carte hors fenêtre.
+        await basculerVue(page, 'Liste');
         const b1 = await page.evaluate((type) => {
           const cartes = [...document.querySelectorAll('.portail-cours-card')];
           const duType = cartes.filter(c => c.innerText.includes(type));
@@ -277,26 +308,33 @@ try {
         await admin.from('cours').update({ photo_url: IMG_SEANCE }).eq('id', seanceTemoin.id);
         await attendre(300);
         await page.goto(`${BASE}/p/${STUDIO_SLUG}`, { waitUntil: 'networkidle' });
-        const b2 = await page.evaluate((nom) => {
+        await basculerVue(page, 'Liste');
+        // ⚠️ On identifie la séance témoin par son ID dans le lien, JAMAIS par
+        // son nom : les séances d'une série récurrente portent toutes le même
+        // (« Reformer — petit groupe » ×6). Chercher par nom trouvait n'importe
+        // laquelle des six, et excluait les cinq autres du contrôle suivant —
+        // qui se retrouvait à valider une liste VIDE.
+        const b2 = await page.evaluate((id) => {
           const cartes = [...document.querySelectorAll('.portail-cours-card')];
-          const cible = cartes.find(c => c.innerText.includes(nom));
+          const cible = cartes.find(c => (c.getAttribute('href') || '').includes(id));
           const img = cible?.querySelector('.portail-cours-vignette img');
           const src = img?.getAttribute('src') || '';
           const dec = src.includes('url=') ? decodeURIComponent(src.split('url=')[1].split('&')[0]) : src;
           return { trouvee: !!cible, source: dec };
-        }, seanceTemoin.nom);
+        }, seanceTemoin.id);
         assert(b2.trouvee && b2.source === IMG_SEANCE,
           'portail : la photo de LA séance prime sur celle de son type');
 
         // ...et les autres séances du même type gardent celle du type
         const b2b = await page.evaluate((args) => {
           const cartes = [...document.querySelectorAll('.portail-cours-card')];
-          const autres = cartes.filter(c => c.innerText.includes(args.type) && !c.innerText.includes(args.nom));
+          const autres = cartes.filter(c =>
+            c.innerText.includes(args.type) && !(c.getAttribute('href') || '').includes(args.id));
           return autres.map(c => {
             const src = c.querySelector('.portail-cours-vignette img')?.getAttribute('src') || '';
             return src.includes('url=') ? decodeURIComponent(src.split('url=')[1].split('&')[0]) : src;
           });
-        }, { type: typeTemoin, nom: seanceTemoin.nom });
+        }, { type: typeTemoin, id: seanceTemoin.id });
         assert(b2b.length > 0 && b2b.every(s => s === IMG_TYPE),
           `les ${b2b.length} autres séances de « ${typeTemoin} » gardent la vignette du type`);
 
@@ -308,19 +346,16 @@ try {
         // blocs de jour deux fois moins larges : la vignette y est un bandeau,
         // sinon le titre se cassait sur quatre lignes. La vue liste garde le
         // carré à gauche. On mesure, on ne suppose pas.
-        const tailles = await page.evaluate(async () => {
-          const mesure = () => {
-            const v = document.querySelector('.portail-cours-vignette');
-            if (!v) return null;
-            const r = v.getBoundingClientRect();
-            return { l: Math.round(r.width), h: Math.round(r.height) };
-          };
-          const semaine = mesure();
-          const bouton = [...document.querySelectorAll('button')].find(b => b.textContent.trim() === 'Liste');
-          bouton?.click();
-          await new Promise(r => setTimeout(r, 500));
-          return { semaine, liste: mesure(), basculee: !!bouton };
+        const mesureVignette = () => page.evaluate(() => {
+          const v = document.querySelector('.portail-cours-vignette');
+          if (!v) return null;
+          const r = v.getBoundingClientRect();
+          return { l: Math.round(r.width), h: Math.round(r.height) };
         });
+        const basculeeSemaine = await basculerVue(page, 'Semaine');
+        const semaine = await mesureVignette();
+        const basculeeListe = await basculerVue(page, 'Liste');
+        const tailles = { semaine, liste: await mesureVignette(), basculee: basculeeSemaine && basculeeListe };
         assert(tailles.basculee && tailles.semaine && tailles.liste, 'les deux modes d\'affichage rendent la vignette');
         assert(tailles.semaine.l > 150 && tailles.semaine.h === 88,
           `vue semaine : bandeau pleine largeur (${tailles.semaine.l}×${tailles.semaine.h})`);
