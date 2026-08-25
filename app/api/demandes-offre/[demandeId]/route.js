@@ -17,7 +17,7 @@ const schema = z.object({
  * façon d'écrire l'argent : c'est exactement ce que l'audit de juillet a passé
  * une journée à défaire (Lot C : « tunnel de vente unifié sur PaiementStep »).
  */
-export const PATCH = withRoute({ auth: 'active', schema }, async ({ params, auth, body }) => {
+export const PATCH = withRoute({ auth: 'active', schema, perm: 'argent_gerer' }, async ({ params, auth, body }) => {
   const { studioId, supabase } = auth;
   const { demandeId } = params;
 

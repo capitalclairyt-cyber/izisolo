@@ -40,7 +40,7 @@ const ResolveBodySchema = z.object({
   ressource_type: z.enum(['paiement', 'abonnement', 'presence']).optional().nullable(),
 });
 
-export const POST = withRoute({ auth: 'active' }, async ({ request, params, auth }) => {
+export const POST = withRoute({ auth: 'active', perm: 'eleves_gerer' }, async ({ request, params, auth }) => {
   const { studioId, user, supabase } = auth;
   const { id } = params;
 

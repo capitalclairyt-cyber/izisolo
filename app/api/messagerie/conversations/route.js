@@ -332,7 +332,7 @@ async function getEleveConversations(supabase, userEmail) {
  *   Crée ou retrouve la conversation 1-to-1 entre l'élève (résolu via auth.email)
  *   et le pro de ce studio.
  */
-export const POST = withRoute({ auth: 'user' }, async ({ request, auth }) => {
+export const POST = withRoute({ auth: 'user', perm: 'messagerie' }, async ({ request, auth }) => {
   const { user, profile, supabase } = auth;
 
   let body;

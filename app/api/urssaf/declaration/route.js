@@ -22,7 +22,7 @@ export const dynamic = 'force-dynamic';
  * droit et n'entre dans aucun calcul — seulement dans l'archive de la prof,
  * bornée par RLS à ses propres lignes.
  */
-export const POST = withRoute({ auth: 'user' }, async ({ request, auth }) => {
+export const POST = withRoute({ auth: 'user', perm: 'argent_gerer' }, async ({ request, auth }) => {
   const { studioId, supabase } = auth;
   const { data, errorResponse } = await parseJsonBody(request, urssafDeclarationSchema);
   if (errorResponse) return errorResponse;

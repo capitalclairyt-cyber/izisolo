@@ -7,7 +7,7 @@ import { reportError } from '@/lib/report';
  * Le numéro reste BRÛLÉ dans la séquence (marqué annulé, jamais réattribué)
  * et les paiements sont libérés pour re-facturation. RPC atomique.
  */
-export const POST = withRoute({ auth: 'active' }, async ({ params, auth }) => {
+export const POST = withRoute({ auth: 'active', perm: 'argent_gerer' }, async ({ params, auth }) => {
   const { studioId } = auth;
   const { id } = params;
   const admin = createAdminClient();

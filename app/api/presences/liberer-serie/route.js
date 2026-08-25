@@ -21,7 +21,7 @@ import { reportError } from '@/lib/report';
  * Utilité : un·e élève ne vient plus → libérer toutes ses réservations
  * récurrentes futures d'un coup au lieu d'annuler une par une.
  */
-export const POST = withRoute({ auth: 'active' }, async ({ request, auth }) => {
+export const POST = withRoute({ auth: 'active', perm: 'cours_gerer' }, async ({ request, auth }) => {
   const { profile, supabase } = auth;
 
   let body;

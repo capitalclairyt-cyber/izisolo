@@ -38,7 +38,7 @@ function normDate(s) {
   return null;
 }
 
-export const POST = withRoute({ auth: 'active', schema: clientsImportSchema }, async ({ auth, body }) => {
+export const POST = withRoute({ auth: 'active', schema: clientsImportSchema, perm: 'eleves_gerer' }, async ({ auth, body }) => {
   const { studioId, profile, supabase } = auth;
 
   // 1. Nettoyage + validation ligne à ligne (rien ne fait échouer le lot)

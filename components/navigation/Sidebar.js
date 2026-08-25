@@ -7,11 +7,13 @@ import {
   Home, CalendarDays, Users, Settings,
   BookOpen, BookMarked, Mail, ChevronRight, Sparkles,
   Package, BarChart3, LogOut, Menu, X, GraduationCap, LifeBuoy, ClipboardList,
-  MessageSquare, Inbox, Clock
+  MessageSquare, Inbox, Clock, UserCog
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase';
 import NotificationBell from '@/components/notifications/NotificationBell';
 import MessagesBadge from '@/components/messagerie/MessagesBadge';
+import { useMembre } from '@/components/studio/StudioProvider';
+import { peut } from '@/lib/studio-membre';
 
 const NAV_SECTIONS = [
   {
@@ -19,16 +21,16 @@ const NAV_SECTIONS = [
       { href: '/dashboard',     label: 'Accueil',           icon: Home },
       { href: '/agenda',        label: 'Agenda',             icon: CalendarDays },
       { href: '/cours',         label: 'Cours & Évènements', icon: GraduationCap },
-      { href: '/clients',       label: 'Élèves',             icon: Users },
-      { href: '/cas-a-traiter', label: 'À traiter',          icon: Inbox },
+      { href: '/clients',       label: 'Élèves',             icon: Users, perm: 'eleves_voir' },
+      { href: '/cas-a-traiter', label: 'À traiter',          icon: Inbox, perm: 'eleves_voir' },
     ],
   },
   {
     title: 'Gestion',
     items: [
-      { href: '/offres',         label: 'Offres',         icon: Package },
-      { href: '/revenus',        label: 'Revenus',        icon: BarChart3 },
-      { href: '/abonnements',    label: 'Carnets & abos', icon: BookOpen },
+      { href: '/offres',         label: 'Offres',         icon: Package,   perm: 'argent_voir' },
+      { href: '/revenus',        label: 'Revenus',        icon: BarChart3, perm: 'argent_voir' },
+      { href: '/abonnements',    label: 'Carnets & abos', icon: BookOpen,  perm: 'eleves_voir' },
     ],
   },
   {
@@ -42,7 +44,12 @@ const NAV_SECTIONS = [
   },
 ];
 
-export default function Sidebar({ studioNom = 'Mon Studio', vocabulaire = {}, illustration = 'lotus', nbCasATraiter = 0, nbEssais = 0 }) {
+export default function Sidebar({ studioNom = 'Mon Studio', vocabulaire = {}, illustration = 'lotus', nbCasATraiter = 0, nbEssais = 0, peutEquipe = false }) {
+  // Ce que CETTE personne a le droit de faire dans CE studio (lot 3). Pour une
+  // prof seule, `membre` est propriétaire : `peut()` renvoie true partout et la
+  // nav est exactement celle d'avant. Une porte qui ne mène nulle part est un
+  // mensonge d'interface — mieux vaut ne pas la dessiner.
+  const membre = useMembre();
   // Compteurs affichés en pastille sur les entrées « à action » de la nav.
   const navCounts = { '/cas-a-traiter': nbCasATraiter, '/essais': nbEssais };
   const pathname = usePathname();
@@ -80,13 +87,15 @@ export default function Sidebar({ studioNom = 'Mon Studio', vocabulaire = {}, il
 
   const sections = NAV_SECTIONS.map(section => ({
     ...section,
-    items: section.items.map(item => {
-      if (item.href === '/clients' && vocabulaire.Clients) {
-        return { ...item, label: vocabulaire.Clients };
-      }
-      return item;
-    }),
-  }));
+    items: section.items
+      .filter(item => !item.perm || peut(membre, item.perm))
+      .map(item => {
+        if (item.href === '/clients' && vocabulaire.Clients) {
+          return { ...item, label: vocabulaire.Clients };
+        }
+        return item;
+      }),
+  })).filter(section => section.items.length > 0);
 
   const showIllustration = illustration && illustration !== 'aucun';
 
@@ -166,6 +175,16 @@ export default function Sidebar({ studioNom = 'Mon Studio', vocabulaire = {}, il
           <span className="sidebar-label">Support</span>
           {pathname === '/support' && <ChevronRight size={14} className="sidebar-chevron" />}
         </Link>
+        {peutEquipe && peut(membre, 'equipe_gerer') && (
+        <Link href="/equipe" className={`sidebar-item ${pathname === '/equipe' ? 'active' : ''}`} onClick={triggerPulse}>
+          <span className="sidebar-icon-wrap">
+            <UserCog size={20} strokeWidth={pathname === '/equipe' ? 2.2 : 1.8} />
+          </span>
+          <span className="sidebar-label">Équipe</span>
+          {pathname === '/equipe' && <ChevronRight size={14} className="sidebar-chevron" />}
+        </Link>
+        )}
+        {peut(membre, 'parametres') && (
         <Link href="/parametres" className={`sidebar-item ${pathname === '/parametres' ? 'active' : ''}`} onClick={triggerPulse}>
           <span className="sidebar-icon-wrap">
             <Settings size={20} strokeWidth={pathname === '/parametres' ? 2.2 : 1.8} />
@@ -173,6 +192,7 @@ export default function Sidebar({ studioNom = 'Mon Studio', vocabulaire = {}, il
           <span className="sidebar-label">Paramètres</span>
           {pathname === '/parametres' && <ChevronRight size={14} className="sidebar-chevron" />}
         </Link>
+        )}
       </nav>
 
       {/* Illustration */}

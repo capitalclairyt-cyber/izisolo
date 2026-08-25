@@ -33,7 +33,7 @@ function normalizePhone(telephone) {
   return raw; // déjà normalisé ou numéro international sans indicatif
 }
 
-export const POST = withRoute({ auth: 'active' }, async ({ request, auth }) => {
+export const POST = withRoute({ auth: 'active', perm: 'messagerie' }, async ({ request, auth }) => {
   // 0. Kill-switch global : SMS désactivés temporairement (cf. constantes.js)
   if (!SMS_ENABLED) {
     return Response.json(

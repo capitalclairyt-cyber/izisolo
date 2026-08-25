@@ -15,11 +15,11 @@ import { createContext, useContext } from 'react';
  * invitée dans une association, non. Le ratchet CI `studio-scope.spec.js`
  * refuse le retour de la forme `profile_id = user.id`.
  */
-const StudioContext = createContext({ studioId: null, membre: null, membres: [] });
+const StudioContext = createContext({ studioId: null, membre: null, membres: [], moi: null });
 
-export function StudioProvider({ studioId, membre, membres, children }) {
+export function StudioProvider({ studioId, membre, membres, moi, children }) {
   return (
-    <StudioContext.Provider value={{ studioId, membre, membres: membres || [] }}>
+    <StudioContext.Provider value={{ studioId, membre, membres: membres || [], moi: moi || null }}>
       {children}
     </StudioContext.Provider>
   );
@@ -35,7 +35,17 @@ export function useMembre() {
   return useContext(StudioContext).membre;
 }
 
-/** Toutes ses appartenances actives — le sélecteur de studio arrive au lot 3. */
+/** Toutes ses appartenances actives — le sélecteur multi-studios viendra après. */
 export function useStudios() {
   return useContext(StudioContext).membres;
+}
+
+/**
+ * La personne CONNECTÉE (prénom, email) — à ne pas confondre avec le studio.
+ * Une prof invitée doit être accueillie par SON prénom, pas par celui de la
+ * propriétaire : « Bonjour Maude ! » affiché à Claire, c'est ce que la preuve
+ * du lot 2 a montré sur sa capture.
+ */
+export function useMoi() {
+  return useContext(StudioContext).moi;
 }

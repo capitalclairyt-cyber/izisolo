@@ -79,7 +79,7 @@ export const GET = withRoute({ auth: 'user' }, async ({ params, auth }) => {
  *
  * Auth : seul le pro owner peut renommer (vérifié via profile_id = auth.uid()).
  */
-export const PATCH = withRoute({ auth: 'user' }, async ({ request, params, auth }) => {
+export const PATCH = withRoute({ auth: 'user', perm: 'messagerie' }, async ({ request, params, auth }) => {
   const { supabase } = auth;
   const { id: conversationId } = params;
 
@@ -129,7 +129,7 @@ export const PATCH = withRoute({ auth: 'user' }, async ({ request, params, auth 
  * avant de confirmer). RLS « Pro CRUD ses conversations » = seul le pro
  * owner supprime ; un non-owner fait 0 ligne → 404, jamais de fuite.
  */
-export const DELETE = withRoute({ auth: 'active' }, async ({ params, auth }) => {
+export const DELETE = withRoute({ auth: 'active', perm: 'messagerie' }, async ({ params, auth }) => {
   const { profile, supabase } = auth;
   const { id: conversationId } = params;
   if (!profile?.studio_slug) return Response.json({ error: 'Réservé aux pros' }, { status: 403 });

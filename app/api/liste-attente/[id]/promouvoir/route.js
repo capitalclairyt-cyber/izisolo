@@ -22,7 +22,7 @@ import { reportError } from '@/lib/report';
  *
  * Retour : { ok, presence_id, client_id }
  */
-export const POST = withRoute({ auth: 'active' }, async ({ params, auth }) => {
+export const POST = withRoute({ auth: 'active', perm: 'eleves_gerer' }, async ({ params, auth }) => {
   const { profile, user, supabase } = auth;
   const { id } = params;
 
@@ -187,7 +187,7 @@ export const POST = withRoute({ auth: 'active' }, async ({ params, auth }) => {
  *
  * Retire la personne de la liste d'attente (cas : ne veut plus venir, ou doublon).
  */
-export const DELETE = withRoute({ auth: 'active' }, async ({ params, auth }) => {
+export const DELETE = withRoute({ auth: 'active', perm: 'eleves_gerer' }, async ({ params, auth }) => {
   const { profile, supabase } = auth;
   const { id } = params;
 

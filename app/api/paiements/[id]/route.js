@@ -31,7 +31,7 @@ const updateSchema = z.object({
   exclu_compta: z.boolean().optional(),
 });
 
-export const PATCH = withRoute({ auth: 'active', schema: updateSchema }, async ({ params, auth, body }) => {
+export const PATCH = withRoute({ auth: 'active', schema: updateSchema, perm: 'argent_gerer' }, async ({ params, auth, body }) => {
   const { studioId, supabase } = auth;
   const { id } = params;
 
@@ -105,7 +105,7 @@ export const PATCH = withRoute({ auth: 'active', schema: updateSchema }, async (
   return Response.json({ ok: true });
 });
 
-export const DELETE = withRoute({ auth: 'active' }, async ({ params, auth }) => {
+export const DELETE = withRoute({ auth: 'active', perm: 'argent_gerer' }, async ({ params, auth }) => {
   const { studioId, supabase } = auth;
   const { id } = params;
 

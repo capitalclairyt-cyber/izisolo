@@ -18,7 +18,7 @@ const ALLOWED = [...ALLOWED_IMAGES, ...ALLOWED_FILES];
  *
  * Variable d'env requise : BLOB_READ_WRITE_TOKEN
  */
-export const POST = withRoute({ auth: 'user' }, async ({ request, auth }) => {
+export const POST = withRoute({ auth: 'user', perm: 'messagerie' }, async ({ request, auth }) => {
   const { user } = auth;
 
   // Un blob = jusqu'à 5 Mo sur le store partagé → on borne la cadence

@@ -27,7 +27,7 @@ const schema = z.object({
   })).max(12).optional(),
 });
 
-export const POST = withRoute({ auth: 'active', schema }, async ({ auth, body }) => {
+export const POST = withRoute({ auth: 'active', schema, perm: 'argent_gerer' }, async ({ auth, body }) => {
   const { studioId, supabase } = auth;
 
   const { data: client } = await supabase

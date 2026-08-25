@@ -9,7 +9,7 @@ export const GET = withRoute({ auth: 'user' }, async ({ auth }) => {
 });
 
 // PUT /api/profile — Mettre à jour le profil
-export const PUT = withRoute({ auth: 'user' }, async ({ request, auth }) => {
+export const PUT = withRoute({ auth: 'user', perm: 'parametres' }, async ({ request, auth }) => {
   const { studioId, supabase } = auth;
   const body = await request.json();
 

@@ -13,23 +13,25 @@ export default async function DashboardLayout({ children }) {
     redirect('/login');
   }
 
-  // Compte élève (créé via le portail d'un studio, v57) : jamais de
-  // dashboard prof. /onboarding affiche l'écran dédié « tu es élève ici »
-  // avec les liens vers ses portails + le parcours « devenir prof ».
-  if (user.user_metadata?.role === 'eleve') {
-    redirect('/onboarding');
-  }
-
   // LE point de résolution du studio affiché (v101, lot 2 multi-prof). Un seul
   // endroit décide, tout le reste en hérite : les pages serveur par leur propre
   // appel, le navigateur par StudioProvider. Pour une prof seule, studioId vaut
   // exactement user.id — c'est le cas de 100 % des comptes existants, et c'est
   // ce qui rend cette bascule invisible le jour où elle est déployée.
-  const { studioId, membre, membres } = await resoudreStudioActif(supabase, user);
+  const { studioId, membre, membres, equipeSuspendue } = await resoudreStudioActif(supabase, user);
 
-  // Ni studio à soi, ni invitation dans celui d'une autre : il n'y a rien à
-  // montrer ici. /onboarding sait accueillir les deux cas (élève, ou prof qui
-  // n'a pas encore ouvert son studio).
+  // Invitée dans un studio qui n'a plus le plan Multi : sa ligne existe
+  // toujours (re-souscrire rendra tout), mais la porte est fermée. On lui dit
+  // POURQUOI plutôt que de la renvoyer sur un onboarding qui n'a rien à voir.
+  if (equipeSuspendue) {
+    redirect('/acces-suspendu');
+  }
+
+  // Ni studio à soi, ni invitation : il n'y a rien à montrer ici. C'est aussi
+  // le chemin des comptes élève (v57), qui n'ont pas de profil.
+  // ⚠️ Cette garde vient APRÈS la résolution, et c'est voulu : un compte créé
+  // côté portail (role='eleve') peut aussi avoir été invité comme prof — le
+  // renvoyer sur son seul statut d'élève l'enfermerait dehors.
   if (!studioId) {
     redirect('/onboarding');
   }
@@ -107,7 +109,12 @@ export default async function DashboardLayout({ children }) {
   } catch { /* badge décoratif : idem */ }
 
   return (
-    <StudioProvider studioId={studioId} membre={membre} membres={membres}>
+    <StudioProvider
+      studioId={studioId}
+      membre={membre}
+      membres={membres}
+      moi={{ prenom: user.user_metadata?.prenom || '', email: user.email || '' }}
+    >
       <DashboardLayoutClient profile={profile} trial={trial} nbCasATraiter={nbCasATraiter} nbEssais={nbEssais}>
         {children}
       </DashboardLayoutClient>

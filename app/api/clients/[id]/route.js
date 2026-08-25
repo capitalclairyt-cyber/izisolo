@@ -12,7 +12,7 @@ import { reportError } from '@/lib/report';
  *
  * Un simple DELETE sur clients suffit donc : la base s'occupe du reste.
  */
-export const DELETE = withRoute({ auth: 'active' }, async ({ params, auth }) => {
+export const DELETE = withRoute({ auth: 'active', perm: 'eleves_gerer' }, async ({ params, auth }) => {
   const { studioId, supabase } = auth;
   const { id } = params;
 

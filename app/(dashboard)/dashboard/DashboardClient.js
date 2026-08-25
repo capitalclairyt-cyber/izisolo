@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useMoi } from '@/components/studio/StudioProvider';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -21,8 +22,13 @@ const QrPortailModal = dynamic(() => import('@/components/portail/QrPortailModal
 import { can } from '@/lib/plan-guard';
 
 export default function DashboardClient({ profile, coursDuJour, nbClients, nbCoursTotal, revenusMois, alertes, coutsMois, hasSondage = false, nbCasATraiter = 0, nbInvites = 0, nbOffres = 0, nbVentes = 0, espacesEleve = [] }) {
+  const moi = useMoi();
   const vocab = getVocabulaire(profile?.metier || 'yoga', profile?.vocabulaire);
-  const prenom = profile?.prenom || 'toi';
+  // On salue la personne connectée, pas le studio : une prof invitée voyait
+  // « Bonjour Maude ! » avec l'avatar de la propriétaire (constaté sur la
+  // capture de la preuve du lot 2). Repli sur le profil du studio pour une
+  // prof seule dont la metadata n'aurait pas de prénom.
+  const prenom = moi?.prenom || profile?.prenom || 'toi';
   const studioSlug = profile?.studio_slug;
   const router = useRouter();
   const { toast } = useToast();

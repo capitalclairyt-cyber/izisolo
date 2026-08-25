@@ -11,7 +11,7 @@ import { reportError } from '@/lib/report';
  *
  * RLS : l'abonnement doit appartenir au prof (profile_id = user.id).
  */
-export const POST = withRoute({ auth: 'active' }, async ({ request, params, auth }) => {
+export const POST = withRoute({ auth: 'active', perm: 'argent_gerer' }, async ({ request, params, auth }) => {
   const { profile, supabase } = auth;
   const { id } = params;
 

@@ -16,7 +16,7 @@ import { reportError } from '@/lib/report';
  * 2) Génère un magic link DIRECT (generateLink serveur) + l'envoie par Resend.
  *    L'élève clique → connecté·e direct sur son espace.
  */
-export const POST = withRoute({ auth: 'active' }, async ({ request, auth }) => {
+export const POST = withRoute({ auth: 'active', perm: 'eleves_gerer' }, async ({ request, auth }) => {
   const { profile } = auth;
   const body = await request.json().catch(() => ({}));
   const { email, prenom, studioSlug, studioNom, profPrenom, clientId } = body;

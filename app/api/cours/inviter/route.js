@@ -15,7 +15,7 @@ import { reportError } from '@/lib/report';
  * le même email. Marche que l'élève ait déjà un compte ou non (magic link
  * passwordless, createUser idempotent role='eleve').
  */
-export const POST = withRoute({ auth: 'active', schema: coursInviterSchema }, async ({ auth, body }) => {
+export const POST = withRoute({ auth: 'active', schema: coursInviterSchema, perm: 'cours_gerer' }, async ({ auth, body }) => {
   const { profile } = auth;
   const { coursId } = body;
 

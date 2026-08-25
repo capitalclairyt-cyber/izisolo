@@ -8,7 +8,7 @@ import {
   BookOpen, CalendarDays, Users, Wallet, ClipboardList, Globe,
   LifeBuoy, MessageSquarePlus, ArrowRight, ArrowLeft, Package, Inbox,
   MessageSquare, FileText, Smartphone, CalendarClock, Hourglass, Search, X,
-  Sparkles, ListOrdered, Landmark, Palette
+  Sparkles, ListOrdered, Landmark, Palette, UserCog
 } from 'lucide-react';
 import { FAQ_SUPPORT } from '@/content/faq-support';
 
@@ -292,6 +292,20 @@ const SECTIONS = [
       <>Les files des cours passés se purgent toutes seules — rien à nettoyer.</>,
     ],
     astuce: 'Une promotion crée une vraie réservation : si l\'élève promue annule à son tour, la place repart à la file.',
+  },
+  {
+    id: 'equipe',
+    icon: UserCog,
+    titre: 'Travailler à plusieurs',
+    intro: "Une association, un studio partagé, une collègue qui donne deux cours par semaine : chacune son compte, et tu décides de ce qu'elle voit.",
+    etapes: [
+      <>Dans la nav, <strong>« Équipe »</strong> → <strong>« Inviter une prof »</strong>. Son email suffit. Elle reçoit un lien, choisit son mot de passe, et ton studio apparaît chez elle. Elle n'a rien à installer, rien à payer.</>,
+      <>Deux préréglages pour ne pas cocher neuf cases : <strong>« Prof »</strong> (elle donne des cours et les pointe, sans voir l'argent ni écrire à tes élèves) et <strong>« Admin »</strong> (elle gère le studio comme toi). Tu peux ensuite ajuster droit par droit.</>,
+      <>Ce qu'elle n'a pas le droit de faire, elle ne le voit pas : sa navigation ne montre que ses portes. Et trois droits (l'argent, la messagerie, les réglages) sont tenus par la base elle-même, pas seulement par l'écran.</>,
+      <>Tu changes d'avis ? <strong>« Droits »</strong> sur sa ligne, et c'est immédiat. <strong>La corbeille</strong> la retire du studio : elle est dehors à la seconde d'après, son historique reste, et tu peux la réinviter plus tard.</>,
+      <>Travailler à plusieurs fait partie du <strong>plan Multi</strong> : un seul abonnement pour tout le studio, autant de profs que tu veux. Si l'abonnement s'arrête, personne n'est effacé : chacune retrouve sa place dès qu'il reprend.</>,
+    ],
+    astuce: "Tu te fais juste remplacer une fois ? Pas besoin d'invitation : « Confier le pointage » sur la séance suffit, et ça marche sans compte.",
   },
   {
     id: 'installer',

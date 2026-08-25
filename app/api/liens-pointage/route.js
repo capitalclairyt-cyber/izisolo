@@ -68,7 +68,7 @@ export const GET = withRoute({ auth: 'user', plan: 'lien_pointage' }, async ({ r
 });
 
 export const POST = withRoute(
-  { auth: 'active', schema: creerSchema, plan: 'lien_pointage' },
+  { auth: 'active', schema: creerSchema, plan: 'lien_pointage', perm: 'pointer' },
   async ({ request, auth, body }) => {
     const { studioId, user, supabase } = auth;
 

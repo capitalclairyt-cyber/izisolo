@@ -52,11 +52,16 @@ test.describe('can — la frontière boucle élève', () => {
     expect(can(SOLO_ACTIF, 'paiement_en_ligne')).toBe(false);
     expect(can(SOLO_ACTIF, 'photo_import')).toBe(false);
   });
-  test('Complet (pro) et premium legacy : toute la matrice', () => {
-    for (const cap of Object.keys(CAPACITES)) {
-      expect(can(PRO, cap)).toBe(true);
-      expect(can(PREMIUM, cap)).toBe(true); // le mapping en action
+  test('Complet (pro) et premium legacy : toute la matrice SAUF le multi-prof', () => {
+    // Depuis le lot 3 (2026-08-25), la matrice a une TROISIÈME marche : le
+    // travail à plusieurs appartient au plan Multi. Complet garde tout le
+    // reste, et `premium` continue de se comporter exactement comme lui.
+    for (const [cap, min] of Object.entries(CAPACITES)) {
+      const attendu = min !== 'multi';
+      expect(can(PRO, cap), `capacité ${cap}`).toBe(attendu);
+      expect(can(PREMIUM, cap), `capacité ${cap} (premium legacy)`).toBe(attendu); // le mapping en action
     }
+    expect(can(PRO, 'equipe')).toBe(false);
   });
   test('trial actif = Complet ; trial expiré = les capacités de son plan', () => {
     expect(can(SOLO_EN_TRIAL, 'reservation_en_ligne')).toBe(true);
@@ -71,9 +76,11 @@ test.describe('can — la frontière boucle élève', () => {
     expect(can(SOLO_ACTIF, 'capacite_qui_n_existe_pas')).toBe(false);
     expect(can(PRO, 'capacite_qui_n_existe_pas')).toBe(true);
   });
-  test('la matrice ne contient que solo|pro', () => {
+  test('la matrice ne contient que solo|pro|multi', () => {
+    // Trois marches, pas quatre : ajouter un palier sans le décider ici
+    // ferait diverger l'échelle de plan-guard et les alias d'effectivePlan.
     for (const [cap, min] of Object.entries(CAPACITES)) {
-      expect(['solo', 'pro'], `capacité ${cap}`).toContain(min);
+      expect(['solo', 'pro', 'multi'], `capacité ${cap}`).toContain(min);
     }
   });
 });

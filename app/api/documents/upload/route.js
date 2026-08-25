@@ -17,7 +17,7 @@ const ALLOWED = ['application/pdf'];
  * La liste elle-même est sauvée par Paramètres dans profiles.docs_inscription
  * (carte « Documents d'inscription », max lib/docs-inscription.MAX_DOCS).
  */
-export const POST = withRoute({ auth: 'active', rateLimit: { max: 15, windowSeconds: 3600, scope: 'docs-upload' } }, async ({ request, auth }) => {
+export const POST = withRoute({ auth: 'active', rateLimit: { max: 15, windowSeconds: 3600, scope: 'docs-upload', perm: 'parametres' } }, async ({ request, auth }) => {
   const { user } = auth;
 
   if (!process.env.BLOB_READ_WRITE_TOKEN) {

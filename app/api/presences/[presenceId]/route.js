@@ -18,7 +18,7 @@ import { promouvoirListeAttente } from '@/lib/promotion-liste-attente';
 // « annulation, désinscription → IziSolo place automatiquement le suivant »).
 // ════════════════════════════════════════════════════════════════════════════
 
-export const DELETE = withRoute({ auth: 'active' }, async ({ params, auth }) => {
+export const DELETE = withRoute({ auth: 'active', perm: 'pointer' }, async ({ params, auth }) => {
   const { studioId, user, supabase, profile } = auth;
   const { presenceId } = params;
 

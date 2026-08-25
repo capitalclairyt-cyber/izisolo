@@ -21,7 +21,7 @@ const relierSchema = z.object({
   abonnement_id: z.string().uuid().nullable(),
 });
 
-export const POST = withRoute({ auth: 'active', schema: relierSchema }, async ({ params, auth, body }) => {
+export const POST = withRoute({ auth: 'active', schema: relierSchema, perm: 'pointer' }, async ({ params, auth, body }) => {
   const { studioId, supabase, profile } = auth;
   const { presenceId } = params;
   const nouvelAboId = body.abonnement_id;

@@ -30,7 +30,7 @@ const KINDS_SANS_COLONNE = ['vignette', 'cours'];
  *
  * Variable d'env requise : BLOB_READ_WRITE_TOKEN (Vercel Dashboard → Storage → Blob)
  */
-export const POST = withRoute({ auth: 'user' }, async ({ request, auth }) => {
+export const POST = withRoute({ auth: 'user', perm: 'parametres' }, async ({ request, auth }) => {
   const { studioId, user, profile, supabase } = auth;
 
   if (!process.env.BLOB_READ_WRITE_TOKEN) {

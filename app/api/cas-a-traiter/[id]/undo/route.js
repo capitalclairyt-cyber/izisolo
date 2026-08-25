@@ -23,7 +23,7 @@ import { reportError } from '@/lib/report';
 
 const UNDO_WINDOW_DAYS = 7;
 
-export const POST = withRoute({ auth: 'active' }, async ({ params, auth }) => {
+export const POST = withRoute({ auth: 'active', perm: 'eleves_gerer' }, async ({ params, auth }) => {
   const { studioId, supabase } = auth;
   const { id } = params;
 

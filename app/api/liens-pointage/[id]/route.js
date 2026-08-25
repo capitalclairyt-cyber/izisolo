@@ -11,7 +11,7 @@ import { withRoute } from '@/lib/api-route';
  * Sous la session de la prof, donc sous RLS : un lien qui n'est pas le sien
  * est simplement introuvable.
  */
-export const DELETE = withRoute({ auth: 'user' }, async ({ params, auth }) => {
+export const DELETE = withRoute({ auth: 'user', perm: 'pointer' }, async ({ params, auth }) => {
   const { studioId, supabase } = auth;
 
   const { data, error } = await supabase

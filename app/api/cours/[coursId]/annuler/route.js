@@ -18,7 +18,7 @@ export const runtime = 'nodejs';
  *   Body : { raison?: string }    — message optionnel à inclure dans l'email
  */
 
-export const POST = withRoute({ auth: 'active' }, async ({ request, params, auth }) => {
+export const POST = withRoute({ auth: 'active', perm: 'cours_gerer' }, async ({ request, params, auth }) => {
   const { studioId, user } = auth;
   const { coursId } = params;
   let body = {};

@@ -10,7 +10,7 @@ const encaisserSchema = z.object({
   numero_cheque: z.string().trim().max(100).nullable().optional(),
 });
 
-export const POST = withRoute({ auth: 'active', schema: encaisserSchema }, async ({ params, auth, body }) => {
+export const POST = withRoute({ auth: 'active', schema: encaisserSchema, perm: 'argent_gerer' }, async ({ params, auth, body }) => {
   const { studioId, user, supabase } = auth;
   const { id } = params;
 

@@ -1,6 +1,7 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
+import { can } from '@/lib/plan-guard';
 import Sidebar from '@/components/navigation/Sidebar';
 import AccountStatusBanner from '@/components/trial/AccountStatusBanner';
 import { getVocabulaire } from '@/lib/vocabulaire';
@@ -45,6 +46,7 @@ export default function DashboardLayoutClient({ children, profile, trial, nbCasA
         nbCasATraiter={nbCasATraiter}
         nbEssais={nbEssais}
         illustration={illustrationParMetier(profile?.metier)}
+        peutEquipe={can(profile, 'equipe')}
       />
 
       <main className="dashboard-content">

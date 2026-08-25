@@ -37,7 +37,7 @@ export const POST = withRoute({
   schema: messagerieAnnounceSchema,
   plan: 'mailing',
   // Fan-out jusqu'à 500 messages par appel → on borne la cadence.
-  rateLimit: { max: 20, windowSeconds: 3600, scope: 'messagerie-announce' },
+  rateLimit: { max: 20, windowSeconds: 3600, scope: 'messagerie-announce', perm: 'messagerie' },
 }, async ({ auth, body }) => {
   const { profile, supabase } = auth;
   // Vrai pro = a un studio_slug (le trigger Supabase crée un profil pour tout user)

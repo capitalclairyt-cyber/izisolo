@@ -9,8 +9,8 @@ import { matchRecherche } from '@/lib/utils';
 // utilisateurs ont encore plan='studio' en BDD historique, l'UI les affichera
 // quand même (l'enum ne filtre que les options du dropdown), et l'admin
 // pourra les migrer en cliquant pour changer.
-const PLANS = ['free', 'solo', 'pro', 'premium'];
-const PLAN_COLORS = { free: 'free', solo: 'solo', pro: 'pro', premium: 'premium' };
+const PLANS = ['free', 'solo', 'pro', 'multi', 'multi_free', 'premium'];
+const PLAN_COLORS = { free: 'free', solo: 'solo', pro: 'pro', multi: 'pro', multi_free: 'free', premium: 'premium' };
 
 // Statuts de compte (calculés serveur via lib/trial getAccountStatus)
 const STATUTS_COMPTE = {

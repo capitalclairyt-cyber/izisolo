@@ -13,7 +13,7 @@ const updateSchema = z.object({
   notes: z.string().max(1000).nullable().optional(),
 });
 
-export const PATCH = withRoute({ auth: 'active', schema: updateSchema }, async ({ params, auth, body }) => {
+export const PATCH = withRoute({ auth: 'active', schema: updateSchema, perm: 'argent_gerer' }, async ({ params, auth, body }) => {
   const { studioId, supabase } = auth;
   const { id } = params;
 
@@ -53,7 +53,7 @@ export const PATCH = withRoute({ auth: 'active', schema: updateSchema }, async (
   return Response.json({ ok: true });
 });
 
-export const DELETE = withRoute({ auth: 'active' }, async ({ params, auth }) => {
+export const DELETE = withRoute({ auth: 'active', perm: 'argent_gerer' }, async ({ params, auth }) => {
   const { studioId, supabase } = auth;
   const { id } = params;
 

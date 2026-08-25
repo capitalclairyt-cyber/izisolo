@@ -39,7 +39,7 @@ const extractSchema = z.object({
   notes: z.string().max(1000).nullable().optional(),
 });
 
-export const POST = withRoute({ auth: 'active' }, async ({ request, auth }) => {
+export const POST = withRoute({ auth: 'active', perm: 'eleves_gerer' }, async ({ request, auth }) => {
   const { profile, supabase } = auth;
 
   // Capacité Complet (essai inclus, donc dispo pour les nouvelles utilisatrices)

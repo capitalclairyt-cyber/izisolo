@@ -31,7 +31,7 @@ const draftSchema = z.object({
   website_url: z.string().url().nullable().optional(),
 });
 
-export const PATCH = withRoute({ auth: 'user' }, async ({ request, auth }) => {
+export const PATCH = withRoute({ auth: 'user', perm: 'parametres' }, async ({ request, auth }) => {
   const { studioId, supabase } = auth;
   let body;
   try { body = await request.json(); } catch { return Response.json({ error: 'JSON invalide' }, { status: 400 }); }
@@ -52,7 +52,7 @@ export const PATCH = withRoute({ auth: 'user' }, async ({ request, auth }) => {
   return Response.json({ ok: true });
 });
 
-export const POST = withRoute({ auth: 'user' }, async ({ request, auth }) => {
+export const POST = withRoute({ auth: 'user', perm: 'parametres' }, async ({ request, auth }) => {
   const { studioId, supabase } = auth;
   const url = new URL(request.url);
   const action = url.searchParams.get('action');
