@@ -182,4 +182,9 @@ export const FAQ_SUPPORT = [
     a: "Pour consulter, non : le planning et tes tarifs s'affichent DANS ton site, dans tes couleurs. Au moment de réserver ou de payer, un nouvel onglet s'ouvre sur ta page IziSolo. Ce n'est pas un choix de facilité : les navigateurs bloquent les connexions et les paiements à l'intérieur d'une page intégrée dans un autre site, et aucun outil du secteur ne fait autrement. Ce que tu peux soigner, en revanche, c'est à quoi ressemble cette page : Paramètres → Portail public → « Ma page » → « Tes couleurs » (deux codes, ils habillent le bloc intégré ET ta page publique), plus ta photo de couverture, ta bio, et une couleur et une photo par type de cours.",
     lien: { href: '/aide#page-publique', label: 'Voir le pas-à-pas' },
   },
+  {
+    // Retour Melyflow (Belgique), 2026-08-25. AJOUTÉE EN FIN de liste.
+    q: "Je ne suis pas en France (Belgique, Luxembourg) : la facturation marche-t-elle ?",
+    a: "Oui. Va dans Paramètres → Profil & studio → Activité et choisis ton pays d'exercice en haut de la carte « Facturation ». Le champ s'adapte : « SIRET » en France, « Numéro d'entreprise » en Belgique, « Numéro RCS » au Luxembourg — et c'est ce libellé qui s'imprime sur tes factures. Deux points importants : le bloc « Ma déclaration URSSAF » disparaît, parce que chez toi ce sont tes caisses qui appellent les cotisations et qu'il n'y a rien à déclarer depuis IziSolo (ton export de recettes, lui, reste disponible dans Revenus) ; et la mention de TVA n'est PAS pré-remplie hors de France, parce que nous ne devinons pas ce qui doit figurer sur ta facture. On te propose une formulation courante, mais vérifie-la auprès de ton comptable : c'est ta responsabilité qui est engagée.",
+  },
 ];

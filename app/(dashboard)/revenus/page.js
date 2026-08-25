@@ -156,5 +156,14 @@ export default async function RevenusPage() {
     exclus.has(p.id) ? { ...p, exclu_compta: true } : p
   ));
 
-  return <RevenusClient paiements={paiementsAvecFlag} seancesDues={seancesDues} annulationsDues={annulationsDues} />;
+  // Le pays du studio (v105), en lecture SÉPARÉE et défensive : la colonne est
+  // neuve, la nommer dans un select principal ferait tomber toute la page tant
+  // que la migration n'est pas passée (§12).
+  let pays = 'FR';
+  try {
+    const { data, error } = await supabase.from('profiles').select('pays').eq('id', studioId).maybeSingle();
+    if (!error && data?.pays) pays = data.pays;
+  } catch { /* pré-v105 : la France, c'est-à-dire le comportement d'avant */ }
+
+  return <RevenusClient paiements={paiementsAvecFlag} seancesDues={seancesDues} annulationsDues={annulationsDues} pays={pays} />;
 }

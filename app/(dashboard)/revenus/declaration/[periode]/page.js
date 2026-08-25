@@ -9,6 +9,7 @@ import {
 } from '@/lib/urssaf';
 import { construireSnapshot, statutPeriode, ecartDepuisDeclaration } from '@/lib/declaration-archive';
 import DeclarationClient from './DeclarationClient';
+import { aDeclarationAutomatisable, paysDe } from '@/lib/pays';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,6 +31,34 @@ export default async function DeclarationPage({ params }) {
   // Le studio affiché (v101) : pour une prof seule c'est elle-même,
   // pour une prof invitée dans une association c'est le studio de l'asso.
   const { studioId } = await resoudreStudioActif(supabase, user);
+
+  // ⚠️ FRANCE SEULEMENT (v105). Le bloc est caché ailleurs, mais une URL se
+  // tape à la main : proposer une déclaration URSSAF à une prof belge
+  // l'enverrait remplir un formulaire qui n'existe pas pour elle.
+  // Lecture SÉPARÉE et défensive : `pays` est neuve (§12).
+  let paysStudio = 'FR';
+  try {
+    const { data, error } = await supabase.from('profiles').select('pays').eq('id', studioId).maybeSingle();
+    if (!error && data?.pays) paysStudio = data.pays;
+  } catch { /* pré-v105 : la France */ }
+  if (!aDeclarationAutomatisable(paysStudio)) {
+    const p = paysDe(paysStudio);
+    return (
+      <div className="section" style={{ maxWidth: 560, margin: '32px auto', textAlign: 'center', padding: 28 }}>
+        <div style={{ fontSize: 34, marginBottom: 8 }}>🌍</div>
+        <h1 style={{ fontSize: '1.4rem', margin: '0 0 10px' }}>Pas de déclaration à faire ici</h1>
+        <p style={{ margin: '0 0 8px', lineHeight: 1.6, color: 'var(--text-soft, #7a6f6a)' }}>
+          En {p.nom}, c&apos;est {p.declarationSociale.nom} qui appelle tes cotisations : tu n&apos;as
+          rien à déclarer depuis IziSolo.
+        </p>
+        <p style={{ margin: '0 0 16px', lineHeight: 1.6, color: 'var(--text-soft, #7a6f6a)' }}>
+          Ce dont tu as besoin est dans <strong>Revenus</strong> : l&apos;export de tes encaissements,
+          période par période, prêt pour ta comptabilité.
+        </p>
+        <a href="/revenus" className="izi-btn btn-sm izi-btn-secondary">Retour à mes revenus</a>
+      </div>
+    );
+  }
   if (!user) redirect('/login');
 
   const today = aujourdhuiParis();

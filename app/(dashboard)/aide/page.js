@@ -223,7 +223,7 @@ const SECTIONS = [
     icon: Landmark,
     capture: { src: '/icons/aide/urssaf.png', w: 2320, h: 1520 },
     titre: 'Ta déclaration URSSAF',
-    intro: 'Le montant à recopier, sa date limite, et le registre que tu dois tenir. Sans ressortir la calculette.',
+    intro: 'Le montant à recopier, sa date limite, et le registre que tu dois tenir. Sans ressortir la calculette. Ce tuto ne concerne que la France : ailleurs (Belgique, Luxembourg), ce sont tes caisses qui appellent tes cotisations, et le bloc reste masqué.',
     etapes: [
       <>Une fois : <strong>Paramètres → Profil &amp; studio → Activité</strong>, carte <strong>« Ma déclaration URSSAF »</strong> — ton régime, si tu déclares au mois ou au trimestre, et tes taux (recopie-les depuis ton compte autoentrepreneur.urssaf.fr, ils changent d&apos;une année à l&apos;autre).</>,
       <>Ensuite, sur <strong>Revenus</strong>, le bloc <strong>« Ma déclaration URSSAF »</strong> affiche le montant encaissé de la période close, arrondi à l&apos;euro comme le formulaire l&apos;attend. Bouton <strong>Copier</strong>, tu colles, c&apos;est fait.</>,

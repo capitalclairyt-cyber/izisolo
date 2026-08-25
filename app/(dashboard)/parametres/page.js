@@ -14,8 +14,7 @@ import { METIERS, PLANS } from '@/lib/constantes';
 import { getTrialStatus, effectivePlan as effectivePlanFromTrial } from '@/lib/trial';
 import { can } from '@/lib/plan-guard';
 import { genererSlugStudioUnique } from '@/lib/slug-studio';
-import { validerSiret } from '@/lib/validation';
-import { MENTION_TVA_DEFAUT } from '@/lib/factures';
+import { PAYS, CODES_PAYS, paysDe, validerIdentifiant, mentionSuggeree, aDeclarationAutomatisable } from '@/lib/pays';
 import { sanitizeDocs } from '@/lib/docs-inscription';
 import { sanitizeEssaiPrixParType } from '@/lib/essai-tarif';
 import {
@@ -79,7 +78,7 @@ const SOUS_TAB_ALIAS = { seuils: 'eleves', anniv: 'eleves' };
 const CARTES = {
   profil:        ['prenom', 'nom', 'email_contact', 'telephone', 'adresse'],
   activite:      ['studio_nom', 'ville', 'metier'],
-  facturation:   ['facturation_raison_sociale', 'facturation_siret', 'facturation_mention_tva'],
+  facturation:   ['facturation_raison_sociale', 'facturation_siret', 'facturation_mention_tva', 'pays'],
   reglement:     ['reglement_config'],
   urssaf:        ['urssaf_config'],
   champs:        ['client_fields_config'],
@@ -100,11 +99,17 @@ const CARTES = {
 
 // Transformations avant écriture — miroir exact de l'ancien handleSave
 // monolithique (comportement constant). Champ absent d'ici = valeur brute.
+// Colonnes dont la migration peut ne pas encore être appliquée en prod. Une
+// entrée ici = « si PostgREST la refuse, rejoue l'enregistrement sans elle
+// plutôt que de tout perdre ». À VIDER une fois la migration passée partout.
+const COLONNES_EN_ATTENTE_DE_MIGRATION = new Set(['pays']); // v105
+
 const SERIALIZERS = {
   email_contact:             v => v || null,
   facturation_raison_sociale: v => v || null,
   facturation_siret:         v => (v ? String(v).replace(/\s/g, '') : null),
   facturation_mention_tva:   v => v || null,
+  pays:                      v => (['FR', 'BE', 'LU'].includes(v) ? v : 'FR'),
   // La config URSSAF n'est JAMAIS écrite brute : sanitize = taux bornés,
   // régime/périodicité de la liste blanche, défauts du régime si difforme.
   urssaf_config:             v => sanitizeConfigUrssaf(v),
@@ -489,9 +494,37 @@ export default function Parametres() {
       }
     }
 
-    const { error } = await supabase.from('profiles').update(payload).eq('id', profile.id);
+    let { error } = await supabase.from('profiles').update(payload).eq('id', profile.id);
 
-    if (!error) {
+    // ⚠️ Leçon v95, appliquée à v105 : PostgREST refuse TOUTE la requête quand
+    // UNE colonne lui est inconnue. Sans ce rejeu, déployer avant d'appliquer
+    // la migration ferait perdre la raison sociale et le numéro d'entreprise
+    // en même temps que le pays — la prof croit avoir enregistré, rien n'est
+    // écrit. On rejoue donc sans la colonne neuve, et on DIT ce qui manque.
+    let colonneNeuveRefusee = null;
+    if (error && (error.code === '42703' || error.code === 'PGRST204')) {
+      const neuves = Object.keys(payload).filter(k => COLONNES_EN_ATTENTE_DE_MIGRATION.has(k));
+      if (neuves.length && neuves.length < Object.keys(payload).length) {
+        const sansNeuves = { ...payload };
+        for (const k of neuves) delete sansNeuves[k];
+        const rejeu = await supabase.from('profiles').update(sansNeuves).eq('id', profile.id);
+        if (!rejeu.error) {
+          error = null;
+          colonneNeuveRefusee = neuves;
+        }
+      }
+    }
+
+    if (!error && colonneNeuveRefusee) {
+      toast.success('Enregistré — sauf le pays, qui attend une mise à jour de la base.');
+      console.warn('[parametres] colonnes en attente de migration :', colonneNeuveRefusee.join(', '));
+      setDirtyCartes(prev => {
+        const next = new Set(prev);
+        next.delete(carte);
+        return next;
+      });
+      router.refresh();
+    } else if (!error) {
       if (slugGenere) {
         // Refléter le slug + l'activation dans l'état local sans rechargement.
         setProfile(prev => ({ ...prev, studio_slug: slugGenere, portail_actif: true }));
@@ -650,16 +683,38 @@ export default function Parametres() {
 
           {/* Facturation (v84) — l'identité légale des factures élèves */}
           {subTab.profil === 'activite' && (() => {
-            const siretCheck = validerSiret(profile.facturation_siret || '');
+            const pays = paysDe(profile);
+            const siretCheck = validerIdentifiant(profile?.pays, profile.facturation_siret || '');
             const active = !!String(profile.facturation_siret || '').trim();
             return (
           <div className="section izi-card">
             <div className="section-top"><div className="section-icon"><FileText size={20} /></div><h2>Facturation</h2></div>
             <p className="section-desc">
-              Avec ton SIRET renseigné, tes élèves téléchargent de <strong>vraies factures acquittées</strong> depuis
+              Avec ton {pays.identifiant.label.toLowerCase()} renseigné, tes élèves téléchargent de <strong>vraies factures acquittées</strong> depuis
               leur espace (CSE, mutuelles…) — à la place du simple reçu. Numérotation automatique et séquentielle
               (FAC-{new Date().getFullYear()}-0001), documents figés à l'émission, re-téléchargeables à l'identique.
             </p>
+            {/* Le pays d'exercice (v105) : il décide du libellé de ton numéro
+                d'entreprise, de la mention sur tes factures, et de la présence
+                du bloc de déclaration. Retour Melyflow (Belgique), 2026-08-25. */}
+            <div className="form-group">
+              <label className="form-label">Pays d&apos;exercice</label>
+              <select
+                className="izi-input"
+                value={profile.pays || 'FR'}
+                onChange={handleChange('pays')}
+                style={{ maxWidth: 260 }}
+              >
+                {CODES_PAYS.map(c => (
+                  <option key={c} value={c}>{PAYS[c].drapeau} {PAYS[c].nom}</option>
+                ))}
+              </select>
+              <p className="form-hint">
+                {aDeclarationAutomatisable(profile?.pays)
+                  ? "En France, tu déclares toi-même ton chiffre d'affaires : le bloc URSSAF de Revenus est là pour ça."
+                  : `Chez toi, c'est ${pays.declarationSociale.nom} qui appelle tes cotisations : IziSolo ne te demande aucune déclaration, il te donne juste tes recettes au propre.`}
+              </p>
+            </div>
             <div className="form-group">
               <label className="form-label">Nom / raison sociale sur les factures</label>
               <input
@@ -671,19 +726,21 @@ export default function Parametres() {
               <p className="form-hint">Vide = le nom de ton studio.</p>
             </div>
             <div className="form-group">
-              <label className="form-label">SIRET</label>
+              <label className="form-label">{pays.identifiant.label}</label>
               <input
                 className="izi-input"
                 value={profile.facturation_siret || ''}
                 onChange={handleChange('facturation_siret')}
-                placeholder="123 456 789 00012"
-                inputMode="numeric"
+                placeholder={pays.identifiant.exemple}
+                inputMode={pays.code === 'LU' ? 'text' : 'numeric'}
               />
               {!siretCheck.valide ? (
                 <p className="form-hint" style={{ color: '#dc2626' }}>{siretCheck.message}</p>
               ) : (
                 <p className="form-hint">
-                  {active ? 'Facturation active ✓' : 'Sans SIRET, tes élèves téléchargent un simple reçu de paiement.'}
+                  {active
+                    ? 'Facturation active ✓'
+                    : `${pays.identifiant.aide} Sans lui, tes élèves téléchargent un simple reçu de paiement.`}
                 </p>
               )}
             </div>
@@ -693,10 +750,15 @@ export default function Parametres() {
                 className="izi-input"
                 value={profile.facturation_mention_tva || ''}
                 onChange={handleChange('facturation_mention_tva')}
-                placeholder={MENTION_TVA_DEFAUT}
+                placeholder={mentionSuggeree(profile?.pays)}
               />
               <p className="form-hint">
-                Vide = « {MENTION_TVA_DEFAUT} » (franchise de TVA, le cas micro-entreprise). Adapte si tu factures la TVA.
+                {pays.mentionDefaut
+                  ? <>Vide = « {pays.mentionDefaut} » (franchise de TVA, le cas micro-entreprise). Adapte si tu factures la TVA.</>
+                  : <>⚠️ Aucune mention n&apos;est écrite par défaut hors de France : nous ne devinons pas
+                     ce qui doit figurer sur ta facture. Souvent «&nbsp;{mentionSuggeree(profile?.pays)}&nbsp;»,
+                     mais <strong>vérifie la formulation exacte auprès de ton comptable</strong> — c&apos;est
+                     ta responsabilité qui est engagée, pas la nôtre.</>}
               </p>
             </div>
             <BtnSauver carte="facturation" />
@@ -714,11 +776,15 @@ export default function Parametres() {
             />
           )}
 
+          {/* ⚠️ FRANCE SEULEMENT (v105). Ailleurs, ce sont des caisses qui
+              APPELLENT les cotisations sur une base qu'elles connaissent : il
+              n'y a rien à déclarer ici. Afficher ce bloc à une prof belge
+              l'inviterait à s'occuper d'un geste qui n'existe pas chez elle. */}
           {/* Ma déclaration URSSAF (v93) — les réglages qui alimentent le bloc
               de la page Revenus, l'estimation et le rappel d'échéance. Tant
               que cette carte n'est pas enregistrée, urssaf_config est NULL :
               aucune estimation affichée, aucun email envoyé. */}
-          {subTab.profil === 'activite' && (() => {
+          {subTab.profil === 'activite' && aDeclarationAutomatisable(profile?.pays) && (() => {
             const u = configUrssafAffichee(profile.urssaf_config);
             const configuree = !!sanitizeConfigUrssaf(profile.urssaf_config);
             return (

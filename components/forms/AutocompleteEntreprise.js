@@ -7,23 +7,33 @@ import { rechercherEntreprise } from '@/lib/api-france';
 /**
  * Autocomplete Entreprise via API SIRENE
  * Tape un SIRET, SIREN ou nom → suggestions en temps réel → prérempli tout
+ *
+ * ⚠️ Ce registre est FRANÇAIS (v105, 2026-08-25). Une prof belge qui cherche
+ * son association ne trouvera rien — et jusqu'ici le champ ne disait RIEN dans
+ * ce cas : ni « pas trouvé », ni pourquoi. Un silence se lit comme une panne.
+ * Le champ avoue donc son périmètre dès qu'une recherche revient vide, et
+ * rappelle que la saisie à la main marche aussi bien. Ça sert aussi aux
+ * Françaises qui font une faute de frappe.
  */
 export default function AutocompleteEntreprise({ onSelect, placeholder = 'Nom, SIRET ou SIREN...' }) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  // Une recherche est-elle revenue VIDE ? (≠ « pas encore cherché »)
+  const [vide, setVide] = useState(false);
   const timerRef = useRef(null);
   const wrapperRef = useRef(null);
 
   const search = useCallback((q) => {
     clearTimeout(timerRef.current);
-    if (!q || q.trim().length < 3) { setResults([]); setOpen(false); return; }
+    if (!q || q.trim().length < 3) { setResults([]); setOpen(false); setVide(false); return; }
     timerRef.current = setTimeout(async () => {
       setLoading(true);
       const data = await rechercherEntreprise(q);
       setResults(data);
-      setOpen(data.length > 0);
+      setVide(data.length === 0);
+      setOpen(true);
       setLoading(false);
     }, 350);
   }, []);
@@ -63,6 +73,17 @@ export default function AutocompleteEntreprise({ onSelect, placeholder = 'Nom, S
         {loading && <Loader2 size={16} className="ac-spinner" />}
       </div>
 
+      {open && vide && !loading && (
+        <div className="ac-dropdown">
+          <div className="ac-vide">
+            Rien trouvé dans le registre <strong>français</strong> des entreprises.
+            Si ta structure est belge, luxembourgeoise ou simplement absente du
+            registre, remplis les champs à la main juste en dessous : ça marche
+            exactement pareil.
+          </div>
+        </div>
+      )}
+
       {open && results.length > 0 && (
         <div className="ac-dropdown">
           {results.map((r, i) => (
@@ -94,6 +115,11 @@ export default function AutocompleteEntreprise({ onSelect, placeholder = 'Nom, S
         .ac-spinner { position: absolute; right: 12px; color: var(--brand); animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
 
+        .ac-vide {
+          padding: 12px 14px; font-size: 0.82rem; line-height: 1.5;
+          color: var(--text-muted);
+        }
+        .ac-vide strong { color: var(--text); }
         .ac-dropdown {
           position: absolute; top: 100%; left: 0; right: 0; z-index: 50;
           background: var(--bg-card); border: 1px solid var(--border);

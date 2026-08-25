@@ -15,12 +15,12 @@ function parseAdresse(raw) {
   const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
   if (lines.length === 0) return { rue: '', codePostal: '', ville: '' };
   if (lines.length === 1) {
-    const match = lines[0].match(/^(\d{5})\s+(.+)$/);
+    const match = lines[0].match(/^(\d{4,5})\s+(.+)$/);
     if (match) return { rue: '', codePostal: match[1], ville: match[2] };
     return { rue: lines[0], codePostal: '', ville: '' };
   }
   const last = lines[lines.length - 1];
-  const match = last.match(/^(\d{5})\s+(.+)$/);
+  const match = last.match(/^(\d{4,5})\s+(.+)$/);
   if (match) {
     return { rue: lines.slice(0, -1).join('\n'), codePostal: match[1], ville: match[2] };
   }

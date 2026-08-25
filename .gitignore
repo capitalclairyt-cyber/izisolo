@@ -59,3 +59,6 @@ test-results/
 bible/
 ressources/
 izisolo-audit-strategique-2026.pdf
+
+# Sorties de scripts/proof-facture-pdf.mjs (regénérables à chaque run)
+proof-*.pdf

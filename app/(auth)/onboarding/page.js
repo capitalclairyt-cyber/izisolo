@@ -7,6 +7,7 @@ import { METIERS, TYPES_COURS_DEFAUT } from '@/lib/constantes';
 import { getVocabulaire } from '@/lib/vocabulaire';
 import { genererSlugStudioUnique } from '@/lib/slug-studio';
 import { Sparkles, ArrowRight, ArrowLeft, Check, Copy, ExternalLink, PartyPopper, Upload } from 'lucide-react';
+import { PAYS, CODES_PAYS } from '@/lib/pays';
 
 const ETAPES = ['metier', 'studio', 'offre', 'portail'];
 
@@ -36,6 +37,10 @@ export default function OnboardingPage() {
   const [prenom, setPrenom] = useState('');
   const [nom, setNom] = useState('');
   const [ville, setVille] = useState('');
+  // Le pays d'exercice (v105) : posé ICI plutôt que découvert au moment de la
+  // première facture. Retour Melyflow (Belgique) : l'app lui affichait
+  // « SIRET : 14 chiffres » en rouge des semaines après son inscription.
+  const [pays, setPays] = useState('FR');
   const [telephone, setTelephone] = useState('');
   const [adresse, setAdresse] = useState('');
   const [offreNom, setOffreNom] = useState('');
@@ -152,6 +157,7 @@ export default function OnboardingPage() {
       prenom: prenom || null,
       nom: nom || null,
       ville: ville || null,
+      pays,
       telephone: telephone || null,
       adresse: adresse || null,
       ui_couleur: couleur,
@@ -159,11 +165,28 @@ export default function OnboardingPage() {
       vocabulaire,
       portail_actif: true,
     };
-    const { data: updated, error: profileError } = await supabase
+    // ⚠️ `pays` est neuf (v105). PostgREST refuse TOUTE la requête quand une
+    // colonne lui est inconnue : déployer avant d'appliquer la migration
+    // empêcherait alors CHAQUE nouvelle prof de créer son studio. On rejoue
+    // donc sans le pays — elle le choisira dans ses Paramètres, et la France
+    // reste le défaut, ce qu'elle était déjà pour tout le monde.
+    const colonneInconnue = (e) => e && (e.code === '42703' || e.code === 'PGRST204');
+    const sansPays = () => { const d = { ...profilData }; delete d.pays; return d; };
+
+    let { data: updated, error: profileError } = await supabase
       .from('profiles')
       .update(profilData)
       .eq('id', user.id)
       .select('id');
+
+    if (colonneInconnue(profileError)) {
+      console.warn('[onboarding] pays non enregistré (migration v105 en attente)');
+      ({ data: updated, error: profileError } = await supabase
+        .from('profiles')
+        .update(sansPays())
+        .eq('id', user.id)
+        .select('id'));
+    }
 
     if (profileError) {
       console.error('Erreur profil:', profileError);
@@ -177,9 +200,14 @@ export default function OnboardingPage() {
     // élève→prof interrompue) : avant, l'écran « Bravo ! » était factice et
     // le dashboard rebouclait sur l'onboarding à l'infini (B1d).
     if (!updated || updated.length === 0) {
-      const { error: insertErr } = await supabase
+      let { error: insertErr } = await supabase
         .from('profiles')
         .insert({ id: user.id, ...profilData });
+      if (colonneInconnue(insertErr)) {
+        ({ error: insertErr } = await supabase
+          .from('profiles')
+          .insert({ id: user.id, ...sansPays() }));
+      }
       if (insertErr && insertErr.code !== '23505') {
         console.error('Erreur création profil:', insertErr);
         setErreur("Ton profil n'a pas pu être créé — déconnecte-toi puis reconnecte-toi, ou écris-nous via le bouton d'aide.");
@@ -459,6 +487,19 @@ export default function OnboardingPage() {
                 </div>
               </div>
               <div className="step-row">
+                <div className="auth-field" style={{ flex: 1 }}>
+                  <label htmlFor="onb-pays">Pays</label>
+                  <select
+                    id="onb-pays"
+                    className="izi-input"
+                    value={pays}
+                    onChange={e => setPays(e.target.value)}
+                  >
+                    {CODES_PAYS.map(c => (
+                      <option key={c} value={c}>{PAYS[c].drapeau} {PAYS[c].nom}</option>
+                    ))}
+                  </select>
+                </div>
                 <div className="auth-field" style={{ flex: 1 }}>
                   <label htmlFor="onb-ville">Ville *</label>
                   <input
