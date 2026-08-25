@@ -20,6 +20,9 @@
  *      composant navigateur interroge Supabase en direct.
  *   E. Un compte étranger au studio ne lit RIEN. Zéro ligne, partout.
  *   F. Révoquer ferme immédiatement, sans redéploiement.
+ *   G. Le bras ÉLÈVE est INTACT : une élève lit son espace et RIEN du studio.
+ *      v101 affirme ne toucher aucune policy « Eleve … » — une affirmation
+ *      n'est pas une preuve, surtout quand se tromper ouvre un studio entier.
  *   G. Ménage : comptes et lignes jetables supprimés, MÊME en cas d'échec.
  *
  * Le script SONDE la migration v101 : sans elle, il prouve que l'app tourne
@@ -43,6 +46,7 @@ const BASE = 'http://localhost:3333';
 const PROF_EMAIL = 'bonjour@melutek.com';
 const MEMBRE_EMAIL = 'preuve-membre-v101@example.com';
 const ETRANGER_EMAIL = 'preuve-etranger-v101@example.com';
+const ELEVE_EMAIL = 'preuve-eleve-v101@example.com';
 
 const env = Object.fromEntries(
   readFileSync(join(ROOT, '.env.local'), 'utf8')
@@ -101,7 +105,15 @@ console.log(V101
 const { userId: profId, cookies: cookiesProf, token: tokenProf } = await session(PROF_EMAIL);
 
 const purger = async () => {
-  for (const mail of [MEMBRE_EMAIL, ETRANGER_EMAIL]) {
+  if (V101) {
+    const { data: fiches } = await admin.from('clients').select('id').eq('profile_id', profId).eq('email', ELEVE_EMAIL);
+    for (const f of (fiches || [])) {
+      await admin.from('presences').delete().eq('client_id', f.id);
+      await admin.from('abonnements').delete().eq('client_id', f.id);
+      await admin.from('clients').delete().eq('id', f.id);
+    }
+  }
+  for (const mail of [MEMBRE_EMAIL, ETRANGER_EMAIL, ELEVE_EMAIL]) {
     const { data } = await admin.auth.admin.listUsers({ page: 1, perPage: 200 });
     const u = (data?.users || []).find(x => x.email === mail);
     if (u) {
@@ -270,6 +282,21 @@ try {
       'elle ne peut PAS renommer le studio (parametres refusé) — vérifié EN BASE');
     if (eUpd) assert(true, 'et la base le refuse explicitement');
 
+    // ══ D2. Les écrans qu'elle N'A PAS le droit de lire ne doivent pas ═════
+    // CASSER pour autant. La nav du lot 2 lui propose encore Revenus et
+    // Messagerie (le gating d'écran, c'est le lot 3) : ils doivent se rendre
+    // VIDES, jamais tomber en error boundary. Une porte fermée est acceptable,
+    // une porte qui s'effondre ne l'est pas.
+    for (const url of ['/revenus', '/messagerie']) {
+      erreursM.length = 0;
+      await pM.goto(`${BASE}${url}`, { waitUntil: 'domcontentloaded' });
+      await pM.waitForTimeout(5000);
+      const t = await pM.innerText('body');
+      assert(!/Une erreur est survenue/i.test(t) && erreursM.length === 0,
+        `${url} se rend VIDE pour elle, sans casser (le gating d'écran arrive au lot 3)`);
+    }
+    await pM.screenshot({ path: join(OUT, 'D2-revenus-membre.png') });
+
     // ══ E. Un étranger ne lit rien ═══════════════════════════════════════
     console.log('\nE. Cloisonnement : un compte étranger au studio');
     const { data: creeE, error: eCreeE } = await admin.auth.admin.createUser({
@@ -306,6 +333,55 @@ try {
       'et son navigateur la renvoie hors du studio');
     await pM.screenshot({ path: join(OUT, 'F-revoquee.png') });
 
+    // ══ G. Le bras ÉLÈVE, intact ══════════════════════════════════════════
+    // v101 affirme ne toucher aucune policy « Eleve … ». Une affirmation n'est
+    // pas une preuve, et se tromper ici ouvrirait un studio entier à ses
+    // élèves. On fabrique donc une vraie élève et on regarde ce qu'elle voit.
+    console.log('\nG. Le bras élève');
+    const { data: creeEl, error: eCreeEl } = await admin.auth.admin.createUser({
+      email: ELEVE_EMAIL, password: 'preuve-v101-jetable', email_confirm: true,
+      user_metadata: { role: 'eleve', prenom: 'Nina' },
+    });
+    if (eCreeEl) throw new Error(`createUser élève : ${eCreeEl.message}`);
+    const eleveId = creeEl.user.id;
+    const { data: profilEleve } = await admin.from('profiles').select('id').eq('id', eleveId).maybeSingle();
+    assert(!profilEleve, 'EN BASE : un compte élève ne reçoit toujours pas de profil (v57 tient)');
+
+    const { data: fiche, error: eFiche } = await admin.from('clients').insert({
+      profile_id: profId, prenom: 'Nina', nom: 'Preuve v101', email: ELEVE_EMAIL,
+      statut: 'actif', type_client: 'particulier', auth_user_id: eleveId,
+    }).select('id').single();
+    if (eFiche) throw new Error(`fiche élève : ${eFiche.message}`);
+
+    const { data: unCoursEl } = await admin.from('cours').select('id')
+      .eq('profile_id', profId).order('date', { ascending: false }).limit(1).maybeSingle();
+    if (unCoursEl) {
+      await admin.from('presences').insert({
+        profile_id: profId, cours_id: unCoursEl.id, client_id: fiche.id,
+        statut_pointage: 'inscrit', pointee: false,
+      });
+    }
+
+    const { token: tokenEl } = await session(ELEVE_EMAIL);
+    const sbEl = commeSoi(tokenEl);
+    const { count: elFiches } = await sbEl.from('clients').select('id', { count: 'exact', head: true });
+    const { count: elPres } = await sbEl.from('presences').select('id', { count: 'exact', head: true });
+    const { count: elPaie } = await sbEl.from('paiements').select('id', { count: 'exact', head: true });
+    const { count: elMembres } = await sbEl.from('studio_membres').select('id', { count: 'exact', head: true });
+
+    assert((elFiches || 0) === 1,
+      `elle lit SA fiche et une seule (${elFiches}) — pas les ${nClients} du studio`);
+    assert((elPres || 0) === (unCoursEl ? 1 : 0),
+      `elle lit SES présences et rien d'autre (${elPres})`);
+    assert((elPaie || 0) === 0, `elle ne lit aucun paiement du studio (${elPaie})`);
+    assert((elMembres || 0) === 0,
+      "LE test du bras élève : elle ne lit RIEN de studio_membres (elle n'est le staff de personne)");
+
+    // Et surtout : elle n'est PAS devenue membre du studio par accident.
+    const { data: membreFantome } = await admin.from('studio_membres')
+      .select('id').eq('auth_user_id', eleveId).maybeSingle();
+    assert(!membreFantome, "EN BASE : être élève d'un studio n'y fabrique aucune appartenance staff");
+
     await ctxM.close();
   }
 
@@ -316,7 +392,7 @@ try {
 } finally {
   try { await purger(); } catch (e) { console.error('ménage :', e.message); }
   const { data } = await admin.auth.admin.listUsers({ page: 1, perPage: 200 });
-  const restes = (data?.users || []).filter(u => [MEMBRE_EMAIL, ETRANGER_EMAIL].includes(u.email));
+  const restes = (data?.users || []).filter(u => [MEMBRE_EMAIL, ETRANGER_EMAIL, ELEVE_EMAIL].includes(u.email));
   assert(restes.length === 0, 'ménage : aucun compte jetable ne reste');
   if (V101) {
     const { count } = await admin.from('studio_membres').select('id', { count: 'exact', head: true }).eq('profile_id', profId);
