@@ -934,8 +934,23 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
             // seule grosse phrase (max 3 versets affichés)
             let versets = profile.philosophie.split(/\n{2,}/).map(v => v.trim()).filter(Boolean);
             if (versets.length === 1) {
-              // Pas de séparateur explicite → on split en phrases (max 3)
-              versets = profile.philosophie.split(/(?<=[.!?])\s+/).map(v => v.trim()).filter(Boolean).slice(0, 3);
+              // Pas de séparateur explicite → on split en phrases (max 3).
+              // ⚠️ PAS de lookbehind (/(?<=[.!?])\s+/) : Safari ne l'a accepté
+              // qu'à partir de la version 16.4, et un littéral d'expression
+              // régulière est analysé au CHARGEMENT du script — pas à son
+              // exécution. Sur un iPhone resté en iOS 15, ce n'était donc pas
+              // ce bloc qui cassait, c'était TOUT le portail : aucune
+              // hydratation, aucun onglet, aucune réservation. On garde le
+              // point de fin de phrase avec un groupe capturant, qui marche
+              // partout depuis toujours.
+              versets = profile.philosophie
+                .split(/([.!?])\s+/)
+                .reduce((acc, part, i, arr) => {
+                  if (i % 2 === 0) acc.push((part + (arr[i + 1] || '')).trim());
+                  return acc;
+                }, [])
+                .filter(Boolean)
+                .slice(0, 3);
             } else {
               versets = versets.slice(0, 3);
             }
