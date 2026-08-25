@@ -2,6 +2,7 @@ import { createServerClient } from '@/lib/supabase-server';
 import { resoudreStudioActif } from '@/lib/studio-actif';
 import { notFound } from 'next/navigation';
 import CoursDetailClient from './CoursDetailClient';
+import { chargerIntervenantes, lireIntervenantes, labelIntervenante } from '@/lib/intervenante';
 
 export default async function CoursDetailPage({ params, searchParams }) {
   const { coursId } = await params;
@@ -127,8 +128,21 @@ export default async function CoursDetailPage({ params, searchParams }) {
     nbOccurrences = count || 0;
   }
 
+  // Qui peut donner cette séance, et qui la donne (v103). Lectures SÉPARÉES
+  // et défensives : la colonne ne va JAMAIS dans le select principal du cours
+  // (§12 — un select qui nomme une colonne absente rend `data` null, et la
+  // page entière affiche « introuvable »).
+  const membresStudio = await chargerIntervenantes(supabase, studioId);
+  const intervenantes = membresStudio.map(m => ({ id: m.id, label: labelIntervenante(m) }));
+  const parCours = await lireIntervenantes(supabase, [coursId]);
+  const intervenantInit = parCours[coursId] || '';
+  const intervenanteIndispo = membresStudio.length > 1 && Object.keys(parCours).length === 0 && false;
+
   return (
     <CoursDetailClient
+      intervenantes={intervenantes}
+      intervenantInit={intervenantInit}
+      intervenanteIndispo={intervenanteIndispo}
       cours={cours}
       presences={presences || []}
       lieux={lieux || []}

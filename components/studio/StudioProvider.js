@@ -15,11 +15,11 @@ import { createContext, useContext } from 'react';
  * invitée dans une association, non. Le ratchet CI `studio-scope.spec.js`
  * refuse le retour de la forme `profile_id = user.id`.
  */
-const StudioContext = createContext({ studioId: null, membre: null, membres: [], moi: null });
+const StudioContext = createContext({ studioId: null, membre: null, membres: [], studios: [], moi: null });
 
-export function StudioProvider({ studioId, membre, membres, moi, children }) {
+export function StudioProvider({ studioId, membre, membres, studios, moi, children }) {
   return (
-    <StudioContext.Provider value={{ studioId, membre, membres: membres || [], moi: moi || null }}>
+    <StudioContext.Provider value={{ studioId, membre, membres: membres || [], studios: studios || [], moi: moi || null }}>
       {children}
     </StudioContext.Provider>
   );
@@ -35,9 +35,18 @@ export function useMembre() {
   return useContext(StudioContext).membre;
 }
 
-/** Toutes ses appartenances actives — le sélecteur multi-studios viendra après. */
-export function useStudios() {
+/** Ses appartenances actives (données brutes). */
+export function useAppartenances() {
   return useContext(StudioContext).membres;
+}
+
+/**
+ * Les studios où elle travaille, NOMMÉS — vide quand il n'y en a qu'un.
+ * C'est ce que lit le sélecteur : une prof seule n'a rien à basculer, et ne
+ * doit pas voir un menu qui ne mène qu'à elle-même.
+ */
+export function useStudios() {
+  return useContext(StudioContext).studios;
 }
 
 /**

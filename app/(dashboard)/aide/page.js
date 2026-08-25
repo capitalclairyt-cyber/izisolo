@@ -302,6 +302,8 @@ const SECTIONS = [
       <>Dans la nav, <strong>« Équipe »</strong> → <strong>« Inviter une prof »</strong>. Son email suffit. Elle reçoit un lien, choisit son mot de passe, et ton studio apparaît chez elle. Elle n'a rien à installer, rien à payer.</>,
       <>Deux préréglages pour ne pas cocher neuf cases : <strong>« Prof »</strong> (elle donne des cours et les pointe, sans voir l'argent ni écrire à tes élèves) et <strong>« Admin »</strong> (elle gère le studio comme toi). Tu peux ensuite ajuster droit par droit.</>,
       <>Ce qu'elle n'a pas le droit de faire, elle ne le voit pas : sa navigation ne montre que ses portes. Et trois droits (l'argent, la messagerie, les réglages) sont tenus par la base elle-même, pas seulement par l'écran.</>,
+      <>Tu peux aussi choisir <strong>quelles séances elle pointe</strong> : toutes, ou seulement celles dont tu l'as désignée intervenante (sur la fiche d'une séance, carte <strong>« Qui donne cette séance ? »</strong>). Une séance que personne n'a prise en charge reste pointable par toute l'équipe.</>,
+      <>Tu donnes aussi des cours ailleurs ? Le <strong>nom du studio</strong>, en haut de la navigation, devient un sélecteur dès que tu appartiens à plusieurs studios : un clic, et tu changes de maison.</>,
       <>Tu changes d'avis ? <strong>« Droits »</strong> sur sa ligne, et c'est immédiat. <strong>La corbeille</strong> la retire du studio : elle est dehors à la seconde d'après, son historique reste, et tu peux la réinviter plus tard.</>,
       <>Travailler à plusieurs fait partie du <strong>plan Multi</strong> : un seul abonnement pour tout le studio, autant de profs que tu veux. Si l'abonnement s'arrête, personne n'est effacé : chacune retrouve sa place dès qu'il reprend.</>,
     ],

@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { withRoute } from '@/lib/api-route';
-import { sanitizeRole, sanitizePermissions } from '@/lib/studio-membre';
-import { peutModifierMembre, membrePublic } from '@/lib/equipe';
+import { sanitizeRole, sanitizePermissions, sanitizePortee } from '@/lib/studio-membre';
+import { peutModifierMembre, membrePublic, poserPortee } from '@/lib/equipe';
 
 /**
  * /api/equipe/[id] — modifier ou retirer un membre (lot 3).
@@ -18,6 +18,7 @@ import { peutModifierMembre, membrePublic } from '@/lib/equipe';
 const patchSchema = z.object({
   role: z.enum(['admin', 'prof']).optional(),
   permissions: z.record(z.string(), z.boolean()).optional(),
+  portee_pointage: z.enum(['tous', 'miens']).optional(),
 });
 
 async function charger(supabase, studioId, id) {
@@ -44,7 +45,17 @@ export const PATCH = withRoute(
     const patch = {};
     if (body.role !== undefined) patch.role = sanitizeRole(body.role);
     if (body.permissions !== undefined) patch.permissions = sanitizePermissions(body.permissions);
+    // La portée à part (cf. poserPortee) : mélangée au patch, elle ferait
+    // échouer TOUTE la modification tant que v103 n'est pas appliquée.
+    if (body.portee_pointage !== undefined) {
+      await poserPortee(supabase, cible.id, sanitizePortee(body.portee_pointage));
+    }
+
     if (Object.keys(patch).length === 0) {
+      if (body.portee_pointage !== undefined) {
+        const apres = await charger(supabase, studioId, cible.id);
+        return Response.json({ membre: membrePublic(apres || cible) });
+      }
       return Response.json({ error: 'Rien à modifier.', code: 'VIDE' }, { status: 400 });
     }
 

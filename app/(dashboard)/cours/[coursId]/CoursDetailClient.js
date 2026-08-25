@@ -22,6 +22,7 @@ import {
 import TypeCoursHint from '@/components/cours/TypeCoursHint';
 import CouvertureCours from '@/components/cours/CouvertureCours';
 import ConfierPointage from '@/components/cours/ConfierPointage';
+import IntervenanteCours from '@/components/cours/IntervenanteCours';
 import AttachmentPicker from '@/components/messagerie/AttachmentPicker';
 import { resoudreCarnetApplicable } from '@/lib/carnet-resolution';
 import { sanitizeLienVisio } from '@/lib/visio';
@@ -31,7 +32,7 @@ import { useToast } from '@/components/ui/ToastProvider';
 import HeureSelect from '@/components/ui/HeureSelect';
 import { SMS_ENABLED } from '@/lib/constantes';
 
-export default function CoursDetailClient({ cours, presences, lieux, profile, nbOccurrences, autoEdit, listeAttente = [], abosParClient = {}, paiementsSeance = [], offresCatalogue = [], nbSeancesType = 0 }) {
+export default function CoursDetailClient({ intervenantes = [], intervenantInit = '', intervenanteIndispo = false, cours, presences, lieux, profile, nbOccurrences, autoEdit, listeAttente = [], abosParClient = {}, paiementsSeance = [], offresCatalogue = [], nbSeancesType = 0 }) {
   const router = useRouter();
   const { toast } = useToast();
   const [editing, setEditing] = useState(autoEdit || false);
@@ -1053,6 +1054,14 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
 
       {/* Confier le pointage à quelqu'un sans compte (v100) — replié, et muet
           tant qu'on ne l'ouvre pas. Masqué en édition, comme la couverture. */}
+      {!editing && (
+        <IntervenanteCours
+          cours={cours}
+          intervenantes={intervenantes}
+          intervenantInit={intervenantInit}
+          indisponible={intervenanteIndispo}
+        />
+      )}
       {!editing && <ConfierPointage cours={cours} />}
 
       </div>{/* /cours-left */}

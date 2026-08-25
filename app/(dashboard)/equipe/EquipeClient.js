@@ -6,7 +6,7 @@ import { useToast } from '@/components/ui/ToastProvider';
 import AideContextuelle from '@/components/AideContextuelle';
 import {
   PERMISSIONS, PRESETS, permissionsParDefaut,
-  labelRole, labelStatut, resumeDroits,
+  labelRole, labelStatut, resumeDroits, labelPortee,
 } from '@/lib/studio-membre';
 
 /**
@@ -25,6 +25,7 @@ export default function EquipeClient({ membresInit, planOk, indisponible, studio
   const [envoi, setEnvoi] = useState(false);
   const [form, setForm] = useState({
     email: '', prenom: '', role: 'prof', permissions: permissionsParDefaut('prof'),
+    portee_pointage: 'tous',
   });
   const [edite, setEdite] = useState(null); // id du membre déplié
 
@@ -48,12 +49,13 @@ export default function EquipeClient({ membresInit, planOk, indisponible, studio
           prenom: form.prenom.trim() || undefined,
           role: form.role,
           permissions: form.permissions,
+          portee_pointage: form.portee_pointage,
         }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) { toast.error(data.error || "L'invitation n'est pas partie."); return; }
       setMembres(prev => [...prev.filter(m => m.id !== data.membre.id), data.membre]);
-      setForm({ email: '', prenom: '', role: 'prof', permissions: permissionsParDefaut('prof') });
+      setForm({ email: '', prenom: '', role: 'prof', permissions: permissionsParDefaut('prof'), portee_pointage: 'tous' });
       setOuvert(false);
       toast.success(data.compteExistant
         ? `${data.membre.email} a déjà un compte : le studio apparaîtra à sa prochaine connexion.`
@@ -160,6 +162,19 @@ export default function EquipeClient({ membresInit, planOk, indisponible, studio
                 </button>
               </div>
 
+              {/* Portée du pointage — décision Colin : c'est un choix PAR
+                  MEMBRE. Une séance sans intervenante désignée reste pointable
+                  par tout le monde : on ne ferme jamais rétroactivement une
+                  porte qui était ouverte. */}
+              <label className="eq-portee">
+                <span>Quelles séances peut-elle pointer ?</span>
+                <select value={form.portee_pointage} onChange={e => majForm({ portee_pointage: e.target.value })}>
+                  <option value="tous">{labelPortee('tous')}</option>
+                  <option value="miens">{labelPortee('miens')}</option>
+                </select>
+                <em>Avec « seulement ses séances », elle pointe celles dont tu l&apos;as désignée intervenante, plus celles que personne n&apos;a prises en charge.</em>
+              </label>
+
               <details className="eq-details">
                 <summary>Ajuster les droits un par un</summary>
                 <div className="eq-perms">
@@ -197,7 +212,10 @@ export default function EquipeClient({ membresInit, planOk, indisponible, studio
                     <span className={`eq-badge statut-${m.statut}`}>{labelStatut(m.statut)}</span>
                     {m.statut === 'invite' && !m.liee && <span className="eq-attente">jamais venue</span>}
                   </div>
-                  <div className="eq-droits">{resumeDroits(m)}</div>
+                  <div className="eq-droits">
+                    {resumeDroits(m)}
+                    {!m.proprietaire && m.portee_pointage === 'miens' && ' · pointe seulement ses séances'}
+                  </div>
                 </div>
                 {!m.proprietaire && m.statut !== 'revoque' && (
                   <div className="eq-boutons">
@@ -251,6 +269,11 @@ export default function EquipeClient({ membresInit, planOk, indisponible, studio
         .eq-role strong { display: block; font-size: .95rem; margin-bottom: 3px; }
         .eq-role span { font-size: .8rem; color: var(--text-soft, #7a6f6a); line-height: 1.45; }
 
+        .eq-portee { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
+        .eq-portee > span { font-size: .78rem; color: var(--text-soft, #7a6f6a); }
+        .eq-portee select { padding: 9px 11px; border-radius: 9px; border: 1px solid rgba(0,0,0,.13);
+          font: inherit; font-size: .88rem; background: #fff; color: inherit; max-width: 320px; }
+        .eq-portee em { font-style: normal; font-size: .76rem; color: var(--text-soft, #7a6f6a); line-height: 1.45; }
         .eq-details { margin-bottom: 14px; }
         .eq-details summary { cursor: pointer; font-size: .87rem; color: var(--text-soft, #7a6f6a); padding: 6px 0; }
         .eq-perms { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 8px; margin-top: 8px; }

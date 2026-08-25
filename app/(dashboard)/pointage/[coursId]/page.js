@@ -2,6 +2,9 @@ import { createServerClient } from '@/lib/supabase-server';
 import { resoudreStudioActif } from '@/lib/studio-actif';
 import { notFound } from 'next/navigation';
 import PointageClient from './PointageClient';
+import Link from 'next/link';
+import { peutPointerCours } from '@/lib/studio-membre';
+import { lireIntervenantes } from '@/lib/intervenante';
 
 export default async function PointagePage({ params }) {
   const { coursId } = await params;
@@ -9,7 +12,7 @@ export default async function PointagePage({ params }) {
   const { data: { user } } = await supabase.auth.getUser();
   // Le studio affiché (v101) : pour une prof seule c'est elle-même,
   // pour une prof invitée dans une association c'est le studio de l'asso.
-  const { studioId } = await resoudreStudioActif(supabase, user);
+  const { studioId, membre } = await resoudreStudioActif(supabase, user);
 
   // Charger le cours
   const { data: cours } = await supabase
@@ -20,6 +23,24 @@ export default async function PointagePage({ params }) {
     .single();
 
   if (!cours) notFound();
+
+  // Portée du pointage (v103) : la RLS refusera l'écriture de toute façon.
+  // Cet écran existe pour qu'elle l'apprenne AVANT d'avoir coché dix noms,
+  // pas après. Lecture SÉPARÉE de l'intervenante (§12).
+  const parCours = await lireIntervenantes(supabase, [coursId]);
+  if (membre && !peutPointerCours(membre, { intervenant_id: parCours[coursId] || null })) {
+    return (
+      <div className="section" style={{ maxWidth: 560, margin: '32px auto', textAlign: 'center', padding: 28 }}>
+        <div style={{ fontSize: 34, marginBottom: 8 }}>🤝</div>
+        <h1 style={{ fontSize: '1.4rem', margin: '0 0 10px' }}>Cette séance est confiée à quelqu&apos;un d&apos;autre</h1>
+        <p style={{ margin: '0 0 16px', lineHeight: 1.6, color: 'var(--text-soft, #7a6f6a)' }}>
+          Tu peux la voir dans le planning, mais son pointage revient à l&apos;intervenante désignée.
+          Si c&apos;est une erreur, la personne qui gère le studio peut la changer sur la fiche du cours.
+        </p>
+        <Link href={`/cours/${coursId}`} className="izi-btn btn-sm izi-btn-secondary">Voir la séance</Link>
+      </div>
+    );
+  }
 
   // Charger les présences existantes avec les infos client + abonnement lié
   const { data: presences } = await supabase

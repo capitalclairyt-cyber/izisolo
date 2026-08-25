@@ -12,7 +12,8 @@ import {
 import { createClient } from '@/lib/supabase';
 import NotificationBell from '@/components/notifications/NotificationBell';
 import MessagesBadge from '@/components/messagerie/MessagesBadge';
-import { useMembre } from '@/components/studio/StudioProvider';
+import { useMembre, useStudios } from '@/components/studio/StudioProvider';
+import SelecteurStudio from '@/components/studio/SelecteurStudio';
 import { peut } from '@/lib/studio-membre';
 
 const NAV_SECTIONS = [
@@ -50,6 +51,7 @@ export default function Sidebar({ studioNom = 'Mon Studio', vocabulaire = {}, il
   // nav est exactement celle d'avant. Une porte qui ne mène nulle part est un
   // mensonge d'interface — mieux vaut ne pas la dessiner.
   const membre = useMembre();
+  const studios = useStudios();
   // Compteurs affichés en pastille sur les entrées « à action » de la nav.
   const navCounts = { '/cas-a-traiter': nbCasATraiter, '/essais': nbEssais };
   const pathname = usePathname();
@@ -118,7 +120,10 @@ export default function Sidebar({ studioNom = 'Mon Studio', vocabulaire = {}, il
             )}
           </div>
         </div>
-        <div className="sidebar-studio">{studioNom}</div>
+        {/* Plusieurs studios : le nom devient un sélecteur. Une prof seule
+            garde exactement l'affichage d'avant (le composant rend null). */}
+        <SelecteurStudio />
+        {studios.length < 2 && <div className="sidebar-studio">{studioNom}</div>}
       </div>
 
       {/* Navigation + Paramètres */}

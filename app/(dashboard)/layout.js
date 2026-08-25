@@ -36,6 +36,18 @@ export default async function DashboardLayout({ children }) {
     redirect('/onboarding');
   }
 
+  // Les noms des studios auxquels elle appartient — uniquement s'il y en a
+  // plusieurs. Une prof seule ne paie pas cette requête, et n'a rien à
+  // basculer.
+  let studios = [];
+  if ((membres || []).length > 1) {
+    const { data } = await supabase
+      .from('profiles')
+      .select('id, studio_nom')
+      .in('id', membres.map(m => m.profile_id));
+    studios = (data || []).map(p => ({ id: p.id, nom: p.studio_nom || 'Studio' }));
+  }
+
   // Le profil DU STUDIO (réglages, plan, trial) — pas celui de la personne
   // connectée : c'est le studio qui a un abonnement IziSolo, pas la prof qui
   // vient y donner un cours.
@@ -113,6 +125,7 @@ export default async function DashboardLayout({ children }) {
       studioId={studioId}
       membre={membre}
       membres={membres}
+      studios={studios}
       moi={{ prenom: user.user_metadata?.prenom || '', email: user.email || '' }}
     >
       <DashboardLayoutClient profile={profile} trial={trial} nbCasATraiter={nbCasATraiter} nbEssais={nbEssais}>

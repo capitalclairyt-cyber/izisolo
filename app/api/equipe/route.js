@@ -3,8 +3,8 @@ import { withRoute } from '@/lib/api-route';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { sendEmail } from '@/lib/email';
 import { reportError } from '@/lib/report';
-import { sanitizeRole, sanitizePermissions, permissionsParDefaut, CLES_PERMISSIONS } from '@/lib/studio-membre';
-import { emailInvitation, verifierEmailInvitation, normaliserEmail, membrePublic } from '@/lib/equipe';
+import { sanitizeRole, sanitizePermissions, permissionsParDefaut, CLES_PERMISSIONS, sanitizePortee } from '@/lib/studio-membre';
+import { emailInvitation, verifierEmailInvitation, normaliserEmail, membrePublic, poserPortee } from '@/lib/equipe';
 
 /**
  * /api/equipe — l'équipe d'un studio (lot 3 du chantier multi-prof).
@@ -24,6 +24,7 @@ const inviterSchema = z.object({
   prenom: z.string().trim().max(60).optional(),
   role: z.enum(['admin', 'prof']).optional(),
   permissions: z.record(z.string(), z.boolean()).optional(),
+  portee_pointage: z.enum(['tous', 'miens']).optional(),
 });
 
 export const GET = withRoute({ auth: 'user', plan: 'equipe', perm: 'equipe_gerer' }, async ({ auth }) => {
@@ -163,6 +164,10 @@ export const POST = withRoute(
         { status: absente ? 503 : 500 }
       );
     }
+
+    // La portée APRÈS coup (cf. poserPortee) : la nommer dans l'insert
+    // ci-dessus ferait perdre l'invitation entière tant que v103 n'est pas là.
+    await poserPortee(supabase, membre.id, sanitizePortee(body.portee_pointage));
 
     const { subject, html } = emailInvitation({
       studioNom: profile?.studio_nom,

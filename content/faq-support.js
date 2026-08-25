@@ -170,4 +170,10 @@ export const FAQ_SUPPORT = [
     a: "Menu « Équipe » → « Inviter une prof ». Tu mets son email, elle reçoit un lien, choisit son mot de passe, et ton studio apparaît chez elle. Tu choisis ce qu'elle peut faire : « Prof » (donner des cours et les pointer, sans voir l'argent ni écrire à tes élèves) ou « Admin » (gérer le studio comme toi), et tu ajustes ensuite droit par droit. Ce qu'elle n'a pas le droit de faire n'apparaît même pas dans sa navigation. Tu peux la retirer quand tu veux, c'est immédiat, et son historique reste. Travailler à plusieurs fait partie du plan Multi : un seul abonnement pour tout le studio, autant de profs que tu veux. Pour un simple remplacement ponctuel, pas besoin d'invitation : « Confier le pointage » sur la séance suffit, et ça marche sans compte.",
     lien: { href: '/aide#equipe', label: 'Voir le pas-à-pas' },
   },
+  {
+    // Intervenante + portée + sélecteur de studio (lot 3b, 2026-08-25).
+    q: "Je donne des cours dans deux studios : comment passer de l'un à l'autre ?",
+    a: "Dès que tu appartiens à plusieurs studios, le nom du studio en haut de la navigation devient un sélecteur : un clic et tu changes de maison, chaque studio garde ses élèves, son agenda et sa compta de son côté. Et si tu gères un studio à plusieurs profs : sur la fiche d'une séance, la carte « Qui donne cette séance ? » désigne l'intervenante. Tu peux alors limiter une prof au pointage de SES séances (Équipe → « Quelles séances peut-elle pointer ? »). Une séance que personne n'a prise en charge reste pointable par toute l'équipe.",
+    lien: { href: '/aide#equipe', label: 'Voir le pas-à-pas' },
+  },
 ];
