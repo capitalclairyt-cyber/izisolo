@@ -1323,6 +1323,19 @@ section.tight { padding-block: clamp(48px, 6vw, 80px); }
   }
 }
 
+/* ⚠️ EXCEPTION : le hero est AU-DESSUS de la ligne de flottaison, par
+   définition. Le révéler au scroll n'a aucun sens, et dans Safari la
+   timeline ne démarre jamais tant que rien ne défile : mesuré en WebKit
+   contre la prod, le cadre produit du hero restait à 0,625 d'opacité,
+   indéfiniment. Notre vitrine, délavée, pour chaque visiteuse sur iPhone.
+   Il s'anime donc sur sa propre horloge, au chargement. Le reste de la
+   landing garde le reveal au scroll : là, c'est voulu, et il y a toujours
+   un scroll. (Incident Melyflow 2026-08-25, même cause côté portail.) */
+.hero-product.reveal {
+  animation: revealUp 0.9s cubic-bezier(0.22, 1, 0.36, 1) both !important;
+  animation-timeline: auto !important;
+}
+
 /* Fallback : navigateurs sans animation-timeline, on a le JS qui ajoute
    .is-revealed quand l'élément entre dans le viewport (cf. ScrollReveal.js) */
 @supports not (animation-timeline: view()) {

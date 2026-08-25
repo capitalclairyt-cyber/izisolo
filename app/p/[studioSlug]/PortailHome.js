@@ -5,7 +5,6 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { MapPin, Calendar, Clock, ChevronRight, ChevronLeft, ChevronDown, Search, CreditCard, Ticket, CalendarCheck, Zap, Instagram, Facebook, Globe, Award, BookOpen, LayoutGrid, List, Check, Loader } from 'lucide-react';
 import { toneCours, vignetteCours, altVignette, imageOptimisable } from '@/lib/vignette-cours';
-import ScrollReveal from '@/components/landing/ScrollReveal';
 import { useToast } from '@/components/ui/ToastProvider';
 import { matchRecherche } from '@/lib/utils';
 import { essaiVarieParType, minPrixEssai } from '@/lib/essai-tarif';
@@ -479,7 +478,6 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
 
   return (
     <div>
-      <ScrollReveal />
 
       {/* Studio header — hero photo moderne (pattern Lumorae : photo pure
           plein écran centré, dégradé doux, contenu sous la photo) */}
@@ -2029,36 +2027,34 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
         }
         .portail-social-link:hover { color: #d4a0a0; border-color: #d4a0a0; transform: translateY(-2px); }
 
-        /* ─── Scroll reveal — fade + translate doux ─────────────────────── */
+        /* ─── Apparition douce ───────────────────────────────────────────
+           ⚠️ INCIDENT 2026-08-25 (Melyflow, vidéo à l'appui). Ce bloc était
+           une animation PILOTÉE PAR LE SCROLL (animation-timeline: view()).
+           Sur les onglets « À propos », « Tarifs » et « Infos », le contenu
+           apparaît au CLIC, sans que rien ne défile : la timeline ne démarrait
+           donc jamais et les trois panneaux restaient à opacity 0. Mesuré
+           dans WebKit contre la prod : 0, 0 et 0. Le texte était bien dans le
+           DOM (c'est pourquoi il ressortait dans innerText, et pourquoi mes
+           vérifications le disaient présent) mais INVISIBLE à l'écran. Chrome
+           rattrapait le coup, Safari non — donc tous les iPhone.
+
+           Règle qui en sort, et qui vaut partout : **une décoration ne décide
+           jamais si un contenu est visible**. L'animation tourne désormais sur
+           sa propre horloge, au montage. Elle ne dépend plus de rien : pas de
+           scroll, pas d'IntersectionObserver, pas de moteur particulier. Au
+           pire elle ne joue pas, et le contenu est là quand même. */
         .reveal {
           opacity: 0;
           transform: translateY(28px);
-          transition:
-            opacity 0.8s cubic-bezier(0.22, 1, 0.36, 1),
-            transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+          animation: portail-reveal-up 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
         }
-        .reveal.is-revealed,
-        .reveal[data-revealed="true"] {
-          opacity: 1;
-          transform: translateY(0);
-        }
-        /* CSS scroll-driven natif (Chrome 115+) : prend la main si supporté */
-        @supports (animation-timeline: view()) {
-          .reveal {
-            opacity: 0;
-            transform: translateY(28px);
-            animation: portail-reveal-up 1s cubic-bezier(0.22, 1, 0.36, 1) both;
-            animation-timeline: view();
-            animation-range: entry 5% cover 25%;
-          }
-          @keyframes portail-reveal-up {
-            to { opacity: 1; transform: translateY(0); }
-          }
+        @keyframes portail-reveal-up {
+          to { opacity: 1; transform: translateY(0); }
         }
         @media (prefers-reduced-motion: reduce) {
           .reveal {
             opacity: 1; transform: none;
-            animation: none; transition: none;
+            animation: none;
           }
         }
       `}</style>
