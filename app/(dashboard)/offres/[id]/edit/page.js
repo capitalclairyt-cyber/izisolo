@@ -11,6 +11,7 @@ import { createClient } from '@/lib/supabase';
 import { getAllTypesFromCategories, formatMontant, formatDate } from '@/lib/utils';
 import { calcProRata, aujourdhuiISO } from '@/lib/prorata';
 import { estPeriodeGlissante, finGlissanteISO } from '@/lib/offres-periode';
+import DureeLibre, { uniteNaturelle } from '@/components/offres/DureeLibre';
 import {
   MODE_ILLIMITE, MODE_CADENCE, MODE_TOTAL, modeSeances, payloadSeances, apercuSeances,
 } from '@/lib/offres-seances';
@@ -42,6 +43,10 @@ export default function EditOffre({ params }) {
   // première sauvegarde.
   const [periodeMode, setPeriodeMode] = useState('fixe');
   const [dureeGlissante, setDureeGlissante] = useState('30');
+  // Unité de SAISIE (on stocke toujours des jours) — retour terrain
+  // 2026-08-25 : « je voulais définir 4 mois ».
+  const [uniteAbo, setUniteAbo] = useState('mois');
+  const [uniteCarnet, setUniteCarnet] = useState('mois');
   // Le mode remplace le booléen « illimité » : la cadence n'est plus une
   // question à part (cf. lib/offres-seances, retour Colin 2026-08-23).
   const [modeSeancesAbo, setModeSeancesAbo] = useState(MODE_ILLIMITE);
@@ -79,6 +84,7 @@ export default function EditOffre({ params }) {
       const glissante = data.type === 'abonnement' && estPeriodeGlissante(data);
       setPeriodeMode(glissante ? 'glissante' : 'fixe');
       setDureeGlissante(glissante ? String(data.duree_jours) : '30');
+      setUniteAbo(uniteNaturelle(glissante ? data.duree_jours : 30));
       // Une offre existante se rouvre dans SON mode, cadence comprise : les
   // abonnements « illimités » nés capés à 1×/sem s'affichent désormais pour
   // ce qu'ils sont (« 1 fois par semaine »), au lieu de le cacher.
@@ -90,6 +96,7 @@ export default function EditOffre({ params }) {
       setInclutVacances(data.inclut_vacances !== false);
       setStripePaymentLink(data.stripe_payment_link || '');
       setCarnetDureeJours(data.type === 'carnet' && data.duree_jours ? String(data.duree_jours) : '');
+      setUniteCarnet(uniteNaturelle(data.duree_jours));
       setPrixUnitaireRef(data.prix_unitaire_ref != null ? String(data.prix_unitaire_ref) : '');
       setProRataActif(!!data.pro_rata_actif);
       setProRataDateLimite(data.pro_rata_date_limite || '');
@@ -262,13 +269,11 @@ export default function EditOffre({ params }) {
                 <button type="button" className={`eo-chip ${carnetDureeJours === '180' ? 'active' : ''}`} onClick={() => setCarnetDureeJours('180')}>6 mois</button>
                 <button type="button" className={`eo-chip ${carnetDureeJours === '365' ? 'active' : ''}`} onClick={() => setCarnetDureeJours('365')}>1 an</button>
               </div>
-              <input
-                className="izi-input"
-                type="number"
-                min="1"
-                placeholder="Ou nombre de jours personnalisé"
-                value={carnetDureeJours}
-                onChange={e => setCarnetDureeJours(e.target.value)}
+              <DureeLibre
+                jours={carnetDureeJours}
+                onChange={setCarnetDureeJours}
+                unite={uniteCarnet}
+                onUnite={setUniteCarnet}
               />
             </div>
             <div className="eo-field">
@@ -310,13 +315,12 @@ export default function EditOffre({ params }) {
 
             {periodeMode === 'glissante' ? (
               <div className="eo-field">
-                <label className="eo-label">Durée <span className="eo-optional">(en jours)</span></label>
-                <input
-                  className="izi-input"
-                  type="number" min="1"
-                  value={dureeGlissante}
-                  onChange={e => setDureeGlissante(e.target.value)}
-                  style={{ maxWidth: 220 }}
+                <label className="eo-label">Durée</label>
+                <DureeLibre
+                  jours={dureeGlissante}
+                  onChange={setDureeGlissante}
+                  unite={uniteAbo}
+                  onUnite={setUniteAbo}
                 />
                 {finGlissanteISO(dureeGlissante) && (
                   <div className="eo-info-pill">

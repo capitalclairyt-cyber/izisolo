@@ -16,6 +16,7 @@ import { PLANS } from '@/lib/constantes';
 import { effectivePlan } from '@/lib/trial';
 import { calcProRata, joursEntreISO, semainesEntreISO, aujourdhuiISO } from '@/lib/prorata';
 import { finGlissanteISO } from '@/lib/offres-periode';
+import DureeLibre, { uniteNaturelle } from '@/components/offres/DureeLibre';
 import {
   MODE_ILLIMITE, MODE_CADENCE, MODE_TOTAL, payloadSeances, apercuSeances,
 } from '@/lib/offres-seances';
@@ -101,6 +102,10 @@ export default function NouvelleOffre() {
   // Défaut 'fixe' : c'est le comportement historique, on ne déplace personne.
   const [periodeMode, setPeriodeMode] = useState('fixe');
   const [dureeGlissante, setDureeGlissante] = useState('30');
+  // L'unité de SAISIE du champ libre (on stocke toujours des jours) — retour
+  // d'une prof le jour de son inscription : « je voulais définir 4 mois ».
+  const [uniteAbo, setUniteAbo] = useState('mois');
+  const [uniteCarnet, setUniteCarnet] = useState('mois');
   const [dateDebut, setDateDebut]     = useState('');
   const [dateFin, setDateFin]         = useState('');
   // Ce que l'abonnement donne droit à faire : UNE question à trois branches
@@ -445,19 +450,17 @@ export default function NouvelleOffre() {
                 <button
                   type="button"
                   className={`no-preset-btn ${carnetDureeCustom ? 'active' : ''}`}
-                  onClick={() => { setCarnetDureeCustom(true); setCarnetDureeJours(''); }}
+                  onClick={() => { setUniteCarnet(uniteNaturelle(carnetDureeJours)); setCarnetDureeCustom(true); setCarnetDureeJours(''); }}
                 >
                   Autre…
                 </button>
               </div>
               {carnetDureeCustom && (
-                <input
-                  className="izi-input no-custom-input"
-                  type="number"
-                  min="1"
-                  placeholder="Nombre de jours"
-                  value={carnetDureeJours}
-                  onChange={e => setCarnetDureeJours(e.target.value)}
+                <DureeLibre
+                  jours={carnetDureeJours}
+                  onChange={setCarnetDureeJours}
+                  unite={uniteCarnet}
+                  onUnite={setUniteCarnet}
                   autoFocus
                 />
               )}
@@ -561,18 +564,17 @@ export default function NouvelleOffre() {
                   <button
                     type="button"
                     className={`no-chip ${!PRESETS_DUREE_ABO.some(p => String(p.jours) === dureeGlissante) ? 'active' : ''}`}
-                    onClick={() => setDureeGlissante('')}
+                    onClick={() => { setUniteAbo(uniteNaturelle(dureeGlissante)); setDureeGlissante(''); }}
                   >
                     Autre
                   </button>
                 </div>
                 {!PRESETS_DUREE_ABO.some(p => String(p.jours) === dureeGlissante) && (
-                  <input
-                    className="izi-input no-custom-input"
-                    type="number" min="1"
-                    placeholder="Nombre de jours"
-                    value={dureeGlissante}
-                    onChange={e => setDureeGlissante(e.target.value)}
+                  <DureeLibre
+                    jours={dureeGlissante}
+                    onChange={setDureeGlissante}
+                    unite={uniteAbo}
+                    onUnite={setUniteAbo}
                   />
                 )}
                 {finGlissanteISO(dureeGlissante) && (
