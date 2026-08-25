@@ -17,7 +17,7 @@ import { test, expect } from '@playwright/test';
 import { readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { PLANS, CAPACITES, ALL_PLANS, PUBLIC_PLANS } from '../../lib/constantes.js';
-import { effectivePlan } from '../../lib/trial.js';
+import { effectivePlan, getAccountStatus, isAccountFrozen, isReadOnly } from '../../lib/trial.js';
 import { can } from '../../lib/plan-guard.js';
 import { PRESETS } from '../../lib/studio-membre.js';
 import {
@@ -85,6 +85,27 @@ test.describe('plan Multi — et sa bêta, qui doit être fidèle', () => {
     const enEssai = { plan: 'solo', trial_started_at: new Date().toISOString() };
     expect(effectivePlan(enEssai)).toBe('pro');
     expect(can(enEssai, 'equipe')).toBe(false);
+  });
+
+  test('LE piège du plan posé à la main : ni Stripe, ni essai, et pourtant PAS gelé', () => {
+    // Un studio Multi posé depuis /admin n'a AUCUN abonnement Stripe (la
+    // caisse ne sait pas encore l'encaisser) et la bêta offerte n'en aura
+    // jamais. Leur essai des 14 jours est fini depuis des mois : sans les
+    // nommer explicitement, ils tombent en `trial_expired` → compte GELÉ →
+    // 402 sur toute écriture. C'est ce qui serait arrivé au PREMIER studio de
+    // la bêta ; trouvé par la preuve, pas par la relecture.
+    const vieilEssai = new Date(Date.now() - 200 * 86400000).toISOString();
+    for (const plan of ['multi', 'multi_free']) {
+      const studio = { plan, trial_started_at: vieilEssai, stripe_subscription_status: null };
+      expect(getAccountStatus(studio), plan).toBe('subscribed');
+      expect(isAccountFrozen(studio), plan).toBe(false);
+      expect(isReadOnly(studio), plan).toBe(false);
+      expect(can(studio, 'equipe'), plan).toBe(true);
+    }
+    // Et un Essentiel dans la même situation reste gelé : on n'a rien ouvert
+    // au passage.
+    const solo = { plan: 'solo', trial_started_at: vieilEssai, stripe_subscription_status: null };
+    expect(isAccountFrozen(solo)).toBe(true);
   });
 
   test('premium reste mappé sur pro : les deux alias cohabitent', () => {

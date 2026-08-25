@@ -344,8 +344,15 @@ try {
     const noteVue = await prof.locator('.cp-note').innerText().catch(() => '');
     assert(/Lea est venue/.test(noteVue), 'la prof LIT le mot de l\'invitée sur la fiche de la séance');
     await prof.screenshot({ path: join(OUT, 'H-cote-prof.png'), fullPage: false });
+    // Clic + ATTENTE DE L'EFFET, pas un délai fixe : le `confirm()` et la
+    // requête se courent après, et une fois sur dix la relecture en base
+    // arrivait avant l'écriture (KO fantôme, produit intact).
     await prof.click('.cp-revoquer');
-    await prof.waitForTimeout(2000);
+    for (let i = 0; i < 15; i++) {
+      const { data } = await admin.from('liens_pointage').select('revoque_at').eq('id', lienId).maybeSingle();
+      if (data?.revoque_at) break;
+      await attendre(600);
+    }
 
     const { data: lienRevoque } = await admin.from('liens_pointage')
       .select('revoque_at').eq('id', lienId).maybeSingle();

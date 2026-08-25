@@ -36,10 +36,10 @@ const NAV_SECTIONS = [
   {
     title: 'Communication',
     items: [
-      { href: '/messagerie',     label: 'Messagerie',      icon: MessageSquare, badge: true },
-      { href: '/sondages',       label: 'Sondage planning', icon: ClipboardList },
-      { href: '/essais',         label: 'Cours d\'essai',   icon: Sparkles },
-      { href: '/liste-attente',  label: 'Liste d\'attente', icon: Clock },
+      { href: '/messagerie',     label: 'Messagerie',      icon: MessageSquare, badge: true, perm: 'messagerie' },
+      { href: '/sondages',       label: 'Sondage planning', icon: ClipboardList, perm: 'eleves_voir' },
+      { href: '/essais',         label: 'Cours d\'essai',   icon: Sparkles,      perm: 'eleves_voir' },
+      { href: '/liste-attente',  label: 'Liste d\'attente', icon: Clock,         perm: 'eleves_voir' },
     ],
   },
 ];

@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useMoi } from '@/components/studio/StudioProvider';
+import { useMoi, useMembre } from '@/components/studio/StudioProvider';
+import { peut } from '@/lib/studio-membre';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -23,6 +24,7 @@ import { can } from '@/lib/plan-guard';
 
 export default function DashboardClient({ profile, coursDuJour, nbClients, nbCoursTotal, revenusMois, alertes, coutsMois, hasSondage = false, nbCasATraiter = 0, nbInvites = 0, nbOffres = 0, nbVentes = 0, espacesEleve = [] }) {
   const moi = useMoi();
+  const membre = useMembre();
   const vocab = getVocabulaire(profile?.metier || 'yoga', profile?.vocabulaire);
   // On salue la personne connectée, pas le studio : une prof invitée voyait
   // « Bonjour Maude ! » avec l'avatar de la propriétaire (constaté sur la
@@ -299,7 +301,11 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
           individuelles, pour ne pas dupliquer l'info.
           Couleurs = catégorie métier (cf. uxui-bible §02 Bento Grid). */}
       <div className="dash-bento animate-slide-up">
-        {/* Grosse tuile : Revenus du mois (KPI principal — la boussole prof) */}
+        {/* Grosse tuile : Revenus du mois (KPI principal — la boussole prof).
+            Masquée à qui n'a pas le droit de voir l'argent (lot 3 multi-prof) :
+            la RLS lui rendrait 0 €, et un « Revenus ce mois : 0 € » affiché à
+            une prof invitée est un chiffre FAUX, pas une porte fermée. */}
+        {peut(membre, 'argent_voir') && (
         <Link href="/revenus" className="bento-cell bento-cell--main">
           <div>
             <div className="bento-icon"><BarChart3 size={20} /></div>
@@ -309,6 +315,7 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
             <div className="bento-value">{formatMontant(revenusMois)}</div>
           </div>
         </Link>
+        )}
 
         {/* Agenda — séances aujourd'hui → ouvre directement la VUE JOUR */}
         <Link href="/agenda?vue=jour" className="bento-cell bento-cell--agenda">
