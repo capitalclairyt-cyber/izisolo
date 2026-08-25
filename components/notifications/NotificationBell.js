@@ -20,6 +20,9 @@ const TYPE_CONFIG = {
   // Types qui existaient sans style ni action (audit 2026-07-25)
   liste_attente:    { color: '#0d9488', bg: '#f0fdfa', border: '#99f6e4' },
   pointage_rappel:  { color: '#4f46e5', bg: '#eef2ff', border: '#c7d2fe' },
+  // v100 : style + clic + bouton posés EN MÊME TEMPS que le type (la leçon
+  // d'offre_demande, née muette et découverte par la prof elle-même).
+  pointage_invite:  { color: '#0369a1', bg: '#f0f9ff', border: '#bae6fd' },
   annulation:       { color: '#be123c', bg: '#fff1f2', border: '#fecdd3' },
   regle_match:      { color: '#a16207', bg: '#fefce8', border: '#fde047' },
 };
@@ -209,6 +212,13 @@ export default function NotificationBell() {
       return;
     }
 
+    // Pointage confié (v100) — la séance, pour voir ce qui a été coché et lire
+    // le mot laissé par la personne invitée.
+    if (notif.type === 'pointage_invite') {
+      router.push(data.cours_id ? `/pointage/${data.cours_id}` : '/agenda');
+      return;
+    }
+
     // Annulation élève — l'agenda du jour concerné.
     if (notif.type === 'annulation') {
       const d = data.date || data.cours_date;
@@ -289,6 +299,12 @@ export default function NotificationBell() {
             <button className="nb-action-btn primary"
                     onClick={() => handleAction(notif, 'voir')}>
               <ExternalLink size={12} /> Pointer
+            </button>
+          )}
+          {notif.type === 'pointage_invite' && (
+            <button className="nb-action-btn secondary"
+                    onClick={() => handleAction(notif, 'voir')}>
+              <ExternalLink size={12} /> Voir la séance
             </button>
           )}
           {(notif.type === 'annulation' || notif.type === 'regle_match') && (

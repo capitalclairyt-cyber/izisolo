@@ -18,6 +18,9 @@ const PUBLIC_ROUTES = [
   '/mot-de-passe-oublie', '/nouveau-mot-de-passe',
   '/auth/',                 // /auth/callback Supabase
   '/p/',                    // portails publics studio (sondages, cours, espace, etc.)
+  '/pointage-invite/',      // lien de pointage confié (v100) : la remplaçante n'a PAS
+                            // de compte — sans cette ligne, le default-deny la
+                            // renverrait sur /login (le piège §12, déjà mordu 2×)
   '/embed/',                // planning intégrable iframé sur les sites des profs (B2g)
   '/widget.js',             // loader du planning intégrable, chargé par les sites tiers (B2g)
   '/legal/',                // CGU/CGV/Mentions/RGPD

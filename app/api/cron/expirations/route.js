@@ -93,6 +93,21 @@ export const GET = withRoute({ auth: 'cron' }, async () => {
     console.error('[cron/expirations] purge erreurs_app:', e?.message);
   }
 
+  // ── Purge des liens de pointage morts (v100) ─────────────────────────────
+  // Un lien expiré ou révoqué depuis plus de 90 jours n'apprend plus rien à
+  // personne : on garde le trimestre (« qui a pointé en septembre ? ») puis on
+  // efface. Les liens ENCORE valables ne sont jamais touchés.
+  try {
+    const il90jours = new Date(Date.now() - 90 * 86400000).toISOString();
+    await supabaseAdmin
+      .from('liens_pointage')
+      .delete()
+      .lt('expire_at', il90jours)
+      .lt('created_at', il90jours);
+  } catch (e) {
+    console.error('[cron/expirations] purge liens_pointage:', e?.message);
+  }
+
   // ── Purge des compteurs de rate-limit (v72) ──────────────────────────────
   // Les fenêtres font 1h max : une ligne de plus de 2 jours est morte.
   try {

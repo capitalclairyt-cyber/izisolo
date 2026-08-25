@@ -21,6 +21,7 @@ import {
 } from '@/lib/serie-jour';
 import TypeCoursHint from '@/components/cours/TypeCoursHint';
 import CouvertureCours from '@/components/cours/CouvertureCours';
+import ConfierPointage from '@/components/cours/ConfierPointage';
 import AttachmentPicker from '@/components/messagerie/AttachmentPicker';
 import { resoudreCarnetApplicable } from '@/lib/carnet-resolution';
 import { sanitizeLienVisio } from '@/lib/visio';
@@ -1049,6 +1050,10 @@ export default function CoursDetailClient({ cours, presences, lieux, profile, nb
           onChoisirType={() => setEditing(true)}
         />
       )}
+
+      {/* Confier le pointage à quelqu'un sans compte (v100) — replié, et muet
+          tant qu'on ne l'ouvre pas. Masqué en édition, comme la couverture. */}
+      {!editing && <ConfierPointage cours={cours} />}
 
       </div>{/* /cours-left */}
       <div className="cours-right">

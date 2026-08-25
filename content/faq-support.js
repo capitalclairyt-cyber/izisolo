@@ -157,4 +157,11 @@ export const FAQ_SUPPORT = [
     a: "Oui, comme le planning : Paramètres → Portail public → « Ma page », bloc « Et tes offres, si tu veux ». Tu copies une ligne de code et tu la colles dans un bloc HTML de ton site. Tes offres actives s'affichent avec leur prix, et un clic emmène ton élève sur tes tarifs IziSolo où elle peut payer en ligne ou te demander l'offre. Les deux blocs prennent les mêmes couleurs, pour qu'ils aillent ensemble sur ta page.",
     lien: { href: '/aide#page-publique', label: 'Voir le pas-à-pas' },
   },
+  {
+    // Lien de pointage confié (v100, 2026-08-25). AJOUTÉE EN FIN DE LISTE :
+    // les ancres /support#faq-N sont indexées par position.
+    q: "Je me fais remplacer : comment ma collègue peut-elle pointer sans avoir de compte ?",
+    a: "Ouvre la séance concernée, puis « Confier le pointage » : tu crées un lien à lui envoyer par SMS ou par message. Elle l'ouvre sur son téléphone et pointe présent, absent ou excusé, sans compte et sans mot de passe. Elle ne voit que les prénoms et les noms de ta liste : ni téléphone, ni email, ni carnet, ni montant. Tu choisis jusqu'à quand le lien reste valable (fin de journée, demain soir, 7 jours), tu peux le désactiver quand tu veux, et tu reçois une notification dès qu'il sert. Une chose qu'elle ne peut pas faire : ajouter ou retirer quelqu'un de la liste — ces gestes touchent aux carnets et aux places. Si une élève arrive à l'improviste, elle te laisse un mot que tu retrouves au même endroit.",
+    lien: { href: '/aide#pointage', label: 'Voir le pas-à-pas' },
+  },
 ];
