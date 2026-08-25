@@ -176,6 +176,28 @@ export default function PagePubliqueSection({ profile, setProfile, setDirty }) {
           </a>
         )}
       </div>
+
+      {/* Où atterrit chaque champ. Retour Melyflow (2026-08-25) : elle avait
+          tout rempli, tout était bien enregistré et bien rendu, mais réparti
+          dans trois onglets qu'elle n'a pas ouverts. Elle a conclu que son
+          travail était perdu, le jour de son inscription. Un formulaire qui ne
+          dit pas où va ce qu'on y écrit fabrique ce malentendu. */}
+      <p className="page-public-ou">
+        Ta <strong>bio</strong> s&apos;affiche en accroche dès l&apos;accueil, et en entier dans
+        l&apos;onglet « À propos ». Tes <strong>réseaux</strong> sont en pied de page, visibles
+        partout. Ton <strong>adresse</strong>, tes <strong>horaires</strong> et ta{' '}
+        <strong>FAQ</strong> vivent dans l&apos;onglet « Infos ». Le bouton <strong>Voir</strong>
+        {' '}ci-dessus ouvre ta page telle que tes élèves la découvrent.
+      </p>
+
+      <style jsx global>{`
+        .page-public-ou {
+          margin: 0 0 16px; padding: 11px 13px; border-radius: 11px;
+          font-size: 0.84rem; line-height: 1.6;
+          background: var(--brand-50, #fdf8f1); border: 1px solid var(--brand-100, #fbf1e6);
+          color: var(--text-secondary);
+        }
+      `}</style>
       <p className="section-desc">
         Tout ce que tes futur·e·s élèves voient sur <strong>{publicUrl || 'ta page'}</strong>. Tous les champs sont optionnels — laisse vide ce que tu ne veux pas montrer.
       </p>

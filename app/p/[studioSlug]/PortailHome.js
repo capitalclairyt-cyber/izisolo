@@ -217,6 +217,17 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
 
   const hasAbout = !!(profile.bio || profile.philosophie || profile.formations || profile.annees_experience);
   const hasSocial = !!(profile.instagram_url || profile.facebook_url || profile.website_url);
+  // Les deux premières phrases de la bio, sans couper un mot en deux. On
+  // s'arrête à une frontière de phrase quand il y en a une avant 220
+  // caractères, sinon au dernier espace — jamais au milieu d'un mot.
+  const { accroche: accrocheBio, tronquee: bioTronquee } = (() => {
+    const brut = String(profile.bio || '').trim();
+    if (!brut) return { accroche: '', tronquee: false };
+    if (brut.length <= 220) return { accroche: brut, tronquee: false };
+    const coupePhrase = brut.slice(0, 220).lastIndexOf('. ');
+    const coupe = coupePhrase > 90 ? coupePhrase + 1 : brut.slice(0, 220).lastIndexOf(' ');
+    return { accroche: brut.slice(0, coupe > 0 ? coupe : 220).trim() + ' …', tronquee: true };
+  })();
   const faq = Array.isArray(profile.faq_publique) ? profile.faq_publique.filter(f => f?.q && f?.a) : [];
   const adresseComplete = [profile.adresse, profile.code_postal, profile.ville].filter(Boolean).join(', ');
   const mapsQuery = adresseComplete ? encodeURIComponent(adresseComplete) : null;
@@ -330,6 +341,10 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
     }
     return days;
   }, [viewMode, weekStart, filteredForView]);
+
+  // Une semaine « creuse » = moins de la moitié des jours occupés. Au-delà, la
+  // grille complète reste plus lisible qu'une liste de trous.
+  const semaineCreuse = !!weekDays && weekDays.filter(d => d.cours.length > 0).length <= 3;
 
   // Prochain cours (le plus tôt, hors annulés, capacité dispo non requise)
   // Sert au CTA conversion "réserve maintenant" sous le hero.
@@ -576,6 +591,26 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
         </Link>
       )}
 
+      {/* Accroche « à propos » — retour Melyflow, 2026-08-25 : « j'ai renseigné
+          ma bio et mes réseaux mais rien n'apparaît sur mon portail ». Tout
+          était bien enregistré et bien rendu… dans DEUX autres onglets, que le
+          portail n'ouvre jamais par défaut. Elle a regardé son planning et
+          conclu que son travail était perdu.
+          Une bio est le premier argument d'une prof : la cacher derrière un
+          onglet coûte à la fois sa confiance et la conversion de ses élèves.
+          On en remonte les deux premières phrases ici, avec la porte vers la
+          suite. */}
+      {tab === 'cours' && profile.bio && (
+        <div className="portail-accroche">
+          <p>{accrocheBio}</p>
+          {bioTronquee && (
+            <button type="button" className="portail-accroche-lien" onClick={() => setTab('propos')}>
+              Lire la suite <ChevronRight size={13} />
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Onglets */}
       <div className="portail-tabs" role="tablist">
         <button
@@ -701,7 +736,15 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
       {/* Vue semaine : tous les jours affichés (même vides) */}
       {viewMode === 'week' && weekDays && (
         <div className="portail-week-grid">
-          {weekDays.map(day => (
+          {/* Les jours SANS séance sont masqués quand la semaine est creuse
+              (2026-08-25, en regardant le portail de Melyflow : elle n'enseigne
+              que le samedi, et ses visiteuses scrollaient cinq blocs « — »
+              avant d'atteindre le moindre cours — un studio qui a l'air vide
+              alors qu'il ne l'est pas).
+              On les garde quand la semaine est bien remplie : la grille
+              complète est alors lisible, et voir « rien le mercredi » est une
+              information utile. */}
+          {weekDays.filter(day => !semaineCreuse || day.cours.length > 0).map(day => (
             <div key={day.iso} className={`portail-week-day ${day.isToday ? 'is-today' : ''}`}>
               <div className="portail-week-day-label">
                 <span className="portail-week-day-name">{JOURS_LONG[day.date.getDay()]}</span>
@@ -713,6 +756,11 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
               ) : day.cours.map(c => renderCoursCarte(c))}
             </div>
           ))}
+          {semaineCreuse && filteredForView.length > 0 && (
+            <p className="portail-week-note">
+              Seuls les jours avec cours sont affichés.
+            </p>
+          )}
           {filteredForView.length === 0 && (
             <div className="portail-empty" style={{ marginTop: 8 }}>
               <p style={{ color: '#888', margin: 0 }}>Aucun cours cette semaine</p>
@@ -918,28 +966,6 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
           </section>
         )}
 
-        {hasSocial && (
-          <section className="portail-social reveal">
-            <h2 className="portail-section-title">Suivre le studio</h2>
-            <div className="portail-social-row">
-              {profile.instagram_url && (
-                <a href={profile.instagram_url} target="_blank" rel="noopener noreferrer" className="portail-social-link" aria-label="Instagram">
-                  <Instagram size={18} />
-                </a>
-              )}
-              {profile.facebook_url && (
-                <a href={profile.facebook_url} target="_blank" rel="noopener noreferrer" className="portail-social-link" aria-label="Facebook">
-                  <Facebook size={18} />
-                </a>
-              )}
-              {profile.website_url && (
-                <a href={profile.website_url} target="_blank" rel="noopener noreferrer" className="portail-social-link" aria-label="Site web">
-                  <Globe size={18} />
-                </a>
-              )}
-            </div>
-          </section>
-        )}
       </>}
 
       {/* Section "Acheter en ligne" — affichée uniquement si au moins 1 offre a un Stripe Payment Link */}
@@ -987,7 +1013,49 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
         </div>
       )}
 
+      {/* Suivre le studio — SORTI de l'onglet « Infos » le 2026-08-25 (retour
+          Melyflow) : trois liens ne sont pas du contenu long, ils n'ont rien à
+          faire derrière un onglet que personne n'ouvre. Rendus UNE fois, en
+          pied, visibles depuis n'importe quel onglet. */}
+      {hasSocial && (
+        <section className="portail-social reveal">
+          <div className="portail-social-row">
+            {profile.instagram_url && (
+              <a href={profile.instagram_url} target="_blank" rel="noopener noreferrer" className="portail-social-link" aria-label="Instagram">
+                <Instagram size={18} />
+              </a>
+            )}
+            {profile.facebook_url && (
+              <a href={profile.facebook_url} target="_blank" rel="noopener noreferrer" className="portail-social-link" aria-label="Facebook">
+                <Facebook size={18} />
+              </a>
+            )}
+            {profile.website_url && (
+              <a href={profile.website_url} target="_blank" rel="noopener noreferrer" className="portail-social-link" aria-label="Site web">
+                <Globe size={18} />
+              </a>
+            )}
+          </div>
+        </section>
+      )}
+
       <style jsx global>{`
+        /* ─── Accroche « à propos » sur l'accueil (2026-08-25) ──────────────
+           Une bio est le premier argument d'une prof : elle ne doit pas vivre
+           uniquement derrière un onglet. */
+        .portail-accroche {
+          margin: 14px 0 4px; padding: 14px 16px; border-radius: 14px;
+          background: var(--brand-50, #fdf8f1); border: 1px solid var(--brand-100, #fbf1e6);
+        }
+        .portail-accroche p {
+          margin: 0; font-size: 0.9rem; line-height: 1.6; color: var(--text-secondary);
+        }
+        .portail-accroche-lien {
+          display: inline-flex; align-items: center; gap: 3px; margin-top: 6px;
+          background: none; border: none; padding: 0; cursor: pointer;
+          font: inherit; font-size: 0.82rem; font-weight: 600; color: var(--brand);
+        }
+
         /* ─── Acheter en ligne (offres à Payment Link Stripe) ───────────────
            Styles nés le 2026-07-28 : la section existait depuis v13 SANS
            aucune règle CSS (liens bleus nus) — invisible tant qu'aucun studio
@@ -1401,6 +1469,9 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
         .portail-pill:hover { border-color: #d4a0a0; color: #d4a0a0; }
         .portail-pill.active { background: #d4a0a0; border-color: #d4a0a0; color: white; }
 
+        .portail-week-note {
+          margin: 4px 0 0; font-size: 0.75rem; color: var(--text-muted); text-align: center;
+        }
         .portail-day-group { margin-bottom: 20px; }
         .portail-day-label {
           font-size: 0.8125rem; font-weight: 700; color: #888;
