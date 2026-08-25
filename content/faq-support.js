@@ -176,4 +176,10 @@ export const FAQ_SUPPORT = [
     a: "Dès que tu appartiens à plusieurs studios, le nom du studio en haut de la navigation devient un sélecteur : un clic et tu changes de maison, chaque studio garde ses élèves, son agenda et sa compta de son côté. Et si tu gères un studio à plusieurs profs : sur la fiche d'une séance, la carte « Qui donne cette séance ? » désigne l'intervenante. Tu peux alors limiter une prof au pointage de SES séances (Équipe → « Quelles séances peut-elle pointer ? »). Une séance que personne n'a prise en charge reste pointable par toute l'équipe.",
     lien: { href: '/aide#equipe', label: 'Voir le pas-à-pas' },
   },
+  {
+    // Question d'une prospecte Instagram, 2026-08-25 : le branding avant tout.
+    q: "Si j'intègre mon planning à mon site, mes élèves en sortent-elles ?",
+    a: "Pour consulter, non : le planning et tes tarifs s'affichent DANS ton site, dans tes couleurs. Au moment de réserver ou de payer, un nouvel onglet s'ouvre sur ta page IziSolo. Ce n'est pas un choix de facilité : les navigateurs bloquent les connexions et les paiements à l'intérieur d'une page intégrée dans un autre site, et aucun outil du secteur ne fait autrement. Ce que tu peux soigner, en revanche, c'est à quoi ressemble cette page : Paramètres → Portail public → « Ma page » → « Tes couleurs » (deux codes, ils habillent le bloc intégré ET ta page publique), plus ta photo de couverture, ta bio, et une couleur et une photo par type de cours.",
+    lien: { href: '/aide#page-publique', label: 'Voir le pas-à-pas' },
+  },
 ];

@@ -43,8 +43,31 @@ export default function PagePubliqueSection({ profile, setProfile, setDirty }) {
   // site. Les sélecteurs ci-dessous régénèrent les 2 snippets en direct.
   const [optAffichage, setOptAffichage] = useState('liste');
   const [optPalette, setOptPalette] = useState('');
-  const [optCouleur1, setOptCouleur1] = useState(''); // '#rrggbb' ou ''
-  const [optCouleur2, setOptCouleur2] = useState('');
+  // Pré-remplies depuis `couleurs_marque` (v104) : elles habillent MAINTENANT
+  // le portail en plus du bloc intégré, donc elles vivent en base et plus
+  // seulement dans le code collé sur son site.
+  const [optCouleur1, setOptCouleur1] = useState(profile?.couleurs_marque?.c1 ? '#' + profile.couleurs_marque.c1 : '');
+  const [optCouleur2, setOptCouleur2] = useState(profile?.couleurs_marque?.c2 ? '#' + profile.couleurs_marque.c2 : '');
+
+  // Enregistrement à part (route dédiée) : mêlée au gros payload des
+  // Paramètres, une colonne neuve ferait échouer TOUTE la sauvegarde tant que
+  // la migration n'est pas passée (le dégât de v95).
+  const enregistrerCouleurs = async (c1, c2) => {
+    try {
+      const res = await fetch('/api/profile/couleurs-marque', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ c1: c1 || null, c2: c2 || null }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        if (data.error) setAvertissementCouleurs(data.error);
+        return;
+      }
+      setAvertissementCouleurs('');
+    } catch { /* silencieux : le snippet, lui, porte déjà les couleurs */ }
+  };
+  const [avertissementCouleurs, setAvertissementCouleurs] = useState('');
 
   const attrs = [`data-studio="${studioSlug}"`];
   const urlParams = [];
@@ -242,20 +265,20 @@ export default function PagePubliqueSection({ profile, setProfile, setDirty }) {
                 <input
                   type="color"
                   value={optCouleur1 || '#b9794d'}
-                  onChange={e => setOptCouleur1(e.target.value)}
+                  onChange={e => { setOptCouleur1(e.target.value); enregistrerCouleurs(e.target.value, optCouleur2); }}
                   title="Couleur principale (titres, boutons)"
                   aria-label="Couleur principale"
                 />
                 <input
                   type="color"
                   value={optCouleur2 || optCouleur1 || '#b9794d'}
-                  onChange={e => setOptCouleur2(e.target.value)}
+                  onChange={e => { setOptCouleur2(e.target.value); enregistrerCouleurs(optCouleur1, e.target.value); }}
                   disabled={!optCouleur1}
                   title="Deuxième couleur (pastilles) — optionnelle"
                   aria-label="Deuxième couleur (optionnelle)"
                 />
                 {optCouleur1 && (
-                  <button type="button" className="emb-int-reset" onClick={() => { setOptCouleur1(''); setOptCouleur2(''); }}>
+                  <button type="button" className="emb-int-reset" onClick={() => { setOptCouleur1(''); setOptCouleur2(''); enregistrerCouleurs('', ''); }}>
                     Réinitialiser
                   </button>
                 )}
@@ -263,10 +286,17 @@ export default function PagePubliqueSection({ profile, setProfile, setDirty }) {
             </div>
           </div>
           <p className="form-hint" style={{ margin: '0 0 10px' }}>
-            Tes couleurs remplacent la palette (2 max) — les textes restent lisibles quoi
-            qu&apos;il arrive, les nuances sont dérivées automatiquement. Les codes ci-dessous
-            se mettent à jour : recolle le code sur ton site pour appliquer.
+            Tes couleurs remplacent la palette (2 max) et habillent AUSSI ta page publique,
+            pour que le bloc sur ton site et la page où arrivent tes élèves soient du même
+            monde. Les textes restent lisibles quoi qu&apos;il arrive : les nuances sont
+            dérivées avec un plancher de contraste. Les codes ci-dessous se mettent à jour,
+            recolle-les sur ton site pour appliquer le bloc.
           </p>
+          {avertissementCouleurs && (
+            <p className="form-hint" style={{ color: '#92400e', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 10, padding: '8px 10px', margin: '0 0 10px' }}>
+              {avertissementCouleurs}
+            </p>
+          )}
           <div className="emb-int-row">
             <div className="emb-int-label">Recommandé — s'ajuste tout seul à la hauteur du planning :</div>
             <div className="emb-int-snippet">

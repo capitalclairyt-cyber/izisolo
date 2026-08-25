@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { estHoteAdmin } from '@/lib/admin-host';
+import { slugDepuisHote, cheminReecrit } from '@/lib/studio-host';
 
 // Routes publiques (pas besoin d'auth)
 //   - Auth flows : login, register, onboarding, mot de passe
@@ -105,6 +106,26 @@ export async function proxy(request) {
     }
     // On laisse continuer : login/auth passent par PUBLIC_ROUTES, /admin par le
     // contrôle d'auth générique en bas (non connecté → /login?redirect=/admin).
+  }
+
+  // ── Hôte d'un studio (mon-studio.izisolo.fr) ─────────────────────────────
+  // RÉÉCRITURE, pas redirection : l'adresse reste celle de la prof, ce qui est
+  // tout l'intérêt pour une prof dont le branding passe avant tout. Placée
+  // APRÈS l'hôte admin (capsule.) qui doit gagner, et AVANT le marketing : sur
+  // son sous-domaine, `/` n'est pas la landing IziSolo, c'est son portail.
+  //
+  // ⚠️ Zéro appel réseau ici (pas de vérification que le slug existe) : le
+  // proxy tourne sur CHAQUE requête. Un slug inconnu réécrit vers /p/<slug>,
+  // qui répond 404 — le bon comportement, au bon endroit.
+  const slugStudio = slugDepuisHote(host);
+  if (slugStudio) {
+    const cible = cheminReecrit(slugStudio, pathname);
+    if (cible) {
+      const url = request.nextUrl.clone();
+      url.pathname = cible;
+      return NextResponse.rewrite(url);
+    }
+    return NextResponse.next();
   }
 
   // ── Pages marketing : redirections légères, SANS appel réseau ────────────

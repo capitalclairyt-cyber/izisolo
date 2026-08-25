@@ -1,5 +1,7 @@
 import PortailLayoutClient from './PortailLayoutClient';
 import { fetchStudioPublic, ogPortail } from '@/lib/portail-metadata';
+import { createAdminClient } from '@/lib/supabase-admin';
+import { stylePortail } from '@/lib/couleurs-marque';
 
 /**
  * Layout server du portail élève.
@@ -43,12 +45,32 @@ export const viewport = {
 export default async function PortailLayout({ children, params }) {
   const { studioSlug } = await params;
 
+  // Les couleurs de marque (v104) : lecture SÉPARÉE, défensive, en admin
+  // (le portail est PUBLIC, il n'y a pas de session pour lire le profil).
+  // Sans la migration, `couleurs` reste null et le portail garde la palette
+  // du métier — exactement le comportement d'avant.
+  let couleurs = null;
+  try {
+    const admin = createAdminClient();
+    const { data, error } = await admin
+      .from('profiles')
+      .select('couleurs_marque')
+      .eq('studio_slug', studioSlug)
+      .maybeSingle();
+    if (!error) couleurs = stylePortail(data?.couleurs_marque);
+  } catch { /* pré-v104, ou service_role absente en local : palette par défaut */ }
+
   return (
     <>
       <link rel="apple-touch-icon" href="/icons/icon-192.png" />
-      <PortailLayoutClient studioSlug={studioSlug}>
-        {children}
-      </PortailLayoutClient>
+      {/* Style INLINE : il gagne sur les palettes [data-theme] de globals.css.
+          Les rôles sont dérivés avec un plancher de contraste, jamais la
+          couleur brute sur du texte (lib/embed-couleurs). */}
+      <div style={couleurs || undefined} data-marque={couleurs ? 'perso' : undefined}>
+        <PortailLayoutClient studioSlug={studioSlug}>
+          {children}
+        </PortailLayoutClient>
+      </div>
     </>
   );
 }
