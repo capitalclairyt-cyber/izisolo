@@ -19,7 +19,7 @@ export const runtime = 'nodejs';
  */
 
 export const POST = withRoute({ auth: 'active' }, async ({ request, params, auth }) => {
-  const { user } = auth;
+  const { studioId, user } = auth;
   const { coursId } = params;
   let body = {};
   try { body = await request.json(); } catch { /* body optionnel : annulation sans motif */ }
@@ -32,7 +32,7 @@ export const POST = withRoute({ auth: 'active' }, async ({ request, params, auth
     .from('cours')
     .select('id, nom, date, heure, lieu, est_annule, profile_id')
     .eq('id', coursId)
-    .eq('profile_id', user.id)
+    .eq('profile_id', studioId)
     .single();
 
   if (!cours) return Response.json({ error: 'Cours introuvable' }, { status: 404 });
@@ -44,7 +44,7 @@ export const POST = withRoute({ auth: 'active' }, async ({ request, params, auth
   const { data: profile } = await supabaseAdmin
     .from('profiles')
     .select('id, studio_nom, studio_slug, notifs_eleves, regles_metier')
-    .eq('id', user.id)
+    .eq('id', studioId)
     .single();
 
   const regleAnnul = getRegle({ regles_metier: profile?.regles_metier }, 'cours_annule_prof');
@@ -54,7 +54,7 @@ export const POST = withRoute({ auth: 'active' }, async ({ request, params, auth
     .from('cours')
     .update({ est_annule: true })
     .eq('id', coursId)
-    .eq('profile_id', user.id);
+    .eq('profile_id', studioId);
 
   if (updateErr) {
     reportError('[cours/annuler] update error:', updateErr);
@@ -66,7 +66,7 @@ export const POST = withRoute({ auth: 'active' }, async ({ request, params, auth
     .from('presences')
     .select('id, abonnement_id, statut_pointage, annulation_tardive, est_due, client:client_id(id, prenom, nom, email, telephone, notif_prefs)')
     .eq('cours_id', coursId)
-    .eq('profile_id', user.id);
+    .eq('profile_id', studioId);
 
   const dateStr = cours.date
     ? new Date(cours.date + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })
@@ -141,7 +141,7 @@ Désolé·e pour le désagrément, à très vite.`,
     if (regleAnnul.mode === 'manuel' || regleAnnul.choix === 'eleve_choisit') {
       try {
         await supabaseAdmin.from('cas_a_traiter').insert({
-          profile_id: user.id,
+          profile_id: studioId,
           case_type: 'cours_annule_prof',
           client_id: client.id,
           cours_id: coursId,
@@ -196,7 +196,7 @@ Désolé·e pour le désagrément, à très vite.`,
       .from('liste_attente')
       .select('id, email, nom')
       .eq('cours_id', coursId)
-      .eq('profile_id', user.id);
+      .eq('profile_id', studioId);
     for (const entry of enAttente || []) {
       if (entry.email && process.env.RESEND_API_KEY) {
         try {
@@ -220,7 +220,7 @@ Désolé·e pour le désagrément, à très vite.`,
       }
     }
     if ((enAttente || []).length > 0) {
-      await supabaseAdmin.from('liste_attente').delete().eq('cours_id', coursId).eq('profile_id', user.id);
+      await supabaseAdmin.from('liste_attente').delete().eq('cours_id', coursId).eq('profile_id', studioId);
     }
   } catch (e) { reportError('[annuler] purge liste attente (non-bloquant):', e?.message); }
 
@@ -257,7 +257,7 @@ Désolé·e pour le désagrément, à très vite.`,
         resolu_notes: 'Fermé automatiquement : la séance a été annulée par la prof.',
       })
       .eq('cours_id', coursId)
-      .eq('profile_id', user.id)
+      .eq('profile_id', studioId)
       .eq('case_type', 'annulation_hors_delai')
       .is('resolu_at', null);
   } catch (e) { reportError('[annuler] nettoyage dettes (non-bloquant):', e?.message); }

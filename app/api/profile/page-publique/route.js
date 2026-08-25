@@ -32,7 +32,7 @@ const draftSchema = z.object({
 });
 
 export const PATCH = withRoute({ auth: 'user' }, async ({ request, auth }) => {
-  const { user, supabase } = auth;
+  const { studioId, supabase } = auth;
   let body;
   try { body = await request.json(); } catch { return Response.json({ error: 'JSON invalide' }, { status: 400 }); }
   const parsed = draftSchema.safeParse(body);
@@ -43,7 +43,7 @@ export const PATCH = withRoute({ auth: 'user' }, async ({ request, auth }) => {
   const { error } = await supabase
     .from('profiles')
     .update({ page_publique_draft: parsed.data })
-    .eq('id', user.id);
+    .eq('id', studioId);
 
   if (error) {
     reportError('[page-publique] save draft error:', error);
@@ -53,7 +53,7 @@ export const PATCH = withRoute({ auth: 'user' }, async ({ request, auth }) => {
 });
 
 export const POST = withRoute({ auth: 'user' }, async ({ request, auth }) => {
-  const { user, supabase } = auth;
+  const { studioId, supabase } = auth;
   const url = new URL(request.url);
   const action = url.searchParams.get('action');
 
@@ -61,7 +61,7 @@ export const POST = withRoute({ auth: 'user' }, async ({ request, auth }) => {
   const { data: profile } = await supabase
     .from('profiles')
     .select('page_publique_draft')
-    .eq('id', user.id)
+    .eq('id', studioId)
     .single();
 
   if (action === 'publish') {
@@ -77,7 +77,7 @@ export const POST = withRoute({ auth: 'user' }, async ({ request, auth }) => {
         page_publique_draft: null,
         page_publique_published_at: new Date().toISOString(),
       })
-      .eq('id', user.id);
+      .eq('id', studioId);
     if (error) {
       reportError('[page-publique] publish error:', error);
       return Response.json({ error: 'Erreur publication' }, { status: 500 });
@@ -89,7 +89,7 @@ export const POST = withRoute({ auth: 'user' }, async ({ request, auth }) => {
     const { error } = await supabase
       .from('profiles')
       .update({ page_publique_draft: null })
-      .eq('id', user.id);
+      .eq('id', studioId);
     if (error) return Response.json({ error: 'Erreur suppression brouillon' }, { status: 500 });
     return Response.json({ ok: true });
   }

@@ -14,7 +14,7 @@ export const runtime = 'nodejs';
  * un paiement n'est jamais porté par deux factures).
  */
 export const GET = withRoute({ auth: 'active' }, async ({ request, auth }) => {
-  const { user, profile } = auth;
+  const { studioId, user, profile } = auth;
   const admin = createAdminClient();
 
   const url = new URL(request.url);
@@ -33,7 +33,7 @@ export const GET = withRoute({ auth: 'active' }, async ({ request, auth }) => {
     .from('clients')
     .select('id, prenom, nom, email, adresse, adresse_postale, ville')
     .eq('id', clientId)
-    .eq('profile_id', user.id)
+    .eq('profile_id', studioId)
     .single();
   if (cliErr || !client) return new Response('Fiche élève introuvable', { status: 404 });
 
@@ -41,7 +41,7 @@ export const GET = withRoute({ auth: 'active' }, async ({ request, auth }) => {
     const { data: paiements, error: payErr } = await admin
       .from('paiements')
       .select('id, intitule, montant, mode, date, date_encaissement, statut')
-      .eq('profile_id', user.id)
+      .eq('profile_id', studioId)
       .eq('client_id', client.id)
       .eq('statut', 'paid');
     if (payErr) throw payErr;

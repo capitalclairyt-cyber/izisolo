@@ -11,6 +11,7 @@ import {
 import { createClient } from '@/lib/supabase';
 import { useToast } from '@/components/ui/ToastProvider';
 import { formatMontant, matchRecherche } from '@/lib/utils';
+import { useStudioId } from '@/components/studio/StudioProvider';
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
 const MODES_PAIEMENT = [
@@ -35,6 +36,9 @@ function displayName(c) {
 
 // ─── Composant principal ──────────────────────────────────────────────────────
 export default function NouveauPaiement() {
+  // Le studio affiché (v101) : `user.id` ne suffit plus, une prof peut être
+  // invitée dans le studio d'une autre. Résolu une seule fois par le layout.
+  const studioId = useStudioId();
   const router      = useRouter();
   const searchParams = useSearchParams();
   const { toast }   = useToast();
@@ -158,12 +162,11 @@ export default function NouveauPaiement() {
     setLoading(true);
     try {
       const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
 
       // .select('id').single() pour récupérer l'ID — utile pour résoudre le
       // cas à traiter avec ressource_id si on vient d'un cas (?cas_id=...).
       const { data: paiement, error } = await supabase.from('paiements').insert({
-        profile_id: user.id,
+        profile_id: studioId,
         client_id:  (selectedClient !== 'inconnu' && selectedClient?.id) ? selectedClient.id : null,
         offre_id:   (selectedOffre?.id && selectedOffre.id !== '__libre__') ? selectedOffre.id : null,
         intitule:   intitule.trim(),

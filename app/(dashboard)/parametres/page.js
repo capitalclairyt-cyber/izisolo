@@ -23,6 +23,7 @@ import {
 } from '@/lib/urssaf';
 import { sanitizeReglementConfig } from '@/lib/reglement';
 import { sanitizeTonsParType, sanitizeVignettesParType } from '@/lib/vignette-cours';
+import { useStudioId } from '@/components/studio/StudioProvider';
 // import BackgroundDecor — retiré, plus utilisé (apparences supprimées)
 
 // Normalise une URL utilisateur :
@@ -213,6 +214,9 @@ const TABS = [
 
 
 export default function Parametres() {
+  // Le studio affiché (v101) : `user.id` ne suffit plus, une prof peut être
+  // invitée dans le studio d'une autre. Résolu une seule fois par le layout.
+  const studioId = useStudioId();
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
@@ -287,11 +291,10 @@ export default function Parametres() {
   useEffect(() => {
     const load = async () => {
       const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
 
       const [{ data: prof }, { data: lieuxData }] = await Promise.all([
-        supabase.from('profiles').select('*').eq('id', user.id).single(),
-        supabase.from('lieux').select('*').eq('profile_id', user.id).order('ordre'),
+        supabase.from('profiles').select('*').eq('id', studioId).single(),
+        supabase.from('lieux').select('*').eq('profile_id', studioId).order('ordre'),
       ]);
 
       // Message anniv : le défaut est injecté à l'affichage (pas en DB) pour
@@ -400,7 +403,6 @@ export default function Parametres() {
     }
     setLieuSaving(true);
     const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
 
     const payload = {
       nom: lieuEdit.nom.trim(),
@@ -423,7 +425,7 @@ export default function Parametres() {
       // Création
       const { data, error } = await supabase.from('lieux').insert({
         ...payload,
-        profile_id: user.id,
+        profile_id: studioId,
         ordre: lieux.length,
       }).select().single();
       if (error || !data) {

@@ -17,6 +17,7 @@ import {
   estPendantVacances, estJourFerie, getPeriodeVacances, ZONES_VACANCES,
   VACANCES_COUVERTURE_MAX, FERIES_COUVERTURE_MAX,
 } from '@/lib/vacances-scolaires';
+import { useStudioId } from '@/components/studio/StudioProvider';
 
 const JOURS_LABEL = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
 
@@ -40,6 +41,9 @@ function freqLabel(rec) {
 }
 
 export default function RecurrencesClient({ recurrences: initialRecurrences, cours: initialCours, profile, initialRecId = null, autoEdit = false, autoAjuster = false }) {
+  // Le studio affiché (v101) : `user.id` ne suffit plus, une prof peut être
+  // invitée dans le studio d'une autre. Résolu une seule fois par le layout.
+  const studioId = useStudioId();
   const router = useRouter();
   const { toast } = useToast();
   const [recurrences, setRecurrences] = useState(initialRecurrences);
@@ -245,7 +249,6 @@ export default function RecurrencesClient({ recurrences: initialRecurrences, cou
     if (!selected) return;
     setActionPending(iso);
     const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
     // La table recurrences ne porte pas tarif_unitaire (payable à la séance) :
     // on le recopie depuis le cours le plus récent de la série pour que
     // l'occurrence ajoutée garde le même modèle de paiement.
@@ -273,7 +276,7 @@ export default function RecurrencesClient({ recurrences: initialRecurrences, cou
     // « réservé abonnés, 8 places » devenait publique et sans jauge. On recopie
     // tout, y compris les champs domicile (v44) portés par la récurrence.
     const { data, error } = await supabase.from('cours').insert({
-      profile_id: user.id,
+      profile_id: studioId,
       nom: selected.nom,
       type_cours: selected.type_cours,
       date: iso,
@@ -303,7 +306,7 @@ export default function RecurrencesClient({ recurrences: initialRecurrences, cou
       // création de série) — erreur LUE (les inserts muets ont assez sévi).
       if (selected.domicile && selected.client_id && data) {
         const { error: presErr } = await supabase.from('presences').insert({
-          profile_id: user.id,
+          profile_id: studioId,
           cours_id: data.id,
           client_id: selected.client_id,
         });
@@ -531,7 +534,6 @@ export default function RecurrencesClient({ recurrences: initialRecurrences, cou
     setProlongeant(true);
     const supabase = createClient();
     try {
-      const { data: { user } } = await supabase.auth.getUser();
 
       // ── Réduction : suppression des occurrences vides au-delà de la fin ──
       let nbSupprimees = 0;
@@ -565,7 +567,7 @@ export default function RecurrencesClient({ recurrences: initialRecurrences, cou
         .maybeSingle();
 
       const rows = incluses.map(iso => ({
-        profile_id: user.id,
+        profile_id: studioId,
         nom: selected.nom,
         type_cours: selected.type_cours || null,
         date: iso,
@@ -601,7 +603,7 @@ export default function RecurrencesClient({ recurrences: initialRecurrences, cou
       // (comme à la création de la série) — erreur LUE.
       if (selected.domicile && selected.client_id && crees.length > 0) {
         const { error: presErr } = await supabase.from('presences').insert(
-          crees.map(c => ({ profile_id: user.id, cours_id: c.id, client_id: selected.client_id }))
+          crees.map(c => ({ profile_id: studioId, cours_id: c.id, client_id: selected.client_id }))
         );
         if (presErr) toast.warning('Séances créées, mais inscription de l\'élève échouée : ' + presErr.message);
       }

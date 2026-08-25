@@ -1,4 +1,5 @@
 import { createServerClient } from '@/lib/supabase-server';
+import { resoudreStudioActif } from '@/lib/studio-actif';
 import ClientsClient from './ClientsClient';
 
 // Boucle .range() (AUDIT-PERF cat 2.8) : le select nu plafonne à 1000 fiches
@@ -24,6 +25,7 @@ async function fetchTousLesClients(supabase, profileId) {
 export default async function ClientsPage() {
   const supabase = await createServerClient();
   const { data: { user } } = await supabase.auth.getUser();
+  const { studioId } = await resoudreStudioActif(supabase, user);
 
   const [
     { data: profile },
@@ -31,7 +33,7 @@ export default async function ClientsPage() {
     { data: statuts },
     { data: segments, error: segmentsError },
   ] = await Promise.all([
-    supabase.from('profiles').select('metier, vocabulaire, niveaux, sources, studio_slug, studio_nom, prenom').eq('id', user.id).single(),
+    supabase.from('profiles').select('metier, vocabulaire, niveaux, sources, studio_slug, studio_nom, prenom').eq('id', studioId).single(),
     fetchTousLesClients(supabase, user.id),
     // Statut de compte (RPC v67) — dégrade proprement si la migration n'est pas
     // appliquée (rpc renvoie une erreur → statuts null → aucun badge « actif »).

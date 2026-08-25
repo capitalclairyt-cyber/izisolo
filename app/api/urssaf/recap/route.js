@@ -26,7 +26,7 @@ import { historique, ecartDepuisDeclaration } from '@/lib/declaration-archive';
 // ============================================================================
 
 export const GET = withRoute({ auth: 'user' }, async ({ request, auth }) => {
-  const { user, supabase } = auth;
+  const { studioId, user, supabase } = auth;
   const url = new URL(request.url);
   const today = aujourdhuiParis();
 
@@ -34,7 +34,7 @@ export const GET = withRoute({ auth: 'user' }, async ({ request, auth }) => {
   let configBrute = null;
   let migrationManquante = false;
   try {
-    const { data, error } = await supabase.from('profiles').select('urssaf_config').eq('id', user.id).single();
+    const { data, error } = await supabase.from('profiles').select('urssaf_config').eq('id', studioId).single();
     if (error) throw error;
     configBrute = data?.urssaf_config ?? null;
   } catch {
@@ -58,7 +58,7 @@ export const GET = withRoute({ auth: 'user' }, async ({ request, auth }) => {
     const { data: lot, error } = await supabase
       .from('paiements')
       .select('id, montant, mode, date, date_encaissement, commission_montant')
-      .eq('profile_id', user.id)
+      .eq('profile_id', studioId)
       .eq('statut', 'paid')
       .or(filtreDateComptable(periode.from, periode.to))
       .order('date', { ascending: true })
@@ -85,7 +85,7 @@ export const GET = withRoute({ auth: 'user' }, async ({ request, auth }) => {
     const { data, error } = await supabase
       .from('declarations_urssaf')
       .select('periode_id, consultations, derniere_consultation_at, declaree_at, montant_declare')
-      .eq('profile_id', user.id)
+      .eq('profile_id', studioId)
       .order('periode_debut', { ascending: false })
       .limit(24);
     if (error) throw error;

@@ -3,7 +3,7 @@ import { withRoute } from '@/lib/api-route';
 import { wantsNotif } from '@/lib/notif-prefs';
 
 export const POST = withRoute({ auth: 'user' }, async ({ auth }) => {
-  const { user, supabase } = auth;
+  const { studioId, supabase } = auth;
 
   // Préférences unifiées (canal 'inapp' = cloche) + anniversaire (feature à
   // part) — profil déjà chargé par requireAuth (select *), pas de re-requête.
@@ -25,7 +25,7 @@ export const POST = withRoute({ auth: 'user' }, async ({ auth }) => {
     const { data: clientsB } = await supabase
       .from('clients')
       .select('id, prenom, nom, date_naissance')
-      .eq('profile_id', user.id)
+      .eq('profile_id', studioId)
       .not('date_naissance', 'is', null);
 
     for (const c of clientsB || []) {
@@ -35,7 +35,7 @@ export const POST = withRoute({ auth: 'user' }, async ({ auth }) => {
       if (!isToday && !isTom) continue;
 
       toUpsert.push({
-        profile_id: user.id,
+        profile_id: studioId,
         type:       'anniversaire',
         titre:      isToday
           ? `🎂 Anniversaire de ${c.prenom} ${c.nom} aujourd'hui !`
@@ -62,14 +62,14 @@ export const POST = withRoute({ auth: 'user' }, async ({ auth }) => {
   const { data: retards } = await supabase
     .from('paiements')
     .select('id, intitule, montant, date, client_id, clients(prenom, nom)')
-    .eq('profile_id', user.id)
+    .eq('profile_id', studioId)
     .neq('statut', 'paid')
     .lte('date', seuilAgo.toISOString().split('T')[0]);
 
   for (const p of retards || []) {
     const jours = Math.floor((today - new Date(p.date)) / 86400000);
     toUpsert.push({
-      profile_id: user.id,
+      profile_id: studioId,
       type:       'paiement_retard',
       titre:      `💶 Paiement en attente — ${p.clients?.prenom} ${p.clients?.nom}`,
       corps:      `${p.intitule} · ${p.montant} € · en attente depuis ${jours} jour(s)`,
@@ -93,7 +93,7 @@ export const POST = withRoute({ auth: 'user' }, async ({ auth }) => {
   const { data: carnets } = await supabase
     .from('abonnements')
     .select('id, type, seances_total, seances_utilisees, client_id, offres(nom), clients(prenom, nom)')
-    .eq('profile_id', user.id)
+    .eq('profile_id', studioId)
     .eq('statut', 'actif')
     .not('seances_total', 'is', null)
     .gt('seances_total', 1);
@@ -106,7 +106,7 @@ export const POST = withRoute({ auth: 'user' }, async ({ auth }) => {
     const reste = ab.seances_total - (ab.seances_utilisees || 0);
     if (reste > seuilSeances) continue; // seulement les carnets presque/déjà finis
     toUpsert.push({
-      profile_id: user.id,
+      profile_id: studioId,
       type:       'carnet_epuise',
       titre:      reste <= 0
         ? `📋 Carnet terminé — ${ab.clients?.prenom} ${ab.clients?.nom}`
@@ -130,7 +130,7 @@ export const POST = withRoute({ auth: 'user' }, async ({ auth }) => {
   const { data: expirant } = await supabase
     .from('abonnements')
     .select('id, date_fin, client_id, offres(nom), clients(prenom, nom)')
-    .eq('profile_id', user.id)
+    .eq('profile_id', studioId)
     .eq('statut', 'actif')
     .not('date_fin', 'is', null)
     .gte('date_fin', todayStr)
@@ -139,7 +139,7 @@ export const POST = withRoute({ auth: 'user' }, async ({ auth }) => {
   for (const ab of expirant || []) {
     const jours = Math.max(0, Math.floor((new Date(ab.date_fin) - today) / 86400000));
     toUpsert.push({
-      profile_id: user.id,
+      profile_id: studioId,
       type:       'abonnement_expire',
       titre:      `⏰ Abonnement expire bientôt — ${ab.clients?.prenom} ${ab.clients?.nom}`,
       corps:      `${ab.offres?.nom} · expire dans ${jours} jour(s)`,
@@ -172,7 +172,7 @@ export const POST = withRoute({ auth: 'user' }, async ({ auth }) => {
     const { data: demandes } = await supabase
       .from('cours_essai_demandes')
       .select('id, prenom, created_at, cours:cours_id(nom, date, heure)')
-      .eq('profile_id', user.id)
+      .eq('profile_id', studioId)
       .eq('statut', 'en_attente');
 
     for (const d of demandes || []) {
@@ -182,7 +182,7 @@ export const POST = withRoute({ auth: 'user' }, async ({ auth }) => {
         : '';
       const hStr = d.cours?.heure ? ' · ' + d.cours.heure.slice(0, 5).replace(':', 'h') : '';
       toUpsert.push({
-        profile_id: user.id,
+        profile_id: studioId,
         type:       'essai_demande',
         titre:      `✨ Demande d'essai à valider — ${d.prenom}`,
         corps:      `${coursNom}${dStr ? ` · ${dStr}` : ''}${hStr}`,
@@ -204,7 +204,7 @@ export const POST = withRoute({ auth: 'user' }, async ({ auth }) => {
   await supabase
     .from('notifications')
     .delete()
-    .eq('profile_id', user.id)
+    .eq('profile_id', studioId)
     .not('expires_at', 'is', null)
     .lt('expires_at', new Date().toISOString());
 
@@ -212,7 +212,7 @@ export const POST = withRoute({ auth: 'user' }, async ({ auth }) => {
   const { data: unread } = await supabase
     .from('notifications')
     .select('*')
-    .eq('profile_id', user.id)
+    .eq('profile_id', studioId)
     .eq('lu', false)
     .order('created_at', { ascending: false });
 

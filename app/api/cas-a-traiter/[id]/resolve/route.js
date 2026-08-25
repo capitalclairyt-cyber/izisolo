@@ -41,7 +41,7 @@ const ResolveBodySchema = z.object({
 });
 
 export const POST = withRoute({ auth: 'active' }, async ({ request, params, auth }) => {
-  const { user, supabase } = auth;
+  const { studioId, user, supabase } = auth;
   const { id } = params;
 
   // Validation body
@@ -60,7 +60,7 @@ export const POST = withRoute({ auth: 'active' }, async ({ request, params, auth
     .from('cas_a_traiter')
     .select('*, clients(prenom, nom, id), cours(nom, date, id, type_cours, tarif_unitaire, carnets_acceptes)')
     .eq('id', id)
-    .eq('profile_id', user.id)
+    .eq('profile_id', studioId)
     .single();
 
   if (fetchErr || !cas) {
@@ -129,7 +129,7 @@ export const POST = withRoute({ auth: 'active' }, async ({ request, params, auth
       resolu_par: user.id,
     })
     .eq('id', id)
-    .eq('profile_id', user.id)
+    .eq('profile_id', studioId)
     .select('*, clients(prenom, nom), cours(nom, date)')
     .single();
 

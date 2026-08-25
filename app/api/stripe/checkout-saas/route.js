@@ -49,7 +49,7 @@ const PRICE_IDS = {
 const STATUTS_ABONNEE = ['active', 'trialing', 'past_due'];
 
 export const POST = withRoute({ auth: 'user' }, async ({ request, auth }) => {
-  const { user, supabase } = auth;
+  const { studioId, user, supabase } = auth;
 
   // Validation
   let body;
@@ -81,7 +81,7 @@ export const POST = withRoute({ auth: 'user' }, async ({ request, auth }) => {
   const { data: profile } = await supabase
     .from('profiles')
     .select('id, stripe_customer_id, plan, trial_started_at, stripe_subscription_status, studio_slug, studio_nom')
-    .eq('id', user.id)
+    .eq('id', studioId)
     .single();
 
   // ── Trois refus, avant que Stripe ne voie quoi que ce soit ───────────────
@@ -119,7 +119,7 @@ export const POST = withRoute({ auth: 'user' }, async ({ request, auth }) => {
   // checkout rendait donc 500 pendant les dernières 24 h d'essai, c'est-à-dire
   // le jour de l'email de relance J-1, le pic de conversion.
   const subscriptionData = {
-    metadata: { profile_id: user.id, plan, periode },
+    metadata: { profile_id: studioId, plan, periode },
   };
 
   try {
@@ -134,7 +134,7 @@ export const POST = withRoute({ auth: 'user' }, async ({ request, auth }) => {
       customer_email: !profile?.stripe_customer_id ? user.email : undefined,
       client_reference_id: user.id,
       metadata: {
-        profile_id: user.id,
+        profile_id: studioId,
         plan,
         periode,
       },

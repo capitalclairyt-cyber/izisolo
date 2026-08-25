@@ -32,14 +32,14 @@ const updateSchema = z.object({
 });
 
 export const PATCH = withRoute({ auth: 'active', schema: updateSchema }, async ({ params, auth, body }) => {
-  const { user, supabase } = auth;
+  const { studioId, supabase } = auth;
   const { id } = params;
 
   const { data: paiement, error: fetchErr } = await supabase
     .from('paiements')
     .select('id')
     .eq('id', id)
-    .eq('profile_id', user.id)
+    .eq('profile_id', studioId)
     .single();
 
   if (fetchErr || !paiement) {
@@ -78,7 +78,7 @@ export const PATCH = withRoute({ auth: 'active', schema: updateSchema }, async (
     .from('paiements')
     .update(update)
     .eq('id', id)
-    .eq('profile_id', user.id);
+    .eq('profile_id', studioId);
 
   if (updateErr) {
     // Pré-v95 : la colonne exclu_compta n'existe pas encore. PostgREST refuse
@@ -92,7 +92,7 @@ export const PATCH = withRoute({ auth: 'active', schema: updateSchema }, async (
     if (colonneAbsente && update.exclu_compta !== undefined) {
       const { exclu_compta: _ignore, ...reste } = update;
       if (Object.keys(reste).length > 0) {
-        await supabase.from('paiements').update(reste).eq('id', id).eq('profile_id', user.id);
+        await supabase.from('paiements').update(reste).eq('id', id).eq('profile_id', studioId);
       }
       return Response.json({
         error: "Ce réglage arrive avec une mise à jour de la base qui n'est pas encore appliquée. Le reste de tes modifications est enregistré ; cet encaissement reste dans ta déclaration pour l'instant.",
@@ -106,14 +106,14 @@ export const PATCH = withRoute({ auth: 'active', schema: updateSchema }, async (
 });
 
 export const DELETE = withRoute({ auth: 'active' }, async ({ params, auth }) => {
-  const { user, supabase } = auth;
+  const { studioId, supabase } = auth;
   const { id } = params;
 
   const { data: paiement, error: fetchErr } = await supabase
     .from('paiements')
     .select('id, statut, abonnement_id, echeancier_id')
     .eq('id', id)
-    .eq('profile_id', user.id)
+    .eq('profile_id', studioId)
     .single();
 
   if (fetchErr || !paiement) {
@@ -144,7 +144,7 @@ export const DELETE = withRoute({ auth: 'active' }, async ({ params, auth }) => 
     .from('paiements')
     .delete()
     .eq('id', id)
-    .eq('profile_id', user.id);
+    .eq('profile_id', studioId);
 
   if (deleteErr) {
     reportError('[paiements DELETE] err:', deleteErr, { route: '/api/paiements/[id]' });

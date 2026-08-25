@@ -39,7 +39,7 @@ function normDate(s) {
 }
 
 export const POST = withRoute({ auth: 'active', schema: clientsImportSchema }, async ({ auth, body }) => {
-  const { user, profile, supabase } = auth;
+  const { studioId, profile, supabase } = auth;
 
   // 1. Nettoyage + validation ligne à ligne (rien ne fait échouer le lot)
   const cleaned = [];
@@ -65,7 +65,7 @@ export const POST = withRoute({ auth: 'active', schema: clientsImportSchema }, a
 
   // 2. Dédup par email : intra-fichier + contre la base existante
   const { data: existing } = await supabase
-    .from('clients').select('email').eq('profile_id', user.id);
+    .from('clients').select('email').eq('profile_id', studioId);
   const existingEmails = new Set((existing || []).map(c => (c.email || '').trim().toLowerCase()).filter(Boolean));
 
   const seen = new Set();
@@ -86,7 +86,7 @@ export const POST = withRoute({ auth: 'active', schema: clientsImportSchema }, a
   if (plan.limiteClients != null) {
     const { count } = await supabase
       .from('clients').select('id', { count: 'exact', head: true })
-      .eq('profile_id', user.id).in('statut', ['prospect', 'actif', 'fidele']);
+      .eq('profile_id', studioId).in('statut', ['prospect', 'actif', 'fidele']);
     const remaining = Math.max(0, plan.limiteClients - (count || 0));
     if (toInsert.length > remaining) {
       allowed = toInsert.slice(0, remaining);
@@ -96,7 +96,7 @@ export const POST = withRoute({ auth: 'active', schema: clientsImportSchema }, a
 
   // 4. Insertion. nom est NOT NULL → '' par défaut. statut/source posés.
   const payload = allowed.map(c => ({
-    profile_id: user.id,
+    profile_id: studioId,
     prenom: c.prenom || null,
     nom: c.nom || '',
     email: c.email || null,

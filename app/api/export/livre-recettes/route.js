@@ -20,7 +20,7 @@ import { reponsePdf } from '@/lib/facture-pdf';
 // ============================================================================
 
 export const GET = withRoute({ auth: 'user' }, async ({ request, auth }) => {
-  const { user, supabase } = auth;
+  const { studioId, user, supabase } = auth;
   const url = new URL(request.url);
   const today = aujourdhuiParis();
 
@@ -35,7 +35,7 @@ export const GET = withRoute({ auth: 'user' }, async ({ request, auth }) => {
     const { data: lot, error } = await supabase
       .from('paiements')
       .select('id, montant, mode, date, date_encaissement, intitule, clients(prenom, nom, nom_structure)')
-      .eq('profile_id', user.id)
+      .eq('profile_id', studioId)
       .eq('statut', 'paid')
       .or(filtreDateComptable(periode.from, periode.to))
       .order('date', { ascending: true })
@@ -80,7 +80,7 @@ export const GET = withRoute({ auth: 'user' }, async ({ request, auth }) => {
     const { data } = await supabase
       .from('profiles')
       .select('studio_nom, ville, facturation_raison_sociale, facturation_siret')
-      .eq('id', user.id)
+      .eq('id', studioId)
       .single();
     emetteur = {
       nom: data?.facturation_raison_sociale || data?.studio_nom || 'Mon studio',

@@ -33,6 +33,7 @@ import {
 } from '@/lib/inscription-serie';
 import { useToast } from '@/components/ui/ToastProvider';
 import { MODES_REGLEMENT, MODES_ORDRE, normaliserMode, labelMode } from '@/lib/modes-paiement';
+import { useStudioId } from '@/components/studio/StudioProvider';
 
 
 // ─────────────────────────────────────────────────────────
@@ -58,6 +59,9 @@ function isPtard(presence, paidIds) {
 //  Modal paiement rapide
 // ─────────────────────────────────────────────────────────
 function PaymentModal({ presence, coursNom, coursDate, montantDefaut = '', paiementExistant = null, onClose, onSaved, onDeleted, onPayerPlusTard, ptardAuto = false, ptardAutoNom = '' }) {
+  // Le studio affiché (v101) : ce sous-composant écrit sur profile_id, il lui
+  // faut donc la même réponse que le reste de l'écran.
+  const studioId = useStudioId();
   const client  = presence.clients || {};
   const abo     = presence.abonnements;
   const isEdit  = !!paiementExistant; // correction d'un encaissement déjà validé
@@ -98,9 +102,8 @@ function PaymentModal({ presence, coursNom, coursDate, montantDefaut = '', paiem
       if (extraMode) {
         // Règlement SUPPLÉMENTAIRE : ligne compta non liée à la présence (la
         // séance est déjà couverte par le 1er encaissement) — la note dit qui.
-        const { data: { user } } = await supabase.auth.getUser();
         let q = supabase.from('paiements').insert({
-          profile_id: user.id,
+          profile_id: studioId,
           client_id:  presence.client_id,
           intitule:   `${coursNom} — ${coursDate} (règlement supplémentaire)`,
           montant:    val,
@@ -127,9 +130,8 @@ function PaymentModal({ presence, coursNom, coursDate, montantDefaut = '', paiem
         if (error) throw error;
         onSaved({ id: paiementExistant.id, presence_id: presence.id, montant: val, mode });
       } else {
-        const { data: { user } } = await supabase.auth.getUser();
         let q = supabase.from('paiements').insert({
-          profile_id:  user.id,
+          profile_id:  studioId,
           client_id:   presence.client_id,
           presence_id: presence.id, // paiement à la séance (v65)
           intitule:    `${coursNom} — ${coursDate}`,
@@ -615,6 +617,9 @@ function PresenceCard({ presence, resolvedCarnet, estPayAsYouGo, paye, paiement,
 //  Composant principal
 // ─────────────────────────────────────────────────────────
 export default function PointageClient({ cours, presences: initialPresences, tousClients, profile, dettesParClient = {}, regles = [], initialPaiementsSeance = [] }) {
+  // Le studio affiché (v101) : `user.id` ne suffit plus, une prof peut être
+  // invitée dans le studio d'une autre. Résolu une seule fois par le layout.
+  const studioId = useStudioId();
   const vocab = getVocabulaire(profile?.metier || 'yoga', profile?.vocabulaire);
   const { toast } = useToast();
 
@@ -1157,14 +1162,13 @@ export default function PointageClient({ cours, presences: initialPresences, tou
     if (selectedToAdd.length === 0) return;
     setAddingBatch(true);
     const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
     // On ne pré-lie PLUS de carnet ici (avant : premier abo « actif » trouvé,
     // sans filtre type/expiration/pause — et le RPC v64 ne re-résout jamais une
     // présence déjà liée → mauvais carnet décompté). abonnement_id reste NULL :
     // la résolution officielle (spécifique d'abord, expire le plus tôt, gate
     // tarif_unitaire) se fait au pointage par le RPC.
     const rows = selectedToAdd.map(id => ({
-      profile_id:      user.id,
+      profile_id:      studioId,
       cours_id:        cours.id,
       client_id:       id,
       abonnement_id:   null,
@@ -1197,7 +1201,6 @@ export default function PointageClient({ cours, presences: initialPresences, tou
     if (!prenom.trim() || !nom.trim()) return;
     setAddingNew(true);
     const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
 
     // 1. Retrouver la fiche si l'email est déjà connu (dédup — seule porte de
     // création qui n'en avait pas), sinon créer. statut 'actif' assumé : la
@@ -1208,7 +1211,7 @@ export default function PointageClient({ cours, presences: initialPresences, tou
       const { data: existing } = await supabase
         .from('clients')
         .select('id, prenom, nom, statut, email, telephone')
-        .eq('profile_id', user.id)
+        .eq('profile_id', studioId)
         .ilike('email', escapeIlike(emailClean))
         .maybeSingle();
       if (existing) {
@@ -1227,7 +1230,7 @@ export default function PointageClient({ cours, presences: initialPresences, tou
       const { data: created, error: clientErr } = await supabase
         .from('clients')
         .insert({
-          profile_id: user.id,
+          profile_id: studioId,
           prenom:     prenom.trim(),
           nom:        nom.trim(),
           email:      emailClean,
@@ -1249,7 +1252,7 @@ export default function PointageClient({ cours, presences: initialPresences, tou
     const { data: pres, error: presErr } = await supabase
       .from('presences')
       .insert({
-        profile_id:      user.id,
+        profile_id:      studioId,
         cours_id:        cours.id,
         client_id:       client.id,
         pointee:         false,

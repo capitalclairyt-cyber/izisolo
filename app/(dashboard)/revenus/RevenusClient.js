@@ -16,6 +16,7 @@ import EmptyState from '@/components/ui/EmptyState';
 import DeclarationUrssaf from '@/components/revenus/DeclarationUrssaf';
 import { periodesDeclarables, aujourdhuiParis } from '@/lib/urssaf';
 import { normaliserMode, labelMode } from '@/lib/modes-paiement';
+import { useStudioId } from '@/components/studio/StudioProvider';
 
 const MODES = [
   { value: 'especes',  label: 'Espèces',  Icon: Banknote },
@@ -84,6 +85,9 @@ function inPeriode(dateStr, periode) {
 }
 
 export default function RevenusClient({ paiements: initialPaiements, seancesDues = [], annulationsDues = [] }) {
+  // Le studio affiché (v101) : `user.id` ne suffit plus, une prof peut être
+  // invitée dans le studio d'une autre. Résolu une seule fois par le layout.
+  const studioId = useStudioId();
   const { toast } = useToast();
   const [paiements, setPaiements] = useState(initialPaiements);
   // Annulations tardives « séance due » : la ligne se ferme via « Réglée »
@@ -334,7 +338,7 @@ export default function RevenusClient({ paiements: initialPaiements, seancesDues
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) { setOffresExport([]); return; }
         const { data } = await supabase
-          .from('offres').select('id, nom').eq('profile_id', user.id).order('nom');
+          .from('offres').select('id, nom').eq('profile_id', studioId).order('nom');
         setOffresExport(data || []);
       })();
     }
@@ -734,9 +738,8 @@ export default function RevenusClient({ paiements: initialPaiements, seancesDues
                 setSeanceSubmitting(true);
                 try {
                   const supabase = createClient();
-                  const { data: { user } } = await supabase.auth.getUser();
                   const { error } = await supabase.from('paiements').insert({
-                    profile_id: user.id,
+                    profile_id: studioId,
                     client_id: seanceModal.client_id,
                     presence_id: seanceModal.id, // même liaison v65 que l'encaissement du pointage
                     intitule: `${seanceModal.cours_nom}${seanceModal.date ? ` — ${formatDate(seanceModal.date)}` : ''}`,

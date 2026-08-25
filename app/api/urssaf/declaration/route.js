@@ -23,7 +23,7 @@ export const dynamic = 'force-dynamic';
  * bornée par RLS à ses propres lignes.
  */
 export const POST = withRoute({ auth: 'user' }, async ({ request, auth }) => {
-  const { user, supabase } = auth;
+  const { studioId, supabase } = auth;
   const { data, errorResponse } = await parseJsonBody(request, urssafDeclarationSchema);
   if (errorResponse) return errorResponse;
   const { periodeId, action, montant, snapshot } = data;
@@ -33,7 +33,7 @@ export const POST = withRoute({ auth: 'user' }, async ({ request, auth }) => {
   if (!periode) return Response.json({ error: 'Période inconnue.' }, { status: 400 });
 
   const base = {
-    profile_id: user.id,
+    profile_id: studioId,
     periode_id: periode.id,
     periode_label: periode.label,
     periode_debut: periode.from,
@@ -46,7 +46,7 @@ export const POST = withRoute({ auth: 'user' }, async ({ request, auth }) => {
   const { data: existante, error: eLire } = await supabase
     .from('declarations_urssaf')
     .select('id, consultations, declaree_at, montant_declare')
-    .eq('profile_id', user.id)
+    .eq('profile_id', studioId)
     .eq('periode_id', periode.id)
     .maybeSingle();
 

@@ -5,6 +5,7 @@ import { Play, Plus, Trash2, Edit3, X, Save, Eye, EyeOff, Loader2, Video } from 
 import { createClient } from '@/lib/supabase';
 import { useToast } from '@/components/ui/ToastProvider';
 import EmptyState from '@/components/ui/EmptyState';
+import { useStudioId } from '@/components/studio/StudioProvider';
 
 const ACCES_LABELS = {
   gratuit: 'Gratuit (tout le monde)',
@@ -13,6 +14,9 @@ const ACCES_LABELS = {
 };
 
 export default function VideosClient({ videosInit }) {
+  // Le studio affiché (v101) : `user.id` ne suffit plus, une prof peut être
+  // invitée dans le studio d'une autre. Résolu une seule fois par le layout.
+  const studioId = useStudioId();
   const { toast } = useToast();
   const [videos, setVideos] = useState(videosInit);
   const [editing, setEditing] = useState(null); // 'new' | id | null
@@ -57,9 +61,8 @@ export default function VideosClient({ videosInit }) {
     setSubmitting(true);
     try {
       const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
       const payload = {
-        profile_id: user.id,
+        profile_id: studioId,
         titre: form.titre.trim(),
         description: form.description.trim() || null,
         url_video: form.url_video.trim(),

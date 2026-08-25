@@ -25,6 +25,7 @@ import PhotoUploader from '@/components/ui/PhotoUploader';
 import HeureSelect from '@/components/ui/HeureSelect';
 import { useToast } from '@/components/ui/ToastProvider';
 import TypeCoursHint from '@/components/cours/TypeCoursHint';
+import { useStudioId } from '@/components/studio/StudioProvider';
 
 const FREQUENCES = [
   { value: 'unique', label: 'Cours unique', desc: 'Une seule date' },
@@ -209,6 +210,9 @@ function RecurrencePreview({ form }) {
 }
 
 function NouveauCoursInner() {
+  // Le studio affiché (v101) : `user.id` ne suffit plus, une prof peut être
+  // invitée dans le studio d'une autre. Résolu une seule fois par le layout.
+  const studioId = useStudioId();
   const router       = useRouter();
   const { toast }    = useToast();
   const searchParams = useSearchParams();
@@ -298,13 +302,12 @@ function NouveauCoursInner() {
   useEffect(() => {
     const load = async () => {
       const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
 
       const [{ data: prof }, { data: lieuxData }, { data: prosData }] = await Promise.all([
-        supabase.from('profiles').select('types_cours, metier, zone_vacances_default, visibilite_default').eq('id', user.id).single(),
-        supabase.from('lieux').select('*, clients:client_pro_id(id, nom_structure)').eq('profile_id', user.id).eq('actif', true).order('ordre'),
+        supabase.from('profiles').select('types_cours, metier, zone_vacances_default, visibilite_default').eq('id', studioId).single(),
+        supabase.from('lieux').select('*, clients:client_pro_id(id, nom_structure)').eq('profile_id', studioId).eq('actif', true).order('ordre'),
         supabase.from('clients').select('id, nom, prenom, nom_structure, type_client')
-          .eq('profile_id', user.id)
+          .eq('profile_id', studioId)
           .in('type_client', ['association', 'studio', 'entreprise', 'autre_pro']),
       ]);
 
@@ -332,7 +335,7 @@ function NouveauCoursInner() {
           .from('clients')
           .select('id, prenom, nom, adresse_postale, telephone, email')
           .eq('id', domicileClientId)
-          .eq('profile_id', user.id)
+          .eq('profile_id', studioId)
           .maybeSingle();
         if (cli) {
           setDomicileClient(cli);
@@ -351,7 +354,7 @@ function NouveauCoursInner() {
           .from('cours')
           .select('nom, type_cours, heure, duree_minutes, lieu_id, capacite_max, client_pro_id, notes, tarif_unitaire, carnets_acceptes, stripe_payment_link_unit, visibilite, domicile, format')
           .eq('id', fromId)
-          .eq('profile_id', user.id)
+          .eq('profile_id', studioId)
           .maybeSingle();
         if (source) {
           setForm(prev => ({
@@ -415,7 +418,6 @@ function NouveauCoursInner() {
     setSavingType(true);
     try {
       const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
       // Ajouter au groupe sans catégorie, en préservant les autres catégories
       let updatedRaw;
       const nullCat = rawTypesCours.find(cat => cat.categorie === null);
@@ -426,7 +428,7 @@ function NouveauCoursInner() {
       } else {
         updatedRaw = [...rawTypesCours, { categorie: null, items: [t] }];
       }
-      await supabase.from('profiles').update({ types_cours: updatedRaw }).eq('id', user.id);
+      await supabase.from('profiles').update({ types_cours: updatedRaw }).eq('id', studioId);
       setRawTypesCours(updatedRaw);
       setTypesCours(prev => [...prev, t]);
       setForm(prev => ({ ...prev, type_cours: t, nom: prev.nom || t }));
@@ -463,9 +465,8 @@ function NouveauCoursInner() {
   const addLieuInline = async () => {
     if (!newLieuNom.trim()) return;
     const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
     const { data, error } = await supabase.from('lieux').insert({
-      profile_id: user.id,
+      profile_id: studioId,
       nom: newLieuNom.trim(),
       client_pro_id: form.client_pro_id || null,
       ordre: lieux.length,
@@ -509,7 +510,6 @@ function NouveauCoursInner() {
     setLoading(true);
     try {
       const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
 
       const isDomicile = !!domicileClientId && !!domicileClient;
       const domicileFields = isDomicile ? {
@@ -521,7 +521,7 @@ function NouveauCoursInner() {
 
       if (form.frequence === 'unique') {
         const { data: newCours, error } = await supabase.from('cours').insert({
-          profile_id: user.id,
+          profile_id: studioId,
           nom: form.nom.trim(),
           type_cours: form.type_cours || null,
           date: form.date,
@@ -548,7 +548,7 @@ function NouveauCoursInner() {
           // Erreur LUE (audit 2026-07-25 : l'insert muet créait le cours SANS
           // l'élève, en silence — invisible dans son espace, v65 mort).
           const { error: presErr } = await supabase.from('presences').insert({
-            profile_id: user.id,
+            profile_id: studioId,
             cours_id: newCours.id,
             client_id: domicileClient.id,
           });
@@ -566,7 +566,7 @@ function NouveauCoursInner() {
           : (incluses.length > 0 ? toDateStr(incluses[incluses.length - 1]) : null);
 
         const { data: recurrence, error: recErr } = await supabase.from('recurrences').insert({
-          profile_id: user.id,
+          profile_id: studioId,
           nom: form.nom.trim(),
           type_cours: form.type_cours || null,
           heure: form.heure || null,
@@ -589,7 +589,7 @@ function NouveauCoursInner() {
 
         if (incluses.length > 0) {
           const coursACreer = incluses.map(d => ({
-            profile_id: user.id,
+            profile_id: studioId,
             nom: form.nom.trim(),
             type_cours: form.type_cours || null,
             date: toDateStr(d),
@@ -626,7 +626,7 @@ function NouveauCoursInner() {
           if (isDomicile && createdCours?.length > 0) {
             const { error: presErr } = await supabase.from('presences').insert(
               createdCours.map(c => ({
-                profile_id: user.id,
+                profile_id: studioId,
                 cours_id: c.id,
                 client_id: domicileClient.id,
               }))
@@ -639,7 +639,7 @@ function NouveauCoursInner() {
         if (form.zone_vacances && form.exclure_vacances) {
           await supabase.from('profiles')
             .update({ zone_vacances_default: form.zone_vacances })
-            .eq('id', user.id);
+            .eq('id', studioId);
         }
       }
 
@@ -666,11 +666,10 @@ function NouveauCoursInner() {
     if (form.frequence === 'unique') {
       try {
         const supabase = createClient();
-        const { data: { user } } = await supabase.auth.getUser();
         const { data: collision } = await supabase
           .from('cours')
           .select('id')
-          .eq('profile_id', user.id)
+          .eq('profile_id', studioId)
           .ilike('nom', form.nom.trim())
           .eq('date', form.date)
           .eq('heure', form.heure || '10:00')

@@ -15,7 +15,7 @@ export const runtime = 'nodejs';
  * justificatif d'une cliente qui le demande de vive voix.
  */
 export const GET = withRoute({ auth: 'active' }, async ({ params, auth }) => {
-  const { user, profile } = auth;
+  const { studioId, user, profile } = auth;
   const { paiementId } = params;
   const admin = createAdminClient();
 
@@ -23,7 +23,7 @@ export const GET = withRoute({ auth: 'active' }, async ({ params, auth }) => {
     .from('paiements')
     .select('id, intitule, montant, mode, date, date_encaissement, statut, client_id')
     .eq('id', paiementId)
-    .eq('profile_id', user.id)
+    .eq('profile_id', studioId)
     .single();
   if (payErr || !paiement) return new Response('Paiement introuvable', { status: 404 });
 
@@ -38,7 +38,7 @@ export const GET = withRoute({ auth: 'active' }, async ({ params, auth }) => {
     .from('clients')
     .select('id, prenom, nom, email, adresse, adresse_postale, ville')
     .eq('id', paiement.client_id)
-    .eq('profile_id', user.id)
+    .eq('profile_id', studioId)
     .single();
   if (cliErr || !client) return new Response('Fiche élève introuvable', { status: 404 });
 

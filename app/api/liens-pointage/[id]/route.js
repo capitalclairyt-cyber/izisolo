@@ -12,13 +12,13 @@ import { withRoute } from '@/lib/api-route';
  * est simplement introuvable.
  */
 export const DELETE = withRoute({ auth: 'user' }, async ({ params, auth }) => {
-  const { user, supabase } = auth;
+  const { studioId, supabase } = auth;
 
   const { data, error } = await supabase
     .from('liens_pointage')
     .update({ revoque_at: new Date().toISOString() })
     .eq('id', params.id)
-    .eq('profile_id', user.id)
+    .eq('profile_id', studioId)
     .is('revoque_at', null)      // re-cliquer ne réécrit pas la date de révocation
     .select('id')
     .maybeSingle();

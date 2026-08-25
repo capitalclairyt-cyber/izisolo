@@ -8,12 +8,12 @@ import { reportError } from '@/lib/report';
  * et les paiements sont libérés pour re-facturation. RPC atomique.
  */
 export const POST = withRoute({ auth: 'active' }, async ({ params, auth }) => {
-  const { user } = auth;
+  const { studioId } = auth;
   const { id } = params;
   const admin = createAdminClient();
 
   const { data, error } = await admin.rpc('annuler_facture', {
-    p_profile_id: user.id,
+    p_profile_id: studioId,
     p_facture_id: id,
   });
 

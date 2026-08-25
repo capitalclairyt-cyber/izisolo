@@ -21,7 +21,7 @@ import { reportError } from '@/lib/report';
 export const runtime = 'nodejs';
 
 export const POST = withRoute({ auth: 'user' }, async ({ auth }) => {
-  const { user, supabase } = auth;
+  const { studioId, supabase } = auth;
 
   if (!process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET_KEY.startsWith('sk_dummy')) {
     return Response.json(
@@ -34,7 +34,7 @@ export const POST = withRoute({ auth: 'user' }, async ({ auth }) => {
   const { data: profile } = await supabase
     .from('profiles')
     .select('stripe_customer_id')
-    .eq('id', user.id)
+    .eq('id', studioId)
     .single();
 
   if (!profile?.stripe_customer_id) {

@@ -193,6 +193,9 @@ export default function OnboardingPage() {
     // erreur LUE (un échec silencieux laissait un catalogue vide surprise).
     if (!skipOffre && offreNom && offrePrix) {
       const { error: offreErr } = await supabase.from('offres').insert({
+        // L'onboarding est le SEUL endroit où le studio est forcément
+        // l'utilisateur : elle est en train de créer le sien. Pas de
+        // useStudioId ici, la page vit hors du layout dashboard.
         profile_id: user.id,
         nom: offreNom,
         type: 'carnet',

@@ -42,14 +42,14 @@ function lienPublic(lien, maintenant = new Date()) {
 }
 
 export const GET = withRoute({ auth: 'user', plan: 'lien_pointage' }, async ({ request, auth }) => {
-  const { user, supabase } = auth;
+  const { studioId, supabase } = auth;
   const coursId = new URL(request.url).searchParams.get('coursId');
   if (!coursId) return Response.json({ error: 'coursId manquant', code: 'BAD_REQUEST' }, { status: 400 });
 
   const { data, error } = await supabase
     .from('liens_pointage')
     .select('*')
-    .eq('profile_id', user.id)
+    .eq('profile_id', studioId)
     .eq('cours_id', coursId)
     .order('created_at', { ascending: false });
 
@@ -70,7 +70,7 @@ export const GET = withRoute({ auth: 'user', plan: 'lien_pointage' }, async ({ r
 export const POST = withRoute(
   { auth: 'active', schema: creerSchema, plan: 'lien_pointage' },
   async ({ request, auth, body }) => {
-    const { user, supabase } = auth;
+    const { studioId, user, supabase } = auth;
 
     // La séance doit appartenir à la prof. RLS + .eq() : ceinture et bretelles,
     // parce que c'est cette ligne qui décide de ce que le lien ouvrira.
@@ -78,7 +78,7 @@ export const POST = withRoute(
       .from('cours')
       .select('id, nom, date, heure, est_annule')
       .eq('id', body.coursId)
-      .eq('profile_id', user.id)
+      .eq('profile_id', studioId)
       .maybeSingle();
 
     if (!cours) {
@@ -100,7 +100,7 @@ export const POST = withRoute(
     const { data: lien, error } = await supabase
       .from('liens_pointage')
       .insert({
-        profile_id: user.id,
+        profile_id: studioId,
         cours_id: cours.id,
         token_hash: hashToken(token),
         nom_invitee: sanitizeNomInvitee(body.nom),

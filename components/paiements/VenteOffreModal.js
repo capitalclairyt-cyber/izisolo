@@ -12,6 +12,7 @@ import { calcProRata } from '@/lib/prorata';
 import { bornesVente } from '@/lib/offres-periode';
 import { solderDemandesApresVente } from '@/lib/demande-offre';
 import { lireReglementConfig, preselectionEmail } from '@/lib/reglement';
+import { useStudioId } from '@/components/studio/StudioProvider';
 
 /**
  * VenteOffreModal — LE tunnel de vente d'une offre, partagé entre pages.
@@ -49,6 +50,9 @@ const proRataOffre = (offre) => calcProRata({
 });
 
 export default function VenteOffreModal({ offre: offreInitiale = null, clientInitial = null, onClose, onSuccess }) {
+  // Le studio affiché (v101) : `user.id` ne suffit plus, une prof peut être
+  // invitée dans le studio d'une autre. Résolu une seule fois par le layout.
+  const studioId = useStudioId();
   // 'offre' (si pas d'offre fournie) | 'client' | 'paiement'
   // clientInitial (v97) : la vente part d'une DEMANDE d'élève, on sait déjà
   // qui et quoi — on ouvre droit sur le règlement, le seul choix qui reste.
@@ -78,12 +82,12 @@ export default function VenteOffreModal({ offre: offreInitiale = null, clientIni
         supabase
           .from('clients')
           .select('id, prenom, nom, nom_structure, type_client, statut, telephone, email')
-          .eq('profile_id', user.id)
+          .eq('profile_id', studioId)
           .order('nom'),
         offreInitiale ? Promise.resolve(null) : supabase
           .from('offres')
           .select('id, nom, prix, type, seances, duree_jours, date_debut, date_fin, types_cours_autorises, pro_rata_actif, pro_rata_date_limite')
-          .eq('profile_id', user.id)
+          .eq('profile_id', studioId)
           .eq('actif', true)
           .neq('type', 'cours_unique') // legacy, plus jamais vendu
           .order('prix'),
@@ -93,7 +97,7 @@ export default function VenteOffreModal({ offre: offreInitiale = null, clientIni
       if (offresRes) setOffres(offresRes.data || []);
       try {
         const { data: cfg, error: cfgErr } = await supabase
-          .from('profiles').select('reglement_config').eq('id', user.id).maybeSingle();
+          .from('profiles').select('reglement_config').eq('id', studioId).maybeSingle();
         if (!cfgErr) setReglementCfg(lireReglementConfig(cfg));
       } catch { /* pré-v98 : pas de RIB, le bloc email reste utilisable */ }
     };

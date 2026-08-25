@@ -18,6 +18,7 @@ import { createClient } from '@/lib/supabase';
 import EmptyState from '@/components/ui/EmptyState';
 import { compterPlacesOccupees } from '@/lib/presences';
 import { useToast } from '@/components/ui/ToastProvider';
+import { useStudioId } from '@/components/studio/StudioProvider';
 
 // ============================================
 // Constantes
@@ -32,6 +33,9 @@ const VUES = [
 // Composant principal
 // ============================================
 export default function AgendaClient({ cours: initialCours, profile, initialDate, listeAttenteByCours = {} }) {
+  // Le studio affiché (v101) : `user.id` ne suffit plus, une prof peut être
+  // invitée dans le studio d'une autre. Résolu une seule fois par le layout.
+  const studioId = useStudioId();
   const searchParams = useSearchParams();
   // Liens externes : ?date=YYYY-MM-DD positionne l'agenda sur cette date
   // (ex: retour depuis une fiche cours), ?vue=jour|mois force la vue.
@@ -128,7 +132,7 @@ export default function AgendaClient({ cours: initialCours, profile, initialDate
       const { data, error } = await supabase
         .from('cours')
         .select('*, presences(pointee, statut_pointage, annulation_tardive)')
-        .eq('profile_id', user.id)
+        .eq('profile_id', studioId)
         .gte('date', plage.debut)
         .lte('date', plage.fin)
         .order('date').order('heure');

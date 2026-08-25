@@ -31,7 +31,7 @@ const KINDS_SANS_COLONNE = ['vignette', 'cours'];
  * Variable d'env requise : BLOB_READ_WRITE_TOKEN (Vercel Dashboard → Storage → Blob)
  */
 export const POST = withRoute({ auth: 'user' }, async ({ request, auth }) => {
-  const { user, profile, supabase } = auth;
+  const { studioId, user, profile, supabase } = auth;
 
   if (!process.env.BLOB_READ_WRITE_TOKEN) {
     return Response.json({
@@ -111,7 +111,7 @@ export const POST = withRoute({ auth: 'user' }, async ({ request, auth }) => {
   const { error: updateErr } = await supabase
     .from('profiles')
     .update({ [targetField]: blob.url })
-    .eq('id', user.id);
+    .eq('id', studioId);
 
   if (updateErr) {
     reportError('[upload-photo] update profile error:', updateErr);

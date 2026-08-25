@@ -15,6 +15,7 @@ import AutocompleteCommune from '@/components/forms/AutocompleteCommune';
 import ValidatedInput from '@/components/forms/ValidatedInput';
 import DateNaissanceInput from '@/components/forms/DateNaissanceInput';
 import AdresseInput from '@/components/forms/AdresseInput';
+import { useStudioId } from '@/components/studio/StudioProvider';
 
 const TYPES_PRO = [
   { value: 'association', label: 'Association' },
@@ -24,6 +25,9 @@ const TYPES_PRO = [
 ];
 
 export default function NouveauClient() {
+  // Le studio affiché (v101) : `user.id` ne suffit plus, une prof peut être
+  // invitée dans le studio d'une autre. Résolu une seule fois par le layout.
+  const studioId = useStudioId();
   const router = useRouter();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
@@ -81,7 +85,7 @@ export default function NouveauClient() {
       const { data } = await supabase
         .from('profiles')
         .select('client_fields_config, plan, trial_started_at, stripe_subscription_status')
-        .eq('id', user.id)
+        .eq('id', studioId)
         .single();
       setProfilRow(data || null);
       if (data?.client_fields_config) setFieldsConfig({
@@ -105,7 +109,7 @@ export default function NouveauClient() {
       let query = supabase
         .from('clients')
         .select('id, nom, prenom, email, type_client')
-        .eq('profile_id', user.id)
+        .eq('profile_id', studioId)
         .ilike('nom', `%${nomRecherche}%`)
         .limit(3);
 
@@ -278,10 +282,9 @@ export default function NouveauClient() {
     setLoading(true);
     try {
       const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
 
       const payload = {
-        profile_id: user.id,
+        profile_id: studioId,
         statut,
         notes: form.notes.trim() || null,
         email: form.email.trim() || null,
@@ -321,7 +324,7 @@ export default function NouveauClient() {
       // Créer les lieux associés (pro)
       if (isPro && lieuxPro.length > 0) {
         const lieuxPayload = lieuxPro.map((l, idx) => ({
-          profile_id: user.id,
+          profile_id: studioId,
           client_pro_id: client.id,
           nom: l.nom,
           adresse: l.adresse || null,
@@ -335,7 +338,7 @@ export default function NouveauClient() {
       router.push('/clients');
       router.refresh();
     } catch (err) {
-      toast.error(await messageErreurClient(err, form.email));
+      toast.error(await messageErreurClient(err, form.email, studioId));
     } finally {
       setLoading(false);
     }

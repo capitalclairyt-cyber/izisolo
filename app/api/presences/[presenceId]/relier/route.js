@@ -22,7 +22,7 @@ const relierSchema = z.object({
 });
 
 export const POST = withRoute({ auth: 'active', schema: relierSchema }, async ({ params, auth, body }) => {
-  const { user, supabase, profile } = auth;
+  const { studioId, supabase, profile } = auth;
   const { presenceId } = params;
   const nouvelAboId = body.abonnement_id;
 
@@ -30,7 +30,7 @@ export const POST = withRoute({ auth: 'active', schema: relierSchema }, async ({
     .from('presences')
     .select('id, abonnement_id, client_id, statut_pointage, type_presence, annulation_tardive')
     .eq('id', presenceId)
-    .eq('profile_id', user.id)
+    .eq('profile_id', studioId)
     .single();
   if (presErr || !presence) {
     return Response.json({ error: 'Présence introuvable' }, { status: 404 });

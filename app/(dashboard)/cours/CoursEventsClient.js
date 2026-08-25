@@ -16,6 +16,7 @@ import { compterPlacesOccupees } from '@/lib/presences';
 import { useToast } from '@/components/ui/ToastProvider';
 import { toneForCours } from '@/lib/tones';
 import Pagination, { usePagination } from '@/components/ui/Pagination';
+import { useStudioId } from '@/components/studio/StudioProvider';
 
 // ── Libellés fréquence ──────────────────────────────
 const FREQ_LABELS = {
@@ -40,6 +41,9 @@ function formatDateFr(dateStr) {
 export default function CoursEventsClient({
   profile, recurrences, ponctuels, lieux, coursRecurrents, todayStr, listeAttenteByCours = {}
 }) {
+  // Le studio affiché (v101) : `user.id` ne suffit plus, une prof peut être
+  // invitée dans le studio d'une autre. Résolu une seule fois par le layout.
+  const studioId = useStudioId();
   const { toast } = useToast();
   const [onglet, setOnglet] = useState('recurrents');
 
@@ -77,8 +81,7 @@ export default function CoursEventsClient({
     setSavingTypes(true);
     try {
       const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      await supabase.from('profiles').update({ types_cours: updated }).eq('id', user.id);
+      await supabase.from('profiles').update({ types_cours: updated }).eq('id', studioId);
       setCategories(updated);
     } catch {
       toast.error('Erreur lors de la sauvegarde');

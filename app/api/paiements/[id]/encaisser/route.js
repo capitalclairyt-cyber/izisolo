@@ -11,7 +11,7 @@ const encaisserSchema = z.object({
 });
 
 export const POST = withRoute({ auth: 'active', schema: encaisserSchema }, async ({ params, auth, body }) => {
-  const { user, supabase } = auth;
+  const { studioId, user, supabase } = auth;
   const { id } = params;
 
   const today = new Date().toISOString().slice(0, 10);
@@ -22,7 +22,7 @@ export const POST = withRoute({ auth: 'active', schema: encaisserSchema }, async
     .from('paiements')
     .select('id, statut, profile_id, notes, client_id')
     .eq('id', id)
-    .eq('profile_id', user.id)
+    .eq('profile_id', studioId)
     .single();
 
   if (fetchErr || !paiement) {
@@ -48,7 +48,7 @@ export const POST = withRoute({ auth: 'active', schema: encaisserSchema }, async
       ...(numero_cheque !== undefined && { numero_cheque }),
     })
     .eq('id', id)
-    .eq('profile_id', user.id);
+    .eq('profile_id', studioId);
 
   if (updateErr) {
     reportError('encaisser error:', updateErr);
@@ -60,7 +60,7 @@ export const POST = withRoute({ auth: 'active', schema: encaisserSchema }, async
     (async () => {
       const { data: cl } = await supabase.from('clients').select('email').eq('id', paiement.client_id).maybeSingle();
       if (!cl?.email) return;
-      const { data: prof } = await supabase.from('profiles').select('studio_slug').eq('id', user.id).maybeSingle();
+      const { data: prof } = await supabase.from('profiles').select('studio_slug').eq('id', studioId).maybeSingle();
       await sendPushToEmail(cl.email, {
         title: `Paiement enregistré ✓`,
         body: `Ton règlement a bien été pris en compte par ton studio.`,

@@ -1,4 +1,5 @@
 import { createServerClient } from '@/lib/supabase-server';
+import { resoudreStudioActif } from '@/lib/studio-actif';
 import { notFound } from 'next/navigation';
 import FicheClientClient from './FicheClientClient';
 
@@ -6,6 +7,9 @@ export default async function FicheClientPage({ params }) {
   const { id } = await params;
   const supabase = await createServerClient();
   const { data: { user } } = await supabase.auth.getUser();
+  // Le studio affiché (v101) : pour une prof seule c'est elle-même,
+  // pour une prof invitée dans une association c'est le studio de l'asso.
+  const { studioId } = await resoudreStudioActif(supabase, user);
 
   const [
     { data: client },
@@ -14,11 +18,11 @@ export default async function FicheClientPage({ params }) {
     { data: presences },
     { data: paiements },
   ] = await Promise.all([
-    supabase.from('clients').select('*').eq('id', id).eq('profile_id', user.id).single(),
-    supabase.from('profiles').select('metier, vocabulaire, client_fields_config, studio_slug, studio_nom, prenom').eq('id', user.id).single(),
-    supabase.from('abonnements').select('*, offre:offres(nom, type)').eq('client_id', id).eq('profile_id', user.id).order('created_at', { ascending: false }),
-    supabase.from('presences').select('*, cours_id, cours(nom, date, heure, recurrence_parent_id, tarif_unitaire)').eq('client_id', id).eq('profile_id', user.id).order('created_at', { ascending: false }).limit(50),
-    supabase.from('paiements').select('id, intitule, type, montant, statut, mode, date, date_encaissement, notes, numero_cheque, abonnement_id, echeancier_id, offre_id, abonnement:abonnements(id, offre:offres(nom))').eq('client_id', id).eq('profile_id', user.id).order('date', { ascending: false }),
+    supabase.from('clients').select('*').eq('id', id).eq('profile_id', studioId).single(),
+    supabase.from('profiles').select('metier, vocabulaire, client_fields_config, studio_slug, studio_nom, prenom').eq('id', studioId).single(),
+    supabase.from('abonnements').select('*, offre:offres(nom, type)').eq('client_id', id).eq('profile_id', studioId).order('created_at', { ascending: false }),
+    supabase.from('presences').select('*, cours_id, cours(nom, date, heure, recurrence_parent_id, tarif_unitaire)').eq('client_id', id).eq('profile_id', studioId).order('created_at', { ascending: false }).limit(50),
+    supabase.from('paiements').select('id, intitule, type, montant, statut, mode, date, date_encaissement, notes, numero_cheque, abonnement_id, echeancier_id, offre_id, abonnement:abonnements(id, offre:offres(nom))').eq('client_id', id).eq('profile_id', studioId).order('date', { ascending: false }),
   ]);
 
   if (!client) notFound();
@@ -37,7 +41,7 @@ export default async function FicheClientPage({ params }) {
     const { data: fact, error: factErr } = await supabase
       .from('profiles')
       .select('facturation_siret')
-      .eq('id', user.id)
+      .eq('id', studioId)
       .maybeSingle();
     if (!factErr && String(fact?.facturation_siret || '').trim()) facturationActive = true;
   }
@@ -64,7 +68,7 @@ export default async function FicheClientPage({ params }) {
     const { data, error } = await supabase
       .from('demandes_offre')
       .select('id, offre_id, message, created_at, offres(id, nom, prix)')
-      .eq('profile_id', user.id)
+      .eq('profile_id', studioId)
       .eq('client_id', id)
       .eq('statut', 'nouvelle')
       .order('created_at', { ascending: false });

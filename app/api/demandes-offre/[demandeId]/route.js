@@ -18,7 +18,7 @@ const schema = z.object({
  * une journée à défaire (Lot C : « tunnel de vente unifié sur PaiementStep »).
  */
 export const PATCH = withRoute({ auth: 'active', schema }, async ({ params, auth, body }) => {
-  const { user, supabase } = auth;
+  const { studioId, supabase } = auth;
   const { demandeId } = params;
 
   const { data, error } = await supabase
@@ -28,7 +28,7 @@ export const PATCH = withRoute({ auth: 'active', schema }, async ({ params, auth
       traitee_at: body.statut === 'nouvelle' ? null : new Date().toISOString(),
     })
     .eq('id', demandeId)
-    .eq('profile_id', user.id)
+    .eq('profile_id', studioId)
     .select('id');
 
   if (error) {

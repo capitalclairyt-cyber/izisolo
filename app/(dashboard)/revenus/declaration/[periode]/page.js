@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import { resoudreStudioActif } from '@/lib/studio-actif';
 import { createServerClient } from '@/lib/supabase-server';
 import { reportError } from '@/lib/report';
 import {
@@ -26,6 +27,9 @@ export default async function DeclarationPage({ params }) {
   const { periode: periodeId } = await params;
   const supabase = await createServerClient();
   const { data: { user } } = await supabase.auth.getUser();
+  // Le studio affiché (v101) : pour une prof seule c'est elle-même,
+  // pour une prof invitée dans une association c'est le studio de l'asso.
+  const { studioId } = await resoudreStudioActif(supabase, user);
   if (!user) redirect('/login');
 
   const today = aujourdhuiParis();
@@ -35,14 +39,14 @@ export default async function DeclarationPage({ params }) {
   // Réglages : lecture SÉPARÉE et défensive (urssaf_config naît avec v93).
   let config = null;
   try {
-    const { data } = await supabase.from('profiles').select('urssaf_config').eq('id', user.id).single();
+    const { data } = await supabase.from('profiles').select('urssaf_config').eq('id', studioId).single();
     config = sanitizeConfigUrssaf(data?.urssaf_config);
   } catch { /* pré-v93 : pas d'estimation, le détail reste utile */ }
 
   const { data: profil } = await supabase
     .from('profiles')
     .select('studio_nom, ville, facturation_raison_sociale, facturation_siret')
-    .eq('id', user.id)
+    .eq('id', studioId)
     .single();
 
   // Paiements RÉGLÉS de la période, bornés sur la date comptable. Paginé :
@@ -52,7 +56,7 @@ export default async function DeclarationPage({ params }) {
     const { data: lot, error } = await supabase
       .from('paiements')
       .select('id, montant, mode, date, date_encaissement, intitule, commission_montant, clients(prenom, nom, nom_structure)')
-      .eq('profile_id', user.id)
+      .eq('profile_id', studioId)
       .eq('statut', 'paid')
       .or(filtreDateComptable(periode.from, periode.to))
       .order('date', { ascending: true })
@@ -94,7 +98,7 @@ export default async function DeclarationPage({ params }) {
     const { data } = await supabase
       .from('declarations_urssaf')
       .select('periode_id, consultations, derniere_consultation_at, declaree_at, montant_declare, snapshot')
-      .eq('profile_id', user.id)
+      .eq('profile_id', studioId)
       .eq('periode_id', periode.id)
       .maybeSingle();
     archive = data || null;

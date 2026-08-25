@@ -13,6 +13,7 @@ import AutocompleteCommune from '@/components/forms/AutocompleteCommune';
 import ValidatedInput from '@/components/forms/ValidatedInput';
 import DateNaissanceInput from '@/components/forms/DateNaissanceInput';
 import AdresseInput from '@/components/forms/AdresseInput';
+import { useStudioId } from '@/components/studio/StudioProvider';
 
 const TYPES_PRO = [
   { value: 'association', label: 'Association' },
@@ -36,6 +37,9 @@ function splitAdresse(adresseComplete) {
 }
 
 export default function EditClientClient({ client, lieux: lieuxInitiaux }) {
+  // Le studio affiché (v101) : `user.id` ne suffit plus, une prof peut être
+  // invitée dans le studio d'une autre. Résolu une seule fois par le layout.
+  const studioId = useStudioId();
   const router = useRouter();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
@@ -64,7 +68,7 @@ export default function EditClientClient({ client, lieux: lieuxInitiaux }) {
       const { data } = await supabase
         .from('profiles')
         .select('client_fields_config')
-        .eq('id', user.id)
+        .eq('id', studioId)
         .single();
       if (data?.client_fields_config) setFieldsConfig({
         predefined: { date_naissance: true, adresse: false, niveau: true, source: true, notes: true, ...(data.client_fields_config.predefined || {}) },
@@ -187,7 +191,6 @@ export default function EditClientClient({ client, lieux: lieuxInitiaux }) {
     setLoading(true);
     try {
       const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
 
       const payload = {
         statut: form.statut,
@@ -223,7 +226,7 @@ export default function EditClientClient({ client, lieux: lieuxInitiaux }) {
         .from('clients')
         .update(payload)
         .eq('id', client.id)
-        .eq('profile_id', user.id);
+        .eq('profile_id', studioId);
 
       if (error) throw error;
 
@@ -232,7 +235,7 @@ export default function EditClientClient({ client, lieux: lieuxInitiaux }) {
         await supabase.from('lieux').delete().eq('client_pro_id', client.id);
         if (lieuxPro.length > 0) {
           const lieuxPayload = lieuxPro.map((l, idx) => ({
-            profile_id: user.id,
+            profile_id: studioId,
             client_pro_id: client.id,
             nom: l.nom,
             adresse: l.adresse || null,
@@ -248,7 +251,7 @@ export default function EditClientClient({ client, lieux: lieuxInitiaux }) {
       router.push(`/clients/${client.id}`);
       router.refresh();
     } catch (err) {
-      toast.error(await messageErreurClient(err, form.email));
+      toast.error(await messageErreurClient(err, form.email, studioId));
     } finally {
       setLoading(false);
     }

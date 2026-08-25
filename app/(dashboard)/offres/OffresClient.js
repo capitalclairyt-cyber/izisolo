@@ -18,6 +18,7 @@ import { createClient } from '@/lib/supabase';
 import { diagnostiquerOffres } from '@/lib/coherence-offres';
 import EmptyState from '@/components/ui/EmptyState';
 import VenteOffreModal from '@/components/paiements/VenteOffreModal';
+import { useStudioId } from '@/components/studio/StudioProvider';
 
 const TYPE_ICONS = { carnet: Ticket, abonnement: CalendarCheck, cours_unique: Zap };
 
@@ -106,6 +107,9 @@ function DiagnosticOffres({ offres }) {
 // Dès qu'un catalogue existe, on propose le geste en 1 clic — même écriture
 // directe de profiles que la sauvegarde par carte des Paramètres (B2e).
 function TarifsPortailHint({ profile, offres }) {
+  // Le studio affiché (v101) : `user.id` ne suffit plus, une prof peut être
+  // invitée dans le studio d'une autre. Ce sous-composant écrit aussi, il lui faut la même réponse.
+  const studioId = useStudioId();
   const [visible, setVisible] = useState(false);
   const [fait, setFait] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -126,8 +130,7 @@ function TarifsPortailHint({ profile, offres }) {
     setErreur('');
     try {
       const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      const { error } = await supabase.from('profiles').update({ afficher_tarifs: true }).eq('id', user.id);
+      const { error } = await supabase.from('profiles').update({ afficher_tarifs: true }).eq('id', studioId);
       if (error) throw error;
       setFait(true);
     } catch (e) {

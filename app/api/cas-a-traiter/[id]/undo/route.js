@@ -24,7 +24,7 @@ import { reportError } from '@/lib/report';
 const UNDO_WINDOW_DAYS = 7;
 
 export const POST = withRoute({ auth: 'active' }, async ({ params, auth }) => {
-  const { user, supabase } = auth;
+  const { studioId, supabase } = auth;
   const { id } = params;
 
   // Charger le cas
@@ -32,7 +32,7 @@ export const POST = withRoute({ auth: 'active' }, async ({ params, auth }) => {
     .from('cas_a_traiter')
     .select('*')
     .eq('id', id)
-    .eq('profile_id', user.id)
+    .eq('profile_id', studioId)
     .single();
 
   if (fetchErr || !cas) {
@@ -94,7 +94,7 @@ export const POST = withRoute({ auth: 'active' }, async ({ params, auth }) => {
       resolu_par: null,
     })
     .eq('id', id)
-    .eq('profile_id', user.id)
+    .eq('profile_id', studioId)
     .select('*, clients(prenom, nom), cours(nom, date)')
     .single();
 

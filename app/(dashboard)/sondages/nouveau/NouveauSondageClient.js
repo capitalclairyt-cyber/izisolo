@@ -8,6 +8,7 @@ import { createClient } from '@/lib/supabase';
 import { slugify } from '@/lib/utils';
 import { useToast } from '@/components/ui/ToastProvider';
 import CalendarBuilder from '@/components/sondage/CalendarBuilder';
+import { useStudioId } from '@/components/studio/StudioProvider';
 
 const VISIBILITE_OPTIONS = [
   { value: 'inscrits', label: 'Élèves inscrits uniquement', desc: 'Faut être connecté à son espace pour voter.' },
@@ -20,6 +21,9 @@ let _localId = 0;
 const tempId = () => `tmp-${++_localId}`;
 
 export default function NouveauSondageClient({ typesCours, studioSlug }) {
+  // Le studio affiché (v101) : `user.id` ne suffit plus, une prof peut être
+  // invitée dans le studio d'une autre. Résolu une seule fois par le layout.
+  const studioId = useStudioId();
   const router = useRouter();
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
@@ -51,7 +55,6 @@ export default function NouveauSondageClient({ typesCours, studioSlug }) {
     setSaving(true);
     try {
       const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
 
       const slugBase = slugify(titre).slice(0, 40);
       const slug = `${slugBase}-${Math.random().toString(36).slice(2, 7)}`;
@@ -59,7 +62,7 @@ export default function NouveauSondageClient({ typesCours, studioSlug }) {
       const { data: sondage, error: sErr } = await supabase
         .from('sondages_planning')
         .insert({
-          profile_id: user.id,
+          profile_id: studioId,
           slug,
           titre: titre.trim(),
           message: message.trim() || null,

@@ -28,13 +28,13 @@ const schema = z.object({
 });
 
 export const POST = withRoute({ auth: 'active', schema }, async ({ auth, body }) => {
-  const { user, supabase } = auth;
+  const { studioId, supabase } = auth;
 
   const { data: client } = await supabase
     .from('clients')
     .select('id, prenom, email')
     .eq('id', body.clientId)
-    .eq('profile_id', user.id)
+    .eq('profile_id', studioId)
     .single();
   if (!client) return Response.json({ error: 'Élève introuvable' }, { status: 404 });
   if (!client.email) {
@@ -44,7 +44,7 @@ export const POST = withRoute({ auth: 'active', schema }, async ({ auth, body })
   const { data: prof } = await supabase
     .from('profiles')
     .select('studio_nom, studio_slug, email_contact')
-    .eq('id', user.id)
+    .eq('id', studioId)
     .single();
 
   // Config v98 — requête SÉPARÉE et défensive (§12) : sans la migration, la
@@ -52,7 +52,7 @@ export const POST = withRoute({ auth: 'active', schema }, async ({ auth, body })
   let config = null;
   try {
     const { data: cfg, error } = await supabase
-      .from('profiles').select('reglement_config').eq('id', user.id).maybeSingle();
+      .from('profiles').select('reglement_config').eq('id', studioId).maybeSingle();
     if (!error) config = lireReglementConfig(cfg);
   } catch { /* pré-v98 */ }
 

@@ -13,7 +13,7 @@ import { reportError } from '@/lib/report';
  * Un simple DELETE sur clients suffit donc : la base s'occupe du reste.
  */
 export const DELETE = withRoute({ auth: 'active' }, async ({ params, auth }) => {
-  const { user, supabase } = auth;
+  const { studioId, supabase } = auth;
   const { id } = params;
 
   // Vérifie que le client existe et appartient bien au prof connecté.
@@ -21,7 +21,7 @@ export const DELETE = withRoute({ auth: 'active' }, async ({ params, auth }) => 
     .from('clients')
     .select('id')
     .eq('id', id)
-    .eq('profile_id', user.id)
+    .eq('profile_id', studioId)
     .single();
 
   if (fetchErr || !client) {
@@ -32,7 +32,7 @@ export const DELETE = withRoute({ auth: 'active' }, async ({ params, auth }) => 
     .from('clients')
     .delete()
     .eq('id', id)
-    .eq('profile_id', user.id);
+    .eq('profile_id', studioId);
 
   if (deleteErr) {
     // On remonte le message réel : toutes les FK client_id sont censées être en

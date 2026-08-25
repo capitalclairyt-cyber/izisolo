@@ -14,14 +14,14 @@ const updateSchema = z.object({
 });
 
 export const PATCH = withRoute({ auth: 'active', schema: updateSchema }, async ({ params, auth, body }) => {
-  const { user, supabase } = auth;
+  const { studioId, supabase } = auth;
   const { id } = params;
 
   const { data: abo, error: fetchErr } = await supabase
     .from('abonnements')
     .select('id')
     .eq('id', id)
-    .eq('profile_id', user.id)
+    .eq('profile_id', studioId)
     .single();
 
   if (fetchErr || !abo) {
@@ -44,7 +44,7 @@ export const PATCH = withRoute({ auth: 'active', schema: updateSchema }, async (
     .from('abonnements')
     .update(update)
     .eq('id', id)
-    .eq('profile_id', user.id);
+    .eq('profile_id', studioId);
 
   if (updateErr) {
     return Response.json({ error: 'Erreur lors de la modification' }, { status: 500 });
@@ -54,14 +54,14 @@ export const PATCH = withRoute({ auth: 'active', schema: updateSchema }, async (
 });
 
 export const DELETE = withRoute({ auth: 'active' }, async ({ params, auth }) => {
-  const { user, supabase } = auth;
+  const { studioId, supabase } = auth;
   const { id } = params;
 
   const { data: abo, error: fetchErr } = await supabase
     .from('abonnements')
     .select('id')
     .eq('id', id)
-    .eq('profile_id', user.id)
+    .eq('profile_id', studioId)
     .single();
 
   if (fetchErr || !abo) {
@@ -76,7 +76,7 @@ export const DELETE = withRoute({ auth: 'active' }, async ({ params, auth }) => 
     .from('paiements')
     .update({ abonnement_id: null })
     .eq('abonnement_id', id)
-    .eq('profile_id', user.id)
+    .eq('profile_id', studioId)
     .eq('statut', 'paid');
   if (detachErr) {
     reportError('[abonnements DELETE] détachement paiements err:', detachErr, { route: '/api/abonnements/[id]' });
@@ -87,7 +87,7 @@ export const DELETE = withRoute({ auth: 'active' }, async ({ params, auth }) => 
     .from('paiements')
     .delete()
     .eq('abonnement_id', id)
-    .eq('profile_id', user.id);
+    .eq('profile_id', studioId);
 
   if (payErr) {
     reportError('[abonnements DELETE] paiements liés err:', payErr, { route: '/api/abonnements/[id]' });
@@ -98,7 +98,7 @@ export const DELETE = withRoute({ auth: 'active' }, async ({ params, auth }) => 
     .from('abonnements')
     .delete()
     .eq('id', id)
-    .eq('profile_id', user.id);
+    .eq('profile_id', studioId);
 
   if (deleteErr) {
     return Response.json({ error: 'Erreur lors de la suppression' }, { status: 500 });

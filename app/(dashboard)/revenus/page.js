@@ -1,4 +1,5 @@
 import { createServerClient } from '@/lib/supabase-server';
+import { resoudreStudioActif } from '@/lib/studio-actif';
 import { reportError } from '@/lib/report';
 import RevenusClient from './RevenusClient';
 
@@ -23,6 +24,9 @@ async function fetchTout(buildQuery, label) {
 export default async function RevenusPage() {
   const supabase = await createServerClient();
   const { data: { user } } = await supabase.auth.getUser();
+  // Le studio affiché (v101) : pour une prof seule c'est elle-même,
+  // pour une prof invitée dans une association c'est le studio de l'asso.
+  const { studioId } = await resoudreStudioActif(supabase, user);
 
   // On charge les paiements des 12 derniers mois ; le filtrage par période
   // se fait côté client pour un UX réactif sans round-trip serveur.
@@ -33,7 +37,7 @@ export default async function RevenusPage() {
   const paiements = await fetchTout(() => supabase
     .from('paiements')
     .select('id, intitule, type, montant, statut, mode, date, date_encaissement, notes, commission_montant, stripe_session_id, client_id, presence_id, clients(prenom, nom, nom_structure)')
-    .eq('profile_id', user.id)
+    .eq('profile_id', studioId)
     .gte('date', debutFenetreStr)
     .order('date', { ascending: false })
     .order('id', { ascending: false }), 'paiements');
@@ -51,7 +55,7 @@ export default async function RevenusPage() {
   const presTarifees = await fetchTout(() => supabase
     .from('presences')
     .select('id, statut_pointage, type_presence, annulation_tardive, client_id, clients(prenom, nom, nom_structure), cours:cours_id!inner(id, nom, date, heure, tarif_unitaire)')
-    .eq('profile_id', user.id)
+    .eq('profile_id', studioId)
     .gt('cours.tarif_unitaire', 0)
     // Une séance d'un cours ANNULÉ par la prof n'est pas de l'argent dû
     // (B1f, rouge : 8 inscrit·es × 15 € restaient « À percevoir » à vie
@@ -77,7 +81,7 @@ export default async function RevenusPage() {
       const { data: lot, error: lotErr } = await supabase
         .from('paiements')
         .select('presence_id, statut')
-        .eq('profile_id', user.id)
+        .eq('profile_id', studioId)
         .in('presence_id', presIds.slice(i, i + 200));
       if (lotErr) {
         reportError('[revenus] paiements liés err:', lotErr, { route: '/revenus' });
@@ -108,7 +112,7 @@ export default async function RevenusPage() {
   const { data: presDues } = await supabase
     .from('presences')
     .select('id, client_id, clients(prenom, nom, nom_structure), cours:cours_id!inner(id, nom, date, heure, tarif_unitaire)')
-    .eq('profile_id', user.id)
+    .eq('profile_id', studioId)
     .eq('est_due', true)
     .is('abonnement_id', null)
     .gte('cours.date', debutFenetreStr);
@@ -117,7 +121,7 @@ export default async function RevenusPage() {
     const { data: casDettes } = await supabase
       .from('cas_a_traiter')
       .select('presence_id')
-      .eq('profile_id', user.id)
+      .eq('profile_id', studioId)
       .is('resolu_at', null)
       .in('presence_id', annulationsDues.map(p => p.id));
     const traitees = new Set((casDettes || []).map(c => c.presence_id).filter(Boolean));
@@ -141,7 +145,7 @@ export default async function RevenusPage() {
     const { data, error } = await supabase
       .from('paiements')
       .select('id')
-      .eq('profile_id', user.id)
+      .eq('profile_id', studioId)
       .eq('exclu_compta', true)
       .limit(5000);
     if (error) throw error;

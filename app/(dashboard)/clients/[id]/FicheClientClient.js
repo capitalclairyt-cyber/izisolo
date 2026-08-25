@@ -27,6 +27,7 @@ import { calcProRata as calcProRataLib } from '@/lib/prorata';
 import { useToast } from '@/components/ui/ToastProvider';
 import PaiementStep from '@/components/paiements/PaiementStep';
 import { AdresseDisplay } from '@/components/forms/AdresseInput';
+import { useStudioId } from '@/components/studio/StudioProvider';
 
 // ─── Icônes par type d'offre ────────────────────────────────────────────────
 const TYPE_ICONS = { carnet: Ticket, abonnement: CalendarCheck, cours_unique: Zap };
@@ -69,6 +70,9 @@ const OFFRE_LIBRE = {
 };
 
 function AssignerOffreModal({ client, onClose, onSuccess, offreInitialeId = null }) {
+  // Le studio affiché (v101) : ce sous-composant écrit sur profile_id, il lui
+  // faut donc la même réponse que le reste de l'écran.
+  const studioId = useStudioId();
   const { toast } = useToast();
   const [step, setStep] = useState('offre'); // 'offre' | 'paiement'
   const [offres, setOffres] = useState([]);
@@ -93,7 +97,7 @@ function AssignerOffreModal({ client, onClose, onSuccess, offreInitialeId = null
       const { data } = await supabase
         .from('offres')
         .select('*')
-        .eq('profile_id', user.id)
+        .eq('profile_id', studioId)
         .eq('actif', true)
         .order('ordre');
       setOffres(data || []);
@@ -107,7 +111,7 @@ function AssignerOffreModal({ client, onClose, onSuccess, offreInitialeId = null
       setLoadingOffres(false);
       try {
         const { data: cfg, error: cfgErr } = await supabase
-          .from('profiles').select('reglement_config').eq('id', user.id).maybeSingle();
+          .from('profiles').select('reglement_config').eq('id', studioId).maybeSingle();
         if (!cfgErr) setReglementCfg(lireReglementConfig(cfg));
       } catch { /* pré-v98 : pas de RIB, le bloc email reste utilisable */ }
     };
@@ -350,6 +354,9 @@ function AssignerOffreModal({ client, onClose, onSuccess, offreInitialeId = null
 // Composant principal
 // ═══════════════════════════════════════════════════════════════════════════
 export default function FicheClientClient({ client, profile, abonnements: abosInit, presences, paiements: paiementsInit = [], lieux, statutCompte = null, facturationActive = false, facturesParPaiement = {}, demandesOffre = [] }) {
+  // Le studio affiché (v101) : `user.id` ne suffit plus, une prof peut être
+  // invitée dans le studio d'une autre. Résolu une seule fois par le layout.
+  const studioId = useStudioId();
   const router = useRouter();
   const { toast } = useToast();
   const vocab = getVocabulaire(profile?.metier || 'yoga', profile?.vocabulaire);
@@ -863,10 +870,9 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
     setVersementSubmitting(true);
     try {
       const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
       const existingEch = paiements.find(p => p.abonnement_id === versementModal.id && p.echeancier_id);
       const { error: payErr } = await supabase.from('paiements').insert({
-        profile_id: user.id,
+        profile_id: studioId,
         client_id: client.id,
         offre_id: versementModal.offre_id || null,
         abonnement_id: versementModal.id,

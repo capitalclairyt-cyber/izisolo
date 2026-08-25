@@ -1,4 +1,5 @@
 import { createServerClient } from '@/lib/supabase-server';
+import { resoudreStudioActif } from '@/lib/studio-actif';
 import { redirect } from 'next/navigation';
 import ListeAttenteClient from './ListeAttenteClient';
 
@@ -7,6 +8,9 @@ export const metadata = { title: 'Liste d\'attente' };
 export default async function ListeAttentePage() {
   const supabase = await createServerClient();
   const { data: { user } } = await supabase.auth.getUser();
+  // Le studio affiché (v101) : pour une prof seule c'est elle-même,
+  // pour une prof invitée dans une association c'est le studio de l'asso.
+  const { studioId } = await resoudreStudioActif(supabase, user);
   if (!user) redirect('/login');
 
   const today = new Date().toISOString().slice(0, 10);
@@ -15,7 +19,7 @@ export default async function ListeAttentePage() {
   const { data: entries } = await supabase
     .from('liste_attente')
     .select('id, email, nom, telephone, position, notified_at, created_at, cours:cours_id(id, nom, date, heure, lieu, capacite_max, est_annule, type_cours)')
-    .eq('profile_id', user.id)
+    .eq('profile_id', studioId)
     .order('created_at', { ascending: true });
 
   // Compter les places dispos par cours (capacite_max - count presences)

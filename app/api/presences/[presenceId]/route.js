@@ -19,14 +19,14 @@ import { promouvoirListeAttente } from '@/lib/promotion-liste-attente';
 // ════════════════════════════════════════════════════════════════════════════
 
 export const DELETE = withRoute({ auth: 'active' }, async ({ params, auth }) => {
-  const { user, supabase, profile } = auth;
+  const { studioId, user, supabase, profile } = auth;
   const { presenceId } = params;
 
   const { data: presence, error: presErr } = await supabase
     .from('presences')
     .select('id, abonnement_id, client_id, statut_pointage, type_presence, annulation_tardive, cours:cours_id (id, nom, date, heure)')
     .eq('id', presenceId)
-    .eq('profile_id', user.id)
+    .eq('profile_id', studioId)
     .single();
   if (presErr || !presence) {
     return Response.json({ error: 'Réservation introuvable' }, { status: 404 });

@@ -1,4 +1,5 @@
 import { createServerClient } from '@/lib/supabase-server';
+import { resoudreStudioActif } from '@/lib/studio-actif';
 import { notFound } from 'next/navigation';
 import PointageClient from './PointageClient';
 
@@ -6,13 +7,16 @@ export default async function PointagePage({ params }) {
   const { coursId } = await params;
   const supabase = await createServerClient();
   const { data: { user } } = await supabase.auth.getUser();
+  // Le studio affiché (v101) : pour une prof seule c'est elle-même,
+  // pour une prof invitée dans une association c'est le studio de l'asso.
+  const { studioId } = await resoudreStudioActif(supabase, user);
 
   // Charger le cours
   const { data: cours } = await supabase
     .from('cours')
     .select('*')
     .eq('id', coursId)
-    .eq('profile_id', user.id)
+    .eq('profile_id', studioId)
     .single();
 
   if (!cours) notFound();
@@ -22,7 +26,7 @@ export default async function PointagePage({ params }) {
     .from('presences')
     .select('*, clients(id, prenom, nom, statut, email, telephone), abonnements(id, offre_nom, seances_total, seances_utilisees, statut)')
     .eq('cours_id', coursId)
-    .eq('profile_id', user.id);
+    .eq('profile_id', studioId);
 
   // Carnets ACTIFS de chaque élève présent — pour résoudre le carnet applicable
   // à CE cours au pointage (affichage « sur carnet » + branchement pay-as-you-go,
@@ -33,7 +37,7 @@ export default async function PointagePage({ params }) {
     const { data: abos } = await supabase
       .from('abonnements')
       .select('id, client_id, offre_nom, type, seances_total, seances_utilisees, statut, date_fin, date_pause_debut, date_pause_fin, types_cours_autorises')
-      .eq('profile_id', user.id)
+      .eq('profile_id', studioId)
       .eq('statut', 'actif')
       .in('client_id', clientIds);
     (abos || []).forEach(a => {
@@ -53,7 +57,7 @@ export default async function PointagePage({ params }) {
     const { data: paies } = await supabase
       .from('paiements')
       .select('id, presence_id, montant, mode, statut')
-      .eq('profile_id', user.id)
+      .eq('profile_id', studioId)
       .eq('statut', 'paid')
       .in('presence_id', presenceIds);
     paiementsSeance = (paies || []).filter(x => x.presence_id);
@@ -70,7 +74,7 @@ export default async function PointagePage({ params }) {
   const { data: clients } = await supabase
     .from('clients')
     .select('id, prenom, nom, statut, abonnements(id, offre_nom, type, seances_total, seances_utilisees, statut, date_fin, date_pause_debut, date_pause_fin, types_cours_autorises)')
-    .eq('profile_id', user.id)
+    .eq('profile_id', studioId)
     .in('statut', ['prospect', 'actif', 'fidele'])
     .order('prenom');
 
@@ -78,14 +82,14 @@ export default async function PointagePage({ params }) {
   const { data: profile } = await supabase
     .from('profiles')
     .select('metier, vocabulaire, regles_annulation, regles_metier, essais_par_defaut')
-    .eq('id', user.id)
+    .eq('id', studioId)
     .single();
 
   // Compter les dettes différées par client (pour alerte multi-impayés)
   const { data: dettesRaw } = await supabase
     .from('presences')
     .select('client_id')
-    .eq('profile_id', user.id)
+    .eq('profile_id', studioId)
     .eq('payer_plus_tard', true);
   const dettesParClient = {};
   (dettesRaw || []).forEach(d => {
@@ -96,7 +100,7 @@ export default async function PointagePage({ params }) {
   const { data: regles } = await supabase
     .from('regles')
     .select('*')
-    .eq('profile_id', user.id)
+    .eq('profile_id', studioId)
     .eq('actif', true)
     .order('ordre');
 

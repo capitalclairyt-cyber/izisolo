@@ -85,7 +85,7 @@ const fmtJour = (d) => (d ? String(d).slice(0, 10).split('-').reverse().join('/'
 
 // plan 'export_compta' : feature Pro (gate serveur — l'UI seule était contournable)
 export const GET = withRoute({ auth: 'user', plan: 'export_compta' }, async ({ request, auth }) => {
-  const { user, supabase } = auth;
+  const { studioId, user, supabase } = auth;
 
   const url = new URL(request.url);
   const periode = url.searchParams.get('periode') || 'mois';
@@ -130,7 +130,7 @@ export const GET = withRoute({ auth: 'user', plan: 'export_compta' }, async ({ r
     let query = supabase
       .from('paiements')
       .select('id, date, date_encaissement, intitule, type, montant, statut, mode, notes, commission_montant, clients(prenom, nom, nom_structure)')
-      .eq('profile_id', user.id)
+      .eq('profile_id', studioId)
       .order('date', { ascending: true })
       .order('id', { ascending: true })
       .range(page * 1000, page * 1000 + 999);
@@ -196,14 +196,14 @@ export const GET = withRoute({ auth: 'user', plan: 'export_compta' }, async ({ r
     const { data } = await supabase
       .from('profiles')
       .select('studio_nom, facturation_raison_sociale, facturation_siret')
-      .eq('id', user.id)
+      .eq('id', studioId)
       .single();
     studio = data || {};
   } catch { /* en-tête cosmétique : on continue sans */ }
 
   let configUrssaf = null;
   try {
-    const { data } = await supabase.from('profiles').select('urssaf_config').eq('id', user.id).single();
+    const { data } = await supabase.from('profiles').select('urssaf_config').eq('id', studioId).single();
     configUrssaf = sanitizeConfigUrssaf(data?.urssaf_config);
   } catch { /* pré-v93 : pas d'estimation dans le récap */ }
 

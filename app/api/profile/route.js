@@ -10,7 +10,7 @@ export const GET = withRoute({ auth: 'user' }, async ({ auth }) => {
 
 // PUT /api/profile — Mettre à jour le profil
 export const PUT = withRoute({ auth: 'user' }, async ({ request, auth }) => {
-  const { user, supabase } = auth;
+  const { studioId, supabase } = auth;
   const body = await request.json();
 
   // Champs autorisés
@@ -37,7 +37,7 @@ export const PUT = withRoute({ auth: 'user' }, async ({ request, auth }) => {
   const { data, error } = await supabase
     .from('profiles')
     .update(updates)
-    .eq('id', user.id)
+    .eq('id', studioId)
     .select()
     .single();
 

@@ -1,4 +1,5 @@
 import { createServerClient } from '@/lib/supabase-server';
+import { resoudreStudioActif } from '@/lib/studio-actif';
 import { redirect, notFound } from 'next/navigation';
 import ResultatsSondageClient from './ResultatsSondageClient';
 
@@ -8,6 +9,9 @@ export default async function SondageResultatsPage({ params }) {
   const { sondageId } = await params;
   const supabase = await createServerClient();
   const { data: { user } } = await supabase.auth.getUser();
+  // Le studio affiché (v101) : pour une prof seule c'est elle-même,
+  // pour une prof invitée dans une association c'est le studio de l'asso.
+  const { studioId } = await resoudreStudioActif(supabase, user);
   if (!user) redirect('/login');
 
   // Sondage + créneaux + réponses agrégées
@@ -15,7 +19,7 @@ export default async function SondageResultatsPage({ params }) {
     .from('sondages_planning')
     .select('id, slug, titre, message, date_fin, visibilite, actif, created_at, closed_at')
     .eq('id', sondageId)
-    .eq('profile_id', user.id)
+    .eq('profile_id', studioId)
     .maybeSingle();
 
   if (!sondage) notFound();
@@ -30,7 +34,7 @@ export default async function SondageResultatsPage({ params }) {
   const { data: profile } = await supabase
     .from('profiles')
     .select('studio_slug, zone_vacances_default')
-    .eq('id', user.id)
+    .eq('id', studioId)
     .single();
 
   return (

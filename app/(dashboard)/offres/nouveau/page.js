@@ -19,6 +19,7 @@ import { finGlissanteISO } from '@/lib/offres-periode';
 import {
   MODE_ILLIMITE, MODE_CADENCE, MODE_TOTAL, payloadSeances, apercuSeances,
 } from '@/lib/offres-seances';
+import { useStudioId } from '@/components/studio/StudioProvider';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 // « Cours à l'unité » retiré de la création (audit cohérence 2026-07-22, spec
@@ -67,6 +68,9 @@ function formatDate(s) {
 
 // ─── Composant ───────────────────────────────────────────────────────────────
 export default function NouvelleOffre() {
+  // Le studio affiché (v101) : `user.id` ne suffit plus, une prof peut être
+  // invitée dans le studio d'une autre. Résolu une seule fois par le layout.
+  const studioId = useStudioId();
   const router      = useRouter();
   const { toast }   = useToast();
   const [loading, setLoading]     = useState(false);
@@ -125,12 +129,11 @@ export default function NouvelleOffre() {
   useEffect(() => {
     const load = async () => {
       const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
 
       const [{ data: unitaires }, { data: profile }, { count }] = await Promise.all([
         supabase.from('offres').select('id, nom, prix').eq('type', 'cours_unique').eq('actif', true).order('prix'),
-        supabase.from('profiles').select('plan, trial_started_at, stripe_subscription_status, types_cours').eq('id', user.id).single(),
-        supabase.from('offres').select('*', { count: 'exact', head: true }).eq('profile_id', user.id),
+        supabase.from('profiles').select('plan, trial_started_at, stripe_subscription_status, types_cours').eq('id', studioId).single(),
+        supabase.from('offres').select('*', { count: 'exact', head: true }).eq('profile_id', studioId),
       ]);
 
       setOffresUnitaires(unitaires || []);
@@ -253,10 +256,9 @@ export default function NouvelleOffre() {
     setLoading(true);
     try {
       const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
 
       const payload = {
-        profile_id: user.id,
+        profile_id: studioId,
         nom:    nom.trim(),
         type,
         prix:   parseFloat(prix),

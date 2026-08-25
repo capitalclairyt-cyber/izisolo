@@ -1,4 +1,5 @@
 import { createServerClient } from '@/lib/supabase-server';
+import { resoudreStudioActif } from '@/lib/studio-actif';
 import { createAdminClient } from '@/lib/supabase-admin';
 import { escapeIlike } from '@/lib/utils';
 import DashboardClient from './DashboardClient';
@@ -7,6 +8,9 @@ import { SMS_PRIX_UNITAIRE } from '@/lib/notifs-eleves';
 export default async function DashboardPage() {
   const supabase = await createServerClient();
   const { data: { user } } = await supabase.auth.getUser();
+  // Le studio affiché (v101) : pour une prof seule c'est elle-même,
+  // pour une prof invitée dans une association c'est le studio de l'asso.
+  const { studioId } = await resoudreStudioActif(supabase, user);
 
   const today = new Date().toISOString().split('T')[0];
   const debutMois = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10);
@@ -23,37 +27,37 @@ export default async function DashboardPage() {
     { count: smsMois },
     { count: nbCasOuverts },
   ] = await Promise.all([
-    supabase.from('profiles').select('*').eq('id', user.id).single(),
-    supabase.from('cours').select('*, presences(count)').eq('profile_id', user.id).eq('date', today).order('heure'),
-    supabase.from('clients').select('*', { count: 'exact', head: true }).eq('profile_id', user.id).in('statut', ['prospect', 'actif', 'fidele']),
-    supabase.from('cours').select('*', { count: 'exact', head: true }).eq('profile_id', user.id),
-    supabase.from('abonnements').select('*, clients(id, nom, prenom)').eq('profile_id', user.id).eq('statut', 'actif'),
-    supabase.from('paiements').select('montant, commission_montant').eq('profile_id', user.id).gte('date', debutMois),
+    supabase.from('profiles').select('*').eq('id', studioId).single(),
+    supabase.from('cours').select('*, presences(count)').eq('profile_id', studioId).eq('date', today).order('heure'),
+    supabase.from('clients').select('*', { count: 'exact', head: true }).eq('profile_id', studioId).in('statut', ['prospect', 'actif', 'fidele']),
+    supabase.from('cours').select('*', { count: 'exact', head: true }).eq('profile_id', studioId),
+    supabase.from('abonnements').select('*, clients(id, nom, prenom)').eq('profile_id', studioId).eq('statut', 'actif'),
+    supabase.from('paiements').select('montant, commission_montant').eq('profile_id', studioId).gte('date', debutMois),
     supabase.from('notifications_eleves').select('id', { count: 'exact', head: true })
-      .eq('profile_id', user.id).eq('channel', 'sms').eq('statut', 'sent').gte('sent_at', debutMoisISO),
+      .eq('profile_id', studioId).eq('channel', 'sms').eq('statut', 'sent').gte('sent_at', debutMoisISO),
     // Compteur de cas non résolus pour le widget dashboard
     supabase.from('cas_a_traiter').select('id', { count: 'exact', head: true })
-      .eq('profile_id', user.id).is('resolu_at', null),
+      .eq('profile_id', studioId).is('resolu_at', null),
   ]);
 
   // A-t-il déjà créé un sondage ? (pour décider d'afficher le CTA)
   const { count: nbSondages } = await supabase
     .from('sondages_planning')
     .select('id', { count: 'exact', head: true })
-    .eq('profile_id', user.id);
+    .eq('profile_id', studioId);
 
   // A-t-elle déjà invité au moins un·e élève ? (étape checklist « Invite tes élèves »)
   const { count: nbInvites } = await supabase
     .from('clients')
     .select('id', { count: 'exact', head: true })
-    .eq('profile_id', user.id)
+    .eq('profile_id', studioId)
     .not('invitation_envoyee_at', 'is', null);
 
   // Boucle argent (checklist étendue 2026-08-18) : la checklist s'arrêtait
   // AVANT l'argent — or offre créée + première vente = LE moment d'activation.
   const [{ count: nbOffres }, { count: nbVentes }] = await Promise.all([
-    supabase.from('offres').select('id', { count: 'exact', head: true }).eq('profile_id', user.id),
-    supabase.from('abonnements').select('id', { count: 'exact', head: true }).eq('profile_id', user.id),
+    supabase.from('offres').select('id', { count: 'exact', head: true }).eq('profile_id', studioId),
+    supabase.from('abonnements').select('id', { count: 'exact', head: true }).eq('profile_id', studioId),
   ]);
 
   // Double identité (26/07) : ce compte prof est-il AUSSI élève ailleurs ?

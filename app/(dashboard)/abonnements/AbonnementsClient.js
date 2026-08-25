@@ -15,6 +15,7 @@ import { formatDate, formatMontant } from '@/lib/utils';
 import { toneForAbonnement } from '@/lib/tones';
 import Pagination, { usePagination } from '@/components/ui/Pagination';
 import EmptyState from '@/components/ui/EmptyState';
+import { useStudioId } from '@/components/studio/StudioProvider';
 
 // ─── Types d'offre ───────────────────────────────────────────────────────────
 const TYPE_CONFIG = {
@@ -69,6 +70,9 @@ function SeancesBar({ utilisees, total }) {
 }
 
 export default function AbonnementsClient({ abonnements: initAbo, paiementsParAbo: initPaiements }) {
+  // Le studio affiché (v101) : `user.id` ne suffit plus, une prof peut être
+  // invitée dans le studio d'une autre. Résolu une seule fois par le layout.
+  const studioId = useStudioId();
   const [abonnements, setAbonnements]         = useState(initAbo || []);
   const [paiementsParAbo, setPaiementsParAbo] = useState(initPaiements || {});
   const [loadingData, setLoadingData]         = useState(!initAbo);
@@ -79,18 +83,17 @@ export default function AbonnementsClient({ abonnements: initAbo, paiementsParAb
     if (initAbo) return; // données passées depuis un parent — pas besoin de fetch
     const fetchData = async () => {
       const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
 
       const [{ data: abos }, { data: paiements }] = await Promise.all([
         supabase
           .from('abonnements')
           .select('*, clients(id, prenom, nom, nom_structure, type_client, statut, email, telephone)')
-          .eq('profile_id', user.id)
+          .eq('profile_id', studioId)
           .order('created_at', { ascending: false }),
         supabase
           .from('paiements')
           .select('id, abonnement_id, montant, mode, created_at')
-          .eq('profile_id', user.id),
+          .eq('profile_id', studioId),
       ]);
 
       setAbonnements(abos || []);

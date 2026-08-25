@@ -1,14 +1,18 @@
 import { createServerClient } from '@/lib/supabase-server';
+import { resoudreStudioActif } from '@/lib/studio-actif';
 import AgendaClient from './AgendaClient';
 
 export default async function AgendaPage({ searchParams }) {
   const supabase = await createServerClient();
   const { data: { user } } = await supabase.auth.getUser();
+  // Le studio affiché (v101) : pour une prof seule c'est elle-même,
+  // pour une prof invitée dans une association c'est le studio de l'asso.
+  const { studioId } = await resoudreStudioActif(supabase, user);
 
   const { data: profile } = await supabase
     .from('profiles')
     .select('metier, vocabulaire, types_cours')
-    .eq('id', user.id)
+    .eq('id', studioId)
     .single();
 
   // Fenêtre de chargement centrée sur ?date= si fourni (ex: retour depuis une
@@ -34,7 +38,7 @@ export default async function AgendaPage({ searchParams }) {
       // statut + tardive : les compteurs 👥 et « Déjà pointé (x/y) »
       // comptaient les sièges fantômes v74 (B1b).
       .select('*, presences(pointee, statut_pointage, annulation_tardive)')
-      .eq('profile_id', user.id)
+      .eq('profile_id', studioId)
       .gte('date', debutStr)
       .lte('date', finStr)
       .order('date')
@@ -42,7 +46,7 @@ export default async function AgendaPage({ searchParams }) {
     supabase
       .from('liste_attente')
       .select('cours_id, notified_at')
-      .eq('profile_id', user.id)
+      .eq('profile_id', studioId)
       .is('notified_at', null),
   ]);
 

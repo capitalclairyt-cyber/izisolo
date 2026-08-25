@@ -1,4 +1,5 @@
 import { createServerClient } from '@/lib/supabase-server';
+import { resoudreStudioActif } from '@/lib/studio-actif';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { Plus, BarChart3 } from 'lucide-react';
@@ -10,12 +11,15 @@ export const metadata = { title: 'Sondage planning — sondages élèves' };
 export default async function SondagesPage() {
   const supabase = await createServerClient();
   const { data: { user } } = await supabase.auth.getUser();
+  // Le studio affiché (v101) : pour une prof seule c'est elle-même,
+  // pour une prof invitée dans une association c'est le studio de l'asso.
+  const { studioId } = await resoudreStudioActif(supabase, user);
   if (!user) redirect('/login');
 
   const { data: sondages } = await supabase
     .from('sondages_planning')
     .select('id, slug, titre, message, date_fin, visibilite, actif, created_at, sondages_creneaux(id, sondages_reponses(client_id, email))')
-    .eq('profile_id', user.id)
+    .eq('profile_id', studioId)
     .order('created_at', { ascending: false });
 
   // Compteurs : nb créneaux + RÉPONDANTS DISTINCTS (B1c : la liste sommait
