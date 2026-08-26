@@ -2,6 +2,7 @@ import { createServerClient } from '@/lib/supabase-server';
 import { resoudreStudioActif } from '@/lib/studio-actif';
 import { effectivePlan, planConfig } from '@/lib/plan-guard';
 import OffresClient from './OffresClient';
+import { offresEnAttenteDeWebhook } from '@/lib/paiement-en-ligne';
 
 export default async function OffresPage() {
   const supabase = await createServerClient();
@@ -36,6 +37,22 @@ export default async function OffresPage() {
   const planKey = effectivePlan(profile);
   const plan = planConfig(planKey);
 
+  // Le paiement en ligne se branche en DEUX gestes, et on ne vérifiait que le
+  // premier : coller un Payment Link sur une offre, puis déclarer le webhook
+  // Stripe. Sans le second, l'élève paie et IziSolo n'en sait jamais rien
+  // (retour Manon 2026-08-26). On le DIT ici, sur l'écran où les liens vivent.
+  // ⚠️ Lecture SÉPARÉE : le secret ne doit pas entrer dans le `profile` envoyé
+  // au navigateur — seul le compte des offres concernées en sort.
+  let offresSansWebhook = 0;
+  try {
+    const { data: conf } = await supabase
+      .from('profiles')
+      .select('stripe_webhook_secret')
+      .eq('id', studioId)
+      .maybeSingle();
+    offresSansWebhook = offresEnAttenteDeWebhook(offres, conf).length;
+  } catch { /* jamais bloquant : au pire, pas d'alerte */ }
+
   return (
     <OffresClient
       offres={offres || []}
@@ -43,6 +60,7 @@ export default async function OffresPage() {
       planKey={planKey}
       limiteOffres={plan.limiteOffres}
       demandes={demandes}
+      offresSansWebhook={offresSansWebhook}
     />
   );
 }

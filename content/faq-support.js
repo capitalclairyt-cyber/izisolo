@@ -202,4 +202,12 @@ export const FAQ_SUPPORT = [
     a: "Parce qu'il manque un geste, et un seul : le pointage. C'est lui qui décompte les carnets, et rien d'autre ne le fait — ni la réservation de l'élève, ni le type de cours, ni le fait que son carnet couvre ce cours. Tant qu'une séance n'est pas pointée, les compteurs ne bougent pas. Le jour J, depuis l'Accueil (bloc « Aujourd'hui ») ou l'Agenda, ouvre la séance → « Pointer », puis un clic par élève : « Carnet 10 séances · 9 séances » s'affiche sous son nom, et c'est écrit. Tu peux pointer après le cours, le soir même ou plus tard, ça marche pareil. Le bouton « Modifier les séances déjà faites » d'une fiche élève, lui, sert au rattrapage de ce qui s'est passé AVANT IziSolo (ton ancien carnet papier) : au quotidien, tu n'as pas à y toucher.",
     lien: { href: '/aide#pointage', label: 'Voir le pas-à-pas' },
   },
+  {
+    // Retour Manon (Soleya), 2026-08-26 : une élève dit avoir payé une carte
+    // depuis l'app, aucune trace côté prof. Payment Links collés, webhook
+    // jamais déclaré. AJOUTÉE EN FIN de liste.
+    q: "Une élève dit avoir payé en ligne, mais je ne vois ni le paiement ni son carnet — que faire ?",
+    a: "Vérifie d'abord Paramètres → Portail public → Paiement en ligne. Brancher le paiement demande DEUX gestes : coller un lien Stripe sur l'offre, et déclarer le webhook (les étapes 1 et 2 de cet écran). Le webhook est ce qui prévient IziSolo qu'une élève a payé : sans lui, l'argent arrive bien sur ton compte Stripe, mais l'app n'en sait rien, donc ni paiement ni carnet ne sont créés. Si le bandeau « Configuré » n'est pas affiché, c'est ça. Pour retrouver l'argent : va sur dashboard.stripe.com → Paiements, en mode Live (l'interrupteur « Mode test » doit être éteint, c'est le piège le plus courant) et cherche l'email de ton élève. Si le paiement y est, termine la configuration, puis dans Stripe → Webhooks, ouvre l'événement et clique « Resend » : IziSolo créera le paiement et le carnet tout seuls, à la bonne date, sans risque de doublon. Depuis le 26/08/2026, tant que le webhook manque, tes élèves ne voient plus de bouton « payer » mais un bouton « Demander » : leur demande arrive en tête de ta page Offres et tu encaisses comme tu veux.",
+    lien: { href: '/aide#offres', label: 'Voir le pas-à-pas' },
+  },
 ];

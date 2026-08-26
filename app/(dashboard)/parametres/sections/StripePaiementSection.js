@@ -105,7 +105,14 @@ export default function StripePaiementSection({ profile, setProfile, setDirty })
 
       {!configured && (
         <div className="stripe-warning">
-          <AlertCircle size={14} /> Tant que le secret n'est pas renseigné, IziSolo ne pourra pas confirmer automatiquement les paiements Stripe (ils devront être marqués manuellement).
+          <AlertCircle size={14} />
+          <span>
+            Tant que ce secret n&apos;est pas renseigné, IziSolo n&apos;apprend jamais qu&apos;une élève
+            a payé : ni le paiement, ni le carnet ne seraient créés. Alors <strong>on ne propose
+            pas le paiement en ligne à tes élèves</strong> — elles voient « Demander » sur tes
+            offres, et tu encaisses comme tu veux. Tes liens Stripe restent en place et
+            reprennent du service dès que tu as collé le secret.
+          </span>
         </div>
       )}
 

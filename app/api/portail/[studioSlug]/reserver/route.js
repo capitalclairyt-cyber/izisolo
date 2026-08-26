@@ -15,6 +15,7 @@ import { reportError } from '@/lib/report';
 import { canSeeCours, resolveClientInfo } from '@/lib/visibilite';
 import { coursDejaCommence } from '@/lib/dates';
 import { urlPaiementSeance } from '@/lib/paiement-seance';
+import { lienPaiementSeance } from '@/lib/paiement-en-ligne';
 
 export const POST = withRoute({ auth: 'public' }, async ({ request, params }) => {
   const { studioSlug } = params;
@@ -467,8 +468,18 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
 
   // Paiement en ligne PAR SÉANCE : la place est réservée, on peut proposer le
   // règlement CB — jamais l'inverse (P0). '' si lien invalide → flux à régler.
+  // Encore faut-il qu'IziSolo apprenne que l'argent est arrivé : sans webhook
+  // Stripe déclaré, on ne propose PAS de payer (retour Manon 2026-08-26 — le
+  // paiement aboutissait chez la prof sans laisser la moindre trace ici).
+  // Lecture SÉPARÉE : un secret n'entre jamais dans le select d'un profil qui
+  // sert à autre chose (cf. lib/paiement-en-ligne).
+  const { data: confStripe } = await supabaseAdmin
+    .from('profiles')
+    .select('stripe_webhook_secret')
+    .eq('id', profile.id)
+    .maybeSingle();
   const paiementUrl = paiementEnLignePossible
-    ? urlPaiementSeance(cours.stripe_payment_link_unit, newPresence.id, email)
+    ? urlPaiementSeance(lienPaiementSeance(cours, confStripe), newPresence.id, email)
     : '';
 
   // Notif prof « nouvelle réservation » — cloche in-app + push. La cloche est

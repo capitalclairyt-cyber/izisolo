@@ -2,6 +2,7 @@ import { withRoute } from '@/lib/api-route';
 import { createAdminClient } from '@/lib/supabase-admin';
 import { verifyStripeSignature, getCheckoutSessionAmount, getCheckoutSessionEmail } from '@/lib/stripe';
 import { estRefPresence } from '@/lib/paiement-seance';
+import { dateSessionStripe } from '@/lib/paiement-en-ligne';
 import { sendPushToUser } from '@/lib/push-server';
 import { escapeIlike } from '@/lib/utils';
 import { reportError } from '@/lib/report';
@@ -135,8 +136,13 @@ async function handleCheckoutCompleted(supabase, profileId, session) {
     clientId = client?.id || null;
   }
 
-  // Insérer le paiement avec calcul de la commission IziSolo
-  const today = new Date().toISOString().slice(0, 10);
+  // Insérer le paiement avec calcul de la commission IziSolo.
+  // La date est celle de la SESSION Stripe, pas celle du traitement : quand
+  // une prof branche son webhook après coup et REJOUE l'événement depuis son
+  // dashboard (le geste de rattrapage, cf. Manon 2026-08-26), l'encaissement
+  // doit rester daté du jour où l'élève a payé — sinon la déclaration URSSAF,
+  // qui compte en trésorerie (v93), tombe dans le mauvais trimestre.
+  const today = dateSessionStripe(session);
   const intitule = offre?.nom || session.metadata?.offre_nom || 'Paiement Stripe';
   const commission = parseFloat((amount * COMMISSION_RATE).toFixed(2));
 
@@ -229,7 +235,8 @@ async function handleSeancePayee(supabase, profileId, session, { email, amount }
     .maybeSingle();
   if (!cours || cours.profile_id !== profileId) return false;
 
-  const today = new Date().toISOString().slice(0, 10);
+  // Même règle que pour les offres : la date comptable est celle de la session.
+  const today = dateSessionStripe(session);
   const dateStr = cours.date
     ? new Date(cours.date + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })
     : '';

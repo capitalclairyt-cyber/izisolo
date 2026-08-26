@@ -11,6 +11,7 @@ import { coursDejaCommence } from '@/lib/dates';
 import { reportError } from '@/lib/report';
 import { getEssaiPrixParType } from '@/lib/essai-tarif';
 import { chargerVignettesConfig, chargerPhotosCours, greffePhotos } from '@/lib/vignette-cours';
+import { masquerLiensSiNonBranche } from '@/lib/paiement-en-ligne';
 
 export async function generateMetadata({ params }) {
   const { studioSlug } = await params;
@@ -160,6 +161,17 @@ async function getStudioData(studioSlug) {
     chargerPhotosCours(supabase, coursFutur.map(c => c.id)),
   ]);
 
+  // Le paiement en ligne n'est branché que si le webhook Stripe est déclaré.
+  // Sans lui, la visiteuse paierait sur un vrai lien dont IziSolo n'apprendrait
+  // jamais rien (retour Manon 2026-08-26) : on retire les liens, la grille
+  // bascule sur « Demander cette offre » (v97).
+  // ⚠️ Lecture SÉPARÉE : `profile` part au navigateur, le secret n'y entre pas.
+  const { data: confStripe } = await supabase
+    .from('profiles')
+    .select('stripe_webhook_secret')
+    .eq('id', profile.id)
+    .maybeSingle();
+
   return {
     profile,
     cours: greffePhotos(coursFutur.map(c => ({
@@ -168,8 +180,8 @@ async function getStudioData(studioSlug) {
     })), photosSeances),
     tonsParType: apparence.tons,
     vignettesParType: apparence.vignettes,
-    offresStripe: offresStripe || [],
-    offresPubliques: offresPubliques || [],
+    offresStripe: masquerLiensSiNonBranche(offresStripe, confStripe).filter(o => o.stripe_payment_link),
+    offresPubliques: masquerLiensSiNonBranche(offresPubliques, confStripe),
     sondageActif: sondageActif || null,
     currentClient,
     reservedCoursIds,

@@ -9,6 +9,7 @@ import { getDocsInscription } from '@/lib/docs-inscription';
 import { getVisioCoursMap, lienVisioVisible } from '@/lib/visio';
 import { resoudreCarnetApplicable } from '@/lib/carnet-resolution';
 import { urlPaiementSeance } from '@/lib/paiement-seance';
+import { masquerLiensSiNonBranche, lienPaiementSeance } from '@/lib/paiement-en-ligne';
 import { lireReglementConfig, referenceVirement } from '@/lib/reglement';
 import { studioCan } from '@/lib/plan-guard';
 
@@ -175,10 +176,23 @@ async function getData(studioSlug, user) {
       .eq('actif', true)
       .order('ordre'),
   ]);
+  // Le paiement en ligne n'est vraiment branché que si le webhook Stripe est
+  // déclaré : sans lui, l'élève paie, l'argent part chez la prof, et IziSolo
+  // n'en sait jamais rien (retour Manon 2026-08-26). Dans ce cas on ne propose
+  // PAS de payer — le catalogue bascule sur « Demander » (v97).
+  // ⚠️ Lecture SÉPARÉE, jamais dans le select du `profile` : ce dernier part au
+  // navigateur, et un secret n'a rien à y faire (cf. lib/paiement-en-ligne).
+  const { data: confStripe } = await supabase
+    .from('profiles')
+    .select('stripe_webhook_secret')
+    .eq('id', profile.id)
+    .maybeSingle();
+
   // Deux listes tirées de la même : celles qui s'achètent en ligne tout de
   // suite, et le catalogue complet dont on peut FAIRE LA DEMANDE (v97).
-  const offresStripe = (offresToutes || []).filter(o => o.stripe_payment_link);
-  const offresCatalogue = offresToutes || [];
+  const offresServies = masquerLiensSiNonBranche(offresToutes, confStripe);
+  const offresStripe = offresServies.filter(o => o.stripe_payment_link);
+  const offresCatalogue = offresServies;
 
   if (!client) {
     return { profile, client: null, aVenir: [], passes: [], paiements: [], offresStripe: offresStripe || [], abonnements: [], aRegler: [] };
@@ -309,8 +323,10 @@ async function getData(studioSlug, user) {
         cours_date: p.cours.date,
         montant: Number(p.cours.tarif_unitaire),
         annulationTardive: !!p.annulation_tardive,
+        // Même règle que pour les offres : sans webhook déclaré, on ne
+        // propose pas un paiement dont IziSolo ne saura jamais rien.
         paiement_url: paiementEnLigne
-          ? urlPaiementSeance(p.cours.stripe_payment_link_unit, p.id, client.email)
+          ? urlPaiementSeance(lienPaiementSeance(p.cours, confStripe), p.id, client.email)
           : '',
       }));
   }

@@ -202,7 +202,7 @@ function TarifsPortailHint({ profile, offres }) {
   );
 }
 
-export default function OffresClient({ offres, profile, planKey, limiteOffres, demandes: demandesInit = [] }) {
+export default function OffresClient({ offres, profile, planKey, limiteOffres, demandes: demandesInit = [], offresSansWebhook = 0 }) {
   const router = useRouter();
   const { toast } = useToast();
   const searchParams = useSearchParams();
@@ -343,6 +343,31 @@ export default function OffresClient({ offres, profile, planKey, limiteOffres, d
 
   return (
     <div className="offres-page">
+      {/* Paiement en ligne branché à moitié : des Payment Links sont collés,
+          mais IziSolo ne saura pas quand une élève paie. Tant que c'est le cas,
+          on ne propose PAS le paiement côté élève (elle « demande » l'offre) —
+          et on le dit ici, franchement, plutôt que de couper en silence. */}
+      {offresSansWebhook > 0 && (
+        <div className="webhook-alerte">
+          <div className="webhook-alerte-titre">
+            ⚠️ Ton paiement en ligne n&apos;est pas terminé
+          </div>
+          <p className="webhook-alerte-txt">
+            {offresSansWebhook === 1
+              ? 'Une de tes offres a un lien de paiement Stripe'
+              : `${offresSansWebhook} de tes offres ont un lien de paiement Stripe`}, mais
+            il manque la dernière étape : dire à Stripe de prévenir IziSolo quand une élève paie.
+            Sans elle, un paiement arrive bien sur ton compte Stripe, mais il n&apos;apparaît
+            ni dans tes revenus ni sur la fiche de l&apos;élève, et son carnet n&apos;est pas créé.
+            En attendant, tes élèves ne voient pas le bouton « payer » : elles voient
+            <strong> « Demander »</strong>, leur demande arrive ici, et tu encaisses comme tu veux.
+          </p>
+          <Link href="/parametres?tab=portail&s=paiement" className="izi-btn btn-sm izi-btn-primary">
+            Terminer la configuration
+          </Link>
+        </div>
+      )}
+
       {/* Demandes d'élèves (v97) — en tête : c'est de l'argent qui attend
           un geste, ça ne se range pas en bas de page. */}
       {demandes.length > 0 && (
@@ -546,6 +571,19 @@ export default function OffresClient({ offres, profile, planKey, limiteOffres, d
         .section { display: flex; flex-direction: column; gap: 8px; }
         .section-title { font-size: 0.8125rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); }
         .offres-list { display: flex; flex-direction: column; gap: 8px; }
+        /* Bloc global (et non scopé) : il contient un <Link>, qu'une règle
+           scopée ne hasherait jamais (piège §12). */
+        .webhook-alerte {
+          background: #fffbeb; border: 1px solid #fcd34d;
+          border-radius: var(--radius-lg, 14px); padding: 14px 16px;
+          display: flex; flex-direction: column; align-items: flex-start; gap: 8px;
+          margin-bottom: 14px;
+        }
+        .webhook-alerte-titre { font-size: 0.95rem; font-weight: 700; color: #78350f; }
+        .webhook-alerte-txt {
+          font-size: 0.8rem; line-height: 1.5; color: #78350f; margin: 0;
+        }
+        .webhook-alerte-txt strong { font-weight: 700; }
         .dem-bloc {
           background: var(--brand-light, #f7efe6); border: 1px solid var(--brand-200, #e8d3bd);
           border-radius: var(--radius-lg, 14px); padding: 14px 16px;
