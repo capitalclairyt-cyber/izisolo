@@ -20,7 +20,7 @@ const FEATURES = [
   { Icon: CheckCircle2, titre: 'Pointage en 1 clic', desc: 'Fais l\'appel depuis ton téléphone. Le carnet se décompte tout seul.' },
   { Icon: CreditCard, titre: 'Paiements & mini-compta', desc: 'Encaisse espèces, chèque, virement ou CB en ligne. Suivi des revenus + export comptable.' },
   { Icon: Share2, titre: 'Portail de réservation', desc: 'Une page publique où tes élèves réservent et paient seuls, sans que tu lèves le petit doigt.' },
-  { Icon: Bell, titre: 'Rappels automatiques', desc: 'Rappels de séance, relances, liste d\'attente — l\'admin qui se fait tout seul.' },
+  { Icon: Bell, titre: 'Rappels automatiques', desc: 'Rappels de séance, relances, liste d\'attente : l\'admin qui se fait tout seul.' },
 ];
 
 export default function LogicielGestionLanding() {
@@ -36,7 +36,7 @@ export default function LogicielGestionLanding() {
         <span className="lg-eyebrow"><Smartphone size={14} /> Appli de gestion tout-en-un</span>
         <h1 className="lg-h1">Le logiciel de gestion pensé pour les <em>profs de yoga</em>.</h1>
         <p className="lg-sub">
-          Agenda, élèves, présences, paiements et portail de réservation —
+          Agenda, élèves, présences, paiements et portail de réservation :
           un seul outil, calme et beau, sur ton téléphone. Fini le tableur, les
           carnets papier et les relances à la main.
         </p>
@@ -65,7 +65,7 @@ export default function LogicielGestionLanding() {
         <p className="lg-why-text">
           Un tableur ne pointe pas les présences, ne relance pas tes élèves, ne
           décompte pas les carnets et ne laisse personne réserver en ligne. IziSolo
-          fait tout ça pour toi — pensé pour une prof <strong>solo</strong>, pas pour
+          fait tout ça pour toi, pensé pour une prof <strong>solo</strong>, pas pour
           un centre avec un secrétariat. Tu gardes le temps pour ce qui compte : tes cours.
         </p>
       </section>

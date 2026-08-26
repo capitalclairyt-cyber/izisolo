@@ -19,7 +19,7 @@ export default function LegalLayout({ children }) {
       </main>
 
       <footer className="legal-footer">
-        <p>© {new Date().getFullYear()} Maude Yoga — IziSolo. Tous droits réservés.</p>
+        <p>© {new Date().getFullYear()} Maude Yoga · IziSolo. Tous droits réservés.</p>
         <Link href="/dashboard">Retour à l'app</Link>
       </footer>
 

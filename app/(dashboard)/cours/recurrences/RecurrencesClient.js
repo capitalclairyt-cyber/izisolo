@@ -208,9 +208,9 @@ export default function RecurrencesClient({ recurrences: initialRecurrences, cou
     // Réservation active = statut 'inscrit' (DEFAULT v5 — jamais NULL en prod).
     const nbResas = presReadErr ? 0 : rows.filter(presenceEstReservationActive).length;
     const ok = confirm(nbHisto > 0
-      ? `⚠️ Cette séance a ${nbHisto} présence${nbHisto > 1 ? 's' : ''} pointée${nbHisto > 1 ? 's' : ''} ou sanctionnée${nbHisto > 1 ? 's' : ''} — la supprimer efface définitivement cet historique (sans recréditer les carnets).\n\nSi la séance n'a pas lieu, préfère « Annuler » (prévient les élèves et recrédite).\n\nSupprimer quand même ?`
+      ? `⚠️ Cette séance a ${nbHisto} présence${nbHisto > 1 ? 's' : ''} pointée${nbHisto > 1 ? 's' : ''} ou sanctionnée${nbHisto > 1 ? 's' : ''} : la supprimer efface définitivement cet historique (sans recréditer les carnets).\n\nSi la séance n'a pas lieu, préfère « Annuler » (prévient les élèves et recrédite).\n\nSupprimer quand même ?`
       : nbResas > 0
-        ? `⚠️ ${nbResas} élève${nbResas > 1 ? 's ont' : ' a'} RÉSERVÉ cette séance — la supprimer efface ${nbResas > 1 ? 'leurs réservations' : 'sa réservation'} SANS prévenir personne.\n\nPréfère « Annuler la séance » (depuis le détail du cours) : les élèves reçoivent un email et les carnets sont recrédités.\n\nSupprimer quand même ?`
+        ? `⚠️ ${nbResas} élève${nbResas > 1 ? 's ont' : ' a'} RÉSERVÉ cette séance : la supprimer efface ${nbResas > 1 ? 'leurs réservations' : 'sa réservation'} SANS prévenir personne.\n\nPréfère « Annuler la séance » (depuis le détail du cours) : les élèves reçoivent un email et les carnets sont recrédités.\n\nSupprimer quand même ?`
         : `Supprimer la séance du ${iso.split('-').reverse().join('/')} ?`);
     if (!ok) return;
     setActionPending(iso);
@@ -330,7 +330,7 @@ export default function RecurrencesClient({ recurrences: initialRecurrences, cou
     // Honnêteté (B1b) : `actif` n'est lu par AUCUN générateur — rien ne crée
     // de séances en continu. La pause est un repère visuel, on le dit.
     toast.success(rec.actif
-      ? 'Série mise en pause (repère visuel — les séances déjà créées restent en place)'
+      ? 'Série mise en pause (repère visuel : les séances déjà créées restent en place)'
       : 'Série réactivée');
   };
 
@@ -357,10 +357,10 @@ export default function RecurrencesClient({ recurrences: initialRecurrences, cou
       const nbResas = presReadErr ? 0 : rows.filter(presenceEstReservationActive).length;
       if (nbHisto > 0 && !confirm(
         `⚠️ ${nbHisto} présence${nbHisto > 1 ? 's' : ''} déjà pointée${nbHisto > 1 ? 's' : ''} sur ces cours ` +
-        `— la suppression efface définitivement cet historique et détache les paiements liés.\n\nSupprimer quand même ?`
+        `: la suppression efface définitivement cet historique et détache les paiements liés.\n\nSupprimer quand même ?`
       )) return;
       if (nbResas > 0 && !confirm(
-        `⚠️ ${nbResas} réservation${nbResas > 1 ? 's' : ''} active${nbResas > 1 ? 's' : ''} sur les séances à venir — ` +
+        `⚠️ ${nbResas} réservation${nbResas > 1 ? 's' : ''} active${nbResas > 1 ? 's' : ''} sur les séances à venir : ` +
         `la suppression les efface SANS prévenir les élèves.\n\nPréfère « Annuler » chaque séance concernée (les élèves reçoivent un email et les carnets sont recrédités).\n\nSupprimer quand même ?`
       )) return;
     }
@@ -498,7 +498,7 @@ export default function RecurrencesClient({ recurrences: initialRecurrences, cou
         .in('cours_id', futures.map(c => c.id));
       if (presErr) {
         setProlongerProteges(new Set(futures.map(c => c.id)));
-        toast.error('Lecture des inscriptions impossible — la réduction est désactivée par prudence : ' + presErr.message);
+        toast.error('Lecture des inscriptions impossible, la réduction est désactivée par prudence : ' + presErr.message);
       } else {
         const proteges = new Set();
         for (const p of (presRows || [])) {
@@ -518,7 +518,7 @@ export default function RecurrencesClient({ recurrences: initialRecurrences, cou
     if (rienAFaire) return;
     // Pas d'écriture tant que la dédup complète n'est pas chargée (le fetch
     // de l'ouverture du panneau prend < 1 s ; en cas d'échec, un toast l'a dit).
-    if (!prolongerExistantes) { toast.error('Un instant — vérification des séances existantes…'); return; }
+    if (!prolongerExistantes) { toast.error('Un instant, vérification des séances existantes…'); return; }
     // Réduction : confirmation honnête (les vides seulement, les protégées
     // restent et sont annoncées).
     if (supprimables.length > 0) {
@@ -722,7 +722,7 @@ export default function RecurrencesClient({ recurrences: initialRecurrences, cou
                   <button type="button" onClick={ouvrirEdition} className="rec-icon-btn" title="Modifier le nom et le type">
                     <Pencil size={16} />
                   </button>
-                  <button type="button" onClick={() => toggleActif(selected)} className="rec-icon-btn" title={selected.actif ? 'Mettre en pause (repère visuel — ne supprime ni ne crée aucune séance)' : 'Réactiver'}>
+                  <button type="button" onClick={() => toggleActif(selected)} className="rec-icon-btn" title={selected.actif ? 'Mettre en pause (repère visuel : ne supprime ni ne crée aucune séance)' : 'Réactiver'}>
                     {selected.actif
                       ? <ToggleRight size={22} style={{ color: '#16a34a' }} />
                       : <ToggleLeft size={22} style={{ color: 'var(--text-muted)' }} />}
@@ -782,7 +782,7 @@ export default function RecurrencesClient({ recurrences: initialRecurrences, cou
                 {selected.date_fin && (
                   <p className="rec-prolonger-info">
                     Fin actuelle : <strong>{new Date(selected.date_fin + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</strong>
-                    <em> — plus loin = séances créées, plus proche = séances vides supprimées.</em>
+                    <em> (plus loin = séances créées, plus proche = séances vides supprimées)</em>
                   </p>
                 )}
                 <input
@@ -802,7 +802,7 @@ export default function RecurrencesClient({ recurrences: initialRecurrences, cou
                     />
                     <span>
                       Créer aussi pendant les vacances scolaires (zone {selected.zone_vacances})
-                      <em> — la série les exclut d'habitude ; utile pour des cours d'été, sans changer sa config.</em>
+                      <em> (la série les exclut d'habitude ; utile pour des cours d'été, sans changer sa config)</em>
                     </span>
                   </label>
                 )}
@@ -813,7 +813,7 @@ export default function RecurrencesClient({ recurrences: initialRecurrences, cou
                         <strong>{previewProlongation.incluses.length} séance{previewProlongation.incluses.length > 1 ? 's' : ''}</strong> ser{previewProlongation.incluses.length > 1 ? 'ont' : 'a'} créée{previewProlongation.incluses.length > 1 ? 's' : ''}
                         {' '}({freqLabel(selected)}{selected.heure ? ` à ${selected.heure.slice(0, 5)}` : ''})
                         {previewProlongation.exclues.length > 0 && (
-                          <> — {previewProlongation.exclues.length} exclue{previewProlongation.exclues.length > 1 ? 's' : ''} ({[...new Set(previewProlongation.exclues.map(e => e.raison))].join(' + ')})</>
+                          <> · {previewProlongation.exclues.length} exclue{previewProlongation.exclues.length > 1 ? 's' : ''} ({[...new Set(previewProlongation.exclues.map(e => e.raison))].join(' + ')})</>
                         )}
                         .{' '}
                       </>
@@ -851,7 +851,7 @@ export default function RecurrencesClient({ recurrences: initialRecurrences, cou
                         ? [
                             previewProlongation.incluses.length > 0 ? `+${previewProlongation.incluses.length}` : null,
                             previewProlongation.supprimables.length > 0 ? `−${previewProlongation.supprimables.length}` : null,
-                          ].filter(Boolean).join(' · ') + ' — Ajuster'
+                          ].filter(Boolean).join(' · ') + ' · Ajuster'
                         : 'Ajuster la série'}
                   </button>
                 </div>

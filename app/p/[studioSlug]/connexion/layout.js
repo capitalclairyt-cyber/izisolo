@@ -9,10 +9,10 @@ export async function generateMetadata({ params }) {
   const nom = studio?.studio_nom || 'ton studio';
 
   return {
-    title: `${nom} — Mon espace élève`,
+    title: `${nom} · Mon espace élève`,
     ...ogPortail({
       studio,
-      titre: `${nom} — Mon espace élève`,
+      titre: `${nom} · Mon espace élève`,
       description: `Connecte-toi pour réserver tes séances et suivre tes carnets chez ${nom}.`,
     }),
     robots: { index: false, follow: false },

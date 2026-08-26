@@ -52,7 +52,7 @@ function LoginContent() {
       } else if (authError.message?.toLowerCase().includes('not confirmed')) {
         // B1d : « mot de passe incorrect » pour un email non confirmé =
         // reset de mot de passe inutile + abandon au jour 1.
-        setError('Ton email n\'est pas encore confirmé — clique le lien reçu par email (vérifie tes spams), puis reviens te connecter.');
+        setError('Ton email n\'est pas encore confirmé : clique le lien reçu par email (vérifie tes spams), puis reviens te connecter.');
       } else {
         setError('Email ou mot de passe incorrect');
       }

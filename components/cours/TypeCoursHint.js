@@ -32,7 +32,7 @@ export default function TypeCoursHint({ typeCours }) {
   const noms = offresRestreintes.slice(0, 2).map(o => `« ${o.nom} »`).join(' et ');
   return (
     <span className="form-hint" style={{ display: 'block', marginTop: 6 }}>
-      💡 Sans type, ce cours sera couvert par <strong>tous</strong> les carnets — y compris
+      💡 Sans type, ce cours sera couvert par <strong>tous</strong> les carnets, y compris
       {' '}{noms}{offresRestreintes.length > 2 ? '…' : ''} pourtant limité{offresRestreintes.length > 1 ? 's' : ''} à
       certains types. Renseigne le type pour que ces limites s&apos;appliquent.
     </span>

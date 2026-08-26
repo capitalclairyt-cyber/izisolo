@@ -20,7 +20,7 @@ export async function generateMetadata({ params }) {
     title,
     ...ogPortail({
       studio,
-      description: `Réserve tes séances et retrouve ton espace élève — ${title}.`,
+      description: `Réserve tes séances et retrouve ton espace élève chez ${title}.`,
     }),
     // Manifest dynamique : chaque studio → son propre nom d'appli installée
     manifest: `/p/${studioSlug}/manifest.webmanifest`,

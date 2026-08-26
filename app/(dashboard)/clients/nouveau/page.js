@@ -545,8 +545,8 @@ export default function NouveauClient() {
                     </button>
                     <p className="photo-import-hint">
                       {photoDispo
-                        ? <>Carte de visite, fiche papier ou capture d'écran — l'IA pré-remplit, tu vérifies.</>
-                        : <>✨ Réservé au plan Complet — <a href="/parametres?tab=abonnement" style={{ fontWeight: 600, color: 'var(--brand)' }}>passe en Complet</a> pour pré-remplir les fiches depuis une photo.</>}
+                        ? <>Carte de visite, fiche papier ou capture d'écran : l'IA pré-remplit, tu vérifies.</>
+                        : <>✨ Réservé au plan Complet : <a href="/parametres?tab=abonnement" style={{ fontWeight: 600, color: 'var(--brand)' }}>passe en Complet</a> pour pré-remplir les fiches depuis une photo.</>}
                     </p>
                   </>
                 );
@@ -598,7 +598,7 @@ export default function NouveauClient() {
                 <label className="form-label" htmlFor="nc-date-naissance">
                   Date de naissance{' '}
                   <span style={{ fontWeight: 400, color: 'var(--text-muted)', fontSize: '0.8125rem' }}>
-                    — pour envoyer un mot doux le jour J 🎂
+                    (pour envoyer un mot doux le jour J 🎂)
                   </span>
                 </label>
                 <DateNaissanceInput

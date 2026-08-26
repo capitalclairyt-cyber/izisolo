@@ -81,10 +81,10 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
       : portalPath;
     try {
       await navigator.clipboard.writeText(fullUrl);
-      toast.success('Lien copié — partage-le à tes élèves !');
+      toast.success('Lien copié, partage-le à tes élèves !');
       marquerPortailPartage();
     } catch {
-      toast.error('Impossible de copier — copie manuellement le lien');
+      toast.error('Impossible de copier : copie manuellement le lien');
     }
   };
 
@@ -435,7 +435,7 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
                 {nbCasATraiter} cas à traiter
               </div>
               <div className="bento-alerte-desc">
-                Élève sans carnet, annulation tardive, etc. — clique pour voir et résoudre.
+                Élève sans carnet, annulation tardive, etc. : clique pour voir et résoudre.
               </div>
             </div>
             <ChevronRight size={16} />

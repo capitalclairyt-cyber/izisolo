@@ -58,7 +58,7 @@ async function getData(studioSlug) {
 export async function generateMetadata({ params }) {
   const { studioSlug } = await params;
   return {
-    title: `Offres — ${studioSlug}`,
+    title: `Offres · ${studioSlug}`,
     robots: { index: false, follow: false }, // page technique, iframée seulement
   };
 }

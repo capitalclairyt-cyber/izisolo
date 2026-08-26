@@ -71,7 +71,7 @@ export default function LocalLanding({ city, discipline = 'yoga' }) {
             </h1>
             <p className="local-lead">
               IziSolo est l'outil de gestion pensé pour les profs de {d} indépendant·e·s.
-              Agenda, élèves, paiements, portail public, communication — tout-en-un.
+              Agenda, élèves, paiements, portail public, communication : tout-en-un.
               Utilisé par des profs solo dans toute la France, y compris à {city.name} et {city.region}.
             </p>
             <div className="local-ctas">
@@ -111,7 +111,7 @@ export default function LocalLanding({ city, discipline = 'yoga' }) {
                 <aside className="local-citation">
                   <blockquote>
                     <p>{data.citation.text}</p>
-                    <footer>— {data.citation.author}</footer>
+                    <footer>{data.citation.author}</footer>
                   </blockquote>
                 </aside>
               )}
@@ -202,7 +202,7 @@ export default function LocalLanding({ city, discipline = 'yoga' }) {
                 <div className="local-why-icon">💬</div>
                 <h3>Messagerie & annonces</h3>
                 <p>
-                  Annoncer une annulation, un nouveau créneau, un stage — à tous tes
+                  Annoncer une annulation, un nouveau créneau, un stage : à tous tes
                   élèves d'un cours précis ou à tous les détenteurs d'un carnet, en 2 clics.
                 </p>
               </div>
@@ -211,7 +211,7 @@ export default function LocalLanding({ city, discipline = 'yoga' }) {
                 <h3>Portail public</h3>
                 <p>
                   Page publique à ton image, où tes élèves voient ton planning,
-                  réservent, payent — sans créer de compte. PWA installable comme une app.
+                  réservent, payent, sans créer de compte. PWA installable comme une app.
                 </p>
               </div>
               <div className="local-why-card">
@@ -233,7 +233,7 @@ export default function LocalLanding({ city, discipline = 'yoga' }) {
                 Démarre ton studio {d} à {city.name} <em>en 15 minutes</em>.
               </h2>
               <p>
-                14 jours d'essai gratuit sans CB. Dès 15 €/mois — et −50 % pendant
+                14 jours d'essai gratuit sans CB. Dès 15 €/mois, et −50 % pendant
                 tes 3 premiers mois avec le code LANCEMENT50. Setup offert.
               </p>
               <Link href="/register" className="btn btn-primary btn-lg">
@@ -248,7 +248,7 @@ export default function LocalLanding({ city, discipline = 'yoga' }) {
           {/* FAQ locale */}
           {extra.faq && extra.faq.length > 0 && (
             <section className="local-faq" aria-label="Questions fréquentes locales">
-              <span className="eyebrow">Questions fréquentes — {city.name}</span>
+              <span className="eyebrow">Questions fréquentes · {city.name}</span>
               <h2 className="serif">Ce qu'on nous demande souvent sur {city.name}.</h2>
               <div className="local-faq-list">
                 {extra.faq.map((item, i) => (
@@ -292,7 +292,7 @@ export default function LocalLanding({ city, discipline = 'yoga' }) {
               </Link>
               <Link href="/blog/excel-vs-logiciel-gestion-eleves-prof-yoga" className="local-related-card">
                 <span className="eyebrow">Organisation</span>
-                <h3>Excel vs logiciel pour gérer ses élèves — le comparatif honnête</h3>
+                <h3>Excel vs logiciel pour gérer ses élèves : le comparatif honnête</h3>
               </Link>
               <Link href="/blog/statut-juridique-prof-yoga-france" className="local-related-card">
                 <span className="eyebrow">Juridique</span>

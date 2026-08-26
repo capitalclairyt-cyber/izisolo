@@ -105,7 +105,7 @@ function PaymentModal({ presence, coursNom, coursDate, montantDefaut = '', paiem
         let q = supabase.from('paiements').insert({
           profile_id: studioId,
           client_id:  presence.client_id,
-          intitule:   `${coursNom} — ${coursDate} (règlement supplémentaire)`,
+          intitule:   `${coursNom} · ${coursDate} (règlement supplémentaire)`,
           montant:    val,
           statut:     'paid',
           mode,
@@ -134,7 +134,7 @@ function PaymentModal({ presence, coursNom, coursDate, montantDefaut = '', paiem
           profile_id:  studioId,
           client_id:   presence.client_id,
           presence_id: presence.id, // paiement à la séance (v65)
-          intitule:    `${coursNom} — ${coursDate}`,
+          intitule:    `${coursNom} · ${coursDate}`,
           montant:     val,
           statut:      'paid',
           mode,
@@ -149,7 +149,7 @@ function PaymentModal({ presence, coursNom, coursDate, montantDefaut = '', paiem
       onClose();
     } catch (err) {
       toast.error(estTimeout(err)
-        ? 'Réseau trop lent — encaissement NON enregistré, réessaie.'
+        ? 'Réseau trop lent : encaissement NON enregistré, réessaie.'
         : 'Erreur : ' + err.message);
     } finally {
       setSaving(false);
@@ -185,7 +185,7 @@ function PaymentModal({ presence, coursNom, coursDate, montantDefaut = '', paiem
       <div className="pm-modal" onClick={e => e.stopPropagation()}>
 
         <div className="pm-header">
-          <h3><CreditCard size={18} /> Règlement — {client.prenom} {client.nom}</h3>
+          <h3><CreditCard size={18} /> Règlement : {client.prenom} {client.nom}</h3>
           <button className="modal-close-x" onClick={onClose} aria-label="Fermer">✕</button>
         </div>
 
@@ -251,7 +251,7 @@ function PaymentModal({ presence, coursNom, coursDate, montantDefaut = '', paiem
                     className="izi-btn izi-btn-ghost pm-delete-btn"
                     onClick={handleDelete}
                     disabled={saving}
-                    title="Supprime le paiement — la séance repasse « à régler »"
+                    title="Supprime le paiement : la séance repasse « à régler »"
                   >
                     🗑 Annuler l'encaissement
                   </button>
@@ -259,7 +259,7 @@ function PaymentModal({ presence, coursNom, coursDate, montantDefaut = '', paiem
                     className="izi-btn izi-btn-ghost"
                     onClick={() => { setExtraMode(true); setMontant(''); setNote(''); }}
                     disabled={saving}
-                    title="Encaisser un règlement de plus pour cette séance (ex : elle paie aussi pour son mari) — ligne compta avec note, la séance reste couverte par le 1er encaissement"
+                    title="Encaisser un règlement de plus pour cette séance (ex : elle paie aussi pour son mari). Ligne compta avec note, la séance reste couverte par le 1er encaissement"
                   >
                     ➕ Autre règlement
                   </button>
@@ -268,7 +268,7 @@ function PaymentModal({ presence, coursNom, coursDate, montantDefaut = '', paiem
                 <button
                   className={`izi-btn pm-ptard-btn ${ptardAuto ? 'pm-ptard-auto' : 'izi-btn-ghost'}`}
                   onClick={() => ptardAuto ? handleConfirmPtard() : setConfirming(true)}
-                  title={ptardAuto ? `Accordé automatiquement — règle : "${ptardAutoNom}"` : undefined}
+                  title={ptardAuto ? `Accordé automatiquement, règle : "${ptardAutoNom}"` : undefined}
                 >
                   ⏰ Payer plus tard{ptardAuto && <span className="pm-auto-badge">auto</span>}
                 </button>
@@ -437,11 +437,11 @@ function PresenceCard({ presence, resolvedCarnet, estPayAsYouGo, paye, paiement,
             <span className="pres-name">{client.prenom} {client.nom}</span>
             {/* Badge à régler (carnet épuisé OU séance à l'unité non payée) */}
             {(impaye || (estPayAsYouGo && !paye && !ptard)) && !locked && (
-              <button className="impaye-btn" onClick={e => { e.stopPropagation(); onPayer(presence); }} title="À régler — encaisser" aria-label="Encaisser">€</button>
+              <button className="impaye-btn" onClick={e => { e.stopPropagation(); onPayer(presence); }} title="À régler : encaisser" aria-label="Encaisser">€</button>
             )}
             {/* Badge payer plus tard */}
             {ptard && !locked && (
-              <button className="ptard-btn" onClick={e => { e.stopPropagation(); onPayer(presence); }} title="Paiement différé — encaisser maintenant" aria-label="Paiement différé">⏰</button>
+              <button className="ptard-btn" onClick={e => { e.stopPropagation(); onPayer(presence); }} title="Paiement différé : encaisser maintenant" aria-label="Paiement différé">⏰</button>
             )}
             {/* Alerte multi-dettes */}
             {nbDettes >= 2 && (
@@ -923,7 +923,7 @@ export default function PointageClient({ cours, presences: initialPresences, tou
         }
         return next;
       }));
-      toast.success(decomptee ? 'Annulation excusée — séance re-créditée ✓' : 'Annulation excusée ✓');
+      toast.success(decomptee ? 'Annulation excusée, séance re-créditée ✓' : 'Annulation excusée ✓');
     } catch (e) {
       toast.error('Impossible d\'excuser : ' + (e?.message || 'erreur'));
     } finally {
@@ -1029,7 +1029,7 @@ export default function PointageClient({ cours, presences: initialPresences, tou
       ));
       setActionLoading(null);
       toast.error(estTimeout(error)
-        ? 'Réseau trop lent — pointage NON enregistré, réessaie.'
+        ? 'Réseau trop lent : pointage NON enregistré, réessaie.'
         : 'Pointage non enregistré, réessaie.');
       return;
     }
@@ -1223,7 +1223,7 @@ export default function PointageClient({ cours, presences: initialPresences, tou
           return;
         }
         client = existing;
-        toast.success(`${existing.prenom || existing.nom} existait déjà — fiche réutilisée.`);
+        toast.success(`${existing.prenom || existing.nom} existait déjà, fiche réutilisée.`);
       }
     }
     if (!client) {
@@ -1430,7 +1430,7 @@ export default function PointageClient({ cours, presences: initialPresences, tou
           <Lock size={16} />
           <div>
             <strong>Séance annulée</strong>
-            <span>Le pointage est verrouillé — les crédits ont été restitués selon ta règle « Cours annulé ».</span>
+            <span>Le pointage est verrouillé : les crédits ont été restitués selon ta règle « Cours annulé ».</span>
           </div>
         </div>
       )}
@@ -1520,7 +1520,7 @@ export default function PointageClient({ cours, presences: initialPresences, tou
           <span className="impaye-icon">€</span>
           <span>
             <strong>{nbImpayes} élève{nbImpayes > 1 ? 's' : ''}</strong> à encaisser
-            — touchez le badge <strong>€</strong> sur leur carte
+            : touchez le badge <strong>€</strong> sur leur carte
           </span>
         </div>
       )}
@@ -1531,7 +1531,7 @@ export default function PointageClient({ cours, presences: initialPresences, tou
           <span className="ptard-icon">⏰</span>
           <span>
             <strong>{nbPtards} paiement{nbPtards > 1 ? 's' : ''} différé{nbPtards > 1 ? 's' : ''}</strong>
-            {' '}— pensez à faire la relance
+            {' '}: pensez à faire la relance
           </span>
         </div>
       )}

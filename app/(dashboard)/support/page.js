@@ -84,7 +84,7 @@ export default function SupportPage() {
           <div className="support-guide-title">Le guide de démarrage</div>
           <div className="support-guide-desc">
             Ton premier cours récurrent, inviter tes élèves, encaisser, le pointage,
-            ta page publique — pas à pas, avec les vrais écrans.
+            ta page publique, pas à pas, avec les vrais écrans.
           </div>
         </div>
         <ArrowRight size={18} className="support-guide-arrow" />
@@ -125,7 +125,7 @@ export default function SupportPage() {
           <MessageSquarePlus size={22} style={{ color: 'var(--brand)', flexShrink: 0, marginTop: 2 }} />
           <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
             Le plus simple : le bouton <strong>« Donner du feedback »</strong> en haut à droite
-            de ton écran. Décris ce qui coince (ou ce qui te ferait gagner du temps) —{' '}
+            de ton écran. Décris ce qui coince (ou ce qui te ferait gagner du temps) :{' '}
             <strong>on lit chaque message</strong>, et c'est comme ça que la plupart des
             améliorations de l'app sont nées.
           </div>

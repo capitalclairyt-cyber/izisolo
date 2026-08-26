@@ -337,7 +337,7 @@ export default function ClientsClient({ clients: clientsInit, profile, statutMap
                       className="izi-btn izi-btn-ghost doublon-btn"
                       onClick={() => ignorerPaire(a, b)}
                       type="button"
-                      title="Ce n'est pas un doublon (ex. deux personnes qui partagent un téléphone) — ne plus proposer cette paire"
+                      title="Ce n'est pas un doublon (ex. deux personnes qui partagent un téléphone) : ne plus proposer cette paire"
                     >
                       Ignorer
                     </button>
@@ -535,7 +535,7 @@ export default function ClientsClient({ clients: clientsInit, profile, statutMap
                       {estPonctuel(client) && (
                         <span
                           className="izi-badge izi-badge-warning"
-                          title={`Venu·e ${presenceInfo[client.id].nb > 1 ? presenceInfo[client.id].nb + ' fois' : 'une fois'} en évènement ponctuel — propose-lui un carnet ou invite-le/la`}
+                          title={`Venu·e ${presenceInfo[client.id].nb > 1 ? presenceInfo[client.id].nb + ' fois' : 'une fois'} en évènement ponctuel : propose-lui un carnet ou invite-le/la`}
                         >
                           ☄️ {presenceInfo[client.id]?.dernier?.nom || 'Ponctuel·le'}
                         </span>
@@ -555,7 +555,7 @@ export default function ClientsClient({ clients: clientsInit, profile, statutMap
                         );
                         // Pas de compte : seulement si invitable (a un email)
                         if (client.email) return (
-                          <span className="compte-pastille compte-aucun" title="Pas de compte — pense à l'inviter">
+                          <span className="compte-pastille compte-aucun" title="Pas de compte, pense à l'inviter">
                             <span className="compte-dot" /> Pas de compte
                           </span>
                         );

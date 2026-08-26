@@ -14,7 +14,7 @@ import { Printer, ArrowLeft } from 'lucide-react';
 
 const TITRES = {
   carte:   { titre: 'Découvre mon studio',            sous: 'Planning, infos pratiques et réservation en ligne.' },
-  flyer:   { titre: 'Viens essayer un cours',         sous: "Scanne pour demander ton cours d'essai — ça prend 30 secondes." },
+  flyer:   { titre: 'Viens essayer un cours',         sous: "Scanne pour demander ton cours d'essai, ça prend 30 secondes." },
   affiche: { titre: 'Réserve tes séances en ligne',   sous: 'Scanne pour retrouver ton espace élève : réservations, carnet, messages.' },
 };
 
@@ -42,7 +42,7 @@ function Affichette() {
       .catch(() => setQr(null));
   }, [url, couleur, slug]);
 
-  if (!slug) return <p style={{ padding: 40 }}>Lien incomplet — repasse par la modale « Mon QR code ».</p>;
+  if (!slug) return <p style={{ padding: 40 }}>Lien incomplet : repasse par la modale « Mon QR code ».</p>;
 
   return (
     <div className="aff-page">

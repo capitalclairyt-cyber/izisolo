@@ -29,7 +29,7 @@ export default function NouveauSondageClient({ typesCours, studioSlug }) {
   const [saving, setSaving] = useState(false);
 
   const [titre, setTitre] = useState('Mon planning idéal');
-  const [message, setMessage] = useState("Aide-moi à choisir mes meilleurs créneaux ! Coche tous les cours auxquels tu viendrais — ça m'aide à construire un planning qui te ressemble.");
+  const [message, setMessage] = useState("Aide-moi à choisir mes meilleurs créneaux ! Coche tous les cours auxquels tu viendrais, ça m'aide à construire un planning qui te ressemble.");
   const [dateFin, setDateFin] = useState(() => {
     const d = new Date(Date.now() + 14 * 86400000);
     return d.toISOString().slice(0, 10);

@@ -13,7 +13,7 @@ import { SMS_ENABLED, SMS_PRIX_UNITAIRE } from '@/lib/constantes';
 
 const NOTIFS_TYPES = [
   { key: 'cours_annule',       label: 'Cours annulé par mes soins',       desc: "Email/SMS automatique aux inscrits quand j'annule un cours." },
-  { key: 'annulation_tardive', label: 'Annulation tardive — séance comptée', desc: "L'élève reçoit un rappel transparent : sa séance a été décomptée." },
+  { key: 'annulation_tardive', label: 'Annulation tardive : séance comptée', desc: "L'élève reçoit un rappel transparent : sa séance a été décomptée." },
   { key: 'credits_faibles',    label: 'Crédits faibles',                  desc: "Quand il reste peu de séances sur un carnet (seuil réglable ci-dessous)." },
   { key: 'expiration_abo',     label: 'Expiration prochaine d\'abonnement', desc: "X jours avant la date de fin (délai réglable ci-dessous)." },
 ];
@@ -106,7 +106,7 @@ export default function NotifsElevesSection({ profile, setProfile, setDirty }) {
             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 2 }}>
               {smsGlobalOff
                 ? 'Aucun SMS ne sera envoyé, même si tu coches une case ci-dessous.'
-                : 'Master switch — coupe tout d\'un coup en cas de doute sur la facture.'}
+                : 'Master switch : coupe tout d\'un coup en cas de doute sur la facture.'}
             </div>
           </div>
           <button type="button" onClick={toggleSmsGlobalOff} className="toggle-btn-mini" aria-label={smsGlobalOff ? 'Réactiver les SMS' : 'Couper tous les SMS'}>
@@ -161,7 +161,7 @@ export default function NotifsElevesSection({ profile, setProfile, setDirty }) {
         display: 'flex', flexDirection: 'column', gap: 10,
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
-          <span style={{ fontSize: '0.875rem', fontWeight: 600 }}>📱 SMS — facturation au volume</span>
+          <span style={{ fontSize: '0.875rem', fontWeight: 600 }}>📱 SMS : facturation au volume</span>
           {smsConso !== null && (
             <span style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>
               <strong>{smsConso} SMS</strong> ce mois · <strong>{(smsConso * SMS_PRIX_UNITAIRE).toFixed(2).replace('.', ',')} €</strong>
@@ -190,7 +190,7 @@ export default function NotifsElevesSection({ profile, setProfile, setDirty }) {
         </div>
         {seuilAtteint && (
           <div style={{ fontSize: '0.75rem', background: '#fee2e2', color: '#991b1b', padding: '6px 10px', borderRadius: 8, fontWeight: 600 }}>
-            ⛔ Seuil atteint — les nouveaux SMS sont bloqués jusqu'au mois prochain.
+            ⛔ Seuil atteint : les nouveaux SMS sont bloqués jusqu'au mois prochain.
           </div>
         )}
         {alerteSeuil && !seuilAtteint && (

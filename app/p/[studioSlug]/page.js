@@ -26,10 +26,10 @@ export async function generateMetadata({ params }) {
 
   if (!profile) return { title: 'Studio introuvable' };
   return {
-    title: `${profile.studio_nom} — Réserver un cours`,
+    title: `${profile.studio_nom} · Réserver un cours`,
     ...ogPortail({
       studio: profile,
-      titre: `${profile.studio_nom} — Réserver un cours`,
+      titre: `${profile.studio_nom} · Réserver un cours`,
       description: `${profile.metier || 'Studio'} à ${profile.ville || 'France'}. Réserve tes cours en ligne.`,
     }),
   };

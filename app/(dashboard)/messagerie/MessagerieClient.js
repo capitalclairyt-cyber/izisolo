@@ -197,7 +197,7 @@ export default function MessagerieClient({ profile, clients, cours, offres }) {
         // Envoi partiel : on CONSERVE le texte et on dit la vérité (avant :
         // un échec au milieu du fan-out affichait « Erreur » alors que N
         // messages étaient déjà partis, et re-cliquer doublait ces N-là).
-        toast.error(`Envoyé à ${json.count} destinataire${json.count > 1 ? 's' : ''}, mais ${json.failed} en échec. Ton texte est conservé — attention : re-envoyer créera des doublons chez les ${json.count} déjà servis.`);
+        toast.error(`Envoyé à ${json.count} destinataire${json.count > 1 ? 's' : ''}, mais ${json.failed} en échec. Ton texte est conservé. Attention : re-envoyer créera des doublons chez les ${json.count} déjà servis.`);
       } else {
         toast.success(`Envoyé à ${json.count} conversation${json.count > 1 ? 's' : ''} !`);
         setContent('');
@@ -287,7 +287,7 @@ export default function MessagerieClient({ profile, clients, cours, offres }) {
             <div className="ann-section">
               <label className="ann-label">Quel cours ?</label>
               <select className="izi-input" value={coursId} onChange={(e) => setCoursId(e.target.value)}>
-                <option value="">— Choisir un cours —</option>
+                <option value="">Choisir un cours…</option>
                 {cours.map(c => (
                   <option key={c.id} value={c.id}>
                     {c.nom} · {new Date(c.date).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })} {c.heure?.slice(0, 5)}
@@ -311,7 +311,7 @@ export default function MessagerieClient({ profile, clients, cours, offres }) {
             <div className="ann-section">
               <label className="ann-label">Quel type de cours ?</label>
               <select className="izi-input" value={typeCours} onChange={(e) => setTypeCours(e.target.value)}>
-                <option value="">— Choisir un type —</option>
+                <option value="">Choisir un type…</option>
                 {typesCoursList.map(t => <option key={t} value={t}>{t}</option>)}
               </select>
             </div>
@@ -321,7 +321,7 @@ export default function MessagerieClient({ profile, clients, cours, offres }) {
             <div className="ann-section">
               <label className="ann-label">Quelle offre ?</label>
               <select className="izi-input" value={offreId} onChange={(e) => setOffreId(e.target.value)}>
-                <option value="">— Choisir une offre —</option>
+                <option value="">Choisir une offre…</option>
                 {offres.map(o => <option key={o.id} value={o.id}>{o.nom}</option>)}
               </select>
             </div>
@@ -392,7 +392,7 @@ export default function MessagerieClient({ profile, clients, cours, offres }) {
               maxLength={4000}
               placeholder="Ex : Le cours de mardi 19h30 est annulé, on se retrouve mercredi à la place. Bonne soirée !"
             />
-            <p className="ann-hint">{content.length}/4000 — chaque destinataire recevra ce message dans sa conversation avec toi. Il pourra te répondre.</p>
+            <p className="ann-hint">{content.length}/4000 · chaque destinataire recevra ce message dans sa conversation avec toi. Il pourra te répondre.</p>
             <AttachmentPicker attachments={annAttachments} onChange={setAnnAttachments} disabled={sending} />
           </div>
 
@@ -713,7 +713,7 @@ function ClientsChipsPicker({ clients, clientsFiltres, clientIds, setClientIds, 
               ))
             )}
             {suggestions.length > 30 && (
-              <div className="chips-picker-more">+ {suggestions.length - 30} autres — affine ta recherche</div>
+              <div className="chips-picker-more">+ {suggestions.length - 30} autres, affine ta recherche</div>
             )}
           </div>
         )}

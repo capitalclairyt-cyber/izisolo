@@ -460,7 +460,7 @@ export default function EditClientClient({ client, lieux: lieuxInitiaux }) {
                 <label className="form-label" htmlFor="ec-date-naissance">
                   Date de naissance{' '}
                   <span style={{ fontWeight: 400, color: 'var(--text-muted)', fontSize: '0.8125rem' }}>
-                    — pour envoyer un mot doux le jour J 🎂
+                    (pour envoyer un mot doux le jour J 🎂)
                   </span>
                 </label>
                 <DateNaissanceInput

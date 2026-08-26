@@ -68,7 +68,7 @@ export default function UnsubscribeConfirmPage() {
         borderTop: '1px solid #eee', fontSize: '0.8rem', color: '#aaa',
       }}>
         <p>
-          Maude Yoga — entreprise individuelle — SIREN 520 888 967<br />
+          Maude Yoga, entreprise individuelle, SIREN 520 888 967<br />
           Montgontier, 38260 Gillonnay
         </p>
       </div>

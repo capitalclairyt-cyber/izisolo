@@ -45,7 +45,7 @@ export default function RegisterPage() {
       if (msg === 'User already registered') {
         setError('Cet email est déjà utilisé');
       } else if (msg.includes('rate') || authError.status === 429) {
-        setError('Trop de tentatives — attends quelques minutes puis réessaie.');
+        setError('Trop de tentatives, attends quelques minutes puis réessaie.');
       } else if (/password/i.test(msg)) {
         setError('Mot de passe refusé par le serveur : ' + msg);
       } else {

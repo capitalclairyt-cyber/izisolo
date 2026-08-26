@@ -18,7 +18,7 @@ export default function MentionsLegalesPage() {
         <a href="https://www.izisolo.fr">izisolo.fr</a>, est éditée par :
       </p>
       <p>
-        <strong>Maude Yoga</strong> — entreprise individuelle<br />
+        <strong>Maude Yoga</strong>, entreprise individuelle<br />
         Montgontier, 38260 Gillonnay, France<br />
         SIREN : 520 888 967<br />
         TVA non applicable, article 293 B du Code général des impôts<br />
@@ -61,9 +61,9 @@ export default function MentionsLegalesPage() {
         <a href="/legal/rgpd">Politique de confidentialité</a> :
       </p>
       <ul>
-        <li><strong>Stripe Payments Europe Ltd.</strong> — paiement en ligne</li>
-        <li><strong>Resend Inc.</strong> — envoi d'emails transactionnels</li>
-        <li><strong>Anthropic, PBC</strong> — extraction de fiches élèves par photo (IA Claude)</li>
+        <li><strong>Stripe Payments Europe Ltd.</strong> : paiement en ligne</li>
+        <li><strong>Resend Inc.</strong> : envoi d'emails transactionnels</li>
+        <li><strong>Anthropic, PBC</strong> : extraction de fiches élèves par photo (IA Claude)</li>
       </ul>
 
       <h2>5. Propriété intellectuelle</h2>

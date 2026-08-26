@@ -24,11 +24,11 @@ export default function AideEleve({ studioNom = 'ton studio', studioSlug }) {
   const QUESTIONS = [
     {
       q: 'Comment réserver une séance ?',
-      r: <>Depuis la page du studio (bouton « 📅 Voir les prochains cours » en bas), choisis un cours puis <strong>« Réserver »</strong>. Connecté·e, ta réservation se rattache automatiquement à ta fiche — et certains cours te proposent de réserver la série entière d'un coup.</>,
+      r: <>Depuis la page du studio (bouton « 📅 Voir les prochains cours » en bas), choisis un cours puis <strong>« Réserver »</strong>. Connecté·e, ta réservation se rattache automatiquement à ta fiche, et certains cours te proposent de réserver la série entière d'un coup.</>,
     },
     {
       q: 'Comment annuler ma réservation ?',
-      r: <>Ici même, dans <strong>« Mes prochains cours »</strong> : bouton <strong>« Annuler »</strong> sur la séance. Dans le délai d'annulation de {studioNom}, ta séance est rendue ; passé ce délai, c'est la règle du studio qui s'applique (séance décomptée ou due) — elle t'est rappelée avant de confirmer.</>,
+      r: <>Ici même, dans <strong>« Mes prochains cours »</strong> : bouton <strong>« Annuler »</strong> sur la séance. Dans le délai d'annulation de {studioNom}, ta séance est rendue ; passé ce délai, c'est la règle du studio qui s'applique (séance décomptée ou due), elle t'est rappelée avant de confirmer.</>,
     },
     {
       q: 'Où est le lien de mon cours en visio ?',
@@ -36,10 +36,10 @@ export default function AideEleve({ studioNom = 'ton studio', studioSlug }) {
     },
     {
       q: 'Comment lire mon carnet ou mon abonnement ?',
-      r: <>Le bloc de tes carnets affiche les <strong>séances restantes</strong>, la <strong>validité</strong>, et « ⏸ En pause jusqu'au… » le cas échéant. Bon à savoir : une séance se décompte quand le studio fait l'appel — pas au moment où tu réserves. Annuler à temps ne te coûte donc jamais une séance.</>,
+      r: <>Le bloc de tes carnets affiche les <strong>séances restantes</strong>, la <strong>validité</strong>, et « ⏸ En pause jusqu'au… » le cas échéant. Bon à savoir : une séance se décompte quand le studio fait l'appel, pas au moment où tu réserves. Annuler à temps ne te coûte donc jamais une séance.</>,
     },
     {
-      q: 'J\'ai un montant « à régler » — c\'est quoi ?',
+      q: 'J\'ai un montant « à régler », c\'est quoi ?',
       r: <>C'est ce que tu dois à {studioNom} : un paiement convenu « à régler plus tard », un versement d'un paiement en plusieurs fois, ou une séance payable à l'unité. Le bouton <strong>« 💡 Comment régler ? »</strong> t'affiche les options : le RIB du studio avec ta référence de virement et un QR à scanner avec ton application bancaire (si le studio l'a fourni), ou espèces et chèque sur place. Et quand un bouton <strong>« 💳 Payer par CB »</strong> accompagne la ligne, tu peux régler en ligne.</>,
     },
     {
@@ -48,7 +48,7 @@ export default function AideEleve({ studioNom = 'ton studio', studioSlug }) {
     },
     {
       q: 'Comment obtenir un reçu ou une facture ?',
-      r: <>Dans <strong>« Mes paiements »</strong>, chaque paiement réglé a son bouton de téléchargement. Si {studioNom} a activé la facturation, tu obtiens une vraie <strong>facture numérotée</strong> (acceptée par les CSE, employeurs et mutuelles) — et « Facture du mois » regroupe plusieurs paiements en un seul document.</>,
+      r: <>Dans <strong>« Mes paiements »</strong>, chaque paiement réglé a son bouton de téléchargement. Si {studioNom} a activé la facturation, tu obtiens une vraie <strong>facture numérotée</strong> (acceptée par les CSE, employeurs et mutuelles), et « Facture du mois » regroupe plusieurs paiements en un seul document.</>,
     },
     {
       q: 'Comment installer l\'app sur mon téléphone ?',

@@ -1,5 +1,5 @@
 export const metadata = {
-  title: "CGV — Conditions Générales de Vente | IziSolo",
+  title: "CGV · Conditions Générales de Vente | IziSolo",
   description: "Conditions générales de vente de la plateforme IziSolo, applicables aux professionnels indépendants.",
 };
 
@@ -7,7 +7,7 @@ export default function CGVPage() {
   return (
     <div className="legal-content">
       <h1>Conditions Générales de Vente</h1>
-      <p className="legal-date">Dernière mise à jour : 6 mai 2026 — Version 2.0</p>
+      <p className="legal-date">Dernière mise à jour : 6 mai 2026 · Version 2.0</p>
 
       <div className="legal-box legal-box-warning">
         <strong>Lecture importante.</strong> Les présentes conditions générales de
@@ -25,7 +25,7 @@ export default function CGVPage() {
         Les services d'abonnement à la plateforme IziSolo sont commercialisés par :
       </p>
       <p>
-        <strong>Maude Yoga</strong> — entreprise individuelle<br />
+        <strong>Maude Yoga</strong>, entreprise individuelle<br />
         Montgontier, 38260 Gillonnay, France<br />
         SIREN : 520 888 967<br />
         TVA non applicable, article 293 B du Code général des impôts<br />

@@ -33,7 +33,7 @@ export default function Calculateur() {
             <h1 className="serif">Combien ça coûte,<br /><em>concrètement ?</em></h1>
             <p className="lead">
               Ajuste tes volumes. On te montre exactement ce que tu paies
-              et ce que tu reçois — ligne par ligne, sans surprises.
+              et ce que tu reçois : ligne par ligne, sans surprises.
             </p>
           </div>
         </section>
@@ -70,8 +70,8 @@ export default function Calculateur() {
               <div className="calc-input-group">
                 <label htmlFor="plan-select">Ton plan</label>
                 <select id="plan-select" value={plan} onChange={(e) => setPlan(e.target.value)}>
-                  <option value="solo">Essentiel — 15 €/mois</option>
-                  <option value="pro">Complet — 29 €/mois</option>
+                  <option value="solo">Essentiel · 15 €/mois</option>
+                  <option value="pro">Complet · 29 €/mois</option>
                 </select>
               </div>
             </div>
@@ -115,9 +115,9 @@ export default function Calculateur() {
             </div>
 
             <p className="calc-note reveal" style={{ textAlign: 'center', fontSize: '0.85rem', color: 'var(--c-ink-soft)', marginTop: 'var(--sp-6)', maxWidth: 600, marginLeft: 'auto', marginRight: 'auto' }}>
-              La commission IziSolo (1 %) apparaît sur ta facture mensuelle — elle n'est jamais prélevée sur les paiements de tes élèves.
+              La commission IziSolo (1 %) apparaît sur ta facture mensuelle, elle n'est jamais prélevée sur les paiements de tes élèves.
               Les frais Stripe (1,5 % + 0,25 €) sont les frais standard de paiement en ligne, identiques quel que soit l'outil que tu utilises.
-              {plan === 'solo' && ' Le plan Essentiel ne propose pas le paiement en ligne — tes élèves paient en espèces, chèque ou virement.'}
+              {plan === 'solo' && ' Le plan Essentiel ne propose pas le paiement en ligne : tes élèves paient en espèces, chèque ou virement.'}
             </p>
           </div>
         </section>

@@ -83,7 +83,7 @@ export default function EmbedPlanning({
   return (
     <div className="emb" data-palette={palette} data-affichage={affichage} style={couleurs || undefined} ref={rootRef}>
       {parDate.length === 0 && (
-        <p className="emb-vide">Aucune séance programmée pour le moment — reviens bientôt !</p>
+        <p className="emb-vide">Aucune séance programmée pour le moment, reviens bientôt !</p>
       )}
 
       {affichage === 'semaine' && parSemaine.map(({ lundi, jours }) => (

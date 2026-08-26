@@ -83,7 +83,7 @@ export default function ResultatsSondageClient({ sondage: initialSondage, crenea
   const copyLink = async () => {
     try {
       await navigator.clipboard.writeText(publicUrl);
-      toast.success('Lien copié — partage-le à tes élèves !');
+      toast.success('Lien copié, partage-le à tes élèves !');
     } catch {
       toast.error('Impossible de copier');
     }

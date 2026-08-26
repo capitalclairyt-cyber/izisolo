@@ -135,14 +135,14 @@ export default async function DashboardPage() {
       if (reste > 0 && reste <= seuil && reste < total) {
         alertes.push({
           type: 'renew',
-          message: `${nom} — il reste ${reste} séance${reste > 1 ? 's' : ''}`,
+          message: `${nom} : il reste ${reste} séance${reste > 1 ? 's' : ''}`,
           hint: 'proposer la suite ?',
           client_id,
         });
       } else if (reste <= 0) {
         alertes.push({
           type: 'renew',
-          message: `${nom} — carnet terminé`,
+          message: `${nom} : carnet terminé`,
           hint: 'renouveler ?',
           client_id,
         });

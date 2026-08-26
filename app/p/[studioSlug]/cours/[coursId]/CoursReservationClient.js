@@ -57,7 +57,7 @@ function CompletAvecListeAttente({ cours, studioSlug, currentUser }) {
       if (!res.ok) throw new Error(json.error || 'Erreur');
       setPosition(json.position);
       setDone(true);
-      toast.success('Tu es sur la liste d\'attente — on te prévient si une place se libère.');
+      toast.success('Tu es sur la liste d\'attente : on te prévient si une place se libère.');
     } catch (e) {
       setError(e.message);
       toast.error(e.message);
@@ -90,7 +90,7 @@ function CompletAvecListeAttente({ cours, studioSlug, currentUser }) {
         <AlertCircle size={18} style={{ color: '#d97706', flexShrink: 0, marginTop: 1 }} />
         <div style={{ fontSize: '0.875rem', color: '#7c4a03', lineHeight: 1.5 }}>
           <strong>Cette séance est complète.</strong><br />
-          Inscris-toi sur la liste d'attente — on te prévient en priorité si une place se libère.
+          Inscris-toi sur la liste d'attente : on te prévient en priorité si une place se libère.
         </div>
       </div>
 
@@ -104,7 +104,7 @@ function CompletAvecListeAttente({ cours, studioSlug, currentUser }) {
           <input id="la-email" type="email" className="portail-input" value={email} onChange={e => setEmail(e.target.value)} placeholder="marie@exemple.fr" required autoComplete="email" />
         </div>
         <div className="portail-field">
-          <label className="portail-label" htmlFor="la-tel">Téléphone <span style={{ color: '#aaa', fontWeight: 400 }}>(optionnel — SMS si place libérée)</span></label>
+          <label className="portail-label" htmlFor="la-tel">Téléphone <span style={{ color: '#aaa', fontWeight: 400 }}>(optionnel, SMS si place libérée)</span></label>
           <input id="la-tel" type="tel" className="portail-input" value={tel} onChange={e => setTel(e.target.value)} placeholder="06 12 34 56 78" autoComplete="tel" />
         </div>
 
@@ -374,9 +374,9 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
             <div className="resa-detail-row">
               <span style={{ fontWeight: 800, fontSize: '0.95rem', width: 15, textAlign: 'center', flexShrink: 0 }}>€</span>
               {cours.carnets_acceptes === true ? (
-                <span><strong>{Number(cours.tarif_unitaire).toFixed(2).replace('.', ',')} €</strong> la séance — ou inclus dans les carnets/abos compatibles</span>
+                <span><strong>{Number(cours.tarif_unitaire).toFixed(2).replace('.', ',')} €</strong> la séance, ou inclus dans les carnets/abos compatibles</span>
               ) : (
-                <span>Évènement payant · <strong>{Number(cours.tarif_unitaire).toFixed(2).replace('.', ',')} €</strong> — à régler auprès du studio</span>
+                <span>Évènement payant · <strong>{Number(cours.tarif_unitaire).toFixed(2).replace('.', ',')} €</strong>, à régler auprès du studio</span>
               )}
             </div>
           )}
@@ -474,20 +474,20 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
             {prevision.kind === 'carnet' && (
               <>Elle sera décomptée de <strong>{prevision.nom}</strong>
                 {prevision.resteApres != null
-                  ? <> — il te restera <strong>{prevision.resteApres} séance{prevision.resteApres > 1 ? 's' : ''}</strong> après celle-ci.</>
+                  ? <>, il te restera <strong>{prevision.resteApres} séance{prevision.resteApres > 1 ? 's' : ''}</strong> après celle-ci.</>
                   : <> (illimité).</>}
               </>
             )}
             {prevision.kind === 'unite' && (
-              <>{prevision.carnetInapplicable && <>Ton carnet ne couvre pas ce type de cours — </>}
+              <>{prevision.carnetInapplicable && <>Ton carnet ne couvre pas ce type de cours : </>}
                 elle est à <strong>{Number(prevision.montant).toFixed(2).replace('.', ',').replace(',00', '')} €</strong>, à régler auprès du studio.
               </>
             )}
             {prevision.kind === 'incompatible' && (
-              <>Ton carnet actuel ne couvre pas ce type de cours — la séance sera à régler selon les règles du studio.</>
+              <>Ton carnet actuel ne couvre pas ce type de cours : la séance sera à régler selon les règles du studio.</>
             )}
             {prevision.kind === 'sans_carnet' && (
-              <>Tu n'as pas de carnet ou d'abonnement actif pour ce cours — parles-en à ton studio si besoin.</>
+              <>Tu n'as pas de carnet ou d'abonnement actif pour ce cours, parles-en à ton studio si besoin.</>
             )}
           </div>
         </div>
@@ -546,7 +546,7 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
         <div className="portail-card" style={{ textAlign: 'center' }}>
           <h2 style={{ fontSize: '1.0625rem', fontWeight: 700, margin: '0 0 8px', color: '#1a1a2e' }}>Réserver ta place</h2>
           <p style={{ color: '#555', fontSize: '0.9rem', margin: 0 }}>
-            Ce studio prend les réservations en direct — <strong>contacte-le pour réserver</strong> (ses coordonnées sont sur sa page).
+            Ce studio prend les réservations en direct : <strong>contacte-le pour réserver</strong> (ses coordonnées sont sur sa page).
           </p>
         </div>
       ) : (

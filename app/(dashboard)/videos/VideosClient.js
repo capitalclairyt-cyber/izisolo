@@ -142,7 +142,7 @@ export default function VideosClient({ videosInit }) {
 
           <div>
             <label className="izi-label">Titre *</label>
-            <input className="izi-input" value={form.titre} onChange={e => setForm({ ...form, titre: e.target.value })} placeholder="Ex : Salutation au soleil — guide débutant" required />
+            <input className="izi-input" value={form.titre} onChange={e => setForm({ ...form, titre: e.target.value })} placeholder="Ex : Salutation au soleil, guide débutant" required />
           </div>
 
           <div>

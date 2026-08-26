@@ -125,7 +125,7 @@ export default function CoursDetailClient({ intervenantes = [], intervenantInit 
       const res = await fetch(`/api/liste-attente/${entryId}/promouvoir`, { method: 'POST' });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Erreur');
-      toast.success('Personne promue — email envoyé');
+      toast.success('Personne promue, email envoyé');
       router.refresh();
     } catch (e) {
       toast.error(e.message);
@@ -159,7 +159,7 @@ export default function CoursDetailClient({ intervenantes = [], intervenantInit 
   const [visioBusy, setVisioBusy] = useState(false);
   const sauverVisio = async () => {
     const clean = visioLien.trim() ? sanitizeLienVisio(visioLien) : '';
-    if (visioLien.trim() && !clean) { toast.error('Lien invalide — il faut une URL https (Zoom, Meet…).'); return; }
+    if (visioLien.trim() && !clean) { toast.error('Lien invalide : il faut une URL https (Zoom, Meet…).'); return; }
     setVisioBusy(true);
     const supabase = createClient();
     const { error } = await supabase.from('cours')
@@ -329,7 +329,7 @@ export default function CoursDetailClient({ intervenantes = [], intervenantInit 
   const handleCancel = async () => {
     const n = presences.length;
     if (!confirm(
-      `Annuler cette séance ?${n > 0 ? `\n\nLes ${n} inscrit·e${n > 1 ? 's' : ''} seront prévenu·es par email, et les crédits restitués selon ta règle « Cours annulé ».` : ''}\n\nElle restera visible (barrée) sur ton agenda — c'est ce qui informe tes élèves. Tu pourras ensuite la supprimer (corbeille) pour la faire disparaître.\n\nCette action est définitive (pas de ré-activation).`
+      `Annuler cette séance ?${n > 0 ? `\n\nLes ${n} inscrit·e${n > 1 ? 's' : ''} seront prévenu·es par email, et les crédits restitués selon ta règle « Cours annulé ».` : ''}\n\nElle restera visible (barrée) sur ton agenda : c'est ce qui informe tes élèves. Tu pourras ensuite la supprimer (corbeille) pour la faire disparaître.\n\nCette action est définitive (pas de ré-activation).`
     )) return;
     setCancelling(true);
     try {
@@ -341,7 +341,7 @@ export default function CoursDetailClient({ intervenantes = [], intervenantInit 
       if (json.credits_restitues > 0) bouts.push(`${json.credits_restitues} crédit${json.credits_restitues > 1 ? 's' : ''} restitué${json.credits_restitues > 1 ? 's' : ''}`);
       toast.success(bouts.join(' · ') + ' ✓');
       if (json.paiements_seance_payes > 0) {
-        toast.warning(`⚠️ ${json.paiements_seance_payes} paiement${json.paiements_seance_payes > 1 ? 's' : ''} déjà encaissé${json.paiements_seance_payes > 1 ? 's' : ''} sur cette séance — pense au remboursement (Revenus).`);
+        toast.warning(`⚠️ ${json.paiements_seance_payes} paiement${json.paiements_seance_payes > 1 ? 's' : ''} déjà encaissé${json.paiements_seance_payes > 1 ? 's' : ''} sur cette séance : pense au remboursement (Revenus).`);
       }
       router.refresh();
     } catch (e) {
@@ -401,7 +401,7 @@ export default function CoursDetailClient({ intervenantes = [], intervenantInit 
 
       if (lectureIncertaine) {
         const ok = confirm(
-          '⚠️ Impossible de vérifier les présences liées — la suppression peut effacer de l\'historique pointé ou des réservations actives.\n\nSupprimer quand même ?'
+          '⚠️ Impossible de vérifier les présences liées : la suppression peut effacer de l\'historique pointé ou des réservations actives.\n\nSupprimer quand même ?'
         );
         if (!ok) { setLoading(false); return; }
       } else if (nbPointees > 0) {
@@ -417,7 +417,7 @@ export default function CoursDetailClient({ intervenantes = [], intervenantInit 
       }
       if (!lectureIncertaine && nbResas > 0) {
         const ok = confirm(
-          `⚠️ ${nbResas} réservation${nbResas > 1 ? 's' : ''} active${nbResas > 1 ? 's' : ''} sur ${deleteScope === 'single' ? 'cette séance' : 'ces séances'} — ` +
+          `⚠️ ${nbResas} réservation${nbResas > 1 ? 's' : ''} active${nbResas > 1 ? 's' : ''} sur ${deleteScope === 'single' ? 'cette séance' : 'ces séances'} : ` +
           `supprimer les efface SANS prévenir les élèves (les listes d'attente disparaissent aussi).\n\n` +
           `Préfère « Annuler le cours » : les inscrit·es reçoivent un email et les carnets sont recrédités.\n\n` +
           `Supprimer quand même ?`
@@ -604,12 +604,12 @@ export default function CoursDetailClient({ intervenantes = [], intervenantInit 
         toast.error(data.error || 'Suppression impossible');
         return;
       }
-      toast.success(`Réservation supprimée ✓${data.recredite ? ' — séance re-créditée sur le carnet' : ''}${data.promu ? ' · 1 personne promue depuis la liste d\'attente' : ''}`);
+      toast.success(`Réservation supprimée ✓${data.recredite ? ' · séance re-créditée sur le carnet' : ''}${data.promu ? ' · 1 personne promue depuis la liste d\'attente' : ''}`);
       setResaModal(null);
       setResaConfirmDel(false);
       router.refresh();
     } catch {
-      toast.error('Suppression impossible — problème réseau ?');
+      toast.error('Suppression impossible : problème réseau ?');
     } finally {
       setResaBusy(false);
     }
@@ -762,7 +762,7 @@ export default function CoursDetailClient({ intervenantes = [], intervenantInit 
           <X size={18} />
           <span>
             Cette séance est annulée. Elle reste affichée <strong>barrée</strong> sur ton agenda pour
-            que tes élèves voient l'annulation — si tu veux la faire disparaître complètement,
+            que tes élèves voient l'annulation. Si tu veux la faire disparaître complètement,
             supprime-la avec la corbeille <Trash2 size={13} style={{ display: 'inline', verticalAlign: '-2px' }} /> ci-dessous.
           </span>
         </div>
@@ -830,7 +830,7 @@ export default function CoursDetailClient({ intervenantes = [], intervenantInit 
               <div className="detail-row">
                 <span style={{ fontSize: 16 }}>🖥</span>
                 <div style={{ flex: 1 }}>
-                  <div className="detail-label">En ligne — lien de la séance</div>
+                  <div className="detail-label">En ligne : lien de la séance</div>
                   <div style={{ display: 'flex', gap: 6, marginTop: 4, flexWrap: 'wrap' }}>
                     <input
                       className="izi-input"
@@ -880,8 +880,8 @@ export default function CoursDetailClient({ intervenantes = [], intervenantInit 
                 <div className="detail-value">
                   {argent.tarif
                     ? (cours.carnets_acceptes === true
-                        ? `${argent.tarif} € à la séance — les carnets compatibles décomptent (mixte)`
-                        : `${argent.tarif} € à la séance — ne décompte aucun carnet`)
+                        ? `${argent.tarif} € à la séance : les carnets compatibles décomptent (mixte)`
+                        : `${argent.tarif} € à la séance : ne décompte aucun carnet`)
                     : 'Couvert par les carnets / abonnements'}
                 </div>
               </div>
@@ -949,7 +949,7 @@ export default function CoursDetailClient({ intervenantes = [], intervenantInit 
               <select className="izi-input" value={form.lieu_id} onChange={handleChange('lieu_id')}>
                 <option value="">-- Aucun --</option>
                 {lieux.map(l => (
-                  <option key={l.id} value={l.id}>{l.nom}{l.adresse ? ` — ${l.adresse}` : ''}</option>
+                  <option key={l.id} value={l.id}>{l.nom}{l.adresse ? `, ${l.adresse}` : ''}</option>
                 ))}
               </select>
             </div>
@@ -966,7 +966,7 @@ export default function CoursDetailClient({ intervenantes = [], intervenantInit 
                 <option value="inscrits">Élèves inscrits seulement</option>
                 <option value="abonnes">Détenteurs d'abonnement actif</option>
                 <option value="fideles">Élèves fidèles</option>
-                <option value="prive">🔒 Privé — sur invitation</option>
+                <option value="prive">🔒 Privé (sur invitation)</option>
               </select>
               <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginTop: 4 }}>
                 {form.visibilite === 'prive'
@@ -989,7 +989,7 @@ export default function CoursDetailClient({ intervenantes = [], intervenantInit 
                 min="0"
                 value={form.tarif_unitaire}
                 onChange={handleChange('tarif_unitaire')}
-                placeholder="Prix à la séance (€) — ex : 15.00"
+                placeholder="Prix à la séance (€), ex : 15.00"
                 style={{ maxWidth: 260 }}
               />
               {form.tarif_unitaire && (
@@ -1005,7 +1005,7 @@ export default function CoursDetailClient({ intervenantes = [], intervenantInit 
                     <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 2 }}>
                       {form.carnets_acceptes
                         ? 'Cours mixte : carnet compatible = séance décomptée, sinon paiement à la séance.'
-                        : 'Décochée : personne ne décompte — tout le monde règle à la séance.'}
+                        : 'Décochée : personne ne décompte, tout le monde règle à la séance.'}
                     </span>
                   </span>
                 </label>
@@ -1109,7 +1109,7 @@ export default function CoursDetailClient({ intervenantes = [], intervenantInit 
         {cours.est_annule && (
           <div className="pointage-banner" style={{ background: 'var(--bg-soft, #F8F4ED)' }}>
             <Lock size={16} />
-            <span>Séance annulée — pointage et ajouts verrouillés (crédits restitués selon ta règle « Cours annulé »).</span>
+            <span>Séance annulée : pointage et ajouts verrouillés (crédits restitués selon ta règle « Cours annulé »).</span>
           </div>
         )}
 
@@ -1118,14 +1118,14 @@ export default function CoursDetailClient({ intervenantes = [], intervenantInit 
           <div className="pointage-banner">
             <CheckCheck size={18} />
             <span>
-              Pointage effectué — <strong>{nbPointes}/{presences.length}</strong> présent{nbPointes > 1 ? 's' : ''}
+              Pointage effectué : <strong>{nbPointes}/{presences.length}</strong> présent{nbPointes > 1 ? 's' : ''}
             </span>
           </div>
         )}
 
         {cours.visibilite === 'prive' && (
           <div style={{ background: 'var(--bg-soft, #F8F4ED)', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 14px', margin: '0 0 12px', fontSize: '0.8125rem', color: 'var(--text-muted)', lineHeight: 1.55 }}>
-            🔒 <strong>Cours privé</strong> — invisible sur ton portail.
+            🔒 <strong>Cours privé</strong> : invisible sur ton portail.
             {presences.length === 0
               ? ' Ajoute ton élève (inscrit·e ou non : tu peux créer sa fiche à la volée), puis préviens-le/la par email.'
               : ' Les personnes ci-dessous le voient dans leur espace ; personne d\'autre.'}
@@ -1138,7 +1138,7 @@ export default function CoursDetailClient({ intervenantes = [], intervenantInit 
             {argent.tarif ? (
               <>
                 💶 <strong>Prévisionnel : {(argent.encaisse + argent.attendu).toFixed(2).replace('.', ',').replace(',00', '')} €</strong>
-                {' — '}{argent.payes} payée{argent.payes > 1 ? 's' : ''} ({argent.encaisse.toFixed(2).replace('.', ',').replace(',00', '')} € encaissés) · {argent.aRegler} à régler ({argent.attendu.toFixed(2).replace('.', ',').replace(',00', '')} €)
+                {' · '}{argent.payes} payée{argent.payes > 1 ? 's' : ''} ({argent.encaisse.toFixed(2).replace('.', ',').replace(',00', '')} € encaissés) · {argent.aRegler} à régler ({argent.attendu.toFixed(2).replace('.', ',').replace(',00', '')} €)
                 {argent.gratuits > 0 && <> · {argent.gratuits} essai/offert</>}
               </>
             ) : (
@@ -1178,7 +1178,7 @@ export default function CoursDetailClient({ intervenantes = [], intervenantInit 
                     <span className="argent-chip chip-carnet" title="Cette séance sera décomptée de ce carnet/abo au pointage">🎟️ {argent.parPresence[p.id].nom}</span>
                   )}
                   {argent.parPresence[p.id]?.kind === 'sans' && (
-                    <span className="argent-chip chip-sans" title="Aucun carnet/abo actif ne couvre ce cours — à régler ou à traiter selon ta règle « élève sans carnet »">Sans carnet</span>
+                    <span className="argent-chip chip-sans" title="Aucun carnet/abo actif ne couvre ce cours : à régler ou à traiter selon ta règle « élève sans carnet »">Sans carnet</span>
                   )}
                   {argent.parPresence[p.id]?.kind === 'paye' && (
                     <span className="argent-chip chip-paye">✓ Payée</span>
@@ -1193,7 +1193,7 @@ export default function CoursDetailClient({ intervenantes = [], intervenantInit 
                     <span className="argent-chip chip-gratuit">Offert</span>
                   )}
                   {argent.parPresence[p.id]?.kind === 'excuse' && (
-                    <span className="argent-chip chip-gratuit">Excusée — rien à régler</span>
+                    <span className="argent-chip chip-gratuit">Excusée, rien à régler</span>
                   )}
                 </div>
                 <span className="inscrit-droite">
@@ -1309,7 +1309,7 @@ export default function CoursDetailClient({ intervenantes = [], intervenantInit 
           </div>
           {placesDispos > 0 && listeAttente.some(e => !e.notified_at) && (
             <p style={{ fontSize: '0.75rem', color: '#7c4a03', margin: '10px 0 0', background: '#fef3c7', padding: '6px 10px', borderRadius: 6 }}>
-              💡 {placesDispos} place{placesDispos > 1 ? 's' : ''} libre{placesDispos > 1 ? 's' : ''} — pense à promouvoir les personnes en attente.
+              💡 {placesDispos} place{placesDispos > 1 ? 's' : ''} libre{placesDispos > 1 ? 's' : ''} : pense à promouvoir les personnes en attente.
             </p>
           )}
         </div>
@@ -1427,7 +1427,7 @@ export default function CoursDetailClient({ intervenantes = [], intervenantInit 
                     onChange={e => setRecurrenceForm(p => ({ ...p, lieu_id: e.target.value }))}>
                     <option value="">-- Aucun --</option>
                     {lieux.map(l => (
-                      <option key={l.id} value={l.id}>{l.nom}{l.adresse ? ` — ${l.adresse}` : ''}</option>
+                      <option key={l.id} value={l.id}>{l.nom}{l.adresse ? `, ${l.adresse}` : ''}</option>
                     ))}
                   </select>
                 </div>
@@ -1456,7 +1456,7 @@ export default function CoursDetailClient({ intervenantes = [], intervenantInit 
                     min="0"
                     value={recurrenceForm.tarif_unitaire}
                     onChange={e => setRecurrenceForm(p => ({ ...p, tarif_unitaire: e.target.value }))}
-                    placeholder="Prix à la séance (€) — vide = couvert par les carnets"
+                    placeholder="Prix à la séance (€), vide = couvert par les carnets"
                     style={{ maxWidth: 280 }}
                   />
                   {recurrenceForm.tarif_unitaire ? (
@@ -1488,7 +1488,7 @@ export default function CoursDetailClient({ intervenantes = [], intervenantInit 
                         type="url"
                         value={recurrenceForm.stripe_payment_link_unit}
                         onChange={e => setRecurrenceForm(p => ({ ...p, stripe_payment_link_unit: e.target.value }))}
-                        placeholder="💳 Lien de paiement Stripe (optionnel) — https://buy.stripe.com/…"
+                        placeholder="💳 Lien de paiement Stripe (optionnel) : https://buy.stripe.com/…"
                         style={{ maxWidth: 380 }}
                       />
                       <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'block', marginTop: 4 }}>
@@ -1611,7 +1611,7 @@ export default function CoursDetailClient({ intervenantes = [], intervenantInit 
         <div className="modal-overlay" onClick={() => !resaBusy && setResaModal(null)}>
           <div className="resa-modal" onClick={e => e.stopPropagation()}>
             <div className="resa-modal-head">
-              <h3>Réservation — {resaModal.clients?.prenom} {resaModal.clients?.nom}</h3>
+              <h3>Réservation : {resaModal.clients?.prenom} {resaModal.clients?.nom}</h3>
               <button className="modal-close-x" onClick={() => setResaModal(null)} aria-label="Fermer" type="button">✕</button>
             </div>
 
@@ -1624,7 +1624,7 @@ export default function CoursDetailClient({ intervenantes = [], intervenantInit 
 
             {(resaModal.annulation_tardive || ['annule', 'declinee'].includes(resaModal.statut_pointage)) ? (
               <p className="resa-modal-note">
-                Cette réservation est {resaModal.annulation_tardive ? 'une annulation tardive' : 'annulée'} —
+                Cette réservation est {resaModal.annulation_tardive ? 'une annulation tardive' : 'annulée'} : 
                 tu peux seulement la supprimer.
               </p>
             ) : (
@@ -1644,7 +1644,7 @@ export default function CoursDetailClient({ intervenantes = [], intervenantInit 
                   ))}
                 </div>
                 <p className="resa-modal-hint">
-                  Une séance « essai » ou « offerte » ne décompte pas de carnet — si elle avait
+                  Une séance « essai » ou « offerte » ne décompte pas de carnet : si elle avait
                   déjà été décomptée, elle est re-créditée automatiquement.
                 </p>
               </div>

@@ -278,7 +278,7 @@ export default function EditOffre({ params }) {
             </div>
             <div className="eo-field">
               <label className="eo-label">
-                Prix d'une séance à l'unité <span className="eo-optional">(référence, optionnel — pour afficher l'économie du carnet)</span>
+                Prix d'une séance à l'unité <span className="eo-optional">(référence, optionnel : pour afficher l'économie du carnet)</span>
               </label>
               <input
                 className="izi-input"
@@ -455,8 +455,8 @@ export default function EditOffre({ params }) {
               </label>
               <button type="button" className="eo-vacances-toggle" onClick={() => setProRataActif(v => !v)}>
                 {proRataActif
-                  ? <><ToggleRight size={22} style={{ color: 'var(--brand)' }} /> Activé — prix ajusté aux semaines restantes</>
-                  : <><ToggleLeft size={22} style={{ color: 'var(--text-muted)' }} /> Désactivé — plein tarif toute la période</>
+                  ? <><ToggleRight size={22} style={{ color: 'var(--brand)' }} /> Activé : prix ajusté aux semaines restantes</>
+                  : <><ToggleLeft size={22} style={{ color: 'var(--text-muted)' }} /> Désactivé : plein tarif toute la période</>
                 }
               </button>
               {proRataActif && (
@@ -500,7 +500,7 @@ export default function EditOffre({ params }) {
           <div className="eo-field">
             <label className="eo-label">
               Vaut pour quels cours ?
-              <span className="eo-optional"> — décide quand ce {type === 'carnet' ? 'carnet' : 'abonnement'} se décompte</span>
+              <span className="eo-optional"> (décide quand ce {type === 'carnet' ? 'carnet' : 'abonnement'} se décompte)</span>
             </label>
             <div className="eo-chips">
               {typesCoursDisponibles.map(t => {
@@ -519,12 +519,12 @@ export default function EditOffre({ params }) {
             </div>
             {typesCoursAutorises.length === 0 ? (
               <span className="eo-optional">
-                ✓ Tous tes cours — utilisable sur n'importe quel type.<br />
-                💡 Sélectionne les types couverts pour <strong>exclure</strong> les cours vendus à la séance (atelier, stage, renfo…) — sinon ce {type === 'carnet' ? 'carnet' : 'abonnement'} pourra aussi les payer.
+                ✓ Tous tes cours : utilisable sur n'importe quel type.<br />
+                💡 Sélectionne les types couverts pour <strong>exclure</strong> les cours vendus à la séance (atelier, stage, renfo…), sinon ce {type === 'carnet' ? 'carnet' : 'abonnement'} pourra aussi les payer.
               </span>
             ) : (
               <span className="eo-optional">
-                Restreint aux cours de type <strong>{typesCoursAutorises.join(', ')}</strong> — sur un autre type, l'élève paiera à la séance.
+                Restreint aux cours de type <strong>{typesCoursAutorises.join(', ')}</strong> : sur un autre type, l'élève paiera à la séance.
               </span>
             )}
             <CoherenceTypesHint typesAutorises={typesCoursAutorises} />

@@ -42,7 +42,7 @@ const DIRECT_ACTIONS = new Set([
 // Description humaine de l'effet pour chaque action directe (preview avant confirm)
 const DIRECT_ACTION_PREVIEW = {
   decompte:      'La séance sera décomptée du carnet de l\'élève (irréversible après 7 jours).',
-  excuse:        'La séance sera marquée comme excusée — pas de décompte sur le carnet.',
+  excuse:        'La séance sera marquée comme excusée : pas de décompte sur le carnet.',
   credit_rendu:  'Une séance sera restituée sur le carnet (seances_utilisees -1).',
   prolonge:      'La date de fin du carnet sera étendue jusqu\'à la date du cours.',
   reporte:       'L\'inscription sera basculée sur un autre cours.',
@@ -204,7 +204,7 @@ export default function ResolveCasModal({ item, action, actionLabel, onClose, on
                         onChange={e => setRessourceId(e.target.value)}
                         className="resolve-select"
                       >
-                        <option value="">— Choisir un {resourceConfig.label} —</option>
+                        <option value="">Choisir un {resourceConfig.label}…</option>
                         {ressources.map(r => (
                           <option key={r.id} value={r.id}>
                             {resourceConfig.type === 'paiement' ? fmtPaiement(r) : fmtAbo(r)}
@@ -249,7 +249,7 @@ export default function ResolveCasModal({ item, action, actionLabel, onClose, on
 
         {missingPresence && (
           <div className="resolve-error">
-            <AlertCircle size={14} /> La réservation liée à ce cas a été supprimée — "{actionLabel}" n'a plus de support. Il reste « Ignorer » (et la fiche de l'élève pour un geste manuel). Les nouveaux cas gardent désormais leur réservation.
+            <AlertCircle size={14} /> La réservation liée à ce cas a été supprimée : "{actionLabel}" n'a plus de support. Il reste « Ignorer » (et la fiche de l'élève pour un geste manuel). Les nouveaux cas gardent désormais leur réservation.
           </div>
         )}
 

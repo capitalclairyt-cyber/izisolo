@@ -36,7 +36,7 @@ export default function DocsInscriptionSection({ profile, setProfile, setDirty }
       const j = await res.json().catch(() => ({}));
       if (!res.ok) { toast.error(j.error || 'Téléversement impossible'); return; }
       update([...docs, { url: j.url, nom: j.nom, ajoute_le: new Date().toISOString().slice(0, 10) }].slice(0, MAX_DOCS));
-      toast.success('Document ajouté — pense à Enregistrer.');
+      toast.success('Document ajouté, pense à Enregistrer.');
     } catch (e) {
       toast.error('Téléversement impossible : ' + e.message);
     } finally {
@@ -109,7 +109,7 @@ export default function DocsInscriptionSection({ profile, setProfile, setDirty }
       {docs.length === 0 && (
         <p className="form-hint">
           💡 Le questionnaire officiel QS-SPORT se télécharge sur service-public.fr
-          (cherche « QS-SPORT cerfa ») — dépose-le ici tel quel.
+          (cherche « QS-SPORT cerfa ») : dépose-le ici tel quel.
         </p>
       )}
 

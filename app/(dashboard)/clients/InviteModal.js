@@ -51,7 +51,7 @@ export default function InviteModal({ open, onClose, profile, clients = [] }) {
   // le ton chaleureux vit dans le corps, pas dans une familiarité imposée.
   const salutation = prenomCible ? `Bonjour ${prenomCible}` : 'Bonjour';
 
-  const sujetEmail = `Ton lien de connexion — ${studioNom}`;
+  const sujetEmail = `Ton lien de connexion · ${studioNom}`;
   const corpsEmail = `${salutation},
 
 Voici ton accès direct à l'espace élève de ${studioNom}.
@@ -62,7 +62,7 @@ Tu pourras voir tes cours réservés, t'inscrire à de nouveaux créneaux et gar
 
 Le lien se génère au moment de l'envoi (valable 1 heure).
 
-À très vite${profPrenom ? ' — ' + profPrenom : ''} 🌿`;
+À très vite${profPrenom ? ', ' + profPrenom : ''} 🌿`;
 
   // Filtrage des clients
   const clientsFiltres = useMemo(() => {
@@ -110,7 +110,7 @@ Le lien se génère au moment de l'envoi (valable 1 heure).
 
   // Message court prêt à envoyer par SMS/WhatsApp : le lien /connexion permet
   // à l'élève de demander son accès elle-même (email → magic link).
-  const messagePartage = `${salutation} ! Voici ton espace élève chez ${studioNom} : ${portailUrl} — entre ton email et tu reçois ton lien de connexion direct.${profPrenom ? ` — ${profPrenom}` : ''}`;
+  const messagePartage = `${salutation} ! Voici ton espace élève chez ${studioNom} : ${portailUrl}. Entre ton email et tu reçois ton lien de connexion direct.${profPrenom ? ` À très vite, ${profPrenom} 🌿` : ''}`;
 
   const handleShare = async () => {
     if (navigator.share) {
@@ -201,7 +201,7 @@ Le lien se génère au moment de l'envoi (valable 1 heure).
                 />
                 <p className="invite-help-small">
                   Cet email sera utilisé comme identifiant côté élève. Pas besoin
-                  qu'iel soit déjà dans ton CRM — l'invitation crée la fiche
+                  qu'iel soit déjà dans ton CRM : l'invitation crée la fiche
                   automatiquement (statut « prospect »), tu la verras tout de
                   suite dans tes élèves.
                 </p>
@@ -304,7 +304,7 @@ Le lien se génère au moment de l'envoi (valable 1 heure).
             <div className="invite-tab-content">
               <p className="invite-help">
                 Envoie ce lien à ton élève par SMS, WhatsApp, Messenger… Iel entre
-                son email et reçoit son accès direct — rien d'autre à faire.
+                son email et reçoit son accès direct, rien d'autre à faire.
               </p>
               <div className="invite-link-box">
                 <code>{portailUrl}</code>

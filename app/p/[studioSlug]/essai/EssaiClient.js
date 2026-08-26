@@ -223,7 +223,7 @@ export default function EssaiClient({ profile, cours, docs = [], studioSlug, pre
             : essaiVarieParType(profile, surchargesEssai)
               ? `💰 dès ${minPrixEssai(profile, surchargesEssai)}€ à régler sur place (selon le cours)`
               : `💰 ${profile.essai_prix}€ à régler sur place`)}
-          {profile.essai_paiement === 'stripe'    && `💳 ${profile.essai_prix}€ — paiement en ligne sécurisé`}
+          {profile.essai_paiement === 'stripe'    && `💳 ${profile.essai_prix}€, paiement en ligne sécurisé`}
         </div>
       </div>
 

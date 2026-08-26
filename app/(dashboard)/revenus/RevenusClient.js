@@ -421,7 +421,7 @@ export default function RevenusClient({ paiements: initialPaiements, seancesDues
           à encaisser / en retard (total dû). Les 3 tuiles sont TOUJOURS là. */}
       <div className="stats-grid animate-slide-up">
         <div className="big-stat izi-card">
-          <div className="big-stat-label">{periodeLabel} — encaissé</div>
+          <div className="big-stat-label">{periodeLabel} · encaissé</div>
           <div className="big-stat-value">{formatMontant(stats.total)}</div>
           {variation !== null && (
             <div className={`big-stat-trend ${variation >= 0 ? 'up' : 'down'}`}>
@@ -456,7 +456,7 @@ export default function RevenusClient({ paiements: initialPaiements, seancesDues
       {/* Récap par mode */}
       {stats.countPaid > 0 && (
         <div className="izi-card recap-mode animate-slide-up">
-          <div className="recap-mode-title">Encaissé par mode — {periodeLabel.toLowerCase()}</div>
+          <div className="recap-mode-title">Encaissé par mode · {periodeLabel.toLowerCase()}</div>
           <div className="recap-mode-grid">
             {MODES.map(({ value, label, Icon }) => (
               <div key={value} className="recap-mode-item">
@@ -574,7 +574,7 @@ export default function RevenusClient({ paiements: initialPaiements, seancesDues
             )}
             {annulations.length > 0 && (
               <div className="a-percevoir-group">
-                <div className="a-percevoir-group-label upcoming">Annulations tardives — séance due ({annulations.length})</div>
+                <div className="a-percevoir-group-label upcoming">Annulations tardives : séance due ({annulations.length})</div>
                 {annulations.slice(0, 5).map(a => (
                   <div key={`a-${a.id}`} className="a-percevoir-row">
                     <span className="a-percevoir-who">
@@ -746,7 +746,7 @@ export default function RevenusClient({ paiements: initialPaiements, seancesDues
                     profile_id: studioId,
                     client_id: seanceModal.client_id,
                     presence_id: seanceModal.id, // même liaison v65 que l'encaissement du pointage
-                    intitule: `${seanceModal.cours_nom}${seanceModal.date ? ` — ${formatDate(seanceModal.date)}` : ''}`,
+                    intitule: `${seanceModal.cours_nom}${seanceModal.date ? ` · ${formatDate(seanceModal.date)}` : ''}`,
                     montant: parseFloat(seanceMontant),
                     statut: 'paid',
                     mode: seanceMode,

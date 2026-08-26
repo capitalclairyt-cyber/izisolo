@@ -161,8 +161,8 @@ function FicheSlot({ client, label, allClients, exclude, isPrimary, onPickPrimar
     <div className={`fiche-slot ${isPrimary ? 'primary' : ''}`}>
       <span className="fiche-slot-label">{label}</span>
       <div className="fiche-slot-nom">{nom(client)}</div>
-      <div className="fiche-slot-line">{client.email || '— pas d\'email'}</div>
-      <div className="fiche-slot-line">{client.telephone || '— pas de tél.'} · {client.statut || 'prospect'}</div>
+      <div className="fiche-slot-line">{client.email || 'pas d\'email'}</div>
+      <div className="fiche-slot-line">{client.telephone || 'pas de tél.'} · {client.statut || 'prospect'}</div>
       <button type="button" className={`fiche-slot-keep ${isPrimary ? 'on' : ''}`} onClick={onPickPrimary}>
         {isPrimary ? <><Check size={13} /> On garde celle-ci</> : 'Garder celle-ci'}
       </button>

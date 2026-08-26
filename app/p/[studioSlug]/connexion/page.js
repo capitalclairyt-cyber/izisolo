@@ -203,7 +203,7 @@ export default function ConnexionPortailPage() {
             onClick={() => { setModeMdp(m => !m); setError(''); }}
             style={{ display: 'block', margin: '14px auto 0', background: 'none', border: 'none', color: '#b58962', fontSize: '0.8125rem', cursor: 'pointer', textDecoration: 'underline' }}
           >
-            {modeMdp ? 'Recevoir un lien par email à la place' : 'J\'ai un mot de passe — me connecter avec'}
+            {modeMdp ? 'Recevoir un lien par email à la place' : 'J\'ai un mot de passe, me connecter avec'}
           </button>
 
           <p style={{ textAlign: 'center', fontSize: '0.8125rem', color: '#aaa', margin: '10px 0 0', lineHeight: 1.5 }}>

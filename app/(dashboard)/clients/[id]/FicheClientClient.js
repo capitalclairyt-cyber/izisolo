@@ -309,7 +309,7 @@ function AssignerOffreModal({ client, onClose, onSuccess, offreInitialeId = null
                   <div className="offre-choice-info">
                     <span className="offre-choice-nom">Encaisser une séance / autre</span>
                     <span className="offre-choice-detail">
-                      Séance à l'unité, frais ponctuel… — montant libre, sans créer de carnet
+                      Séance à l'unité, frais ponctuel… (montant libre, sans créer de carnet)
                     </span>
                   </div>
                   <ChevronRight size={16} style={{ color: 'var(--text-muted)' }} />
@@ -660,7 +660,7 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
     try {
       const res = await fetch(`/api/factures/${f.id}/annuler`, { method: 'POST' });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok || !data.ok) throw new Error(data.error || 'Annulation impossible — réessaie.');
+      if (!res.ok || !data.ok) throw new Error(data.error || 'Annulation impossible, réessaie.');
       toast.success(`Facture ${f.numero} annulée`);
       router.refresh(); // la map serveur fait foi (mensuelle = plusieurs lignes libérées)
     } catch (e) {
@@ -796,7 +796,7 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Erreur');
-      toast.success(`${json.liberees} réservation${json.liberees > 1 ? 's' : ''} libérée${json.liberees > 1 ? 's' : ''}${json.promues > 0 ? ` — ${json.promues} promotion${json.promues > 1 ? 's' : ''} depuis liste d'attente` : ''}`);
+      toast.success(`${json.liberees} réservation${json.liberees > 1 ? 's' : ''} libérée${json.liberees > 1 ? 's' : ''}${json.promues > 0 ? ` · ${json.promues} promotion${json.promues > 1 ? 's' : ''} depuis liste d'attente` : ''}`);
       setLibererModal(null);
       router.refresh();
     } catch (e) {
@@ -1129,7 +1129,7 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
           <Home size={18} />
           <div className="domicile-btn-text">
             <span className="domicile-btn-title">Planifier un cours à domicile</span>
-            <span className="domicile-btn-sub">{client.prenom} — {client.adresse_postale.split('\n')[0]}</span>
+            <span className="domicile-btn-sub">{client.prenom} · {client.adresse_postale.split('\n')[0]}</span>
           </div>
           <ChevronRight size={16} className="domicile-btn-arrow" />
         </Link>
@@ -1272,7 +1272,7 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
                   {abo.statut === 'gele' && abo.date_pause_fin && (
                     <div className="abo-meta" style={{ background: '#fef3c7', color: '#92400e', padding: '6px 10px', borderRadius: 6, marginTop: 6 }}>
                       ⏸ En pause jusqu'au {formatDate(abo.date_pause_fin)}
-                      {abo.notes_pause && <> — {abo.notes_pause}</>}
+                      {abo.notes_pause && <> · {abo.notes_pause}</>}
                     </div>
                   )}
                   {restantes !== null && (
@@ -1288,7 +1288,7 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
                   )}
                   {fullyPaid ? (
                     <div className="abo-paiements-resume">
-                      <span className="abo-regle"><CheckCircle2 size={14} /> Réglé — {formatMontant(aboRecu)}</span>
+                      <span className="abo-regle"><CheckCircle2 size={14} /> Réglé · {formatMontant(aboRecu)}</span>
                       <div className="abo-pay-bar">
                         <div className="abo-pay-fill" style={{ width: '100%' }} />
                       </div>
@@ -1402,7 +1402,7 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
             <p style={{ fontSize: '0.75rem', color: '#888', margin: '0 0 12px', lineHeight: 1.5 }}>
               💡 Renseigne ton SIRET dans{' '}
               <Link href="/parametres?tab=profil&s=activite" style={{ fontWeight: 600 }}>Paramètres → Activité</Link>
-              {' '}pour émettre de vraies factures (CSE, mutuelles) — en attendant, tes élèves téléchargent un simple reçu.
+              {' '}pour émettre de vraies factures (CSE, mutuelles). En attendant, tes élèves téléchargent un simple reçu.
             </p>
           )}
 
@@ -1432,7 +1432,7 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
                       <div className="paiement-fiche-nom">
                         {p.intitule || offreName || 'Paiement'}
                         {echTotal > 1 && (
-                          <span className="paiement-fiche-ech"> — versement {echIndex}/{echTotal}</span>
+                          <span className="paiement-fiche-ech"> · versement {echIndex}/{echTotal}</span>
                         )}
                       </div>
                       {offreName && offreName !== p.intitule && (
@@ -1753,7 +1753,7 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
                       {decomptees.slice(0, 8).map(p => (
                         <li key={p.id}>
                           <Link href={`/cours/${p.cours_id}`} onClick={() => setAboDetail(null)}>
-                            {p.cours?.nom || 'Séance'}{p.cours?.date ? ` — ${formatDate(p.cours.date)}` : ''}
+                            {p.cours?.nom || 'Séance'}{p.cours?.date ? ` · ${formatDate(p.cours.date)}` : ''}
                           </Link>
                         </li>
                       ))}
@@ -1773,7 +1773,7 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
                       ))}
                     </ul>
                     <p className="abo-detail-total">
-                      {formatMontant(aboRecu)} reçu{aboReste > 0.009 ? ` · ${formatMontant(aboReste)} restant` : ' — réglé ✓'}
+                      {formatMontant(aboRecu)} reçu{aboReste > 0.009 ? ` · ${formatMontant(aboReste)} restant` : ' · réglé ✓'}
                     </p>
                   </div>
                 )}
@@ -1883,7 +1883,7 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
                 Les places seront proposées aux personnes en liste d'attente le cas échéant.
               </div>
               <p style={{ fontSize: '0.8125rem', color: '#666', margin: '0 0 16px', lineHeight: 1.5 }}>
-                Action irréversible — utile si l'élève ne vient plus et ne donne plus de signe de vie.
+                Action irréversible : utile si l'élève ne vient plus et ne donne plus de signe de vie.
               </p>
 
               <button
@@ -2117,7 +2117,7 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
                 onChange={e => setEditPayForm(f => ({ ...f, date: e.target.value }))}
               />
 
-              <div className="paiement-section-label">Date d'encaissement <span style={{ fontWeight: 400, color: 'var(--text-muted)' }}>(optionnel — ex : dépôt du chèque)</span></div>
+              <div className="paiement-section-label">Date d'encaissement <span style={{ fontWeight: 400, color: 'var(--text-muted)' }}>(optionnel, ex : dépôt du chèque)</span></div>
               <input
                 className="izi-input"
                 type="date"

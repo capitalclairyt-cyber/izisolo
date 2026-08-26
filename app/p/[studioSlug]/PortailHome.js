@@ -121,7 +121,7 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
         }
         // Complet → renvoyer vers la page du cours (liste d'attente)
         if (res.status === 409 && /complet/i.test(json.error || '')) {
-          toast.warning('Ce cours est complet — rejoins la liste d\'attente depuis sa page.');
+          toast.warning('Ce cours est complet : rejoins la liste d\'attente depuis sa page.');
           return;
         }
         throw new Error(json.error || 'La réservation a échoué');
@@ -567,7 +567,7 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
           padding: '10px 14px', borderRadius: 10, marginBottom: 16,
           fontSize: '0.8125rem', display: 'flex', alignItems: 'center', gap: 8,
         }}>
-          👁 <strong>Mode aperçu</strong> — tu vois ton brouillon, pas encore publié.
+          👁 <strong>Mode aperçu</strong> : tu vois ton brouillon, pas encore publié.
         </div>
       )}
 
@@ -584,7 +584,7 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
         }}>
           <span style={{ fontSize: '1.4rem' }}>👁️</span>
           <div style={{ flex: 1, minWidth: 200 }}>
-            <strong>Mode démo</strong> — tu visites ton portail comme une élève.
+            <strong>Mode démo</strong> : tu visites ton portail comme une élève.
             <span style={{ fontWeight: 400, opacity: 0.85 }}> Réserve un cours pour tester, ou ouvre l'espace élève fictif (Camille, carnet 10 séances).</span>
           </div>
           <Link
@@ -628,7 +628,7 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
               {sondageActif.titre}
             </div>
             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 2 }}>
-              Aide {profile.studio_nom} à construire son planning idéal — 30 secondes
+              Aide {profile.studio_nom} à construire son planning idéal, 30 secondes
             </div>
           </div>
           <span style={{
@@ -1137,7 +1137,7 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
             })}
           </div>
           <p className="portail-stripe-trust">
-            🔒 Paiement sécurisé via Stripe — IziSolo ne stocke aucune donnée bancaire.
+            🔒 Paiement sécurisé via Stripe, IziSolo ne stocke aucune donnée bancaire.
           </p>
         </div>
       )}

@@ -241,7 +241,7 @@ export default function ChatRoom({ conversationId, viewerKind, onMessageSent, in
       fetchReactions([messageId]);
     } catch (err) {
       setReactionsByMsg(prev => ({ ...prev, [messageId]: previousState }));
-      toast.error('Connexion impossible — réessaie dans un instant.');
+      toast.error('Connexion impossible : réessaie dans un instant.');
     }
   };
 
@@ -427,7 +427,7 @@ export default function ChatRoom({ conversationId, viewerKind, onMessageSent, in
             }}>
               <span style={{ flex: 1, minWidth: 180 }}>
                 Supprimer cette conversation ? Les messages seront effacés
-                <strong> pour toi ET pour l'élève</strong> — définitif.
+                <strong> pour toi ET pour l'élève</strong> : définitif.
               </span>
               <button
                 type="button"

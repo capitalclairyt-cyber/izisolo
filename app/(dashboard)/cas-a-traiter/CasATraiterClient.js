@@ -180,7 +180,7 @@ export default function CasATraiterClient({ casOuverts, casResolus }) {
 
       <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginBottom: 16, maxWidth: 720 }}>
         Situations détectées par l'app qui demandent ton attention. Chaque action te demande
-        confirmation et te précise ce qui sera fait — pas de clic-piège. Le paramétrage
+        confirmation et te précise ce qui sera fait : pas de clic-piège. Le paramétrage
         des cas se fait dans <Link href="/parametres" style={{ color: 'var(--brand-700)', fontWeight: 600 }}>Paramètres → Règles → Cas particuliers</Link>.
       </p>
 

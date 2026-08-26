@@ -346,7 +346,7 @@ export default function NouvelleOffre() {
         <div className="no-plan-limit-banner animate-slide-up">
           <div className="no-plan-limit-icon">&#x1F451;</div>
           <div className="no-plan-limit-text">
-            <strong>Limite atteinte</strong> — Tu as atteint la limite d'offres du plan Essentiel.
+            <strong>Limite atteinte</strong>. Tu as atteint la limite d'offres du plan Essentiel.
             Passe en Complet pour cr{'é'}er des offres illimit{'é'}es.
           </div>
           <Link href="/parametres?tab=abonnement" className="izi-btn izi-btn-primary" style={{ whiteSpace: 'nowrap', fontSize: '0.8125rem', padding: '8px 14px' }}>
@@ -378,7 +378,7 @@ export default function NouvelleOffre() {
           </div>
           <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '8px 2px 0', lineHeight: 1.5 }}>
             💡 Pour une <strong>séance à l'unité</strong> (drop-in, atelier, stage), pas besoin d'offre :
-            mets un prix directement sur le cours (« Cours payable à la séance ») — tu encaisseras
+            mets un prix directement sur le cours (« Cours payable à la séance ») : tu encaisseras
             au pointage. Ou utilise « Encaisser une séance » depuis la fiche de l'élève.
           </p>
         </div>
@@ -427,7 +427,7 @@ export default function NouvelleOffre() {
             <div className="no-field">
               <label className="no-label">
                 Durée de validité
-                <span className="no-label-hint"> — à partir de l'achat (optionnel)</span>
+                <span className="no-label-hint"> (à partir de l'achat, optionnel)</span>
               </label>
               <div className="no-presets">
                 <button
@@ -476,7 +476,7 @@ export default function NouvelleOffre() {
             <div className="no-field">
               <label className="no-label">
                 Prix du cours à l'unité
-                <span className="no-label-hint"> — pour calculer la remise (optionnel)</span>
+                <span className="no-label-hint"> (pour calculer la remise, optionnel)</span>
               </label>
               {offresUnitaires.length > 0 ? (
                 <div className="no-ref-row">
@@ -488,7 +488,7 @@ export default function NouvelleOffre() {
                   >
                     <option value="">Choisir une offre existante…</option>
                     {offresUnitaires.map(o => (
-                      <option key={o.id} value={o.prix}>{o.nom} — {formatMontant(o.prix)}</option>
+                      <option key={o.id} value={o.prix}>{o.nom} · {formatMontant(o.prix)}</option>
                     ))}
                   </select>
                   <span className="no-ref-or">ou</span>
@@ -814,7 +814,7 @@ export default function NouvelleOffre() {
           <div className="no-field">
             <label className="no-label">
               Vaut pour quels cours ?
-              <span className="no-label-hint"> — décide quand ce {type === 'carnet' ? 'carnet' : 'abonnement'} se décompte</span>
+              <span className="no-label-hint"> (décide quand ce {type === 'carnet' ? 'carnet' : 'abonnement'} se décompte)</span>
             </label>
             <div className="no-presets">
               {typesCoursDisponibles.map(t => {
@@ -837,13 +837,13 @@ export default function NouvelleOffre() {
             </div>
             {typesCoursAutorises.length === 0 ? (
               <span className="form-hint">
-                ✓ <strong>Tous tes cours</strong> — utilisable sur n'importe quel type.<br />
+                ✓ <strong>Tous tes cours</strong> : utilisable sur n'importe quel type.<br />
                 💡 Sélectionne les types couverts ci-dessus pour <strong>exclure</strong> les
-                cours que tu vends à la séance (atelier, stage, renfo…) — sinon ce {type === 'carnet' ? 'carnet' : 'abonnement'} pourra aussi les payer.
+                cours que tu vends à la séance (atelier, stage, renfo…), sinon ce {type === 'carnet' ? 'carnet' : 'abonnement'} pourra aussi les payer.
               </span>
             ) : (
               <span className="form-hint">
-                Restreint aux cours de type <strong>{typesCoursAutorises.join(', ')}</strong> —
+                Restreint aux cours de type <strong>{typesCoursAutorises.join(', ')}</strong> : 
                 sur un autre type de cours, l'élève paiera à la séance.
               </span>
             )}
@@ -858,7 +858,7 @@ export default function NouvelleOffre() {
           <label className="no-label">
             Nom de l'offre *
             {type === 'carnet' && seances && !nomModifie && (
-              <span className="no-label-hint"> — généré automatiquement</span>
+              <span className="no-label-hint"> (généré automatiquement)</span>
             )}
           </label>
           <input
@@ -913,7 +913,7 @@ export default function NouvelleOffre() {
           )}
           {type === 'carnet' && seances && prixUnitaireRef && prix && parseFloat(prix) >= parseFloat(prixUnitaireRef) * parseInt(seances) && (
             <div className="no-remise-warn">
-              ⚠️ Le prix du carnet est supérieur ou égal au prix unitaire — aucune remise.
+              ⚠️ Le prix du carnet est supérieur ou égal au prix unitaire : aucune remise.
             </div>
           )}
         </div>
@@ -954,7 +954,7 @@ export default function NouvelleOffre() {
             <div className="no-stripe-help">
               <ol>
                 <li>Crée un compte gratuit sur <a href="https://dashboard.stripe.com/register" target="_blank" rel="noopener noreferrer">stripe.com</a> (commission ~1.5% + 0.25€ par CB).</li>
-                <li>Renseigne tes informations bancaires (RIB) — Stripe verse automatiquement chaque semaine.</li>
+                <li>Renseigne tes informations bancaires (RIB) : Stripe verse automatiquement chaque semaine.</li>
                 <li>Va dans <strong>Produits &rarr; Payment Links &rarr; Nouveau lien</strong>.</li>
                 <li>Crée un produit avec le <strong>même nom et prix que cette offre</strong>.</li>
                 <li>Copie le lien (commence par <code>https://buy.stripe.com/</code>) et colle-le ci-dessus.</li>
@@ -968,8 +968,8 @@ export default function NouvelleOffre() {
             le plusieurs fois — se choisit à la VENTE, pas ici. Sans cette
             phrase, tout le monde le cherche dans ce formulaire. */}
         <p className="no-vente-hint">
-          💡 Ici tu définis <strong>ce que tu vends</strong>. Le règlement — payé, à régler plus tard,
-          ou <strong>en plusieurs fois</strong> — se choisit au moment de <strong>vendre</strong> l'offre
+          💡 Ici tu définis <strong>ce que tu vends</strong>. Le règlement (payé, à régler plus tard,
+          ou <strong>en plusieurs fois</strong>) se choisit au moment de <strong>vendre</strong> l'offre
           à un·e élève. On te le proposera juste après.
         </p>
 

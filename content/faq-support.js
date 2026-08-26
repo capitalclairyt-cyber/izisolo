@@ -27,17 +27,17 @@ export const FAQ_SUPPORT = [
     lien: { href: '/aide#pointage', label: 'Voir le pas-à-pas' },
   },
   {
-    q: "Le carnet ne s'est pas décompté (ou pas sur le bon carnet) — comment corriger ?",
+    q: "Le carnet ne s'est pas décompté (ou pas sur le bon carnet), comment corriger ?",
     a: "Au pointage, ouvre le menu ··· sur la ligne de l'élève : « Décompter sur » te laisse choisir le bon carnet, ou repasser la séance « À l'unité ». Le compteur se corrige immédiatement.",
   },
   {
     q: "Comment inviter mes élèves sur leur espace en ligne ?",
-    a: "Page Élèves → « Inviter » (ou depuis une fiche) : chaque élève reçoit un lien d'accès à son espace — réservations, carnet, messages. Et après un import CSV, l'écran de fin te propose d'inviter tout le monde en un clic.",
+    a: "Page Élèves → « Inviter » (ou depuis une fiche) : chaque élève reçoit un lien d'accès à son espace (réservations, carnet, messages). Et après un import CSV, l'écran de fin te propose d'inviter tout le monde en un clic.",
     lien: { href: '/aide#eleves', label: 'Voir le pas-à-pas' },
   },
   {
     q: "Comment vendre un carnet ou un abonnement à une élève ?",
-    a: "Crée d'abord ton offre dans Offres (carnet 10 séances, abo mensuel…). Puis fiche élève → « Ajouter une offre » : payé maintenant, à régler plus tard, ou en plusieurs fois — les montants dus t'attendent dans Revenus, section « À percevoir ».",
+    a: "Crée d'abord ton offre dans Offres (carnet 10 séances, abo mensuel…). Puis fiche élève → « Ajouter une offre » : payé maintenant, à régler plus tard, ou en plusieurs fois. Les montants dus t'attendent dans Revenus, section « À percevoir ».",
     lien: { href: '/aide#encaisser', label: 'Voir le pas-à-pas' },
   },
   {
@@ -46,14 +46,14 @@ export const FAQ_SUPPORT = [
     lien: { href: '/aide#agenda', label: 'Voir le pas-à-pas' },
   },
   {
-    q: "J'ai annulé une séance mais elle s'affiche encore sur l'agenda — c'est normal ?",
-    a: "Oui : une séance annulée reste visible, barrée — c'est ce qui informe tes élèves du changement (ils sont aussi prévenus par email). Pour la faire disparaître complètement, utilise la corbeille sur sa page. Attention, l'annulation est définitive : une séance annulée ne se ré-active pas.",
+    q: "J'ai annulé une séance mais elle s'affiche encore sur l'agenda, c'est normal ?",
+    a: "Oui : une séance annulée reste visible, barrée. C'est ce qui informe tes élèves du changement (ils sont aussi prévenus par email). Pour la faire disparaître complètement, utilise la corbeille sur sa page. Attention, l'annulation est définitive : une séance annulée ne se ré-active pas.",
     lien: { href: '/aide#agenda', label: 'Voir le pas-à-pas' },
   },
   {
     // Demandé 2× dans les feedbacks (19-20/07) — enfin une réponse écrite.
     q: "Comment faire apparaître le lieu d'une séance ?",
-    a: "Le lieu se choisit sur le cours : à la création, ou après coup via l'icône crayon (cette séance) / « Modifier toute la série » (toutes). Tes lieux se gèrent dans Paramètres → Profil & studio → Lieux — ils sont illimités. Une fois posé, le lieu s'affiche sur l'agenda, le portail et les emails à tes élèves.",
+    a: "Le lieu se choisit sur le cours : à la création, ou après coup via l'icône crayon (cette séance) / « Modifier toute la série » (toutes). Tes lieux se gèrent dans Paramètres → Profil & studio → Lieux, ils sont illimités. Une fois posé, le lieu s'affiche sur l'agenda, le portail et les emails à tes élèves.",
     lien: { href: '/aide#agenda', label: 'Voir le pas-à-pas' },
   },
   {
@@ -63,12 +63,12 @@ export const FAQ_SUPPORT = [
   },
   {
     q: "Puis-je modifier une offre déjà vendue ?",
-    a: "Oui : page Offres → icône crayon. La modification vaut pour les PROCHAINES ventes — les carnets déjà vendus gardent leurs conditions, figées à l'achat (prix, cours couverts, validité). Pour corriger un carnet précis : fiche de l'élève → « Modifier » sur la carte du carnet.",
+    a: "Oui : page Offres → icône crayon. La modification vaut pour les PROCHAINES ventes : les carnets déjà vendus gardent leurs conditions, figées à l'achat (prix, cours couverts, validité). Pour corriger un carnet précis : fiche de l'élève → « Modifier » sur la carte du carnet.",
     lien: { href: '/aide#carnets-abos', label: 'Voir le pas-à-pas' },
   },
   {
     q: "Comment archiver ou supprimer une fiche élève ?",
-    a: "Archiver (recommandé) : liste Élèves → statut de la fiche → « Archivé » — elle est masquée mais tout est conservé, réactivable à tout moment. Supprimer (fiche → corbeille) est irréversible : carnets, présences et inscriptions partent avec ; seuls les paiements encaissés restent dans ta compta.",
+    a: "Archiver (recommandé) : liste Élèves → statut de la fiche → « Archivé ». Elle est masquée mais tout est conservé, réactivable à tout moment. Supprimer (fiche → corbeille) est irréversible : carnets, présences et inscriptions partent avec ; seuls les paiements encaissés restent dans ta compta.",
   },
   {
     q: "Où je règle mon délai d'annulation et mes règles (absences, retards…) ?",
@@ -76,8 +76,8 @@ export const FAQ_SUPPORT = [
     lien: { href: '/aide#regles-annulation', label: 'Voir le pas-à-pas' },
   },
   {
-    q: "Une élève me demande une facture pour son CSE ou son employeur — comment faire ?",
-    a: "Renseigne ton SIRET une fois pour toutes : Paramètres → Profil & studio → Activité, carte « Facturation ». Ensuite chaque paiement réglé produit une vraie facture acquittée numérotée — l'élève la télécharge elle-même depuis son espace, et toi depuis sa fiche. Sans SIRET, c'est un reçu de paiement simple.",
+    q: "Une élève me demande une facture pour son CSE ou son employeur, comment faire ?",
+    a: "Renseigne ton SIRET une fois pour toutes : Paramètres → Profil & studio → Activité, carte « Facturation ». Ensuite chaque paiement réglé produit une vraie facture acquittée numérotée : l'élève la télécharge elle-même depuis son espace, et toi depuis sa fiche. Sans SIRET, c'est un reçu de paiement simple.",
     lien: { href: '/aide#factures', label: 'Voir le pas-à-pas' },
   },
   {
@@ -87,12 +87,12 @@ export const FAQ_SUPPORT = [
   },
   {
     q: "Comment exporter mes données (élèves, compta) ?",
-    a: "Page Élèves → « Exporter » : un CSV de toutes tes fiches, disponible quel que soit ton plan. Pour ta compta (plan Complet) : Revenus → « Export » ouvre une modale où tu choisis la période (préréglée ou dates libres), l'état, le mode de règlement et l'offre — le CSV s'ouvre directement dans Excel.",
+    a: "Page Élèves → « Exporter » : un CSV de toutes tes fiches, disponible quel que soit ton plan. Pour ta compta (plan Complet) : Revenus → « Export » ouvre une modale où tu choisis la période (préréglée ou dates libres), l'état, le mode de règlement et l'offre. Le CSV s'ouvre directement dans Excel.",
   },
   {
     // Cas Patricia 2026-08-18 : une prof crée un compte élève avec son adresse
     // perso, sa session bascule, et croit son studio disparu.
-    q: "J'ai créé un compte élève et je ne retrouve plus mon compte pro — perdu ?",
+    q: "J'ai créé un compte élève et je ne retrouve plus mon compte pro, perdu ?",
     a: "Rien n'est perdu ! Un compte élève et un compte studio sont deux comptes séparés (deux adresses email). Ton navigateur est simplement resté connecté au compte élève : déconnecte-toi (bouton « Changer de compte » ou Déconnexion), puis reconnecte-toi sur izisolo.fr/login avec l'adresse email de ton studio et ton mot de passe. Ton studio et toutes tes données sont intacts.",
   },
   {
@@ -161,7 +161,7 @@ export const FAQ_SUPPORT = [
     // Lien de pointage confié (v100, 2026-08-25). AJOUTÉE EN FIN DE LISTE :
     // les ancres /support#faq-N sont indexées par position.
     q: "Je me fais remplacer : comment ma collègue peut-elle pointer sans avoir de compte ?",
-    a: "Ouvre la séance concernée, puis « Confier le pointage » : tu crées un lien à lui envoyer par SMS ou par message. Elle l'ouvre sur son téléphone et pointe présent, absent ou excusé, sans compte et sans mot de passe. Elle ne voit que les prénoms et les noms de ta liste : ni téléphone, ni email, ni carnet, ni montant. Tu choisis jusqu'à quand le lien reste valable (fin de journée, demain soir, 7 jours), tu peux le désactiver quand tu veux, et tu reçois une notification dès qu'il sert. Une chose qu'elle ne peut pas faire : ajouter ou retirer quelqu'un de la liste — ces gestes touchent aux carnets et aux places. Si une élève arrive à l'improviste, elle te laisse un mot que tu retrouves au même endroit.",
+    a: "Ouvre la séance concernée, puis « Confier le pointage » : tu crées un lien à lui envoyer par SMS ou par message. Elle l'ouvre sur son téléphone et pointe présent, absent ou excusé, sans compte et sans mot de passe. Elle ne voit que les prénoms et les noms de ta liste : ni téléphone, ni email, ni carnet, ni montant. Tu choisis jusqu'à quand le lien reste valable (fin de journée, demain soir, 7 jours), tu peux le désactiver quand tu veux, et tu reçois une notification dès qu'il sert. Une chose qu'elle ne peut pas faire : ajouter ou retirer quelqu'un de la liste. Ces gestes touchent aux carnets et aux places. Si une élève arrive à l'improviste, elle te laisse un mot que tu retrouves au même endroit.",
     lien: { href: '/aide#pointage', label: 'Voir le pas-à-pas' },
   },
   {
@@ -185,12 +185,12 @@ export const FAQ_SUPPORT = [
   {
     // Retour Melyflow (Belgique), 2026-08-25. AJOUTÉE EN FIN de liste.
     q: "Je ne suis pas en France (Belgique, Luxembourg) : la facturation marche-t-elle ?",
-    a: "Oui. Va dans Paramètres → Profil & studio → Activité et choisis ton pays d'exercice en haut de la carte « Facturation ». Le champ s'adapte : « SIRET » en France, « Numéro d'entreprise » en Belgique, « Numéro RCS » au Luxembourg — et c'est ce libellé qui s'imprime sur tes factures. Deux points importants : le bloc « Ma déclaration URSSAF » disparaît, parce que chez toi ce sont tes caisses qui appellent les cotisations et qu'il n'y a rien à déclarer depuis IziSolo (ton export de recettes, lui, reste disponible dans Revenus) ; et la mention de TVA n'est PAS pré-remplie hors de France, parce que nous ne devinons pas ce qui doit figurer sur ta facture. On te propose une formulation courante, mais vérifie-la auprès de ton comptable : c'est ta responsabilité qui est engagée.",
+    a: "Oui. Va dans Paramètres → Profil & studio → Activité et choisis ton pays d'exercice en haut de la carte « Facturation ». Le champ s'adapte : « SIRET » en France, « Numéro d'entreprise » en Belgique, « Numéro RCS » au Luxembourg, et c'est ce libellé qui s'imprime sur tes factures. Deux points importants : le bloc « Ma déclaration URSSAF » disparaît, parce que chez toi ce sont tes caisses qui appellent les cotisations et qu'il n'y a rien à déclarer depuis IziSolo (ton export de recettes, lui, reste disponible dans Revenus) ; et la mention de TVA n'est PAS pré-remplie hors de France, parce que nous ne devinons pas ce qui doit figurer sur ta facture. On te propose une formulation courante, mais vérifie-la auprès de ton comptable : c'est ta responsabilité qui est engagée.",
   },
   {
     // Retour Melyflow (Belgique), 2026-08-25 — 5 « Cours découverte » le même
     // samedi. AJOUTÉE EN FIN de liste.
-    q: "Mes cours du même jour se sont regroupés sous une seule carte sur mon portail — c'est normal ?",
+    q: "Mes cours du même jour se sont regroupés sous une seule carte sur mon portail, c'est normal ?",
     a: "Oui, et rien n'est perdu. Quand tu proposes plusieurs fois le MÊME cours dans la journée (même nom, même lieu, même tarif, même format), ton portail les range sous une seule carte plutôt que d'en empiler cinq : « 5 créneaux, de 9h30 à 16h ». Les horaires restent écrits sur la carte, et le bouton « Choisir mon heure » les déplie, chacun avec ses places restantes et son bouton de réservation. Deux exceptions volontaires : une séance annulée garde toujours sa propre carte (c'est l'information la plus importante, elle ne doit pas se cacher), et il faut au moins trois créneaux pour que le regroupement se déclenche.",
     lien: { href: '/aide#page-publique', label: 'Voir le pas-à-pas' },
   },
@@ -198,15 +198,15 @@ export const FAQ_SUPPORT = [
     // Retour Manon (Soleya), 2026-08-26 : 7 semaines de décomptes manuels sur
     // les fiches, 0 pointage. Elle avait renseigné le type de cours et
     // attendait un décompte automatique. AJOUTÉE EN FIN de liste.
-    q: "Je décompte les cartes de mes élèves à la main — pourquoi ça ne se fait pas tout seul ?",
-    a: "Parce qu'il manque un geste, et un seul : le pointage. C'est lui qui décompte les carnets, et rien d'autre ne le fait — ni la réservation de l'élève, ni le type de cours, ni le fait que son carnet couvre ce cours. Tant qu'une séance n'est pas pointée, les compteurs ne bougent pas. Le jour J, depuis l'Accueil (bloc « Aujourd'hui ») ou l'Agenda, ouvre la séance → « Pointer », puis un clic par élève : « Carnet 10 séances · 9 séances » s'affiche sous son nom, et c'est écrit. Tu peux pointer après le cours, le soir même ou plus tard, ça marche pareil. Le bouton « Modifier les séances déjà faites » d'une fiche élève, lui, sert au rattrapage de ce qui s'est passé AVANT IziSolo (ton ancien carnet papier) : au quotidien, tu n'as pas à y toucher.",
+    q: "Je décompte les cartes de mes élèves à la main, pourquoi ça ne se fait pas tout seul ?",
+    a: "Parce qu'il manque un geste, et un seul : le pointage. C'est lui qui décompte les carnets, et rien d'autre ne le fait : ni la réservation de l'élève, ni le type de cours, ni le fait que son carnet couvre ce cours. Tant qu'une séance n'est pas pointée, les compteurs ne bougent pas. Le jour J, depuis l'Accueil (bloc « Aujourd'hui ») ou l'Agenda, ouvre la séance → « Pointer », puis un clic par élève : « Carnet 10 séances · 9 séances » s'affiche sous son nom, et c'est écrit. Tu peux pointer après le cours, le soir même ou plus tard, ça marche pareil. Le bouton « Modifier les séances déjà faites » d'une fiche élève, lui, sert au rattrapage de ce qui s'est passé AVANT IziSolo (ton ancien carnet papier) : au quotidien, tu n'as pas à y toucher.",
     lien: { href: '/aide#pointage', label: 'Voir le pas-à-pas' },
   },
   {
     // Retour Manon (Soleya), 2026-08-26 : une élève dit avoir payé une carte
     // depuis l'app, aucune trace côté prof. Payment Links collés, webhook
     // jamais déclaré. AJOUTÉE EN FIN de liste.
-    q: "Une élève dit avoir payé en ligne, mais je ne vois ni le paiement ni son carnet — que faire ?",
+    q: "Une élève dit avoir payé en ligne, mais je ne vois ni le paiement ni son carnet, que faire ?",
     a: "Vérifie d'abord Paramètres → Portail public → Paiement en ligne. Brancher le paiement demande DEUX gestes : coller un lien Stripe sur l'offre, et déclarer le webhook (les étapes 1 et 2 de cet écran). Le webhook est ce qui prévient IziSolo qu'une élève a payé : sans lui, l'argent arrive bien sur ton compte Stripe, mais l'app n'en sait rien, donc ni paiement ni carnet ne sont créés. Si le bandeau « Configuré » n'est pas affiché, c'est ça. Pour retrouver l'argent : va sur dashboard.stripe.com → Paiements, en mode Live (l'interrupteur « Mode test » doit être éteint, c'est le piège le plus courant) et cherche l'email de ton élève. Si le paiement y est, termine la configuration, puis dans Stripe → Webhooks, ouvre l'événement et clique « Resend » : IziSolo créera le paiement et le carnet tout seuls, à la bonne date, sans risque de doublon. Depuis le 26/08/2026, tant que le webhook manque, tes élèves ne voient plus de bouton « payer » mais un bouton « Demander » : leur demande arrive en tête de ta page Offres et tu encaisses comme tu veux.",
     lien: { href: '/aide#offres', label: 'Voir le pas-à-pas' },
   },

@@ -176,7 +176,7 @@ function RecurrencePreview({ form }) {
         <div className="rec-preview-exclusions">
           {exclues.slice(0, 3).map((e, i) => (
             <span key={i} className="rec-preview-skip">
-              {e.date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })} — {e.label}
+              {e.date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })} · {e.label}
             </span>
           ))}
           {exclues.length > 3 && <span className="rec-preview-skip-more">+{exclues.length - 3} autres</span>}
@@ -187,12 +187,12 @@ function RecurrencePreview({ form }) {
         // vacances/fériés qui expire, mensuel ancré après le 28.
         const derniereIncluse = incluses.length ? toDateStr(incluses[incluses.length - 1]) : null;
         const warns = [];
-        if (borne) warns.push('La génération est bornée à 24 mois — prolonge la série plus tard pour la suite.');
+        if (borne) warns.push('La génération est bornée à 24 mois : prolonge la série plus tard pour la suite.');
         if (form.exclure_vacances && form.zone_vacances && derniereIncluse && derniereIncluse > VACANCES_COUVERTURE_MAX) {
-          warns.push(`Le calendrier des vacances scolaires est connu jusqu'au ${VACANCES_COUVERTURE_MAX.split('-').reverse().join('/')} — au-delà, aucune date ne sera sautée.`);
+          warns.push(`Le calendrier des vacances scolaires est connu jusqu'au ${VACANCES_COUVERTURE_MAX.split('-').reverse().join('/')} : au-delà, aucune date ne sera sautée.`);
         }
         if (form.exclure_feries && derniereIncluse && derniereIncluse > FERIES_COUVERTURE_MAX) {
-          warns.push(`Les jours fériés sont connus jusqu'au ${FERIES_COUVERTURE_MAX.split('-').reverse().join('/')} — au-delà, aucun férié ne sera sauté.`);
+          warns.push(`Les jours fériés sont connus jusqu'au ${FERIES_COUVERTURE_MAX.split('-').reverse().join('/')} : au-delà, aucun férié ne sera sauté.`);
         }
         if (form.frequence === 'mensuel' && parseDate(form.date).getDate() > 28) {
           warns.push('Série mensuelle ancrée après le 28 : les mois sans ce jour (février…) seront sautés.');
@@ -342,7 +342,7 @@ function NouveauCoursInner() {
           setDomicileClient(cli);
           setForm(prev => ({
             ...prev,
-            nom: prev.nom || `Cours à domicile — ${cli.prenom || cli.nom}`,
+            nom: prev.nom || `Cours à domicile (${cli.prenom || cli.nom})`,
             capacite_max: prev.capacite_max || '1',
           }));
         }
@@ -389,9 +389,9 @@ function NouveauCoursInner() {
           if (photoSource) setForm(prev => ({ ...prev, photo_url: photoSource }));
 
           if (source.domicile) {
-            toast.info('Cours dupliqué (le cours source est à domicile : la copie ne reprend ni l\'élève ni l\'adresse — passe par sa fiche pour un vrai cours à domicile).');
+            toast.info('Cours dupliqué (le cours source est à domicile : la copie ne reprend ni l\'élève ni l\'adresse ; passe par sa fiche pour un vrai cours à domicile).');
           } else {
-            toast.info('Cours dupliqué — choisis une nouvelle date.');
+            toast.info('Cours dupliqué : choisis une nouvelle date.');
           }
         }
       }
@@ -559,7 +559,7 @@ function NouveauCoursInner() {
         const { incluses } = calculerDates(form);
         // Une série sans aucune occurrence = série fantôme dans /recurrences.
         if (incluses.length === 0) {
-          throw new Error('Aucune date à générer avec ces réglages — vérifie la récurrence (l\'aperçu doit montrer au moins une séance).');
+          throw new Error('Aucune date à générer avec ces réglages : vérifie la récurrence (l\'aperçu doit montrer au moins une séance).');
         }
         // Bornes effectives pour la table recurrences (info, pas utilisée pour la génération)
         const dateFinEffective = form.mode_fin === 'date_fin'
@@ -676,7 +676,7 @@ function NouveauCoursInner() {
           .eq('heure', form.heure || '10:00')
           .maybeSingle();
         if (collision) {
-          toast.warning('Un cours identique existe déjà à cette date et heure — création en cours quand même.');
+          toast.warning('Un cours identique existe déjà à cette date et heure : création en cours quand même.');
         }
       } catch {
         // erreur réseau : on continue
@@ -780,7 +780,7 @@ function NouveauCoursInner() {
           </div>
         ) : (
           <button type="button" className="types-avance-toggle" onClick={() => setMontrerTypes(true)}>
-            <Tag size={13} /> Classer ce cours par type <span className="types-avance-hint">(avancé — utile si certains carnets ne doivent valoir que pour certains cours)</span>
+            <Tag size={13} /> Classer ce cours par type <span className="types-avance-hint">(avancé : utile si certains carnets ne doivent valoir que pour certains cours)</span>
           </button>
         )}
 
@@ -854,7 +854,7 @@ function NouveauCoursInner() {
           {form.frequence === 'unique' && (
             <div className="rec-tip">
               <Sparkles size={14} />
-              <span>Ce cours revient chaque semaine ? Passe en <strong>« régulier »</strong> et crée toutes les dates d'un coup — tu ne le referas plus à la main.</span>
+              <span>Ce cours revient chaque semaine ? Passe en <strong>« régulier »</strong> et crée toutes les dates d'un coup : tu ne le referas plus à la main.</span>
             </div>
           )}
         </div>
@@ -897,7 +897,7 @@ function NouveauCoursInner() {
           </div>
           <div className="form-group">
             <label className="form-label"><Users size={14} /> Capacité max</label>
-            <input className="izi-input" type="number" value={form.capacite_max} onChange={handleChange('capacite_max')} placeholder="ex : 12 — vide = illimité" />
+            <input className="izi-input" type="number" value={form.capacite_max} onChange={handleChange('capacite_max')} placeholder="ex : 12, vide = illimité" />
           </div>
         </div>
 
@@ -928,7 +928,7 @@ function NouveauCoursInner() {
                 type="url"
                 value={form.lien_visio}
                 onChange={handleChange('lien_visio')}
-                placeholder="Lien de la séance (Zoom, Meet…) — https://…"
+                placeholder="Lien de la séance (Zoom, Meet…) : https://…"
               />
               <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, cursor: 'pointer', fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-primary)' }}>
                 <input
@@ -942,7 +942,7 @@ function NouveauCoursInner() {
               <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '0 0 0 24px', lineHeight: 1.5 }}>
                 {form.lien_visio_verrouille !== false
                   ? <>Le lien n'apparaît (espace élève + rappel de la veille) que si la séance est <strong>couverte par un carnet/abo</strong>, <strong>réglée</strong> (encaissée en 1 clic), ou <strong>offerte/essai</strong>. Les autres voient « le lien apparaîtra une fois ta séance réglée ».</>
-                  : <>Décochée : toutes les inscrites voient le lien — pour un cours gratuit ou ouvert.</>}
+                  : <>Décochée : toutes les inscrites voient le lien, pour un cours gratuit ou ouvert.</>}
               </p>
               <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '0 0 0 2px' }}>
                 💡 Le prix, lui, se règle plus bas dans « Comment se paie ce cours ? ».
@@ -961,7 +961,7 @@ function NouveauCoursInner() {
                 <option value="">-- Choisir un lieu --</option>
                 {lieuxFiltres.map(l => (
                   <option key={l.id} value={l.id}>
-                    {l.nom}{l.clients?.nom_structure ? ` (${l.clients.nom_structure})` : ''}{l.adresse ? ` — ${l.adresse}` : ''}
+                    {l.nom}{l.clients?.nom_structure ? ` (${l.clients.nom_structure})` : ''}{l.adresse ? `, ${l.adresse}` : ''}
                   </option>
                 ))}
               </select>
@@ -1125,7 +1125,7 @@ function NouveauCoursInner() {
                   value={form.zone_vacances}
                   onChange={handleChange('zone_vacances')}
                 >
-                  <option value="">— Choisis ta zone —</option>
+                  <option value="">Choisis ta zone…</option>
                   {ZONES_VACANCES.map(z => (
                     <option key={z.value} value={z.value}>{z.value === 'Corse' ? 'Corse' : `Zone ${z.value}`}</option>
                   ))}
@@ -1234,7 +1234,7 @@ function NouveauCoursInner() {
           </div>
           <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '8px 0 0', lineHeight: 1.5 }}>
             {paiementChoix === 'carnets' && <>Le cas classique : la séance est <strong>décomptée du carnet ou couverte par l'abo</strong> de l'élève au pointage. Le prix se joue dans tes <strong>offres</strong>, pas ici.</>}
-            {paiementChoix === 'unite' && <>Atelier, stage, drop-in : <strong>tout le monde règle le prix à la séance</strong> — aucun carnet n'est décompté, même pour tes abonné·es.</>}
+            {paiementChoix === 'unite' && <>Atelier, stage, drop-in : <strong>tout le monde règle le prix à la séance</strong>, aucun carnet n'est décompté, même pour tes abonné·es.</>}
             {paiementChoix === 'mixte' && <>Cours <strong>mixte</strong> : <strong>au pointage</strong>, les élèves dont le carnet couvre ce type de cours décomptent une séance, les autres (nouvelles, élèves de passage) paient le prix à la séance.</>}
           </p>
           {paiementChoix !== 'carnets' && (
@@ -1252,7 +1252,7 @@ function NouveauCoursInner() {
               />
               {!form.tarif_unitaire && (
                 <span className="form-hint" style={{ color: 'var(--brand-700, #8c5826)' }}>
-                  Indique le prix — sans lui, le cours repasse en « carnets/abos seulement ».
+                  Indique le prix : sans lui, le cours repasse en « carnets/abos seulement ».
                 </span>
               )}
             </div>
@@ -1284,11 +1284,11 @@ function NouveauCoursInner() {
             <option value="inscrits">Élèves inscrits seulement</option>
             <option value="abonnes">Détenteurs d'abonnement actif</option>
             <option value="fideles">Élèves fidèles</option>
-            <option value="prive">🔒 Privé — sur invitation</option>
+            <option value="prive">🔒 Privé (sur invitation)</option>
           </select>
           <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginTop: 4 }}>
             {form.visibilite === 'prive'
-              ? 'Parfait pour un cours individuel : invisible sur ton portail. Après création, ajoute ton élève depuis la fiche du cours — il/elle le verra dans son espace, personne d\'autre.'
+              ? 'Parfait pour un cours individuel : invisible sur ton portail. Après création, ajoute ton élève depuis la fiche du cours : il/elle le verra dans son espace, personne d\'autre.'
               : 'Détermine qui peut voir ce cours sur ton portail public.'}
           </span>
         </div>

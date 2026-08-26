@@ -1,5 +1,5 @@
 export const metadata = {
-  title: "CGU — Conditions Générales d'Utilisation | IziSolo",
+  title: "CGU · Conditions Générales d'Utilisation | IziSolo",
   description: "Conditions générales d'utilisation de la plateforme IziSolo.",
 };
 
@@ -7,7 +7,7 @@ export default function CGUPage() {
   return (
     <div className="legal-content">
       <h1>Conditions Générales d'Utilisation</h1>
-      <p className="legal-date">Dernière mise à jour : 6 mai 2026 — Version 2.0</p>
+      <p className="legal-date">Dernière mise à jour : 6 mai 2026 · Version 2.0</p>
 
       <h2>1. Présentation et éditeur</h2>
       <p>

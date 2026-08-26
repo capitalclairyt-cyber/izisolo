@@ -17,7 +17,7 @@ export async function generateMetadata({ params }) {
     .maybeSingle();
   if (!sondage) return { title: 'Sondage introuvable' };
   return {
-    title: `${sondage.titre} — ${sondage.profiles.studio_nom}`,
+    title: `${sondage.titre} · ${sondage.profiles.studio_nom}`,
     description: `Aide ${sondage.profiles.studio_nom} à construire son planning idéal.`,
     robots: { index: false, follow: false },
   };

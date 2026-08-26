@@ -39,7 +39,7 @@ export default function CoherenceTypesHint({ typesAutorises }) {
     return (
       <span className="form-hint" style={{ display: 'block', marginTop: 6, color: '#a05a1e' }}>
         ⚠️ Aucune de tes {a.total} séances à venir ne porte le type {typesAutorises.join(' / ')}
-        {a.sansType > 0 && <> — et {a.sansType} n&apos;ont pas de type du tout (elles restent couvertes : un cours sans type est toujours accepté)</>}.
+        {a.sansType > 0 && <>, et {a.sansType} n&apos;ont pas de type du tout (elles restent couvertes : un cours sans type est toujours accepté)</>}.
         Vérifie le type de tes cours ou la restriction de cette offre.
       </span>
     );
@@ -48,7 +48,7 @@ export default function CoherenceTypesHint({ typesAutorises }) {
   if (a.sansType > 0) {
     return (
       <span className="form-hint" style={{ display: 'block', marginTop: 6, color: '#a05a1e' }}>
-        ⚠️ {a.sansType} de tes {a.total} séances à venir n&apos;ont <strong>pas de type</strong> —
+        ⚠️ {a.sansType} de tes {a.total} séances à venir n&apos;ont <strong>pas de type</strong> :
         elles seront quand même couvertes (un cours sans type est toujours accepté).
         Pour que la limite s&apos;applique vraiment, renseigne le type sur tes cours.
       </span>

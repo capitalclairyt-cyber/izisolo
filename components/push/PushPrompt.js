@@ -123,11 +123,11 @@ export default function PushPrompt({ audience = 'eleve' }) {
 
   const pitchInstall = audience === 'prof'
     ? 'Ton studio dans la poche : ouvre IziSolo d\'un tap, sans navigateur, et reste connecté·e.'
-    : 'Retrouve tes cours et ton carnet d\'un tap — sans redemander un lien par email : une fois installé, tu restes connecté·e.';
+    : 'Retrouve tes cours et ton carnet d\'un tap, sans redemander un lien par email : une fois installé, tu restes connecté·e.';
 
   const pitchPush = audience === 'prof'
-    ? 'Sois prévenu·e dès qu\'un·e élève réserve, annule ou t\'écrit — même app fermée.'
-    : 'Sois prévenu·e dès qu\'une place se libère ou que ton studio t\'écrit — même app fermée.';
+    ? 'Sois prévenu·e dès qu\'un·e élève réserve, annule ou t\'écrit, même app fermée.'
+    : 'Sois prévenu·e dès qu\'une place se libère ou que ton studio t\'écrit, même app fermée.';
 
   return (
     <div className="push-prompt">

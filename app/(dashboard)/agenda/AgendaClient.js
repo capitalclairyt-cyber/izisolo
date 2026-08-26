@@ -487,7 +487,7 @@ function VueMois({ dateRef, cours, activeCell, setActiveCell, onSelectDay, today
                 return (
                 <Link key={c.id} href={`/cours/${c.id}`}
                   className={`mois-chip ${c.est_annule ? 'annule' : ''} ${chipPast ? 'past' : ''} ${chipPointe ? 'pointe' : ''}`}
-                  title={`${formatHeure(c.heure)} — ${c.nom}`}
+                  title={`${formatHeure(c.heure)} · ${c.nom}`}
                   onClick={e => e.stopPropagation()}>
                   <span className="mois-chip-heure">{formatHeure(c.heure)}</span>
                   {c.domicile && <Home size={8} className="chip-domicile-icon" />}
@@ -566,7 +566,7 @@ function CoursCard({ cours: c, todayStr, onCoursMaj, nbEnAttente = 0 }) {
       if (json.credits_restitues > 0) bouts.push(`${json.credits_restitues} crédit${json.credits_restitues > 1 ? 's' : ''} restitué${json.credits_restitues > 1 ? 's' : ''}`);
       toast.success(bouts.join(' · ') + ' ✓');
       if (json.paiements_seance_payes > 0) {
-        toast.warning(`⚠️ ${json.paiements_seance_payes} paiement${json.paiements_seance_payes > 1 ? 's' : ''} déjà encaissé${json.paiements_seance_payes > 1 ? 's' : ''} sur cette séance — pense au remboursement (Revenus).`);
+        toast.warning(`⚠️ ${json.paiements_seance_payes} paiement${json.paiements_seance_payes > 1 ? 's' : ''} déjà encaissé${json.paiements_seance_payes > 1 ? 's' : ''} sur cette séance : pense au remboursement (Revenus).`);
       }
     } catch (err) {
       toast.error('Annulation impossible : ' + err.message);

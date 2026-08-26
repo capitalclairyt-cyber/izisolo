@@ -192,7 +192,7 @@ export default function ImporterClientsPage() {
                   value={mapping[t.key] ?? -1}
                   onChange={(e) => setMapping(m => ({ ...m, [t.key]: parseInt(e.target.value, 10) }))}
                 >
-                  <option value={-1}>— ignorer —</option>
+                  <option value={-1}>Ignorer cette colonne</option>
                   {headers.map((h, i) => (
                     <option key={i} value={i}>{headerRow ? (h || `Colonne ${i + 1}`) : `Colonne ${i + 1}`}</option>
                   ))}
@@ -248,7 +248,7 @@ export default function ImporterClientsPage() {
                   <div className="imp-invite-title">📨 Envoie-leur leur accès élève&nbsp;?</div>
                   <p className="imp-invite-sub">
                     Chaque élève avec un email reçoit un lien de connexion direct à ton
-                    portail : réservations, carnet de séances, messages — sans mot de passe.
+                    portail : réservations, carnet de séances, messages, sans mot de passe.
                   </p>
                   <button className="izi-btn izi-btn-primary" onClick={handleInviteAll}>
                     <Send size={16} /> Inviter les {report.invitables.length} élève{report.invitables.length > 1 ? 's' : ''} par email
@@ -264,7 +264,7 @@ export default function ImporterClientsPage() {
                   <Check size={18} />
                   <span>
                     {inviteState.sent} invitation{inviteState.sent > 1 ? 's' : ''} envoyée{inviteState.sent > 1 ? 's' : ''}
-                    {inviteState.errors > 0 && ` — ${inviteState.errors} en échec (tu pourras les ré-inviter depuis leur fiche)`}
+                    {inviteState.errors > 0 && ` · ${inviteState.errors} en échec (tu pourras les ré-inviter depuis leur fiche)`}
                   </span>
                 </div>
               )}

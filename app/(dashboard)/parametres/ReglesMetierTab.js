@@ -157,7 +157,7 @@ export default function ReglesMetierTab({ profileId }) {
                           checked={isAuto}
                           onChange={() => updateRegle(caseDef.id, { mode: 'auto', choix: r.choix || caseDef.defaut.choix })}
                         />
-                        <span><strong>Automatique</strong> — l'app applique ma règle</span>
+                        <span><strong>Automatique</strong> : l'app applique ma règle</span>
                       </label>
                       <label className={`rm-radio ${!isAuto ? 'selected' : ''}`}>
                         <input
@@ -166,7 +166,7 @@ export default function ReglesMetierTab({ profileId }) {
                           checked={!isAuto}
                           onChange={() => updateRegle(caseDef.id, { mode: 'manuel', choix: null })}
                         />
-                        <span><strong>Manuel</strong> — je veux gérer chaque cas dans l'inbox « À traiter »</span>
+                        <span><strong>Manuel</strong> : je veux gérer chaque cas dans l'inbox « À traiter »</span>
                       </label>
                     </div>
                   </div>

@@ -30,7 +30,7 @@ export default function BottomNav({ studioSlug, unread = 0 }) {
         <Link
           href={`/p/${studioSlug}`}
           className={`bnav-btn ${isActiveExact(`/p/${studioSlug}`) ? 'is-active' : ''}`}
-          aria-label="Accueil — cours du studio"
+          aria-label="Accueil, cours du studio"
         >
           <span className="bnav-ico">
             <Home size={23} strokeWidth={isActiveExact(`/p/${studioSlug}`) ? 1.7 : 1.4} />

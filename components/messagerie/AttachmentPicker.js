@@ -27,7 +27,7 @@ export default function AttachmentPicker({ attachments, onChange, disabled = fal
       for (const file of files) {
         if (next.length >= max) { toast.warning(`Maximum ${max} pièces jointes.`); break; }
         if (file.size > MAX_FILE_MB * 1024 * 1024) {
-          toast.error(`« ${file.name} » dépasse ${MAX_FILE_MB} Mo — réduis-le avant de l'envoyer.`);
+          toast.error(`« ${file.name} » dépasse ${MAX_FILE_MB} Mo : réduis-le avant de l'envoyer.`);
           continue;
         }
         const fd = new FormData();

@@ -89,7 +89,7 @@ export default function ConfierPointage({ cours }) {
       setCopie(true);
       setTimeout(() => setCopie(false), 2500);
     } catch {
-      toast.error('Copie impossible — sélectionne le lien à la main.');
+      toast.error('Copie impossible : sélectionne le lien à la main.');
     }
   };
 

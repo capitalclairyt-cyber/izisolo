@@ -516,7 +516,7 @@ export default function Parametres() {
     }
 
     if (!error && colonneNeuveRefusee) {
-      toast.success('Enregistré — sauf le pays, qui attend une mise à jour de la base.');
+      toast.success('Enregistré, sauf le pays, qui attend une mise à jour de la base.');
       console.warn('[parametres] colonnes en attente de migration :', colonneNeuveRefusee.join(', '));
       setDirtyCartes(prev => {
         const next = new Set(prev);
@@ -691,7 +691,7 @@ export default function Parametres() {
             <div className="section-top"><div className="section-icon"><FileText size={20} /></div><h2>Facturation</h2></div>
             <p className="section-desc">
               Avec ton {pays.identifiant.label.toLowerCase()} renseigné, tes élèves téléchargent de <strong>vraies factures acquittées</strong> depuis
-              leur espace (CSE, mutuelles…) — à la place du simple reçu. Numérotation automatique et séquentielle
+              leur espace (CSE, mutuelles…), à la place du simple reçu. Numérotation automatique et séquentielle
               (FAC-{new Date().getFullYear()}-0001), documents figés à l'émission, re-téléchargeables à l'identique.
             </p>
             {/* Le pays d'exercice (v105) : il décide du libellé de ton numéro
@@ -757,7 +757,7 @@ export default function Parametres() {
                   ? <>Vide = « {pays.mentionDefaut} » (franchise de TVA, le cas micro-entreprise). Adapte si tu factures la TVA.</>
                   : <>⚠️ Aucune mention n&apos;est écrite par défaut hors de France : nous ne devinons pas
                      ce qui doit figurer sur ta facture. Souvent «&nbsp;{mentionSuggeree(profile?.pays)}&nbsp;»,
-                     mais <strong>vérifie la formulation exacte auprès de ton comptable</strong> — c&apos;est
+                     mais <strong>vérifie la formulation exacte auprès de ton comptable</strong> : c&apos;est
                      ta responsabilité qui est engagée, pas la nôtre.</>}
               </p>
             </div>
@@ -920,7 +920,7 @@ export default function Parametres() {
                       <div className="lieu-card-nom">{lieu.nom}</div>
                       {(lieu.adresse || lieu.ville) && (
                         <div className="lieu-card-adresse">
-                          {[lieu.adresse, lieu.ville].filter(Boolean).join(' — ')}
+                          {[lieu.adresse, lieu.ville].filter(Boolean).join(', ')}
                         </div>
                       )}
                       {lieu.notes && <div className="lieu-card-notes">{lieu.notes}</div>}
@@ -1166,7 +1166,7 @@ export default function Parametres() {
             <p className="section-desc">
               Quand un paiement (chèque, virement, espèces) reste marqué « en attente »
               trop longtemps, tu reçois une notification dans ta cloche pour penser à
-              relancer. Rien n'est envoyé à l'élève — c'est à toi de choisir le ton.
+              relancer. Rien n'est envoyé à l'élève : c'est à toi de choisir le ton.
             </p>
             <div className="form-group">
               <label className="form-label">Me prévenir après</label>
@@ -1207,7 +1207,7 @@ export default function Parametres() {
               </div>
               <p className="section-desc">
                 Ces deux seuils déclenchent les emails automatiques ci-dessus (s'ils
-                sont activés) — et les mêmes alertes sur ton tableau de bord.
+                sont activés), et les mêmes alertes sur ton tableau de bord.
               </p>
 
               <div className="form-row">
@@ -1284,7 +1284,7 @@ export default function Parametres() {
               <p className="section-desc">
                 La veille et le jour J de l'anniversaire d'un·e élève, tu reçois une
                 alerte dans ta cloche. Un clic ouvre la messagerie avec ton message
-                prérempli — tu n'as plus qu'à l'envoyer (rien ne part tout seul).
+                prérempli : tu n'as plus qu'à l'envoyer (rien ne part tout seul).
               </p>
 
               {(profile.anniversaire_mode || 'semi') !== 'off' && (
@@ -1390,12 +1390,12 @@ export default function Parametres() {
                   <p className="abo-status">
                     {isTrialActive ? (
                       <>
-                        Tu profites d'un essai <strong>Pro</strong> — il te reste{' '}
+                        Tu profites d'un essai <strong>Pro</strong> : il te reste{' '}
                         <strong>{trial.daysLeft} {trial.daysLeft > 1 ? 'jours' : 'jour'}</strong>.
                         Choisis ton abonnement ci-dessous quand tu es prêt·e.
                       </>
                     ) : isFree ? (
-                      <>Tu utilises actuellement le plan <strong>{currentPlan.nom}</strong> (compte interne — full access).</>
+                      <>Tu utilises actuellement le plan <strong>{currentPlan.nom}</strong> (compte interne, full access).</>
                     ) : trial.expired ? (
                       <>
                         Ton essai est terminé. Choisis ton plan ci-dessous pour continuer
@@ -1435,7 +1435,7 @@ export default function Parametres() {
 
           <div className="section izi-card" style={{ background: 'var(--bg-soft, #faf8f5)', border: '1px dashed var(--border)' }}>
             <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.5 }}>
-              <strong>Frais de fonctionnement IziSolo</strong> : 1 % du volume payé en ligne via Stripe — ajoutés à ta facture mensuelle, jamais prélevés sur tes paiements. Tu encaisses sur ton propre compte Stripe, IziSolo ne touche jamais l'argent de tes élèves.
+              <strong>Frais de fonctionnement IziSolo</strong> : 1 % du volume payé en ligne via Stripe, ajoutés à ta facture mensuelle, jamais prélevés sur tes paiements. Tu encaisses sur ton propre compte Stripe, IziSolo ne touche jamais l'argent de tes élèves.
             </p>
           </div>
 

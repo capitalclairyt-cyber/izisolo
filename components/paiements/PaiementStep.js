@@ -263,7 +263,7 @@ export default function PaiementStep({
                 <span>{label}</span>
               </button>
             ))}
-            <button type="button" className="mode-btn mode-btn-soon" disabled title="Paiement en ligne — bientôt disponible">
+            <button type="button" className="mode-btn mode-btn-soon" disabled title="Paiement en ligne, bientôt disponible">
               <CardIcon size={18} />
               <span>Lien CB</span>
               <span className="soon-badge">Bientôt</span>
@@ -300,7 +300,7 @@ export default function PaiementStep({
       {isAregler && (
         <p className="montant-hint" style={{ color: '#b45309' }}>
           L'offre est attribuée tout de suite. Le montant apparaît en « à percevoir »
-          — tu l'encaisses en un clic quand l'élève règle.
+         : tu l'encaisses en un clic quand l'élève règle.
         </p>
       )}
 

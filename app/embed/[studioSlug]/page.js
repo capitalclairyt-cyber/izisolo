@@ -137,7 +137,7 @@ function paletteValide(palette) {
 export async function generateMetadata({ params }) {
   const { studioSlug } = await params;
   return {
-    title: `Planning — ${studioSlug}`,
+    title: `Planning · ${studioSlug}`,
     robots: { index: false, follow: false }, // page technique, iframée seulement
   };
 }

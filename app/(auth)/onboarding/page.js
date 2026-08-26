@@ -141,7 +141,7 @@ export default function OnboardingPage() {
       slug = await genererSlugStudioUnique(supabase, studioNom, user.id);
     } catch (e) {
       console.error('Erreur slug:', e);
-      setErreur('Impossible de vérifier la disponibilité du nom du studio — réessaie dans un instant.');
+      setErreur('Impossible de vérifier la disponibilité du nom du studio, réessaie dans un instant.');
       setLoading(false);
       return;
     }
@@ -191,7 +191,7 @@ export default function OnboardingPage() {
     if (profileError) {
       console.error('Erreur profil:', profileError);
       setErreur(profileError.code === '23505'
-        ? 'Ce nom de studio est déjà pris — modifie-le légèrement et réessaie.'
+        ? 'Ce nom de studio est déjà pris, modifie-le légèrement et réessaie.'
         : "Oups, on n'a pas réussi à enregistrer ton studio. Vérifie ta connexion et réessaie.");
       setLoading(false);
       return;
@@ -210,7 +210,7 @@ export default function OnboardingPage() {
       }
       if (insertErr && insertErr.code !== '23505') {
         console.error('Erreur création profil:', insertErr);
-        setErreur("Ton profil n'a pas pu être créé — déconnecte-toi puis reconnecte-toi, ou écris-nous via le bouton d'aide.");
+        setErreur("Ton profil n'a pas pu être créé : déconnecte-toi puis reconnecte-toi, ou écris-nous via le bouton d'aide.");
         setLoading(false);
         return;
       }
@@ -311,7 +311,7 @@ export default function OnboardingPage() {
               Ton compte est un compte élève 🌿
             </h2>
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.9375rem', margin: '0 0 20px', lineHeight: 1.5 }}>
-              Tu utilises IziSolo pour réserver tes cours — ton espace se trouve
+              Tu utilises IziSolo pour réserver tes cours : ton espace se trouve
               sur le portail de ton studio, pas ici.
             </p>
 
@@ -319,7 +319,7 @@ export default function OnboardingPage() {
               <div className="eleve-portails">
                 {portails.map(p => (
                   <a key={p.slug} href={`/p/${p.slug}/espace`} className="izi-btn izi-btn-primary eleve-portail-btn">
-                    <ExternalLink size={16} /> Mon espace — {p.nom}
+                    <ExternalLink size={16} /> Mon espace · {p.nom}
                   </a>
                 ))}
               </div>
@@ -369,7 +369,7 @@ export default function OnboardingPage() {
                   <strong>Tu crées ici TON studio de professeur·e</strong> (essai 14 jours).
                   {portails.length > 0 && (
                     <> Ce n'est <strong>pas</strong> l'accès à ton espace élève chez{' '}
-                    {portails.map(p => p.nom).join(', ')} — pour ça, utilise le bouton
+                    {portails.map(p => p.nom).join(', ')} : pour ça, utilise le bouton
                     « Mon espace » au-dessus.</>
                   )}
                 </p>
@@ -653,7 +653,7 @@ export default function OnboardingPage() {
 
             {offreWarning && (
               <p style={{ background: '#fef3e2', color: '#b45309', borderRadius: 10, padding: '10px 14px', fontSize: '0.8125rem', margin: '0 0 16px' }}>
-                ⚠️ Ta première offre n'a pas pu être créée — tu pourras la refaire en une minute dans « Offres ».
+                ⚠️ Ta première offre n'a pas pu être créée, tu pourras la refaire en une minute dans « Offres ».
               </p>
             )}
 

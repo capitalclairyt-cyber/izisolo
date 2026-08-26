@@ -70,7 +70,7 @@ function DiagnosticOffres({ offres }) {
             {kind === 'restriction_inerte' && (
               <><strong>{offre.nom}</strong> est limitée à {offre.types_cours_autorises.join(' / ')},
                 mais <strong>{analyse.sansType} séance{analyse.sansType > 1 ? 's' : ''} à venir</strong> n&apos;ont
-                pas de type — elles sont quand même couvertes (un cours sans type est toujours accepté).
+                pas de type : elles sont quand même couvertes (un cours sans type est toujours accepté).
                 Renseigne le type sur tes cours pour que la limite s&apos;applique.</>
             )}
             {kind === 'type_fantome' && (
@@ -86,7 +86,7 @@ function DiagnosticOffres({ offres }) {
             {legacy.length === 1
               ? <><strong>{legacy[0].offre.nom}</strong> (offre « à l&apos;unité ») ne s&apos;affiche pas</>
               : <><strong>{legacy.length} offres « à l&apos;unité »</strong> ({legacy.map(i => i.offre.nom).join(', ')}) ne s&apos;affichent pas</>}
-            {' '}à la réservation — le paiement à la séance se règle désormais sur chaque cours
+            {' '}à la réservation : le paiement à la séance se règle désormais sur chaque cours
             (fiche du cours → <strong>Tarif à la séance</strong>, + « carnets acceptés » si besoin).
           </li>
         )}

@@ -39,7 +39,7 @@ export default function ReglesAnnulationSection({ profile, setProfile, setDirty 
         <h2>Règles d'annulation</h2>
       </div>
       <p className="section-desc">
-        L'app applique automatiquement ces règles. <strong>Au-delà du délai, la séance est comptée</strong> dans le crédit de l'élève — tu n'as plus besoin d'expliquer toi-même la règle.
+        L'app applique automatiquement ces règles. <strong>Au-delà du délai, la séance est comptée</strong> dans le crédit de l'élève : tu n'as plus besoin d'expliquer toi-même la règle.
       </p>
 
       <div className="form-group">

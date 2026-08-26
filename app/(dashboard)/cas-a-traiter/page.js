@@ -3,7 +3,7 @@ import { resoudreStudioActif } from '@/lib/studio-actif';
 import { redirect } from 'next/navigation';
 import CasATraiterClient from './CasATraiterClient';
 
-export const metadata = { title: 'Cas à traiter — IziSolo' };
+export const metadata = { title: 'Cas à traiter · IziSolo' };
 export const dynamic = 'force-dynamic';
 
 export default async function CasATraiterPage() {

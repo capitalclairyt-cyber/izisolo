@@ -56,7 +56,7 @@ export default function AccountStatusBanner({ profile }) {
       <div className="acc-banner acc-banner--trial-active">
         <Sparkles size={14} className="acc-icon" />
         <span className="acc-trial-text">
-          Essai <strong>Pro</strong> — {trial.daysLeft} {daysWord} restant{trial.daysLeft > 1 ? 's' : ''}
+          Essai <strong>Pro</strong> · {trial.daysLeft} {daysWord} restant{trial.daysLeft > 1 ? 's' : ''}
         </span>
         <Link href="/parametres?tab=abonnement" className="acc-cta">
           Choisir mon abo
@@ -106,8 +106,8 @@ export default function AccountStatusBanner({ profile }) {
       <div className="acc-banner acc-banner--canceled">
         <Snowflake size={16} className="acc-icon" />
         <div className="acc-text">
-          <strong>Compte gelé — abo annulé.</strong> Tu peux toujours consulter tes
-          données mais plus en ajouter. <strong>Le trial 14j a déjà été utilisé</strong> —
+          <strong>Compte gelé, abo annulé.</strong> Tu peux toujours consulter tes
+          données mais plus en ajouter. <strong>Le trial 14j a déjà été utilisé</strong> :
           re-souscris pour ré-accéder à toutes les features.
         </div>
         <Link href="/parametres?tab=abonnement" className="acc-cta acc-cta--primary">

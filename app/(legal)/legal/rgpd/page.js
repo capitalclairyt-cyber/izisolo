@@ -155,7 +155,7 @@ export default function RGPDPage() {
       <ul>
         <li>chiffrement TLS 1.3 sur l'ensemble des communications réseau ;</li>
         <li>chiffrement au repos des données stockées par Supabase ;</li>
-        <li>mots de passe hachés (bcrypt) — jamais stockés en clair ;</li>
+        <li>mots de passe hachés (bcrypt), jamais stockés en clair ;</li>
         <li>cloisonnement strict des données entre studios via Row-Level Security PostgreSQL ;</li>
         <li>journalisation et audit des accès, alertes en cas d'activité suspecte ;</li>
         <li>sauvegardes quotidiennes par l'hébergeur, conservation 7 jours ;</li>
@@ -188,7 +188,7 @@ export default function RGPDPage() {
         Si vous estimez, après nous avoir contactés, que vos droits ne sont pas
         respectés, vous pouvez introduire une réclamation auprès de la{' '}
         <strong>Commission Nationale de l'Informatique et des Libertés (CNIL)</strong>,
-        3 place de Fontenoy, 75007 Paris —{' '}
+        3 place de Fontenoy, 75007 Paris ·{' '}
         <a href="https://www.cnil.fr/fr/plaintes" target="_blank" rel="noopener noreferrer">cnil.fr/plaintes</a>.
       </p>
 

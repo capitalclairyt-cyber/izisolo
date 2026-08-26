@@ -387,7 +387,7 @@ function CategoryManager({ categories, saving, profileId, todayStr, onAddCategor
 
       {/* Liste des catégories */}
       {categories.length === 0 && (
-        <p className="cat-empty">Aucune catégorie — ajoutez-en une pour organiser vos types de cours.</p>
+        <p className="cat-empty">Aucune catégorie : ajoutez-en une pour organiser vos types de cours.</p>
       )}
 
       {categories.map((cat) => {

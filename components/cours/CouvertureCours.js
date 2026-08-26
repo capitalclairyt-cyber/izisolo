@@ -38,7 +38,7 @@ export default function CouvertureCours({ cours, offres: offresInit, typesCours 
     const message = couverte
       ? (restreinte
           ? `« ${offre.nom} » ne couvrira plus AUCUN cours « ${cours.type_cours} »${seances}, pas seulement celui-ci.\n\nLes carnets déjà vendus gardent leur périmètre. Continuer ?`
-          : `« ${offre.nom} » couvre aujourd'hui TOUS tes cours. La décocher va la limiter aux types : ${res.types.join(', ')} — un type créé plus tard ne sera plus couvert automatiquement.\n\nÇa vaut pour tous tes cours « ${cours.type_cours} »${seances}, pas seulement celui-ci. Les carnets déjà vendus gardent leur périmètre. Continuer ?`)
+          : `« ${offre.nom} » couvre aujourd'hui TOUS tes cours. La décocher va la limiter aux types : ${res.types.join(', ')}. Un type créé plus tard ne sera plus couvert automatiquement.\n\nÇa vaut pour tous tes cours « ${cours.type_cours} »${seances}, pas seulement celui-ci. Les carnets déjà vendus gardent leur périmètre. Continuer ?`)
       : `« ${offre.nom} » couvrira désormais TOUS tes cours « ${cours.type_cours} »${seances}, pas seulement celui-ci. Continuer ?`;
     if (!confirm(message)) return;
 
@@ -67,7 +67,7 @@ export default function CouvertureCours({ cours, offres: offresInit, typesCours 
 
       {atelierPur ? (
         <p className="couv-info">
-          <strong>À l'unité ({tarif} €) uniquement</strong> — aucun carnet/abo ne se décompte
+          <strong>À l'unité ({tarif} €) uniquement</strong> : aucun carnet/abo ne se décompte
           sur cette séance. Pour accepter aussi les carnets compatibles, modifie le cours
           et coche la case sous le tarif.
         </p>

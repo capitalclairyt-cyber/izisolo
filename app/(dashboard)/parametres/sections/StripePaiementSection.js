@@ -43,7 +43,7 @@ export default function StripePaiementSection({ profile, setProfile, setDirty })
       </div>
       <p className="section-desc">
         Branche Stripe pour permettre à tes élèves de payer leurs carnets et abonnements
-        par CB depuis ton portail. <strong>Frais de fonctionnement IziSolo : 1%</strong> du volume — ajoutés
+        par CB depuis ton portail. <strong>Frais de fonctionnement IziSolo : 1%</strong> du volume, ajoutés
         à ta facture mensuelle, jamais prélevés sur tes paiements.
       </p>
 
@@ -109,7 +109,7 @@ export default function StripePaiementSection({ profile, setProfile, setDirty })
           <span>
             Tant que ce secret n&apos;est pas renseigné, IziSolo n&apos;apprend jamais qu&apos;une élève
             a payé : ni le paiement, ni le carnet ne seraient créés. Alors <strong>on ne propose
-            pas le paiement en ligne à tes élèves</strong> — elles voient « Demander » sur tes
+            pas le paiement en ligne à tes élèves</strong> : elles voient « Demander » sur tes
             offres, et tu encaisses comme tu veux. Tes liens Stripe restent en place et
             reprennent du service dès que tu as collé le secret.
           </span>

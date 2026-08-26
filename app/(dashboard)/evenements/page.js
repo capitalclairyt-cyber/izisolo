@@ -6,7 +6,7 @@ export default function Evenements() {
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', gap: '16px', textAlign: 'center' }}>
       <LayoutGrid size={40} style={{ color: 'var(--brand)' }} />
       <h1 style={{ fontSize: '1.5rem', fontWeight: 700 }}>Événements</h1>
-      <p style={{ color: 'var(--text-muted)', fontSize: '0.9375rem' }}>Bientôt disponible — Phase 1</p>
+      <p style={{ color: 'var(--text-muted)', fontSize: '0.9375rem' }}>Bientôt disponible · Phase 1</p>
     </div>
   );
 }

@@ -328,7 +328,7 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(json.error || 'Erreur');
-      toast.success('Mot de passe enregistré ✓ — tu peux maintenant te connecter avec, depuis la page Connexion.');
+      toast.success('Mot de passe enregistré ✓. Tu peux maintenant te connecter avec, depuis la page Connexion.');
       setMdpOpen(false); setMdp1(''); setMdp2('');
     } catch (e) {
       toast.error(e.message);
@@ -353,11 +353,11 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
       // « la séance a été comptée » s'affichait même quand la règle du studio
       // excusait tout ou laissait la prof décider).
       if (json.tardive && json.action === 'excusee') {
-        toast.success('Annulation enregistrée — ton studio ne compte pas cette séance. 🌿');
+        toast.success('Annulation enregistrée : ton studio ne compte pas cette séance. 🌿');
       } else if (json.tardive && json.action === 'manuel') {
-        toast.warning('Annulation tardive enregistrée — ton studio revient vers toi pour la suite.');
+        toast.warning('Annulation tardive enregistrée : ton studio revient vers toi pour la suite.');
       } else if (json.tardive) {
-        toast.warning('Annulation enregistrée — la séance a été comptée (annulation tardive).');
+        toast.warning('Annulation enregistrée : la séance a été comptée (annulation tardive).');
       } else {
         toast.success('Réservation annulée. On t\'attend la prochaine fois 🌿');
       }
@@ -423,7 +423,7 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
         }}>
           <span style={{ fontSize: '1.25rem' }}>👁️</span>
           <div style={{ flex: 1 }}>
-            <strong>Mode démo</strong> — tu vois ton espace élève avec des données fictives.
+            <strong>Mode démo</strong> : tu vois ton espace élève avec des données fictives.
             <span style={{ fontWeight: 400, opacity: 0.85 }}> Camille, une élève imaginaire, a un carnet 10 séances et 2 cours réservés.</span>
           </div>
         </div>
@@ -666,7 +666,7 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
             </div>
           ) : (
             <p style={{ color: '#aaa', fontSize: '0.875rem', margin: '10px 0 0', lineHeight: 1.5 }}>
-              Optionnel — pour te connecter directement, sans attendre un lien par
+              Optionnel : pour te connecter directement, sans attendre un lien par
               email. Le lien reste dispo si tu l'oublies.
             </p>
           )}
@@ -800,7 +800,7 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
                             ? <>Expiré le {new Date(abo.date_fin).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</>
                             : <>Valable jusqu'au {new Date(abo.date_fin).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
                               {joursRestants != null && joursRestants <= 30 && joursRestants > 0 && (
-                                <span style={{ color: '#d97706', fontWeight: 600 }}> — plus que {joursRestants} jour{joursRestants > 1 ? 's' : ''}</span>
+                                <span style={{ color: '#d97706', fontWeight: 600 }}> · plus que {joursRestants} jour{joursRestants > 1 ? 's' : ''}</span>
                               )}
                             </>
                           }
@@ -866,7 +866,7 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: 600, fontSize: '0.875rem', color: '#1a1a2e' }}>{w.cours_nom}</div>
                     <div style={{ fontSize: '0.7rem', color: '#b45309', marginTop: 2 }}>
-                      {w.annulationTardive ? 'Annulation tardive — séance due' : 'Séance à régler'}{dateStr ? ` · ${dateStr}` : ''}
+                      {w.annulationTardive ? 'Annulation tardive : séance due' : 'Séance à régler'}{dateStr ? ` · ${dateStr}` : ''}
                     </div>
                     {/* Paiement par séance (v2 de v86) : la ligne disparaît
                         seule dès que le webhook rattache le paiement. */}
@@ -902,7 +902,7 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: 600, fontSize: '0.875rem', color: '#1a1a2e' }}>{a.cours_nom}</div>
                     <div style={{ fontSize: '0.7rem', color: '#b45309', marginTop: 2 }}>
-                      Annulation tardive — séance due{dateStr ? ` · ${dateStr}` : ''}
+                      Annulation tardive : séance due{dateStr ? ` · ${dateStr}` : ''}
                     </div>
                   </div>
                   <div style={{ fontWeight: 700, fontSize: '0.9375rem', color: '#b45309', flexShrink: 0 }}>

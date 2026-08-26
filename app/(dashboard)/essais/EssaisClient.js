@@ -57,7 +57,7 @@ export default function EssaisClient({ profile, demandes: initialDemandes, surch
         ? { ...d, statut: action === 'valider' ? 'finalisee' : 'refusee', motif_refus: motif }
         : d
       ));
-      toast.success(action === 'valider' ? 'Demande validée — fiche client créée' : 'Demande refusée');
+      toast.success(action === 'valider' ? 'Demande validée, fiche client créée' : 'Demande refusée');
       setRefusingId(null);
       setRefusMotif('');
     } catch (err) {
@@ -183,7 +183,7 @@ export default function EssaisClient({ profile, demandes: initialDemandes, surch
                     </span>
                     {seancePassee && canAct && (
                       <span style={{ display: 'inline-block', marginTop: 4, fontSize: '0.72rem', fontWeight: 600, color: '#b45309', background: '#fef3e2', borderRadius: 6, padding: '1px 8px' }}>
-                        ⏳ Séance passée — valider est impossible, propose un autre créneau
+                        ⏳ Séance passée : valider est impossible, propose un autre créneau
                       </span>
                     )}
                   </div>

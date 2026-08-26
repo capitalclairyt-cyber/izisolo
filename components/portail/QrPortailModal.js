@@ -108,7 +108,7 @@ export default function QrPortailModal({ open, onClose, studioSlug, studioNom, e
           ))}
         </div>
         {preset === 'flyer' && !essaiDispo && (
-          <p className="qrm-hint">Ton cours d'essai en ligne n'est pas actif — ce QR mènera à ton portail.</p>
+          <p className="qrm-hint">Ton cours d'essai en ligne n'est pas actif : ce QR mènera à ton portail.</p>
         )}
 
         <div className="qrm-preview">

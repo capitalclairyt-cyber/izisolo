@@ -3,7 +3,7 @@ import { resoudreStudioActif } from '@/lib/studio-actif';
 import { redirect } from 'next/navigation';
 import VideosClient from './VideosClient';
 
-export const metadata = { title: 'Vidéos — IziSolo' };
+export const metadata = { title: 'Vidéos · IziSolo' };
 
 export default async function VideosPage() {
   const supabase = await createServerClient();

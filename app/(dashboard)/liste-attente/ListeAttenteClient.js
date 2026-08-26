@@ -38,7 +38,7 @@ export default function ListeAttenteClient({ groupes: groupesInit }) {
       const res = await fetch(`/api/liste-attente/${entryId}/promouvoir`, { method: 'POST' });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Erreur');
-      toast.success('Personne promue — email envoyé');
+      toast.success('Personne promue, email envoyé');
       router.refresh();
     } catch (e) {
       toast.error(e.message);

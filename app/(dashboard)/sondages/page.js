@@ -6,7 +6,7 @@ import { Plus, BarChart3 } from 'lucide-react';
 import SondagesList from './SondagesList';
 import EmptyState from '@/components/ui/EmptyState';
 
-export const metadata = { title: 'Sondage planning — sondages élèves' };
+export const metadata = { title: 'Sondage planning · sondages élèves' };
 
 export default async function SondagesPage() {
   const supabase = await createServerClient();
@@ -52,7 +52,7 @@ export default async function SondagesPage() {
         <EmptyState
           icon={<BarChart3 size={28} />}
           title="Aucun sondage pour l'instant"
-          description="Crée un sondage avec 3-8 créneaux candidats — tes élèves cochent ceux où ils viendraient. Tu vois les gagnants en un coup d'œil et tu les transformes en série en un clic."
+          description="Crée un sondage avec 3-8 créneaux candidats : tes élèves cochent ceux où ils viendraient. Tu vois les gagnants en un coup d'œil et tu les transformes en série en un clic."
         >
           <Link href="/sondages/nouveau" className="izi-btn izi-btn-primary">
             <Plus size={16} /> Créer mon premier sondage

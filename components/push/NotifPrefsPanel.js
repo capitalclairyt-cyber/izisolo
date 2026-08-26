@@ -73,7 +73,7 @@ export default function NotifPrefsPanel({ audience = 'eleve', initialPrefs = {},
                   type="button"
                   role="switch"
                   aria-checked={on}
-                  aria-label={`${t.label} — ${c.label}`}
+                  aria-label={`${t.label}, ${c.label}`}
                   className={`np-cell np-toggle ${on ? 'on' : ''}`}
                   onClick={() => toggle(t.key, c.ch)}
                   disabled={saving}

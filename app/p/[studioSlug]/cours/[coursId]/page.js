@@ -171,7 +171,7 @@ export async function generateMetadata({ params }) {
     });
     quand = ` ${jour}${cours.heure ? ` à ${String(cours.heure).slice(0, 5)}` : ''}`;
   } catch { /* date imparsable → description sans la date, jamais de crash */ }
-  const titre = `${cours.nom} — ${profile.studio_nom}`;
+  const titre = `${cours.nom} · ${profile.studio_nom}`;
   return {
     title: titre,
     ...ogPortail({

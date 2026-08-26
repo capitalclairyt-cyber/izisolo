@@ -199,7 +199,7 @@ export default function PagePubliqueSection({ profile, setProfile, setDirty }) {
         }
       `}</style>
       <p className="section-desc">
-        Tout ce que tes futur·e·s élèves voient sur <strong>{publicUrl || 'ta page'}</strong>. Tous les champs sont optionnels — laisse vide ce que tu ne veux pas montrer.
+        Tout ce que tes futur·e·s élèves voient sur <strong>{publicUrl || 'ta page'}</strong>. Tous les champs sont optionnels : laisse vide ce que tu ne veux pas montrer.
       </p>
 
       {/* Avertissement trial : la page publique enrichie est Pro+ */}
@@ -220,7 +220,7 @@ export default function PagePubliqueSection({ profile, setProfile, setDirty }) {
       {studioSlug && (
         <div className="page-pub-workflow">
           <div className="page-pub-workflow-info">
-            <strong>Aperçu avant publication</strong> — visualise tes modifs comme tes élèves les verront, avant de cliquer Enregistrer en bas de page.
+            <strong>Aperçu avant publication</strong> : visualise tes modifs comme tes élèves les verront, avant de cliquer Enregistrer en bas de page.
           </div>
           <div className="page-pub-workflow-actions">
             <button
@@ -268,7 +268,7 @@ export default function PagePubliqueSection({ profile, setProfile, setDirty }) {
             <label className="emb-int-opt">
               Affichage
               <select value={optAffichage} onChange={e => setOptAffichage(e.target.value)}>
-                <option value="liste">Liste — jours avec séances</option>
+                <option value="liste">Liste (jours avec séances)</option>
                 <option value="semaine">Semaine complète (Lun → Dim)</option>
               </select>
             </label>
@@ -296,7 +296,7 @@ export default function PagePubliqueSection({ profile, setProfile, setDirty }) {
                   value={optCouleur2 || optCouleur1 || '#b9794d'}
                   onChange={e => { setOptCouleur2(e.target.value); enregistrerCouleurs(optCouleur1, e.target.value); }}
                   disabled={!optCouleur1}
-                  title="Deuxième couleur (pastilles) — optionnelle"
+                  title="Deuxième couleur (pastilles), optionnelle"
                   aria-label="Deuxième couleur (optionnelle)"
                 />
                 {optCouleur1 && (
@@ -320,7 +320,7 @@ export default function PagePubliqueSection({ profile, setProfile, setDirty }) {
             </p>
           )}
           <div className="emb-int-row">
-            <div className="emb-int-label">Recommandé — s'ajuste tout seul à la hauteur du planning :</div>
+            <div className="emb-int-label">Recommandé, s'ajuste tout seul à la hauteur du planning :</div>
             <div className="emb-int-snippet">
               <code>{snippetWidget}</code>
               <button type="button" className="izi-btn izi-btn-secondary emb-int-copy" onClick={() => copier('widget', snippetWidget)}>
@@ -329,7 +329,7 @@ export default function PagePubliqueSection({ profile, setProfile, setDirty }) {
             </div>
           </div>
           <div className="emb-int-row">
-            <div className="emb-int-label">Si ton site refuse les scripts — iframe simple (hauteur fixe) :</div>
+            <div className="emb-int-label">Si ton site refuse les scripts, iframe simple (hauteur fixe) :</div>
             <div className="emb-int-snippet">
               <code>{snippetIframe}</code>
               <button type="button" className="izi-btn izi-btn-secondary emb-int-copy" onClick={() => copier('iframe', snippetIframe)}>
@@ -458,7 +458,7 @@ export default function PagePubliqueSection({ profile, setProfile, setDirty }) {
           rows={2}
           value={profile?.formations || ''}
           onChange={set('formations')}
-          placeholder="Ex : RYT 500 — Yoga Alliance · Diplôme Hatha (Sivananda) · Formation prénatal"
+          placeholder="Ex : RYT 500, Yoga Alliance · Diplôme Hatha (Sivananda) · Formation prénatal"
         />
       </div>
 
@@ -550,7 +550,7 @@ export default function PagePubliqueSection({ profile, setProfile, setDirty }) {
 
       {/* FAQ publique */}
       <div className="form-group">
-        <label className="form-label">FAQ — questions de tes élèves</label>
+        <label className="form-label">FAQ : questions de tes élèves</label>
         <p className="form-hint" style={{ marginTop: 0, marginBottom: 8 }}>
           Anticipe les questions classiques (« dois-je amener mon tapis ? », « où me garer ? »).
         </p>
