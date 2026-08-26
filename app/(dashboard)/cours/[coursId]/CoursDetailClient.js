@@ -23,6 +23,7 @@ import TypeCoursHint from '@/components/cours/TypeCoursHint';
 import CouvertureCours from '@/components/cours/CouvertureCours';
 import ConfierPointage from '@/components/cours/ConfierPointage';
 import IntervenanteCours from '@/components/cours/IntervenanteCours';
+import RepereDate from '@/components/cours/RepereDate';
 import AttachmentPicker from '@/components/messagerie/AttachmentPicker';
 import { resoudreCarnetApplicable } from '@/lib/carnet-resolution';
 import { sanitizeLienVisio } from '@/lib/visio';
@@ -924,6 +925,7 @@ export default function CoursDetailClient({ intervenantes = [], intervenantInit 
               <div className="form-group">
                 <label className="form-label"><Calendar size={14} /> Date</label>
                 <input className="izi-input" type="date" value={form.date} onChange={handleChange('date')} />
+                <RepereDate iso={form.date} />
               </div>
               <div className="form-group">
                 <label className="form-label"><Clock size={14} /> Heure</label>

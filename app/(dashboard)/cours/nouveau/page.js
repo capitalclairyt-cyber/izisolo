@@ -7,6 +7,7 @@ import {
   JOURS_SEMAINE, JOUR_LONG_PLURIEL, jourDeLaSemaine, prochaineOccurrenceJour,
 } from '@/lib/serie-jour';
 import { sanitizeLienVisio } from '@/lib/visio';
+import RepereDate from '@/components/cours/RepereDate';
 import { sanitizeLienPaiement } from '@/lib/paiement-seance';
 import { getAllTypesFromCategories, normalizeTypesCours } from '@/lib/utils';
 import {
@@ -880,6 +881,7 @@ function NouveauCoursInner() {
           <div className="form-group">
             <label className="form-label"><Calendar size={14} /> Date *</label>
             <input className="izi-input" type="date" value={form.date} onChange={handleChange('date')} required />
+            <RepereDate iso={form.date} />
           </div>
           <div className="form-group">
             <label className="form-label"><Clock size={14} /> Heure</label>
@@ -1089,13 +1091,16 @@ function NouveauCoursInner() {
                 <span className="form-hint" style={{ margin: 0 }}>cours seront créés</span>
               </div>
             ) : (
-              <input
-                className="izi-input"
-                type="date"
-                value={form.date_fin}
-                onChange={handleChange('date_fin')}
-                min={form.date}
-              />
+              <>
+                <input
+                  className="izi-input"
+                  type="date"
+                  value={form.date_fin}
+                  onChange={handleChange('date_fin')}
+                  min={form.date}
+                />
+                <RepereDate iso={form.date_fin} />
+              </>
             )}
           </div>
         )}

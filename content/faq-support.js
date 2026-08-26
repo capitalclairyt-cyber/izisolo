@@ -210,4 +210,12 @@ export const FAQ_SUPPORT = [
     a: "Vérifie d'abord Paramètres → Portail public → Paiement en ligne. Brancher le paiement demande DEUX gestes : coller un lien Stripe sur l'offre, et déclarer le webhook (les étapes 1 et 2 de cet écran). Le webhook est ce qui prévient IziSolo qu'une élève a payé : sans lui, l'argent arrive bien sur ton compte Stripe, mais l'app n'en sait rien, donc ni paiement ni carnet ne sont créés. Si le bandeau « Configuré » n'est pas affiché, c'est ça. Pour retrouver l'argent : va sur dashboard.stripe.com → Paiements, en mode Live (l'interrupteur « Mode test » doit être éteint, c'est le piège le plus courant) et cherche l'email de ton élève. Si le paiement y est, termine la configuration, puis dans Stripe → Webhooks, ouvre l'événement et clique « Resend » : IziSolo créera le paiement et le carnet tout seuls, à la bonne date, sans risque de doublon. Depuis le 26/08/2026, tant que le webhook manque, tes élèves ne voient plus de bouton « payer » mais un bouton « Demander » : leur demande arrive en tête de ta page Offres et tu encaisses comme tu veux.",
     lien: { href: '/aide#offres', label: 'Voir le pas-à-pas' },
   },
+  {
+    // Retour Maude, 2026-08-26 : « le calendrier affiche le 1er septembre un
+    // jeudi alors que c'est un mardi ». Le calendrier en cause n'était pas le
+    // nôtre. AJOUTÉE EN FIN de liste.
+    q: "Le petit calendrier me montre le mauvais jour de la semaine, IziSolo se trompe ?",
+    a: "Non, et c'est vérifiable en un coup d'œil. Le petit calendrier qui s'ouvre quand tu cliques sur un champ de date est dessiné par ton navigateur, pas par IziSolo, et il s'ouvre toujours sur le mois de la date déjà écrite dans le champ. Si un chiffre de l'année est parti de travers en tapant au clavier (2022 au lieu de 2026, par exemple), il s'ouvre sur la mauvaise année, où le même jour du mois tombe évidemment sur un autre jour de la semaine. Regarde l'année écrite en haut du calendrier. Pour t'éviter le piège, IziSolo écrit désormais sous le champ le jour choisi en toutes lettres, « Mardi 1 septembre 2026 », et te prévient en rouge si l'année n'est ni celle en cours ni l'une des deux suivantes.",
+    lien: { href: '/aide#premier-cours', label: 'Voir le pas-à-pas' },
+  },
 ];
