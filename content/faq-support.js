@@ -194,4 +194,12 @@ export const FAQ_SUPPORT = [
     a: "Oui, et rien n'est perdu. Quand tu proposes plusieurs fois le MÊME cours dans la journée (même nom, même lieu, même tarif, même format), ton portail les range sous une seule carte plutôt que d'en empiler cinq : « 5 créneaux, de 9h30 à 16h ». Les horaires restent écrits sur la carte, et le bouton « Choisir mon heure » les déplie, chacun avec ses places restantes et son bouton de réservation. Deux exceptions volontaires : une séance annulée garde toujours sa propre carte (c'est l'information la plus importante, elle ne doit pas se cacher), et il faut au moins trois créneaux pour que le regroupement se déclenche.",
     lien: { href: '/aide#page-publique', label: 'Voir le pas-à-pas' },
   },
+  {
+    // Retour Manon (Soleya), 2026-08-26 : 7 semaines de décomptes manuels sur
+    // les fiches, 0 pointage. Elle avait renseigné le type de cours et
+    // attendait un décompte automatique. AJOUTÉE EN FIN de liste.
+    q: "Je décompte les cartes de mes élèves à la main — pourquoi ça ne se fait pas tout seul ?",
+    a: "Parce qu'il manque un geste, et un seul : le pointage. C'est lui qui décompte les carnets, et rien d'autre ne le fait — ni la réservation de l'élève, ni le type de cours, ni le fait que son carnet couvre ce cours. Tant qu'une séance n'est pas pointée, les compteurs ne bougent pas. Le jour J, depuis l'Accueil (bloc « Aujourd'hui ») ou l'Agenda, ouvre la séance → « Pointer », puis un clic par élève : « Carnet 10 séances · 9 séances » s'affiche sous son nom, et c'est écrit. Tu peux pointer après le cours, le soir même ou plus tard, ça marche pareil. Le bouton « Modifier les séances déjà faites » d'une fiche élève, lui, sert au rattrapage de ce qui s'est passé AVANT IziSolo (ton ancien carnet papier) : au quotidien, tu n'as pas à y toucher.",
+    lien: { href: '/aide#pointage', label: 'Voir le pas-à-pas' },
+  },
 ];

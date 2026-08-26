@@ -1230,7 +1230,7 @@ function NouveauCoursInner() {
           <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '8px 0 0', lineHeight: 1.5 }}>
             {paiementChoix === 'carnets' && <>Le cas classique : la séance est <strong>décomptée du carnet ou couverte par l'abo</strong> de l'élève au pointage. Le prix se joue dans tes <strong>offres</strong>, pas ici.</>}
             {paiementChoix === 'unite' && <>Atelier, stage, drop-in : <strong>tout le monde règle le prix à la séance</strong> — aucun carnet n'est décompté, même pour tes abonné·es.</>}
-            {paiementChoix === 'mixte' && <>Cours <strong>mixte</strong> : les élèves dont le carnet couvre ce type de cours décomptent une séance, les autres (nouvelles, élèves de passage) paient le prix à la séance.</>}
+            {paiementChoix === 'mixte' && <>Cours <strong>mixte</strong> : <strong>au pointage</strong>, les élèves dont le carnet couvre ce type de cours décomptent une séance, les autres (nouvelles, élèves de passage) paient le prix à la séance.</>}
           </p>
           {paiementChoix !== 'carnets' && (
             <div className="form-group" style={{ background: 'transparent', padding: 0, border: 'none', maxWidth: 220, marginTop: 10 }}>

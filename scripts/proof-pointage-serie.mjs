@@ -192,6 +192,22 @@ try {
     await attendre(300);
   };
 
+  // Le PREMIER clic d'action de la preuve peut partir dans le vide : le bouton
+  // est rendu côté serveur avant que React n'ait attaché son handler, et sur un
+  // dev server qui vient de recompiler la fenêtre est large (constaté
+  // 2026-08-26 : 2 KO fantômes en phase B, verts au run suivant). On re-clique
+  // donc jusqu'à ce que le témoin soit vrai, au lieu d'attendre un délai fixe.
+  const retirerJusquA = async (prenom, essais = 8) => {
+    for (let i = 0; i < essais; i++) {
+      if (await carte(prenom).count() === 0) return true;
+      const menu = page.locator('.tp-menu').first();
+      if (await menu.count() === 0) await ouvrirMenu(prenom).catch(() => {});
+      await page.locator('.tp-menu').first().locator('.tpm-danger').click({ timeout: 4000 }).catch(() => {});
+      await attendre(1200);
+    }
+    return await carte(prenom).count() === 0;
+  };
+
   // ══ A. Le menu propose enfin de retirer ═══════════════════════════════════
   console.log('\nA. Le menu ··· propose « Retirer de la seance »');
   await page.goto(`${BASE}/pointage/${parDate[S_ACT]}`, { waitUntil: 'networkidle' });
@@ -203,8 +219,7 @@ try {
 
   // ══ B. Retirer une inscription simple ═════════════════════════════════════
   console.log('\nB. Retirer une inscription simple');
-  await menu.locator('.tpm-danger').click();
-  await attendre(2500);
+  await retirerJusquA('Alba');
   const { data: apresSimple } = await admin.from('presences').select('id').eq('id', presParClient[simple.id]).maybeSingle();
   assert(!apresSimple, 'l\'inscription a disparu EN BASE');
   // Sur la CARTE, pas sur le texte de la page : le toast de confirmation

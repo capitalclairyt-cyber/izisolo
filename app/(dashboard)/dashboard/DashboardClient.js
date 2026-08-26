@@ -14,6 +14,7 @@ import { formatHeure, formatMontant } from '@/lib/utils';
 import { getVocabulaire } from '@/lib/vocabulaire';
 import { useToast } from '@/components/ui/ToastProvider';
 import { toneForCours } from '@/lib/tones';
+import { compterPlacesOccupees, presenceEstReservationActive } from '@/lib/presences';
 import PushToggle from '@/components/push/PushToggle';
 import PushPrompt from '@/components/push/PushPrompt';
 // Chargée à la demande (AUDIT-PERF 2.9) : la lib `qrcode` (~12-15 Ko gzip)
@@ -140,7 +141,16 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
   const coursJour = (coursDuJour || []).filter(c => !c.est_annule);
   const coursJourTries = [...coursJour].sort((a, b) => (a.heure || '').localeCompare(b.heure || ''));
   const prochainCours = coursJourTries.find(c => (c.heure || '').slice(0, 5) >= nowHM) || null;
-  const elevesAttendus = coursJour.reduce((s, c) => s + (c.presences?.[0]?.count || 0), 0);
+  const elevesAttendus = coursJour.reduce((s, c) => s + compterPlacesOccupees(c.presences), 0);
+
+  // Ce qui reste à pointer aujourd'hui. Une séance passée avec des inscrites
+  // jamais pointées, c'est de l'argent et des carnets qui ne bougent pas :
+  // c'est CE bouton qu'il faut mettre en avant une fois le cours donné, pas
+  // « Voir la journée » (retour Manon 2026-08-26).
+  const resteAPointer = (c) => (c.presences || []).filter(presenceEstReservationActive).length;
+  const seancesAPointer = coursJourTries.filter(c => (c.heure || '').slice(0, 5) < nowHM && resteAPointer(c) > 0);
+  const premiereAPointer = seancesAPointer[0] || null;
+  const elevesAPointer = seancesAPointer.reduce((s, c) => s + resteAPointer(c), 0);
 
   return (
     <div className="dashboard">
@@ -181,6 +191,19 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
               <Link href={`/pointage/${prochainCours.id}`} className="izi-btn izi-btn-primary dash-today-cta">
                 <ClipboardList size={16} /> Ouvrir le prochain cours
               </Link>
+            </>
+          ) : premiereAPointer ? (
+            <>
+              <span className="dash-today-next">
+                <strong>{elevesAPointer}</strong> élève{elevesAPointer > 1 ? 's' : ''} à pointer
+                {seancesAPointer.length > 1
+                  ? <> sur {seancesAPointer.length} séances</>
+                  : <> sur <strong>{premiereAPointer.nom}</strong></>}
+              </span>
+              <Link href={`/pointage/${premiereAPointer.id}`} className="izi-btn izi-btn-primary dash-today-cta">
+                <ClipboardList size={16} /> Pointer la séance
+              </Link>
+              <span className="dash-today-hint">Les carnets se décomptent au pointage, tu n&apos;as rien à corriger à la main.</span>
             </>
           ) : coursJourTries.length > 0 ? (
             <>
@@ -491,6 +514,8 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
           <div className="cours-list">
             {coursDuJour.map(cours => {
               const tone = toneForCours(cours.type_cours);
+              const inscrits = compterPlacesOccupees(cours.presences);
+              const aPointer = resteAPointer(cours);
               return (
               <div key={cours.id} className={`cours-card izi-card cours-card--${tone}`}>
                 <div className="cours-color-bar" />
@@ -502,7 +527,7 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
                         <Clock size={14} />
                         {formatHeure(cours.heure)}
                         {cours.duree_minutes && ` · ${cours.duree_minutes}min`}
-                        {cours.presences?.[0]?.count > 0 && ` · ${cours.presences[0].count} inscrits`}
+                        {inscrits > 0 && ` · ${inscrits} inscrits`}
                         {cours.lieu && <span className="cours-lieu"><MapPin size={13} /> {cours.lieu}</span>}
                       </div>
                     </div>
@@ -515,7 +540,9 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
                     className="cours-pointer-btn"
                   >
                     <CheckCircle2 size={18} />
-                    Pointer
+                    {/* Même vocabulaire que la fiche de la séance : une prof
+                        doit voir d'un coup d'œil ce qui reste à faire. */}
+                    {inscrits > 0 && aPointer === 0 ? 'Modifier le pointage' : 'Pointer'}
                   </Link>
                 </div>
               </div>
@@ -551,6 +578,7 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
         .dash-today-action { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
         .dash-today-next { font-size: 0.8125rem; opacity: 0.92; text-align: right; }
         .dash-today-next strong { font-weight: 700; }
+        .dash-today-hint { font-size: 0.75rem; opacity: 0.82; text-align: right; line-height: 1.4; max-width: 250px; }
         .dash-today-cta {
           background: #fff !important; color: var(--brand-dark, #8c5826) !important;
           border: none !important; font-weight: 700; white-space: nowrap;

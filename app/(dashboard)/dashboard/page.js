@@ -28,7 +28,13 @@ export default async function DashboardPage() {
     { count: nbCasOuverts },
   ] = await Promise.all([
     supabase.from('profiles').select('*').eq('id', studioId).single(),
-    supabase.from('cours').select('*, presences(count)').eq('profile_id', studioId).eq('date', today).order('heure'),
+    // Les LIGNES de présence, pas un count brut : le dashboard doit savoir ce
+    // qui reste À POINTER (retour Manon 2026-08-26 — elle décomptait les
+    // carnets à la main faute de voir le geste qui le fait pour elle), et
+    // compter les inscrits passe par la formule v74 (lib/presences), qui
+    // ignore les annulations. Les cours du jour sont peu nombreux : aucun
+    // risque de cap PostgREST ici.
+    supabase.from('cours').select('*, presences(id, statut_pointage, annulation_tardive)').eq('profile_id', studioId).eq('date', today).order('heure'),
     supabase.from('clients').select('*', { count: 'exact', head: true }).eq('profile_id', studioId).in('statut', ['prospect', 'actif', 'fidele']),
     supabase.from('cours').select('*', { count: 'exact', head: true }).eq('profile_id', studioId),
     supabase.from('abonnements').select('*, clients(id, nom, prenom)').eq('profile_id', studioId).eq('statut', 'actif'),

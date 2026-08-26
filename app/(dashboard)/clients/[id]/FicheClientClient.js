@@ -1553,6 +1553,20 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
                       >
                         <Edit3 size={12} /> Modifier les séances déjà faites
                       </button>
+                      {/* Ce bouton sert au RATTRAPAGE de ce qui s'est passé
+                          avant IziSolo. Quand une élève a un carnet entamé mais
+                          n'a jamais été pointée, c'est le signe que la prof
+                          corrige les compteurs à la main sans savoir que le
+                          pointage le fait pour elle (retour Manon 2026-08-26 :
+                          7 semaines de décomptes manuels, 0 pointage). Le
+                          message disparaît dès le premier pointage. */}
+                      {presPointees === 0 && saisiesAvant > 0 && (
+                        <div className="presences-carnet-auto">
+                          Au quotidien, tu n&apos;as pas besoin de ce bouton : <strong>pointe ta séance</strong> et
+                          le carnet se décompte tout seul.{' '}
+                          <Link href="/aide#pointage">Comment ça marche</Link>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -2462,6 +2476,19 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
         .presences-carnet-nom { font-weight: 600; font-size: 0.875rem; flex: 1; color: var(--brand-700); }
         .presences-carnet-count { font-weight: 700; font-size: 0.875rem; color: var(--brand-700); font-family: var(--font-geist-mono), ui-monospace, monospace; }
         .presences-carnet-hint { font-size: 0.75rem; color: var(--text-muted); font-style: italic; }
+        /* Bloc global (et non scopé) : il contient un <Link>, et une règle
+           scopée ne hashe jamais le <a> rendu par un composant — le lien
+           ressortirait en bleu navigateur (piège §12, déjà rencontré 6 fois). */
+        .presences-carnet-auto {
+          font-size: 0.75rem; line-height: 1.45; margin-top: 6px;
+          padding: 6px 8px; border-radius: 8px;
+          background: var(--c-bg-sage, #f0f3ec); color: var(--text-soft, #6b6259);
+        }
+        .presences-carnet-auto strong { color: var(--text, #3d3733); font-weight: 700; }
+        .presences-carnet-auto a {
+          color: var(--brand-dark, #8c5826); font-weight: 600;
+          text-decoration: underline; text-underline-offset: 2px;
+        }
         .presences-carnet-edit {
           display: inline-flex; align-items: center; gap: 5px; align-self: flex-start;
           padding: 4px 10px; border-radius: var(--radius-full);
