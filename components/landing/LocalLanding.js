@@ -17,6 +17,63 @@
 import Link from 'next/link';
 import { CITIES } from '@/content/cities';
 import { CITIES_EXTRA } from '@/content/cities-extra';
+import { CITIES_EXTRA_PILATES } from '@/content/cities-extra-pilates';
+
+// Surcharges de contenu par discipline. Le yoga garde CITIES_EXTRA tel quel :
+// une discipline absente d'ici retombe simplement sur le contenu de base.
+const EXTRA_PAR_DISCIPLINE = { pilates: CITIES_EXTRA_PILATES };
+
+/**
+ * Le bloc « À lire aussi », décliné par discipline (2026-08-28).
+ *
+ * Les trois mêmes liens partaient sur les 22 pages villes, dont « Combien gagne
+ * un·e prof de YOGA » au milieu d'une page Pilates. Les libellés ci-dessous
+ * décrivent le contenu réel de la page visée : l'article sur le statut juridique
+ * compare micro, EI, EURL et SASU, ce qui vaut pour n'importe quelle activité
+ * indépendante, tandis que l'article sur les revenus porte spécifiquement sur
+ * le yoga et n'a donc rien à faire sur une page Pilates.
+ */
+const LECTURES_PAR_DISCIPLINE = {
+  yoga: [
+    { href: '/blog/combien-gagne-prof-yoga-france-2026', rubrique: 'Revenus', titre: "Combien gagne un·e prof de yoga indépendant·e en France ?" },
+    { href: '/blog/excel-vs-logiciel-gestion-eleves-prof-yoga', rubrique: 'Organisation', titre: "Excel ou logiciel pour gérer ses élèves : le comparatif honnête" },
+    { href: '/blog/statut-juridique-prof-yoga-france', rubrique: 'Juridique', titre: "Quel statut juridique pour prof de yoga en France ?" },
+  ],
+  pilates: [
+    { href: '/outils/grille-tarifaire-prof-yoga', rubrique: 'Tarifs', titre: "Construire ta grille tarifaire, au propre" },
+    { href: '/blog/excel-vs-logiciel-gestion-eleves-prof-yoga', rubrique: 'Organisation', titre: "Excel ou logiciel pour gérer ses élèves : le comparatif honnête" },
+    { href: '/blog/statut-juridique-prof-yoga-france', rubrique: 'Juridique', titre: "Micro, EI, EURL ou SASU : quel statut choisir ?" },
+  ],
+};
+
+/**
+ * Les 6 arguments produit, déclinés par discipline (2026-08-28).
+ *
+ * Avant, ce bloc était identique MOT POUR MOT sur les 22 pages villes : environ
+ * 1 400 caractères strictement dupliqués sur chacune, sur des pages qui n'en
+ * comptent que 6 500. Mesuré le même jour : 77 % du texte d'une page ville est
+ * partagé avec ses soeurs, et la paire yoga/pilates d'une même ville arrivait à
+ * 75 % de mots communs. Décliner ce bloc ne change rien à ce que fait le
+ * produit : ça dit la même chose avec les contraintes réelles du métier visé.
+ */
+const ARGUMENTS_PAR_DISCIPLINE = {
+  yoga: [
+    { icone: '🌿', titre: 'Pensé pour les profs solo', texte: "Pas un CRM d'entreprise reconverti. Une app calme conçue pour les indépendant·e·s qui jonglent 12 à 15 cours par semaine et veulent récupérer leur dimanche soir." },
+    { icone: '💳', titre: 'Paiement en ligne intégré', texte: "Tes élèves règlent leur carnet en CB depuis ton portail, les fonds arrivent sur ton compte Stripe. Fini le chèque oublié et le « je te paie la semaine prochaine »." },
+    { icone: '📅', titre: 'Agenda multi-lieux', texte: "Studio le mardi, salle municipale le jeudi, cours en visio le dimanche ? Un seul planning, avec une capacité propre à chaque lieu." },
+    { icone: '💬', titre: 'Messagerie et annonces', texte: "Annoncer une annulation, un créneau qui s'ouvre, une retraite : à tous les inscrits d'un cours précis ou à tous les détenteurs d'un carnet, en deux clics." },
+    { icone: '🌐', titre: 'Portail public', texte: "Une page à ton image où tes élèves voient ton planning, réservent et payent, sans créer de compte. Installable comme une application sur leur téléphone." },
+    { icone: '📊', titre: 'Compta et déclaration', texte: "Export comptable en deux clics, livre des recettes, et le montant à reporter sur ta déclaration URSSAF calculé à la date d'encaissement." },
+  ],
+  pilates: [
+    { icone: '🌿', titre: 'Pensé pour les profs solo', texte: "Pas un logiciel de salle de sport. Une app calme conçue pour une prof qui gère seule son planning, ses appareils et ses élèves, sans secrétariat derrière." },
+    { icone: '💳', titre: 'Paiement en ligne intégré', texte: "Tes élèves règlent leur carnet en CB depuis ton portail. Précieux sur du Reformer, où une place non réglée pèse bien plus lourd que sur un cours au sol." },
+    { icone: '🧘', titre: 'Une jauge par cours, pas par studio', texte: "Six places sur le Reformer du mardi, vingt sur le Mat du jeudi : chaque séance a sa capacité, et la liste d'attente prend le relais dès que c'est complet." },
+    { icone: '🎟️', titre: 'Des carnets qui savent où ils valent', texte: "Un carnet Mat ne doit pas payer une place Reformer facturée le double. Chaque offre précise les types de cours qu'elle couvre, et le décompte suit au pointage." },
+    { icone: '🌐', titre: 'Portail public', texte: "Une page à ton image où tes élèves voient ton planning, réservent et payent, sans créer de compte. Installable comme une application sur leur téléphone." },
+    { icone: '📊', titre: 'Compta et déclaration', texte: "Export comptable en deux clics, livre des recettes, et le montant à reporter sur ta déclaration URSSAF calculé à la date d'encaissement." },
+  ],
+};
 
 const DISCIPLINE_LABEL = {
   yoga: 'yoga',
@@ -44,7 +101,17 @@ export default function LocalLanding({ city, discipline = 'yoga' }) {
 
   // Champs additionnels par ville (quartiers, marché local, FAQ, villes proches)
   // pour différenciation SEO. Voir content/cities-extra.js.
-  const extra = CITIES_EXTRA[city.slug] || {};
+  //
+  // ⚠️ La surcharge PAR DISCIPLINE a manqué jusqu'au 2026-08-28 : les 11 pages
+  // /prof-pilates-* servaient les quartiers, le marché et la FAQ du yoga, donc
+  // /prof-pilates-paris demandait « Combien gagne un·e prof de YOGA à Paris ? ».
+  // `villesProches` reste volontairement au niveau ville : le maillage
+  // géographique est le même quelle que soit la discipline, et discBase
+  // fabrique déjà le bon préfixe d'URL plus bas.
+  const extra = {
+    ...(CITIES_EXTRA[city.slug] || {}),
+    ...((EXTRA_PAR_DISCIPLINE[discipline] || {})[city.slug] || {}),
+  };
   const discBase = discipline === 'pilates' ? 'prof-pilates' : 'prof-yoga';
 
   return (
@@ -173,55 +240,13 @@ export default function LocalLanding({ city, discipline = 'yoga' }) {
             <span className="eyebrow">Pour les profs {d} de {city.name}</span>
             <h2 className="serif">Pourquoi {city.name === 'Paris' ? 'les profs parisien·ne·s' : `les profs à ${city.name}`} aiment IziSolo.</h2>
             <div className="local-why-grid">
-              <div className="local-why-card">
-                <div className="local-why-icon">🌿</div>
-                <h3>Pensé pour les profs solo</h3>
-                <p>
-                  Pas un CRM d'entreprise reconverti. Une app calme conçue pour les
-                  indépendant·e·s qui jonglent 12-15 cours par semaine et veulent
-                  récupérer leur dimanche soir.
-                </p>
-              </div>
-              <div className="local-why-card">
-                <div className="local-why-icon">💳</div>
-                <h3>Paiement en ligne intégré</h3>
-                <p>
-                  Stripe Payment Link inclus. Tes élèves payent en CB depuis ton portail,
-                  les fonds arrivent direct sur ton compte. {city.name === 'Paris' && "Pratique quand tes élèves enchaînent les RER et veulent pré-payer pendant le trajet."}
-                </p>
-              </div>
-              <div className="local-why-card">
-                <div className="local-why-icon">📅</div>
-                <h3>Agenda multi-lieux</h3>
-                <p>
-                  Tu enseignes dans 2-3 salles différentes ? Studio + paroisse + visio ?
-                  Tout est sur le même planning, avec capacité dédiée par lieu.
-                </p>
-              </div>
-              <div className="local-why-card">
-                <div className="local-why-icon">💬</div>
-                <h3>Messagerie & annonces</h3>
-                <p>
-                  Annoncer une annulation, un nouveau créneau, un stage : à tous tes
-                  élèves d'un cours précis ou à tous les détenteurs d'un carnet, en 2 clics.
-                </p>
-              </div>
-              <div className="local-why-card">
-                <div className="local-why-icon">🌐</div>
-                <h3>Portail public</h3>
-                <p>
-                  Page publique à ton image, où tes élèves voient ton planning,
-                  réservent, payent, sans créer de compte. PWA installable comme une app.
-                </p>
-              </div>
-              <div className="local-why-card">
-                <div className="local-why-icon">📊</div>
-                <h3>Mini-compta intégrée</h3>
-                <p>
-                  Export comptable CSV en 2 clics pour ton expert-comptable.
-                  Plus jamais à reconstruire ton chiffre d'affaires à la main.
-                </p>
-              </div>
+              {(ARGUMENTS_PAR_DISCIPLINE[discipline] || ARGUMENTS_PAR_DISCIPLINE.yoga).map((arg) => (
+                <div className="local-why-card" key={arg.titre}>
+                  <div className="local-why-icon">{arg.icone}</div>
+                  <h3>{arg.titre}</h3>
+                  <p>{arg.texte}</p>
+                </div>
+              ))}
             </div>
           </section>
 
@@ -286,18 +311,12 @@ export default function LocalLanding({ city, discipline = 'yoga' }) {
           <nav className="local-related" aria-label="Articles connexes">
             <h2 className="serif">À lire aussi</h2>
             <div className="local-related-grid">
-              <Link href="/blog/combien-gagne-prof-yoga-france-2026" className="local-related-card">
-                <span className="eyebrow">Revenus</span>
-                <h3>Combien gagne un·e prof de yoga indépendant·e en France ?</h3>
-              </Link>
-              <Link href="/blog/excel-vs-logiciel-gestion-eleves-prof-yoga" className="local-related-card">
-                <span className="eyebrow">Organisation</span>
-                <h3>Excel vs logiciel pour gérer ses élèves : le comparatif honnête</h3>
-              </Link>
-              <Link href="/blog/statut-juridique-prof-yoga-france" className="local-related-card">
-                <span className="eyebrow">Juridique</span>
-                <h3>Quel statut juridique pour prof de yoga en France ?</h3>
-              </Link>
+              {(LECTURES_PAR_DISCIPLINE[discipline] || LECTURES_PAR_DISCIPLINE.yoga).map((l) => (
+                <Link href={l.href} className="local-related-card" key={l.href}>
+                  <span className="eyebrow">{l.rubrique}</span>
+                  <h3>{l.titre}</h3>
+                </Link>
+              ))}
             </div>
           </nav>
 

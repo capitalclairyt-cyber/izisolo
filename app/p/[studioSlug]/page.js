@@ -12,6 +12,7 @@ import { reportError } from '@/lib/report';
 import { getEssaiPrixParType } from '@/lib/essai-tarif';
 import { chargerVignettesConfig, chargerPhotosCours, greffePhotos } from '@/lib/vignette-cours';
 import { masquerLiensSiNonBranche } from '@/lib/paiement-en-ligne';
+import { urlPortail } from '@/lib/studio-host';
 
 export async function generateMetadata({ params }) {
   const { studioSlug } = await params;
@@ -27,6 +28,12 @@ export async function generateMetadata({ params }) {
   if (!profile) return { title: 'Studio introuvable' };
   return {
     title: `${profile.studio_nom} · Réserver un cours`,
+    // Canonique posée ici et PAS sur le layout /p/* (2026-08-28) : sur le
+    // layout, elle serait héritée par /espace, /essai, /connexion et les pages
+    // de cours, qui se déclareraient toutes comme des copies de l'accueil.
+    // urlPortail est la source unique de l'adresse d'un portail : le jour où
+    // les sous-domaines sont branchés, la canonique suit sans qu'on y repense.
+    alternates: { canonical: urlPortail(studioSlug) },
     ...ogPortail({
       studio: profile,
       titre: `${profile.studio_nom} · Réserver un cours`,

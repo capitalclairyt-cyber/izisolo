@@ -71,7 +71,18 @@ export const metadata = {
   // Via metadata (et pas un <link> en dur dans le <head>) pour que le segment
   // (admin) puisse la remplacer par l'icône de la PWA admin — un <link> JSX
   // s'imposerait sur TOUTES les pages, metadata enfant ou pas.
-  icons: { apple: '/icons/icon-192.png' },
+  // `icon` ajouté le 2026-08-28 : /favicon.ico répondait 404 en prod (très
+  // probablement l'unique « Introuvable » du rapport d'indexation Search
+  // Console) et AUCUNE balise <link rel="icon"> n'était servie — donc aucune
+  // icône dans l'onglet, sur toutes les pages. Le .ico se regénère avec
+  // `node scripts/generer-favicon.mjs`.
+  icons: {
+    icon: [
+      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/icons/icon-192.png', type: 'image/png', sizes: '192x192' },
+    ],
+    apple: '/icons/icon-192.png',
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',

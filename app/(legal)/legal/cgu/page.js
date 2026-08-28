@@ -1,6 +1,9 @@
+import { BASE_URL } from '@/lib/seo';
+
 export const metadata = {
   title: "CGU · Conditions Générales d'Utilisation | IziSolo",
   description: "Conditions générales d'utilisation de la plateforme IziSolo.",
+  alternates: { canonical: `${BASE_URL}/legal/cgu` },
 };
 
 export default function CGUPage() {

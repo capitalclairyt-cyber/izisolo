@@ -1,6 +1,9 @@
+import { BASE_URL } from '@/lib/seo';
+
 export const metadata = {
   title: "Mentions légales | IziSolo",
   description: "Éditeur, hébergement et informations légales de la plateforme IziSolo.",
+  alternates: { canonical: `${BASE_URL}/legal/mentions` },
 };
 
 export default function MentionsLegalesPage() {

@@ -1,7 +1,17 @@
 import Landing from '@/components/landing/Landing';
-import { getSoftwareApplicationSchema, getFAQSchema } from '@/lib/seo';
+import { getSoftwareApplicationSchema, getFAQSchema, BASE_URL } from '@/lib/seo';
 import { FAQ_ITEMS } from '@/content/faq';
 import './landing.css';
+
+// Canonical explicite (2026-08-28, export Search Console) : la home n'en avait
+// AUCUNE, comme 21 autres pages, alors que izisolo.fr et www.izisolo.fr
+// répondent tous les deux. Ce n'est pas théorique : le rapport « fonctionnalités
+// génératives » liste une impression sur https://izisolo.fr/profs-de-meditation,
+// donc en version non-www. Sans canonique, c'est Google qui tranche à notre
+// place, et il l'annonce dans « Autre page avec balise canonique correcte ».
+export const metadata = {
+  alternates: { canonical: BASE_URL },
+};
 
 /**
  * Home publique IziSolo (landing) — STATIQUE depuis AUDIT-PERF cat 2.4.

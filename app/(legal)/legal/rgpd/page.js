@@ -1,6 +1,9 @@
+import { BASE_URL } from '@/lib/seo';
+
 export const metadata = {
   title: "Politique de confidentialité (RGPD) | IziSolo",
   description: "Politique de confidentialité et de protection des données personnelles de la plateforme IziSolo, conforme RGPD.",
+  alternates: { canonical: `${BASE_URL}/legal/rgpd` },
 };
 
 export default function RGPDPage() {

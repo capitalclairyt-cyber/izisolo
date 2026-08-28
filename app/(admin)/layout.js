@@ -17,7 +17,12 @@ export const metadata = {
   manifest: '/manifest-admin.json',
   robots: { index: false, follow: false },
   appleWebApp: { capable: true, statusBarStyle: 'black-translucent', title: 'IziSolo Admin' },
-  icons: { apple: '/icons/icon-admin-180.png' },
+  // `icons` REMPLACE en bloc celui du layout racine : sans l'entrée `icon`,
+  // l'onglet admin retomberait sur le favicon du studio (2026-08-28).
+  icons: {
+    icon: [{ url: '/icons/icon-admin-192.png', type: 'image/png', sizes: '192x192' }],
+    apple: '/icons/icon-admin-180.png',
+  },
 };
 
 export const viewport = { themeColor: '#1a1612' };

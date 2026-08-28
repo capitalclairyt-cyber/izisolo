@@ -1,6 +1,9 @@
+import { BASE_URL } from '@/lib/seo';
+
 export const metadata = {
   title: "CGV · Conditions Générales de Vente | IziSolo",
   description: "Conditions générales de vente de la plateforme IziSolo, applicables aux professionnels indépendants.",
+  alternates: { canonical: `${BASE_URL}/legal/cgv` },
 };
 
 export default function CGVPage() {
