@@ -6,6 +6,7 @@ import { IziSoloLogo, YogaLotusIllu, YogaTreeIllu, SunCurveIllu } from './Brand'
 import Link from 'next/link';
 import Image from 'next/image';
 import { CITIES } from '@/content/cities';
+import ComparatifsLies from './ComparatifsLies';
 
 const ILLUS = { lotus: YogaLotusIllu, tree: YogaTreeIllu, sun: SunCurveIllu };
 
@@ -168,6 +169,7 @@ export default function PersonaLanding({ persona }) {
           </section>
         )}
 
+        <ComparatifsLies />
         <Pricing />
         <FAQ />
         <FinalCta />
@@ -214,11 +216,20 @@ export const PERSONAS = {
       { kw: 'Vocabulaire yoga', title: 'Parle ton langage', desc: 'L\'app utilise « élève » et « séance », pas « client » et « rendez-vous ». Personnalisable par métier.' },
       { kw: 'Portail élève', title: 'Une page propre pour réserver', desc: 'Tes élèves voient tes cours et réservent en 30 secondes, sans devoir t\'envoyer un SMS.' },
       { kw: 'Annulation auto', title: "L'app applique tes règles", desc: 'Délai d\'annulation, séance comptée si tardive : c\'est l\'app qui dit non, pas toi.' },
+      // Ajoutés le 2026-08-30 (export Performances) : cette page fait 443
+      // impressions en position 24, sur des requêtes qui parlent de
+      // « gestionnaire », « système de gestion » et « logiciel comptable pour
+      // centre de yoga » (82 impressions à elle seule). On avait livré la compta
+      // et on n'en disait pas un mot ici. La grille est en 2 colonnes fixes :
+      // on ajoute par PAIRE, sinon la dernière carte reste orpheline.
+      { kw: 'Compta & URSSAF', title: 'Ta déclaration déjà calculée', desc: "Factures conformes avec ton SIRET, livre des recettes, export comptable, et le montant à reporter sur ta déclaration URSSAF, calculé à la date où l'argent est réellement rentré." },
+      { kw: 'Dans ta poche', title: 'Un système de gestion, pas un logiciel de bureau', desc: "Tout se pilote depuis ton téléphone entre deux cours : le pointage, l'encaissement, la réponse à une élève. L'appli s'installe sur ton écran d'accueil." },
     ],
     use_cases: [
       { titre: 'Ouvre un Vinyasa hebdo en 30 secondes', desc: 'Tu choisis le jour, l\'heure, la salle, et l\'app génère 12 occurrences automatiquement. Tes élèves le voient immédiatement sur leur portail.' },
       { titre: 'Une élève annule à la dernière minute', desc: 'Si elle est dans le délai (24h par défaut, configurable), c\'est libre. Sinon, la séance est décomptée de son carnet, toi tu n\'as pas à t\'en occuper.' },
       { titre: 'Tu pointes les présences en fin de cours', desc: 'Sur ton téléphone, en deux taps. Le carnet de chaque élève se met à jour, les paiements en attente apparaissent.' },
+      { titre: 'Fin de trimestre : ta déclaration URSSAF', desc: "IziSolo additionne ce que tu as réellement encaissé sur la période, arrondit à l'euro comme le formulaire l'attend, et te laisse copier le montant. Le livre des recettes se télécharge en un clic si on te le réclame." },
       { titre: 'Une retraite à organiser', desc: 'Crée une offre spéciale "Retraite Bali 2026", génère un Stripe Payment Link, partage-le sur Insta. Les inscriptions arrivent toutes seules.' },
     ],
   },

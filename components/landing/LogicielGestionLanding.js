@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import Link from 'next/link';
 import { Nav, Footer, FinalCta, Pricing } from './Sections';
+import ComparatifsLies from './ComparatifsLies';
 import {
   CalendarDays, Users, CheckCircle2, CreditCard, Share2, Bell, Smartphone,
 } from 'lucide-react';
@@ -70,6 +71,33 @@ export default function LogicielGestionLanding() {
         </p>
       </section>
 
+      {/* Volet comptable — ajouté le 2026-08-30 après l'export Performances.
+          « logiciel comptable centre de yoga » vaut 82 impressions à lui seul,
+          en position 37, et « logiciel comptable pour centre de yoga » 6 de
+          plus. On avait livré les factures (SIRET, numérotation séquentielle),
+          le livre des recettes et la déclaration URSSAF, et cette page n'en
+          disait qu'une demi-ligne dans une carte. */}
+      <section className="lg-why">
+        <h2 className="lg-h2">Et la comptabilité, dans tout ça ?</h2>
+        <p className="lg-why-text">
+          C&apos;est souvent ce qui décide, et c&apos;est rarement ce qu&apos;on montre.
+          IziSolo émet de <strong>vraies factures</strong> avec ton numéro d&apos;entreprise,
+          une numérotation séquentielle et tes mentions, celles qu&apos;un CSE ou un employeur
+          accepte sans discuter. Il tient ton <strong>livre des recettes</strong>, le registre
+          chronologique qu&apos;on te réclame en cas de contrôle. Et il calcule le montant à
+          reporter sur ta <strong>déclaration URSSAF</strong>, à la date où l&apos;argent est
+          réellement rentré et pas à celle de la vente, ce qui change de trimestre plus
+          souvent qu&apos;on ne le croit. L&apos;export comptable se filtre par période, par
+          mode de règlement et par offre, pour ton expert-comptable.
+        </p>
+        <p className="lg-cta-hint" style={{ marginTop: 16 }}>
+          IziSolo n&apos;est pas un logiciel de caisse certifié. Cette obligation vise les
+          entreprises assujetties à la TVA qui encaissent des particuliers : à vérifier avec
+          ton comptable si tu n&apos;es pas en franchise en base.
+        </p>
+      </section>
+
+      <ComparatifsLies />
       <Pricing />
       <FinalCta />
       <Footer />
