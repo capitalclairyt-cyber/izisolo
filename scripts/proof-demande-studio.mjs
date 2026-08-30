@@ -121,9 +121,29 @@ try {
   console.log('\nA. La landing');
   await page.goto(`${BASE}/`, { waitUntil: 'networkidle' });
   await attendre(800);
-  const mention = page.locator('.hero-concierge a');
-  assert(await mention.count() === 1, 'une mention sous le CTA du hero, pas un second bouton de meme poids');
-  assert((await mention.getAttribute('href')) === '/creer-mon-studio', 'elle mene au guichet');
+  // 2026-08-30 : le guichet est passé de la petite ligne grise au SECOND
+  // BOUTON du hero, qui menait jusque-là à /login (une porte pour les clients,
+  // à l'endroit le plus cher de la page). L'invariant de v96 reste le même et
+  // c'est lui qu'on garde : le hero mène au guichet, SANS deux CTA de même
+  // poids. On le vérifie sur le fond CALCULÉ des deux boutons et non sur leur
+  // classe, parce que c'est le rendu qui décide de la hiérarchie perçue.
+  const lienGuichet = page.locator('.hero-v2-ctas a[href="/creer-mon-studio"]');
+  assert(await lienGuichet.count() === 1, 'le hero mene au guichet concierge');
+  const poids = await page.evaluate(() => {
+    const liens = [...document.querySelectorAll('.hero-v2-ctas a')];
+    const fond = (a) => getComputedStyle(a).backgroundColor;
+    const transparent = (c) => c === 'transparent' || /rgba\(0, 0, 0, 0\)/.test(c);
+    return {
+      nb: liens.length,
+      premierEstPlein: !transparent(fond(liens[0])),
+      guichetEstFantome: transparent(fond(liens.find((a) => a.getAttribute('href') === '/creer-mon-studio'))),
+      premierHref: liens[0]?.getAttribute('href'),
+    };
+  });
+  assert(poids.nb === 2 && poids.premierHref === '/register',
+    'deux CTA, l\'essai en premier');
+  assert(poids.premierEstPlein && poids.guichetEstFantome,
+    'hierarchie preservee : essai plein, guichet fantome (pas deux CTA de meme poids)');
   const section = page.locator('#concierge');
   await section.scrollIntoViewIfNeeded();
   await attendre(500);
@@ -224,8 +244,18 @@ try {
     console.log('     (applique v96 puis relance ce script pour la phase E complete)');
   }
 
-  assert(erreursConsole.length === 0, `console propre (${erreursConsole.length} erreur(s))`);
-  if (erreursConsole.length) erreursConsole.slice(0, 5).forEach(e => console.log('     ', e.slice(0, 200)));
+  // Les scripts Vercel Analytics (/_vercel/insights, /_vercel/speed-insights)
+  // n'existent pas en local : le proxy default-deny les renvoie vers /login,
+  // qui répond du HTML, et le navigateur refuse de l'exécuter comme script.
+  // Artefact LOCAL connu, déjà filtré par proof-landing-v2 depuis le 19/08 ;
+  // ce script-ci ne l'avait jamais été. Filtre volontairement ÉTROIT, pour
+  // qu'une vraie erreur de console fasse toujours KO.
+  // ⚠️ On cherche `_vercel` SANS les barres obliques : le message du navigateur
+  // porte l'URL ENCODÉE (« %2F_vercel%2Finsights%2Fscript.js »), donc un filtre
+  // sur « /_vercel/ » ne matche rien et ne filtre rien, en silence.
+  const erreursReelles = erreursConsole.filter((e) => !e.includes('_vercel'));
+  assert(erreursReelles.length === 0, `console propre (${erreursReelles.length} erreur(s) hors artefact Vercel Analytics local)`);
+  if (erreursReelles.length) erreursReelles.slice(0, 5).forEach(e => console.log('     ', e.slice(0, 200)));
 
 } catch (err) {
   ko++;

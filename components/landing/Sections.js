@@ -120,12 +120,22 @@ export function Hero() {
         </p>
         <div className="hero-v2-ctas">
           <Link href="/register" className="btn btn-primary btn-lg">Essayer 14 jours · sans CB →</Link>
-          <Link href="/login" className="btn btn-ghost btn-lg">Se connecter</Link>
+          <Link href="/creer-mon-studio" className="btn btn-ghost btn-lg">On monte ton studio pour toi</Link>
         </div>
-        {/* Mention discrète, pas un second CTA de même poids : deux boutons
-            égaux se neutralisent. Le détail vit dans sa propre section. */}
+        {/* Ce second bouton menait à /login jusqu'au 2026-08-30. C'était une
+            porte pour les CLIENTS, posée à l'endroit le plus cher de la page,
+            alors que « Se connecter » vit déjà dans la nav ET dans le pied :
+            le seul bouton du hero qui ne pouvait convertir personne. Le
+            concierge, lui, y était relégué en petite ligne grise.
+
+            La règle de v96 tient toujours et n'est pas contournée : ce n'est
+            PAS un second CTA de même poids. On n'AJOUTE aucun bouton, on
+            change la destination de celui qui existait, et la hiérarchie
+            reste intacte (l'un plein, l'autre fantôme). C'est d'ailleurs ce
+            que vérifie désormais proof-demande-studio, en lisant le fond
+            CALCULÉ des deux boutons plutôt que leur place dans le DOM. */}
         <p className="hero-concierge">
-          Pas le temps de tout paramétrer ? <Link href="/creer-mon-studio">On monte ton studio pour toi, gratuitement</Link>.
+          Essai sans carte bancaire. Et si on monte ton studio, c&apos;est offert.
         </p>
         <div className="hero-trust">
           {/* Photo placeholder : à remplacer par une vraie photo de Maude */}
