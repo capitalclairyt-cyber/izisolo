@@ -10,7 +10,7 @@ import {
 import AideContextuelle from '@/components/AideContextuelle';
 import { formatMontant } from '@/lib/utils';
 import { libelleSeances } from '@/lib/offres-seances';
-import { resumeDemande } from '@/lib/demande-offre';
+import { resumeDemande, contactDemandeur } from '@/lib/demande-offre';
 import { useToast } from '@/components/ui/ToastProvider';
 import { toneForOffre } from '@/lib/tones';
 import { TYPES_OFFRE } from '@/lib/constantes';
@@ -232,17 +232,39 @@ export default function OffresClient({ offres, profile, planKey, limiteOffres, d
   };
 
   // Attribuer : on ouvre le tunnel de vente sur l'offre demandée, avec l'élève
-  // déjà désignée quand elle a une fiche. Une prospecte sans fiche passe par
-  // l'étape de choix : c'est là que la prof la crée, comme d'habitude.
-  const attribuerDepuisDemande = (demande) => {
+  // déjà désignée. Une prospecte venue de la page publique n'a PAS de fiche :
+  // on la crée d'abord, sinon le tunnel s'ouvrait sur « Choisir un élève » —
+  // une liste où elle n'existe pas, et un lien « Ajouter un élève » qui ferme
+  // la modale et perd la demande. C'est ce cul-de-sac qui a laissé Maude
+  // devant une demande à 480 € sans savoir qui c'était (31/08/2026).
+  const attribuerDepuisDemande = async (demande) => {
     const offre = offres.find(o => o.id === demande.offre_id);
     if (!offre) { toast.error('Cette offre n\'existe plus.'); return; }
-    setDemandeEnCours({
-      demande,
-      client: demande.clients
-        ? { id: demande.clients.id, prenom: demande.clients.prenom, nom: demande.clients.nom, type_client: 'particulier' }
-        : null,
-    });
+    let client = demande.clients
+      ? { id: demande.clients.id, prenom: demande.clients.prenom, nom: demande.clients.nom, type_client: 'particulier' }
+      : null;
+
+    // Dédup par email côté route : si la personne est déjà fichée sous cette
+    // adresse, on reprend SA fiche au lieu d'en fabriquer une deuxième.
+    if (!client) {
+      setTraitement(demande.id);
+      try {
+        const res = await fetch(`/api/demandes-offre/${demande.id}/fiche`, { method: 'POST' });
+        const json = await res.json().catch(() => ({}));
+        if (!res.ok || !json.client) throw new Error(json.error || 'Fiche non créée.');
+        client = { ...json.client, type_client: json.client.type_client || 'particulier' };
+        toast.success(json.creee
+          ? `Fiche créée pour ${[client.prenom, client.nom].filter(Boolean).join(' ')}.`
+          : 'Une fiche existait déjà à cette adresse : on la reprend.');
+      } catch (e) {
+        toast.error(String(e.message || e));
+        setTraitement('');
+        return;
+      }
+      setTraitement('');
+    }
+
+    setDemandeEnCours({ demande, client });
     setAssignModalOffre(offre);
   };
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
@@ -381,15 +403,26 @@ export default function OffresClient({ offres, profile, planKey, limiteOffres, d
           {demandes.map(d => {
             const offre = offres.find(o => o.id === d.offre_id);
             const r = resumeDemande(d);
+            // Le moyen de RECONTACTER, enfin affiché (31/08/2026) : l'email
+            // était en base depuis le premier jour, aucun écran ne le montrait.
+            const contact = contactDemandeur(d);
             return (
               <div key={d.id} className="dem-ligne">
                 <div className="dem-info">
                   <div className="dem-nom">
                     {r.nom}
-                    {r.prospect && <span className="dem-badge">pas encore de fiche</span>}
+                    {r.prospect && <span className="dem-badge">page publique · pas encore de fiche</span>}
                   </div>
                   <div className="dem-offre">
                     {offre ? offre.nom : 'Offre supprimée'} · {r.quand}
+                  </div>
+                  <div className="dem-contact">
+                    {contact.email
+                      ? <a href={`mailto:${contact.email}`} className="dem-lien">✉️ {contact.email}</a>
+                      : <span className="dem-sans-contact">Aucune adresse : impossible de la recontacter d&apos;ici.</span>}
+                    {contact.telephone && (
+                      <a href={`tel:${contact.telephone.replace(/\s/g, '')}`} className="dem-lien">📞 {contact.telephone}</a>
+                    )}
                   </div>
                   {d.message && <div className="dem-message">« {d.message} »</div>}
                 </div>
@@ -399,7 +432,9 @@ export default function OffresClient({ offres, profile, planKey, limiteOffres, d
                     onClick={() => attribuerDepuisDemande(d)}
                     disabled={!offre || traitement === d.id}
                   >
-                    Attribuer l&apos;offre
+                    {traitement === d.id ? 'Un instant…'
+                      : r.prospect ? 'Créer la fiche et attribuer'
+                      : "Attribuer l'offre"}
                   </button>
                   <button
                     className="dem-btn dem-btn-ghost"
@@ -604,6 +639,13 @@ export default function OffresClient({ offres, profile, planKey, limiteOffres, d
           border-radius: 999px; padding: 1px 8px;
         }
         .dem-offre { font-size: 0.8rem; color: var(--text-secondary); margin-top: 2px; }
+        .dem-contact { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 5px; }
+        .dem-lien {
+          font-size: 0.8rem; font-weight: 600; color: var(--brand-700, #8c5826);
+          text-decoration: none; overflow-wrap: anywhere;
+        }
+        .dem-lien:hover { text-decoration: underline; }
+        .dem-sans-contact { font-size: 0.78rem; color: var(--danger, #b3261e); }
         .dem-message { font-size: 0.78rem; color: var(--text-muted); margin-top: 4px; font-style: italic; }
         .dem-actions { display: flex; gap: 6px; align-items: center; }
         .dem-btn { font-size: 0.8rem; padding: 7px 12px; white-space: nowrap; }

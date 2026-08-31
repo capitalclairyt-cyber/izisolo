@@ -25,7 +25,7 @@ export default async function OffresPage() {
   try {
     const { data, error } = await supabase
       .from('demandes_offre')
-      .select('id, offre_id, client_id, prenom, nom, email, message, created_at, clients(id, prenom, nom, email)')
+      .select('id, offre_id, client_id, prenom, nom, email, message, created_at, clients(id, prenom, nom, email, telephone)')
       .eq('profile_id', studioId)
       .eq('statut', 'nouvelle')
       .order('created_at', { ascending: false })

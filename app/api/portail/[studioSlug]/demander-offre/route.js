@@ -9,6 +9,7 @@ import { sendEmail } from '@/lib/email';
 import { reportError } from '@/lib/report';
 import { formatMontant } from '@/lib/utils';
 import { sanitizeDemandeOffre, nomDemandeur, confirmationEleve } from '@/lib/demande-offre';
+import { escapeHtml } from '@/lib/messagerie-email';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -112,7 +113,13 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
 
   const qui = ficheNom || nomDemandeur(valeurs);
   const titre = `🛒 Demande d'offre — ${qui}`;
-  const corps = `${offre.nom}${offre.prix != null ? ` · ${formatMontant(offre.prix)}` : ''}`;
+  // Sans fiche, la prof ne connaît PAS cette personne : le seul moyen de la
+  // recontacter est l'adresse qu'elle vient de saisir. La taire, c'est rendre
+  // la demande inexploitable (incident Maude, 31/08/2026 : « je ne sais pas
+  // qui c'est et je ne vois pas ses coordonnées »).
+  const contactLibre = clientId ? null : valeurs.email;
+  const corps = `${offre.nom}${offre.prix != null ? ` · ${formatMontant(offre.prix)}` : ''}`
+    + (contactLibre ? ` — ${contactLibre}` : '');
 
   if (wantsNotif(profile.notif_prefs, 'offre_demande', 'prof', 'inapp')) {
     await admin.from('notifications').upsert({
@@ -140,8 +147,9 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
       html: `
         <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:560px;margin:0 auto;padding:24px;">
           <h2 style="color:#b87333;margin:0 0 6px;">Une élève veut une de tes offres</h2>
-          <p style="color:#555;margin:0 0 14px;"><strong>${qui}</strong> demande : <strong>${offre.nom}</strong>${offre.prix != null ? ` (${formatMontant(offre.prix)})` : ''}.</p>
-          ${valeurs.message ? `<p style="color:#555;margin:0 0 14px;">« ${valeurs.message} »</p>` : ''}
+          <p style="color:#555;margin:0 0 14px;"><strong>${escapeHtml(qui)}</strong> demande : <strong>${escapeHtml(offre.nom)}</strong>${offre.prix != null ? ` (${formatMontant(offre.prix)})` : ''}.</p>
+          ${valeurs.message ? `<p style="color:#555;margin:0 0 14px;">« ${escapeHtml(valeurs.message)} »</p>` : ''}
+          ${contactLibre ? `<p style="color:#555;margin:0 0 14px;">Elle n'a pas encore de fiche chez toi. Son adresse : <a href="mailto:${escapeHtml(contactLibre)}" style="color:#b87333;font-weight:700;">${escapeHtml(contactLibre)}</a> (tu peux aussi répondre directement à cet email).</p>` : ''}
           <p style="color:#555;margin:0 0 14px;">
             Rien n'est encaissé : tu valides et tu choisis le règlement (payé maintenant, à régler plus tard, en plusieurs fois) depuis ta page Offres.
           </p>

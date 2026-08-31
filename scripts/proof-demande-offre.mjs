@@ -35,6 +35,7 @@
  * Prérequis : dev server sur :3333 (npm run dev).
  */
 import { createClient } from '@supabase/supabase-js';
+import { createHash } from 'node:crypto';
 import { readFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -60,6 +61,20 @@ const assert = (cond, label) => {
 };
 const attendre = ms => new Promise(r => setTimeout(r, ms));
 
+/**
+ * Re-clique jusqu a ce que le temoin soit vrai. Un bouton rendu cote SERVEUR
+ * existe avant que React n ait attache son handler : le premier clic part
+ * dans le vide, et la preuve accuse le produit (lecon v100).
+ */
+async function clicJusquA(bouton, temoin, essais = 8) {
+  for (let i = 0; i < essais; i++) {
+    if (await temoin()) return true;
+    await bouton.click({ timeout: 5000 }).catch(() => {});
+    await attendre(900);
+  }
+  return await temoin();
+}
+
 async function sessionCookies(email) {
   const { data: linkData, error: eLink } = await admin.auth.admin.generateLink({ type: 'magiclink', email });
   if (eLink) throw new Error(`generateLink(${email}): ${eLink.message}`);
@@ -80,6 +95,16 @@ for (let i = 0; i < 90; i++) {
   if (i === 89) { console.error('dev server injoignable sur :3333'); process.exit(1); }
 }
 console.log('dev server pret');
+
+// L'antibot de /demander-offre : 10 demandes/heure/IP. En enchaînant les runs
+// on épuise le quota, et la preuve rend des KO qui accusent le produit alors
+// que c'est le garde-fou qui fonctionne. On libère la SEULE clé de cette
+// machine — jamais un `like(...)` : la table est partagée avec la prod.
+// ⚠️ Deux étages : celui-ci (en base) et un compteur mémoire dans le process
+// du serveur de dev. Si les KO persistent, redémarrer `npm run dev`.
+const empreinteLocale = createHash('sha256')
+  .update('::1' + (env.IP_HASH_SALT || 'izisolo')).digest('hex').slice(0, 32);
+await admin.from('rate_limits').delete().eq('cle', `demande-offre:${empreinteLocale}`);
 
 const { cookies: cookiesProf, userId: profileId } = await sessionCookies(PROF_EMAIL);
 const { data: profil } = await admin.from('profiles')
@@ -178,8 +203,10 @@ try {
 
   // ══ B. La demande part, sans rien promettre ═══════════════════════════════
   console.log('\nB. La demande part');
-  await btnDemander.click();
-  await attendre(2500);
+  // Temoin SCOPE a la carte : cherche dans tout le body, il serait deja vrai
+  // avant le moindre clic (la mini-aide eleve de la page parle elle aussi de
+  // demander une offre) et clicJusquA ne cliquerait jamais — lecon v98.
+  await clicJusquA(btnDemander, async () => await carteOffre.locator('.espace-demande-ok').count() > 0);
   const apres = await pageEleve.evaluate(() => document.body.innerText);
 
   if (!V97) {

@@ -13,7 +13,7 @@ import { test, expect } from '@playwright/test';
 import {
   sanitizeDemandeOffre, nomDemandeur, emailDemandeur, estProspect,
   confirmationEleve, resumeDemande, STATUTS_DEMANDE_OFFRE,
-  solderDemandesApresVente,
+  solderDemandesApresVente, contactDemandeur, ficheDepuisDemande,
 } from '../../lib/demande-offre.js';
 
 test.describe('sanitizeDemandeOffre — deux portes, une exigence', () => {
@@ -164,5 +164,73 @@ test.describe('solderDemandesApresVente — la vente range la file', () => {
     const sb = fauxSupabase();
     await solderDemandesApresVente(sb, { clientId: 'c1', offreId: undefined });
     expect(sb.appels.table).toBe(null);
+  });
+});
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// L'incident du 31/08/2026 (Maude) : « Anne-Sophie » demande un abonnement à
+// 480 € depuis la grille publique, et sa prof écrit « je ne sais pas qui c'est
+// et je ne vois pas ses coordonnées ». L'email était en base depuis la
+// première seconde, `emailDemandeur` existait et était TESTÉE ici même — aucun
+// écran ne l'appelait. Un helper vert dans une spec ne prouve rien tant que
+// personne ne l'utilise : ces tests-là figent le contrat côté prof.
+// ═══════════════════════════════════════════════════════════════════════════
+test.describe('contactDemandeur — une demande sans moyen de répondre ne vaut rien', () => {
+  test('prospecte : l\'email saisi ressort, et le fait qu\'elle soit inconnue aussi', () => {
+    const c = contactDemandeur({ prenom: 'Anne Sophie', email: 'anne@example.org' });
+    expect(c.email).toBe('anne@example.org');
+    expect(c.prospect).toBe(true);
+    expect(c.telephone).toBe(null);
+  });
+
+  test('fiche connue : la fiche fait foi, téléphone compris', () => {
+    const c = contactDemandeur({
+      client_id: 'c1',
+      email: 'saisi@example.org',
+      clients: { email: 'fiche@example.org', telephone: '06 12 34 56 78' },
+    });
+    expect(c.email).toBe('fiche@example.org');
+    expect(c.telephone).toBe('06 12 34 56 78');
+    expect(c.prospect).toBe(false);
+  });
+
+  test('rien du tout : on ne fabrique pas un contact qui n\'existe pas', () => {
+    const c = contactDemandeur({});
+    expect(c.email).toBe(null);
+    expect(c.telephone).toBe(null);
+  });
+});
+
+test.describe('ficheDepuisDemande — créer l\'identité, sans rien inventer', () => {
+  test('prénom composé : le nom reste VIDE, on ne le découpe pas au hasard', () => {
+    const { ok, fiche } = ficheDepuisDemande({ prenom: 'Anne Sophie', email: 'A.Sophie@Example.ORG' });
+    expect(ok).toBe(true);
+    expect(fiche.prenom).toBe('Anne Sophie');
+    expect(fiche.nom).toBe('');
+    expect(fiche.email).toBe('a.sophie@example.org');   // normalisé, comme à la saisie
+    expect(fiche.statut).toBe('prospect');
+    expect(fiche.source).toBe('Demande d\'offre');
+  });
+
+  test('nom fourni : il est repris tel quel', () => {
+    const { fiche } = ficheDepuisDemande({ prenom: 'Léa', nom: 'Martin', email: 'lea@example.org' });
+    expect(fiche.nom).toBe('Martin');
+  });
+
+  test('sans email, pas de fiche : une fiche sans adresse est un doublon en puissance', () => {
+    const r = ficheDepuisDemande({ prenom: 'Léa' });
+    expect(r.ok).toBe(false);
+    expect(r.erreur).toContain('email');
+  });
+
+  test('sans prénom non plus', () => {
+    expect(ficheDepuisDemande({ email: 'lea@example.org' }).ok).toBe(false);
+  });
+
+  test('demande déjà rattachée : on refuse d\'en créer une seconde', () => {
+    const r = ficheDepuisDemande({ client_id: 'c1', prenom: 'Léa', email: 'lea@example.org' });
+    expect(r.ok).toBe(false);
+    expect(r.erreur).toContain('déjà une fiche');
   });
 });

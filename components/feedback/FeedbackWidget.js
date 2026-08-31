@@ -214,6 +214,13 @@ export default function FeedbackWidget() {
           top: 48px;
           right: 0;
           width: 200px;
+          /* Elle informe, elle ne clique pas : sans ça elle recouvre le coin
+             haut-droite de CHAQUE page du dashboard pendant 5 visites, et le
+             bouton qui vit dessous devient incliquable sans qu'aucun test de
+             présence ne le voie (trouvé par elementFromPoint, 31/08/2026 :
+             le bouton d'attribution d'une demande d'offre). Seule sa croix
+             reprend les clics, juste en dessous. */
+          pointer-events: none;
           background: white;
           border-radius: 12px;
           padding: 12px 14px;
@@ -243,6 +250,7 @@ export default function FeedbackWidget() {
           line-height: 1.4;
         }
         .feedback-tooltip-close {
+          pointer-events: auto;   /* la seule partie cliquable de la bulle */
           position: absolute;
           top: 6px;
           right: 6px;

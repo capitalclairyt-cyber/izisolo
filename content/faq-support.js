@@ -218,4 +218,13 @@ export const FAQ_SUPPORT = [
     a: "Non, et c'est vérifiable en un coup d'œil. Le petit calendrier qui s'ouvre quand tu cliques sur un champ de date est dessiné par ton navigateur, pas par IziSolo, et il s'ouvre toujours sur le mois de la date déjà écrite dans le champ. Si un chiffre de l'année est parti de travers en tapant au clavier (2022 au lieu de 2026, par exemple), il s'ouvre sur la mauvaise année, où le même jour du mois tombe évidemment sur un autre jour de la semaine. Regarde l'année écrite en haut du calendrier. Pour t'éviter le piège, IziSolo écrit désormais sous le champ le jour choisi en toutes lettres, « Mardi 1 septembre 2026 », et te prévient en rouge si l'année n'est ni celle en cours ni l'une des deux suivantes.",
     lien: { href: '/aide#premier-cours', label: 'Voir le pas-à-pas' },
   },
+  {
+    // Retour Maude, 2026-08-31 : « Anne-Sophie » demande un abonnement à 480 €
+    // depuis la page publique, et sa prof ne voit ni qui c'est ni comment la
+    // joindre. L'email était en base, aucun écran ne l'affichait.
+    // AJOUTÉE EN FIN de liste.
+    q: "J'ai reçu une demande d'offre de quelqu'un que je ne connais pas, comment la contacter ?",
+    a: "Son adresse email est écrite sur la demande, dans le bloc « demandes d'élèves » en tête de ta page Offres : clique dessus pour lui écrire directement. C'est normal de ne pas la connaître : ta page publique est ouverte à tout le monde, et une visiteuse peut demander une offre en laissant juste son prénom et son email, sans compte et sans fiche chez toi. La ligne porte alors le badge « page publique · pas encore de fiche ». Pour aller plus loin, le bouton « Créer la fiche et attribuer » lui crée sa fiche élève avec ces coordonnées, puis ouvre la vente directement sur le règlement (espèces, chèque, virement, en plusieurs fois : tu choisis). Si elle a déjà une fiche sous cette adresse, IziSolo reprend la sienne au lieu d'en créer une deuxième. Et tant que tu n'as pas fait la vente, rien n'est encaissé ni réservé de son côté.",
+    lien: { href: '/aide#offres', label: 'Voir le pas-à-pas' },
+  },
 ];
