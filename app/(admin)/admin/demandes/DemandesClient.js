@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { STATUTS_DEMANDE, DELAI_HEURES } from '@/lib/demande-studio';
+import { STATUTS_DEMANDE, DELAI_HEURES, lienSite } from '@/lib/demande-studio';
 
 const TONS = {
   warning: { bg: '#3a2e14', fg: '#fbbf24' },
@@ -108,7 +108,17 @@ export default function DemandesClient({ demandes: initiales, migrationManquante
             <div style={{ color: '#aaa', fontSize: '0.85rem', margin: '6px 0 10px' }}>
               {fmt(d.created_at)} · <a href={`mailto:${d.email}`} style={lien}>{d.email}</a>
               {d.telephone && <> · <a href={`tel:${d.telephone}`} style={lien}>{d.telephone}</a></>}
-              {d.site_web && <> · <a href={d.site_web} target="_blank" rel="noopener noreferrer" style={lien}>site</a></>}
+              {(() => {
+                // Le site est du texte libre saisi par une inconnue : seul un
+                // http(s) valide devient un lien (lib/demande-studio). Le reste
+                // s'affiche tel quel — on montre ce qu'elle a écrit, sans en
+                // faire une URL vers notre propre domaine ni un javascript:.
+                const { href, texte } = lienSite(d.site_web);
+                if (!texte) return null;
+                return <> · {href
+                  ? <a href={href} target="_blank" rel="noopener noreferrer" style={lien}>{texte}</a>
+                  : <span title="Adresse non cliquable : ce n'est pas une URL valide">{texte}</span>}</>;
+              })()}
             </div>
 
             {d.planning && <Bloc titre="Planning" texte={d.planning} />}

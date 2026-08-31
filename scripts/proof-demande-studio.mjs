@@ -237,6 +237,47 @@ try {
     assert(href?.includes(encodeURIComponent(emailTemoin)),
       'le bouton « Créer son studio » pre-remplit le formulaire concierge avec SON email');
     await pageAdmin.screenshot({ path: join(OUT, 'D-admin-demandes.png'), fullPage: true });
+
+    // ══ F. Le site web d'une inconnue ne devient pas un lien piégé ═════════
+    // La première demande de spam (31/08/2026) portait « Vbn » dans le champ
+    // site. Rendu tel quel, un href SANS protocole est RELATIF : le lien
+    // pointait donc sur « capsule.izisolo.fr/vbn », notre propre hôte admin.
+    // Et rien n'empêchait un « javascript: » d'y entrer, cliquable depuis une
+    // session admin. On insère les témoins EN BASE : le formulaire public est
+    // rate-limité à 5/h, le brûler pour trois variantes rendrait la preuve
+    // non re-runnable.
+    console.log('\nF. Le site web d\'une inconnue');
+    const PIEGES = [
+      { prenom: `${MARQUEUR} Poison`, site_web: 'javascript:fetch("/api/admin/x",{method:"POST"})' },
+      { prenom: `${MARQUEUR} Relatif`, site_web: 'Vbn' },
+      { prenom: `${MARQUEUR} Vrai`, site_web: 'monsite-de-lea.fr' },
+    ];
+    await admin.from('demandes_studio').insert(PIEGES.map((t, i) => ({
+      ...t, nom: 'T', email: `preuve-site-${i}@example.org`, statut: 'nouvelle',
+    })));
+    await pageAdmin.reload({ waitUntil: 'networkidle' });
+    await attendre(1200);
+
+    // Le juge est le DOM RENDU, jamais le HTML brut : en dev, Next transporte
+    // ses logs serveur dans le payload RSC, et chercher une chaîne dans la
+    // source accuserait la page d'afficher ce qu'elle n'affiche pas.
+    const hrefs = await pageAdmin.evaluate(() =>
+      [...document.querySelectorAll('a')].map(a => a.getAttribute('href') || ''));
+    assert(!hrefs.some(h => /^\s*javascript:/i.test(h)),
+      'aucun href javascript: dans la page, meme avec une session admin ouverte');
+    assert(!hrefs.some(h => /^\s*data:/i.test(h)), 'aucun href data:');
+    assert(!hrefs.includes('Vbn'),
+      'un texte qui n\'est pas une URL ne fabrique plus de lien RELATIF vers notre propre hote');
+    assert(hrefs.some(h => h === 'https://monsite-de-lea.fr/'),
+      'une vraie adresse sans protocole devient bien un lien https absolu');
+
+    // Refuser le lien ne doit pas effacer ce qu'elle a ecrit : sinon on
+    // perdrait l'information au lieu de la neutraliser.
+    const texteF = await pageAdmin.evaluate(() => document.body.innerText);
+    assert(texteF.includes('Vbn'), 'le texte saisi reste AFFICHE, seulement pas cliquable');
+    assert(texteF.includes('javascript:fetch'), 'le poison est visible en clair, donc reperable');
+    await pageAdmin.screenshot({ path: join(OUT, 'E-sites-filtres.png'), fullPage: true });
+
     await ctxAdmin.close();
   } else {
     assert(/bonjour@izisolo\.fr|email/i.test(merci),

@@ -15,7 +15,7 @@
 import { test, expect } from '@playwright/test';
 import {
   sanitizeDemande, cequiManque, renderEmailAccuse, renderEmailInterne,
-  ACTIVITES, STATUTS_DEMANDE, DELAI_HEURES,
+  ACTIVITES, STATUTS_DEMANDE, DELAI_HEURES, lienSite,
 } from '../../lib/demande-studio.js';
 
 test.describe('sanitizeDemande — ce qui entre, et ce qu\'on refuse', () => {
@@ -151,5 +151,78 @@ test.describe('renderEmailInterne — de quoi créer le studio sans rien redeman
 test.describe('les statuts de suivi', () => {
   test('les quatre états, et eux seuls (le CHECK de v96 les fige)', () => {
     expect(Object.keys(STATUTS_DEMANDE)).toEqual(['nouvelle', 'en_cours', 'creee', 'sans_suite']);
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Le site web d'une inconnue (31/08/2026). Une première demande de spam a
+// montré deux choses d'un coup : « Vbn » dans le champ site donnait un lien
+// vers « capsule.izisolo.fr/vbn » (un href sans protocole est RELATIF, donc
+// il pointait sur notre propre hôte admin), et rien n'empêchait un
+// « javascript: » d'y entrer et d'être cliqué depuis une session admin.
+// ═══════════════════════════════════════════════════════════════════════════
+test.describe("lienSite — cliquable seulement si c'est vraiment une adresse", () => {
+  test('un domaine nu devient https (personne ne tape le protocole)', () => {
+    expect(lienSite('monsite.fr').href).toBe('https://monsite.fr/');
+    expect(lienSite('www.yoga-lea.com').href).toBe('https://www.yoga-lea.com/');
+  });
+
+  test('http et https passent tels quels', () => {
+    expect(lienSite('https://ok.fr').href).toBe('https://ok.fr/');
+    expect(lienSite('http://ok.fr').href).toBe('http://ok.fr/');
+  });
+
+  test('JAMAIS de lien relatif : « Vbn » ne doit pas viser notre propre hôte', () => {
+    expect(lienSite('Vbn').href).toBe(null);
+    expect(lienSite('Vbn').texte).toBe('Vbn');   // mais on montre ce qu'elle a écrit
+  });
+
+  test('javascript: et data: sont refusés, casse comprise', () => {
+    for (const poison of [
+      'javascript:alert(document.cookie)',
+      'JavaScript:fetch("/api/admin/x",{method:"POST"})',
+      '  javascript:alert(1)',
+      'data:text/html,<script>alert(1)</script>',
+      'vbscript:msgbox(1)',
+      'mailto:a@b.fr',
+      'file:///etc/passwd',
+    ]) {
+      expect(lienSite(poison).href, poison).toBe(null);
+    }
+  });
+
+  test('une phrase reste une phrase', () => {
+    expect(lienSite("je n'ai pas de site").href).toBe(null);
+    expect(lienSite('demande moi sur insta').href).toBe(null);
+  });
+
+  test('vide ou absent : ni lien ni texte', () => {
+    for (const rien of ['', '   ', null, undefined]) {
+      expect(lienSite(rien)).toEqual({ href: null, texte: null });
+    }
+  });
+
+  test("la valeur n'est JAMAIS jetée : perdre une prospecte coûte plus cher", () => {
+    expect(lienSite('Vbn').texte).toBe('Vbn');
+    expect(lienSite('javascript:alert(1)').texte).toBe('javascript:alert(1)');
+  });
+});
+
+test.describe("l'email interne ne se laisse pas réécrire", () => {
+  test("le HTML d'une inconnue est échappé, jamais rendu", () => {
+    const { html } = renderEmailInterne({
+      prenom: 'Léa', email: 'a@b.fr',
+      message: '<img src=x onerror=alert(1)> <a href="https://phish.tld">urgent</a>',
+      studio_nom: '<b>gras</b>',
+    });
+    expect(html).not.toContain('<img src=x');
+    expect(html).not.toContain('<a href="https://phish.tld"');
+    expect(html).not.toContain('<b>gras</b>');
+    expect(html).toContain('&lt;img src=x');
+  });
+
+  test("les retours à la ligne survivent à l'échappement", () => {
+    const { html } = renderEmailInterne({ prenom: 'L', email: 'a@b.fr', planning: 'lundi\nmardi' });
+    expect(html).toContain('lundi<br>mardi');
   });
 });
