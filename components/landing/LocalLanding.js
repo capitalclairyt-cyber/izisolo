@@ -5,12 +5,18 @@
  * (ex: /prof-yoga-paris, /prof-yoga-lyon, /prof-pilates-paris).
  *
  * Pourquoi : capter le long tail "prof de yoga [ville]" + "logiciel
- * gestion studio [ville]". Chaque ville = 1 page unique, contenu
- * différencié (statistiques locales, points de pratique connus, témoignages)
- * pour éviter le duplicate content que Google sanctionne.
+ * gestion studio [ville]". Chaque ville = 1 page unique, différenciée par ce
+ * qui change VRAIMENT d'une ville à l'autre, pour éviter le duplicate content.
+ *
+ * ⚠️ 2026-09-05 : trois blocs ont été retirés de ce template le même jour que
+ * du contenu de content/cities.js, parce qu'ils étaient fabriqués (220 noms
+ * d'établissements dont notre propre studio de démo, 22 témoignages inventés,
+ * des recensements sans source) et parce qu'ils faisaient matcher des requêtes
+ * d'ÉLÈVES sur des pages qui vendent un logiciel à des PROFS. Le détail est
+ * dans l'en-tête de content/cities.js. Ne pas les recréer ici.
  *
  * Props :
- *   city : { name, region, slug, codePostal, profDescription, lieuxConnus, stats, citation }
+ *   city : { name, region, slug, codePostal, zoneVacances, profDescription, pilates }
  *   discipline : 'yoga' | 'pilates' | 'danse' (default 'yoga')
  */
 
@@ -92,7 +98,8 @@ export default function LocalLanding({ city, discipline = 'yoga' }) {
   const D = DISCIPLINE_LABEL_CAPITAL[discipline] || 'Yoga';
 
   // Si l'objet city contient un sous-objet pour la discipline (ex: city.pilates),
-  // on l'utilise pour surcharger profDescription/lieuxConnus/stats/citation.
+  // on l'utilise pour surcharger profDescription (les clés lieuxConnus,
+  // stats et citation ont été supprimées le 2026-09-05, cf. content/cities.js).
   // Sinon fallback sur les valeurs racine (= yoga par défaut). Garantit la
   // rétrocompatibilité des 11 pages /prof-yoga-{ville} existantes.
   const data = (discipline !== 'yoga' && city[discipline])
@@ -163,23 +170,34 @@ export default function LocalLanding({ city, discipline = 'yoga' }) {
                   Une scène <em>{d}</em> en pleine effervescence.
                 </h2>
                 <p>{data.profDescription}</p>
-                {data.stats && (
-                  <ul className="local-stats">
-                    {data.stats.map((s, i) => (
-                      <li key={i}>
-                        <strong>{s.value}</strong>
-                        <span>{s.label}</span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
               </div>
-              {data.citation && (
-                <aside className="local-citation">
-                  <blockquote>
-                    <p>{data.citation.text}</p>
-                    <footer>{data.citation.author}</footer>
-                  </blockquote>
+
+              {/*
+                Remplace le faux témoignage qui vivait ici. Le seul fait chiffré
+                de ces pages, et il est sourcé : la zone de vacances scolaires.
+                Elle change d'une ville à l'autre, et elle décide vraiment de
+                quelque chose dans l'app (génération des séries).
+              */}
+              {city.zoneVacances && (
+                <aside className="local-repere">
+                  <span className="eyebrow">Repère utile</span>
+                  <p className="local-repere-zone">
+                    {city.name} est en <strong>zone {city.zoneVacances}</strong>.
+                  </p>
+                  <p>
+                    C&apos;est le découpage officiel des vacances scolaires. Une série de cours
+                    hebdomadaires s&apos;interrompt aux dates de la zone {city.zoneVacances}, pas à
+                    celles d&apos;à côté : deux villes voisines ne sont pas forcément en vacances
+                    la même semaine.
+                  </p>
+                  <p>
+                    Dans IziSolo, tu choisis ta zone une fois. Les séries sautent ces dates
+                    toutes seules, et une case permet de créer les séances quand même si tu
+                    enseignes pendant les vacances.
+                  </p>
+                  <p className="local-repere-source">
+                    Source : calendrier scolaire officiel, data.education.gouv.fr
+                  </p>
                 </aside>
               )}
             </div>
@@ -189,10 +207,10 @@ export default function LocalLanding({ city, discipline = 'yoga' }) {
           {extra.quartiers && extra.quartiers.length > 0 && (
             <section className="local-quartiers">
               <span className="eyebrow">Les quartiers à connaître</span>
-              <h2 className="serif">Où enseigner et pratiquer à {city.name}.</h2>
+              <h2 className="serif">Où enseigner à {city.name}.</h2>
               <p className="local-quartiers-intro">
-                Chaque quartier de {city.name} a sa propre ambiance et sa clientèle.
-                Voici les zones où les profs de {d} sont les plus installé·e·s, avec ce qui les caractérise :
+                Chaque quartier de {city.name} a son ambiance et son public.
+                Voici ce qui change, d'un secteur à l'autre, quand on y donne ses cours :
               </p>
               <ul className="local-quartiers-list">
                 {extra.quartiers.map((q, i) => (
@@ -218,22 +236,11 @@ export default function LocalLanding({ city, discipline = 'yoga' }) {
             </section>
           )}
 
-          {/* Lieux de pratique connus */}
-          {data.lieuxConnus && data.lieuxConnus.length > 0 && (
-            <section className="local-lieux">
-              <span className="eyebrow">Quelques lieux de pratique connus à {city.name}</span>
-              <h2 className="serif">Tu pratiques peut-être déjà à...</h2>
-              <p className="local-lieux-intro">
-                IziSolo n'est affilié à aucun de ces lieux. C'est un outil pour les profs
-                indépendant·e·s qui louent leur salle ou ont leur studio propre, peu importe l'endroit.
-              </p>
-              <ul className="local-lieux-list">
-                {data.lieuxConnus.map((lieu, i) => (
-                  <li key={i}>{lieu}</li>
-                ))}
-              </ul>
-            </section>
-          )}
+          {/*
+            Ici vivait « Tu pratiques peut-être déjà à... », une liste de dix
+            établissements par ville. Retirée le 2026-09-05 : contenu fabriqué,
+            et aimant à requêtes d'élèves. Voir l'en-tête de content/cities.js.
+          */}
 
           {/* Pourquoi IziSolo pour les profs à [ville] */}
           <section className="local-why">
@@ -404,7 +411,11 @@ export default function LocalLanding({ city, discipline = 'yoga' }) {
           gap: var(--sp-10);
           align-items: center;
         }
-        @media (max-width: 768px) {
+        /* Le bloc de droite porte maintenant trois paragraphes (le repere de zone)
+           la ou vivait une citation de deux lignes. Sous 1024px la colonne
+           tombait a 215px de large pour 879px de haut : on passe en pleine
+           largeur bien plus tot. Mesure au getBoundingClientRect, pas a l oeil. */
+        @media (max-width: 1024px) {
           .local-context-grid {
             grid-template-columns: 1fr;
             gap: var(--sp-8);
@@ -426,84 +437,36 @@ export default function LocalLanding({ city, discipline = 'yoga' }) {
           line-height: 1.65;
           color: var(--c-ink-soft);
         }
-        .local-stats {
-          list-style: none;
-          padding: 0;
-          margin: var(--sp-6) 0 0;
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-          gap: var(--sp-4);
-        }
-        .local-stats li {
-          display: flex;
-          flex-direction: column;
-          gap: 4px;
-        }
-        .local-stats strong {
-          font-family: 'Instrument Serif', Georgia, serif;
-          font-size: clamp(1.75rem, 4vw, 2.5rem);
-          color: var(--c-accent-deep);
-          line-height: 1;
-        }
-        .local-stats span {
-          font-size: 0.8125rem;
-          color: var(--c-ink-soft);
-        }
-        .local-citation blockquote {
-          margin: 0;
+        /* Repere « zone de vacances scolaires ».
+           Remplace .local-stats (recensements sans source) et .local-citation
+           (temoignages inventes), retires le 2026-09-05. */
+        .local-repere {
           padding: var(--sp-6) var(--sp-7);
           background: linear-gradient(135deg, #fefaf5, #fef0dc);
           border-left: 3px solid var(--c-accent);
           border-radius: 16px;
-          font-family: 'Instrument Serif', Georgia, serif;
-          font-style: italic;
-          font-size: 1.25rem;
-          line-height: 1.45;
-          color: var(--c-ink);
         }
-        .local-citation footer {
-          font-family: var(--font-geist);
-          font-style: normal;
-          font-size: 0.875rem;
-          margin-top: var(--sp-3);
-          color: var(--c-ink-soft);
-        }
-
-        /* Lieux connus */
-        .local-lieux {
-          margin-bottom: var(--sp-14);
-          padding: var(--sp-10);
-          background: white;
-          border-radius: 24px;
-          border: 1px solid color-mix(in oklch, var(--c-ink) 8%, transparent);
-        }
-        .local-lieux h2 {
-          font-size: clamp(1.5rem, 3vw, 2rem);
-          letter-spacing: -0.015em;
-          margin: var(--sp-3) 0 var(--sp-3);
-          color: var(--c-ink);
-        }
-        .local-lieux-intro {
+        .local-repere p {
           font-size: 0.9375rem;
+          line-height: 1.6;
           color: var(--c-ink-soft);
-          margin: 0 0 var(--sp-5);
-          font-style: italic;
+          margin: 0 0 var(--sp-3);
         }
-        .local-lieux-list {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 8px;
-          list-style: none;
-          padding: 0;
-          margin: 0;
+        .local-repere-zone {
+          font-family: 'Fraunces', Georgia, serif;
+          font-size: 1.375rem;
+          line-height: 1.3;
+          color: var(--c-ink) !important;
+          margin: var(--sp-2) 0 var(--sp-4) !important;
         }
-        .local-lieux-list li {
-          background: color-mix(in oklch, var(--c-accent) 8%, transparent);
+        .local-repere-zone strong {
           color: var(--c-accent-deep);
-          padding: 6px 14px;
-          border-radius: 99px;
-          font-size: 0.875rem;
-          font-weight: 500;
+        }
+        .local-repere-source {
+          font-size: 0.8125rem !important;
+          color: var(--c-ink-soft);
+          opacity: 0.8;
+          margin: 0 !important;
         }
 
         /* Pourquoi */

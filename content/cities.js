@@ -1,12 +1,36 @@
 /**
- * content/cities.js — Données des villes pour les pages SEO locales.
+ * content/cities.js — données par ville pour les pages locales SEO.
  *
- * Chaque entrée doit avoir un contenu UNIQUE (Google sanctionne le duplicate
- * content). On personnalise : description contexte yoga local, lieux connus,
- * stats, citation type.
+ * RÈGLE D'ÉCRITURE (2026-09-05, après l'audit Search Console) :
+ * on n'écrit ici QUE du vérifiable. Aucun nom d'établissement tiers, aucun
+ * témoignage, aucun chiffre de marché sans source.
  *
- * Pour ajouter une ville : copier un objet, adapter, créer une route
- * app/prof-yoga-[slug]/page.js qui importe l'objet et passe à LocalLanding.
+ * Ce fichier a porté jusqu'au 2026-09-05 trois blocs supprimés ce jour-là :
+ *   - lieuxConnus : 220 noms d'établissements, dont 43 % suivaient un gabarit
+ *     mécanique répété de ville en ville, dont notre propre studio de démo
+ *     (« Atelier Soleil ») donné comme lieu connu à Lyon et à Strasbourg, et
+ *     dont une minorité de VRAIS établissements nommés sans leur accord.
+ *   - citation : 22 témoignages attribués à des profs nommées avec leur
+ *     quartier, tous inventés.
+ *   - stats : des recensements chiffrés (« 800+ profs recensé·e·s ») sans source.
+ * C'est exactement ce que la landing v2 avait retiré le 2026-08-19 sous la
+ * mention « plus jamais de faux ». Ne pas les faire revenir.
+ *
+ * Ces listes étaient aussi la cause SEO du problème : ce sont elles qui
+ * faisaient matcher des requêtes d'ÉLÈVES (« rasa yoga rive gauche »,
+ * « pilates reformer rive gauche ») sur des pages qui vendent un logiciel
+ * à des PROFS. 105 impressions et 1 clic sur le trimestre.
+ *
+ * Champs :
+ *   name, region, slug, codePostal : état civil de la ville, vérifiable.
+ *   zoneVacances : 'A' | 'B' | 'C'. Source = ZONES_VACANCES de
+ *     lib/vacances-scolaires.js, lui-même bundlé depuis le calendrier officiel
+ *     data.education.gouv.fr. C'est le seul fait chiffré de ces pages, et il
+ *     est vrai. Il sert en plus à quelque chose : une série de cours s'arrête
+ *     aux vacances de SA zone, et IziSolo sait générer ou sauter ces dates.
+ *   profDescription : ce qui change concrètement quand on enseigne LÀ.
+ *     Géographie, climat, rythme de la ville. Aucun chiffre inventé.
+ *   pilates.profDescription : la même chose pour la discipline Pilates.
  */
 
 export const CITIES = {
@@ -15,603 +39,120 @@ export const CITIES = {
     region: 'Île-de-France',
     slug: 'paris',
     codePostal: '75',
-    profDescription: `Paris concentre la plus grande densité de profs de yoga indépendant·e·s en France : plus de 800 profs actifs·ves recensés en 2025, répartis entre les studios Marais, Bastille, Pigalle, Le Marais, et les nombreuses salles louées dans les 11e, 12e, 18e et 19e arrondissements. La pratique parisienne se distingue par sa diversité — du Vinyasa rapide compatible avec les pauses déjeuner des actifs aux retraites Yin du week-end, en passant par les ateliers de Pilates Reformer haut de gamme. Le défi local : un loyer de salle à l'heure parmi les plus élevés d'Europe (40-100 €/h), qui pousse les profs solo à optimiser leur taux de remplissage au maximum.`,
-    lieuxConnus: [
-      'Le Tigre Yoga Club',
-      'Yoga Village',
-      'Casa Yoga',
-      'Rasa Yoga Rive Gauche',
-      'Yuj Studio',
-      'Affinity Yoga',
-      'Trini Yoga',
-      'Maison Sur Soi',
-      'Studio Carre Yoga',
-      'Sources & Visions',
-    ],
-    stats: [
-      { value: '800+', label: 'Profs yoga indépendant·e·s recensé·e·s à Paris' },
-      { value: '40-100 €', label: "Tarif horaire moyen de location de salle" },
-      { value: '17-22 €', label: 'Tarif moyen par cours collectif' },
-      { value: '12-16', label: 'Cours hebdo médian par prof confirmée' },
-    ],
-    citation: {
-      text: "À Paris, le yoga n'est plus un luxe — c'est devenu une infrastructure mentale pour beaucoup de gens qui télétravaillent et qui veulent un ancrage régulier dans leur semaine.",
-      author: 'Maude · prof de yoga, Paris 11e',
-    },
+    zoneVacances: 'C',
+    profDescription: `Paris s'enseigne en éclaté : on donne rarement ses cours là où on habite, et souvent dans trois ou quatre lieux différents dans la semaine. La salle se loue à l'heure, ce qui rend chaque créneau à moitié rempli douloureux, et les trajets entre deux cours mangent une vraie part de la journée. Les horaires qui se remplissent le mieux sont ceux qui s'encastrent dans une journée de bureau : la pause de midi et la fin d'après-midi. Le quotidien parisien, c'est donc un planning serré, plusieurs lieux à ne pas confondre, et des désistements de dernière minute qui coûtent d'autant plus cher que la salle, elle, est déjà payée.`,
     pilates: {
-      profDescription: `Paris a le marché Pilates le plus dense et le plus segmenté de France. Trois sous-segments cohabitent : (1) le Pilates Mat traditionnel issu de la méthode Joseph Pilates, dispensé majoritairement par d'ancien·ne·s danseuses et kinés ; (2) le Pilates Reformer haut de gamme dans des studios spécialisés (10-15 k€ d'investissement matériel par studio) avec une clientèle premium ; (3) le Pilates Clinical (kinés-Pilates) pour la rééducation post-traumatique. Les quartiers concentrant les studios : Marais, Bastille, Trocadéro, 16ᵉ, 7ᵉ. Loyer salle 50-90 €/h pour location standard, 70-130 €/h pour studio équipé Reformer. Cours collectif Mat : 22-30 €, cours collectif Reformer : 35-55 €, 1-à-1 Reformer : 80-150 €.`,
-      lieuxConnus: [
-        'Pilates ProWorks Paris',
-        'Studio Reformer Paris',
-        'Pure Pilates Paris',
-        'Pilates Bastille',
-        'Mat Pilates Marais',
-        'Stott Pilates Paris 16',
-        'Pilates Clinique Paris',
-        'Reformer Studio Trocadéro',
-        'Pilates Loft Paris',
-        'Body Mind Paris',
-      ],
-      stats: [
-        { value: '200+', label: 'Studios Pilates spécialisés à Paris' },
-        { value: '50-130 €', label: 'Tarif horaire location salle (Mat / Reformer)' },
-        { value: '22-55 €', label: 'Tarif cours collectif (Mat / Reformer)' },
-        { value: '10-14', label: 'Cours hebdo médian par prof confirmée' },
-      ],
-      citation: {
-        text: "À Paris, le Reformer a complètement changé la donne. Les élèves comprennent qu'on offre quelque chose qu'un cours collectif classique ne peut pas — un travail précis, sur-mesure, avec une vraie progression mesurable.",
-        author: 'Sophie · prof Pilates Reformer, Paris 11e',
-      },
+      profDescription: `Le Pilates parisien recouvre deux métiers qui n'ont pas du tout les mêmes contraintes. Le Mat se transporte : un tapis, une salle louée à l'heure, et on peut enseigner d'un arrondissement à l'autre. Le Reformer, non : la machine fixe le lieu, donc on enseigne là où l'équipement se trouve, souvent en partageant le studio avec d'autres profs et donc en négociant ses créneaux. Dans les deux cas les groupes sont plus petits qu'en yoga et le suivi de chaque élève compte davantage, ce qui déplace le travail administratif vers les carnets individuels plutôt que vers le remplissage.`,
     },
   },
-
   lyon: {
     name: 'Lyon',
     region: 'Auvergne-Rhône-Alpes',
     slug: 'lyon',
     codePostal: '69',
-    profDescription: `Lyon est devenue ces 5 dernières années l'un des hubs yoga les plus dynamiques de France après Paris. Le quartier de la Croix-Rousse, la Presqu'île et le 7e arrondissement concentrent la majorité des studios indépendants. La scène lyonnaise se caractérise par une forte présence du Hatha traditionnel, du Yin, et une vraie demande pour les formats "doux" (prénatal, postnatal, yoga seniors). Avantage notable par rapport à Paris : des loyers de salle 30-40 % moins élevés (typiquement 20-50 €/h), ce qui permet aux profs solo de tenir avec moins d'élèves par cours et de dégager une rentabilité plus rapidement.`,
-    lieuxConnus: [
-      'Centre de Yoga Iyengar Lyon',
-      'Sukha Yoga',
-      'Le Yoga Studio',
-      'Yoga Croix-Rousse',
-      'Yoga Lounge',
-      'Studio Hridaya',
-      'Atelier Soleil',
-      'Yoga Citta',
-      'Méluna Yoga',
-      'Asana Studio Lyon',
-    ],
-    stats: [
-      { value: '250+', label: 'Profs yoga indépendant·e·s recensé·e·s à Lyon' },
-      { value: '20-50 €', label: "Tarif horaire moyen de location de salle" },
-      { value: '14-18 €', label: 'Tarif moyen par cours collectif' },
-      { value: '10-14', label: 'Cours hebdo médian par prof confirmée' },
-    ],
-    citation: {
-      text: "Lyon a la chance d'avoir une vraie scène locale soudée. Les profs se connaissent, se recommandent, organisent des retraites communes — c'est un écosystème, pas une compétition.",
-      author: 'Solène · prof de yoga, Lyon Croix-Rousse',
-    },
+    zoneVacances: 'A',
+    profDescription: `Lyon oblige à composer avec son relief et ses deux rivières. Monter à la Croix-Rousse ou passer d'une rive à l'autre entre deux cours n'a rien d'anodin quand on enchaîne, et beaucoup de profs finissent par se concentrer sur un secteur plutôt que de traverser la ville toute la semaine. Les quartiers d'affaires appellent des créneaux courts en pleine journée, la Presqu'île et les pentes plutôt des cours du soir. Deux publics, deux rythmes, souvent dans la même semaine, et un planning qui doit tenir les deux sans les mélanger.`,
     pilates: {
-      profDescription: `Lyon a vu sa scène Pilates exploser depuis 5 ans, portée notamment par des profs venues du yoga ou de la danse classique. Le Pilates Mat domine encore largement (~75 % de l'offre), mais le Reformer prend du terrain — surtout dans le 6ᵉ arrondissement et la Croix-Rousse où plusieurs studios spécialisés ont ouvert. La clientèle lyonnaise est plus sensible au rapport qualité-prix que la clientèle parisienne : les studios qui marchent sont ceux qui proposent du Reformer à un tarif accessible (35-50 €/cours collectif), pas du premium ultra-cher. Beaucoup de profs lyonnaises combinent Pilates avec une autre discipline (yoga, sophro, danse) pour diversifier leur planning et leurs revenus.`,
-      lieuxConnus: [
-        'Pilates Studio Lyon',
-        'Reformer Lyon',
-        'Pure Pilates Lyon',
-        'Pilates Croix-Rousse',
-        'Mat Studio Lyon',
-        'Méthode Pilates Lyon',
-        'Pilates 6e',
-        'Studio Pilates Confluence',
-        'Pilates Vaise',
-        'Pilates Lyon Centre',
-      ],
-      stats: [
-        { value: '100+', label: 'Studios/profs Pilates indé à Lyon' },
-        { value: '30-70 €', label: 'Tarif horaire location salle (Mat / Reformer)' },
-        { value: '16-25 €', label: 'Tarif cours collectif Mat' },
-        { value: '35-50 €', label: 'Tarif cours collectif Reformer' },
-      ],
-      citation: {
-        text: "À Lyon, l'élève Pilates est plus exigeante qu'en yoga — elle veut sentir un vrai travail technique. Tu peux pas te contenter d'animer, tu dois enseigner précisément. Et le bouche-à-oreille est implacable.",
-        author: 'Manon · prof Pilates, Lyon 6e',
-      },
+      profDescription: `À Lyon, la géographie décide beaucoup du modèle Pilates. Le Reformer impose un lieu fixe et bien desservi, sinon les élèves ne montent pas jusqu'à la salle, tandis que le Mat permet de rayonner d'une rive à l'autre avec un simple tapis. La demande des quartiers de bureaux se porte sur des séances courtes en journée, celle des quartiers résidentiels sur du travail plus posé, souvent en petit groupe ou en individuel. Deux offres différentes, qu'il faut tarifer et suivre séparément sans s'y perdre.`,
     },
   },
-
   bordeaux: {
     name: 'Bordeaux',
     region: 'Nouvelle-Aquitaine',
     slug: 'bordeaux',
     codePostal: '33',
-    profDescription: `Bordeaux a vu sa scène yoga exploser depuis l'arrivée de la LGV en 2017 — beaucoup de profs parisien·ne·s s'y sont installé·e·s, attiré·e·s par un cadre de vie plus calme et des loyers de salle deux fois moins élevés (22-50 €/h en moyenne). Les Chartrons, Saint-Pierre et la rive droite (La Bastide) concentrent l'essentiel des studios indépendants. Particularité bordelaise : une vraie tradition d'ateliers "yoga & vin" ou "yoga & œnologie" qui colle au territoire, et beaucoup de profs qui proposent des retraites week-end dans le Médoc ou le Bassin d'Arcachon. La pratique dominante reste le Vinyasa et le Hatha, avec une demande croissante pour le Yin et le yoga prénatal.`,
-    lieuxConnus: [
-      'Yoga Inside Bordeaux',
-      'La Yoga Boutique',
-      'Sukha Yoga Bordeaux',
-      'Vinyasa Yoga Bordeaux',
-      'ON Yoga',
-      'Yoga Lifestyle Bordeaux',
-      'Chartrons Yoga',
-      'Studio Sangha',
-      'Yoga Bordeaux Centre',
-      'Atelier Pranayama',
-    ],
-    stats: [
-      { value: '150+', label: 'Profs yoga indépendant·e·s recensé·e·s à Bordeaux' },
-      { value: '22-50 €', label: 'Tarif horaire moyen de location de salle' },
-      { value: '13-17 €', label: 'Tarif moyen par cours collectif' },
-      { value: '8-12', label: 'Cours hebdo médian par prof confirmée' },
-    ],
-    citation: {
-      text: "À Bordeaux, on a le luxe d'un vrai art de vivre. Mes élèves viennent pour la pratique, mais aussi pour ce qui se passe avant et après — un café, un échange, un week-end dans le Médoc.",
-      author: 'Camille · prof de yoga, Bordeaux Chartrons',
-    },
+    zoneVacances: 'A',
+    profDescription: `Bordeaux a la douceur qui permet de sortir du studio une bonne partie de l'année : les quais, les parcs et les jardins accueillent des cours dès les premiers beaux jours et jusque tard en automne. C'est un confort, et c'est aussi une organisation à part, parce qu'un cours en extérieur se replie sous la pluie et qu'il faut alors prévenir tout le monde vite. La ville a grandi vite et continue d'accueillir des gens qui arrivent d'ailleurs, donc une part du travail consiste à transformer des curieuses de passage en élèves régulières.`,
     pilates: {
-      profDescription: `Bordeaux a vu sa scène Pilates suivre l'attraction parisienne post-LGV : plusieurs profs Pilates confirmées sont arrivées de Paris ces 5 dernières années avec une expertise Reformer, ce qui a complètement structuré l'offre locale. Aujourd'hui, Bordeaux est probablement la 3ᵉ ville française pour le Pilates Reformer après Paris et Lyon. Quartiers les plus actifs : Chartrons (zone bobo premium), Saint-Pierre, et la rive droite émergente. Tarifs intermédiaires entre Paris et Toulouse (Mat 16-22 €, Reformer 35-55 €). Particularité bordelaise : plusieurs studios combinent Pilates Reformer avec des modalités SPA (sauna, hammam, soins) pour un positionnement très premium.`,
-      lieuxConnus: [
-        'Pilates Studio Bordeaux',
-        'Reformer Bordeaux',
-        'Pure Pilates Bordeaux',
-        'Pilates Chartrons',
-        'Mat Studio Bordeaux',
-        'Pilates Saint-Pierre',
-        'Stott Pilates Bordeaux',
-        'Pilates Bordeaux Centre',
-        'Pilates La Bastide',
-        'Reformer Studio Caudéran',
-      ],
-      stats: [
-        { value: '100+', label: 'Studios/profs Pilates indé à Bordeaux' },
-        { value: '28-65 €', label: 'Tarif horaire location salle' },
-        { value: '16-22 €', label: 'Tarif cours collectif Mat' },
-        { value: '35-55 €', label: 'Tarif cours collectif Reformer' },
-      ],
-      citation: {
-        text: "Bordeaux est la ville idéale pour démarrer un studio Pilates : assez de demande premium, des tarifs immobiliers tenables, et une clientèle qui prend le temps de comprendre la méthode. Tout l'inverse de Paris.",
-        author: 'Charlotte · prof Pilates Reformer, Bordeaux Chartrons',
-      },
+      profDescription: `À Bordeaux, le Pilates se pratique presque toujours à l'intérieur, même quand la météo invite à sortir : le travail au sol et les appareils s'accommodent mal du vent et du sable. La ville attire beaucoup de nouvelles arrivantes, ce qui alimente un flux régulier de premières séances, avec la contrepartie classique du Pilates : il faut souvent plusieurs séances avant qu'une personne s'engage sur un carnet. Suivre qui en est à son essai, qui a un carnet entamé et qui a disparu après deux séances devient vite le vrai sujet.`,
     },
   },
-
   marseille: {
     name: 'Marseille',
     region: "Provence-Alpes-Côte d'Azur",
     slug: 'marseille',
     codePostal: '13',
-    profDescription: `Marseille a la scène yoga la plus singulière de France : ici, on pratique dehors une bonne partie de l'année. Beaucoup de profs proposent des cours réguliers dans les calanques (Sormiou, Morgiou), sur la plage de la Pointe-Rouge ou dans les parcs (Borély, Longchamp). La Plaine, Vauban, les Cinq-Avenues et Castellane regroupent la majorité des studios couverts. La pratique dominante est un Vinyasa très solaire, doublé d'une vraie demande pour les retraites week-end dans le Luberon ou sur les îles du Frioul. Les loyers de salle sont restés modérés (25-55 €/h) malgré la popularité grandissante de la ville auprès des Parisien·ne·s.`,
-    lieuxConnus: [
-      'Yoga Marseille Centre',
-      'Casa Yoga Marseille',
-      "Atelier du Souffle",
-      'Yoga Sud',
-      "Centre de Yoga Iyengar Marseille",
-      "Yoga Bel-Air",
-      "Studio Hridaya Marseille",
-      "Yoga'ttitude",
-      "Marseille Yoga Studio",
-      "Pranayoga Marseille",
-    ],
-    stats: [
-      { value: '200+', label: 'Profs yoga indépendant·e·s recensé·e·s à Marseille' },
-      { value: '25-55 €', label: 'Tarif horaire moyen de location de salle' },
-      { value: '13-18 €', label: 'Tarif moyen par cours collectif' },
-      { value: '10-14', label: 'Cours hebdo médian par prof confirmée' },
-    ],
-    citation: {
-      text: "Pratiquer face à la mer change tout. Mes élèves payent pour la séance, mais c'est ce qu'on ressent en sortant de l'eau après le savasana qui les ramène la semaine d'après.",
-      author: 'Inès · prof de yoga, Marseille Cinq-Avenues',
-    },
+    zoneVacances: 'B',
+    profDescription: `Marseille est la ville où l'extérieur n'est pas une exception mais un mode d'enseignement : les calanques, les plages et les parcs servent de salle une grande partie de l'année. Ça change deux choses très concrètement. D'abord la météo devient un paramètre de planning, avec des séances déplacées ou annulées que personne n'avait vues venir la veille. Ensuite la ville est vaste et étalée, donc le lieu exact compte autant que l'heure, et une élève qui se trompe de point de rendez-vous a fait le trajet pour rien.`,
     pilates: {
-      profDescription: `Marseille a une scène Pilates en pleine ascension, portée par la dimension "bien-être méditerranéen" très ancrée localement. Le Pilates Mat domine très largement, avec une croissance plus lente du Reformer qu'à Bordeaux ou Lyon. Le Reformer s'implante doucement dans le 8ᵉ (Pointe-Rouge, Bonneveine), Vauban et le centre. La spécificité marseillaise : forte demande pour le Pilates post-natal, en lien avec une population jeune en plein boom démographique. Beaucoup de profs proposent des formats "Pilates + sortie en mer kayak/SUP" pendant la belle saison. Tarifs très compétitifs (Mat 14-19 €, Reformer 30-45 € quand il existe).`,
-      lieuxConnus: [
-        'Pilates Marseille Centre',
-        'Reformer Studio Marseille',
-        'Pilates Bel-Air',
-        'Mat Pilates Pointe-Rouge',
-        'Studio Pilates Vauban',
-        'Pilates Castellane',
-        'Stott Pilates Marseille',
-        'Pilates Bonneveine',
-        'Reformer Marseille 8e',
-        'Pilates La Plaine',
-      ],
-      stats: [
-        { value: '120+', label: 'Studios/profs Pilates indé à Marseille' },
-        { value: '25-65 €', label: 'Tarif horaire location salle' },
-        { value: '14-19 €', label: 'Tarif cours collectif Mat' },
-        { value: '30-45 €', label: 'Tarif cours collectif Reformer' },
-      ],
-      citation: {
-        text: "Marseille a une vraie demande pour le Pilates post-natal — les jeunes mamans cherchent une remise en forme douce et progressive. C'est devenu mon créneau principal, avec des cours qui se remplissent en 48h dès l'annonce.",
-        author: 'Léa · prof Pilates, Marseille Castellane',
-      },
+      profDescription: `Le Pilates marseillais se donne à l'intérieur alors que la ville pousse à sortir, ce qui le met en concurrence directe avec des pratiques qui, elles, profitent du soleil. Le Reformer demande un studio équipé, donc un lieu fixe, dans une ville où les distances sont réelles et où une élève ne traverse pas Marseille pour une séance de plus. La conséquence pratique : on travaille surtout dans un rayon proche, on mise sur des petits groupes fidèles, et chaque abandon se voit tout de suite dans le chiffre du mois.`,
     },
   },
-
   toulouse: {
     name: 'Toulouse',
     region: 'Occitanie',
     slug: 'toulouse',
     codePostal: '31',
-    profDescription: `Toulouse a une scène yoga jeune et universitaire, profondément marquée par la proximité culturelle avec l'Inde — plusieurs profs locales se sont formées à Mysore (Ashtanga) ou Rishikesh (Hatha traditionnel). Le Vinyasa et l'Ashtanga dominent, avec une bonne présence du Kundalini et du Yoga Nidra. Les quartiers de Carmes, Saint-Cyprien (rive gauche), Capitole et Compans-Caffarelli concentrent la majorité des studios. Particularité toulousaine : les tarifs sont restés parmi les plus accessibles de France (12-16 € par cours), pour rester en phase avec un public étudiant nombreux. Les loyers de salle suivent (20-45 €/h), ce qui rend la rentabilité plus rapide pour les profs solo.`,
-    lieuxConnus: [
-      'Yoga Toulouse',
-      'La Maison du Yoga Toulouse',
-      'Yoga Carmes',
-      'Yoga Capitole',
-      'Sukha Yoga Toulouse',
-      'Ashtanga Yoga Toulouse',
-      'Studio Hridaya Toulouse',
-      'Atelier Pranava',
-      'Hatha Yoga Toulouse',
-      'Yoga Saint-Cyprien',
-    ],
-    stats: [
-      { value: '150+', label: 'Profs yoga indépendant·e·s recensé·e·s à Toulouse' },
-      { value: '20-45 €', label: 'Tarif horaire moyen de location de salle' },
-      { value: '12-16 €', label: 'Tarif moyen par cours collectif' },
-      { value: '12-16', label: 'Cours hebdo médian par prof confirmée' },
-    ],
-    citation: {
-      text: "Toulouse a cette force d'avoir gardé des tarifs accessibles. Du coup les cours se remplissent vite, et tu peux vraiment vivre du yoga avec 12 cours par semaine — chose impossible à Paris ou Lyon au même prix.",
-      author: 'Léa · prof de yoga, Toulouse Saint-Cyprien',
-    },
+    zoneVacances: 'C',
+    profDescription: `Toulouse est une ville étudiante et étalée, ce qui donne un public renouvelé à chaque rentrée et des trajets qui pèsent dans une journée chargée. Les bords de Garonne et les parcs permettent de sortir du studio une bonne partie de l'année, mais l'été y est franchement chaud, et les créneaux de milieu de journée se vident quand la température monte. Beaucoup de profs déplacent alors leurs cours tôt le matin ou en soirée, ce qui revient à refaire son planning deux fois par an.`,
     pilates: {
-      profDescription: `Toulouse a une scène Pilates qui suit le pattern toulousain habituel : universitaire, accessible, et qualitative. Les tarifs sont parmi les plus bas de France (Mat 13-17 €, Reformer 28-40 € quand il existe). La majorité de l'offre est en Pilates Mat traditionnel, avec une montée en puissance du Pilates Clinical (kinés-Pilates) en lien avec les nombreux étudiants en kinésithérapie de la fac de médecine — c'est une vraie spécificité toulousaine. Quartiers : Carmes, Saint-Cyprien (rive gauche), Capitole, et Compans-Caffarelli côté nord. Les studios Reformer restent rares (3-4 sur toute la métropole) mais en croissance régulière.`,
-      lieuxConnus: [
-        'Pilates Studio Toulouse',
-        'Reformer Toulouse',
-        'Mat Studio Toulouse',
-        'Pilates Carmes',
-        'Studio Pilates Capitole',
-        'Pilates Saint-Cyprien',
-        'Pilates Clinical Toulouse',
-        'Méthode Pilates Toulouse',
-        'Pilates Compans',
-        'Pilates Toulouse Sud',
-      ],
-      stats: [
-        { value: '80+', label: 'Studios/profs Pilates indé à Toulouse' },
-        { value: '22-55 €', label: 'Tarif horaire location salle' },
-        { value: '13-17 €', label: 'Tarif cours collectif Mat' },
-        { value: '28-40 €', label: 'Tarif cours collectif Reformer' },
-      ],
-      citation: {
-        text: "Toulouse permet de proposer du Pilates accessible sans se brader. Notre clientèle étudiante et jeunes actives compose mes meilleurs cours — ils sont curieux, assidus, et reviennent semaine après semaine.",
-        author: 'Camille · prof Pilates, Toulouse Saint-Cyprien',
-      },
+      profDescription: `À Toulouse, le Pilates s'adresse à deux publics qui se croisent peu : des séances collectives sur tapis d'un côté, du travail individuel plus technique de l'autre, souvent après le passage chez un professionnel de santé. Ces deux publics n'ont ni le même tarif, ni le même rythme, ni la même façon de payer. L'été chaud vide les créneaux de milieu de journée, ce qui pousse à concentrer les séances tôt le matin et en soirée pendant plusieurs semaines.`,
     },
   },
-
   nantes: {
     name: 'Nantes',
     region: 'Pays de la Loire',
     slug: 'nantes',
     codePostal: '44',
-    profDescription: `Nantes a une scène yoga particulièrement créative, marquée par la culture alternative de la ville. On y trouve une vraie offre de yoga hybride — danse-yoga, acroyoga, yoga & sound healing, ateliers yoga-écriture — qu'on retrouve rarement ailleurs en France. Les quartiers de Bouffay (centre), de l'Île de Nantes (création contemporaine), des Hauts-Pavés et de Doulon concentrent les studios indépendants. Forte présence du yoga doux, prénatal et seniors, en cohérence avec une population de jeunes parents. Beaucoup de profs nantaises organisent des retraites week-end sur la côte (Pornic, Pornichet, Noirmoutier) ou en presqu'île de Guérande. Loyers de salle modérés (22-48 €/h).`,
-    lieuxConnus: [
-      'Yoga Nantes Centre',
-      'La Maison du Yoga Nantes',
-      'Yoga Bouffay',
-      'Sukha Yoga Nantes',
-      'Atelier du Yoga Nantes',
-      'Studio Air Nantes',
-      'Yoga & Vibes',
-      'Centre de Yoga Iyengar Nantes',
-      'Hatha Yoga Nantes',
-      'Studio Hridaya Nantes',
-    ],
-    stats: [
-      { value: '120+', label: 'Profs yoga indépendant·e·s recensé·e·s à Nantes' },
-      { value: '22-48 €', label: 'Tarif horaire moyen de location de salle' },
-      { value: '13-17 €', label: 'Tarif moyen par cours collectif' },
-      { value: '9-13', label: 'Cours hebdo médian par prof confirmée' },
-    ],
-    citation: {
-      text: "Nantes laisse beaucoup de place à l'expérimentation. J'ai pu lancer un format danse-yoga qui aurait été inaudible ailleurs — ici les élèves cherchent justement ce mélange.",
-      author: 'Marion · prof de yoga, Nantes Bouffay',
-    },
+    zoneVacances: 'B',
+    profDescription: `Nantes se traverse facilement à vélo, et beaucoup d'élèves viennent en pédalant, ce qui rend les cours de fin de journée plus fragiles dès que le temps tourne. Le climat atlantique est doux mais imprévisible : on peut enseigner dehors une bonne partie de l'année à condition d'avoir toujours un repli sous la main. La ville a une vraie densité de lieux associatifs et de salles partagées, donc l'enjeu tient moins à trouver un créneau qu'à garder un groupe stable d'une saison à l'autre.`,
     pilates: {
-      profDescription: `Nantes a une scène Pilates qui suit le pattern créatif de la ville : on y trouve beaucoup de formats hybrides Pilates + danse, Pilates + théâtre corporel, ateliers de mouvement créatif. Le Pilates Mat traditionnel domine (~80 % de l'offre) avec une croissance progressive du Reformer dans le centre et sur l'Île de Nantes. Forte demande Pilates post-natal en lien avec une population jeunes parents. Beaucoup de profs organisent des retraites sur la côte sud bretonne (Pornic, Pornichet, Noirmoutier) combinant Pilates + marche en bord de mer. Loyers modérés (22-50 €/h).`,
-      lieuxConnus: [
-        'Pilates Nantes Centre',
-        'La Maison du Pilates Nantes',
-        'Pilates Bouffay',
-        'Mat Studio Nantes',
-        'Reformer Nantes',
-        'Pilates Île de Nantes',
-        'Studio Pilates Nantes Sud',
-        'Pilates Hauts-Pavés',
-        'Studio Air Nantes',
-        'Pilates & Vibes',
-      ],
-      stats: [
-        { value: '80+', label: 'Studios/profs Pilates indé à Nantes' },
-        { value: '22-50 €', label: 'Tarif horaire location salle' },
-        { value: '14-19 €', label: 'Tarif cours collectif Mat' },
-        { value: '30-45 €', label: 'Tarif cours collectif Reformer' },
-      ],
-      citation: {
-        text: "Nantes laisse beaucoup de place aux formats hybrides — Pilates + danse, Pilates + théâtre corporel. Ailleurs ce serait perçu comme bizarre, ici c'est attendu et recherché.",
-        author: 'Charlotte · prof Pilates, Nantes Île de Nantes',
-      },
+      profDescription: `À Nantes, le Pilates se donne à l'intérieur toute l'année, ce qui protège des aléas météo mais rend la salle déterminante : accessible à vélo et à pied, sinon les inscriptions du soir s'effritent dès l'automne. Le tissu associatif est dense, donc beaucoup de profs commencent en partageant des créneaux avant d'avoir leur propre lieu. Cette période de partage est celle où le suivi devient compliqué, avec des élèves qui viennent d'un créneau puis d'un autre, et des carnets qui doivent suivre la personne et non la salle.`,
     },
   },
-
   strasbourg: {
     name: 'Strasbourg',
     region: 'Grand Est',
     slug: 'strasbourg',
     codePostal: '67',
-    profDescription: `Strasbourg a une scène yoga discrète mais très qualitative, marquée par sa position transfrontalière avec l'Allemagne. Influence forte de la pratique allemande (Iyengar rigoureux, Yin profond) qui se mêle à un Hatha plus traditionnel. Les quartiers de la Krutenau, Petite France et Neudorf concentrent l'essentiel des studios. Particularité strasbourgeoise : une partie des profs propose des cours bilingues français/allemand (clientèle fonctionnaires européens) et organise des retraites dans les Vosges et la Forêt-Noire toute proche. Loyers de salle modérés (22-50 €/h) avec des espaces souvent grands et lumineux hérités des bâtiments alsaciens.`,
-    lieuxConnus: [
-      'Yoga Strasbourg Krutenau',
-      'Sukha Yoga Strasbourg',
-      'Centre de Yoga Iyengar Strasbourg',
-      'Studio Hridaya Strasbourg',
-      'Yoga Studio Neudorf',
-      'Atelier Soleil Strasbourg',
-      'Hatha Yoga Strasbourg',
-      'Yoga Petite France',
-      'Méluna Yoga Strasbourg',
-      'Yoga Méditation Strasbourg',
-    ],
-    stats: [
-      { value: '120+', label: 'Profs yoga indépendant·e·s recensé·e·s à Strasbourg' },
-      { value: '22-50 €', label: 'Tarif horaire moyen de location de salle' },
-      { value: '13-17 €', label: 'Tarif moyen par cours collectif' },
-      { value: '10-14', label: 'Cours hebdo médian par prof confirmée' },
-    ],
-    citation: {
-      text: "À Strasbourg, on a la chance d'avoir un public exigeant et fidèle. La proximité avec l'Allemagne tire toute la scène vers le haut — on apprend vite que la rigueur paye.",
-      author: 'Anne-Sophie · prof de yoga, Strasbourg Krutenau',
-    },
+    zoneVacances: 'B',
+    profDescription: `À Strasbourg, l'hiver dicte le calendrier : de novembre à mars, tout se passe à l'intérieur, et la fréquentation dépend beaucoup de la facilité à venir sans se mouiller. Le centre est compact et se fait à pied ou à vélo, ce qui joue en faveur des cours du soir, à condition que la salle soit sur le chemin. La ville est frontalière et une partie du public travaille en horaires décalés ou de l'autre côté du Rhin, d'où une demande réelle pour des créneaux inhabituels, tôt le matin ou en début d'après-midi.`,
     pilates: {
-      profDescription: `Strasbourg a une scène Pilates discrète mais très qualitative, marquée par l'influence allemande de la pratique. Beaucoup de profs strasbourgeoises se sont formées à la méthode Stott (école canadienne reconnue en Allemagne) ou directement outre-Rhin, ce qui se ressent dans une exigence technique forte. Le Mat domine (~75 %) avec un Reformer en croissance. Plusieurs profs proposent des cours bilingues français/allemand (clientèle fonctionnaires européens et frontaliers). Particularité : retraites Pilates dans les Vosges ou en Forêt-Noire en partenariat avec des hôtels-spa. Loyers modérés (22-50 €/h).`,
-      lieuxConnus: [
-        'Pilates Strasbourg Centre',
-        'Stott Pilates Strasbourg',
-        'Mat Studio Strasbourg',
-        'Pilates Krutenau',
-        'Reformer Studio Strasbourg',
-        'Pilates Petite France',
-        'Studio Pilates Neudorf',
-        'Méthode Pilates Strasbourg',
-        'Pilates Centre Strasbourg',
-        'Body Mind Strasbourg',
-      ],
-      stats: [
-        { value: '70+', label: 'Studios/profs Pilates indé à Strasbourg' },
-        { value: '22-50 €', label: 'Tarif horaire location salle' },
-        { value: '14-18 €', label: 'Tarif cours collectif Mat' },
-        { value: '30-45 €', label: 'Tarif cours collectif Reformer' },
-      ],
-      citation: {
-        text: "À Strasbourg, l'influence allemande nous a donné une exigence technique forte sur le Pilates. Beaucoup de mes collègues ont été formées en Allemagne ou en Suisse — ça change la façon d'enseigner.",
-        author: 'Mathilde · prof Pilates, Strasbourg Krutenau',
-      },
+      profDescription: `À Strasbourg, l'hiver joue pour le Pilates : c'est une pratique d'intérieur, et la saison froide est longue. La contrepartie tombe au printemps, quand une partie du public repart vers l'extérieur et que les groupes s'allègent d'un coup. La ville, frontalière et compacte, amène un public aux horaires variés, dont une partie cherche des séances individuelles ou en tout petit groupe plutôt que le cours collectif classique. Le travail de gestion se concentre alors sur des formules courtes et sur des paiements qui n'ont pas tous la même forme.`,
     },
   },
-
   lille: {
     name: 'Lille',
     region: 'Hauts-de-France',
     slug: 'lille',
     codePostal: '59',
-    profDescription: `Lille a une scène yoga jeune et associative, fortement ancrée dans le tissu étudiant local. Les quartiers de Wazemmes, du Vieux-Lille, de Vauban et de Saint-Maurice concentrent l'essentiel des studios. Caractéristique lilloise : un vrai croisement disciplinaire entre yoga, danse contemporaine et théâtre — on y trouve plus de profs proposant des formats hybrides (yoga-écriture, yoga-danse, ateliers performatifs) qu'ailleurs en France. La proximité de la Belgique amène aussi une clientèle binationale. Loyers de salle parmi les plus accessibles des grandes villes (20-45 €/h) — un vrai avantage pour les profs qui démarrent. Forte demande sur le yoga doux et prénatal en lien avec une population jeune en âge d'avoir des enfants.`,
-    lieuxConnus: [
-      'Yoga Lille Centre',
-      'La Maison du Yoga Lille',
-      'Yoga Wazemmes',
-      'Atelier du Yoga Lille',
-      'Studio Hridaya Lille',
-      'Sukha Yoga Lille',
-      'Yoga Lille Sud',
-      'Hatha Yoga Lille',
-      'Yoga Studio Vieux Lille',
-      'Méluna Yoga Lille',
-    ],
-    stats: [
-      { value: '110+', label: 'Profs yoga indépendant·e·s recensé·e·s à Lille' },
-      { value: '20-45 €', label: 'Tarif horaire moyen de location de salle' },
-      { value: '12-16 €', label: 'Tarif moyen par cours collectif' },
-      { value: '10-14', label: 'Cours hebdo médian par prof confirmée' },
-    ],
-    citation: {
-      text: "Lille a cette énergie associative qui change tout. Les profs s'entraident, échangent leurs salles, partagent leurs élèves quand ça déborde — j'ai jamais vu un tel esprit collectif ailleurs.",
-      author: 'Pauline · prof de yoga, Lille Wazemmes',
-    },
+    zoneVacances: 'B',
+    profDescription: `À Lille, on enseigne à l'intérieur presque toute l'année, et la pluie fait partie du modèle : elle ne vide pas les cours, mais elle rend la régularité plus difficile à tenir sur les créneaux du soir. Le centre est dense et se parcourt vite, ce qui permet d'avoir plusieurs lieux sans y perdre sa journée, contrairement à des villes plus étalées. La population étudiante est importante, donc les groupes se renouvellent beaucoup et le mois de septembre pèse très lourd dans une année.`,
     pilates: {
-      profDescription: `Lille a une scène Pilates jeune et créative, ancrée dans la culture associative locale et fortement marquée par la tradition danse de la ville (Lille = capitale de la danse contemporaine en France). Cette double influence donne des formats originaux : Pilates + barre au sol, Pilates + travail postural pour danseurs, ateliers de mouvement combinés. Le Mat domine très largement, le Reformer reste émergent. Tarifs accessibles (Mat 13-17 €, Reformer 28-42 € quand il existe). La proximité de la Belgique amène une clientèle binationale. Quartiers actifs : Wazemmes, Vieux-Lille, Vauban.`,
-      lieuxConnus: [
-        'Pilates Lille Centre',
-        'La Maison du Pilates Lille',
-        'Pilates Wazemmes',
-        'Mat Studio Lille',
-        'Reformer Lille',
-        'Pilates Lille Sud',
-        'Studio Pilates Vieux-Lille',
-        'Pilates & Danse Lille',
-        'Atelier Pilates Lille',
-        'Studio Pilates Vauban',
-      ],
-      stats: [
-        { value: '70+', label: 'Studios/profs Pilates indé à Lille' },
-        { value: '20-45 €', label: 'Tarif horaire location salle' },
-        { value: '13-17 €', label: 'Tarif cours collectif Mat' },
-        { value: '28-42 €', label: 'Tarif cours collectif Reformer' },
-      ],
-      citation: {
-        text: "À Lille, la jeunesse étudiante est curieuse mais regarde le tarif. Mes cours Mat à 14 € se remplissent en 24h dès l'annonce, le Reformer à 30 € met un peu plus de temps mais finit par tourner.",
-        author: 'Inès · prof Pilates, Lille Wazemmes',
-      },
+      profDescription: `À Lille, le Pilates profite d'un climat qui garde tout le monde à l'intérieur, et d'une ville assez dense pour qu'une élève accepte de venir même par mauvais temps si la salle est proche. La forte population étudiante crée une demande pour des séances collectives accessibles, quand le Reformer s'adresse à un public plus installé. Faire cohabiter les deux dans une même semaine suppose des tarifs distincts, des tailles de groupe différentes, et une visibilité claire sur qui a droit à quoi.`,
     },
   },
-
   montpellier: {
     name: 'Montpellier',
     region: 'Occitanie',
     slug: 'montpellier',
     codePostal: '34',
-    profDescription: `Montpellier connaît une expansion yoga spectaculaire depuis l'afflux post-2020 de Parisien·ne·s en télétravail. La ville cumule trois avantages rares : un public jeune et bien formé (4ᵉ ville étudiante de France), un climat qui permet la pratique en extérieur 9 mois sur 12, et la mer à 10 minutes — beaucoup de profs proposent des cours sur la plage de Palavas l'été. L'Écusson, Beaux-Arts, Antigone et le quartier des Comédies concentrent les studios. Pratiques dominantes : Vinyasa solaire, Yin et yoga prénatal/postnatal (le public familial est important). Loyers de salle 22-50 €/h, en hausse marquée depuis 3 ans. La scène locale est très dynamique avec plusieurs retraites régulières en Cévennes et Pic Saint-Loup.`,
-    lieuxConnus: [
-      'Yoga Montpellier Écusson',
-      'Sukha Yoga Montpellier',
-      'Le Yoga Studio Montpellier',
-      'Studio Hridaya Montpellier',
-      'Casa Yoga Montpellier',
-      'Yoga Beaux-Arts',
-      'Centre de Yoga Iyengar Montpellier',
-      'Hatha Yoga Montpellier',
-      'Yoga Méditation Montpellier',
-      'Atelier Pranava Montpellier',
-    ],
-    stats: [
-      { value: '150+', label: 'Profs yoga indépendant·e·s recensé·e·s à Montpellier' },
-      { value: '22-50 €', label: 'Tarif horaire moyen de location de salle' },
-      { value: '13-17 €', label: 'Tarif moyen par cours collectif' },
-      { value: '11-15', label: 'Cours hebdo médian par prof confirmée' },
-    ],
-    citation: {
-      text: "Montpellier a complètement changé en 5 ans. On est passé d'une scène locale tranquille à un vrai pôle yoga du Sud, avec une clientèle qui sait ce qu'elle veut. C'est exigeant mais hyper stimulant.",
-      author: 'Margaux · prof de yoga, Montpellier Beaux-Arts',
-    },
+    zoneVacances: 'C',
+    profDescription: `Montpellier cumule un climat méditerranéen et une population étudiante nombreuse, ce qui donne une année à deux vitesses. De septembre à juin, les groupes se remplissent et l'extérieur reste praticable une grande partie du temps. L'été, une partie du public quitte la ville, et les profs qui vivent uniquement du cours collectif le sentent passer. Anticiper ce creux, en gardant le contact pendant les mois vides et en préparant la rentrée à l'avance, fait souvent la différence sur l'année.`,
     pilates: {
-      profDescription: `Montpellier a vu sa scène Pilates exploser dans le sillage du boom yoga local. Population jeune, climat méditerranéen, arrivée post-2020 de Parisien·ne·s exigeant·e·s : tous les ingrédients d'un marché Pilates qui se structure rapidement. Plusieurs studios Reformer ont ouvert ces 3 dernières années dans le quartier de l'Écusson et des Beaux-Arts. Particularité montpelliéraine : forte demande pour le Pilates "post-sport intensif" (runners, trailers, cyclistes) qui cherchent un travail postural précis. Tarifs en montée régulière (Mat 15-20 €, Reformer 33-48 €). Quartiers actifs : Écusson, Beaux-Arts, Antigone, Comédie.`,
-      lieuxConnus: [
-        'Pilates Montpellier Écusson',
-        'Pure Pilates Montpellier',
-        'Studio Pilates Beaux-Arts',
-        'Reformer Montpellier',
-        'Mat Studio Montpellier',
-        'Pilates Antigone',
-        'Stott Pilates Montpellier',
-        'Pilates Comédie',
-        'Studio Pilates Méditerranée',
-        'Pilates Mosson',
-      ],
-      stats: [
-        { value: '100+', label: 'Studios/profs Pilates indé à Montpellier' },
-        { value: '25-55 €', label: 'Tarif horaire location salle' },
-        { value: '15-20 €', label: 'Tarif cours collectif Mat' },
-        { value: '33-48 €', label: 'Tarif cours collectif Reformer' },
-      ],
-      citation: {
-        text: "Montpellier a un public Pilates exigeant — beaucoup de personnes qui sortent du sport intense (running, trail, vélo) et qui cherchent le travail postural précis qu'un cours collectif classique ne donne pas.",
-        author: 'Hélène · prof Pilates, Montpellier Beaux-Arts',
-      },
+      profDescription: `Le Pilates à Montpellier suit le rythme universitaire, avec une rentrée qui remplit tout d'un coup et un été qui se vide. La chaleur pousse à privilégier les séances tôt le matin ou en fin de journée pendant plusieurs mois. Comme partout en Pilates, la conversion se joue sur les premières séances : beaucoup viennent essayer, une partie seulement s'engage sur la durée, et repérer tôt qui est en train de décrocher vaut mieux que de le découvrir en comptant les recettes du mois.`,
     },
   },
-
   rennes: {
     name: 'Rennes',
     region: 'Bretagne',
     slug: 'rennes',
     codePostal: '35',
-    profDescription: `Rennes a une scène yoga marquée par la culture bretonne — proximité à la nature, à la mer (Saint-Malo à 50 km) et à une tradition wellness ancienne. Les quartiers du Centre, des Halles, de Sainte-Anne et de Beauregard concentrent les studios. Forte présence du yoga doux, du Hatha traditionnel et du Yin — moins de Vinyasa rapide qu'en région parisienne. Beaucoup de profs organisent des retraites week-end sur la côte sud bretonne (presqu'île de Quiberon, Belle-Île, golfe du Morbihan) — c'est devenu une vraie signature locale. Loyers de salle modérés (22-45 €/h). La population universitaire (2ᵉ pôle étudiant de France après Paris) alimente une demande constante en cours accessibles à tarif étudiant.`,
-    lieuxConnus: [
-      'Yoga Rennes Centre',
-      'La Maison du Yoga Rennes',
-      'Studio Hridaya Rennes',
-      'Sukha Yoga Rennes',
-      'Yoga Atalante',
-      'Atelier du Yoga Rennes',
-      'Yoga Rennes Sud',
-      'Hatha Yoga Rennes',
-      'Centre de Yoga Iyengar Rennes',
-      'Yoga Studio Sainte-Anne',
-    ],
-    stats: [
-      { value: '100+', label: 'Profs yoga indépendant·e·s recensé·e·s à Rennes' },
-      { value: '22-45 €', label: 'Tarif horaire moyen de location de salle' },
-      { value: '12-16 €', label: 'Tarif moyen par cours collectif' },
-      { value: '9-13', label: 'Cours hebdo médian par prof confirmée' },
-    ],
-    citation: {
-      text: "Ici, l'élève vient autant pour la séance que pour ce qu'il y a autour — la promenade vers le studio, le café après, et l'idée qu'on peut prolonger en week-end sur la côte. C'est tout un art de vivre.",
-      author: 'Anaïs · prof de yoga, Rennes Sainte-Anne',
-    },
+    zoneVacances: 'B',
+    profDescription: `Rennes est une ville compacte où l'on se déplace vite, ce qui permet d'enseigner dans plusieurs quartiers sans y laisser sa journée. Le climat est doux mais humide, donc les cours se donnent surtout à l'intérieur et la salle compte beaucoup dans le choix des élèves. La forte présence étudiante donne un rythme très marqué par le calendrier universitaire : des groupes qui se remplissent d'un coup à la rentrée, et qui s'allègent aussi vite à la fin du printemps.`,
     pilates: {
-      profDescription: `Rennes a une scène Pilates plus douce et structurée que ses voisines, en cohérence avec la sensibilité wellness bretonne. Le Pilates Mat domine très largement, le Reformer reste rare (3-4 studios sur la métropole). Forte demande pour le Pilates prénatal/postnatal et le Pilates seniors — en lien avec une population universitaire jeune et un vieillissement progressif. Beaucoup de profs organisent des retraites Pilates sur la côte sud bretonne (Quiberon, Belle-Île, presqu'île de Rhuys) combinant Pilates + nature + déconnexion. Tarifs modérés (Mat 13-17 €, Reformer 28-42 €).`,
-      lieuxConnus: [
-        'Pilates Rennes Centre',
-        'La Maison du Pilates Rennes',
-        'Mat Studio Rennes',
-        'Pilates Sainte-Anne',
-        'Reformer Studio Rennes',
-        'Pilates Rennes Sud',
-        'Studio Pilates Atalante',
-        'Pilates & Bien-être Rennes',
-        'Pilates Centre Rennes',
-        'Atelier Pilates Rennes',
-      ],
-      stats: [
-        { value: '60+', label: 'Studios/profs Pilates indé à Rennes' },
-        { value: '22-45 €', label: 'Tarif horaire location salle' },
-        { value: '13-17 €', label: 'Tarif cours collectif Mat' },
-        { value: '28-42 €', label: 'Tarif cours collectif Reformer' },
-      ],
-      citation: {
-        text: "Rennes a cette douceur bretonne qui colle parfaitement au Pilates. Mes élèves cherchent une pratique régulière, sans stress, qui les accompagne sur la durée. Pas de course à la perf — du précis et du juste.",
-        author: 'Soizic · prof Pilates, Rennes Sainte-Anne',
-      },
+      profDescription: `À Rennes, la ville compacte permet d'enseigner le Pilates dans plusieurs quartiers sans y perdre sa journée, ce qui aide quand on démarre et qu'on multiplie les lieux pour remplir. Le calendrier universitaire donne une année très contrastée, avec des groupes qui se forment vite à la rentrée. Le climat humide garde la pratique à l'intérieur toute l'année, ce qui stabilise la fréquentation mais rend la salle et son accessibilité déterminantes dans le choix de l'élève.`,
     },
   },
-
   nice: {
     name: 'Nice',
     region: "Provence-Alpes-Côte d'Azur",
     slug: 'nice',
     codePostal: '06',
-    profDescription: `Nice a une scène yoga atypique en France, marquée par sa double dimension : public local fidèle ET clientèle internationale (résidents secondaires, expatriés, touristes longue durée). Cette mixité tire les tarifs vers le haut — les profs niçoises facturent typiquement 15-22 €/cours, parfois plus pour les formats premium. Les quartiers du Vieux Nice, du Carré d'Or, de Cimiez et de Riquier concentrent les studios. Particularité locale : de nombreux profs proposent des cours sur la Promenade des Anglais aux beaux jours, et des formats "yoga + chemins de l'arrière-pays" (Tourrettes, La Turbie). Loyers de salle 30-65 €/h selon zone — plutôt élevés dans les zones touristiques mais plus accessibles côté Saint-Roch ou Libération.`,
-    lieuxConnus: [
-      'Yoga Nice Centre',
-      'Casa Yoga Nice',
-      'Studio Hridaya Nice',
-      'Sukha Yoga Nice',
-      'Le Yoga Studio Nice',
-      'Yoga Promenade Nice',
-      'Centre de Yoga Iyengar Nice',
-      'Yoga Vieux Nice',
-      'Hatha Yoga Nice',
-      'Atelier du Souffle Nice',
-    ],
-    stats: [
-      { value: '140+', label: 'Profs yoga indépendant·e·s recensé·e·s à Nice' },
-      { value: '30-65 €', label: 'Tarif horaire moyen de location de salle' },
-      { value: '15-22 €', label: 'Tarif moyen par cours collectif' },
-      { value: '10-14', label: 'Cours hebdo médian par prof confirmée' },
-    ],
-    citation: {
-      text: "Niçoise et internationale à la fois, c'est ce qui rend la pratique ici particulière. Tu peux enseigner en français le matin et en anglais l'après-midi — et personne ne s'étonne. C'est unique en France.",
-      author: 'Elena · prof de yoga, Nice Carré d\'Or',
-    },
+    zoneVacances: 'B',
+    profDescription: `Nice permet d'enseigner dehors une bonne partie de l'hiver, ce qui est rare en France, et le bord de mer sert de salle à ciel ouvert dès les beaux jours. La contrepartie est la saisonnalité : l'été amène du public de passage et fait bouger les habitudes des habitué·e·s, entre départs en vacances et horaires décalés par la chaleur. C'est une ville où l'on jongle entre un noyau d'élèves à l'année et une fréquentation qui gonfle puis retombe, avec un planning à réajuster plusieurs fois dans la saison.`,
     pilates: {
-      profDescription: `Nice a une scène Pilates haut de gamme, parmi les plus structurées de France après Paris. Plusieurs studios Reformer premium se sont implantés ces 5 dernières années, profitant d'une clientèle mixte (locaux fidèles + résidents internationaux + vacanciers longue durée à fort pouvoir d'achat). Le Pilates Mat et le Reformer cohabitent à parts égales, ce qui est rare en France. Tarifs premium (Mat 18-28 €, Reformer 38-65 €) — parmi les plus élevés du marché national en province. Cours occasionnels sur la Promenade des Anglais aux beaux jours. Quartiers actifs : Vieux Nice, Carré d'Or, Cimiez, Riquier.`,
-      lieuxConnus: [
-        'Pilates Nice Centre',
-        'Reformer Nice',
-        'Stott Pilates Nice',
-        'Pure Pilates Nice',
-        'Mat Studio Nice',
-        'Pilates Vieux Nice',
-        'Pilates Carré d\'Or',
-        'Studio Pilates Cimiez',
-        'Pilates Promenade Nice',
-        'Studio Reformer Nice',
-      ],
-      stats: [
-        { value: '100+', label: 'Studios/profs Pilates indé à Nice' },
-        { value: '32-70 €', label: 'Tarif horaire location salle' },
-        { value: '18-28 €', label: 'Tarif cours collectif Mat' },
-        { value: '38-65 €', label: 'Tarif cours collectif Reformer' },
-      ],
-      citation: {
-        text: "Nice a une demande Pilates premium très solide. Les résidents internationaux et les vacanciers longue durée payent volontiers 40-50 € pour un cours collectif Reformer de qualité — c'est inimaginable ailleurs en province.",
-        author: 'Alexandra · prof Pilates Reformer, Nice Carré d\'Or',
-      },
+      profDescription: `À Nice, le Pilates compose avec une saisonnalité forte : un noyau d'élèves à l'année, et des périodes où le public de passage change la composition des groupes. Le Reformer impose un studio équipé, donc un lieu fixe et des créneaux partagés, quand le Mat permet de suivre la demande là où elle est. La douceur de l'hiver joue contre l'intérieur une partie de l'année, et il faut souvent réajuster les horaires plusieurs fois dans la saison, ce qui veut dire retoucher des séries de cours déjà programmées.`,
     },
   },
 };

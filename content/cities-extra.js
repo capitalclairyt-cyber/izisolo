@@ -23,7 +23,7 @@ export const CITIES_EXTRA = {
       { name: '15e-16e', ambiance: "Yoga doux, prénatal, seniors. Clientèle familiale et CSP+ qui cherche du qualitatif sur des créneaux journée." },
       { name: 'Sud-Est (12e-13e)', ambiance: "Studios coopératifs et collectifs émergents. Loyers plus accessibles, clientèle créative." },
     ],
-    marcheLocal: `Le marché parisien est saturé en volume (800+ profs recensés) mais reste ouvert sur les niches : yoga pour parents-enfants, micro-séances de bureau (entreprises 8e-9e-2e), retraites week-end en Île-de-France (Yvelines, Seine-et-Marne). Le gros défi parisien reste le loyer de salle (40-100 €/h) qui force la rentabilité au remplissage : sous 6 élèves moyens par cours collectif, l'équation devient compliquée. Beaucoup de profs parisien·ne·s adoptent le mix "3-4 cours collectifs en studio loué + 5-8 séances particulier à domicile" pour amortir leur fixe.`,
+    marcheLocal: `Le marché parisien est le plus dense de France, et c'est en même temps celui qui laisse le plus de place aux niches : yoga parents-enfants, séances courtes en entreprise, retraites de week-end à moins d'une heure de train. Le vrai défi reste le loyer de salle, le plus élevé du pays, qui fait dépendre la rentabilité du remplissage : un cours à moitié vide coûte exactement le même prix qu'un cours plein. Beaucoup de profs parisien·ne·s équilibrent avec un mélange de cours collectifs en salle louée et de séances particulières à domicile, qui amortissent ce fixe.`,
     faq: [
       {
         q: "Combien gagne réellement un·e prof de yoga à Paris ?",
@@ -49,19 +49,19 @@ export const CITIES_EXTRA = {
       { name: '7e (Guillotière, Jean-Macé)', ambiance: "Quartier jeune et étudiant, studios collectifs émergents avec tarifs accessibles." },
       { name: 'Confluence', ambiance: "Quartier neuf avec bureaux et logements premium. Demande pour yoga d'entreprise et cours en visio." },
     ],
-    marcheLocal: `Lyon est probablement la ville française au meilleur ratio "demande vs offre" pour démarrer une activité yoga indépendante en 2026. Loyers de salle 30-40 % moins chers qu'à Paris (20-50 €/h), clientèle solide et fidèle, écosystème de profs soudé avec un fort bouche-à-oreille. Le défi local est la saisonnalité marquée : août et décembre sont creux, mais septembre et janvier explosent. Beaucoup de profs lyonnaises diversifient avec des retraites week-end dans les Monts du Lyonnais ou le Beaujolais.`,
+    marcheLocal: `Lyon est une ville où démarrer une activité indépendante reste tenable : les loyers de salle y sont plus abordables qu'à Paris, la clientèle est fidèle et le bouche-à-oreille entre profs fonctionne bien. Le défi local est la saisonnalité, très marquée : août et décembre sont creux, septembre et janvier remplissent tout d'un coup. Beaucoup de profs lyonnaises complètent avec des retraites de week-end dans les Monts du Lyonnais ou le Beaujolais.`,
     faq: [
       {
         q: "Combien gagne un·e prof de yoga à Lyon en 2026 ?",
         r: "Une prof confirmée avec 10-14 cours hebdo facture 2 800 à 5 000 € brut/mois. Net après URSSAF et IR : 2 200 à 3 800 €. À retrancher 400-800 €/mois de location de salle. Net réaliste : 1 700 à 3 200 €/mois pour une activité bien posée. Lyon offre un excellent rapport qualité de vie / revenu net comparé à Paris."
       },
       {
-        q: "Où trouver des cours de yoga à la Croix-Rousse ?",
-        r: "La Croix-Rousse concentre une dizaine de studios indépendants actifs : Sukha Yoga, Studio Hridaya, Le Yoga Studio, Atelier Soleil, plus quelques associations qui proposent du yoga doux et seniors. Particularité du quartier : beaucoup de profs proposent des cours en plein air au Parc de la Croix-Rousse aux beaux jours."
+        q: "Enseigner à la Croix-Rousse, qu'est-ce que ça change ?",
+        r: "C'est un quartier dense en studios indépendants et en associations, donc la concurrence y est réelle et le bouche-à-oreille compte plus qu'ailleurs. La pente est le vrai paramètre : une salle en haut des pentes n'a pas le même public qu'une salle en bas, et les élèves choisissent souvent celle qu'elles atteignent sans effort après le travail. Aux beaux jours, le parc de la Croix-Rousse permet de sortir, avec la logistique que ça suppose : prévenir tout le monde en cas de pluie, et un point de rendez-vous que personne ne peut manquer."
       },
       {
         q: "Le marché yoga à Lyon est-il saturé ?",
-        r: "Pas encore, contrairement à Paris. Lyon compte ~250 profs indépendant·e·s actif·ves pour une métropole de 1,4M d'habitants — soit 1 prof pour ~5 600 habitants vs 1 pour ~2 700 à Paris. La marge de croissance reste réelle, particulièrement sur les niches : yoga prénatal, yoga enfants, yoga thérapeutique, yoga d'entreprise."
+        r: "Pas encore, contrairement à Paris. Lyon reste nettement moins dense que Paris, et la marge de croissance y est réelle, particulièrement sur les niches : yoga prénatal, yoga enfants, yoga thérapeutique, yoga d'entreprise."
       },
     ],
     villesProches: ['marseille', 'montpellier'],  // Sud-Est
@@ -78,8 +78,8 @@ export const CITIES_EXTRA = {
     marcheLocal: `Marseille est singulière : la pratique en plein air est une vraie composante de l'offre 6-8 mois de l'année. Les profs qui dominent localement combinent un cours hebdo en studio (revenus stables) avec des stages mensuels dans les calanques, sur les îles du Frioul, ou en bord de mer (revenus premium). Tarifs cours collectifs intermédiaires (13-18 €), mais possible de monter à 35-50 € pour un format "yoga + sortie bateau" très demandé l'été. Le défi : le creux estival pendant la canicule (juillet-août) où la pratique régulière s'effondre.`,
     faq: [
       {
-        q: "Où pratiquer le yoga en plein air à Marseille ?",
-        r: "Les spots les plus pratiqués : calanque de Sormiou et Morgiou (accès marche 30 min), plage de la Pointe-Rouge le matin, parc Borély (8e), parc Longchamp (4e), et les terrasses de Notre-Dame de la Garde au coucher du soleil. Plusieurs profs marseillais·es proposent des cours réguliers dans ces lieux d'avril à octobre. Tarif typique : 20-25 € par cours en plein air."
+        q: "Donner des cours en plein air à Marseille, comment ça s'organise ?",
+        r: "Les calanques, les plages et les parcs se prêtent aux cours en extérieur d'avril à octobre, et beaucoup de profs marseillais·es en font une part de leur activité. Les deux difficultés sont toujours les mêmes. La météo d'abord : il faut pouvoir prévenir tout un groupe la veille au soir, et décider si la séance est reportée ou rendue au carnet. Le lieu ensuite : un point de rendez-vous en extérieur se décrit précisément, sinon une élève fait le trajet pour rien. Dans IziSolo, chaque séance porte son propre lieu, et une annonce part au groupe concerné en deux clics."
       },
       {
         q: "Combien gagne un·e prof de yoga à Marseille ?",
@@ -101,7 +101,7 @@ export const CITIES_EXTRA = {
       { name: 'Compans-Caffarelli / Minimes', ambiance: "Familles et jeunes parents. Demande forte yoga prénatal, postnatal, enfants." },
       { name: 'Rangueil / Université', ambiance: "Forte demande étudiante. Cours collectifs à tarif accessible (12-14 €) très fréquentés." },
     ],
-    marcheLocal: `Toulouse a le marché yoga le plus accessible des grandes métropoles françaises (tarifs cours 12-16 €), porté par un public universitaire nombreux (UPS, INP, écoles d'ingé). Le défi local : maintenir une marge correcte avec ces tarifs. Solution adoptée par les profs locales : forte fidélisation via les carnets (10-20 cours), peu de désabonnement, et complément revenus avec retraites week-end dans les Pyrénées ou le Tarn. L'Ashtanga et le Vinyasa dominent, en lien avec la tradition Mysore que plusieurs profs toulousaines ont rapportée d'Inde.`,
+    marcheLocal: `Toulouse a l'un des marchés les plus accessibles des grandes métropoles, porté par un public universitaire nombreux, avec pour contrepartie des tarifs de cours plus bas qu'ailleurs. Le défi local est donc de tenir sa marge : les profs y répondent surtout par la fidélisation, avec des carnets plutôt que des séances à l'unité, et par un complément en retraites de week-end dans les Pyrénées ou le Tarn. L'Ashtanga et le Vinyasa y sont bien implantés, avec plusieurs profs formées à la pratique Mysore.`,
     faq: [
       {
         q: "Pourquoi les tarifs yoga sont-ils si bas à Toulouse ?",
@@ -127,7 +127,7 @@ export const CITIES_EXTRA = {
       { name: 'Caudéran / Cauderan', ambiance: "Familles et seniors actifs. Demande forte yoga doux, prénatal, seniors." },
       { name: 'Bassins à Flot (nord)', ambiance: "Tertiaire récent. Cours d'entreprise et yoga lunch break très demandés." },
     ],
-    marcheLocal: `Bordeaux est l'une des villes où démarrer comme prof yoga indé est le plus tenable en 2026 : marché en croissance (LGV depuis Paris, +30 000 habitants/an sur la métropole), loyers de salle accessibles (22-50 €/h), clientèle CSP+ qui paye sans broncher des tarifs intermédiaires (13-17 €). Particularité bordelaise unique en France : la culture du "yoga & vin" / yoga & œnologie qui se développe vraiment, avec plusieurs profs qui proposent des ateliers conjoints avec châteaux du Médoc. Les retraites week-end sur le Bassin d'Arcachon ou dans les vignobles cartonnent.`,
+    marcheLocal: `Bordeaux est une ville où se lancer reste tenable : le marché grandit avec la population, les loyers de salle restent accessibles comparés à Paris, et le public accepte des tarifs intermédiaires. Une particularité locale s'y est développée, les ateliers qui associent le yoga et l'univers du vin, en lien avec les châteaux de la région. Les retraites de week-end sur le Bassin d'Arcachon ou dans les vignobles marchent bien.`,
     faq: [
       {
         q: "Yoga & vin à Bordeaux : est-ce vraiment une vraie offre ou un gadget marketing ?",
@@ -179,7 +179,7 @@ export const CITIES_EXTRA = {
       { name: 'Robertsau / Wacken', ambiance: "Quartier institutions européennes. Cours en anglais et yoga d'entreprise très demandés." },
       { name: 'Cronenbourg / Hautepierre', ambiance: "Quartiers populaires. Yoga associatif et ateliers municipaux importants." },
     ],
-    marcheLocal: `Strasbourg a une scène yoga atypique en France : forte influence de la pratique allemande (Iyengar rigoureux, Yin profond), capitale européenne avec une demande pour cours en anglais/allemand, et tradition d'ateliers ludiques pour enfants en lien avec la culture nordique du bien-être. Le défi local : marché plus petit que les autres métropoles (~85 profs indé recensés), ce qui rend les niches plus exposées. L'avantage : possibilité de se positionner sur le marché transfrontalier (Kehl, Offenburg en Allemagne à 15 min) et d'organiser des retraites dans les Vosges ou la Forêt-Noire.`,
+    marcheLocal: `Strasbourg a une scène atypique en France, marquée par la proximité allemande : des pratiques plus rigoureuses, une demande réelle pour des cours en anglais et en allemand, et un public habitué aux formats d'atelier. Le défi local est la taille du marché, plus petite que dans les autres métropoles, ce qui rend une niche trop étroite risquée. L'avantage est le transfrontalier, avec l'Allemagne à quelques minutes, et des retraites possibles dans les Vosges ou la Forêt-Noire.`,
     faq: [
       {
         q: "Cours de yoga en allemand ou bilingue à Strasbourg : vraie demande ?",
@@ -257,11 +257,11 @@ export const CITIES_EXTRA = {
       { name: 'Beauregard / Villejean (nord)', ambiance: "Familles et jeunes parents. Forte demande prénatal et yoga enfants." },
       { name: 'Sud Gare / Cleunay', ambiance: "Quartiers en mutation. Studios alternatifs émergents et tarifs accessibles." },
     ],
-    marcheLocal: `Rennes a une scène yoga plus discrète que sa taille (~220 000 habitants) le laisserait supposer : ~90 profs indé recensé·e·s en 2026. La culture bretonne plus introvertie joue sans doute, mais le marché est ouvert et la concurrence modérée. Forte demande pour le yoga doux, prénatal et seniors. Bonne dynamique sur le yoga d'entreprise (Rennes étant un hub tertiaire et de l'innovation digitale). Le défi local : tarifs un peu plus bas qu'ailleurs (12-16 € en cours collectif), mais des coûts (salle, vie) en cohérence.`,
+    marcheLocal: `Rennes a une scène plus discrète que sa taille ne le laisserait supposer, avec une concurrence modérée et un marché qui reste ouvert. La demande porte beaucoup sur le yoga doux, le prénatal et les seniors, et le yoga en entreprise y trouve un terrain favorable dans un bassin très tertiaire. Le défi local tient aux tarifs, un peu plus bas qu'ailleurs, compensés par des coûts de salle et de vie eux aussi plus bas.`,
     faq: [
       {
         q: "Le marché yoga à Rennes est-il porteur en 2026 ?",
-        r: "Oui mais lentement. Rennes est l'une des métropoles françaises où la scène yoga est la plus sous-développée par rapport à sa population (~90 profs indé pour 220 000 habitants, ratio 1 pour 2 440). Le marché a clairement de la marge, mais la culture bretonne plus discrète sur les pratiques bien-être ralentit la croissance. Pour un·e prof qui démarre : focus fidélisation et bouche-à-oreille plutôt que stratégie de volume."
+        r: "Oui mais lentement. Rennes est une métropole où la scène yoga reste discrète au regard de sa population, donc le marché a de la marge, mais la culture bretonne plus réservée sur les pratiques bien-être ralentit la croissance. Pour un·e prof qui démarre : focus fidélisation et bouche-à-oreille plutôt que stratégie de volume."
       },
       {
         q: "Combien gagne un·e prof de yoga à Rennes ?",
