@@ -34,6 +34,7 @@ const PUBLIC_ROUTES = [
   '/prof-yoga-',            // /prof-yoga-paris, /prof-yoga-lyon, futures villes
   '/prof-pilates-',         // /prof-pilates-paris, /prof-pilates-lyon, etc.
   '/logiciel-gestion-prof-yoga', // page SEO catégorie « logiciel/appli de gestion yoga »
+  '/logiciel-comptabilite-prof-yoga', // page SEO categorie « logiciel comptable yoga » (2026-09-05)
   '/blog',                  // /blog (liste) + /blog/[slug] (articles)
   '/outils',                // /outils/calculateur-revenu-prof-yoga, etc. (lead magnets HTML)
   '/calculateur',                // calculateur de frais (lead magnet)
@@ -50,7 +51,8 @@ const PUBLIC_ROUTES = [
 const MARKETING_EXACT = [
   '/', '/profs-de-yoga', '/profs-de-yoga-enfants', '/profs-de-pilates',
   '/profs-de-meditation', '/profs-de-danse', '/coachs-bien-etre',
-  '/therapeutes', '/sophrologues', '/logiciel-gestion-prof-yoga', '/calculateur',
+  '/therapeutes', '/sophrologues', '/logiciel-gestion-prof-yoga',
+  '/logiciel-comptabilite-prof-yoga', '/calculateur',
   '/creer-mon-studio',
 ];
 const MARKETING_PREFIXES = ['/prof-yoga-', '/prof-pilates-'];

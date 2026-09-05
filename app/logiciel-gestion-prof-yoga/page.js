@@ -1,5 +1,6 @@
 import LogicielGestionLanding from '@/components/landing/LogicielGestionLanding';
-import { getBreadcrumbSchema, ogImageUrl } from '@/lib/seo';
+import { getBreadcrumbSchema, getFAQSchema, ogImageUrl } from '@/lib/seo';
+import { FAQ_LOGICIEL } from '@/content/faq-logiciel';
 import '../landing.css';
 
 const URL_CANON = 'https://www.izisolo.fr/logiciel-gestion-prof-yoga';
@@ -43,15 +44,20 @@ export default async function LogicielGestionPage() {
     url: URL_CANON,
     offers: {
       '@type': 'Offer',
-      price: '17',
+      price: '15', // grille definitive 2026-07-27 (Essentiel). Etait '17', reliquat de l'ancienne grille Solo : on annoncait un prix faux a Google.
       priceCurrency: 'EUR',
       description: "14 jours d'essai gratuit sans carte bancaire, puis dès 15 €/mois.",
     },
   };
 
+  // Meme liste que celle affichee par le composant : un schema qui annonce
+  // une question absente de la page est un signal trompeur.
+  const faq = getFAQSchema(FAQ_LOGICIEL.map(({ q, r }) => ({ question: q, answer: r })));
+
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumb) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faq) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(appSchema) }} />
       <LogicielGestionLanding />
     </>

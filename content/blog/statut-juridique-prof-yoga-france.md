@@ -49,7 +49,7 @@ Tu te demandes quel statut prendre pour devenir prof de yoga indépendant·e ? O
 - **Création** : 100 % gratuite en 15 min sur [autoentrepreneur.urssaf.fr](https://www.autoentrepreneur.urssaf.fr) → tu reçois ton **numéro SIRET sous 2-4 semaines** par courrier.
 - **Catégorie** : profession libérale BNC (Bénéfices Non Commerciaux). Code APE typique : 8551Z ("Enseignement de disciplines sportives et d'activités de loisirs") ou 9329Z.
 - **Cotisations sociales** : **21,2 % du chiffre d'affaires** déclaré (taux 2026 BNC libéral). Versées chaque mois ou trimestre selon ton choix.
-- **Comptabilité** : un simple **livre de recettes** (date + intitulé + mode paiement + montant). Aucun bilan, aucune liasse fiscale, aucun comptable nécessaire.
+- **Comptabilité** : un simple **livre de recettes** (date + intitulé + mode paiement + montant). Aucun bilan, aucune liasse fiscale, aucun comptable nécessaire. C'est peu, mais ce n'est pas rien : c'est le registre qu'on te réclame en cas de contrôle, et il doit être tenu au fil de l'eau. Si tu encaisses déjà via un outil, [autant qu'il le tienne pour toi](/logiciel-comptabilite-prof-yoga).
 - **TVA** : franchise en base jusqu'à **39 100 €** de CA en 2026 (= tu factures HT = TTC, pas de TVA à reverser).
 - **Plafond annuel** : **77 700 €** de CA en BNC en 2026. Au-delà, tu sors automatiquement du régime micro.
 
@@ -253,6 +253,10 @@ Beaucoup l'oublient. Elle te tombe dessus en **fin d'année 2** d'activité, et 
 ### 5. Mélanger compte perso et compte pro
 En micro, ce n'est pas obligatoire d'avoir un compte pro **dédié** (un second compte perso suffit), mais c'est **fortement recommandé** dès 10 000 € de CA annuel. Ça facilite la déclaration et te protège en cas de contrôle URSSAF.
 
+### 6. Déclarer à la date de la vente au lieu de la date d'encaissement
+
+Celle-là est sournoise, parce qu'elle ne se voit pas. La micro-entreprise déclare **en trésorerie** : un chèque remis le 28 septembre mais déposé le 3 octobre appartient au trimestre suivant. Si tu comptes à la date de vente, tu déclares trop sur un trimestre et pas assez sur l'autre, sans jamais t'en apercevoir. Vérifie ce que ton [outil de suivi des encaissements](/logiciel-comptabilite-prof-yoga) utilise comme date.
+
 <aside class="article-tool-callout">
   <div class="callout-icon">✅</div>
   <div class="callout-body">
@@ -280,3 +284,5 @@ Quand ton CA grimpe sérieusement, **un seul RDV avec un expert-comptable** te d
 ---
 
 *Tu veux savoir combien tu peux espérer gagner concrètement avec ton activité de prof yoga ? Lis aussi notre article sur [combien gagne réellement un·e prof de yoga indépendant·e en France en 2026](/blog/combien-gagne-prof-yoga-france-2026).*
+
+*Une fois ton statut créé, le quotidien reprend ses droits : l'agenda, les élèves, les cartes entamées et les impayés. C'est exactement ce que fait [IziSolo, le logiciel de gestion pour prof de yoga](/logiciel-gestion-prof-yoga), écrit par une prof et conçu pour quelqu'un qui enseigne seul·e.*

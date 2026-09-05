@@ -4,6 +4,8 @@ import { useEffect } from 'react';
 import Link from 'next/link';
 import { Nav, Footer, FinalCta, Pricing } from './Sections';
 import ComparatifsLies from './ComparatifsLies';
+import StylesPageSeo from './StylesPageSeo';
+import { FAQ_LOGICIEL } from '@/content/faq-logiciel';
 import {
   CalendarDays, Users, CheckCircle2, CreditCard, Share2, Bell, Smartphone,
 } from 'lucide-react';
@@ -95,6 +97,89 @@ export default function LogicielGestionLanding() {
           entreprises assujetties à la TVA qui encaissent des particuliers : à vérifier avec
           ton comptable si tu n&apos;es pas en franchise en base.
         </p>
+        <p style={{ marginTop: 18 }}>
+          <Link href="/logiciel-comptabilite-prof-yoga" className="lg-btn lg-btn-ghost">
+            Le détail de la partie compta →
+          </Link>
+        </p>
+      </section>
+
+      {/* ── Profondeur ajoutée le 2026-09-05 ───────────────────────────────
+          Cette page ressortait en position 41,5 sur ses propres requêtes
+          (« logiciel gestion yoga » 48, « logiciel de gestion studio de yoga »
+          69,6) alors que ses métadonnées et son schema étaient déjà bons. Elle
+          faisait 1 940 caractères de texte visible : il n'y avait rien à
+          classer. Ce qui suit n'est pas du remplissage, c'est ce qu'une prof
+          qui compare deux outils cherche réellement à savoir. */}
+      <section className="lg-prose">
+        <h2 className="lg-h2">Une semaine ordinaire, vue depuis l&apos;outil</h2>
+        <p>
+          La meilleure façon de juger un logiciel de gestion, ce n&apos;est pas sa liste de
+          fonctions, c&apos;est ce qu&apos;il te demande de faire un jour normal.
+        </p>
+
+        <h3>Lundi, tu poses ta rentrée</h3>
+        <p>
+          Tu crées ton cours du mardi soir, tu choisis le jour et la fréquence, tu donnes
+          une date de fin. IziSolo fabrique toutes les séances d&apos;un coup et saute les
+          vacances scolaires de ta zone si tu le demandes. Si la série est trop courte ou
+          trop longue trois semaines plus tard, tu la rallonges ou tu la raccourcis sans
+          rien recréer, et les séances où quelqu&apos;un est déjà inscrit ne sont jamais
+          supprimées en silence.
+        </p>
+
+        <h3>Mardi, tu fais l&apos;appel</h3>
+        <p>
+          Depuis ton téléphone, en trente secondes, avant ou après le cours. Chaque
+          présence décompte la carte de l&apos;élève, et seulement si sa carte couvre ce
+          type de cours. Une personne sans carnet apparaît en « à régler » plutôt que
+          d&apos;être oubliée. Si tu te fais remplacer, tu peux envoyer un lien qui permet à
+          quelqu&apos;un de pointer cette séance-là depuis son téléphone, sans compte et sans
+          rien voir d&apos;autre de ton studio.
+        </p>
+
+        <h3>Mercredi, quelqu&apos;un annule</h3>
+        <p>
+          L&apos;élève annule depuis son espace. Selon la règle que tu as fixée, la séance lui
+          est rendue ou décomptée, et la première personne en liste d&apos;attente est prévenue
+          et prend la place. Tu n&apos;as rien fait.
+        </p>
+
+        <h3>Vendredi, tu regardes l&apos;argent</h3>
+        <p>
+          Tu vois ce qui est encaissé, ce qui reste à percevoir, et ce qui traîne depuis
+          trop longtemps. Tu encaisses un chèque en un clic, tu envoies une facture à celle
+          qui la réclame pour son comité d&apos;entreprise, et en fin de trimestre le montant
+          à reporter sur ta déclaration est déjà calculé.
+        </p>
+
+        <h3>Ce qu&apos;IziSolo ne fait pas</h3>
+        <div className="lg-note">
+          <p>
+            Il ne <strong>crée pas ton site web</strong>. Tu as une page publique à ton
+            image avec ton planning et tes tarifs, et un bloc que tu peux coller sur ton
+            site existant, mais ce n&apos;est pas un constructeur de site vitrine.
+          </p>
+          <p>
+            Il ne fait ni <strong>vidéos à la demande</strong>, ni boutique en ligne, ni
+            programme de fidélité. Ces choses existent ailleurs, souvent mieux faites.
+          </p>
+          <p>
+            Il n&apos;est pas conçu pour un <strong>centre avec un secrétariat</strong> et
+            plusieurs dizaines de créneaux quotidiens. Plusieurs profs dans un même studio,
+            c&apos;est possible ; une salle de sport, non.
+          </p>
+        </div>
+      </section>
+
+      <section className="lg-faq">
+        <h2 className="lg-h2">Questions fréquentes</h2>
+        {FAQ_LOGICIEL.map(({ q, r }) => (
+          <details key={q}>
+            <summary>{q}</summary>
+            <p>{r}</p>
+          </details>
+        ))}
       </section>
 
       <ComparatifsLies />
@@ -102,51 +187,7 @@ export default function LogicielGestionLanding() {
       <FinalCta />
       <Footer />
 
-      {/* Global exprès : .lg-btn habille des <Link> (composants custom) que
-          styled-jsx scoped ne hashe pas — en scoped, les CTA de cette page
-          SEO s'affichaient en liens bleus navigateur (sweep 2026-08-19). */}
-      <style jsx global>{`
-        .lg-page { background: var(--c-bg, #fdfbf7); color: var(--c-ink, #2a2320); }
-        .lg-hero {
-          max-width: 820px; margin: 0 auto; padding: 72px 20px 40px; text-align: center;
-        }
-        .lg-eyebrow {
-          display: inline-flex; align-items: center; gap: 6px;
-          font-family: var(--font-mono), monospace; font-size: 0.78rem; letter-spacing: 0.04em;
-          text-transform: uppercase; color: var(--c-accent-deep, #9c5a2c);
-          background: var(--c-bg-sable, #f4ece0); padding: 5px 12px; border-radius: 99px;
-        }
-        .lg-h1 {
-          font-family: var(--font-fraunces), Georgia, serif; font-weight: 500;
-          font-size: clamp(2.1rem, 5vw, 3.4rem); line-height: 1.08; margin: 18px 0 0;
-          letter-spacing: -0.02em;
-        }
-        .lg-h1 em { font-style: italic; color: var(--c-accent-deep, #9c5a2c); }
-        .lg-sub { font-size: 1.06rem; line-height: 1.6; color: var(--c-ink-soft, #5c5148); margin: 18px auto 0; max-width: 620px; }
-        .lg-cta-row { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 26px; }
-        .lg-btn { display: inline-flex; align-items: center; padding: 12px 22px; border-radius: 12px; font-weight: 600; text-decoration: none; font-size: 0.95rem; }
-        .lg-btn-primary { background: var(--c-accent-deep, #9c5a2c); color: #fff; }
-        .lg-btn-ghost { background: transparent; color: var(--c-ink, #2a2320); border: 1px solid var(--c-ink-soft, #cdbfae); }
-        .lg-cta-hint { font-size: 0.8rem; color: var(--c-ink-soft, #7a6f64); margin-top: 12px; }
-
-        .lg-features, .lg-why { max-width: 1000px; margin: 0 auto; padding: 32px 20px; }
-        .lg-h2 {
-          font-family: var(--font-fraunces), Georgia, serif; font-weight: 500;
-          font-size: clamp(1.5rem, 3.5vw, 2.1rem); text-align: center; margin: 0 0 28px;
-          letter-spacing: -0.01em;
-        }
-        .lg-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
-        .lg-card { background: #fff; border: 1px solid var(--c-bg-sable, #ece3d5); border-radius: 16px; padding: 20px; }
-        .lg-card-icon {
-          width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center;
-          background: var(--c-bg-sable, #f4ece0); color: var(--c-accent-deep, #9c5a2c); margin-bottom: 12px;
-        }
-        .lg-card-titre { font-size: 1.05rem; font-weight: 700; margin: 0 0 6px; }
-        .lg-card-desc { font-size: 0.9rem; line-height: 1.5; color: var(--c-ink-soft, #5c5148); margin: 0; }
-
-        .lg-why { max-width: 680px; text-align: center; }
-        .lg-why-text { font-size: 1.02rem; line-height: 1.7; color: var(--c-ink-soft, #5c5148); }
-      `}</style>
+      <StylesPageSeo />
     </div>
   );
 }
