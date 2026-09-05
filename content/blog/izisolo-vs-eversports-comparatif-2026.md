@@ -1,5 +1,5 @@
 ---
-title: "IziSolo vs Eversports : prix, avis et comparatif honnête (2026)"
+title: "Eversports : prix, avis et comparatif avec IziSolo (2026)"
 description: "Eversports Manager : prix par paliers de réservations (36 à 169 €/mois HT), avis honnête face à IziSolo, l'alternative française à prix fixe TTC. Comparatif relevé et daté."
 date: 2026-08-21
 updated: 2026-08-21

@@ -1,5 +1,5 @@
 ---
-title: "IziSolo vs Momoyoga : prix, avis et comparatif honnête (2026)"
+title: "Momoyoga : prix, avis et comparatif avec IziSolo (2026)"
 description: "Momoyoga : prix 2026, forfaits, frais et avis honnête face à IziSolo, l'alternative française. Comparatif complet, chiffres relevés et datés, forces réelles des deux outils."
 date: 2026-08-21
 updated: 2026-08-21

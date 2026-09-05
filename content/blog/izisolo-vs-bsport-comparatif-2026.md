@@ -1,5 +1,5 @@
 ---
-title: "IziSolo vs bsport : prix, avis et comparatif honnête (2026)"
+title: "bsport : prix, avis et comparatif avec IziSolo (2026)"
 description: "bsport : prix sur devis, formules, avis honnête face à IziSolo, l'alternative française à prix publics. Comparatif factuel, relevé et daté, forces réelles des deux outils."
 date: 2026-08-21
 updated: 2026-08-21

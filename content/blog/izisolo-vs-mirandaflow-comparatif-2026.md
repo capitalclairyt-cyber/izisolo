@@ -1,5 +1,5 @@
 ---
-title: "IziSolo vs Mirandaflow : prix, avis et comparatif honnête (2026)"
+title: "Mirandaflow : prix, avis et comparatif avec IziSolo (2026)"
 description: "Miranda Flow : 29 €/mois tout compris, 30 jours d'essai. Avis honnête face à IziSolo, deux outils français pour studios et indépendant·es comparés fait par fait, relevé et daté."
 date: 2026-08-21
 updated: 2026-08-21

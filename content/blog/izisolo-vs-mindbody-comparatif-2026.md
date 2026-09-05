@@ -1,5 +1,5 @@
 ---
-title: "IziSolo vs Mindbody : prix, avis et comparatif honnête (2026)"
+title: "Mindbody : prix, avis et comparatif avec IziSolo (2026)"
 description: "Mindbody : à partir de 99 €/mois par établissement, plans sur contact commercial. Avis honnête face à IziSolo, l'alternative française pour indépendant·es. Comparatif relevé et daté."
 date: 2026-08-21
 updated: 2026-08-21
