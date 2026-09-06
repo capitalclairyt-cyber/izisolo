@@ -1,0 +1,22 @@
+{
+  "hero-pointage": {
+    "w": 640,
+    "h": 1276
+  },
+  "row-agenda": {
+    "w": 1400,
+    "h": 427
+  },
+  "row-portail": {
+    "w": 600,
+    "h": 1251
+  },
+  "row-revenus": {
+    "w": 1400,
+    "h": 787
+  },
+  "row-messagerie": {
+    "w": 600,
+    "h": 1082
+  }
+}

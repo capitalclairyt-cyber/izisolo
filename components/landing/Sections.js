@@ -3,70 +3,73 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { IziSoloLogo, WaveOrnament } from './Brand';
-import ReelPhone from './ReelPhone';
+import { IziSoloLogo } from './Brand';
 import { FAQ_ITEMS } from '@/content/faq';
+import VISUELS from '@/public/icons/landing/manifest.json';
 
 /* ================================================================
-   Landing v2 « pro » — handoff design_handoff_landing_v2 (2026-08-19).
-   Éditorial × organique : hero product-led (vraies captures), zéro
-   faux témoignage / faux studio, section fondatrice « Créée par
-   Maude », tarifs réels 2 plans. Copies du handoff, passées au filtre
-   « zéro tiret quadratin » (règle Colin 2026-08-19).
+   Landing v3 « claire » (2026-09-06, plan de lancement rentrée).
+   Une règle par problème constaté face aux concurrents :
+   · un seul alignement (à gauche) et un seul rythme d'espacement ;
+   · une seule signature décorative : le souligné cuivre du hero
+     (plus de blobs, de texture, de pastilles flottantes, de tirets) ;
+   · un seul visuel produit dans le hero, LISIBLE (le pointage sur
+     un téléphone), et des visuels réels recadrés sur chaque rangée ;
+   · 4 rangées au lieu de 4 bénéfices + 4 rangées + 6 mini-cartes ;
+   · 5 puces par tarif, 6 questions à l'écran (les autres en repli).
+   Tout visuel vient du démo Atelier Soleil : scripts/shoot-landing-visuels.mjs
+   les refait quand l'UI change. Zéro faux témoignage, zéro tiret quadratin.
    ================================================================ */
 
-// Captures réelles de l'app (compte démo, scripts/capture-landing-app.mjs).
-// 1280×800. À rafraîchir au même cadrage quand l'UI bouge.
-const SCREENS = {
-  accueil: { src: '/icons/screen-1-dashboard.png', alt: 'Tableau de bord IziSolo : prochains cours, élèves, revenus du mois' },
-  agenda:  { src: '/icons/screen-2-agenda.png',    alt: 'Agenda IziSolo : vue semaine avec présences et inscrits' },
-  revenus: { src: '/icons/screen-3-revenus.png',   alt: 'Revenus IziSolo : mini-compta tous modes de paiement' },
+// Visuels réels (public/icons/landing/, dimensions du manifest écrit par le script).
+const V = (id, alt) => ({ src: `/icons/landing/${id}.jpg`, alt, width: VISUELS[id].w, height: VISUELS[id].h });
+const VISUEL = {
+  pointage:   V('hero-pointage',  'Pointage d\'une séance sur IziSolo : six présentes, carnets décomptés'),
+  agenda:     V('row-agenda',     'Agenda IziSolo en vue semaine'),
+  portail:    V('row-portail',    'Planning public d\'un studio sur IziSolo, réservable depuis un téléphone'),
+  revenus:    V('row-revenus',    'Revenus IziSolo : encaissé sur trois mois, par mode de paiement, et le reste à percevoir'),
+  messagerie: V('row-messagerie', 'Messagerie IziSolo : le canal d\'un cours de yoga pleine lune, avec une photo'),
 };
 
 /* ---- Helpers partagés ---------------------------------------- */
 
 function CheckIcon() {
   return (
-    <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M2 7 L6 11 L12 3" />
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M20 6L9 17l-5-5" />
     </svg>
   );
 }
 
-// Souligné éditorial « main levée » terminé par un lotus 3 pétales.
-// Posé en absolu sous le span .accent (hero + CTA final).
+// LA signature décorative conservée : le souligné cuivre « main levée »
+// sous « Plus de tapis. » (hero) et sous l'accent du CTA final.
 function AccentUnderline() {
   return (
-    <svg className="accent-underline" viewBox="0 0 224 22" preserveAspectRatio="none" fill="none" aria-hidden="true">
-      <path d="M3 15 Q50 9 100 13 T192 12" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" />
-      <g stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M206 14 C204 10 204.5 6 206 3.5 C207.5 6 208 10 206 14 Z" fill="currentColor" fillOpacity=".25" />
-        <path d="M206 14 C202 12.5 200 9.5 199.5 6.5 C202.8 7.2 205 10 206 14 Z" fill="currentColor" fillOpacity=".12" />
-        <path d="M206 14 C210 12.5 212 9.5 212.5 6.5 C209.2 7.2 207 10 206 14 Z" fill="currentColor" fillOpacity=".12" />
-      </g>
+    <svg className="accent-underline" viewBox="0 0 430 14" preserveAspectRatio="none" fill="none" aria-hidden="true">
+      <path d="M3 9C120 3 260 2 427 7" stroke="currentColor" strokeWidth="5" strokeLinecap="round" />
     </svg>
   );
 }
 
-// Fonds « zen organiques » : blobs flous derrière la section (intensité
-// médium figée — le panneau Tweaks de la maquette n'existe pas en prod).
-function ZenLayer({ blobs }) {
+// Tête de section v3 : eyebrow, H2, sous-titre facultatif, tout à gauche.
+function Head({ eyebrow, sub, children }) {
   return (
-    <div className="zen-layer" aria-hidden="true">
-      {blobs.map(([tone, style], i) => (
-        <div key={i} className={`zen-blob ${tone}`} style={style} />
-      ))}
+    <div className="head reveal">
+      <span className="eyebrow">{eyebrow}</span>
+      <h2 className="serif">{children}</h2>
+      {sub && <p className="head-sub">{sub}</p>}
     </div>
   );
 }
 
-// Tête de section v2 : eyebrow à filets à gauche, H2 Fraunces à droite.
-function Head({ eyebrow, sub, children }) {
+// Téléphone : cadre sombre, écran arrondi, une image dedans. `coupe` = le bas
+// du téléphone sort du panneau (rangées), sinon téléphone entier (hero).
+function Phone({ visuel, coupe = false, priority = false, sizes = '300px' }) {
   return (
-    <div className="head reveal">
-      <div><span className="eyebrow-line">{eyebrow}</span></div>
-      <h2 className="serif">{children}</h2>
-      {sub && <p className="head-sub">{sub}</p>}
+    <div className={`phone ${coupe ? 'phone-coupe' : ''}`}>
+      <div className="phone-ecran">
+        <Image src={visuel.src} alt={visuel.alt} width={visuel.width} height={visuel.height} priority={priority} sizes={sizes} />
+      </div>
     </div>
   );
 }
@@ -83,13 +86,25 @@ export function Nav() {
     <header className={`nav ${scrolled ? 'nav-scrolled' : ''}`}>
       <div className="container nav-inner">
         <Link href="/" className="nav-brand"><IziSoloLogo size={26} /></Link>
-        <nav className="nav-links">
+        <nav className="nav-links" aria-label="Navigation principale">
           <a href="#fonctionnalites">Fonctionnalités</a>
-          <a href="#pour-qui">Pour qui</a>
           <a href="#tarifs">Tarifs</a>
-          <a href="#faq">FAQ</a>
-          <Link href="/outils">Outils</Link>
-          <Link href="/blog">Journal</Link>
+          <a href="#pour-qui">Pour qui</a>
+          {/* Journal, outils et FAQ vivent sous une seule entrée : quatre
+              entrées lisibles d'un coup d'œil au lieu de sept. Menu CSS pur
+              (survol + focus clavier), rien à hydrater. */}
+          <div className="nav-menu">
+            <button type="button" className="nav-menu-btn" aria-haspopup="true">
+              Ressources
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>
+            </button>
+            <div className="nav-menu-panel">
+              <Link href="/blog">Le journal</Link>
+              <Link href="/outils">Outils gratuits</Link>
+              <Link href="/calculateur">Calculateur de frais</Link>
+              <a href="#faq">Questions fréquentes</a>
+            </div>
+          </div>
         </nav>
         <div className="nav-cta">
           <Link href="/login" className="nav-link-soft">Se connecter</Link>
@@ -100,99 +115,77 @@ export function Nav() {
   );
 }
 
-/* ---- HERO product-led ---------------------------------------- */
-// Centré, headline « Moins de soucis. / Plus de tapis. », souligné
-// lotus, ligne de confiance Maude, cadre navigateur avec 3 vraies
-// captures (celle du centre décalée), fondu bas vers le bg.
+/* ---- HERO ----------------------------------------------------- */
+// Deux colonnes : la promesse à gauche, UN visuel à droite (le pointage
+// d'une vraie séance du démo, sur un téléphone). Le concierge est le bouton
+// principal (plan de lancement rentrée 2026 : le trou est l'activation, pas
+// la notoriété) ; l'essai reste en bouton fantôme. Jamais deux CTA de même
+// poids, l'invariant de v96 tient. Pas de .reveal ici : au-dessus de la ligne
+// de flottaison, une animation au scroll ne démarre jamais dans Safari (§12).
 export function Hero() {
   return (
-    <section className="hero-v2 zen">
-      <ZenLayer blobs={[['b1', { top: '-12%', right: '-6%' }], ['b2', { bottom: '10%', left: '-10%' }]]} />
-      <div className="container">
-        <span className="eyebrow-line eyebrow-line-hero">Pour les profs de yoga, pilates, danse &amp; bien-être</span>
-        <h1 className="serif">
-          Moins de soucis.<br />
-          <span className="accent">Plus de tapis.<AccentUnderline /></span>
-        </h1>
-        <p className="hero-v2-lead">
-          Agenda, réservations, paiements, factures, messagerie : <b>un seul outil clair et beau.</b> IziSolo
-          gère les cas pénibles à ta place pour que tu reviennes à l&apos;essentiel : ta pratique, tes cours, tes élèves.
-        </p>
-        <div className="hero-v2-ctas">
-          <Link href="/register" className="btn btn-primary btn-lg">Essayer 30 jours · sans CB →</Link>
-          <Link href="/creer-mon-studio" className="btn btn-ghost btn-lg">On monte ton studio pour toi</Link>
-        </div>
-        {/* Ce second bouton menait à /login jusqu'au 2026-08-30. C'était une
-            porte pour les CLIENTS, posée à l'endroit le plus cher de la page,
-            alors que « Se connecter » vit déjà dans la nav ET dans le pied :
-            le seul bouton du hero qui ne pouvait convertir personne. Le
-            concierge, lui, y était relégué en petite ligne grise.
-
-            La règle de v96 tient toujours et n'est pas contournée : ce n'est
-            PAS un second CTA de même poids. On n'AJOUTE aucun bouton, on
-            change la destination de celui qui existait, et la hiérarchie
-            reste intacte (l'un plein, l'autre fantôme). C'est d'ailleurs ce
-            que vérifie désormais proof-demande-studio, en lisant le fond
-            CALCULÉ des deux boutons plutôt que leur place dans le DOM. */}
-        <p className="hero-concierge">
-          Essai sans carte bancaire. Et si on monte ton studio, c&apos;est offert.
-        </p>
-        <div className="hero-trust">
-          {/* Photo placeholder : à remplacer par une vraie photo de Maude */}
-          <span className="pic blob-a">
-            <Image src="/icons/maude-foret.jpg" alt="Maude, fondatrice d'IziSolo" width={68} height={68} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-          </span>
-          <span>Créée par <b>Maude</b>, prof de yoga · conçue et hébergée en France</span>
-        </div>
-        <div className="hero-product reveal">
-          <div className="frame">
-            <div className="bar" aria-hidden="true"><i /><i /><i /><span className="url mono">ton-studio.izisolo.fr</span></div>
-            <div className="shots">
-              <Image src={SCREENS.accueil.src} alt={SCREENS.accueil.alt} width={1280} height={800} priority sizes="(max-width: 640px) 50vw, 315px" />
-              <Image src={SCREENS.agenda.src} alt={SCREENS.agenda.alt} width={1280} height={800} priority sizes="(max-width: 640px) 50vw, 315px" />
-              <Image src={SCREENS.revenus.src} alt={SCREENS.revenus.alt} width={1280} height={800} sizes="(max-width: 640px) 50vw, 315px" />
-            </div>
+    <section className="hero-v3">
+      <div className="container hero-v3-grid">
+        <div className="hero-v3-copy">
+          <span className="eyebrow">Pour les profs de yoga, pilates, danse et bien-être</span>
+          <h1 className="serif">
+            Moins de soucis.<br />
+            <span className="accent">Plus de tapis.<AccentUnderline /></span>
+          </h1>
+          <p className="hero-v3-lead">
+            Agenda, réservations, paiements, factures, messagerie : un seul outil, clair et calme.
+            IziSolo gère les cas pénibles à ta place, tu reviens à tes cours et à tes élèves.
+          </p>
+          <div className="hero-v2-ctas hero-v3-ctas">
+            <Link href="/creer-mon-studio" className="btn btn-primary btn-lg">On monte ton studio pour toi</Link>
+            <Link href="/register" className="btn btn-ghost btn-lg">Essayer 30 jours, sans CB</Link>
           </div>
-          <div className="fade" aria-hidden="true" />
+          <p className="hero-concierge">
+            Gratuit, sous 48 h, c&apos;est Maude qui s&apos;en occupe. Ou tu pars seule, sans carte bancaire.
+          </p>
+        </div>
+        <div className="hero-v3-visuel">
+          <Phone visuel={VISUEL.pointage} priority sizes="(max-width: 900px) 260px, 300px" />
         </div>
       </div>
     </section>
   );
 }
 
-/* ---- POURQUOI (bénéfices, grille filets 2×2) ------------------ */
-export function Benefits() {
-  const items = [
-    { num: '01 · Tout-en-un', title: 'Agenda, élèves, paiements', desc: 'Plus de jongles entre Excel, Calendly et ton appli de paiement. Tout est au même endroit, propre et synchronisé.' },
-    { num: '02 · Gain de temps', title: 'Cinq minutes par jour', desc: 'Réservations, rappels, encaissements, relances : automatisés. Tu ouvres, tu jettes un œil, tu fermes. Ton temps reste à toi.' },
-    { num: '03 · Pour toi', title: 'Pensé pour les indépendant·e·s', desc: "Pas un CRM d'entreprise. Une app calme, douce, qui parle ton langage et s'adapte à ta pratique." },
-    { num: '04 · Ton image', title: 'Une expérience belle pour tes élèves', desc: 'Portail de réservation à ton nom, rappels élégants, vraies factures numérotées. Ton studio mérite une vitrine soignée.' },
-  ];
+/* ---- BANDE DE CONFIANCE -------------------------------------- */
+// Quatre faits vérifiables, aucun chiffre inventé : la seule « preuve
+// sociale » qu'on s'autorise tant que les témoignages nommés n'existent pas.
+export function TrustStrip() {
   return (
-    <section className="zen">
-      <ZenLayer blobs={[['b3', { top: '6%', left: '-8%' }], ['b2', { bottom: '-18%', right: '-8%' }]]} />
-      <div className="container">
-        <Head eyebrow="Pourquoi IziSolo">Une journée plus légère,<br /><span className="accent">un studio plus serein.</span></Head>
-        <div className="bens">
-          {items.map((b, i) => (
-            <div key={i} className="ben reveal">
-              <div className="ben-num mono">{b.num}</div>
-              <h3 className="serif">{b.title}</h3>
-              <p>{b.desc}</p>
-            </div>
-          ))}
+    <section className="trust" aria-label="Ce qu'il faut savoir">
+      <div className="container trust-grid">
+        <div className="trust-item">
+          <Image src="/icons/maude-avatar.jpg" alt="Maude" width={200} height={200} className="trust-avatar" />
+          <span>Créée par <b>Maude</b>, prof de yoga</span>
+        </div>
+        <div className="trust-item">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 2L3 6v6c0 5 3.8 8.6 9 10 5.2-1.4 9-5 9-10V6l-9-4z" /></svg>
+          <span>Conçue et hébergée en France</span>
+        </div>
+        <div className="trust-item">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2" /><path d="M3 10h18" /></svg>
+          <span>30 jours d&apos;essai, sans carte bancaire</span>
+        </div>
+        <div className="trust-item">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5" /></svg>
+          <span>Sans engagement, résiliable en un clic</span>
         </div>
       </div>
     </section>
   );
 }
 
-/* ---- FONCTIONNALITÉS (4 rangées alternées) ------------------- */
+/* ---- FONCTIONNALITÉS (4 rangées) ------------------------------ */
 function FeatRow({ k, title, desc, bullets, media, flip }) {
   return (
     <div className={`feat reveal ${flip ? 'flip' : ''}`}>
       <div className="feat-copy">
-        <span className="k mono">{k}</span>
+        <span className="eyebrow">{k}</span>
         <h3 className="serif">{title}</h3>
         <p>{desc}</p>
         <ul>
@@ -208,24 +201,23 @@ function FeatRow({ k, title, desc, bullets, media, flip }) {
 
 export function Features() {
   return (
-    <section id="fonctionnalites" className="rule-top">
+    <section id="fonctionnalites" className="features-v3">
       <div className="container">
-        <Head eyebrow="Fonctionnalités">Tout ce qu&apos;il te faut.<br /><span className="accent">Rien de plus.</span></Head>
+        <Head eyebrow="Fonctionnalités">Tout ce qu&apos;il te faut. <span className="accent">Rien de plus.</span></Head>
 
         <FeatRow
           k="Agenda"
           title="Ton agenda tourne tout seul"
-          desc="Cours à l'unité, séries hebdo ou mensuelles, exceptions, vacances : tu configures une fois, l'app déroule. Une série qui se termine ? Tu la prolonges en 2 clics, avec aperçu des séances créées."
+          desc="Cours à l'unité, séries hebdo ou mensuelles, exceptions, vacances : tu configures une fois, l'app déroule. Une série qui se termine se prolonge en deux clics."
           bullets={[
-            'Récurrences flexibles : hebdo, mensuel, exceptions, vacances',
             'Plusieurs lieux, aucun supplément',
             'Rappel automatique la veille de chaque séance',
+            'Planning intégrable sur ton propre site',
           ]}
           media={(
-            <>
-              <div className="feat-shot"><Image src={SCREENS.agenda.src} alt={SCREENS.agenda.alt} width={1280} height={800} sizes="(max-width: 760px) 90vw, 440px" /></div>
-              <span className="badge">↻ synchro temps réel</span>
-            </>
+            <div className="feat-shot">
+              <Image src={VISUEL.agenda.src} alt={VISUEL.agenda.alt} width={VISUEL.agenda.width} height={VISUEL.agenda.height} sizes="(max-width: 760px) 92vw, 700px" />
+            </div>
           )}
         />
 
@@ -233,43 +225,32 @@ export function Features() {
           flip
           k="Réservation"
           title="Tes élèves réservent sans toi"
-          desc="Un portail de réservation à ton nom, installable comme une appli sur leur téléphone. Réservation d'une séance ou de toute une série, confirmation par email, et si c'est complet, liste d'attente automatique."
+          desc="Un portail à ton nom, installable comme une appli sur leur téléphone. Réservation d'une séance ou d'une série, confirmation par email, liste d'attente automatique quand c'est complet."
           bullets={[
-            "Cours d'essai : validation automatique ou à la main",
-            'Visibilité fine par cours : public, inscrits, abonnés, fidèles ou sur invitation',
-            "Place libérée : la première en attente est prévenue",
+            "Cours d'essai, validation automatique ou à la main",
+            'Visibilité par cours : public, inscrits, abonnés, sur invitation',
+            'Place libérée : la première en attente est prévenue',
           ]}
           media={(
-            <>
-              <div className="feat-shot"><Image src={SCREENS.accueil.src} alt={SCREENS.accueil.alt} width={1280} height={800} sizes="(max-width: 760px) 90vw, 440px" /></div>
-              <span className="badge">Léa s&apos;est inscrite · +1</span>
-            </>
+            <div className="feat-panneau">
+              <Phone visuel={VISUEL.portail} coupe sizes="(max-width: 760px) 240px, 300px" />
+            </div>
           )}
         />
 
         <FeatRow
-          k="Revenus & paiements"
+          k="Revenus"
           title="L'argent rentre, et tu vois tout"
-          desc="Carnets, abonnements, séances à l'unité, cours mixtes. Payé maintenant, à régler plus tard ou en plusieurs fois : l'app suit chaque centime. Paiement CB en ligne, y compris à la séance."
+          desc="Carnets, abonnements, séances à l'unité. Payé maintenant, à régler plus tard ou en plusieurs fois : l'app suit chaque centime, et te mâche ta déclaration URSSAF."
           bullets={[
-            '« À percevoir » : tout ce qu\'on te doit, encaissable en 1 clic',
-            'Vraies factures numérotées, téléchargées par tes élèves (ton SIRET suffit)',
-            'Export comptable filtrable par période, mode et offre',
+            '« À percevoir » : tout ce qu\'on te doit, encaissable en un clic',
+            'Vraies factures numérotées, téléchargées par tes élèves',
+            'Paiement CB en ligne sur ton propre Stripe, y compris à la séance',
           ]}
           media={(
-            <>
-              {/* Réel produit auto-hébergé (compressé ~3 Mo, muet, sous-titres
-                  incrustés) — remplace la capture statique. Le master vit dans
-                  ressources/ (gitignoré) ; workflow : cf. ReelPhone.js. */}
-              <div className="feat-shot feat-shot-reel">
-                <ReelPhone
-                  src="/videos/reel-paiement-plusieurs-fois.mp4"
-                  poster="/videos/reel-paiement-plusieurs-fois-poster.jpg"
-                  titre="Démo en 35 secondes : vendre un carnet payé en plusieurs fois et suivre chaque versement"
-                />
-              </div>
-              <span className="badge">En 3 fois, sans y penser</span>
-            </>
+            <div className="feat-shot">
+              <Image src={VISUEL.revenus.src} alt={VISUEL.revenus.alt} width={VISUEL.revenus.width} height={VISUEL.revenus.height} sizes="(max-width: 760px) 92vw, 700px" />
+            </div>
           )}
         />
 
@@ -277,15 +258,15 @@ export function Features() {
           flip
           k="Communication"
           title="Ta communication, sans y passer tes soirées"
-          desc="Messagerie intégrée : conversations privées, canaux par cours, annonces groupées. Tes élèves reçoivent un email dès que tu écris, avec ta vraie adresse en réponse. Annulation d'une séance ? Chaque élève est prévenue, et son crédit restitué."
+          desc="Messagerie intégrée, annonces groupées, canaux par cours. Tes élèves reçoivent un email dès que tu écris, avec ta vraie adresse en réponse. Une séance annulée ? Chaque élève est prévenue, et son crédit restitué."
           bullets={[
-            'Sondages planning : les créneaux gagnants deviennent des cours en 2 clics',
-            'Relances impayés et rappels automatiques',
-            'Cours en ligne : le lien visio n\'est servi qu\'aux élèves à jour',
+            "Relances d'impayés et rappels automatiques",
+            'Sondage planning : tes élèves votent, tu crées les cours en deux clics',
+            "Cours en visio : le lien n'est servi qu'aux élèves à jour",
           ]}
           media={(
-            <div className="feat-photo blob-b">
-              <Image src="/icons/photo-mala.jpg" alt="Détail mala, posture de méditation" width={3648} height={2432} sizes="(max-width: 760px) 90vw, 560px" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            <div className="feat-panneau">
+              <Phone visuel={VISUEL.messagerie} coupe sizes="(max-width: 760px) 240px, 300px" />
             </div>
           )}
         />
@@ -294,154 +275,90 @@ export function Features() {
   );
 }
 
-/* ---- PETITES CHOSES (grille 3×2) ----------------------------- */
-export function MoreFeatures() {
-  const items = [
-    { k: 'Pointage', title: 'Le pointage en 1 clic', desc: 'Tu pointes depuis ton téléphone à la fin du cours, les carnets se décomptent tout seuls. Les essais et séances offertes ne sont jamais décomptés. Jamais.' },
-    { k: 'À traiter', title: 'Les galères gérées pour toi', desc: 'No-shows, annulations tardives, retards de paiement : tout arrive au même endroit, réglé en 2 clics, annulable pendant 7 jours.' },
-    { k: 'Automations', title: 'Des règles SI/ALORS', desc: "Règles d'annulation à ta façon : délai, sanction, message. L'app applique, toi tu enseignes. Relances, alertes et notifications en pilote automatique." },
-    { k: 'Base élèves', title: 'Propre et vivante', desc: "Import CSV depuis n'importe où, accents compris. Tu photographies une fiche papier, l'IA la transforme en fiche prête à enregistrer. Doublons fusionnés en 1 clic." },
-    { k: 'Vitrine', title: 'QR code prêt à imprimer', desc: 'Carte de visite, flyer, affiche A4 générée pour toi. Ton planning intégrable sur ton propre site, à tes couleurs, en liste ou en grille semaine.' },
-    { k: 'Accompagnement', title: "Tu n'es jamais seule", desc: "Guide intégré avec 15 pas-à-pas, un « ? » contextuel sur chaque page, et une ligne directe avec l'équipe IziSolo dans ta messagerie." },
+/* ---- POUR QUI (une ligne de liens vers les pages métier) ------ */
+// Les six personas gardent leur entrée de nav et leurs liens internes (SEO),
+// sans les photos ni les cartes : une ligne suffit à dire « c'est pour toi ».
+export function ForWhom() {
+  const personas = [
+    { name: 'Profs de yoga', href: '/profs-de-yoga' },
+    { name: 'Pilates', href: '/profs-de-pilates' },
+    { name: 'Méditation', href: '/profs-de-meditation' },
+    { name: 'Danse et mouvement', href: '/profs-de-danse' },
+    { name: 'Coachs bien-être', href: '/coachs-bien-etre' },
+    { name: 'Thérapeutes', href: '/therapeutes' },
   ];
   return (
-    <section className="rule-top zen">
-      <ZenLayer blobs={[['b2', { top: '-10%', right: '-8%' }], ['b3', { bottom: '-14%', left: '-6%' }]]} />
-      <div className="container">
-        <Head eyebrow="Plus encore">Et tout un tas de petites choses<br /><span className="accent">qui font la différence.</span></Head>
-        <div className="mini reveal r-stagger">
-          {items.map((it, i) => (
-            <article key={i} className="mini-card">
-              <div className="k mono">{it.k}</div>
-              <h3 className="serif">{it.title}</h3>
-              <p>{it.desc}</p>
-            </article>
-          ))}
+    <section id="pour-qui" className="pourqui">
+      <div className="container pourqui-grid reveal">
+        <div>
+          <span className="eyebrow">Pour qui</span>
+          <h2 className="serif">Si tu travailles seul·e, <span className="accent">ou en petit collectif.</span></h2>
         </div>
+        <ul className="pourqui-liste">
+          {personas.map(p => (
+            <li key={p.href}><Link href={p.href}>{p.name}</Link></li>
+          ))}
+        </ul>
       </div>
     </section>
   );
 }
 
-/* ---- POUR QUI (6 personas compacts, photos blob) ------------- */
-export function ForWhom() {
-  const personas = [
-    { idx: '01', name: 'Profs de yoga', desc: 'Hatha, vinyasa, yin : cours, ateliers, retraites en pleine nature.', photo: '/icons/persona-yoga.jpg', alt: 'Professeure de yoga en posture de méditation au bord de la mer', blob: 'blob-a' },
-    { idx: '02', name: 'Pilates', desc: 'Reformer ou tapis, suivi postural et abonnements.', photo: '/icons/persona-pilates.jpg', alt: 'Professeure de pilates en exercice sur reformer', blob: 'blob-b' },
-    { idx: '03', name: 'Méditation', desc: 'Sessions guidées, retraites, ateliers de pleine conscience.', photo: '/icons/persona-meditation.jpg', alt: 'Groupe en posture de méditation lotus', blob: 'blob-a' },
-    { idx: '04', name: 'Danse & mouvement', desc: "Cours hebdo, stages, présences, listes d'attente.", photo: '/icons/persona-danse.jpg', alt: 'Chorégraphe dirigeant des danseuses contemporaines', blob: 'blob-b' },
-    { idx: '05', name: 'Coachs bien-être', desc: 'Suivi 1-à-1, visio, rappels personnalisés.', photo: '/icons/persona-coach.jpg', alt: "Coach en méditation lotus à côté d'un ordinateur portable", blob: 'blob-a' },
-    { idx: '06', name: 'Thérapeutes', desc: 'Rendez-vous, anamnèse, factures conformes, suivi long terme.', photo: '/icons/persona-therapeutes.jpg', alt: 'Thérapeute en consultation dans son cabinet', blob: 'blob-b' },
-  ];
+/* ---- ON MONTE TON STUDIO (concierge, v96) ---------------------- */
+// Le guichet public de la création concierge. Depuis le 2026-09-06 c'est LE
+// chemin mis en avant : un essai qui commence seul finit vide (quatre essais
+// sur onze morts à zéro cours), un studio monté par Maude se garde.
+export function Concierge() {
   return (
-    <section id="pour-qui" className="rule-top">
-      <div className="container">
-        <Head eyebrow="Pour qui">Si tu travailles seul·e<br /><span className="accent">ou en petit collectif…</span></Head>
-        <div className="personas reveal r-stagger">
-          {personas.map(p => (
-            <div key={p.idx} className="persona">
-              <div className={`pic ${p.blob}`}>
-                <Image src={p.photo} alt={p.alt} fill sizes="72px" style={{ objectFit: 'cover' }} />
-              </div>
-              <div>
-                <div className="idx mono">{p.idx}</div>
-                <h3 className="serif">{p.name}</h3>
-                <p>{p.desc}</p>
-              </div>
-            </div>
-          ))}
+    <section className="conc" id="concierge">
+      <div className="container conc-grid">
+        <div className="conc-copy">
+          <span className="eyebrow">Mise en route</span>
+          <h2 className="serif">On monte ton studio,<br /><span className="accent">tu ouvres les yeux dessus.</span></h2>
+          <p className="conc-lead">
+            Le plus dur, ce n&apos;est pas l&apos;outil, c&apos;est de trouver la soirée pour tout saisir.
+            Alors on le fait à ta place. Tu nous donnes ton planning et tes tarifs, on te livre ton
+            studio prêt à l&apos;emploi sous 48 h.
+          </p>
+          <ul className="conc-liste">
+            <li><span className="ck"><CheckIcon /></span> Tes cours et tes récurrences, déjà créés</li>
+            <li><span className="ck"><CheckIcon /></span> Tes carnets, tes abonnements, ton portail élève</li>
+            <li><span className="ck"><CheckIcon /></span> Tes élèves importées depuis un autre outil, un tableur ou un cahier</li>
+          </ul>
+          <div className="conc-ctas">
+            <Link href="/creer-mon-studio" className="btn btn-primary btn-lg">On me monte mon studio</Link>
+            <span className="conc-note">Gratuit, sans engagement. C&apos;est Maude qui s&apos;en occupe.</span>
+          </div>
         </div>
+        <ol className="conc-carte">
+          <li><span className="conc-num serif">1</span><div><b>Tu remplis un formulaire</b><span>Cinq minutes, depuis ton téléphone.</span></div></li>
+          <li><span className="conc-num serif">2</span><div><b>Maude construit ton studio</b><span>Elle te pose une ou deux questions, puis elle saisit tout.</span></div></li>
+          <li><span className="conc-num serif">3</span><div><b>Tu reçois ton accès</b><span>Tout est en place. Tu vérifies, tu partages le lien à tes élèves.</span></div></li>
+        </ol>
       </div>
     </section>
   );
 }
 
 /* ---- FONDATRICE ---------------------------------------------- */
-// « On crée ton studio » (v96, 2026-08-23) — le guichet public de la
-// création concierge que l'équipe fait déjà en visio depuis le 21/08. Ce qui a
-// coûté une bêta (Kim, partie sur un concurrent pour la rentrée), c'est le
-// temps de mise en route, pas le produit.
-export function Concierge() {
-  return (
-    <section className="section rule-top" id="concierge">
-      <div className="container conc-grid">
-        <div>
-          <span className="eyebrow mono">Mise en route</span>
-          <h2 className="conc-h2">On monte ton studio,<br /><span className="accent">tu ouvres les yeux dessus</span></h2>
-          <p className="conc-lead">
-            Le plus dur, ce n&apos;est pas l&apos;outil : c&apos;est de trouver la soirée pour tout
-            saisir. Alors on le fait à ta place. Tu nous donnes ton planning et tes tarifs,
-            on te livre ton studio prêt à l&apos;emploi sous 48 h ouvrées.
-          </p>
-          <ul className="conc-liste">
-            <li>Tes cours et tes récurrences, déjà créés</li>
-            <li>Tes carnets et tes abonnements, déjà paramétrés</li>
-            <li>Tes lieux, ton portail élève, ta page publique</li>
-            <li>Tes élèves si tu nous envoies ta liste, sinon tu les ajoutes quand tu veux</li>
-          </ul>
-          <Link href="/creer-mon-studio" className="btn btn-primary btn-lg">On me monte mon studio →</Link>
-          <p className="conc-note">Gratuit, sans engagement. C&apos;est Maude qui s&apos;en occupe.</p>
-        </div>
-        <div className="conc-carte">
-          <div className="conc-etape"><b>1.</b> Tu remplis un formulaire, cinq minutes</div>
-          <div className="conc-etape"><b>2.</b> On te répond et on construit</div>
-          <div className="conc-etape"><b>3.</b> Tu reçois ton accès, tout est en place</div>
-        </div>
-      </div>
-      <style jsx>{`
-        .conc-grid { display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 48px; align-items: center; }
-        .conc-h2 {
-          font-family: var(--font-display), serif; font-weight: 400;
-          font-size: clamp(1.9rem, 3.4vw, 2.7rem); line-height: 1.1;
-          margin: 12px 0 16px; color: var(--c-ink);
-        }
-        .conc-h2 .accent { color: var(--c-accent-deep); }
-        .conc-lead { color: var(--c-ink-soft); line-height: 1.6; margin: 0 0 18px; }
-        .conc-liste { list-style: none; padding: 0; margin: 0 0 26px; }
-        .conc-liste li {
-          position: relative; padding-left: 24px; margin-bottom: 9px;
-          color: var(--c-ink); font-size: 0.95rem;
-        }
-        .conc-liste li::before {
-          content: '✓'; position: absolute; left: 0; color: var(--c-accent-deep); font-weight: 700;
-        }
-        .conc-note { font-size: 0.85rem; color: var(--c-ink-soft); margin: 12px 0 0; }
-        .conc-carte {
-          display: flex; flex-direction: column; gap: 12px;
-          background: var(--c-bg-sage, #eef1ea); border-radius: 20px; padding: 28px;
-        }
-        .conc-etape { font-size: 0.95rem; color: var(--c-ink); line-height: 1.5; }
-        .conc-etape b { color: var(--c-accent-deep); margin-right: 6px; }
-        @media (max-width: 860px) {
-          .conc-grid { grid-template-columns: 1fr; gap: 28px; }
-        }
-      `}</style>
-    </section>
-  );
-}
-
+// Vraie photo de Maude dans son studio (2026-09-06, choisie parmi les treize
+// envoyées : mains jointes devant le panneau Maude Yoga, le calme de la pose
+// dit la citation). Le témoignage de Manon prendra place à côté quand elle
+// aura donné son accord, jamais avant.
 export function Founder() {
   return (
-    <section className="rule-top zen">
-      <ZenLayer blobs={[['b1', { top: '-8%', left: '-8%' }], ['b3', { bottom: '-14%', right: '-6%' }]]} />
+    <section className="founder-v3">
       <div className="container founder reveal">
-        {/* Photo placeholder : à remplacer par une vraie photo de Maude */}
-        <div className="founder-photo blob-a">
-          <Image src="/icons/maude-foret.jpg" alt="Maude, fondatrice d'IziSolo, assise en forêt" width={2592} height={3240} sizes="(max-width: 800px) 320px, 420px" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        <div className="founder-photo">
+          <Image src="/icons/maude-studio.jpg" alt="Maude, fondatrice d'IziSolo, mains jointes dans son studio de yoga" width={960} height={1200} sizes="(max-width: 800px) 240px, 300px" />
         </div>
         <div className="founder-copy">
-          <span className="eyebrow-line">Qui est derrière IziSolo</span>
+          <span className="eyebrow">Qui est derrière IziSolo</span>
           <blockquote className="serif">
             « J&apos;ai créé IziSolo parce que je suis prof de yoga, et que je passais mes soirées sur
             Excel au lieu de préparer mes cours. <span className="accent">Je voulais un outil calme, qui me ressemble.</span> »
           </blockquote>
-          <div className="who">
-            <div>
-              <div className="sig serif">Maude</div>
-              <div className="role mono">Fondatrice · Prof de yoga</div>
-            </div>
-          </div>
-          <div className="fr">☼ Conçue, développée et hébergée en France</div>
+          <div className="who"><b>Maude</b> · fondatrice, prof de yoga à Bordeaux</div>
         </div>
       </div>
     </section>
@@ -449,63 +366,52 @@ export function Founder() {
 }
 
 /* ---- TARIFS — 2 plans (grille définitive Colin 2026-07-27 :
-   Essentiel 15 € / Complet 29 € TTC). Items alignés sur la matrice
-   CAPACITES (constantes.js) : tout ce qui touche l'élève = Complet,
-   tout ce que la prof gère seule = Essentiel. Factures, QR code et
-   planning intégrable = tous les plans, donc listés en Essentiel.
-   Offre de lancement LANCEMENT50 (−50 % pendant 3 mois). */
+   Essentiel 15 € / Complet 29 € TTC). Cinq puces par plan, alignées
+   sur la matrice CAPACITES (constantes.js) : tout ce qui touche l'élève
+   = Complet, tout ce que la prof gère seule = Essentiel. Le détail
+   complet vit sur la page d'inscription et dans le guide. */
 export function Pricing() {
   const plans = [
     {
       name: 'Essentiel',
       price: '15',
-      desc: 'Ton cahier, en mieux. Tout ce que tu gères seule, sans aucune limite de volume.',
+      desc: 'Ton cahier, en mieux. Tout ce que tu gères toi-même, au même endroit.',
       features: [
-        'Élèves illimités · fiches complètes · fusion des doublons en 1 clic',
-        "Import/export CSV de ta base : tes données t'appartiennent",
-        'Agenda, récurrences, séries prolongeables, lieux illimités',
-        'Pointage 1-clic + carnets et abos gérés à la main',
-        'Mini-compta : encaissements, « à percevoir », export comptable',
-        'Vraies factures numérotées (ton SIRET suffit pour activer)',
-        'Cas à traiter : no-show, paiement en attente, tout au même endroit',
-        'Ta vitrine : planning public, appli installable, QR code à imprimer, planning intégrable sur ton site',
+        'Élèves illimités, agenda, récurrences, lieux',
+        'Pointage en un clic, carnets et abonnements',
+        'Encaissements, vraies factures numérotées, déclaration URSSAF',
+        'Planning public, QR code, planning intégrable sur ton site',
+        'Import et export de ta base élèves',
       ],
       featured: false,
     },
     {
       name: 'Complet',
       price: '29',
-      desc: 'Tes élèves entrent dans la boucle : ils réservent, annulent, paient et te parlent en ligne.',
+      desc: 'Tes élèves font le travail à ta place : elles réservent, elles paient, elles reçoivent.',
       features: [
-        'Tout du plan Essentiel',
-        "Réservation en ligne + annulation élève + règles d'annulation à ta façon",
-        'Espace élève connecté : compte, historique, rappel la veille de chaque séance',
-        "Cours d'essai · liste d'attente automatique · cours privés sur invitation",
-        "Documents d'inscription (questionnaire santé, CGV) proposés à l'inscription",
-        'Messagerie · annonces groupées · sondages planning',
-        "Paiement en ligne sur ton propre Stripe : carnets ET séance à l'unité",
-        'Cours en visio : ton lien Zoom ou Meet servi aux élèves à jour, déverrouillé dès le paiement',
-        'Import de fiche élève par photo (IA)',
+        'Tout Essentiel',
+        "Réservation en ligne, espace élève, liste d'attente",
+        'Paiement CB en ligne sur ton propre Stripe',
+        'Messagerie, annonces groupées, sondages planning',
+        'Cours en visio : ton lien Zoom ou Meet servi aux élèves à jour',
       ],
       featured: true,
     },
   ];
 
   return (
-    <section id="tarifs" className="rule-top pricing">
+    <section id="tarifs" className="pricing-v3">
       <div className="container">
-        <Head eyebrow="Tarifs" sub="30 jours d'essai gratuit · sans carte bancaire · annulable en 1 clic.">
-          Simple,<br /><span className="accent">comme tout le reste.</span>
+        <Head eyebrow="Tarifs" sub="30 jours d'essai gratuit, sans carte bancaire, résiliable en un clic. Offre de lancement : moitié prix pendant 3 mois avec le code LANCEMENT50.">
+          Simple, <span className="accent">comme tout le reste.</span>
         </Head>
-        <div className="promo reveal">
-          Offre de lancement : <b>−50 % pendant tes 3 premiers mois</b> avec le code <span className="code mono">LANCEMENT50</span>
-        </div>
         <div className="prices reveal r-stagger">
           {plans.map((p, i) => (
             <div key={i} className={`price ${p.featured ? 'featured' : ''}`}>
               {p.featured && <span className="tag">Le plus choisi</span>}
               <div className="nm serif">{p.name}</div>
-              <div className="amt"><b className="serif">{p.price} €</b><span>/mois</span></div>
+              <div className="amt"><b className="serif">{p.price} €</b><span>/ mois</span></div>
               <div className="ds">{p.desc}</div>
               <ul>
                 {p.features.map(f => (
@@ -513,15 +419,14 @@ export function Pricing() {
                 ))}
               </ul>
               <Link href="/register" className={`btn ${p.featured ? 'btn-primary' : 'btn-ghost'}`}>
-                Essayer 30 jours · sans CB
+                Essayer 30 jours
               </Link>
             </div>
           ))}
         </div>
         <p className="stripe-note">
           Paiements en ligne (Complet) : <strong>tu encaisses sur ton propre compte Stripe</strong>.
-          Frais transparents : 1 % IziSolo (sur ta facture mensuelle, jamais prélevé sur tes paiements)
-          + frais Stripe standard (1,5 % + 0,25 € par transaction).
+          1 % IziSolo sur ta facture mensuelle, jamais prélevé sur tes paiements, plus les frais Stripe standard (1,5 % + 0,25 € par transaction).
         </p>
       </div>
     </section>
@@ -529,18 +434,35 @@ export function Pricing() {
 }
 
 /* ---- FAQ ---------------------------------------------------- */
+// Les 12 questions de content/faq.js restent toutes dans le DOM (Schema.org
+// FAQPage de app/page.js) ; l'écran en montre six, les autres se déplient.
+const FAQ_VISIBLES = 6;
 export function FAQ() {
-  // Items extraits dans content/faq.js (source unique partagée avec le
-  // Schema.org FAQPage de app/page.js → rich snippets Google).
   const items = FAQ_ITEMS;
   const [open, setOpen] = useState(0);
+  const [toutes, setToutes] = useState(false);
   return (
-    <section id="faq" className="rule-top faq">
-      <div className="container">
-        <Head eyebrow="FAQ">Questions<br /><span className="accent">fréquentes.</span></Head>
+    <section id="faq" className="faq-v3">
+      <div className="container faq-grid">
+        <div className="faq-head reveal">
+          <span className="eyebrow">Questions fréquentes</span>
+          <h2 className="serif">Ce qu&apos;on nous demande le plus.</h2>
+          {!toutes && items.length > FAQ_VISIBLES && (
+            <button type="button" className="faq-more" onClick={() => setToutes(true)}>
+              Voir les {items.length - FAQ_VISIBLES} autres questions
+            </button>
+          )}
+        </div>
         <div className="faq-list reveal">
           {items.map((it, i) => (
-            <button key={i} type="button" className={`faq-item ${open === i ? 'open' : ''}`} aria-expanded={open === i} onClick={() => setOpen(open === i ? -1 : i)}>
+            <button
+              key={i}
+              type="button"
+              className={`faq-item ${open === i ? 'open' : ''}`}
+              hidden={!toutes && i >= FAQ_VISIBLES}
+              aria-expanded={open === i}
+              onClick={() => setOpen(open === i ? -1 : i)}
+            >
               <div className="faq-q">
                 <span className="q serif">{it.q}</span>
                 <span className="pm" aria-hidden="true">+</span>
@@ -559,25 +481,23 @@ export function FAQ() {
 /* ---- CTA FINAL ----------------------------------------------- */
 export function FinalCta() {
   return (
-    <section id="cta" className="final zen">
-      <ZenLayer blobs={[
-        ['b1', { top: '-20%', left: '50%', transform: 'translateX(-50%)' }],
-        ['b2', { bottom: '-30%', right: '-6%' }],
-        ['b3', { bottom: '-10%', left: '-6%' }],
-      ]} />
+    <section id="cta" className="final-v3">
       <div className="container">
-        <span className="eyebrow-line">Prêt·e&nbsp;?</span>
-        <h2 className="serif">
-          Lance ton studio<br />
-          <span className="accent">en 5 minutes.<AccentUnderline /></span>
-        </h2>
-        <p>
-          30 jours d&apos;essai gratuit · sans carte bancaire · annulable en 1 clic.
-          On t&apos;accompagne par message si tu cales, réponse sous 24 h.
-        </p>
-        <div className="ctas">
-          <Link href="/register" className="btn btn-primary btn-lg">Créer mon studio →</Link>
-          <a href="mailto:bonjour@izisolo.fr" className="btn btn-ghost btn-lg">Parler à l&apos;équipe</a>
+        <div className="final-carte">
+          <div className="final-copy">
+            <h2 className="serif">
+              Ta rentrée, montée en 48 h.<br />
+              <span className="accent">Par une prof.<AccentUnderline /></span>
+            </h2>
+            <p>
+              Envoie-nous ton planning et ta liste d&apos;élèves. Demain, ton studio tourne.
+              Ou pars seule : 30 jours d&apos;essai, sans carte.
+            </p>
+          </div>
+          <div className="final-ctas">
+            <Link href="/creer-mon-studio" className="btn btn-primary btn-lg">On me monte mon studio</Link>
+            <Link href="/register" className="btn btn-ghost btn-lg btn-sur-sombre">Essayer 30 jours, sans CB</Link>
+          </div>
         </div>
       </div>
     </section>
@@ -592,7 +512,6 @@ export function Footer() {
         <div className="footer-brand">
           <IziSoloLogo size={28} />
           <p>L&apos;outil de gestion calme et beau pour les indépendant·e·s du bien-être. Créé par Maude, prof de yoga, en France.</p>
-          <WaveOrnament width={140} />
         </div>
         <FooterCol
           title="Produit"
@@ -600,14 +519,15 @@ export function Footer() {
             { label: 'Fonctionnalités', href: '#fonctionnalites' },
             { label: 'Tarifs', href: '#tarifs' },
             { label: 'Pour qui', href: '#pour-qui' },
-            { label: 'FAQ', href: '#faq' },
+            { label: 'Questions fréquentes', href: '#faq' },
+            { label: 'On monte ton studio', href: '/creer-mon-studio' },
           ]}
         />
         <FooterCol
           title="Ressources"
           links={[
-            { label: 'Outils gratuits', href: '/outils' },
             { label: 'Le journal', href: '/blog' },
+            { label: 'Outils gratuits', href: '/outils' },
             { label: 'Calculateur de frais', href: '/calculateur' },
             { label: 'Profs de yoga', href: '/profs-de-yoga' },
             { label: 'Profs de yoga enfants', href: '/profs-de-yoga-enfants' },
@@ -620,16 +540,11 @@ export function Footer() {
           ]}
         />
         <FooterCol
-          title="Compte"
+          title="Compte et légal"
           links={[
             { label: 'Se connecter', href: '/login' },
             { label: 'Créer un studio', href: '/register' },
             { label: 'Mot de passe oublié', href: '/mot-de-passe-oublie' },
-          ]}
-        />
-        <FooterCol
-          title="Légal"
-          links={[
             { label: 'Mentions légales', href: '/legal/mentions' },
             { label: 'CGU', href: '/legal/cgu' },
             { label: 'CGV', href: '/legal/cgv' },
@@ -638,7 +553,7 @@ export function Footer() {
         />
       </div>
       <div className="footer-bottom container">
-        <span>© 2026 IziSolo · Mélutek · fait avec ☼ en France</span>
+        <span>© 2026 IziSolo · Mélutek · fait en France</span>
         <span className="mono">bonjour@izisolo.fr</span>
       </div>
     </footer>

@@ -122,11 +122,12 @@ try {
   await page.goto(`${BASE}/`, { waitUntil: 'networkidle' });
   await attendre(800);
   // 2026-08-30 : le guichet est passé de la petite ligne grise au SECOND
-  // BOUTON du hero, qui menait jusque-là à /login (une porte pour les clients,
-  // à l'endroit le plus cher de la page). L'invariant de v96 reste le même et
-  // c'est lui qu'on garde : le hero mène au guichet, SANS deux CTA de même
-  // poids. On le vérifie sur le fond CALCULÉ des deux boutons et non sur leur
-  // classe, parce que c'est le rendu qui décide de la hiérarchie perçue.
+  // bouton du hero. 2026-09-06 (landing v3, plan de lancement rentrée) : il
+  // devient le PREMIER, plein ; l'essai passe en fantôme. Quatre essais sur
+  // onze mouraient à zéro cours : un studio monté par Maude se garde, un essai
+  // commencé seul se perd. L'invariant de v96 tient toujours : le hero mène au
+  // guichet, SANS deux CTA de même poids. On le vérifie sur le fond CALCULÉ des
+  // deux boutons et non sur leur classe, parce que c'est le rendu qui décide.
   const lienGuichet = page.locator('.hero-v2-ctas a[href="/creer-mon-studio"]');
   assert(await lienGuichet.count() === 1, 'le hero mene au guichet concierge');
   const poids = await page.evaluate(() => {
@@ -136,14 +137,14 @@ try {
     return {
       nb: liens.length,
       premierEstPlein: !transparent(fond(liens[0])),
-      guichetEstFantome: transparent(fond(liens.find((a) => a.getAttribute('href') === '/creer-mon-studio'))),
+      essaiEstFantome: transparent(fond(liens.find((a) => a.getAttribute('href') === '/register'))),
       premierHref: liens[0]?.getAttribute('href'),
     };
   });
-  assert(poids.nb === 2 && poids.premierHref === '/register',
-    'deux CTA, l\'essai en premier');
-  assert(poids.premierEstPlein && poids.guichetEstFantome,
-    'hierarchie preservee : essai plein, guichet fantome (pas deux CTA de meme poids)');
+  assert(poids.nb === 2 && poids.premierHref === '/creer-mon-studio',
+    'deux CTA, le guichet en premier');
+  assert(poids.premierEstPlein && poids.essaiEstFantome,
+    'hierarchie preservee : guichet plein, essai fantome (pas deux CTA de meme poids)');
   const section = page.locator('#concierge');
   await section.scrollIntoViewIfNeeded();
   await attendre(500);

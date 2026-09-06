@@ -131,9 +131,9 @@ Usages : section Fondatrice de la landing (Manon à côté de Maude), email 2 de
 
 Colin :
 - [ ] Brancher la caisse Stripe (script `setup-stripe-saas.mjs` avec les trois prix, LANCEMENT50, webhook, portail) et tester un vrai checkout de bout en bout.
-- [ ] Remplacer la photo Pexels de Maude sur la landing par une vraie photo.
-- [ ] Faire de `/creer-mon-studio` le CTA principal du hero pour la durée de l'offre (le bouton « Essai gratuit » passe en second).
-- [ ] Bandeau « Offre Rentrée 2026 » sur la landing avec les quatre points de §3.
+- [x] Remplacer la photo Pexels de Maude sur la landing par une vraie photo (fait le 6 septembre : mains jointes dans son studio, avatar à lunettes dans la bande de confiance).
+- [x] Faire de `/creer-mon-studio` le CTA principal du hero pour la durée de l'offre (le bouton « Essai gratuit » passe en second) : landing v3 du 6 septembre..
+- [ ] Bandeau « Offre Rentrée 2026 » sur la landing avec les quatre points de §3. En attente : la migration en 48 h et le parrainage ne sont pas construits, on n'affiche pas une offre qu'on ne tient pas encore. L'essai est passé à 30 jours le 6 septembre.
 - [ ] Domaine `izisolo.com` : DNS (SPF, DKIM, DMARC), boîte `maude@`, inscription Smartlead, warmup lancé le 8 septembre au plus tard.
 - [ ] Valider les 4000 adresses avec Bouncer, dédoublonner contre les comptes existants.
 - [ ] Parrainage v0 : colonne `parrain_slug`, lien dans l'email de bienvenue payant, routine admin.
