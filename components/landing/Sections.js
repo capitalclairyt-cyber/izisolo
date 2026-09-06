@@ -364,7 +364,7 @@ export function ForWhom() {
 export function Concierge() {
   return (
     <section className="section rule-top" id="concierge">
-      <div className="wrap conc-grid">
+      <div className="container conc-grid">
         <div>
           <span className="eyebrow mono">Mise en route</span>
           <h2 className="conc-h2">On monte ton studio,<br /><span className="accent">tu ouvres les yeux dessus</span></h2>
