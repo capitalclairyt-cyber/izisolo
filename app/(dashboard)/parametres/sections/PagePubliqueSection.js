@@ -4,7 +4,7 @@
 // Section "Page publique" — enrichit ce que voient les visiteurs sur /p/[slug]
 // Bio, photo, formations, horaires, FAQ, réseaux sociaux. Tous champs optionnels.
 // ⚠️ La page publique ENRICHIE est une feature Pro+ : pendant le trial, un
-// user en plan Solo a accès, mais à J14, s'il choisit Solo plutôt que Pro, ses
+// user en plan Solo a accès, mais à J30, s'il choisit Solo plutôt que Pro, ses
 // modifs (bio, FAQ, philosophie...) ne seront plus rendues sur le portail.
 // On l'avertit via un bandeau en haut de la section.
 // Extrait de parametres/page.js en B2d (découpe mécanique, zéro changement).
@@ -27,7 +27,7 @@ const QrPortailModal = dynamic(() => import('@/components/portail/QrPortailModal
 export default function PagePubliqueSection({ profile, setProfile, setDirty }) {
   const studioSlug = profile?.studio_slug;
   const trial = getTrialStatus(profile);
-  // Avertir si trial actif ET plan réel = solo (= ce qui sera effectif après J14)
+  // Avertir si trial actif ET plan réel = solo (= ce qui sera effectif après J30)
   const showTrialWarning = trial.active && (profile?.plan === 'solo' || !profile?.plan);
   const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://www.izisolo.fr';
   const publicUrl = studioSlug ? `${baseUrl}/p/${studioSlug}` : null;
@@ -208,7 +208,7 @@ export default function PagePubliqueSection({ profile, setProfile, setDirty }) {
           <AlertCircle size={16} />
           <div>
             <strong>Ces enrichissements sont une feature Pro.</strong> Tu y as
-            accès pendant ton essai 14 jours. Si tu choisis Solo à la fin,
+            accès pendant ton essai 30 jours. Si tu choisis Solo à la fin,
             les champs avancés (bio, philosophie, formations, FAQ, photos
             additionnelles) ne seront plus affichés sur ta page publique.
             Pour les conserver, passe en Pro.

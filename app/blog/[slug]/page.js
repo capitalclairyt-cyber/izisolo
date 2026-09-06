@@ -147,7 +147,7 @@ export default async function ArticlePage({ params }) {
                 </h3>
                 <p>
                   Agenda, élèves, paiements, portail public : tout-en-un.
-                  14 jours d'essai sans CB, dès 15 €/mois.
+                  30 jours d'essai sans CB, dès 15 €/mois.
                 </p>
                 <Link href="/" className="btn btn-primary btn-lg">Découvrir IziSolo →</Link>
               </div>

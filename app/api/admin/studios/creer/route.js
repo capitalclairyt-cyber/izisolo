@@ -16,7 +16,7 @@ export const dynamic = 'force-dynamic';
  * Chemin : createUser (email confirmé, metadata prenom → handle_new_user crée
  * le profil PROF, jamais role='eleve' ici) puis complétion du profil comme le
  * ferait l'onboarding (slug unique, métier, types de cours par défaut, portail
- * actif) → le compte atterrit directement sur le dashboard, trial 14 j
+ * actif) → le compte atterrit directement sur le dashboard, trial 30 j
  * démarré. Toujours avec l'accord de l'intéressée (elle est en visio).
  */
 export const POST = withRoute({ auth: 'admin' }, async ({ request, auth }) => {

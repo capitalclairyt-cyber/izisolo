@@ -155,7 +155,7 @@ export default function Calculateur() {
 
         <section className="alt-cta">
           <div className="container reveal">
-            <h2 className="serif">14 jours pour essayer,<br /><em>sans carte bancaire.</em></h2>
+            <h2 className="serif">30 jours pour essayer,<br /><em>sans carte bancaire.</em></h2>
             <p>Tu choisis ton plan après. Annulable en 1 clic, sans engagement.</p>
             <Link href="/register" className="btn btn-accent btn-lg squishy">
               Essayer gratuitement →

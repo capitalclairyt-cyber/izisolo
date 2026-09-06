@@ -10,7 +10,7 @@ export const runtime = 'nodejs';
 /**
  * Crée une Checkout Session Stripe pour que le pro souscrive à Solo / Pro / Studio.
  *
- * Trial 14 jours appliqué automatiquement (cf. TRIAL_DAYS dans constantes.js).
+ * Trial 30 jours appliqué automatiquement (cf. TRIAL_DAYS dans constantes.js).
  *
  * MENSUEL UNIQUEMENT pour l'instant (l'annuel sera réintroduit plus tard
  * avec -20%, mais on garde la signature `periode` pour ne pas casser l'API).
@@ -110,7 +110,7 @@ export const POST = withRoute({ auth: 'user' }, async ({ request, auth }) => {
 
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.izisolo.fr';
 
-  // AUCUN trial Stripe (décision Colin 2026-08-22) : les 14 jours sont déjà
+  // AUCUN trial Stripe (décision Colin 2026-08-22) : les 30 jours sont déjà
   // comptés par IziSolo, la prof paie le jour où elle décide de rester.
   //
   // Ce choix supprime un bug qui frappait au pire moment : l'ancien code posait

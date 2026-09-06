@@ -189,7 +189,7 @@ export const GET = withRoute({ auth: 'cron' }, async () => {
   // one-shot dans fix-desarchivage-fantome.sql.
 
   // ── Relance de fin d'essai SaaS (J-3 / J-1) ───────────────────────────────
-  // Email transactionnel au prof dont l'essai 14j se termine bientôt (conversion
+  // Email transactionnel au prof dont l'essai 30 j se termine bientôt (conversion
   // vers un plan payant). Flags trial_reminder_sent_j3/j1 (v33) = anti-doublon.
   // Pas de push (cron à 3h ≈ 5h Paris) : le canal email + la bannière in-app
   // suffisent. ⚠️ Sûr depuis v57 (plus d'élèves fantômes en faux trial).
@@ -240,7 +240,7 @@ export const GET = withRoute({ auth: 'cron' }, async () => {
               <h2 style="color:#b87333;margin:0 0 6px;">Ton essai touche à sa fin</h2>
               <p style="color:#555;margin:0 0 14px;">Bonjour ${prof.prenom || ''},</p>
               <p style="color:#555;margin:0 0 14px;">
-                Ton essai gratuit de 14 jours se termine ${jours <= 1 ? (finLe ? `le ${finLe}` : 'très bientôt') : `dans ${jours} jours`}.
+                Ton essai gratuit de 30 jours se termine ${jours <= 1 ? (finLe ? `le ${finLe}` : 'très bientôt') : `dans ${jours} jours`}.
                 Pour continuer à gérer ton studio sans interruption, choisis ton plan dès maintenant.
               </p>
               <div style="text-align:center;margin:24px 0;">

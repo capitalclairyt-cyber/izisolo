@@ -87,7 +87,7 @@ export default async function DashboardLayout({ children }) {
     }
   }
 
-  // Statut du trial 14j (calculé côté serveur). Sérialisable, on convertit
+  // Statut du trial 30 j (calculé côté serveur). Sérialisable, on convertit
   // les Date en string pour passer à un Client Component.
   const trialRaw = getTrialStatus(profile);
   const trial = {

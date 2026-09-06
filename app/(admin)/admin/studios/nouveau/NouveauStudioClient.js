@@ -84,7 +84,7 @@ export default function NouveauStudioClient({ initial = {} }) {
       <p style={{ maxWidth: 720, color: '#64748b', fontSize: '0.875rem', margin: '0 0 20px', lineHeight: 1.55 }}>
         Le geste de la visio : tu crées son studio, tu le paramètres devant elle
         avec le lien de connexion, et en fin d&apos;appel tu lui envoies le lien
-        d&apos;appropriation (elle choisit son mot de passe). Son essai de 14 jours
+        d&apos;appropriation (elle choisit son mot de passe). Son essai de 30 jours
         démarre à la création. À faire AVEC son accord, elle est en face.
       </p>
 

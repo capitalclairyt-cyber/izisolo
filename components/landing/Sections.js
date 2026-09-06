@@ -119,7 +119,7 @@ export function Hero() {
           gère les cas pénibles à ta place pour que tu reviennes à l&apos;essentiel : ta pratique, tes cours, tes élèves.
         </p>
         <div className="hero-v2-ctas">
-          <Link href="/register" className="btn btn-primary btn-lg">Essayer 14 jours · sans CB →</Link>
+          <Link href="/register" className="btn btn-primary btn-lg">Essayer 30 jours · sans CB →</Link>
           <Link href="/creer-mon-studio" className="btn btn-ghost btn-lg">On monte ton studio pour toi</Link>
         </div>
         {/* Ce second bouton menait à /login jusqu'au 2026-08-30. C'était une
@@ -494,7 +494,7 @@ export function Pricing() {
   return (
     <section id="tarifs" className="rule-top pricing">
       <div className="container">
-        <Head eyebrow="Tarifs" sub="14 jours d'essai gratuit · sans carte bancaire · annulable en 1 clic.">
+        <Head eyebrow="Tarifs" sub="30 jours d'essai gratuit · sans carte bancaire · annulable en 1 clic.">
           Simple,<br /><span className="accent">comme tout le reste.</span>
         </Head>
         <div className="promo reveal">
@@ -513,7 +513,7 @@ export function Pricing() {
                 ))}
               </ul>
               <Link href="/register" className={`btn ${p.featured ? 'btn-primary' : 'btn-ghost'}`}>
-                Essayer 14 jours · sans CB
+                Essayer 30 jours · sans CB
               </Link>
             </div>
           ))}
@@ -572,7 +572,7 @@ export function FinalCta() {
           <span className="accent">en 5 minutes.<AccentUnderline /></span>
         </h2>
         <p>
-          14 jours d&apos;essai gratuit · sans carte bancaire · annulable en 1 clic.
+          30 jours d&apos;essai gratuit · sans carte bancaire · annulable en 1 clic.
           On t&apos;accompagne par message si tu cales, réponse sous 24 h.
         </p>
         <div className="ctas">

@@ -49,7 +49,7 @@ export const POST = withRoute({ auth: 'admin' }, async ({ request, auth }) => {
       <p>Bonjour${prenom ? ' ' + prenom : ''},</p>
       <p>Comme convenu ensemble, on a créé et préparé <strong>${studio}</strong> sur IziSolo pendant notre échange. Il est à toi.</p>
       <p><a href="${lien.properties.action_link}" style="display:inline-block;background:#1a1612;color:#ffffff;padding:12px 20px;border-radius:10px;text-decoration:none;font-weight:600;">Choisir mon mot de passe et entrer</a></p>
-      <p>Ce lien te fait choisir ton mot de passe, puis tu retrouves ton studio tel qu'on l'a configuré : tes cours, tes offres, ta page de réservation. Ton essai de 14 jours court, sans carte bancaire.</p>
+      <p>Ce lien te fait choisir ton mot de passe, puis tu retrouves ton studio tel qu'on l'a configuré : tes cours, tes offres, ta page de réservation. Ton essai de 30 jours court, sans carte bancaire.</p>
       <p>Pense à installer l'app sur ton téléphone (le guide dans le menu explique tout), et si quoi que ce soit coince : réponds à cet email, c'est nous qui lisons.</p>
       <p>À très vite 🌿</p>
     `,

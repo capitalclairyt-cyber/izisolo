@@ -15,7 +15,7 @@ faq:
   - question: "Eversports, quel avis en 2026 ?"
     answer: "Eversports est un acteur européen solide avec un vrai atout que peu d'outils ont : sa marketplace grand public, l'appli Eversports où des sportifs cherchent des cours près de chez eux, ce qui peut t'amener des élèves. La plateforme couvre cours en ligne, vidéos à la demande, gestion d'équipe et rapports. À regarder de près : les paliers de prix par réservations, les tarifs hors TVA, et la souscription par consultation plutôt qu'en autonomie."
   - question: "Quelle alternative à Eversports avec un prix fixe ?"
-    answer: "IziSolo affiche deux prix fixes TTC, 15 et 29 €/mois sans engagement, indépendants de ton nombre de réservations : remplir tes cours ne fait jamais monter ta facture. Essai 14 jours sans carte bancaire, en autonomie. On est juge et partie pour le dire : le mieux est d'essayer les deux sur tes vrais cas."
+    answer: "IziSolo affiche deux prix fixes TTC, 15 et 29 €/mois sans engagement, indépendants de ton nombre de réservations : remplir tes cours ne fait jamais monter ta facture. Essai 30 jours sans carte bancaire, en autonomie. On est juge et partie pour le dire : le mieux est d'essayer les deux sur tes vrais cas."
 ---
 
 Eversports est un des grands noms européens du [logiciel de gestion pour studios et profs](/logiciel-gestion-prof-yoga), et son application grand public lui donne un argument que presque personne d'autre n'a. Voici notre comparatif, avec la méthode habituelle de la série : cette page est écrite par IziSolo (je m'appelle Maude, prof de yoga et cofondatrice, juge et partie donc), tous les chiffres Eversports viennent de leur page Prix publique, relevés le **21 août 2026**, et s'ils changent, écris-nous à bonjour@izisolo.fr, on corrige.
@@ -34,7 +34,7 @@ Eversports est un des grands noms européens du [logiciel de gestion pour studio
 
 Trois choses à savoir en lisant cette grille : les prix sont **hors TVA** (compte environ 20 % de plus sur ta facture), ils supposent une **facturation annuelle** (le mensuel est plus cher, leur remise annuelle affichée va jusqu'à 17 %), et la souscription passe par une **consultation** avec leur équipe. Aucun frais de mise en place, c'est écrit noir sur blanc et c'est appréciable.
 
-**IziSolo** : 15 €/mois (Essentiel) ou 29 €/mois (Complet), TTC, au mois, sans engagement, essai 14 jours sans carte. Et surtout : le prix ne dépend pas de ton activité.
+**IziSolo** : 15 €/mois (Essentiel) ou 29 €/mois (Complet), TTC, au mois, sans engagement, essai 30 jours sans carte. Et surtout : le prix ne dépend pas de ton activité.
 
 ## Le détail qui change tout : ton succès fait-il monter ta facture ?
 

@@ -11,7 +11,7 @@ faq:
   - question: "Momoyoga est-il vraiment gratuit ?"
     answer: "Oui, Momoyoga propose un vrai forfait à 0 € (relevé le 21 août 2026 sur momoyoga.com). Il faut connaître ses conditions : 5 % de frais de plateforme sur chaque paiement en ligne (en plus des frais Stripe), 2 abonnements ou pass de cours maximum, 1 billet payant par évènement, et des fonctions comme la liste d'attente, les fenêtres d'annulation ou l'export des données réservées aux forfaits payants. Pour un usage très léger sans paiement en ligne, il peut suffire. Dès que tu encaisses en ligne, les 5 % se comparent au prix d'un abonnement payant."
   - question: "Combien coûtent IziSolo et Momoyoga en 2026 ?"
-    answer: "IziSolo : 15 €/mois (Essentiel) ou 29 €/mois (Complet), sans engagement, essai 14 jours sans carte bancaire. Momoyoga (relevé le 21 août 2026) : gratuit avec 5 % de frais de plateforme sur les paiements en ligne, Standard à 39 €/mois (ou 29 €/mois en payant l'année d'avance), Plus à 79 €/mois (59 €/mois en annuel), et une offre sur mesure à partir de 179 €/mois en annuel."
+    answer: "IziSolo : 15 €/mois (Essentiel) ou 29 €/mois (Complet), sans engagement, essai 30 jours sans carte bancaire. Momoyoga (relevé le 21 août 2026) : gratuit avec 5 % de frais de plateforme sur les paiements en ligne, Standard à 39 €/mois (ou 29 €/mois en payant l'année d'avance), Plus à 79 €/mois (59 €/mois en annuel), et une offre sur mesure à partir de 179 €/mois en annuel."
   - question: "Peut-on migrer de Momoyoga vers IziSolo sans perdre ses élèves ?"
     answer: "Oui. Momoyoga liste une fonction d'export des élèves, enseignants et commandes sur ses forfaits Standard et Plus. Côté IziSolo, l'import CSV mappe automatiquement les colonnes (prénom, nom, email, téléphone, notes), avec aperçu avant validation, puis un écran d'invitation groupée envoie à chaque élève son lien d'accès au portail. Compte 30 minutes à 1 heure pour une base de quelques dizaines d'élèves."
   - question: "Momoyoga : quel avis en 2026 ?"
@@ -45,13 +45,13 @@ Notre méthode pour rester honnêtes :
 
 | | IziSolo | Momoyoga |
 |---|---|---|
-| Forfait gratuit | Non (essai 14 jours sans CB) | Oui, 0 € avec 5 % de frais de plateforme sur chaque paiement en ligne |
+| Forfait gratuit | Non (essai 30 jours sans CB) | Oui, 0 € avec 5 % de frais de plateforme sur chaque paiement en ligne |
 | Entrée payante, au mois | Essentiel : 15 €/mois | Standard : 39 €/mois |
 | Plan principal, au mois | Complet : 29 €/mois | Plus : 79 €/mois |
 | En payant l'année d'avance | Pas de formule annuelle | Standard : 29 €/mois · Plus : 59 €/mois |
 | Engagement | Aucun, annulable en 1 clic | Aucun au mensuel, 12 mois en annuel |
 | Frais sur les paiements en ligne | 1 % IziSolo + frais Stripe | Gratuit : 5 % + frais Stripe · Standard et Plus : frais Stripe seuls |
-| Essai | 14 jours | 14 jours |
+| Essai | 30 jours | 14 jours |
 
 Sources : izisolo.fr et la page Tarifs de momoyoga.com (affichages mensuel et annuel), relevées le 21 août 2026. Les frais Stripe standard sont d'environ 1,5 % + 0,25 € par transaction pour une carte européenne, chez tout le monde.
 
@@ -124,9 +124,9 @@ Dans un sens : Momoyoga liste l'export des élèves et des commandes sur ses for
 
 ## Le mot de la fin
 
-Il n'y a pas de meilleur outil dans l'absolu, il y a le bon outil pour TA pratique. Les deux s'essaient 14 jours : fais tes trois tests réels (une élève qui réserve et paie, un pointage en vrai cours, une annulation avec sa communication) et tranche sur l'expérience, pas sur la plaquette. Si tu veux une méthode complète pour comparer n'importe quels outils, on a écrit [un guide en 10 critères, 5 red flags et 7 questions](/blog/comment-choisir-logiciel-gestion-studio-yoga-2026).
+Il n'y a pas de meilleur outil dans l'absolu, il y a le bon outil pour TA pratique. Les deux s'essaient gratuitement, 30 jours chez IziSolo et 14 chez Momoyoga : fais tes trois tests réels (une élève qui réserve et paie, un pointage en vrai cours, une annulation avec sa communication) et tranche sur l'expérience, pas sur la plaquette. Si tu veux une méthode complète pour comparer n'importe quels outils, on a écrit [un guide en 10 critères, 5 red flags et 7 questions](/blog/comment-choisir-logiciel-gestion-studio-yoga-2026).
 
-Et si tu veux voir IziSolo en vrai : [essai 14 jours, sans carte bancaire](/register).
+Et si tu veux voir IziSolo en vrai : [essai 30 jours, sans carte bancaire](/register).
 
 ---
 

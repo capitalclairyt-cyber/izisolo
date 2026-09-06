@@ -13,7 +13,7 @@ const OG = ogImageUrl({
 
 export const metadata = {
   title: 'Logiciel pour profs de yoga à Montpellier — IziSolo',
-  description: "Outil de gestion pensé pour les profs de yoga indépendant·e·s à Montpellier : agenda, élèves, paiements, portail public. Dès 15 €/mois. 14 jours d'essai sans CB.",
+  description: "Outil de gestion pensé pour les profs de yoga indépendant·e·s à Montpellier : agenda, élèves, paiements, portail public. Dès 15 €/mois. 30 jours d'essai sans CB.",
   alternates: { canonical: `${BASE_URL}/prof-yoga-montpellier` },
   openGraph: {
     title: 'Logiciel pour profs de yoga à Montpellier — IziSolo',

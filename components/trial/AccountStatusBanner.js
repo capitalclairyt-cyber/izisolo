@@ -72,7 +72,7 @@ export default function AccountStatusBanner({ profile }) {
       <div className="acc-banner acc-banner--expired">
         <AlertTriangle size={16} className="acc-icon" />
         <div className="acc-text">
-          <strong>Ton essai 14 jours est terminé.</strong> Choisis un plan pour
+          <strong>Ton essai 30 jours est terminé.</strong> Choisis un plan pour
           continuer à ajouter élèves, cours et paiements.
         </div>
         <Link href="/parametres?tab=abonnement" className="acc-cta acc-cta--primary">
@@ -107,7 +107,7 @@ export default function AccountStatusBanner({ profile }) {
         <Snowflake size={16} className="acc-icon" />
         <div className="acc-text">
           <strong>Compte gelé, abo annulé.</strong> Tu peux toujours consulter tes
-          données mais plus en ajouter. <strong>Le trial 14j a déjà été utilisé</strong> :
+          données mais plus en ajouter. <strong>Le trial 30 j a déjà été utilisé</strong> :
           re-souscris pour ré-accéder à toutes les features.
         </div>
         <Link href="/parametres?tab=abonnement" className="acc-cta acc-cta--primary">

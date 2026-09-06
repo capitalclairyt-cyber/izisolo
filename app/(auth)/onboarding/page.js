@@ -259,7 +259,7 @@ export default function OnboardingPage() {
   }
 
   // Élève qui veut ouvrir SON studio : POST /api/eleve/compte passe le
-  // compte en prof et crée le profil avec un essai 14 jours NEUF (le
+  // compte en prof et crée le profil avec un essai 30 jours NEUF (le
   // trigger v33 pose trial_started_at à l'insert). On rafraîchit ensuite
   // la session pour récupérer le nouveau role, puis on ouvre le wizard.
   async function handleDevenirProf() {
@@ -348,7 +348,7 @@ export default function OnboardingPage() {
 
             <p style={{ fontSize: '0.9375rem', color: 'var(--text-secondary)', margin: '0 0 14px', lineHeight: 1.5 }}>
               Tu enseignes aussi et tu veux <strong>ouvrir ton propre studio</strong> ?
-              Ton essai gratuit de 14 jours démarre à ce moment-là, pas avant.
+              Ton essai gratuit de 30 jours démarre à ce moment-là, pas avant.
             </p>
             {erreur && <div className="onboarding-error" role="alert">{erreur}</div>}
             {!blocProfOuvert ? (
@@ -366,7 +366,7 @@ export default function OnboardingPage() {
                 padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 12,
               }}>
                 <p style={{ margin: 0, fontSize: '0.875rem', lineHeight: 1.55, color: 'var(--text-primary)' }}>
-                  <strong>Tu crées ici TON studio de professeur·e</strong> (essai 14 jours).
+                  <strong>Tu crées ici TON studio de professeur·e</strong> (essai 30 jours).
                   {portails.length > 0 && (
                     <> Ce n'est <strong>pas</strong> l'accès à ton espace élève chez{' '}
                     {portails.map(p => p.nom).join(', ')} : pour ça, utilise le bouton

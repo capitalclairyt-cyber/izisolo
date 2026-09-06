@@ -72,7 +72,7 @@ export default function ComptabiliteLanding() {
           par les encaissements que tu saisis déjà.
         </p>
         <div className="lg-cta-row">
-          <Link href="/register" className="lg-btn lg-btn-primary">Essayer gratuitement 14 jours</Link>
+          <Link href="/register" className="lg-btn lg-btn-primary">Essayer gratuitement 30 jours</Link>
           <Link href="/logiciel-gestion-prof-yoga" className="lg-btn lg-btn-ghost">Voir tout l&apos;outil →</Link>
         </div>
         <p className="lg-cta-hint">Sans carte bancaire · toute la partie compta est dans le plan à 15 €/mois</p>

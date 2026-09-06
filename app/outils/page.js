@@ -256,7 +256,7 @@ export default function OutilsIndexPage() {
                   Découvrir IziSolo →
                 </Link>
                 <p className="outils-cta-sub">
-                  14 jours d&apos;essai gratuit · sans CB · annulation 1 clic
+                  30 jours d&apos;essai gratuit · sans CB · annulation 1 clic
                 </p>
               </div>
             </section>

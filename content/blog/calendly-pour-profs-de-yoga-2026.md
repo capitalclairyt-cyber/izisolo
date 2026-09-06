@@ -50,7 +50,7 @@ Aucun de ces points n'est un défaut de Calendly : ce n'est simplement pas son m
 
 Un seul de ces signaux, et l'agenda a fini son travail : il t'a lancée. Le suivant s'appelle un outil métier, quel qu'il soit : notre [guide de choix en 10 critères](/blog/comment-choisir-logiciel-gestion-studio-yoga-2026) fonctionne pour tous les outils du marché, et notre [calculateur de frais](/calculateur) aussi.
 
-Et si tu veux voir à quoi ressemble la marche d'après chez nous : IziSolo démarre à 15 €/mois TTC sans engagement, essai 14 jours sans carte, et le plan Complet à 29 € donne à tes élèves la réservation en ligne, l'espace personnel et le paiement CB. Les carnets qui se décomptent au pointage, les échéanciers et les factures avec ton SIRET sont dans les deux plans.
+Et si tu veux voir à quoi ressemble la marche d'après chez nous : IziSolo démarre à 15 €/mois TTC sans engagement, essai 30 jours sans carte, et le plan Complet à 29 € donne à tes élèves la réservation en ligne, l'espace personnel et le paiement CB. Les carnets qui se décomptent au pointage, les échéanciers et les factures avec ton SIRET sont dans les deux plans.
 
 ---
 

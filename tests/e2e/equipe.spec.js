@@ -90,7 +90,7 @@ test.describe('plan Multi — et sa bêta, qui doit être fidèle', () => {
   test('LE piège du plan posé à la main : ni Stripe, ni essai, et pourtant PAS gelé', () => {
     // Un studio Multi posé depuis /admin n'a AUCUN abonnement Stripe (la
     // caisse ne sait pas encore l'encaisser) et la bêta offerte n'en aura
-    // jamais. Leur essai des 14 jours est fini depuis des mois : sans les
+    // jamais. Leur essai des 30 jours est fini depuis des mois : sans les
     // nommer explicitement, ils tombent en `trial_expired` → compte GELÉ →
     // 402 sur toute écriture. C'est ce qui serait arrivé au PREMIER studio de
     // la bêta ; trouvé par la preuve, pas par la relecture.

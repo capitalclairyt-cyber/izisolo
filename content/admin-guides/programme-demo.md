@@ -10,7 +10,7 @@ maj: 2026-08-21
 >
 > Support de démo : le compte vitrine **Atelier Soleil** (Camille Leroux). Ses données se recalent toutes seules sur la date du jour (refresh re-runnable à vie). On ne fait jamais de démo sur un compte vide : la prospecte crée SON studio en fin d'appel, c'est le geste qui convertit.
 
-> ⚠️ **LANCEMENT50 : ne PAS le promettre tant que la caisse Stripe SaaS n'est pas branchée** (à ce jour, elle ne l'est pas : le code promo n'existe pas encore chez Stripe). En attendant, s'en tenir aux prix publics 15/29 € et à l'essai 14 jours sans carte. Cette note disparaîtra quand la caisse sera en service.
+> ⚠️ **LANCEMENT50 : ne PAS le promettre tant que la caisse Stripe SaaS n'est pas branchée** (à ce jour, elle ne l'est pas : le code promo n'existe pas encore chez Stripe). En attendant, s'en tenir aux prix publics 15/29 € et à l'essai 30 jours sans carte. Cette note disparaîtra quand la caisse sera en service.
 
 ## 1. Check-list avant chaque démo (5 min, la veille ou le matin)
 
@@ -72,7 +72,7 @@ Voir le guide **Questions & réponses** (section dédiée, avec les chiffres con
 
 Deux formats, au choix selon la personne :
 
-🪷 **Autonomie guidée** : elle va sur izisolo.fr, essai 14 jours sans carte, elle partage son écran et c'est elle qui clique.
+🪷 **Autonomie guidée** : elle va sur izisolo.fr, essai 30 jours sans carte, elle partage son écran et c'est elle qui clique.
 
 🪷 **Concierge** : tu crées son studio TOI-MÊME depuis /admin/studios/nouveau (prénom, email, nom du studio, activité : 30 secondes, avec son accord), tu ouvres le lien de connexion dans un autre navigateur et tu paramètres devant elle. En fin d'appel : bouton « Envoyer le lien d'appropriation », elle choisit son mot de passe, le studio est à elle.
 
@@ -92,7 +92,7 @@ Deux formats, au choix selon la personne :
 >
 > Merci pour ce moment ! Comme promis, le récap :
 >
-> 🪷 Ton essai : izisolo.fr (14 jours, sans carte).
+> 🪷 Ton essai : izisolo.fr (30 jours, sans carte).
 >
 > 🪷 Ce qu'on a vu ensemble : le pointage en un geste, la vente en plusieurs fois, ton portail de réservation, la liste d'attente automatique.
 >

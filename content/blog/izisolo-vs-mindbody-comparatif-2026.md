@@ -15,7 +15,7 @@ faq:
   - question: "Mindbody, quel avis en 2026 ?"
     answer: "Un outil puissant et mûr, au sommet du marché mondial : équipes illimitées, marketing email et SMS automatisé, analytique avancée, assistant IA, marketplace géante. Ses contreparties pour une indépendante française : le prix (à partir de 99 €/mois par établissement), la vente accompagnée (pas de souscription en autonomie sur les plans), et un produit d'abord pensé pour le marché nord-américain. Le meilleur avis reste ton propre essai, sur tes cas réels."
   - question: "Quelle alternative française à Mindbody pour une indépendante ?"
-    answer: "IziSolo : 15 ou 29 €/mois TTC sans engagement, essai 14 jours sans carte, en français de bout en bout (vraies factures avec ton SIRET, export comptable, vocabulaire du métier), avec le suivi de tous les encaissements (espèces, chèques, virements, paiement en plusieurs fois). On est juge et partie pour le dire : compare en essayant."
+    answer: "IziSolo : 15 ou 29 €/mois TTC sans engagement, essai 30 jours sans carte, en français de bout en bout (vraies factures avec ton SIRET, export comptable, vocabulaire du métier), avec le suivi de tous les encaissements (espèces, chèques, virements, paiement en plusieurs fois). On est juge et partie pour le dire : compare en essayant."
 ---
 
 Mindbody, c'est le nom que tu croises dès que tu cherches un [logiciel de gestion](/logiciel-gestion-prof-yoga) au niveau mondial : le géant du secteur bien-être et fitness. Le comparer à IziSolo, c'est comparer un paquebot et un voilier, et c'est précisément pour ça que l'exercice est utile : la bonne question n'est pas « lequel est le meilleur », c'est « lequel est fait pour TOI ». Méthode habituelle de la série : page écrite par IziSolo (Maude, prof de yoga, cofondatrice, juge et partie), chiffres Mindbody relevés le **21 août 2026** sur leurs pages publiques, correction sur simple signalement à bonjour@izisolo.fr.
@@ -24,7 +24,7 @@ Mindbody, c'est le nom que tu croises dès que tu cherches un [logiciel de gesti
 
 **Mindbody** affiche « à partir de 99 € par mois et par établissement ». Trois plans (Starter, Accelerate, Ultimate), et sur chacun le même bouton : « Let's talk ». Le prix exact s'obtient donc auprès de leur équipe commerciale. À noter aussi : l'application mobile à ta marque est un supplément, et lors de notre relevé, la page tarifs était servie en anglais.
 
-**IziSolo** : 15 €/mois (Essentiel) ou 29 €/mois (Complet), TTC, affichés publiquement, sans engagement, essai 14 jours sans carte bancaire.
+**IziSolo** : 15 €/mois (Essentiel) ou 29 €/mois (Complet), TTC, affichés publiquement, sans engagement, essai 30 jours sans carte bancaire.
 
 L'écart n'est pas un détail : le ticket d'entrée Mindbody représente 3 à 6 fois nos deux plans. Ça ne le rend pas « trop cher » dans l'absolu : ça dit pour qui il est construit.
 

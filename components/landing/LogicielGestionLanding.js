@@ -44,7 +44,7 @@ export default function LogicielGestionLanding() {
           carnets papier et les relances à la main.
         </p>
         <div className="lg-cta-row">
-          <Link href="/register" className="lg-btn lg-btn-primary">Essayer gratuitement 14 jours</Link>
+          <Link href="/register" className="lg-btn lg-btn-primary">Essayer gratuitement 30 jours</Link>
           <Link href="/profs-de-yoga" className="lg-btn lg-btn-ghost">Voir pour les profs de yoga →</Link>
         </div>
         <p className="lg-cta-hint">Sans carte bancaire · dès 15 €/mois</p>

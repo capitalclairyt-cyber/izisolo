@@ -40,7 +40,7 @@ Renseigne ton SIRET une fois : vraies factures numérotées, l'élève se sert s
 Export CSV de tout, à tout moment, même compte gelé. Tes données t'appartiennent, la portabilité n'est pas une option payante.
 
 **« C'est combien ? »**
-Essentiel 15 € / Complet 29 € TTC, sans engagement, annulable en 1 clic. 14 jours d'essai sans carte. *(⚠️ LANCEMENT50 : seulement quand la caisse Stripe sera branchée.)*
+Essentiel 15 € / Complet 29 € TTC, sans engagement, annulable en 1 clic. 30 jours d'essai sans carte. *(⚠️ LANCEMENT50 : seulement quand la caisse Stripe sera branchée.)*
 
 **« Vous êtes qui ? »**
 « Je suis prof de yoga, j'ai cofondé IziSolo parce que je gérais mes élèves sur un cahier. » La transparence EST l'argument.

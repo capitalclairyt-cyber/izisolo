@@ -111,7 +111,7 @@ export const POST = withRoute(
     if (!compteExistant) {
       // ⚠️ role:'membre' dans la metadata : le trigger handle_new_user (v101)
       // s'en sert pour NE PAS lui fabriquer un studio à elle. Sans ça, elle
-      // repartirait avec un studio fantôme en essai 14 j — l'incident Bruno.
+      // repartirait avec un studio fantôme en essai 30 j — l'incident Bruno.
       const { error: eCreate } = await supabaseAdmin.auth.admin.createUser({
         email,
         email_confirm: true,

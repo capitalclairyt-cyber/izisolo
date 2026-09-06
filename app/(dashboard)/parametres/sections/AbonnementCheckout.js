@@ -4,7 +4,7 @@
 // Section "Abonnement IziSolo" — Stripe SaaS
 // 2 plans publics (Essentiel 15 € / Complet 29 € TTC) — MENSUEL UNIQUEMENT
 // (l'annuel est désactivé pour l'instant ; sera ajouté plus tard avec -20%)
-// Trial 14 jours sur tous. Plan `free` (interne, exempté) jamais affiché ici.
+// Trial 30 jours sur tous. Plan `free` (interne, exempté) jamais affiché ici.
 // Extrait de parametres/page.js en B2d (découpe mécanique — seule prise :
 // le helper mort `pillStyle`, défini après le return et jamais appelé, purgé).
 // ════════════════════════════════════════════════════════════════════════════
@@ -102,7 +102,7 @@ export default function AbonnementCheckout({ currentPlan, profile }) {
     <div className="section izi-card">
       <h2 style={{ fontSize: '1.125rem', fontWeight: 700, marginBottom: 4 }}>Mon abonnement IziSolo</h2>
       <p className="section-desc">
-        14 jours d'essai gratuit sur tous les plans. Tu peux changer ou annuler à tout moment.
+        30 jours d'essai gratuit sur tous les plans. Tu peux changer ou annuler à tout moment.
       </p>
 
       {/* ── Bandeau d'état subscription ───────────────────────────────────── */}

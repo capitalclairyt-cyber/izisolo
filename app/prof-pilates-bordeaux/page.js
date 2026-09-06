@@ -13,7 +13,7 @@ const OG = ogImageUrl({
 
 export const metadata = {
   title: 'Logiciel pour profs de Pilates à Bordeaux — IziSolo',
-  description: "Outil de gestion pensé pour les profs de Pilates indépendant·e·s à Bordeaux : Mat + Reformer, planning, élèves, paiements, portail public. Dès 15 €/mois. 14 jours d'essai sans CB.",
+  description: "Outil de gestion pensé pour les profs de Pilates indépendant·e·s à Bordeaux : Mat + Reformer, planning, élèves, paiements, portail public. Dès 15 €/mois. 30 jours d'essai sans CB.",
   alternates: { canonical: `${BASE_URL}/prof-pilates-bordeaux` },
   openGraph: {
     title: 'Logiciel pour profs de Pilates à Bordeaux — IziSolo',

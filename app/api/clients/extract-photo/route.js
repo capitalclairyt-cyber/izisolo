@@ -14,7 +14,7 @@ export const runtime = 'nodejs';
  * en extrait les coordonnées d'UN contact pour pré-remplir le formulaire
  * "nouveau client". La prof revoit/corrige TOUJOURS avant d'enregistrer.
  *
- * - Réservé Pro+ (l'essai 14j = plan 'pro' → les nouvelles utilisatrices y ont accès).
+ * - Réservé Pro+ (l'essai 30 j = plan 'pro' → les nouvelles utilisatrices y ont accès).
  * - L'image est traitée puis JETÉE (jamais stockée).
  * - Réutilise le SDK Anthropic déjà branché (lib/claude.js).
  *

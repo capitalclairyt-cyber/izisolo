@@ -11,7 +11,7 @@ faq:
   - question: "Combien coûte Miranda Flow ?"
     answer: "Relevé le 21 août 2026 sur mirandaflow.com : un tarif unique tout compris de 29 €/mois par studio, facturé mensuellement, avec 30 jours d'essai gratuit et sans engagement. L'offre inclut un site vitrine, l'application de réservation avec paiement en ligne intégré (Stripe), le multi-coachs et multi-lieux sans surcoût, un tableau de bord des comptes et un support par messagerie, email et téléphone."
   - question: "Miranda Flow ou IziSolo, comment choisir ?"
-    answer: "Les deux sont français et dans la même gamme de prix. Regarde ce qui pèse dans TON quotidien : si tu veux un site vitrine complet fourni par l'outil et que vous êtes plusieurs coachs, Miranda Flow met ça en avant. Si tu encaisses beaucoup hors ligne (espèces, chèques, virements, paiement en plusieurs fois) et que tu veux les no-shows, annulations tardives et impayés gérés dans une boîte dédiée, c'est le terrain d'IziSolo. Les deux s'essaient gratuitement : 30 jours chez eux, 14 jours chez nous, teste tes vrais cas."
+    answer: "Les deux sont français et dans la même gamme de prix. Regarde ce qui pèse dans TON quotidien : si tu veux un site vitrine complet fourni par l'outil et que vous êtes plusieurs coachs, Miranda Flow met ça en avant. Si tu encaisses beaucoup hors ligne (espèces, chèques, virements, paiement en plusieurs fois) et que tu veux les no-shows, annulations tardives et impayés gérés dans une boîte dédiée, c'est le terrain d'IziSolo. Les deux s'essaient gratuitement : 30 jours chez eux, 30 jours chez nous, teste tes vrais cas."
   - question: "Miranda Flow, quel avis en 2026 ?"
     answer: "Un outil français attachant, au positionnement clair : un tarif unique de 29 €/mois tout compris (relevé du 21 août 2026), un site vitrine inclus, le multi-coachs et multi-lieux sans surcoût, un support joignable par téléphone depuis la Bretagne, et 30 jours d'essai, ce qui est généreux (le nôtre en fait 14). C'est un vrai concurrent sérieux pour les studios qui cherchent simple et français."
   - question: "Quelle différence de prix entre IziSolo et Miranda Flow ?"
@@ -24,7 +24,7 @@ Voici le comparatif le plus délicat de la série, et on te dit pourquoi d'entr�
 
 **Miranda Flow** : un tarif unique de **29 €/mois par studio**, tout compris, facturé mensuellement, avec **30 jours d'essai gratuit** sans engagement.
 
-**IziSolo** : deux plans, **15 €/mois** (Essentiel : toute ta gestion, élèves, agenda, carnets, encaissements, factures, sans la boucle de réservation en ligne) et **29 €/mois** (Complet : tes élèves réservent, annulent, paient en ligne et ont leur espace), sans engagement, **14 jours d'essai** sans carte bancaire.
+**IziSolo** : deux plans, **15 €/mois** (Essentiel : toute ta gestion, élèves, agenda, carnets, encaissements, factures, sans la boucle de réservation en ligne) et **29 €/mois** (Complet : tes élèves réservent, annulent, paient en ligne et ont leur espace), sans engagement, **30 jours d'essai** sans carte bancaire.
 
 Deux observations honnêtes : leur essai de 30 jours est plus généreux que le nôtre, et leur tarif unique est plus simple à comprendre. En face, notre plan à 15 € offre une porte d'entrée moitié moins chère si la réservation en ligne n'est pas encore ton sujet.
 

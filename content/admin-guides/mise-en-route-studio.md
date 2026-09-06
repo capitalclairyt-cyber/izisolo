@@ -17,7 +17,7 @@ maj: 2026-08-21
 
 ## Étape 1 : le compte et l'onboarding (5 min)
 
-🪷 izisolo.fr → « Essayer gratuitement » : email + mot de passe, **14 jours d'essai sans carte** (pendant l'essai, tout le plan Complet est ouvert).
+🪷 izisolo.fr → « Essayer gratuitement » : email + mot de passe, **30 jours d'essai sans carte** (pendant l'essai, tout le plan Complet est ouvert).
 
 🪷 L'onboarding pose les bases : prénom, nom du studio, activité. Le nom du studio donne l'adresse publique (`izisolo.fr/p/son-studio`), il se peaufine ensuite dans Paramètres.
 

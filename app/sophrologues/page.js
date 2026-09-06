@@ -11,7 +11,7 @@ const OG = ogImageUrl({
 
 export const metadata = {
   title: 'Logiciel pour sophrologues indépendant·e·s — IziSolo',
-  description: "Une alternative douce à Doctolib pour les sophrologues : RDV public, anamnèse confidentielle, programmes 6-10 séances, reçus PDF conformes (art. 293 B). 14 jours d'essai gratuit, dès 15 €/mois.",
+  description: "Une alternative douce à Doctolib pour les sophrologues : RDV public, anamnèse confidentielle, programmes 6-10 séances, reçus PDF conformes (art. 293 B). 30 jours d'essai gratuit, dès 15 €/mois.",
   alternates: { canonical: 'https://www.izisolo.fr/sophrologues' },
   openGraph: {
     title: 'Logiciel pour sophrologues — IziSolo',

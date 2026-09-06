@@ -150,7 +150,7 @@ export default function LocalLanding({ city, discipline = 'yoga' }) {
             </p>
             <div className="local-ctas">
               <Link href="/register" className="btn btn-primary btn-lg">
-                Essai gratuit 14 jours →
+                Essai gratuit 30 jours →
               </Link>
               <Link href="/calculateur" className="btn btn-ghost btn-lg">
                 Calculer mon coût
@@ -265,7 +265,7 @@ export default function LocalLanding({ city, discipline = 'yoga' }) {
                 Démarre ton studio {d} à {city.name} <em>en 15 minutes</em>.
               </h2>
               <p>
-                14 jours d'essai gratuit sans CB. Dès 15 €/mois, et −50 % pendant
+                30 jours d'essai gratuit sans CB. Dès 15 €/mois, et −50 % pendant
                 tes 3 premiers mois avec le code LANCEMENT50. Setup offert.
               </p>
               <Link href="/register" className="btn btn-primary btn-lg">

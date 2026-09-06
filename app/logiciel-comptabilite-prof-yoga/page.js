@@ -15,7 +15,7 @@ const OG = ogImageUrl({
 export const metadata = {
   title: 'Logiciel de comptabilité pour prof de yoga et studio',
   description:
-    "Livre des recettes, factures numérotées avec ton SIRET et montant de ta déclaration URSSAF calculé à la date d'encaissement. Tout ce que la micro-entreprise réclame, dès 15 €/mois. 14 jours d'essai sans CB.",
+    "Livre des recettes, factures numérotées avec ton SIRET et montant de ta déclaration URSSAF calculé à la date d'encaissement. Tout ce que la micro-entreprise réclame, dès 15 €/mois. 30 jours d'essai sans CB.",
   keywords: [
     'logiciel comptable centre de yoga',
     'logiciel comptabilité prof de yoga',

@@ -14,7 +14,7 @@ import { reportError } from '@/lib/report';
  *          vers SON espace au lieu d'un onboarding prof).
  *   POST → « devenir prof » VOLONTAIRE : passe role='prof' et crée le
  *          profil — le trigger v33 pose trial_started_at=NOW(), donc un
- *          essai 14 jours NEUF (avant v57, son trial courait depuis sa
+ *          essai 30 jours NEUF (avant v57, son trial courait depuis sa
  *          1re réservation en tant qu'élève).
  */
 
@@ -97,7 +97,7 @@ export const POST = withRoute(
     //    (B1d : dans l'ordre inverse, un échec d'insert laissait un compte
     //    prof SANS profil → onboarding « réussi » factice → boucle infinie
     //    dashboard↔wizard). L'insert déclenche le trigger v33 →
-    //    trial_started_at = NOW() → essai 14 jours neuf.
+    //    trial_started_at = NOW() → essai 30 jours neuf.
     if (!profile) {
       const { error: insertErr } = await supabaseAdmin.from('profiles').insert({
         id: user.id,

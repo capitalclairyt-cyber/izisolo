@@ -11,11 +11,11 @@ faq:
   - question: "Combien coûte bsport ?"
     answer: "bsport ne publie aucun prix (constaté le 21 août 2026 sur leur site) : les cinq formules (Start, Build, Engage, Elevate, Scale) affichent toutes « Demander un devis », et le tarif s'obtient après une démonstration commerciale, adapté à ton studio. Leur FAQ revendique une tarification transparente et sans frais cachés, mais le chiffre lui-même n'est pas public."
   - question: "bsport propose-t-il un essai gratuit ?"
-    answer: "Pas au sens classique. Leur propre FAQ (relevée le 21 août 2026) indique : pas d'essai gratuit classique, mais une période initiale gratuite intégrée au début du contrat pour les nouveaux studios. Il faut donc signer avant d'essayer. Chez IziSolo, l'essai est de 14 jours, sans carte bancaire et sans contrat."
+    answer: "Pas au sens classique. Leur propre FAQ (relevée le 21 août 2026) indique : pas d'essai gratuit classique, mais une période initiale gratuite intégrée au début du contrat pour les nouveaux studios. Il faut donc signer avant d'essayer. Chez IziSolo, l'essai est de 30 jours, sans carte bancaire et sans contrat."
   - question: "bsport, quel avis en 2026 ?"
     answer: "bsport est une plateforme complète et sérieuse, pensée pour les studios structurés : gestion du personnel, application mobile à la marque du studio (formules supérieures), intégrations agrégateurs, Zoom, vidéos à la demande, SMS et notifications push, jusqu'aux réseaux de franchises. Pour un studio avec une équipe et plusieurs sites, c'est un vrai candidat. Pour un·e indépendant·e seul·e, la question est le dimensionnement : beaucoup de ces briques ne te serviront pas, et tu ne connaîtras le prix qu'après une démo commerciale."
   - question: "Quelle alternative simple et à prix publics à bsport ?"
-    answer: "IziSolo est une alternative française pensée pour les indépendant·es : prix affichés publiquement (15 €/mois Essentiel, 29 €/mois Complet, sans engagement), essai 14 jours sans carte bancaire ni contrat, et un outil concentré sur le quotidien d'une prof seule : élèves, carnets, encaissements tous modes, no-shows, messagerie. On est juge et partie pour le dire, donc essaie et compare sur tes vrais cas."
+    answer: "IziSolo est une alternative française pensée pour les indépendant·es : prix affichés publiquement (15 €/mois Essentiel, 29 €/mois Complet, sans engagement), essai 30 jours sans carte bancaire ni contrat, et un outil concentré sur le quotidien d'une prof seule : élèves, carnets, encaissements tous modes, no-shows, messagerie. On est juge et partie pour le dire, donc essaie et compare sur tes vrais cas."
 ---
 
 Si tu as regardé les [logiciels de gestion pour prof de yoga](/logiciel-gestion-prof-yoga) et de studio, tu as croisé bsport. C'est un des noms les plus visibles du marché, et on nous demande régulièrement en démo ce qu'on en pense. Voici la réponse par écrit, chiffres relevés le **21 août 2026**, avec la même méthode que pour [notre comparatif Momoyoga](/blog/izisolo-vs-momoyoga-comparatif-2026) : cette page est écrite par IziSolo, je m'appelle Maude, je suis prof de yoga et cofondatrice, donc juge et partie. Tout ce qui concerne bsport vient de leurs pages publiques, datées, et s'ils changent, écris-nous à bonjour@izisolo.fr, on corrige.
@@ -24,7 +24,7 @@ Si tu as regardé les [logiciels de gestion pour prof de yoga](/logiciel-gestion
 
 Chez bsport, il n'y a **aucun prix public**. Cinq formules (Start, Build, Engage, Elevate, Scale), et sur chacune le même bouton : « Demander un devis ». Le tarif s'obtient après une démonstration commerciale. Leur FAQ précise aussi qu'il n'y a **pas d'essai gratuit classique** : les nouveaux studios bénéficient d'une période initiale gratuite intégrée au début du contrat. Autrement dit, on signe, puis on essaie.
 
-Chez IziSolo, c'est l'inverse : **15 €/mois (Essentiel) ou 29 €/mois (Complet)**, affichés sur la page Tarifs, sans engagement, annulables en 1 clic, avec 14 jours d'essai sans carte bancaire ni rendez-vous.
+Chez IziSolo, c'est l'inverse : **15 €/mois (Essentiel) ou 29 €/mois (Complet)**, affichés sur la page Tarifs, sans engagement, annulables en 1 clic, avec 30 jours d'essai sans carte bancaire ni rendez-vous.
 
 Aucun des deux modèles n'est un scandale : le devis personnalisé a du sens pour un studio à plusieurs salles qui négocie des modules. Mais tu dois savoir dans quel type de relation tu entres : l'une commence par un rendez-vous commercial, l'autre par un essai en autonomie.
 

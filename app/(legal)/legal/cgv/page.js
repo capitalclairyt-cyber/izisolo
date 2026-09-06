@@ -10,7 +10,7 @@ export default function CGVPage() {
   return (
     <div className="legal-content">
       <h1>Conditions Générales de Vente</h1>
-      <p className="legal-date">Dernière mise à jour : 6 mai 2026 · Version 2.0</p>
+      <p className="legal-date">Dernière mise à jour : 6 septembre 2026 · Version 2.1</p>
 
       <div className="legal-box legal-box-warning">
         <strong>Lecture importante.</strong> Les présentes conditions générales de
@@ -110,7 +110,7 @@ export default function CGVPage() {
 
       <h2>6. Période d'essai gratuite</h2>
       <p>
-        L'Éditeur peut proposer une période d'essai gratuite de quatorze (14) jours,
+        L'Éditeur peut proposer une période d'essai gratuite de trente (30) jours,
         sans saisie de moyen de paiement, à l'issue de laquelle l'accès au service est
         bloqué en l'absence de souscription à une offre payante. Aucune relance
         commerciale automatique n'est effectuée pendant la période d'essai.
