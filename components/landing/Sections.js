@@ -358,7 +358,7 @@ export function Founder() {
             « J&apos;ai créé IziSolo parce que je suis prof de yoga, et que je passais mes soirées sur
             Excel au lieu de préparer mes cours. <span className="accent">Je voulais un outil calme, qui me ressemble.</span> »
           </blockquote>
-          <div className="who"><b>Maude</b> · fondatrice, prof de yoga à Bordeaux</div>
+          <div className="who"><b>Maude</b> · fondatrice, prof de yoga</div>
         </div>
       </div>
     </section>
