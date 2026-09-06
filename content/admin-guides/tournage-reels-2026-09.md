@@ -1,7 +1,7 @@
 ---
 titre: "🎥 Tournage au studio de Maude : huit réels en une session (6 septembre 2026)"
 description: "La feuille de tournage : ordre du jour, huit scénarios plan par plan avec le texte de Maude et les légendes, la banque de plans, et ce qui reste à faire après."
-maj: 2026-09-06
+maj: "2026-09-06"
 ---
 
 > Brief de tournage. Le but du jour : rentrer avec la MATIÈRE (visage, mains,
