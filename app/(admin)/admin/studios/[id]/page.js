@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { createAdminClient } from '@/lib/supabase-admin';
 import { fetchAllRows, estCompteTest } from '@/lib/admin-stats';
-import { getAccountStatus, getTrialStatus } from '@/lib/trial';
+import { getAdminStatus, getTrialStatus } from '@/lib/trial';
 import ConciergeActions from './ConciergeActions';
 import ZoneDangereuse from './ZoneDangereuse';
 
@@ -16,6 +16,7 @@ export const dynamic = 'force-dynamic';
 
 const STATUTS_COMPTE = {
   subscribed:    { label: 'Abonnée',       couleur: '#4ade80' },
+  offert:        { label: 'Offert (à la main, sans Stripe)', couleur: '#c084fc' },
   trial_active:  { label: 'En essai',      couleur: '#60a5fa' },
   trial_expired: { label: 'Essai expiré',  couleur: '#fb923c' },
   past_due:      { label: 'Impayé',        couleur: '#f87171' },
@@ -126,7 +127,7 @@ export default async function AdminStudioPage({ params }) {
     .limit(5);
 
   // ── Dérivés ──
-  const statut = getAccountStatus(profil);
+  const statut = getAdminStatus(profil);
   const trial = getTrialStatus(profil);
   const estTest = estCompteTest({ email, studio_slug: profil.studio_slug, studio_nom: profil.studio_nom });
 

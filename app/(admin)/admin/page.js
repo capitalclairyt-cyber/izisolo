@@ -68,7 +68,8 @@ async function getStats(supabase) {
 }
 
 const STATUT_CARDS = [
-  { key: 'subscribed',    label: 'Abonnés',        accent: '#4ade80' },
+  { key: 'subscribed',    label: 'Abonnés',        accent: '#4ade80', hint: 'Stripe actif' },
+  { key: 'offert',        label: 'Offerts',        accent: '#c084fc', hint: 'plan posé à la main, sans Stripe' },
   { key: 'trial_active',  label: 'Essais en cours', accent: '#60a5fa' },
   { key: 'trial_expired', label: 'Essais expirés',  accent: '#fb923c', hint: 'à relancer' },
   { key: 'past_due',      label: 'Impayés',         accent: '#f87171', hint: 'action urgente' },
@@ -94,6 +95,7 @@ export default async function AdminDashboard() {
   const PLAN_COLORS = { free: 'free', solo: 'solo', pro: 'pro', premium: 'premium' };
   const STATUT_BADGES = {
     subscribed: ['Abonné', '#1c3a2e', '#4ade80'],
+    offert: ['Offert', '#2e1f3f', '#c084fc'],
     trial_active: ['Essai', '#1e3a5f', '#60a5fa'],
     trial_expired: ['Essai expiré', '#3f2d1f', '#fb923c'],
     past_due: ['Impayé', '#3f1f1f', '#f87171'],

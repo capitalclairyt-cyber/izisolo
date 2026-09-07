@@ -15,6 +15,7 @@ const PLAN_COLORS = { free: 'free', solo: 'solo', pro: 'pro', multi: 'pro', mult
 // Statuts de compte (calculés serveur via lib/trial getAccountStatus)
 const STATUTS_COMPTE = {
   subscribed:    { label: 'Abonné',        cls: 'st-subscribed' },
+  offert:        { label: 'Offert',        cls: 'st-offert' },
   trial_active:  { label: 'Essai',         cls: 'st-trial' },
   trial_expired: { label: 'Essai expiré',  cls: 'st-expired' },
   past_due:      { label: 'Impayé ⚠️',     cls: 'st-pastdue' },
@@ -415,6 +416,7 @@ export default function AdminUsersClient({ initialUsers, comptesEleves = [] }) {
           font-size: 0.72rem; font-weight: 600; white-space: nowrap;
         }
         .admin-statut-badge.st-subscribed { background: #1c3a2e; color: #4ade80; }
+        .admin-statut-badge.st-offert     { background: #2e1f3f; color: #c084fc; }
         .admin-statut-badge.st-trial      { background: #1e3a5f; color: #60a5fa; }
         .admin-statut-badge.st-expired    { background: #3f2d1f; color: #fb923c; }
         .admin-statut-badge.st-pastdue    { background: #3f1f1f; color: #f87171; }
