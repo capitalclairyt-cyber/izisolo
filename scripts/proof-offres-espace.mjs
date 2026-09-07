@@ -131,12 +131,15 @@ try {
   const bouton = page.locator('button.toggle-btn', { hasText: 'Proposer mes offres dans l\'espace' });
   c('il est ACTIVÉ par défaut', (await bouton.getAttribute('aria-pressed')) === 'true');
   const [rep] = await Promise.all([
-    page.waitForResponse(r => r.url().includes('/api/profile/offres-espace'), { timeout: 45000 }),
+    page.waitForResponse(r => r.url().includes('/api/profile/offres-espace') && r.request().method() === 'PATCH', { timeout: 45000 }),
     bouton.click(),
   ]);
-  const corps = await rep.json().catch(() => ({}));
+  // Le corps d'une réponse interceptée n'est pas toujours relisible par
+  // Playwright (constaté en phase complète : status 200, corps vide) — le
+  // juge est la BASE puis l'écran, le statut suffit ici.
+  const corps = await rep.text().then(t => { try { return JSON.parse(t); } catch { return { brut: t.slice(0, 80) }; } }).catch(() => ({}));
   if (V108) {
-    c('la route répond 200 avec visible=false', rep.status() === 200 && corps.visible === false, `status ${rep.status()} · ${JSON.stringify(corps)}`);
+    c('la route PATCH répond 200', rep.status() === 200, `status ${rep.status()} · ${JSON.stringify(corps)}`);
     const { data: p } = await svc.from('profiles').select('offres_espace').eq('id', demo.id).maybeSingle();
     c('profiles.offres_espace = false EN BASE', p?.offres_espace === false);
     await page.waitForTimeout(500);
