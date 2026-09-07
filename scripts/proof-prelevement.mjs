@@ -339,17 +339,30 @@ try {
   if (V107) {
     c('la fiche affiche le badge « 💳 Prélèvement auto »', nbBadges === 1, String(nbBadges));
     c('la fiche ne propose PAS « Mettre en pause » sur cet abo (bouton d\'en-tête)', (await page.locator('.abo-card button[title="Mettre en pause"]').count()) === 0);
-    await page.locator('button.abo-nom-btn', { hasText: 'Abo au mois prélevé (témoin)' }).first().click();
-    await page.waitForSelector('.abo-detail-sheet', { timeout: 15000 });
+    // Un bouton rendu côté serveur se clique AVANT que React n'ait attaché son
+    // handler (piège v100) : on re-clique jusqu'à ce que le détail soit là.
+    const titreAbo = page.locator('button.abo-nom-btn', { hasText: 'Abo au mois prélevé (témoin)' }).first();
+    const detailOuvert = await attendre(async () => {
+      if ((await page.locator('.abo-detail-sheet').count()) > 0) return true;
+      await titreAbo.click({ timeout: 3000 }).catch(() => {});
+      await new Promise(r => setTimeout(r, 900));
+      return (await page.locator('.abo-detail-sheet').count()) > 0 ? true : null;
+    }, 45000, 300);
+    c('le détail de l\'abo s\'ouvre', !!detailOuvert);
     const txtDetail = await page.innerText('.abo-detail-sheet');
     c('le détail dit que la pause et la résiliation se gèrent dans Stripe', /se gèrent dans ton Stripe/.test(txtDetail));
     c('ni « Encaisser un versement » ni « Programmer chaque mois » sur un abo prélevé', !/Encaisser un versement|Programmer chaque mois|Mettre en pause/.test(txtDetail));
   } else {
     c('sans v107 : la fiche se rend sans badge ni erreur', nbBadges === 0, String(nbBadges));
   }
+  // Le détail (modale) recouvre les onglets : on le ferme d'abord.
+  await page.locator('.abo-detail-sheet .modal-close').click().catch(() => {});
+  await attendre(async () => (await page.locator('.abo-detail-sheet').count()) === 0 ? true : null, 10000, 200);
   await page.locator('button.tab-btn:has-text("Paiements")').click();
   await page.waitForSelector('.paiement-fiche-item', { timeout: 30000 });
-  const nbLignes = ((await page.innerText('body')).match(/Abonnement mensuel · /g) || []).length;
+  // L'intitulé porte le nom de l'OFFRE dès que l'abo est connu (phase complète),
+  // la description Stripe sinon (orphelin, ou pré-v107).
+  const nbLignes = ((await page.innerText('body')).match(/(Abonnement mensuel|Abo au mois prélevé \(témoin\)) · /g) || []).length;
   c('les 3 prélèvements sont dans l\'onglet Paiements', nbLignes >= 3, String(nbLignes));
 
   const { data: cree, error: eU } = await svc.auth.admin.createUser({ email: EMAIL_TEMOIN, email_confirm: true, user_metadata: { role: 'eleve' } });
