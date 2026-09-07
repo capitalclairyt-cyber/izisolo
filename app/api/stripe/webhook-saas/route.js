@@ -48,12 +48,20 @@ const echoue = async (etape, details) => {
 
 /** Applique un update sur profiles et EXIGE qu'il ait touché une ligne. */
 async function majProfil(supabase, filtre, valeurs, contexte) {
-  let q = supabase.from('profiles').update(valeurs);
+  // ⚠️ Le `count` se demande sur update(), PAS sur le select() qui le suit :
+  // `.select('id', { count })` après une mutation ignore l'option, count
+  // revenait null, et ce helper répondait « aucune ligne touchée » alors que
+  // la ligne ÉTAIT écrite. Conséquence, trouvée par la preuve du 2026-09-07
+  // (premier vrai paiement sur le compte Maude Yoga) : 500 sur chaque
+  // événement, jamais marqué traité, rejoué par Stripe pendant 3 jours.
+  // On lit les lignes RENDUES, la vérité la plus directe.
+  let q = supabase.from('profiles').update(valeurs, { count: 'exact' });
   for (const [col, val] of Object.entries(filtre)) q = q.eq(col, val);
-  const { error, count } = await q.select('id', { count: 'exact' });
+  const { data, error, count } = await q.select('id');
   if (error) return { ok: false, raison: `erreur SQL : ${error.message}`, contexte };
-  if (!count) return { ok: false, raison: 'aucune ligne touchée', contexte };
-  return { ok: true, count };
+  const n = Array.isArray(data) ? data.length : (count || 0);
+  if (!n) return { ok: false, raison: 'aucune ligne touchée', contexte };
+  return { ok: true, count: n };
 }
 
 export const POST = withRoute({ auth: 'public' }, async ({ request }) => {

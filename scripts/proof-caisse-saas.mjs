@@ -59,6 +59,7 @@ const attendre = async (fn, ms = 20000, pas = 1000) => {
   for (;;) { const r = await fn(); if (r) return r; if (Date.now() > fin) return null; await new Promise(r2 => setTimeout(r2, pas)); }
 };
 const slug = `preuve-caisse-${Date.now().toString(36)}`;
+const DEBUT_RUN = new Date().toISOString();
 
 let userId = null, profileId = null, customerId = null, sessionSolo = null, sessionMulti = null, subscriptionId = null;
 
@@ -191,13 +192,26 @@ try {
       subscriptionId = null;
 
       // Remboursement
-      const charge = facture?.charge || (facture?.payment_intent ? (await stripe.paymentIntents.retrieve(typeof facture.payment_intent === 'string' ? facture.payment_intent : facture.payment_intent.id)).latest_charge : null);
+      // API 2025-09 : l'invoice ne porte plus `charge` ni `payment_intent` — on
+      // retrouve le paiement par le CLIENT, avant de le supprimer (purge).
+      const charges = await stripe.charges.list({ customer: customerId, limit: 5 });
+      const charge = charges.data.find(ch => ch.status === 'succeeded' && !ch.refunded);
       if (charge) {
-        const refund = await stripe.refunds.create({ charge: typeof charge === 'string' ? charge : charge.id });
-        c('les 7,50 € sont remboursés', refund.status === 'succeeded' || refund.status === 'pending', refund.status);
+        const refund = await stripe.refunds.create({ charge: charge.id });
+        c(`le paiement (${charge.amount / 100} €) est remboursé`, refund.status === 'succeeded' || refund.status === 'pending', refund.status);
       } else {
         c('remboursement : charge introuvable, à faire depuis le dashboard', false);
       }
+
+      // Le webhook ne doit ni mentir ni rejouer : aucune erreur journalisée
+      // pendant le run, et les événements marqués traités (sinon 500 → Stripe
+      // rejoue pendant 3 jours — le bug attrapé le 2026-09-07).
+      await new Promise(r => setTimeout(r, 4000));
+      const { data: erreurs } = await svc.from('erreurs_app').select('message').gte('created_at', DEBUT_RUN).ilike('message', '%webhook-saas%');
+      c('aucune erreur [webhook-saas] journalisée pendant le run', (erreurs || []).length === 0, (erreurs || []).map(e => String(e.message).slice(0, 70)).join(' | '));
+      const { data: traites } = await svc.from('stripe_events_processed').select('event_type').gte('processed_at', DEBUT_RUN);
+      const types = new Set((traites || []).map(e => e.event_type));
+      c('checkout.session.completed, subscription.created et subscription.deleted marqués traités', ['checkout.session.completed', 'customer.subscription.created', 'customer.subscription.deleted'].every(t => types.has(t)), [...types].join(', '));
     }
   }
 } finally {
