@@ -47,6 +47,10 @@ export default function AideEleve({ studioNom = 'ton studio', studioSlug }) {
       r: <>La section <strong>« Les offres du studio »</strong> de ton espace liste tout le catalogue. Tu paies en ligne quand le bouton le propose ; sinon, <strong>« Demander »</strong> prévient {studioNom} : rien n'est débité, rien n'est réservé, le studio revient vers toi pour valider et convenir du règlement.</>,
     },
     {
+      q: 'Mon abonnement est prélevé automatiquement, comment ça marche ?',
+      r: <>Quand tu souscris un abonnement « par mois » depuis le portail, c'est <strong>Stripe</strong> qui prélève ta carte chaque mois : ton espace affiche « 💳 Prélèvement automatique par carte » sur l'abonnement, chaque prélèvement apparaît dans « Mes paiements » et ton abonnement se prolonge tout seul. Pour changer de carte, faire une pause ou arrêter, passe par l'email que Stripe t'envoie ou demande à {studioNom} : tu gardes l'accès jusqu'à la fin de la période déjà réglée. Si un prélèvement échoue, tu reçois un email et Stripe réessaie.</>,
+    },
+    {
       q: 'Comment obtenir un reçu ou une facture ?',
       r: <>Dans <strong>« Mes paiements »</strong>, chaque paiement réglé a son bouton de téléchargement. Si {studioNom} a activé la facturation, tu obtiens une vraie <strong>facture numérotée</strong> (acceptée par les CSE, employeurs et mutuelles), et « Facture du mois » regroupe plusieurs paiements en un seul document. Il se peut aussi que {studioNom} te l'envoie <strong>par email, en pièce jointe</strong>, dès qu'un paiement est enregistré : c'est exactement le même document, avec le même numéro.</>,
     },

@@ -561,6 +561,7 @@ export default function EditOffre({ params }) {
             onChange={e => setStripePaymentLink(e.target.value)}
             placeholder="https://buy.stripe.com/..."
           />
+          <p className="eo-hint" style={{ fontSize: '0.8125rem', color: '#7a6a63', margin: '6px 0 0' }}>Un lien récurrent (abonnement Stripe, prix par mois) marche aussi : chaque prélèvement est enregistré et prolonge l&apos;abonnement de l&apos;élève.</p>
         </div>
 
         <button type="submit" className="izi-btn izi-btn-primary eo-submit" disabled={saving || !canSubmit}>

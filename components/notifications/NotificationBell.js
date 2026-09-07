@@ -23,6 +23,8 @@ const TYPE_CONFIG = {
   // v100 : style + clic + bouton posés EN MÊME TEMPS que le type (la leçon
   // d'offre_demande, née muette et découverte par la prof elle-même).
   pointage_invite:  { color: '#0369a1', bg: '#f0f9ff', border: '#bae6fd' },
+  // v107 : échec / résiliation d'un prélèvement automatique par carte.
+  prelevement:      { color: '#b45309', bg: '#fffbeb', border: '#fde68a' },
   annulation:       { color: '#be123c', bg: '#fff1f2', border: '#fecdd3' },
   regle_match:      { color: '#a16207', bg: '#fefce8', border: '#fde047' },
 };
@@ -200,6 +202,13 @@ export default function NotificationBell() {
       return;
     }
 
+    // Prélèvement automatique (v107) — la fiche de l'élève si on la connaît,
+    // sinon Revenus (paiement sans fiche) ou la création de fiche.
+    if (notif.type === 'prelevement') {
+      router.push(data.client_id ? `/clients/${data.client_id}` : (data.subscription_id && !data.abonnement_id ? '/clients/nouveau' : '/revenus'));
+      return;
+    }
+
     // Liste d'attente (inscription ou promotion) — la page dédiée.
     if (notif.type === 'liste_attente') {
       router.push('/liste-attente');
@@ -287,6 +296,12 @@ export default function NotificationBell() {
             <button className="nb-action-btn primary"
                     onClick={() => handleAction(notif, 'voir')}>
               <ExternalLink size={12} /> Voir la demande
+            </button>
+          )}
+          {notif.type === 'prelevement' && (
+            <button className="nb-action-btn primary"
+                    onClick={() => handleAction(notif, 'voir')}>
+              <ExternalLink size={12} /> {notif.data?.client_id ? 'Voir la fiche' : 'Voir'}
             </button>
           )}
           {notif.type === 'liste_attente' && (

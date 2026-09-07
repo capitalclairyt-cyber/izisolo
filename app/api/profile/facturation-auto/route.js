@@ -30,8 +30,10 @@ export const PATCH = withRoute({ auth: 'active', schema, perm: 'parametres' }, a
     );
   }
 
-  const { auto } = await lireFacturationAuto(supabase, studioId);
-  return Response.json({ ok: true, actif: auto });
+  // On répond la valeur ÉCRITE, jamais une relecture dans la même requête :
+  // Next mémoïse les fetch d'une requête et la relecture rendait l'ANCIENNE
+  // valeur (attrapé par la preuve : base à true, réponse à false).
+  return Response.json({ ok: true, actif: body.actif === true });
 });
 
 export const GET = withRoute({ auth: 'active' }, async ({ auth }) => {

@@ -7,6 +7,8 @@ import { sendPushToUser } from '@/lib/push-server';
 import { escapeIlike } from '@/lib/utils';
 import { reportError } from '@/lib/report';
 import { envoyerFactureAuto } from '@/lib/facture-auto';
+import { estSessionAbonnement } from '@/lib/prelevement';
+import { traiterSessionAbonnement, traiterInvoicePayee, traiterInvoiceEchouee, traiterSubscriptionSupprimee } from '@/lib/prelevement-service';
 
 // Frais de fonctionnement IziSolo sur chaque paiement encaissé via le portail (Stripe).
 // Calculés et stockés en DB pour facturation SaaS mensuelle (sprint post-launch).
@@ -67,6 +69,13 @@ export const POST = withRoute({ auth: 'public' }, async ({ request }) => {
       await handleCheckoutCompleted(supabase, profile.id, event.data.object);
     } else if (event.type === 'charge.refunded') {
       await handleChargeRefunded(supabase, profile.id, event.data.object);
+    // Prélèvement automatique (v107) : le Payment Link RÉCURRENT de la prof.
+    } else if (event.type === 'invoice.paid') {
+      await traiterInvoicePayee(supabase, profile.id, event.data.object);
+    } else if (event.type === 'invoice.payment_failed') {
+      await traiterInvoiceEchouee(supabase, profile.id, event.data.object);
+    } else if (event.type === 'customer.subscription.deleted') {
+      await traiterSubscriptionSupprimee(supabase, profile.id, event.data.object);
     }
     // Autres événements : on accepte sans traiter (Stripe attend un 200).
     return Response.json({ received: true });
@@ -90,6 +99,15 @@ async function handleCheckoutCompleted(supabase, profileId, session) {
 
   if (existing) {
     console.log(`[stripe/webhook] session ${session.id} already processed, skipping`);
+    return;
+  }
+
+  // ─── Abonnement Stripe (Payment Link récurrent, v107) ─────────────────────
+  // Le paiement de CHAQUE période arrive par invoice.paid (y compris la
+  // première) : ici on ne crée que l'abo porteur du sub_… — écrire aussi un
+  // paiement doublerait le premier mois.
+  if (estSessionAbonnement(session)) {
+    await traiterSessionAbonnement(supabase, profileId, session);
     return;
   }
 

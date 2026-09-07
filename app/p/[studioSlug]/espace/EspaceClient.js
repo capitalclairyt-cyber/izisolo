@@ -789,6 +789,11 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
                           Séances illimitées
                         </div>
                       ) : null}
+                      {abo.stripe_subscription_id && !inactif && (
+                        <div style={{ fontSize: '0.75rem', color: '#7c4a03', marginTop: 3, fontWeight: 600 }}>
+                          💳 Prélèvement automatique par carte{abo.date_fin ? <> · prochain autour du {new Date(abo.date_fin).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}</> : null}
+                        </div>
+                      )}
                       {enPause && abo.date_pause_fin && (
                         <div style={{ fontSize: '0.75rem', color: '#7c4a03', marginTop: 3, fontWeight: 600 }}>
                           ⏸ En pause jusqu'au {new Date(abo.date_pause_fin).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}

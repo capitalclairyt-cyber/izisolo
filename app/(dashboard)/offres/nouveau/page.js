@@ -926,6 +926,7 @@ export default function NouvelleOffre() {
           <p className="no-stripe-desc">
             Permet à tes élèves de payer cette offre par CB depuis ton portail.
             Tu reçois directement les fonds sur ton compte Stripe.
+            {type === 'abonnement' && <> <strong>Un lien récurrent marche aussi</strong> (dans Stripe : « Abonnement », prix « par mois ») : l&apos;élève est prélevée chaque mois, IziSolo enregistre chaque prélèvement, prolonge l&apos;abonnement et envoie la facture si tu l&apos;as demandé.</>}
           </p>
           <div className="no-field">
             <label className="no-label" htmlFor="stripe-link">Lien Stripe Payment Link</label>

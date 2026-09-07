@@ -438,7 +438,23 @@ async function getData(studioSlug, user) {
     }
   }
 
-  return { profile, client, aVenir, passes, paiements: paiements || [], offresStripe: offresStripe || [], offresCatalogue, abonnements: abonnements || [], aRegler, seancesWorkshopDues, annulationsDues, unreadMessages, clientPrefs, facturationActive, facturesParPaiement, docsInscription, visioParPresence, ribStudio, refVirement };
+  // Prélèvement automatique (v107) : lecture SÉPARÉE et défensive de la
+  // colonne (absente = aucun abo prélevé), greffée sur les abos déjà chargés.
+  let abonnementsAvecPrelevement = abonnements || [];
+  if ((abonnements || []).length) {
+    try {
+      const { data: subs, error: subErr } = await supabase
+        .from('abonnements')
+        .select('id, stripe_subscription_id')
+        .in('id', abonnements.map(a => a.id));
+      if (!subErr && subs) {
+        const parId = new Map(subs.map(s => [s.id, s.stripe_subscription_id]));
+        abonnementsAvecPrelevement = abonnements.map(a => ({ ...a, stripe_subscription_id: parId.get(a.id) || null }));
+      }
+    } catch { /* pré-v107 */ }
+  }
+
+  return { profile, client, aVenir, passes, paiements: paiements || [], offresStripe: offresStripe || [], offresCatalogue, abonnements: abonnementsAvecPrelevement, aRegler, seancesWorkshopDues, annulationsDues, unreadMessages, clientPrefs, facturationActive, facturesParPaiement, docsInscription, visioParPresence, ribStudio, refVirement };
 }
 
 export default async function EspacePage({ params, searchParams }) {

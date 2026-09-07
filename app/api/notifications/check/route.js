@@ -136,7 +136,20 @@ export const POST = withRoute({ auth: 'user' }, async ({ auth }) => {
     .gte('date_fin', todayStr)
     .lte('date_fin', finFenetre.toISOString().split('T')[0]);
 
+  // v107 : un abo prélevé par carte se renouvelle tout seul, l'alerte serait
+  // du bruit. Lecture SÉPARÉE et défensive de la colonne (absente → rien
+  // n'est filtré, comportement d'avant).
+  let preleves = new Set();
+  if ((expirant || []).length) {
+    try {
+      const { data: subs, error: subErr } = await supabase
+        .from('abonnements').select('id, stripe_subscription_id').in('id', expirant.map(a => a.id));
+      if (!subErr) preleves = new Set((subs || []).filter(s => s.stripe_subscription_id).map(s => s.id));
+    } catch { /* pré-v107 */ }
+  }
+
   for (const ab of expirant || []) {
+    if (preleves.has(ab.id)) continue;
     const jours = Math.max(0, Math.floor((new Date(ab.date_fin) - today) / 86400000));
     toUpsert.push({
       profile_id: studioId,

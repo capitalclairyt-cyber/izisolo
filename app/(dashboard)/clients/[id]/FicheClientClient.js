@@ -23,6 +23,7 @@ import { resumeDemande, solderDemandesApresVente } from '@/lib/demande-offre';
 import { lireReglementConfig, preselectionEmail } from '@/lib/reglement';
 import { moisFacturables } from '@/lib/factures';
 import { genererVersementsMensuels, moisCouverts, premierMoisLibre, resumeVersements, dateDuMois, nbMoisOffre, MAX_VERSEMENTS } from '@/lib/versements-mensuels';
+import { estAboPreleve, libellePreleve } from '@/lib/prelevement';
 import { createClient } from '@/lib/supabase';
 import { calcProRata as calcProRataLib } from '@/lib/prorata';
 import { useToast } from '@/components/ui/ToastProvider';
@@ -1326,7 +1327,12 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
                     </button>
                     <div className="abo-top-right">
                       <span className={`izi-badge izi-badge-${sInfo.color || 'neutral'}`}>{sInfo.label || abo.statut}</span>
-                      {abo.statut === 'actif' && (
+                      {/* v107 : un abo prélevé par carte ne se met pas en pause ici (la
+                          carte continuerait d'être débitée) — ça se règle dans Stripe. */}
+                      {estAboPreleve(abo) && (
+                        <span className="izi-badge izi-badge-brand" title={libellePreleve(abo)}>💳 Prélèvement auto</span>
+                      )}
+                      {abo.statut === 'actif' && !estAboPreleve(abo) && (
                         <button className="abo-action-btn" onClick={() => { setPauseModal(abo); setPauseDebut(new Date().toISOString().split('T')[0]); setPauseFin(''); setPauseNotes(''); }} title="Mettre en pause"><Pause size={13} /></button>
                       )}
                       {abo.statut === 'gele' && (
@@ -1923,7 +1929,10 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
                   <button type="button" className="izi-btn izi-btn-secondary" onClick={() => { setAboDetail(null); openEditAbo(abo); }}>
                     <Edit3 size={15} /> Modifier
                   </button>
-                  {abo.statut === 'actif' && (
+                  {estAboPreleve(abo) && (
+                    <p className="abo-detail-vide" style={{ margin: '0 0 8px' }}>💳 {libellePreleve(abo)}. La pause, la carte et la résiliation se gèrent dans ton Stripe (Abonnements) : IziSolo suit tout seul.</p>
+                  )}
+                  {abo.statut === 'actif' && !estAboPreleve(abo) && (
                     <button type="button" className="izi-btn izi-btn-secondary" onClick={() => { setAboDetail(null); setPauseModal(abo); setPauseDebut(new Date().toISOString().split('T')[0]); setPauseFin(''); setPauseNotes(''); }}>
                       <Pause size={15} /> Mettre en pause
                     </button>
@@ -1936,12 +1945,12 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
                   {/* Toujours proposé sur un abo actif (2026-09-07) : caché dès le
                       solde à zéro, un abo au mois vendu en un paiement ne pouvait
                       plus JAMAIS recevoir le versement du mois suivant. */}
-                  {abo.statut === 'actif' && (
+                  {abo.statut === 'actif' && !estAboPreleve(abo) && (
                     <button type="button" className="izi-btn izi-btn-secondary" onClick={() => { setAboDetail(null); setVersementModal(abo); setVersementMontant(''); setVersementMode('especes'); setVersementDate(new Date().toISOString().split('T')[0]); }}>
                       <Banknote size={15} /> Encaisser un versement
                     </button>
                   )}
-                  {abo.statut === 'actif' && (
+                  {abo.statut === 'actif' && !estAboPreleve(abo) && (
                     <button type="button" className="izi-btn izi-btn-secondary" onClick={() => { setAboDetail(null); ouvrirMensuel(abo); }}>
                       <CalendarClock size={15} /> Programmer chaque mois
                     </button>

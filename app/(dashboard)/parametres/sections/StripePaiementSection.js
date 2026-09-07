@@ -60,8 +60,11 @@ export default function StripePaiementSection({ profile, setProfile, setDirty })
             </div>
             <p className="stripe-step-hint">
               Va sur <a href="https://dashboard.stripe.com/webhooks" target="_blank" rel="noopener noreferrer">dashboard.stripe.com/webhooks</a>
-              {' '}→ <strong>+ Add endpoint</strong> → colle l'URL → coche l'événement{' '}
-              <code>checkout.session.completed</code> (et optionnellement <code>charge.refunded</code>).
+              {' '}→ <strong>+ Add endpoint</strong> → colle l'URL → coche les événements{' '}
+              <code>checkout.session.completed</code>, <code>invoice.paid</code>,{' '}
+              <code>invoice.payment_failed</code>, <code>customer.subscription.deleted</code>{' '}
+              (et <code>charge.refunded</code> pour les remboursements). Les trois du milieu servent aux{' '}
+              <strong>prélèvements automatiques</strong> : un lien de paiement récurrent collé sur un abonnement, et l'élève est prélevée chaque mois sans que tu fasses rien.
             </p>
           </div>
         </div>
