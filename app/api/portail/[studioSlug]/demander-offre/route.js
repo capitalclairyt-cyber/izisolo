@@ -1,5 +1,6 @@
 import { withRoute } from '@/lib/api-route';
 import { catalogueEspaceVisible } from '@/lib/paiement-en-ligne';
+import { studioCan } from '@/lib/plan-guard';
 import { createAdminClient } from '@/lib/supabase-admin';
 import { createServerClient } from '@/lib/supabase-server';
 import { checkAntiBot, ipFromRequest } from '@/lib/antibot';
@@ -47,10 +48,16 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
   const admin = createAdminClient();
   const { data: profile } = await admin
     .from('profiles')
-    .select('id, studio_nom, studio_slug, prenom, email_contact, notif_prefs')
+    .select('id, studio_nom, studio_slug, prenom, email_contact, notif_prefs, plan, trial_started_at, stripe_subscription_status')
     .eq('studio_slug', studioSlug)
     .maybeSingle();
   if (!profile) return Response.json({ error: 'Studio introuvable' }, { status: 404 });
+
+  // Frontière des plans (2026-09-07) : la demande d'offre est Complet. Un
+  // écran qui cache un bouton ne protège rien, la route refuse aussi.
+  if (!studioCan(profile, 'demande_offre')) {
+    return Response.json({ error: 'Ce studio ne prend pas de demandes d\'offre en ligne : contacte-le directement.', code: 'PLAN_REQUIS' }, { status: 403 });
+  }
 
   // v108 : si la prof a masqué ses offres dans l'espace ET sa grille publique,
   // aucune surface ne propose « Demander » — la route le refuse aussi (un

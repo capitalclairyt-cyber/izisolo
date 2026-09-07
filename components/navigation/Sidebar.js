@@ -7,7 +7,7 @@ import {
   Home, CalendarDays, Users, Settings,
   BookOpen, BookMarked, Mail, ChevronRight, Sparkles,
   Package, BarChart3, LogOut, Menu, X, GraduationCap, LifeBuoy, ClipboardList,
-  MessageSquare, Inbox, Clock, UserCog
+  MessageSquare, Inbox, Clock, UserCog, Lock,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase';
 import NotificationBell from '@/components/notifications/NotificationBell';
@@ -37,15 +37,18 @@ const NAV_SECTIONS = [
   {
     title: 'Communication',
     items: [
-      { href: '/messagerie',     label: 'Messagerie',      icon: MessageSquare, badge: true, perm: 'messagerie' },
-      { href: '/sondages',       label: 'Sondage planning', icon: ClipboardList, perm: 'eleves_voir' },
-      { href: '/essais',         label: 'Cours d\'essai',   icon: Sparkles,      perm: 'eleves_voir' },
-      { href: '/liste-attente',  label: 'Liste d\'attente', icon: Clock,         perm: 'eleves_voir' },
+      // `cap:` = la capacité du plan (lib/constantes CAPACITES). Une entrée
+      // hors plan reste VISIBLE avec un cadenas : la page dit alors ce que c'est
+      // et où l'ouvrir (PlanRequis), au lieu d'un 403 au premier clic.
+      { href: '/messagerie',     label: 'Messagerie',      icon: MessageSquare, badge: true, perm: 'messagerie', cap: 'messagerie' },
+      { href: '/sondages',       label: 'Sondage planning', icon: ClipboardList, perm: 'eleves_voir', cap: 'sondages' },
+      { href: '/essais',         label: 'Cours d\'essai',   icon: Sparkles,      perm: 'eleves_voir', cap: 'cours_essai' },
+      { href: '/liste-attente',  label: 'Liste d\'attente', icon: Clock,         perm: 'eleves_voir', cap: 'liste_attente' },
     ],
   },
 ];
 
-export default function Sidebar({ studioNom = 'Mon Studio', vocabulaire = {}, illustration = 'lotus', nbCasATraiter = 0, nbEssais = 0, peutEquipe = false }) {
+export default function Sidebar({ studioNom = 'Mon Studio', vocabulaire = {}, illustration = 'lotus', nbCasATraiter = 0, nbEssais = 0, peutEquipe = false, caps = {} }) {
   // Ce que CETTE personne a le droit de faire dans CE studio (lot 3). Pour une
   // prof seule, `membre` est propriétaire : `peut()` renvoie true partout et la
   // nav est exactement celle d'avant. Une porte qui ne mène nulle part est un
@@ -134,8 +137,9 @@ export default function Sidebar({ studioNom = 'Mon Studio', vocabulaire = {}, il
             {section.title && (
               <div className="sidebar-section-title">{section.title}</div>
             )}
-            {section.items.map(({ href, label, icon: Icon, badge }) => {
+            {section.items.map(({ href, label, icon: Icon, badge, cap }) => {
               const isActive = pathname === href || pathname.startsWith(href + '/');
+              const verrouille = !!cap && caps[cap] === false;
               // Badge compteur générique (à traiter, demandes d'essai…)
               const count = navCounts[href] || 0;
               return (
@@ -155,7 +159,8 @@ export default function Sidebar({ studioNom = 'Mon Studio', vocabulaire = {}, il
                     )}
                   </span>
                   <span className="sidebar-label">{label}</span>
-                  {isActive && <ChevronRight size={14} className="sidebar-chevron" />}
+                  {verrouille && <Lock size={13} className="sidebar-lock" aria-label="Plan Complet" data-testid="sidebar-lock" />}
+                  {isActive && !verrouille && <ChevronRight size={14} className="sidebar-chevron" />}
                 </Link>
               );
             })}
@@ -402,6 +407,7 @@ export default function Sidebar({ studioNom = 'Mon Studio', vocabulaire = {}, il
         /* Badge compteur "À traiter" / "Demandes d'essai" — pastille persimmon
            en haut à droite de l'icône. Anneau couleur-fond + pulse doux pour
            qu'elle accroche vraiment l'œil (avant : trop discrète). */
+        .sidebar-lock { margin-left: auto; opacity: 0.55; flex-shrink: 0; }
         .sidebar-count-badge {
           position: absolute;
           top: -5px;

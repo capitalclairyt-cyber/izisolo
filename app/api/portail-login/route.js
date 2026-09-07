@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { withRoute } from '@/lib/api-route';
+import { studioCan } from '@/lib/plan-guard';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { sendPortailMagicLink } from '@/lib/portail-magic-link';
 import { checkRateLimitIP } from '@/lib/antibot';
@@ -38,12 +39,18 @@ export const POST = withRoute({ auth: 'public' }, async ({ request: req }) => {
     // Vérifie que le studio existe (et récupère son nom pour l'email)
     const { data: studio, error: studioErr } = await supabaseAdmin
       .from('profiles')
-      .select('studio_nom, studio_slug, prenom')
+      .select('studio_nom, studio_slug, prenom, plan, trial_started_at, stripe_subscription_status')
       .eq('studio_slug', studioSlug)
       .single();
 
     if (studioErr || !studio) {
       return NextResponse.json({ error: 'Studio introuvable' }, { status: 404 });
+    }
+
+    // Frontière des plans (2026-09-07) : pas de lien magique vers un espace
+    // que le studio n'a pas (Essentiel).
+    if (!studioCan(studio, 'espace_eleve')) {
+      return NextResponse.json({ error: `${studio.studio_nom || 'Ce studio'} n'a pas activé l'espace élève en ligne : contacte-le directement.`, code: 'PLAN_REQUIS' }, { status: 403 });
     }
 
     const result = await sendPortailMagicLink({

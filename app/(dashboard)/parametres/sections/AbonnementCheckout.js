@@ -61,7 +61,7 @@ export default function AbonnementCheckout({ currentPlan, profile }) {
         'Mini-compta : encaissements, « à percevoir », export comptable',
         'Page publique vitrine (planning affiché, PWA)',
       ],
-      limits: 'Tes élèves ne font rien en ligne : pas de résa, pas d\'espace élève, pas de paiement en ligne.',
+      limits: 'Tes élèves ne font rien en ligne : pas de résa, pas d\'espace élève, pas de paiement ni de demande d\'offre en ligne, pas de sondage.',
     },
     {
       id: 'pro',

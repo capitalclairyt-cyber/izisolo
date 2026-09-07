@@ -85,7 +85,7 @@ function PlacesBadge({ capacite, inscrits, afficherInscrits = true }) {
   return <span className="portail-tag portail-tag-green">Places disponibles</span>;
 }
 
-export default function PortailHome({ profile, cours, offresStripe = [], offresPubliques = [], sondageActif = null, studioSlug, isPreview = false, isDemo = false, currentClient = null, reservedCoursIds = [], canReserve = true, essaiVisible = true, surchargesEssai = null, tonsParType = null, vignettesParType = null, tabInitial = null }) {
+export default function PortailHome({ profile, cours, offresStripe = [], offresPubliques = [], sondageActif = null, studioSlug, isPreview = false, isDemo = false, currentClient = null, reservedCoursIds = [], canReserve = true, essaiVisible = true, canDemander = true, surchargesEssai = null, tonsParType = null, vignettesParType = null, tabInitial = null }) {
   // Suffixe de query pour préserver le mode demo dans les liens internes
   const demoQS = isDemo ? '?demo=1' : '';
 
@@ -1006,6 +1006,8 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
                       return <div className="pp-demande-ok">✓ {etat}</div>;
                     }
                     if (demandeOffreId !== o.id) {
+                      // Frontière des plans : la demande d'offre est Complet.
+                      if (!canDemander) return null;
                       return (
                         <button type="button" className="pp-demande-btn" onClick={() => setDemandeOffreId(o.id)}>
                           Demander cette offre

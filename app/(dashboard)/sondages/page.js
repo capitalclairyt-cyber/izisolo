@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { Plus, BarChart3 } from 'lucide-react';
 import SondagesList from './SondagesList';
 import EmptyState from '@/components/ui/EmptyState';
+import { can } from '@/lib/plan-guard';
+import PlanRequis from '@/components/plan/PlanRequis';
 
 export const metadata = { title: 'Sondage planning · sondages élèves' };
 
@@ -15,6 +17,13 @@ export default async function SondagesPage() {
   // pour une prof invitée dans une association c'est le studio de l'asso.
   const { studioId } = await resoudreStudioActif(supabase, user);
   if (!user) redirect('/login');
+
+  // Frontière des plans (2026-09-07) : le sondage planning est Complet.
+  const { data: profilPlan } = await supabase
+    .from('profiles').select('plan, trial_started_at, stripe_subscription_status').eq('id', studioId).maybeSingle();
+  if (!can(profilPlan, 'sondages')) {
+    return <PlanRequis capacite="sondages" titre="Sondage planning" texte="Propose des créneaux, tes élèves votent depuis un lien, et tu crées les cours gagnants en deux clics." />;
+  }
 
   const { data: sondages } = await supabase
     .from('sondages_planning')

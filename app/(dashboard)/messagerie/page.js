@@ -2,6 +2,8 @@ import { createServerClient } from '@/lib/supabase-server';
 import { resoudreStudioActif } from '@/lib/studio-actif';
 import { redirect } from 'next/navigation';
 import MessagerieClient from './MessagerieClient';
+import { can } from '@/lib/plan-guard';
+import PlanRequis from '@/components/plan/PlanRequis';
 
 export const metadata = { title: 'Messagerie' };
 
@@ -23,7 +25,7 @@ export default async function MessageriePage() {
     // anniversaire_message = prefill du message anniv (clic depuis la cloche).
     // Les colonnes anniversaire_cadeau_* ont été retirées du select (B2e) :
     // chargées depuis toujours, utilisées nulle part (feature cadeau jamais construite).
-    supabase.from('profiles').select('id, types_cours, studio_nom, anniversaire_message').eq('id', studioId).single(),
+    supabase.from('profiles').select('id, types_cours, studio_nom, anniversaire_message, plan, trial_started_at, stripe_subscription_status').eq('id', studioId).single(),
     supabase.from('clients')
       .select('id, prenom, nom, email')
       .eq('profile_id', studioId)
@@ -40,6 +42,11 @@ export default async function MessageriePage() {
       .eq('actif', true)
       .order('nom'),
   ]);
+
+  // Frontière des plans (2026-09-07) : la messagerie est Complet.
+  if (!can(profile, 'messagerie')) {
+    return <PlanRequis capacite="messagerie" titre="Messagerie" texte="Écris à tes élèves une par une ou à tout un cours, envoie une annonce à tout le monde, reçois leurs messages : c'est la boucle qui les fait entrer dans ton studio." />;
+  }
 
   return (
     <MessagerieClient

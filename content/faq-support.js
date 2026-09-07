@@ -251,4 +251,11 @@ export const FAQ_SUPPORT = [
     a: "Paramètres → Portail public → Ma page, désactive « Proposer mes offres dans l'espace de mes élèves ». La section « Les offres du studio » disparaît de leur espace, et avec elle le bouton « Demander ». Tout le reste reste en place : leurs paiements, leurs carnets, leurs factures, et toi tu continues d'attribuer tes offres depuis leurs fiches (« Ajouter une offre »), comme aujourd'hui. Ce réglage est indépendant de « Afficher mes tarifs sur ma page publique » : tu peux masquer l'un sans l'autre. Le jour où tu veux vendre depuis IziSolo, tu le réactives et tout revient.",
     lien: { href: '/aide#offres', label: 'Voir le pas-à-pas' },
   },
+  {
+    // Frontière des plans, 2026-09-07 (lot « Essentiel / Complet effectifs »).
+    // AJOUTÉE EN FIN de liste.
+    q: "Qu'est-ce que mes élèves ne peuvent PAS faire en ligne avec Essentiel ?",
+    a: "Essentiel, c'est ton cahier en mieux : élèves illimités, agenda, carnets et abonnements gérés à la main, pointage, versements, factures, déclaration URSSAF, export comptable, et ta page publique vitrine avec le planning. Ce qui n'y est pas, c'est tout ce que tes élèves feraient elles-mêmes en ligne : réserver et annuler, avoir un espace élève, demander un cours d'essai, s'inscrire en liste d'attente, t'écrire dans la messagerie, voter à un sondage, acheter ou demander une offre en ligne. Avec Essentiel, ta page publique n'affiche ni ta bio, ni ta FAQ, ni les boutons de demande : uniquement ton planning et tes tarifs si tu les as activés. Dans ton menu, ces fonctions gardent leur entrée avec un petit cadenas, et la page te dit en un clic ce qu'elle fait et comment passer en Complet, sans engagement, à tout moment.",
+    lien: { href: '/aide#abonnement', label: 'Voir le pas-à-pas' },
+  },
 ];

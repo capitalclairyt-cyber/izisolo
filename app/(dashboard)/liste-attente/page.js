@@ -2,6 +2,8 @@ import { createServerClient } from '@/lib/supabase-server';
 import { resoudreStudioActif } from '@/lib/studio-actif';
 import { redirect } from 'next/navigation';
 import ListeAttenteClient from './ListeAttenteClient';
+import { can } from '@/lib/plan-guard';
+import PlanRequis from '@/components/plan/PlanRequis';
 
 export const metadata = { title: 'Liste d\'attente' };
 
@@ -12,6 +14,13 @@ export default async function ListeAttentePage() {
   // pour une prof invitée dans une association c'est le studio de l'asso.
   const { studioId } = await resoudreStudioActif(supabase, user);
   if (!user) redirect('/login');
+
+  // Frontière des plans (2026-09-07) : la liste d'attente est Complet.
+  const { data: profilPlan } = await supabase
+    .from('profiles').select('plan, trial_started_at, stripe_subscription_status').eq('id', studioId).maybeSingle();
+  if (!can(profilPlan, 'liste_attente')) {
+    return <PlanRequis capacite="liste_attente" titre="Liste d'attente" texte="Un cours complet ? Tes élèves s'inscrivent en liste d'attente depuis ta page, et la première est prévenue toute seule dès qu'une place se libère." />;
+  }
 
   const today = new Date().toISOString().slice(0, 10);
 

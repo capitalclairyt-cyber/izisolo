@@ -47,6 +47,12 @@ export default function DashboardLayoutClient({ children, profile, trial, nbCasA
         nbEssais={nbEssais}
         illustration={illustrationParMetier(profile?.metier)}
         peutEquipe={can(profile, 'equipe')}
+        caps={{
+          messagerie: can(profile, 'messagerie'),
+          sondages: can(profile, 'sondages'),
+          cours_essai: can(profile, 'cours_essai'),
+          liste_attente: can(profile, 'liste_attente'),
+        }}
       />
 
       <main className="dashboard-content">

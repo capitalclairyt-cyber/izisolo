@@ -21,6 +21,7 @@ import {
   Home, Navigation, Phone, ImageIcon,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase';
+import { can } from '@/lib/plan-guard';
 import { chargerPhotosCours } from '@/lib/vignette-cours';
 import PhotoUploader from '@/components/ui/PhotoUploader';
 import HeureSelect from '@/components/ui/HeureSelect';
@@ -220,6 +221,8 @@ function NouveauCoursInner() {
   // Date pré-remplie depuis l'agenda (split diagonal) ou aujourd'hui
   const dateInitiale = searchParams.get('date') || toDateStr(new Date());
   const [loading, setLoading] = useState(false);
+  // Row profil (plan + champs trial) pour can() — null tant que pas chargé.
+  const [profilRow, setProfilRow] = useState(null);
   const [typesCours, setTypesCours] = useState([]);
   const [rawTypesCours, setRawTypesCours] = useState([]);
   const [showNewType, setShowNewType] = useState(false);
@@ -305,13 +308,14 @@ function NouveauCoursInner() {
       const supabase = createClient();
 
       const [{ data: prof }, { data: lieuxData }, { data: prosData }] = await Promise.all([
-        supabase.from('profiles').select('types_cours, metier, zone_vacances_default, visibilite_default').eq('id', studioId).single(),
+        supabase.from('profiles').select('types_cours, metier, zone_vacances_default, visibilite_default, plan, trial_started_at, stripe_subscription_status').eq('id', studioId).single(),
         supabase.from('lieux').select('*, clients:client_pro_id(id, nom_structure)').eq('profile_id', studioId).eq('actif', true).order('ordre'),
         supabase.from('clients').select('id, nom, prenom, nom_structure, type_client')
           .eq('profile_id', studioId)
           .in('type_client', ['association', 'studio', 'entreprise', 'autre_pro']),
       ]);
 
+      setProfilRow(prof || null);
       if (prof?.types_cours) {
         const normalized = normalizeTypesCours(prof.types_cours);
         setRawTypesCours(normalized);
@@ -1284,7 +1288,8 @@ function NouveauCoursInner() {
             <option value="inscrits">Élèves inscrits seulement</option>
             <option value="abonnes">Détenteurs d'abonnement actif</option>
             <option value="fideles">Élèves fidèles</option>
-            <option value="prive">🔒 Privé (sur invitation)</option>
+            {/* Frontière des plans (2026-09-07) : le cours privé sur invitation est Complet. */}
+            {(profilRow == null || can(profilRow, 'cours_prives')) && <option value="prive">🔒 Privé (sur invitation)</option>}
           </select>
           <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginTop: 4 }}>
             {form.visibilite === 'prive'

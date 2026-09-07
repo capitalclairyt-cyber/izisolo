@@ -1,4 +1,5 @@
 import { withRoute } from '@/lib/api-route';
+import { studioCan } from '@/lib/plan-guard';
 import { createAdminClient } from '@/lib/supabase-admin';
 import { createServerClient } from '@/lib/supabase-server';
 import { parseJsonBody, sondageReponseSchema } from '@/lib/validation';
@@ -67,6 +68,15 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
     .maybeSingle();
 
   if (!sondage) return Response.json({ error: 'Sondage introuvable' }, { status: 404 });
+
+  // Frontière des plans (2026-09-07) : le sondage planning est Complet.
+  {
+    const { data: studio } = await supabase
+      .from('profiles').select('plan, trial_started_at, stripe_subscription_status').eq('id', sondage.profile_id).maybeSingle();
+    if (!studioCan(studio, 'sondages')) {
+      return Response.json({ error: 'Ce sondage n\'est pas ouvert.', code: 'PLAN_REQUIS' }, { status: 403 });
+    }
+  }
   // Clôture en heure de PARIS (serveur UTC : un sondage fini le 25 acceptait
   // des votes jusqu'au 26 à 2 h du matin — B1c).
   const todayParis = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Paris' });

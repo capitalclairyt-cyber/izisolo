@@ -179,17 +179,27 @@ async function getStudioData(studioSlug) {
     .eq('id', profile.id)
     .maybeSingle();
 
+  // Frontière des plans (2026-09-07) : ce que la page publique d'un studio
+  // Essentiel ne propose PAS — acheter en ligne, demander une offre, voter à
+  // un sondage, lire la bio/FAQ (portail enrichi). Décidé côté SERVEUR : ce
+  // qui ne doit pas s'afficher ne part pas au navigateur.
+  const canAcheter = studioCan(profile, 'paiement_en_ligne');
+  const canDemander = studioCan(profile, 'demande_offre');
+  const enrichi = studioCan(profile, 'portail_enrichi');
+  const sansLien = (o) => ({ ...o, stripe_payment_link: null });
+
   return {
-    profile,
+    profile: enrichi ? profile : { ...profile, bio: null, philosophie: null, formations: null, annees_experience: null, faq_publique: [] },
+    canDemander,
     cours: greffePhotos(coursFutur.map(c => ({
       ...c,
       nbInscrits: presencesCounts[c.id] || 0,
     })), photosSeances),
     tonsParType: apparence.tons,
     vignettesParType: apparence.vignettes,
-    offresStripe: masquerLiensSiNonBranche(offresStripe, confStripe).filter(o => o.stripe_payment_link),
-    offresPubliques: masquerLiensSiNonBranche(offresPubliques, confStripe),
-    sondageActif: sondageActif || null,
+    offresStripe: canAcheter ? masquerLiensSiNonBranche(offresStripe, confStripe).filter(o => o.stripe_payment_link) : [],
+    offresPubliques: masquerLiensSiNonBranche(offresPubliques, confStripe).map(o => (canAcheter ? o : sansLien(o))),
+    sondageActif: studioCan(profile, 'sondages') ? (sondageActif || null) : null,
     currentClient,
     reservedCoursIds,
     // Tarif d'essai par type (v92, lecture défensive — null pré-migration) :
@@ -252,6 +262,7 @@ export default async function PortailPage({ params, searchParams }) {
       tabInitial={typeof sp?.tab === 'string' ? sp.tab : null}
       canReserve={studioCan(profile, 'reservation_en_ligne')}
       essaiVisible={studioCan(profile, 'cours_essai')}
+      canDemander={data.canDemander !== false}
     />
   );
 }

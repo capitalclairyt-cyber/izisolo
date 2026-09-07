@@ -6,6 +6,7 @@ import { countUnread } from '@/lib/messagerie';
 import EspaceClient from './EspaceClient';
 import { resoudreFicheEleve } from '@/lib/fiche-eleve';
 import { getDocsInscription } from '@/lib/docs-inscription';
+import EspaceIndisponible from '@/components/portail/EspaceIndisponible';
 import { getVisioCoursMap, lienVisioVisible } from '@/lib/visio';
 import { resoudreCarnetApplicable } from '@/lib/carnet-resolution';
 import { urlPaiementSeance } from '@/lib/paiement-seance';
@@ -486,11 +487,17 @@ export default async function EspacePage({ params, searchParams }) {
   // pas le lire avec son propre client à cause des RLS → null → notFound().
   const { data: ownerProfile } = await supabaseAdmin
     .from('profiles')
-    .select('id, studio_nom, studio_slug, regles_annulation')
+    .select('id, studio_nom, studio_slug, regles_annulation, plan, trial_started_at, stripe_subscription_status')
     .eq('studio_slug', studioSlug)
     .single();
 
   if (!ownerProfile) notFound();
+
+  // Frontière des plans (2026-09-07) : l'espace élève est Complet. La prof
+  // du studio garde son aperçu démo ; une élève voit pourquoi il n'y a rien.
+  if (ownerProfile.id !== user.id && !studioCan(ownerProfile, 'espace_eleve')) {
+    return <EspaceIndisponible studioNom={ownerProfile.studio_nom} studioSlug={studioSlug} />;
+  }
 
   // Si l'user est le prof du studio : on bascule automatiquement en mode démo
   // (le prof n'est pas client de son propre studio, donc sans ce bypass il

@@ -966,7 +966,8 @@ export default function CoursDetailClient({ intervenantes = [], intervenantInit 
                 <option value="inscrits">Élèves inscrits seulement</option>
                 <option value="abonnes">Détenteurs d'abonnement actif</option>
                 <option value="fideles">Élèves fidèles</option>
-                <option value="prive">🔒 Privé (sur invitation)</option>
+                {/* Frontière des plans (2026-09-07) : privé = Complet (un cours déjà privé reste éditable). */}
+                {(can(profile, 'cours_prives') || form.visibilite === 'prive') && <option value="prive">🔒 Privé (sur invitation)</option>}
               </select>
               <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginTop: 4 }}>
                 {form.visibilite === 'prive'

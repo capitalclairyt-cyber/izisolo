@@ -484,6 +484,14 @@ export default function PagePubliqueSection({ profile, setProfile, setDirty }) {
         />
       </div>
 
+      {/* Frontière des plans (2026-09-07) : bio, philosophie, formations et FAQ
+          ne s'affichent sur la page publique qu'en Complet (portail_enrichi).
+          On laisse écrire, on dit ce qui s'affiche. */}
+      {profile && !can(profile, 'portail_enrichi') && (
+        <p className="form-hint" data-testid="hint-portail-enrichi" style={{ margin: '-6px 0 12px' }}>
+          🔒 Bio, philosophie, formations et FAQ ne s&apos;affichent sur ta page publique qu&apos;avec le plan Complet. Tes textes sont conservés : ils apparaîtront le jour où tu y passes.
+        </p>
+      )}
       {/* Philosophie */}
       <div className="form-group">
         <label className="form-label">Ma philosophie / ce qui me rend unique</label>

@@ -1,4 +1,7 @@
 import { fetchStudioPublic, ogPortail } from '@/lib/portail-metadata';
+import { supabaseAdmin } from '@/lib/supabase-admin';
+import { studioCan } from '@/lib/plan-guard';
+import EspaceIndisponible from '@/components/portail/EspaceIndisponible';
 
 // C'est LE lien que la prof partage à ses élèves (partage natif, modale
 // Inviter, QR) : l'aperçu SMS/WhatsApp doit montrer le nom du studio,
@@ -19,6 +22,17 @@ export async function generateMetadata({ params }) {
   };
 }
 
-export default function PortailConnexionLayout({ children }) {
+export default async function PortailConnexionLayout({ children, params }) {
+  // Frontière des plans (2026-09-07) : sans espace élève (Essentiel), la page
+  // de connexion ne propose pas un lien magique vers un espace fermé.
+  const { studioSlug } = await params;
+  const { data: studio } = await supabaseAdmin
+    .from('profiles')
+    .select('studio_nom, plan, trial_started_at, stripe_subscription_status')
+    .eq('studio_slug', studioSlug)
+    .maybeSingle();
+  if (studio && !studioCan(studio, 'espace_eleve')) {
+    return <EspaceIndisponible studioNom={studio.studio_nom} studioSlug={studioSlug} />;
+  }
   return children;
 }

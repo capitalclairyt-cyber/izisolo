@@ -43,6 +43,15 @@ test.describe('effectivePlan — trial, premium legacy, free', () => {
 });
 
 test.describe('can — la frontière boucle élève', () => {
+  test('demande d\'offre (v97) = Complet, comme tout geste d\'élève en ligne (2026-09-07)', () => {
+    expect(can(SOLO_ACTIF, 'demande_offre')).toBe(false);
+    expect(can(PRO, 'demande_offre')).toBe(true);
+    expect(can(SOLO_ACTIF, 'sondages')).toBe(false);
+    expect(can(SOLO_ACTIF, 'espace_eleve')).toBe(false);
+    expect(can(SOLO_ACTIF, 'cours_prives')).toBe(false);
+    expect(can(SOLO_ACTIF, 'portail_enrichi')).toBe(false);
+  });
+
   test('Essentiel (solo abonné) : la prof seule OUI, la boucle élève NON', () => {
     expect(can(SOLO_ACTIF, 'carnets_manuels')).toBe(true);   // D1
     expect(can(SOLO_ACTIF, 'export_compta')).toBe(true);     // D2

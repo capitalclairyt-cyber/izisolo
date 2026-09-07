@@ -1,4 +1,5 @@
 import { createServerClient } from '@/lib/supabase-server';
+import { studioCan } from '@/lib/plan-guard';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { notFound } from 'next/navigation';
 import SondageReponseClient from './SondageReponseClient';
@@ -33,10 +34,20 @@ export default async function SondagePublicPage({ params }) {
   // Le studio
   const { data: profile } = await supabase
     .from('profiles')
-    .select('id, studio_nom, studio_slug, photo_url')
+    .select('id, studio_nom, studio_slug, photo_url, plan, trial_started_at, stripe_subscription_status')
     .eq('studio_slug', studioSlug)
     .maybeSingle();
   if (!profile) notFound();
+
+  // Frontière des plans (2026-09-07) : le sondage planning est Complet.
+  if (!studioCan(profile, 'sondages')) {
+    return (
+      <div data-testid="sondage-indisponible" style={{ maxWidth: 520, margin: '48px auto', padding: '32px 24px', textAlign: 'center', background: '#fff', borderRadius: 16, border: '1px solid #f0ebe8' }}>
+        <h1 style={{ fontSize: '1.25rem', margin: '0 0 10px' }}>Ce sondage n&apos;est pas ouvert</h1>
+        <p style={{ color: '#6b6560', lineHeight: 1.55 }}>{profile.studio_nom} n&apos;a pas activé les sondages en ligne pour le moment. Parle-lui directement de tes créneaux préférés.</p>
+      </div>
+    );
+  }
 
   // Le sondage + créneaux
   const { data: sondage } = await supabase
