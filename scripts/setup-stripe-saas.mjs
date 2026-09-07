@@ -2,10 +2,10 @@
  * IziSolo — Installation Stripe SaaS en 1 commande (idempotent)
  * ─────────────────────────────────────────────────────────────────────────────
  * Crée/retrouve tout ce que la chaîne d'abonnement attend :
- *   1. Products  : IziSolo Essentiel / IziSolo Complet
+ *   1. Products  : IziSolo Essentiel / IziSolo Complet / IziSolo Multi
  *      (les produits d'un éventuel run précédent sont RENOMMÉS s'ils portent
  *      encore les anciens noms Solo/Pro — retrouvés par metadata izisolo_plan)
- *   2. Prices    : 15 € / 29 € par mois (EUR), tax_behavior INCLUSIVE
+ *   2. Prices    : 15 € / 29 € / 49 € par mois (EUR), tax_behavior INCLUSIVE
  *   3. Coupon + promotion code de lancement : LANCEMENT50, −50 % pendant 3 mois,
  *      borné dans le temps et réservé aux nouvelles clientes.
  *   4. Webhook endpoint : https://www.izisolo.fr/api/stripe/webhook-saas
@@ -31,7 +31,8 @@
  * en migrant les abonnements à la main.
  *
  * Grille canonique (bible + lib/constantes.js) :
- *   Essentiel 15 € / Complet 29 € · lancement −50 % pendant 3 mois.
+ *   Essentiel 15 € / Complet 29 € / Multi 49 € (forfait plat, profs illimitées,
+ *   ajouté le 2026-09-07 avec l'accord de Colin) · lancement −50 % pendant 3 mois.
  *   Vendeur : Maude Yoga (EI), franchise de TVA art. 293 B — d'où
  *   tax_behavior INCLUSIVE : le montant affiché est le montant débité.
  *   Studio/premium : legacy, plus jamais vendu — aucun Product/Price créé.
@@ -82,6 +83,9 @@ const WEBHOOK_EVENTS = [
 const PLANS = [
   { planKey: 'solo', nom: 'IziSolo Essentiel', prix: 1500, envVar: 'STRIPE_PRICE_ID_SOLO_MENSUEL', lookup: 'izisolo_essentiel_mensuel' },
   { planKey: 'pro',  nom: 'IziSolo Complet',   prix: 2900, envVar: 'STRIPE_PRICE_ID_PRO_MENSUEL',  lookup: 'izisolo_complet_mensuel' },
+  // Multi : forfait PLAT, profs illimitées (décision gravée B3a / multi-prof) —
+  // jamais un prix par siège.
+  { planKey: 'multi', nom: 'IziSolo Multi',    prix: 4900, envVar: 'STRIPE_PRICE_ID_MULTI_MENSUEL', lookup: 'izisolo_multi_mensuel' },
 ];
 
 const COUPON_ID = 'LANCEMENT50';   // id déterministe : le rejeu retrouve le coupon

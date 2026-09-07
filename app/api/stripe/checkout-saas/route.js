@@ -19,18 +19,19 @@ export const runtime = 'nodejs';
  *   - STRIPE_SECRET_KEY (clé secrète Mélutek)
  *   - STRIPE_PRICE_ID_SOLO_MENSUEL    (15 €/mois — Essentiel)
  *   - STRIPE_PRICE_ID_PRO_MENSUEL     (29 €/mois — Complet)
+ *   - STRIPE_PRICE_ID_MULTI_MENSUEL   (49 €/mois — Multi, forfait plat)
  *   - STRIPE_PRICE_ID_PREMIUM_MENSUEL (legacy Studio — plus vendu, jamais posée :
  *     un checkout premium répond « plan indisponible », c'est voulu)
  *   - NEXT_PUBLIC_APP_URL
  *
- * Body : { plan: 'solo'|'pro', periode: 'mensuel' }
+ * Body : { plan: 'solo'|'pro'|'multi', periode: 'mensuel' }
  */
 
 // 'premium' (ex-Studio) est LEGACY : plus jamais vendu, aucun Product ni Price
 // créé côté Stripe. Le laisser dans l'enum rendait un 500 qui nommait des env
 // vars internes à qui le demandait.
 const schema = z.object({
-  plan: z.enum(['solo', 'pro']),
+  plan: z.enum(['solo', 'pro', 'multi']),
   periode: z.enum(['mensuel']), // 'annuel' désactivé temporairement
 });
 
@@ -40,6 +41,9 @@ const PRICE_IDS = {
   },
   pro: {
     mensuel: process.env.STRIPE_PRICE_ID_PRO_MENSUEL,
+  },
+  multi: {
+    mensuel: process.env.STRIPE_PRICE_ID_MULTI_MENSUEL,
   },
 };
 

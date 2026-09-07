@@ -1735,7 +1735,7 @@ export default function Parametres() {
         .abo-lock { font-size: 0.8rem; }
 
         /* Plans */
-        .plans-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 4px; }
+        .plans-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; margin-top: 4px; } /* 3 cartes depuis Multi (2026-09-07) */
         .plan-card {
           display: flex; flex-direction: column; gap: 8px;
           padding: 20px; border-radius: var(--radius-md);

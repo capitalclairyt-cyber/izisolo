@@ -61,10 +61,13 @@ test.describe('plan Multi — et sa bêta, qui doit être fidèle', () => {
     expect(PLANS.multi_free.fraisStripeIziSolo).toBe(PLANS.multi.fraisStripeIziSolo);
   });
 
-  test("Multi n'est PAS encore public : la caisse Stripe ne sait pas l'encaisser", () => {
-    // Afficher une carte dont le checkout renvoie 500 est pire que ne rien
-    // afficher. Ce test tombera le jour où on l'ouvrira, volontairement.
-    expect(PUBLIC_PLANS).toEqual(['solo', 'pro']);
+  test("Multi est public depuis que la caisse Stripe sait l'encaisser (2026-09-07)", () => {
+    // Ce test disait « pas encore public » tant que le checkout aurait rendu
+    // 500 sur Multi. Le Price live existe (setup-stripe-saas), le checkout
+    // accepte plan:'multi' : la carte peut s'afficher. multi_free reste
+    // INTERNE (posé depuis /admin), jamais vendu.
+    expect(PUBLIC_PLANS).toEqual(['solo', 'pro', 'multi']);
+    expect(PUBLIC_PLANS).not.toContain('multi_free');
     expect(ALL_PLANS).toContain('multi');
     expect(ALL_PLANS).toContain('multi_free');
   });

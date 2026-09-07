@@ -22,7 +22,7 @@ export default function AbonnementCheckout({ currentPlan, profile }) {
   // Souscrire n'aurait aucun sens, et la route refuse de toute façon : autant
   // que l'écran le dise au lieu d'ouvrir un formulaire de paiement.
   const estOfferte = profile?.plan === 'free';
-  const [loading, setLoading] = useState(null); // 'solo' | 'pro' | 'premium'
+  const [loading, setLoading] = useState(null); // 'solo' | 'pro' | 'multi'
   const [portalLoading, setPortalLoading] = useState(false);
 
   // ── Statut subscription Stripe (pour le bandeau du haut + bouton portail) ──
@@ -77,6 +77,21 @@ export default function AbonnementCheckout({ currentPlan, profile }) {
         'Messagerie, mailing groupé, sondages planning',
         'Paiement en ligne élèves (Stripe Payment Link, 1 % IziSolo)',
         'Import fiche par photo (IA)',
+      ],
+    },
+    // Multi (2026-09-07) : forfait PLAT, profs illimitées — pour une association
+    // ou un studio à plusieurs profs (chantier multi-prof, lots 1 à 3b).
+    {
+      id: 'multi',
+      nom: 'Multi',
+      prixMensuel: 49,
+      tagline: 'Plusieurs profs, un seul studio',
+      pitch: 'Tout Complet + ton équipe : chaque prof a son accès, ses droits, ses séances.',
+      features: [
+        'Profs illimitées, invitées par email',
+        'Droits par personne (pointer, élèves, argent, messagerie, réglages)',
+        'Qui donne quelle séance, et qui peut la pointer',
+        'Un forfait plat, jamais un prix par siège',
       ],
     },
   ];

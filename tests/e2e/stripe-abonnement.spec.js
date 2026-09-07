@@ -61,6 +61,13 @@ test.describe('planDepuisSubscription — le price fait foi', () => {
     expect(planDepuisSubscription(inconnu, ENV)).toBe('pro');
   });
 
+  test('multi (49 €, forfait plat) est reconnu dès que son prix est posé', () => {
+    const env = { ...ENV, STRIPE_PRICE_ID_MULTI_MENSUEL: 'price_multi' };
+    expect(tablePlansParPrice(env).price_multi).toBe('multi');
+    expect(planDepuisSubscription({ items: { data: [{ price: { id: 'price_multi' } }] } }, env)).toBe('multi');
+    expect(planDepuisSubscription({ metadata: { plan: 'multi' } }, ENV)).toBe('multi');
+  });
+
   test('premium (legacy) reste lisible, mais n\'est plus vendu', () => {
     const env = { ...ENV, STRIPE_PRICE_ID_PREMIUM_MENSUEL: 'price_studio' };
     expect(planDepuisSubscription({ items: { data: [{ price: { id: 'price_studio' } }] } }, env)).toBe('premium');
