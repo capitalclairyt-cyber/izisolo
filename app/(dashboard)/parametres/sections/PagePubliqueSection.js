@@ -11,6 +11,7 @@
 // ════════════════════════════════════════════════════════════════════════════
 
 import { useState } from 'react';
+import { useToast } from '@/components/ui/ToastProvider';
 import {
   Eye, ExternalLink, AlertCircle, User, Image as ImageIcon,
   ToggleLeft, ToggleRight, Trash2, Plus,
@@ -26,6 +27,27 @@ const QrPortailModal = dynamic(() => import('@/components/portail/QrPortailModal
 
 export default function PagePubliqueSection({ profile, setProfile, setDirty }) {
   const studioSlug = profile?.studio_slug;
+  const { toast } = useToast();
+  // v108 : « proposer mes offres dans l'espace de mes élèves ». Route DÉDIÉE
+  // (jamais dans le payload de la carte : pré-migration, la sauvegarde
+  // entière échouerait), enregistré au clic.
+  const [offresEspaceBusy, setOffresEspaceBusy] = useState(false);
+  const offresEspaceVisible = profile?.offres_espace !== false;
+  const toggleOffresEspace = async () => {
+    const visible = !offresEspaceVisible;
+    setOffresEspaceBusy(true);
+    try {
+      const res = await fetch('/api/profile/offres-espace', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ visible }) });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json.error || 'Réglage non enregistré');
+      setProfile(prev => ({ ...prev, offres_espace: json.visible === true }));
+      toast.success(json.visible ? 'Tes offres sont de nouveau proposées dans l\'espace de tes élèves.' : 'Tes offres ne sont plus proposées dans l\'espace de tes élèves.');
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setOffresEspaceBusy(false);
+    }
+  };
   const trial = getTrialStatus(profile);
   // Avertir si trial actif ET plan réel = solo (= ce qui sera effectif après J30)
   const showTrialWarning = trial.active && (profile?.plan === 'solo' || !profile?.plan);
@@ -517,6 +539,24 @@ export default function PagePubliqueSection({ profile, setProfile, setDirty }) {
           <span>Afficher mes tarifs (offres) sur ma page publique</span>
         </button>
         <p className="form-hint">Liste tes carnets, abonnements et cours unitaires actifs avec leur prix.</p>
+      </div>
+
+      {/* Offres dans l'espace élève (v108, retour Manon 2026-09-07 : « je gère
+          la prise de carte ou d'abonnement via mon site ») */}
+      <div className="form-group toggle-row">
+        <button
+          type="button"
+          onClick={toggleOffresEspace}
+          className="toggle-btn"
+          aria-pressed={offresEspaceVisible}
+          disabled={offresEspaceBusy}
+        >
+          {offresEspaceVisible ? <ToggleRight size={28} style={{ color: 'var(--brand)' }} /> : <ToggleLeft size={28} style={{ color: 'var(--text-muted)' }} />}
+          <span>Proposer mes offres dans l&apos;espace de mes élèves</span>
+        </button>
+        <p className="form-hint">
+          Activé : la section « Les offres du studio » de leur espace liste ton catalogue, avec « Payer en ligne » ou « Demander ». Désactivé (tu vends ailleurs, sur ton site par exemple) : la section disparaît ; leurs paiements, carnets et factures restent visibles, et tu continues d&apos;attribuer tes offres depuis les fiches. Enregistré tout de suite, sans passer par « Sauvegarder ».
+        </p>
       </div>
 
       {/* Réseaux sociaux */}

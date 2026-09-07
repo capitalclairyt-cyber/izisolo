@@ -17,6 +17,7 @@ import {
   masquerLiensSiNonBranche,
   offresEnAttenteDeWebhook,
   dateSessionStripe,
+  catalogueEspaceVisible,
 } from '../../lib/paiement-en-ligne.js';
 
 const LIEN = 'https://buy.stripe.com/4gMcMYcXL17Bdfs9Sofw403';
@@ -128,5 +129,22 @@ test.describe('dateSessionStripe — la date comptable est celle de la session',
     expect(dateSessionStripe({ created: 0 }, '2026-09-30')).toBe('2026-09-30');
     expect(dateSessionStripe({ created: 'hier' }, '2026-09-30')).toBe('2026-09-30');
     expect(dateSessionStripe(null, '2026-09-30')).toBe('2026-09-30');
+  });
+});
+
+test.describe('catalogueEspaceVisible (v108) — masquer les offres dans l\'espace élève', () => {
+  test('visible par défaut : profil null, colonne absente, valeur difforme', () => {
+    expect(catalogueEspaceVisible(null)).toBe(true);
+    expect(catalogueEspaceVisible({})).toBe(true);
+    expect(catalogueEspaceVisible({ offres_espace: null })).toBe(true);
+    expect(catalogueEspaceVisible({ offres_espace: 'non' })).toBe(true);
+    expect(catalogueEspaceVisible({ offres_espace: true })).toBe(true);
+  });
+  test('seul un false explicite masque la section', () => {
+    expect(catalogueEspaceVisible({ offres_espace: false })).toBe(false);
+  });
+  test('indépendant de la grille publique (afficher_tarifs)', () => {
+    expect(catalogueEspaceVisible({ afficher_tarifs: false })).toBe(true);
+    expect(catalogueEspaceVisible({ afficher_tarifs: true, offres_espace: false })).toBe(false);
   });
 });

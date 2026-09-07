@@ -9,7 +9,7 @@ import { getDocsInscription } from '@/lib/docs-inscription';
 import { getVisioCoursMap, lienVisioVisible } from '@/lib/visio';
 import { resoudreCarnetApplicable } from '@/lib/carnet-resolution';
 import { urlPaiementSeance } from '@/lib/paiement-seance';
-import { masquerLiensSiNonBranche, lienPaiementSeance } from '@/lib/paiement-en-ligne';
+import { masquerLiensSiNonBranche, lienPaiementSeance, catalogueEspaceVisible } from '@/lib/paiement-en-ligne';
 import { lireReglementConfig, referenceVirement } from '@/lib/reglement';
 import { studioCan } from '@/lib/plan-guard';
 
@@ -190,12 +190,24 @@ async function getData(studioSlug, user) {
 
   // Deux listes tirées de la même : celles qui s'achètent en ligne tout de
   // suite, et le catalogue complet dont on peut FAIRE LA DEMANDE (v97).
-  const offresServies = masquerLiensSiNonBranche(offresToutes, confStripe);
+  // « Proposer mes offres dans l'espace de mes élèves » (v108, retour Manon
+  // 2026-09-07 : elle vend depuis son site). Lecture SÉPARÉE et défensive :
+  // colonne absente = visible, comme avant. Masqué → aucune offre ne part au
+  // navigateur (la section ET la question de la mini-aide disparaissent).
+  let catalogueVisible = true;
+  try {
+    const { data: cfgOffres, error: errOffres } = await supabase
+      .from('profiles').select('offres_espace').eq('id', profile.id).maybeSingle();
+    if (!errOffres) catalogueVisible = catalogueEspaceVisible(cfgOffres);
+  } catch { /* pré-v108 */ }
+
+  const offresServies = catalogueVisible ? masquerLiensSiNonBranche(offresToutes, confStripe) : [];
   const offresStripe = offresServies.filter(o => o.stripe_payment_link);
   const offresCatalogue = offresServies;
+  const catalogueMasque = !catalogueVisible;
 
   if (!client) {
-    return { profile, client: null, aVenir: [], passes: [], paiements: [], offresStripe: offresStripe || [], abonnements: [], aRegler: [] };
+    return { profile, client: null, aVenir: [], passes: [], paiements: [], offresStripe: offresStripe || [], abonnements: [], aRegler: [], catalogueMasque };
   }
 
   // Mes paiements + abonnements actifs (pour afficher le solde)
@@ -454,7 +466,7 @@ async function getData(studioSlug, user) {
     } catch { /* pré-v107 */ }
   }
 
-  return { profile, client, aVenir, passes, paiements: paiements || [], offresStripe: offresStripe || [], offresCatalogue, abonnements: abonnementsAvecPrelevement, aRegler, seancesWorkshopDues, annulationsDues, unreadMessages, clientPrefs, facturationActive, facturesParPaiement, docsInscription, visioParPresence, ribStudio, refVirement };
+  return { profile, client, aVenir, passes, paiements: paiements || [], offresStripe: offresStripe || [], offresCatalogue, abonnements: abonnementsAvecPrelevement, catalogueMasque, aRegler, seancesWorkshopDues, annulationsDues, unreadMessages, clientPrefs, facturationActive, facturesParPaiement, docsInscription, visioParPresence, ribStudio, refVirement };
 }
 
 export default async function EspacePage({ params, searchParams }) {
@@ -519,6 +531,7 @@ export default async function EspacePage({ params, searchParams }) {
       paiements={data.paiements || []}
       offresStripe={data.offresStripe || []}
       offresCatalogue={data.offresCatalogue || []}
+      catalogueMasque={data.catalogueMasque === true}
       abonnements={data.abonnements || []}
       aRegler={data.aRegler || []}
       seancesWorkshopDues={data.seancesWorkshopDues || []}

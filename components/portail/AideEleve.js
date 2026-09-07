@@ -18,7 +18,7 @@ import { CircleHelp, ChevronDown, ChevronUp } from 'lucide-react';
  * @param {string} studioNom   nom du studio (les réponses parlent de « ton studio »)
  * @param {string} studioSlug  pour les liens internes (messages)
  */
-export default function AideEleve({ studioNom = 'ton studio', studioSlug }) {
+export default function AideEleve({ studioNom = 'ton studio', studioSlug, sansCatalogue = false }) {
   const [ouverte, setOuverte] = useState(null);
 
   const QUESTIONS = [
@@ -42,10 +42,13 @@ export default function AideEleve({ studioNom = 'ton studio', studioSlug }) {
       q: 'J\'ai un montant « à régler », c\'est quoi ?',
       r: <>C'est ce que tu dois à {studioNom} : un paiement convenu « à régler plus tard », un versement d'un paiement en plusieurs fois, ou une séance payable à l'unité. Le bouton <strong>« 💡 Comment régler ? »</strong> t'affiche les options : le RIB du studio avec ta référence de virement et un QR à scanner avec ton application bancaire (si le studio l'a fourni), ou espèces et chèque sur place. Et quand un bouton <strong>« 💳 Payer par CB »</strong> accompagne la ligne, tu peux régler en ligne.</>,
     },
-    {
+    // v108 : quand le studio a masqué ses offres dans l'espace (il vend
+    // ailleurs), la question changerait de réponse — on la retire plutôt que
+    // de décrire une section qui n'existe pas à l'écran.
+    ...(sansCatalogue ? [] : [{
       q: 'Comment acheter un carnet ou un abonnement ?',
       r: <>La section <strong>« Les offres du studio »</strong> de ton espace liste tout le catalogue. Tu paies en ligne quand le bouton le propose ; sinon, <strong>« Demander »</strong> prévient {studioNom} : rien n'est débité, rien n'est réservé, le studio revient vers toi pour valider et convenir du règlement.</>,
-    },
+    }]),
     {
       q: 'Mon abonnement est prélevé automatiquement, comment ça marche ?',
       r: <>Quand tu souscris un abonnement « par mois » depuis le portail, c'est <strong>Stripe</strong> qui prélève ta carte chaque mois : ton espace affiche « 💳 Prélèvement automatique par carte » sur l'abonnement, chaque prélèvement apparaît dans « Mes paiements » et ton abonnement se prolonge tout seul. Pour changer de carte, faire une pause ou arrêter, passe par l'email que Stripe t'envoie ou demande à {studioNom} : tu gardes l'accès jusqu'à la fin de la période déjà réglée. Si un prélèvement échoue, tu reçois un email et Stripe réessaie.</>,

@@ -1,4 +1,5 @@
 import { withRoute } from '@/lib/api-route';
+import { catalogueEspaceVisible } from '@/lib/paiement-en-ligne';
 import { createAdminClient } from '@/lib/supabase-admin';
 import { createServerClient } from '@/lib/supabase-server';
 import { checkAntiBot, ipFromRequest } from '@/lib/antibot';
@@ -50,6 +51,19 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
     .eq('studio_slug', studioSlug)
     .maybeSingle();
   if (!profile) return Response.json({ error: 'Studio introuvable' }, { status: 404 });
+
+  // v108 : si la prof a masqué ses offres dans l'espace ET sa grille publique,
+  // aucune surface ne propose « Demander » — la route le refuse aussi (un
+  // écran qui cache un bouton ne protège rien). Lecture SÉPARÉE et défensive.
+  {
+    const { data: cfg, error: cfgErr } = await admin
+      .from('profiles').select('afficher_tarifs, offres_espace').eq('id', profile.id).maybeSingle();
+    const espaceOuvert = cfgErr ? true : catalogueEspaceVisible(cfg);
+    const grilleOuverte = cfgErr ? true : cfg?.afficher_tarifs === true;
+    if (!espaceOuvert && !grilleOuverte) {
+      return Response.json({ error: 'Ce studio ne prend pas de demandes d\'offre en ligne : contacte-le directement.' }, { status: 403 });
+    }
+  }
 
   // Élève connectée : sa fiche fait foi, jamais l'identité déclarée dans le
   // corps de la requête (sinon n'importe qui demande au nom de n'importe qui).

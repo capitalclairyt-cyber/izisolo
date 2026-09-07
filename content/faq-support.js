@@ -243,4 +243,12 @@ export const FAQ_SUPPORT = [
     a: "Oui, avec le plan Complet et ton compte Stripe. Dans Stripe, crée un lien de paiement récurrent (type « Abonnement », prix « par mois ») et colle-le sur ton offre d'abonnement, exactement comme un lien de paiement classique. Sur ton endpoint Stripe (Paramètres → Portail public → Paiement en ligne), coche aussi invoice.paid, invoice.payment_failed et customer.subscription.deleted. Ensuite tout suit : quand une élève souscrit depuis ton portail, Stripe la prélève chaque mois, IziSolo enregistre chaque prélèvement dans ses paiements, prolonge son abonnement et lui envoie sa facture si tu as activé l'envoi automatique. Sur sa fiche, l'abonnement porte le badge « 💳 Prélèvement auto ». Trois choses se règlent dans ton Stripe et pas dans IziSolo : la pause, le changement de carte et la résiliation (elle garde l'accès jusqu'à la fin de la période déjà payée). Si un prélèvement échoue, ta cloche te prévient et l'élève reçoit un email ; après trois échecs, l'abonnement passe en pause tout seul et se réactive dès qu'un prélèvement passe. Un engagement sur douze mois se règle dans Stripe, IziSolo ne l'impose pas.",
     lien: { href: '/aide#offres', label: 'Voir le pas-à-pas' },
   },
+  {
+    // Retour Manon (Soleya), 2026-09-07 : « est-ce que je peux enlever les
+    // offres sur le profil des clientes ? je gère ça via mon site internet ».
+    // AJOUTÉE EN FIN de liste.
+    q: "Je vends mes carnets sur mon propre site : comment enlever les offres de l'espace de mes élèves ?",
+    a: "Paramètres → Portail public → Ma page, désactive « Proposer mes offres dans l'espace de mes élèves ». La section « Les offres du studio » disparaît de leur espace, et avec elle le bouton « Demander ». Tout le reste reste en place : leurs paiements, leurs carnets, leurs factures, et toi tu continues d'attribuer tes offres depuis leurs fiches (« Ajouter une offre »), comme aujourd'hui. Ce réglage est indépendant de « Afficher mes tarifs sur ma page publique » : tu peux masquer l'un sans l'autre. Le jour où tu veux vendre depuis IziSolo, tu le réactives et tout revient.",
+    lien: { href: '/aide#offres', label: 'Voir le pas-à-pas' },
+  },
 ];
