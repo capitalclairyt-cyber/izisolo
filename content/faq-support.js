@@ -227,4 +227,13 @@ export const FAQ_SUPPORT = [
     a: "Son adresse email est écrite sur la demande, dans le bloc « demandes d'élèves » en tête de ta page Offres : clique dessus pour lui écrire directement. C'est normal de ne pas la connaître : ta page publique est ouverte à tout le monde, et une visiteuse peut demander une offre en laissant juste son prénom et son email, sans compte et sans fiche chez toi. La ligne porte alors le badge « page publique · pas encore de fiche ». Pour aller plus loin, le bouton « Créer la fiche et attribuer » lui crée sa fiche élève avec ces coordonnées, puis ouvre la vente directement sur le règlement (espèces, chèque, virement, en plusieurs fois : tu choisis). Si elle a déjà une fiche sous cette adresse, IziSolo reprend la sienne au lieu d'en créer une deuxième. Et tant que tu n'as pas fait la vente, rien n'est encaissé ni réservé de son côté.",
     lien: { href: '/aide#offres', label: 'Voir le pas-à-pas' },
   },
+  {
+    // Retour Manon (Soleya), 2026-09-07 : « pour mes abonnements au mois,
+    // comment je fais pour que ça génère automatiquement une facture chaque
+    // début de mois ? Je n'arrive à générer qu'une facture pour août. »
+    // AJOUTÉE EN FIN de liste.
+    q: "Mes élèves ont un abonnement au mois : comment avoir une facture chaque mois, sans y penser ?",
+    a: "Une facture IziSolo est une facture acquittée : elle naît d'un paiement reçu, jamais avant. Une facture par mois, c'est donc un paiement par mois. Deux gestes, puis plus rien. (1) Le paiement de chaque mois : à la vente, choisis « En plusieurs fois » puis « Chaque mois jusqu'à la fin » et saisis le montant du mois (55 € par exemple) : un versement par mois se remplit tout seul jusqu'à la fin de l'abonnement, le premier réglé tout de suite, les suivants dans « À percevoir » de ta page Revenus et dans « À régler » de l'espace de l'élève. Pour un abonnement déjà vendu, ouvre-le depuis la fiche de l'élève et clique « Programmer chaque mois » : les mois déjà réglés sont sautés, jamais doublés. (2) La facture : dans Paramètres → Profil & studio → Activité, carte « Facturation », coche « Envoyer la facture à l'élève par email à chaque encaissement ». Ensuite, chaque mois, quand l'argent arrive, tu cliques « Encaisser » sur le versement : la facture est émise et part en pièce jointe. Le prélèvement automatique par carte, où même ce clic disparaît, est le prochain chantier.",
+    lien: { href: '/aide#factures', label: 'Voir le pas-à-pas' },
+  },
 ];

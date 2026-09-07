@@ -253,6 +253,7 @@ export default function Parametres() {
   // de ~45 champs où une seule colonne en erreur tuait TOUTE la page et où
   // le bouton d'un onglet réécrivait les champs de tous les autres.
   const [savingCarte, setSavingCarte] = useState(null);        // id de la carte en cours de save
+  const [factureAutoBusy, setFactureAutoBusy] = useState(false); // v106, route dédiée
   const [dirtyCartes, setDirtyCartes] = useState(() => new Set());
   const dirty = dirtyCartes.size > 0;
   const [profile, setProfile] = useState(null);
@@ -760,6 +761,44 @@ export default function Parametres() {
                      mais <strong>vérifie la formulation exacte auprès de ton comptable</strong> : c&apos;est
                      ta responsabilité qui est engagée, pas la nôtre.</>}
               </p>
+            </div>
+            {/* Facture automatique (v106, retour Manon 2026-09-07 : « une
+                facture chaque début de mois pour mes abonnements au mois »).
+                Route DÉDIÉE : la colonne est neuve, un échec ne coûte que ce
+                réglage et le dit, jamais la carte entière. */}
+            <div className="form-group" style={{ marginTop: 6 }}>
+              <label className="form-label" style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: active ? 'pointer' : 'not-allowed', opacity: active ? 1 : 0.6 }}>
+                <input
+                  type="checkbox"
+                  checked={profile.facturation_auto === true}
+                  disabled={!active || factureAutoBusy}
+                  onChange={async (e) => {
+                    const actif = e.target.checked;
+                    setFactureAutoBusy(true);
+                    try {
+                      const res = await fetch('/api/profile/facturation-auto', {
+                        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ actif }),
+                      });
+                      const json = await res.json().catch(() => ({}));
+                      if (!res.ok) throw new Error(json.error || 'Réglage non enregistré');
+                      setProfile(p => ({ ...p, facturation_auto: json.actif === true }));
+                      toast.success(json.actif ? 'Chaque paiement encaissé enverra sa facture à l\'élève.' : 'Les factures restent disponibles au clic, sans envoi automatique.');
+                    } catch (err) {
+                      toast.error(err.message);
+                    } finally {
+                      setFactureAutoBusy(false);
+                    }
+                  }}
+                  style={{ marginTop: 3 }}
+                />
+                <span>
+                  <strong>Envoyer la facture à l&apos;élève par email à chaque encaissement</strong>
+                  <span className="form-hint" style={{ display: 'block', fontWeight: 400 }}>
+                    Dès qu&apos;un paiement passe « réglé » (bouton Encaisser, vente payée comptant, paiement en ligne), sa facture est émise et part en pièce jointe. C&apos;est le même document, le même numéro, que celui qu&apos;elle télécharge dans son espace. Pour un abonnement au mois : un versement encaissé chaque mois, une facture qui part chaque mois.
+                    {!active && ' Renseigne d\'abord ton numéro d\'entreprise.'}
+                  </span>
+                </span>
+              </label>
             </div>
             <BtnSauver carte="facturation" />
           </div>

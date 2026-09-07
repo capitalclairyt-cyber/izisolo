@@ -48,7 +48,7 @@ export default function AideEleve({ studioNom = 'ton studio', studioSlug }) {
     },
     {
       q: 'Comment obtenir un reçu ou une facture ?',
-      r: <>Dans <strong>« Mes paiements »</strong>, chaque paiement réglé a son bouton de téléchargement. Si {studioNom} a activé la facturation, tu obtiens une vraie <strong>facture numérotée</strong> (acceptée par les CSE, employeurs et mutuelles), et « Facture du mois » regroupe plusieurs paiements en un seul document.</>,
+      r: <>Dans <strong>« Mes paiements »</strong>, chaque paiement réglé a son bouton de téléchargement. Si {studioNom} a activé la facturation, tu obtiens une vraie <strong>facture numérotée</strong> (acceptée par les CSE, employeurs et mutuelles), et « Facture du mois » regroupe plusieurs paiements en un seul document. Il se peut aussi que {studioNom} te l'envoie <strong>par email, en pièce jointe</strong>, dès qu'un paiement est enregistré : c'est exactement le même document, avec le même numéro.</>,
     },
     {
       q: 'Comment installer l\'app sur mon téléphone ?',

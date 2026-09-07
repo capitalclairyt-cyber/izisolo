@@ -6,6 +6,7 @@ import { dateSessionStripe } from '@/lib/paiement-en-ligne';
 import { sendPushToUser } from '@/lib/push-server';
 import { escapeIlike } from '@/lib/utils';
 import { reportError } from '@/lib/report';
+import { envoyerFactureAuto } from '@/lib/facture-auto';
 
 // Frais de fonctionnement IziSolo sur chaque paiement encaissé via le portail (Stripe).
 // Calculés et stockés en DB pour facturation SaaS mensuelle (sprint post-launch).
@@ -146,7 +147,7 @@ async function handleCheckoutCompleted(supabase, profileId, session) {
   const intitule = offre?.nom || session.metadata?.offre_nom || 'Paiement Stripe';
   const commission = parseFloat((amount * COMMISSION_RATE).toFixed(2));
 
-  const { error: insertErr } = await supabase.from('paiements').insert({
+  const { data: paiementCree, error: insertErr } = await supabase.from('paiements').insert({
     profile_id: profileId,
     client_id: clientId,
     offre_id: offre?.id || null,
@@ -163,11 +164,19 @@ async function handleCheckoutCompleted(supabase, profileId, session) {
     commission_taux: COMMISSION_RATE,
     commission_montant: commission,
     notes: `Stripe · ${email || 'email inconnu'}${clientId ? '' : ' · client à attribuer'}`,
-  });
+  }).select('id').single();
 
   if (insertErr) {
     reportError('[stripe/webhook] insert paiement error:', insertErr);
     throw new Error('Failed to create paiement: ' + insertErr.message);
+  }
+
+  // Facture automatique (v106) : un paiement en ligne est un paiement réglé
+  // comme un autre — si la prof a demandé l'envoi, la facture part. C'est le
+  // maillon qui rendra le prélèvement récurrent « facture chaque mois » sans
+  // un geste. Best effort : le paiement est écrit, quoi qu'il arrive ici.
+  if (paiementCree?.id) {
+    await envoyerFactureAuto(supabase, { profileId, paiementId: paiementCree.id }).catch(() => {});
   }
 
   // Push prof « paiement en ligne reçu » (gaté sur pref ; no-op sans abo)
@@ -255,7 +264,7 @@ async function handleSeancePayee(supabase, profileId, session, { email, amount }
     .limit(1)
     .maybeSingle();
 
-  const { error: insertErr } = await supabase.from('paiements').insert({
+  const { data: paiementSeance, error: insertErr } = await supabase.from('paiements').insert({
     profile_id: profileId,
     client_id: presence.client_id,
     presence_id: dejaPayee ? null : presence.id, // paiement à la séance (v65)
@@ -272,10 +281,14 @@ async function handleSeancePayee(supabase, profileId, session, { email, amount }
     notes: dejaPayee
       ? `⚠️ Séance déjà payée — possible DOUBLE paiement Stripe, à vérifier/rembourser. Stripe · ${email || 'email inconnu'}`
       : `Payé en ligne à la réservation. Stripe · ${email || 'email inconnu'}`,
-  });
+  }).select('id').single();
   if (insertErr) {
     reportError('[stripe/webhook] insert paiement séance error:', insertErr);
     throw new Error('Failed to create paiement séance: ' + insertErr.message);
+  }
+  // Facture automatique (v106), même règle que l'achat d'offre ci-dessus.
+  if (paiementSeance?.id) {
+    await envoyerFactureAuto(supabase, { profileId, paiementId: paiementSeance.id }).catch(() => {});
   }
 
   // Le cas « workshop à régler » de cette présence est réglé de fait —

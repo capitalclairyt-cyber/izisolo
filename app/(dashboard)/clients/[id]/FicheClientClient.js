@@ -11,7 +11,7 @@ import {
   Banknote, CreditCard, Landmark, FileText, ChevronRight,
   Package, Zap, CalendarCheck, Loader2,
   MessageSquare, Wallet, AlertCircle, Trash2, PlusCircle, Home, Send, Pause, Play,
-  GitMerge,
+  GitMerge, CalendarClock,
 } from 'lucide-react';
 import MergeClientsModal from '@/components/clients/MergeClientsModal';
 import { formatDate, formatMontant } from '@/lib/utils';
@@ -22,6 +22,7 @@ import { bornesVente } from '@/lib/offres-periode';
 import { resumeDemande, solderDemandesApresVente } from '@/lib/demande-offre';
 import { lireReglementConfig, preselectionEmail } from '@/lib/reglement';
 import { moisFacturables } from '@/lib/factures';
+import { genererVersementsMensuels, moisCouverts, premierMoisLibre, resumeVersements, dateDuMois, nbMoisOffre, MAX_VERSEMENTS } from '@/lib/versements-mensuels';
 import { createClient } from '@/lib/supabase';
 import { calcProRata as calcProRataLib } from '@/lib/prorata';
 import { useToast } from '@/components/ui/ToastProvider';
@@ -211,6 +212,20 @@ function AssignerOffreModal({ client, onClose, onSuccess, offreInitialeId = null
         await solderDemandesApresVente(supabase, { clientId: client.id, offreId: selectedOffre.id });
       }
 
+      // Facture automatique (v106) : les paiements nés réglés par cette vente
+      // partent à l'élève si la prof l'a demandé. Fire-and-forget, comme
+      // l'email « comment régler » : la vente est enregistrée.
+      {
+        const idsRegles = (Array.isArray(result?.paiement_ids) ? result.paiement_ids : []).filter((_, i) => paiements[i]?.statut === 'paid');
+        if (idsRegles.length) {
+          fetch('/api/factures/auto', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ paiementIds: idsRegles }),
+          }).catch(e => console.warn('[facture-auto]', e));
+        }
+      }
+
       // Email « comment régler » (v98) : la variante choisie dans le tunnel
       // part avec le montant encore dû. Fire-and-forget : la vente est faite.
       if (emailReglement) {
@@ -327,6 +342,7 @@ function AssignerOffreModal({ client, onClose, onSuccess, offreInitialeId = null
               offreNom={selectedOffre.nom}
               clientNom={[client.prenom, client.nom_structure || client.nom].filter(Boolean).join(' ')}
               offrePrix={prorata ? prorata.montant : selectedOffre.prix}
+              nbMoisOffre={selectedOffre.type === 'abonnement' ? nbMoisOffre(selectedOffre) : null}
               prixDetail={prorata ? `Pro-rata : ${prorata.resteSemaines} semaine${prorata.resteSemaines > 1 ? 's' : ''} restante${prorata.resteSemaines > 1 ? 's' : ''} sur ${prorata.totalSemaines} (prix plein ${selectedOffre.prix} €)` : null}
               isLibre={isLibre}
               intituleLibre={intituleLibre}
@@ -772,6 +788,57 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
   const [versementCheque, setVersementCheque] = useState('');
   const [versementDate, setVersementDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [versementSubmitting, setVersementSubmitting] = useState(false);
+
+  // ─── « Programmer un versement chaque mois » (retour Manon, 2026-09-07) ──
+  // Un abo au mois vendu en un paiement ne pouvait plus recevoir de
+  // versement (bouton caché dès le solde à zéro) : aucun paiement de
+  // septembre, donc aucune facture de septembre. L'aperçu et l'écriture
+  // partagent lib/versements-mensuels ; la route recalcule depuis la base.
+  const [mensuelModal, setMensuelModal] = useState(null);
+  const [mensuelMontant, setMensuelMontant] = useState('');
+  const [mensuelJour, setMensuelJour] = useState('1');
+  const [mensuelDebut, setMensuelDebut] = useState('');
+  const [mensuelSubmitting, setMensuelSubmitting] = useState(false);
+  const ouvrirMensuel = (abo) => {
+    const lies = paiements.filter(p => p.abonnement_id === abo.id).sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
+    const dernier = lies[0];
+    setMensuelMontant(dernier ? String(parseFloat(dernier.montant) || '') : '');
+    setMensuelJour('1');
+    setMensuelDebut(premierMoisLibre(new Date().toLocaleDateString('sv-SE'), moisCouverts(lies)) || '');
+    setMensuelModal(abo);
+  };
+  const apercuMensuel = (abo) => genererVersementsMensuels({
+    montant: mensuelMontant,
+    jour: parseInt(mensuelJour, 10) || 1,
+    debut: mensuelDebut,
+    fin: abo.date_fin || null,
+    couverts: moisCouverts(paiements.filter(p => p.abonnement_id === abo.id)),
+    nbMax: abo.date_fin ? MAX_VERSEMENTS : 12,
+  });
+  const programmerMensuel = async () => {
+    if (!mensuelModal) return;
+    setMensuelSubmitting(true);
+    try {
+      const res = await fetch(`/api/abonnements/${mensuelModal.id}/versements-mensuels`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ montant: parseFloat(mensuelMontant), jour: parseInt(mensuelJour, 10) || 1, debut: mensuelDebut }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json.error || 'Erreur');
+      const supabase = createClient();
+      const { data: pays } = await supabase.from('paiements').select('*').eq('client_id', client.id).order('date', { ascending: false });
+      setPaiements(pays || []);
+      setMensuelModal(null);
+      if (json.count > 0) toast.success(`${json.count} versement${json.count > 1 ? 's' : ''} programmé${json.count > 1 ? 's' : ''} : ils attendent dans « À percevoir », et la facture suit chaque encaissement.`);
+      else toast.info('Rien à programmer : tous les mois jusqu\'à la fin de l\'abonnement ont déjà leur versement.');
+      router.refresh();
+    } catch (e) {
+      toast.error(e.message);
+    } finally {
+      setMensuelSubmitting(false);
+    }
+  };
 
   // ─── Libérer une série de réservations futures ─────────────────────────
   const [libererModal, setLibererModal] = useState(null); // { recurrence_id, presences[], coursNom }
@@ -1716,6 +1783,80 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
         </div>
       )}
 
+      {/* Modal « Programmer un versement chaque mois » (2026-09-07) */}
+      {mensuelModal && (() => {
+        const abo = mensuelModal;
+        const { versements, ignores } = apercuMensuel(abo);
+        const montantOk = parseFloat(mensuelMontant) > 0;
+        const premierJour = mensuelDebut ? dateDuMois(mensuelDebut, parseInt(mensuelJour, 10) || 1) : null;
+        return (
+          <div className="modal-backdrop" onClick={e => { if (e.target === e.currentTarget) setMensuelModal(null); }}>
+            <div className="modal-sheet versement-sheet animate-slide-up" role="dialog" aria-modal="true">
+              <div className="modal-header">
+                <div style={{ width: 36 }} />
+                <span className="modal-title">Programmer chaque mois</span>
+                <button className="modal-close" onClick={() => setMensuelModal(null)} type="button" aria-label="Fermer"><X size={20} /></button>
+              </div>
+              <div className="modal-body">
+                <div className="paiement-recap">
+                  <span className="paiement-recap-nom">{abo.offre_nom}</span>
+                  <span className="paiement-recap-client">pour {displayName}</span>
+                </div>
+                <p className="montant-hint" style={{ marginTop: 0 }}>
+                  Un versement par mois, {abo.date_fin ? <>jusqu&apos;au <strong>{formatDate(abo.date_fin)}</strong> (fin de l&apos;abonnement)</> : <>sur 12 mois au plus (cet abonnement n&apos;a pas de date de fin)</>}.
+                  Chacun attend dans « À percevoir » et dans l&apos;espace de {client.prenom || 'ton élève'} ; « Encaisser » le passe réglé, et sa facture suit.
+                </p>
+
+                <div className="paiement-section-label">Montant de chaque mois</div>
+                <div className="montant-row">
+                  <input
+                    className="izi-input montant-input"
+                    type="number" step="0.01" min="0"
+                    value={mensuelMontant}
+                    onChange={e => setMensuelMontant(e.target.value)}
+                    placeholder="0.00"
+                    autoFocus
+                  />
+                  <span className="montant-currency">€</span>
+                </div>
+
+                <div className="paiement-section-label">À partir du mois de</div>
+                <input
+                  className="izi-input"
+                  type="month"
+                  value={mensuelDebut}
+                  onChange={e => setMensuelDebut(e.target.value)}
+                />
+
+                <div className="paiement-section-label">Jour du mois</div>
+                <input
+                  className="izi-input"
+                  type="number" min="1" max="31" step="1"
+                  value={mensuelJour}
+                  onChange={e => setMensuelJour(e.target.value)}
+                  style={{ maxWidth: 120 }}
+                />
+                <p className="montant-hint">Le 31 tombe sur le dernier jour des mois plus courts.{premierJour ? <> Premier versement : <strong>{formatDate(premierJour)}</strong>.</> : null}</p>
+
+                <div className="paiement-section-label">Aperçu</div>
+                <p className="montant-hint" data-testid="apercu-mensuel" style={{ fontWeight: 600, color: versements.length ? 'var(--c-ink, #2b2320)' : undefined }}>
+                  {montantOk && mensuelDebut ? resumeVersements(versements, ignores) : 'Saisis le montant et le mois de départ.'}
+                </p>
+
+                <button
+                  type="button"
+                  className="izi-btn izi-btn-primary confirm-btn"
+                  onClick={programmerMensuel}
+                  disabled={mensuelSubmitting || !montantOk || !mensuelDebut || versements.length === 0}
+                >
+                  {mensuelSubmitting ? <><Loader2 size={16} className="spin" /> Enregistrement...</> : <>✓ Programmer {versements.length > 0 ? `${versements.length} versement${versements.length > 1 ? 's' : ''}` : 'les versements'}</>}
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Modal pause abonnement */}
       {aboDetail && (() => {
         const abo = aboDetail;
@@ -1792,9 +1933,17 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
                       <Play size={15} /> Réactiver
                     </button>
                   )}
-                  {abo.statut === 'actif' && aboReste > 0.009 && (
+                  {/* Toujours proposé sur un abo actif (2026-09-07) : caché dès le
+                      solde à zéro, un abo au mois vendu en un paiement ne pouvait
+                      plus JAMAIS recevoir le versement du mois suivant. */}
+                  {abo.statut === 'actif' && (
                     <button type="button" className="izi-btn izi-btn-secondary" onClick={() => { setAboDetail(null); setVersementModal(abo); setVersementMontant(''); setVersementMode('especes'); setVersementDate(new Date().toISOString().split('T')[0]); }}>
                       <Banknote size={15} /> Encaisser un versement
+                    </button>
+                  )}
+                  {abo.statut === 'actif' && (
+                    <button type="button" className="izi-btn izi-btn-secondary" onClick={() => { setAboDetail(null); ouvrirMensuel(abo); }}>
+                      <CalendarClock size={15} /> Programmer chaque mois
                     </button>
                   )}
                   <button type="button" className="izi-btn izi-btn-ghost abo-detail-suppr" onClick={() => { setAboDetail(null); deleteAbonnement(abo); }}>

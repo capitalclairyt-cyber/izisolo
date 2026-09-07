@@ -2,6 +2,9 @@ import { z } from 'zod';
 import { withRoute } from '@/lib/api-route';
 import { sendPushToEmail } from '@/lib/push-server';
 import { reportError } from '@/lib/report';
+import { after } from 'next/server';
+import { createAdminClient } from '@/lib/supabase-admin';
+import { envoyerFactureAuto } from '@/lib/facture-auto';
 
 const encaisserSchema = z.object({
   mode: z.enum(['especes', 'cheque', 'virement', 'CB']),
@@ -11,7 +14,7 @@ const encaisserSchema = z.object({
 });
 
 export const POST = withRoute({ auth: 'active', schema: encaisserSchema, perm: 'argent_gerer' }, async ({ params, auth, body }) => {
-  const { studioId, user, supabase } = auth;
+  const { studioId, user, supabase, profile } = auth;
   const { id } = params;
 
   const today = new Date().toISOString().slice(0, 10);
@@ -54,6 +57,13 @@ export const POST = withRoute({ auth: 'active', schema: encaisserSchema, perm: '
     reportError('encaisser error:', updateErr);
     return Response.json({ error: 'Erreur lors de l\'encaissement' }, { status: 500 });
   }
+
+  // Facture automatique (v106) : si la prof l'a demandé, la facture de ce
+  // paiement part à l'élève en pièce jointe. Après la réponse, jamais
+  // bloquant — l'encaissement est déjà écrit.
+  after(async () => {
+    await envoyerFactureAuto(createAdminClient(), { profileId: studioId, paiementId: id, profile });
+  });
 
   // Push élève « paiement enregistré » (gaté sur pref paiement ; no-op sans abo)
   if (paiement.client_id) {

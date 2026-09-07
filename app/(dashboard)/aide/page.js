@@ -217,6 +217,8 @@ const SECTIONS = [
       <>Dès le SIRET renseigné, le même bouton produit une <strong>facture numérotée</strong> (FAC-2026-0001…). Re-téléchargée plus tard : même document, même numéro. L'administration adore.</>,
       <>Plusieurs paiements dans le mois ? <strong>« Facture du mois »</strong> les regroupe en une seule.</>,
       <>Une erreur ? <strong>« Annuler la facture »</strong> depuis la fiche élève : le numéro est brûlé (jamais réutilisé), les paiements redeviennent facturables.</>,
+      <>Tu veux que la facture <strong>parte toute seule</strong> ? Dans la même carte « Facturation », coche <strong>« Envoyer la facture à l&apos;élève par email à chaque encaissement »</strong> : dès qu&apos;un paiement passe réglé (Encaisser, vente payée comptant, paiement en ligne), sa facture est émise et arrive en pièce jointe chez l&apos;élève. Même document, même numéro que dans son espace.</>,
+      <><strong>Un abonnement au mois, une facture chaque mois</strong> : une facture est acquittée, elle naît d&apos;un paiement reçu. Il faut donc un paiement par mois. À la vente, choisis « En plusieurs fois » puis <strong>« Chaque mois jusqu&apos;à la fin »</strong> et saisis le montant du mois : les versements se remplissent seuls. Sur un abonnement déjà vendu, ouvre-le depuis la fiche de l&apos;élève et clique <strong>« Programmer chaque mois »</strong>. Chaque mois, « Encaisser » le versement reçu : la facture suit.</>,
     ],
     astuce: 'La mention TVA proposée par défaut est celle de la franchise en base (art. 293 B du CGI). Modifie-la dans la même carte si ton régime est différent.',
   },

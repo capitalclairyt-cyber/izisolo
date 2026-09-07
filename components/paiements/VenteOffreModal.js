@@ -10,6 +10,7 @@ import { createClient } from '@/lib/supabase';
 import PaiementStep from '@/components/paiements/PaiementStep';
 import { calcProRata } from '@/lib/prorata';
 import { bornesVente } from '@/lib/offres-periode';
+import { nbMoisOffre } from '@/lib/versements-mensuels';
 import { solderDemandesApresVente } from '@/lib/demande-offre';
 import { lireReglementConfig, preselectionEmail } from '@/lib/reglement';
 import { useStudioId } from '@/components/studio/StudioProvider';
@@ -197,6 +198,20 @@ export default function VenteOffreModal({ offre: offreInitiale = null, clientIni
       // et « Attribuer l'offre » fabriquerait un doublon. Jamais bloquant.
       await solderDemandesApresVente(supabase, { clientId: selectedClient.id, offreId: offre.id });
 
+      // Facture automatique (v106) : les paiements nés réglés par cette vente
+      // partent à l'élève si la prof l'a demandé. Fire-and-forget, comme
+      // l'email « comment régler » : la vente est enregistrée.
+      {
+        const idsRegles = (Array.isArray(result?.paiement_ids) ? result.paiement_ids : []).filter((_, i) => paiements[i]?.statut === 'paid');
+        if (idsRegles.length) {
+          fetch('/api/factures/auto', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ paiementIds: idsRegles }),
+          }).catch(e => console.warn('[facture-auto]', e));
+        }
+      }
+
       // Email « comment régler » (v98) : la variante choisie dans le tunnel
       // part vers l'élève avec le montant encore dû. Fire-and-forget : la
       // vente est enregistrée, un email raté ne doit pas la faire douter.
@@ -337,6 +352,7 @@ export default function VenteOffreModal({ offre: offreInitiale = null, clientIni
                 offreNom={offre.nom}
                 clientNom={displayName(selectedClient)}
                 offrePrix={prorata ? prorata.montant : offre.prix}
+                nbMoisOffre={offre.type === 'abonnement' ? nbMoisOffre(offre) : null}
                 prixDetail={prorata ? `Pro-rata : ${prorata.resteSemaines} semaine${prorata.resteSemaines > 1 ? 's' : ''} restante${prorata.resteSemaines > 1 ? 's' : ''} sur ${prorata.totalSemaines} (prix plein ${offre.prix} €)` : null}
                 onConfirm={handleConfirm}
                 submitting={submitting}

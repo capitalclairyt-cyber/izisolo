@@ -6,6 +6,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { formatMontant } from '@/lib/utils';
+import { versementsChaqueMois, MAX_VERSEMENTS_TUNNEL } from '@/lib/versements-mensuels';
 
 const MODES_PAIEMENT = [
   { value: 'especes',  label: 'Espèces',  Icon: Banknote },
@@ -77,6 +78,10 @@ export default function PaiementStep({
   // Email « comment régler » (v98) : { actif, presel, ribOk, prenom } — fourni
   // par le modal appelant (qui lit profiles.reglement_config). null = pas de bloc.
   emailCtx = null,
+  // Nombre de mois de l'offre (lib/versements-mensuels.nbMoisOffre) : active
+  // le préréglage « Chaque mois jusqu'à la fin » de l'échéancier (retour
+  // Manon 2026-09-07). null ou < 2 = pas de préréglage.
+  nbMoisOffre = null,
 }) {
   const [montant, setMontant] = useState(isLibre ? '' : String(offrePrix || ''));
   // Retour Kim 2026-08-20 : « aucune info de paiement renseignée » et pourtant
@@ -94,6 +99,11 @@ export default function PaiementStep({
   const [nbVersements, setNbVersements] = useState(3);
   const [rythme, setRythme] = useState(1);
   const [versements, setVersements] = useState([]);
+  // Préréglage « Chaque mois » : n versements ÉGAUX d'un montant MENSUEL, et
+  // le total de la vente devient n × ce montant. C'est le cas « 55 € par
+  // mois » de Manon : son offre porte le prix du MOIS, pas de l'année.
+  const [chaqueMois, setChaqueMois] = useState(false);
+  const [parMois, setParMois] = useState('');
   const [error, setError] = useState('');
   // Quel email « comment régler » partira après la vente (v98) : '' = aucun.
   // Présélection selon le réglage de la prof (auto / je choisis / jamais).
@@ -126,8 +136,26 @@ export default function PaiementStep({
     setError('');
   };
 
-  const changeNbVersements = (n) => { setNbVersements(n); regenerate(n, rythme); };
-  const changeRythme = (r) => { setRythme(r); regenerate(nbVersements, r); };
+  const changeNbVersements = (n) => { setChaqueMois(false); setNbVersements(n); regenerate(n, rythme); };
+  const changeRythme = (r) => { setChaqueMois(false); setRythme(r); regenerate(nbVersements, r); };
+
+  const aujourdhuiLocal = () => new Date().toLocaleDateString('sv-SE');
+  const activerChaqueMois = () => {
+    setChaqueMois(true);
+    setRythme(1);
+    setNbVersements(nbMoisOffre);
+    setParMois('');
+    setVersements([]);
+  };
+  const changeParMois = (val) => {
+    setParMois(val);
+    const m = parseFloat(val);
+    if (!(m > 0)) { setVersements([]); return; }
+    const lignes = versementsChaqueMois({ parMois: m, nb: nbMoisOffre, aujourdhui: aujourdhuiLocal() });
+    setVersements(lignes);
+    setMontant(String(Math.round(lignes.reduce((s, v) => s + v.montant, 0) * 100) / 100));
+    setError('');
+  };
 
   const updateVersement = (idx, field, value) => {
     setVersements(prev => prev.map((v, i) => i === idx ? { ...v, [field]: field === 'montant' ? (parseFloat(value) || 0) : value } : v));
@@ -358,8 +386,44 @@ export default function PaiementStep({
       {/* Échéancier — détail des versements */}
       {isMulti && (
         <>
+          {/* Préréglage « Chaque mois jusqu'à la fin de l'abo » (2026-09-07) :
+              un abo au mois se vend UNE fois, avec un versement par mois. Le
+              montant saisi est celui du MOIS, le total de la vente suit. */}
+          {nbMoisOffre >= 2 && (
+            <div className="multi-nb-chips">
+              <button
+                type="button"
+                className={`multi-nb-chip ${chaqueMois ? 'active' : ''}`}
+                onClick={activerChaqueMois}
+                title="Un versement par mois, du même montant, jusqu'à la fin de l'abonnement"
+              >
+                Chaque mois jusqu'à la fin ({nbMoisOffre} mois)
+              </button>
+            </div>
+          )}
+          {chaqueMois && (
+            <>
+              <div className="paiement-section-label">Montant de chaque mois</div>
+              <div className="montant-row">
+                <input
+                  className="izi-input montant-input"
+                  type="number" step="0.01" min="0"
+                  value={parMois}
+                  onChange={e => changeParMois(e.target.value)}
+                  placeholder="Ex : 55"
+                  autoFocus
+                />
+                <span className="montant-currency">€ / mois</span>
+              </div>
+              <p className="montant-hint">
+                {parseFloat(parMois) > 0
+                  ? `${nbMoisOffre} versements de ${formatMontant(parseFloat(parMois))}, un par mois à partir d'aujourd'hui : le total de la vente devient ${formatMontant(parseFloat(montant) || 0)}. Le premier est réglé maintenant, les suivants attendent dans « À percevoir » et s'encaissent en un clic.`
+                  : 'Saisis ce que l\'élève règle chaque mois : les versements se remplissent tout seuls.'}
+              </p>
+            </>
+          )}
           <div className="multi-nb-chips">
-            {[2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => (
+            {Array.from({ length: MAX_VERSEMENTS_TUNNEL - 1 }, (_, i) => i + 2).map(n => (
               <button key={n} type="button" className={`multi-nb-chip ${nbVersements === n ? 'active' : ''}`} onClick={() => changeNbVersements(n)}>
                 {n}x
               </button>
