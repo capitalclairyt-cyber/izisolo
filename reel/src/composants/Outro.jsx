@@ -6,7 +6,7 @@ import { Plan } from './Plan';
 const CREME = '#faf4ec';
 const OMBRE = '0 4px 30px rgba(0,0,0,0.45)';
 
-// La fin : la suite du rush (2,5 → 6,4 s) sous un voile, l'essai, ses faits
+// La fin : la suite du rush (4,6 → 6,4 s, puis l'image figée) sous un voile, l'essai, ses faits
 // vérifiables, et l'adresse dans un bouton (le code LANCEMENT50 a été retiré
 // le 2026-09-08, à la demande de Colin).
 export const Outro = () => {
@@ -20,7 +20,7 @@ export const Outro = () => {
 
   return (
     <AbsoluteFill>
-      <Plan nom="outro" dureeClip={Math.round(3.9 * fps)} voile={voile} zoom={0.06} />
+      <Plan nom="outro" dureeClip={Math.round(1.8 * fps)} voile={voile} zoom={0.06} />
       <AbsoluteFill style={{ alignItems: 'center', justifyContent: 'center' }}>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: -80, textAlign: 'center', color: CREME, textShadow: OMBRE }}>
           <div style={{ ...monte(s(0)), color: CREME }}><Logo size={54} style={{ color: CREME }} /></div>
