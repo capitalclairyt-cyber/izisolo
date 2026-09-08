@@ -1,6 +1,7 @@
 import { createServerClient } from '@/lib/supabase-server';
 import { resoudreStudioActif } from '@/lib/studio-actif';
 import { reportError } from '@/lib/report';
+import { resoudreCarnetApplicable } from '@/lib/carnet-resolution';
 import RevenusClient from './RevenusClient';
 
 // Boucle .range() : le select nu plafonne à 1000 lignes EN SILENCE — sur cette
@@ -54,7 +55,7 @@ export default async function RevenusPage() {
   // 1. Séances payables à la séance non couvertes par un paiement lié
   const presTarifees = await fetchTout(() => supabase
     .from('presences')
-    .select('id, statut_pointage, type_presence, annulation_tardive, client_id, clients(prenom, nom, nom_structure), cours:cours_id!inner(id, nom, date, heure, tarif_unitaire)')
+    .select('id, statut_pointage, type_presence, annulation_tardive, client_id, clients(prenom, nom, nom_structure), cours:cours_id!inner(id, nom, date, heure, type_cours, tarif_unitaire, carnets_acceptes)')
     .eq('profile_id', studioId)
     .gt('cours.tarif_unitaire', 0)
     // Une séance d'un cours ANNULÉ par la prof n'est pas de l'argent dû
@@ -64,11 +65,42 @@ export default async function RevenusPage() {
     .gte('cours.date', debutFenetreStr)
     .order('id'), 'presences tarifées');
 
-  const presEligibles = (presTarifees || []).filter(p =>
+  const presCandidates = (presTarifees || []).filter(p =>
     (p.type_presence || 'normal') === 'normal'
     // annule/declinee = résa annulée côté studio (lignes info v74) : les
     // compter « dues » était le miroir ARGENT du bug de capacité (B1f, rouge).
     && !['absent', 'excuse', 'annule', 'declinee'].includes(p.statut_pointage)
+  );
+
+  // Cours MIXTE (carnets acceptés + tarif à la séance) : l'inscrite dont un
+  // carnet ou un abonnement actif couvre le cours ne doit RIEN à la séance,
+  // c'est le carnet qui se décomptera au pointage. Sans ce tri, une élève à
+  // l'abonnement annuel « à régler plus tard » comptait DEUX fois : l'abo, ET
+  // chacune de ses séances de la saison, semaine après semaine (retour Maude
+  // et Colin, 2026-09-07 : 48 lignes fantômes sur 98 chez Maude). Même
+  // résolution que le pointage (RPC v82) et que l'espace élève, via le miroir
+  // JS `resoudreCarnetApplicable` ; un atelier pur (carnets refusés) reste dû.
+  const abosParClient = new Map();
+  const clientsMixtes = [...new Set(presCandidates.filter(p => p.cours?.carnets_acceptes === true).map(p => p.client_id).filter(Boolean))];
+  for (let i = 0; i < clientsMixtes.length; i += 200) {
+    const { data: abos, error: abosErr } = await supabase
+      .from('abonnements')
+      .select('client_id, statut, seances_total, seances_utilisees, date_fin, date_pause_debut, date_pause_fin, types_cours_autorises')
+      .eq('profile_id', studioId)
+      .eq('statut', 'actif')
+      .in('client_id', clientsMixtes.slice(i, i + 200));
+    if (abosErr) {
+      // Lecture en échec = on ne devine pas : les lignes restent dues (état d'avant).
+      reportError('[revenus] abonnements (prévision mixte) err:', abosErr, { route: '/revenus' });
+      continue;
+    }
+    for (const a of abos || []) {
+      if (!abosParClient.has(a.client_id)) abosParClient.set(a.client_id, []);
+      abosParClient.get(a.client_id).push(a);
+    }
+  }
+  const presEligibles = presCandidates.filter(p =>
+    !(p.cours?.carnets_acceptes === true && resoudreCarnetApplicable(abosParClient.get(p.client_id) || [], p.cours))
   );
   let seancesDues = [];
   if (presEligibles.length > 0) {
