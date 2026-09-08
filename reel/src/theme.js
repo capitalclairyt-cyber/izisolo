@@ -29,6 +29,5 @@ export const FPS = 30;
 // Durées (en images). Les transitions se chevauchent : la durée totale est
 // la somme des séquences moins les transitions (calculée dans Root.jsx).
 export const DUREE_INTRO = 78;
-export const DUREE_SCENE = 112;
 export const DUREE_OUTRO = 108;
 export const DUREE_TRANSITION = 14;

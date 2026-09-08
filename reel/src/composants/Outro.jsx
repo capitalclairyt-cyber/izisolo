@@ -2,7 +2,8 @@ import { AbsoluteFill, interpolate, spring, useCurrentFrame, useVideoConfig } fr
 import { FONT_BODY, FONT_DISPLAY, P } from '../theme';
 import { Logo } from './Logo';
 
-// La fin : l'essai, ses trois faits vérifiables, et l'adresse dans un bouton.
+// La fin : l'essai, ses faits vérifiables, et l'adresse dans un bouton (le code
+// LANCEMENT50 a été retiré le 2026-09-08, à la demande de Colin).
 export const Outro = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
@@ -27,8 +28,6 @@ export const Outro = () => {
           boxShadow: `0 20px 50px rgba(185,121,77,${0.25 + lueur * 0.2})`, letterSpacing: '0.01em' }}>
           izisolo.fr
         </div>
-        <div style={{ ...monte(s(52)), marginTop: 44, fontFamily: FONT_BODY, fontWeight: 500, fontSize: 24, letterSpacing: '0.06em',
-          textTransform: 'uppercase', color: P.accentDeep }}>Code LANCEMENT50 · moitié prix 3 mois</div>
       </div>
     </AbsoluteFill>
   );

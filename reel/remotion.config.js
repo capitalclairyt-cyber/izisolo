@@ -1,10 +1,8 @@
 // Réglages Remotion du réel IziSolo.
-// Les captures sont lues DIRECTEMENT dans public/icons/landing/ du site : une
-// seule source de vérité, re-photographiée par scripts/shoot-landing-visuels.mjs.
+// Les captures vivent dans reel/public/ (le dossier public par défaut), prises
+// par scripts/shoot-reel-visuels.mjs contre le démo en prod.
 import { Config } from '@remotion/cli/config';
-import path from 'node:path';
 
 Config.setEntryPoint('./src/index.jsx');
-Config.setPublicDir(path.join(process.cwd(), '..', 'public', 'icons', 'landing'));
 Config.setVideoImageFormat('jpeg');
 Config.setOverwriteOutput(true);

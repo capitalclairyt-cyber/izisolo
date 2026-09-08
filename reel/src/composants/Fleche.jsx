@@ -8,8 +8,10 @@ const pointBezier = (a, c, b, t) => ({
   y: (1 - t) * (1 - t) * a.y + 2 * (1 - t) * t * c.y + t * t * b.y,
 });
 
-export const Fleche = ({ de, vers, courbure = 60, delai = 0, duree = 24 }) => {
+export const Fleche = ({ de, vers, courbure = 60, delai = 0, duree = 24, fin = 1e9 }) => {
   const frame = useCurrentFrame();
+  const sortie = interpolate(frame, [fin, fin + 10], [1, 0], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
+  if (sortie <= 0) return null;
   const t = interpolate(frame - delai, [0, duree], [0, 1], {
     extrapolateLeft: 'clamp', extrapolateRight: 'clamp', easing: Easing.out(Easing.cubic),
   });
@@ -23,18 +25,18 @@ export const Fleche = ({ de, vers, courbure = 60, delai = 0, duree = 24 }) => {
 
   // La flèche s'arrête un peu avant la cible, pour laisser respirer le repère.
   const marge = Math.min(26, l * 0.2);
-  const fin = pointBezier(de, ctrl, vers, 1 - marge / l);
-  const chemin = `M ${de.x} ${de.y} Q ${ctrl.x} ${ctrl.y} ${fin.x} ${fin.y}`;
+  const bout = pointBezier(de, ctrl, vers, 1 - marge / l);
+  const chemin = `M ${de.x} ${de.y} Q ${ctrl.x} ${ctrl.y} ${bout.x} ${bout.y}`;
 
   let longueur = 0;
   let prev = de;
   for (let i = 1; i <= 60; i++) {
-    const p = pointBezier(de, ctrl, fin, i / 60);
+    const p = pointBezier(de, ctrl, bout, i / 60);
     longueur += Math.hypot(p.x - prev.x, p.y - prev.y);
     prev = p;
   }
-  const tete = pointBezier(de, ctrl, fin, t);
-  const avant = pointBezier(de, ctrl, fin, Math.max(0, t - 0.02));
+  const tete = pointBezier(de, ctrl, bout, t);
+  const avant = pointBezier(de, ctrl, bout, Math.max(0, t - 0.02));
   const angle = (Math.atan2(tete.y - avant.y, tete.x - avant.x) * 180) / Math.PI;
 
   const depuisFin = frame - delai - duree;
@@ -44,7 +46,7 @@ export const Fleche = ({ de, vers, courbure = 60, delai = 0, duree = 24 }) => {
   const repere = interpolate(t, [0.85, 1], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
 
   return (
-    <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+    <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} style={{ position: 'absolute', inset: 0, pointerEvents: 'none', opacity: sortie }}>
       <path d={chemin} fill="none" stroke={P.accent} strokeWidth={6} strokeLinecap="round"
         strokeDasharray={longueur} strokeDashoffset={longueur * (1 - t)} />
       <g transform={`translate(${tete.x} ${tete.y}) rotate(${angle})`} opacity={t > 0.05 ? 1 : 0}>

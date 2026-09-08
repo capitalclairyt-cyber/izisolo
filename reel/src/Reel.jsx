@@ -1,7 +1,7 @@
 import { AbsoluteFill } from 'remotion';
 import { TransitionSeries, linearTiming } from '@remotion/transitions';
 import { fade } from '@remotion/transitions/fade';
-import { DUREE_INTRO, DUREE_OUTRO, DUREE_SCENE, DUREE_TRANSITION } from './theme';
+import { DUREE_INTRO, DUREE_OUTRO, DUREE_TRANSITION } from './theme';
 import { SCENES } from './scenes';
 import { Fond } from './composants/Fond';
 import { Intro } from './composants/Intro';
@@ -20,7 +20,7 @@ export const Reel = () => (
       <TransitionSeries.Sequence durationInFrames={DUREE_INTRO}><Intro /></TransitionSeries.Sequence>
       {SCENES.flatMap((scene) => [
         transition(),
-        <TransitionSeries.Sequence key={scene.id} durationInFrames={DUREE_SCENE}><Scene scene={scene} /></TransitionSeries.Sequence>,
+        <TransitionSeries.Sequence key={scene.id} durationInFrames={scene.duree}><Scene scene={scene} /></TransitionSeries.Sequence>,
       ])}
       {transition()}
       <TransitionSeries.Sequence durationInFrames={DUREE_OUTRO}><Outro /></TransitionSeries.Sequence>
@@ -29,4 +29,4 @@ export const Reel = () => (
 );
 
 export const dureeReel = () =>
-  DUREE_INTRO + SCENES.length * DUREE_SCENE + DUREE_OUTRO - (SCENES.length + 1) * DUREE_TRANSITION;
+  DUREE_INTRO + SCENES.reduce((t, s) => t + s.duree, 0) + DUREE_OUTRO - (SCENES.length + 1) * DUREE_TRANSITION;
