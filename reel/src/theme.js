@@ -21,6 +21,10 @@ export const P = {
   bezel: '#1a1512',
 };
 
+// Les deux teintes vives des cartes de points forts, en alternance : elles
+// tranchent avec le sable (demande Colin, 2026-09-08).
+export const TEINTES = ['#c4552a', '#3b7d5e'];
+
 // Format du réel : 9:16, 30 images par seconde.
 export const W = 1080;
 export const H = 1920;

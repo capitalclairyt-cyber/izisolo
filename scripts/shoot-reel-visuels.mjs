@@ -12,6 +12,10 @@
  *                    de planning (le réel la fait défiler dans le téléphone)
  *   revenus.jpg      Revenus sur 3 derniers mois, mobile
  *   messagerie.jpg   le canal « Yoga Pleine Lune »
+ *   vente-moyens.jpg      le tunnel de vente, « Plusieurs moyens » (espèces + CB)
+ *   vente-echeancier.jpg  le même, « En plusieurs fois » (3 versements arrondis)
+ *   offre.jpg        le formulaire Nouvelle offre rempli (jamais créée), pleine page
+ *   cours.jpg        le formulaire Nouveau cours rempli en série (jamais créé), pleine page
  *
  * Prérequis : refresh du démo + node scripts/habiller-demo-portail.mjs.
  * Usage : node scripts/shoot-reel-visuels.mjs
@@ -114,6 +118,7 @@ const cacherBandeaux = async (page) => {
 // pose le doigt. Coordonnées en px CSS, converties en px de capture (×3).
 const rect = (page, sel) => page.evaluate((s) => {
   const el = typeof s === 'string' ? document.querySelector(s)
+    : s && s.sel ? [...document.querySelectorAll(s.sel)].find(e => e.textContent.replace(/\s+/g, ' ').trim().includes(s.texte))
     : [...document.querySelectorAll('.sidebar-mobile.open a')].find(a => a.textContent.trim().startsWith('Agenda'));
   if (!el) return null;
   const r = el.getBoundingClientRect();
@@ -199,6 +204,102 @@ const ECHELLE = LARGEUR / 1170; // px de capture → px de l'image écrite
   await page.waitForTimeout(800);
   await cacherBurger(page);
   await ecrire('messagerie', await page.screenshot(), { extract: { left: 0, top: 100, width: 1170, height: 2110 } });
+  await page.close();
+}
+
+// 7. VENTE : le tunnel « Ajouter une offre » sur la fiche d'Élise, deux règlements.
+//    Rien n'est validé : on remplit le formulaire et on photographie, c'est tout.
+{
+  const { data: eleve } = await admin.from('clients').select('id').eq('profile_id', PROFILE_ID).ilike('prenom', 'Élise').limit(1).single();
+  if (!eleve) { console.log('❌ Élise introuvable : lancer le refresh du démo'); ko++; }
+  else {
+    const page = await ouvrir(mob, `/clients/${eleve.id}`);
+    const btn = page.getByRole('button', { name: /Ajouter une offre/ }).first();
+    await btn.scrollIntoViewIfNeeded();
+    await btn.click();
+    await page.waitForTimeout(1000);
+    await page.locator('.offre-choice-nom', { hasText: 'Carnet 10' }).first().click();
+    await page.waitForTimeout(1000);
+    // a) « Plusieurs moyens » : 70 € en espèces + 70 € par carte, le même jour.
+    await page.getByRole('button', { name: 'Plusieurs moyens' }).first().click();
+    await page.waitForTimeout(500);
+    const moyens = page.locator('.mm-mode');
+    await moyens.nth(0).selectOption({ label: 'Espèces' });
+    await moyens.nth(1).selectOption({ label: 'Carte bancaire' }).catch(() => moyens.nth(1).selectOption({ label: 'CB' }));
+    await page.waitForTimeout(400);
+    const plusieursFois = await rect(page, { sel: '.reglement-btn', texte: 'En plusieurs fois' });
+    await ecrire('vente-moyens', await page.screenshot());
+    // b) « En plusieurs fois » : 3 versements mensuels, arrondis aux euros, le premier réglé en espèces.
+    await page.getByRole('button', { name: 'En plusieurs fois' }).first().click();
+    await page.waitForTimeout(500);
+    await page.locator('.multi-nb-chip', { hasText: /^3x$/ }).first().click();
+    await page.waitForTimeout(300);
+    const arrondir = page.locator('.multi-arrondir-btn');
+    if (await arrondir.count()) { await arrondir.first().click(); await page.waitForTimeout(300); }
+    const premierMode = page.locator('.multi-v-row select').first();
+    if (await premierMode.count()) await premierMode.selectOption({ label: 'Espèces' }).catch(() => {});
+    await page.waitForTimeout(300);
+    // Faire descendre le corps de la modale pour voir les trois versements.
+    await page.evaluate(() => {
+      for (const el of document.querySelectorAll('.modal-backdrop *')) {
+        const st = getComputedStyle(el);
+        if ((st.overflowY === 'auto' || st.overflowY === 'scroll') && el.scrollHeight > el.clientHeight + 20) { el.scrollTop = 260; return; }
+      }
+      window.scrollTo(0, 260);
+    });
+    await page.waitForTimeout(400);
+    await ecrire('vente-echeancier', await page.screenshot());
+    if (!plusieursFois) { console.log('❌ repère « En plusieurs fois » introuvable'); ko++; }
+    else manifest.reperes.plusieursFois = [Math.round(plusieursFois.x * 3 * ECHELLE), Math.round(plusieursFois.y * 3 * ECHELLE)];
+    await page.close();
+  }
+}
+
+// 8. NOUVELLE OFFRE, remplie mais jamais créée : carnet de 10, 6 mois, Mat + Reformer, 140 €.
+{
+  const page = await ouvrir(mob, '/offres/nouveau');
+  await cacherBurger(page);
+  await page.getByRole('button', { name: '10 séances' }).first().click();
+  await page.getByRole('button', { name: '6 mois' }).first().click();
+  await page.getByRole('button', { name: 'Mat', exact: true }).first().click();
+  await page.getByRole('button', { name: 'Reformer', exact: true }).first().click();
+  await page.getByPlaceholder('Ex : Carnet 10 séances').fill('Carnet 10 séances');
+  await page.getByPlaceholder('0.00').first().fill('140');
+  await page.evaluate(() => document.activeElement?.blur());
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.waitForTimeout(600);
+  await ecrire('offre', await page.screenshot({ fullPage: true }));
+  await page.close();
+}
+
+// 9. NOUVEAU COURS, une série hebdomadaire remplie mais jamais créée : Yoga Flow, mardi 12h15, 12 cours.
+{
+  const page = await ouvrir(mob, '/cours/nouveau?frequence=hebdomadaire');
+  await cacherBurger(page);
+  await page.getByRole('button', { name: 'Yoga', exact: true }).first().click();
+  await page.getByPlaceholder('Ex : Yoga Vinyasa').fill('Yoga Flow · pause déj');
+  const heures = page.locator('select');
+  const nbSelects = await heures.count();
+  for (let i = 0; i < nbSelects; i++) {
+    const options = await heures.nth(i).locator('option').allTextContents();
+    if (options.some(o => o.trim() === '12h')) await heures.nth(i).selectOption({ label: '12h' });
+    else if (options.some(o => o.trim() === '15') && options.some(o => o.trim() === '45')) await heures.nth(i).selectOption({ label: '15' });
+  }
+  const duree = page.locator('input[type=number]').first();
+  await duree.fill('45');
+  await page.getByPlaceholder('ex : 12, vide = illimité').fill('12');
+  const lieu = page.locator('select').filter({ hasText: 'Choisir un lieu' }).first();
+  if (await lieu.count()) {
+    const opts = await lieu.locator('option').allTextContents();
+    if (opts.length > 1) await lieu.selectOption({ index: 1 });
+  }
+  await page.getByRole('button', { name: 'Mar', exact: true }).first().click();
+  await page.getByText('Sauter les vacances scolaires').click();
+  await page.getByText('Sauter les jours fériés français').click();
+  await page.evaluate(() => document.activeElement?.blur());
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.waitForTimeout(800);
+  await ecrire('cours', await page.screenshot({ fullPage: true }));
   await page.close();
 }
 

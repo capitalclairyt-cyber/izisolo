@@ -15,6 +15,10 @@
     "agenda": [
       239,
       289
+    ],
+    "plusieursFois": [
+      613,
+      616
     ]
   },
   "agenda": {
@@ -36,5 +40,21 @@
   "messagerie": {
     "w": 720,
     "h": 1298
+  },
+  "vente-moyens": {
+    "w": 720,
+    "h": 1558
+  },
+  "vente-echeancier": {
+    "w": 720,
+    "h": 1558
+  },
+  "offre": {
+    "w": 720,
+    "h": 3393
+  },
+  "cours": {
+    "w": 720,
+    "h": 5321
   }
 }

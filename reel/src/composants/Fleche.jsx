@@ -8,7 +8,7 @@ const pointBezier = (a, c, b, t) => ({
   y: (1 - t) * (1 - t) * a.y + 2 * (1 - t) * t * c.y + t * t * b.y,
 });
 
-export const Fleche = ({ de, vers, courbure = 60, delai = 0, duree = 24, fin = 1e9 }) => {
+export const Fleche = ({ de, vers, courbure = 60, delai = 0, duree = 24, fin = 1e9, teinte = P.accent }) => {
   const frame = useCurrentFrame();
   const sortie = interpolate(frame, [fin, fin + 10], [1, 0], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
   if (sortie <= 0) return null;
@@ -47,13 +47,13 @@ export const Fleche = ({ de, vers, courbure = 60, delai = 0, duree = 24, fin = 1
 
   return (
     <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} style={{ position: 'absolute', inset: 0, pointerEvents: 'none', opacity: sortie }}>
-      <path d={chemin} fill="none" stroke={P.accent} strokeWidth={6} strokeLinecap="round"
+      <path d={chemin} fill="none" stroke={teinte} strokeWidth={6} strokeLinecap="round"
         strokeDasharray={longueur} strokeDashoffset={longueur * (1 - t)} />
       <g transform={`translate(${tete.x} ${tete.y}) rotate(${angle})`} opacity={t > 0.05 ? 1 : 0}>
-        <path d="M -20 -13 L 2 0 L -20 13" fill="none" stroke={P.accent} strokeWidth={6} strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M -20 -13 L 2 0 L -20 13" fill="none" stroke={teinte} strokeWidth={6} strokeLinecap="round" strokeLinejoin="round" />
       </g>
-      <circle cx={vers.x} cy={vers.y} r={rayon} fill="none" stroke={P.accent} strokeWidth={3} opacity={opacitePulse} />
-      <circle cx={vers.x} cy={vers.y} r={9 * repere} fill={P.accent} stroke="#fff" strokeWidth={3} opacity={repere} />
+      <circle cx={vers.x} cy={vers.y} r={rayon} fill="none" stroke={teinte} strokeWidth={3} opacity={opacitePulse} />
+      <circle cx={vers.x} cy={vers.y} r={9 * repere} fill={teinte} stroke="#fff" strokeWidth={3} opacity={repere} />
     </svg>
   );
 };

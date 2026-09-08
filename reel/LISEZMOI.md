@@ -1,16 +1,22 @@
 # Le réel IziSolo (Remotion)
 
-Une vidéo verticale 1080×1920, 30 i/s, ~26 s, tout mobile : intro (logo + « Moins de soucis.
-Plus de tapis. »), cinq écrans RÉELS du démo Atelier Soleil dans un téléphone, annotés par des
-flèches animées, puis l'appel à l'essai 30 jours.
+Une vidéo verticale 1080×1920, 30 i/s, ~38 s, tout mobile : intro (logo + « Moins de soucis.
+Plus de tapis. »), huit écrans RÉELS du démo Atelier Soleil dans un téléphone, annotés par des
+flèches animées et des cartes de couleur vive (terracotta, sauge), puis l'appel à l'essai 30 jours.
+L'ordre suit la journée d'une prof :
 
-1. **Navigation** : l'accueil, un doigt appuie sur le menu, il se déplie, le doigt choisit
-   « Agenda », la page arrive. Deux points forts.
-2. **Pointage** d'une séance passée.
-3. **Page publique côté élève** : la vitrine (couverture, avatar, nom), puis la capture DÉFILE
-   dans le téléphone jusqu'au planning et à « Places disponibles ».
-4. **Revenus** sur trois mois, mobile.
-5. **Messagerie**, le canal « Yoga Pleine Lune ».
+1. **Navigation** : l'accueil, un doigt appuie sur le menu, il se déplie, un second doigt choisit
+   « Agenda », la page arrive.
+2. **Créer un cours** : le formulaire rempli en série hebdomadaire, qui défile jusqu'à l'aperçu
+   « 12 cours seront créés ».
+3. **Créer une offre** : le formulaire rempli (carnet de 10, 6 mois, Mat + Reformer, 140 €).
+4. **Page publique côté élève** : la vitrine (couverture, avatar, nom), puis la capture DÉFILE
+   jusqu'au planning et à « Places disponibles ».
+5. **Pointage** d'une séance passée.
+6. **Encaisser** : « Plusieurs moyens » (70 € espèces + 70 € CB), puis le doigt bascule sur
+   « En plusieurs fois » (3 versements arrondis, le premier réglé).
+7. **Revenus** sur trois mois.
+8. **Messagerie**, le canal « Yoga Pleine Lune ».
 
 ## Ce qu'il faut savoir
 
@@ -20,6 +26,8 @@ flèches animées, puis l'appel à l'essai 30 jours.
   (sinon le démo a vécu et les cibles se décalent, constaté le 2026-09-08) et, une fois pour
   toutes, `node scripts/habiller-demo-portail.mjs` (couverture, avatar, photos par type, tons,
   onglet À propos : le refresh préserve le profil).
+- **Le tunnel de vente et les deux formulaires sont REMPLIS mais jamais validés** par le script de
+  capture : rien n'est écrit dans le démo (ni vente, ni offre, ni cours).
 - **Les flèches visent des pixels de la capture** (`src/scenes.js`, champ `cible`, en px de
   l'image de 720 de large). Si une capture est refaite et que l'écran a bougé, ce sont ces
   coordonnées qu'il faut revoir, rien d'autre.
@@ -39,5 +47,5 @@ npm run render          # → ../../reseaux/reel/izisolo-reel.mp4 (hors repo, fi
 npm run still -- out/f307.png --frame=307   # une image précise, pour vérifier une scène
 ```
 
-Repères de temps (image 30 i/s) : intro 0–78, navigation 64, pointage 215, page publique 313,
-revenus 479, messagerie 577, outro 675. Les fondus durent 14 images.
+Repères de temps (image 30 i/s) : intro 0–78, navigation 64, cours 200, offre 336, page publique 472,
+pointage 628, encaisser 714, revenus 850, messagerie 936, outro 1022. Les fondus durent 14 images.
