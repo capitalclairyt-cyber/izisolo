@@ -121,3 +121,9 @@ body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sa
 .admin-md strong { color: #e2e8f0; }
 .admin-md a { color: #60a5fa; }
 .admin-md em { color: #94a3b8; }
+/* Blocs ```texte des guides : des textes prêts à coller (légendes, posts), avec leur bouton Copier
+   posé par BlocsACopier.js. On les lit comme du texte : retours à la ligne gardés, pas de défilement. */
+.admin-md pre.admin-pre-texte { position: relative; font-family: inherit; background: #14141f; border: 1px solid #2d2d3f; border-radius: 10px; padding: 46px 16px 16px; margin: 0 0 16px; }
+.admin-md pre.admin-pre-texte code { display: block; background: none; border: none; padding: 0; white-space: pre-wrap; word-break: break-word; font: inherit; font-size: 0.9rem; line-height: 1.6; color: #e2e8f0; }
+.admin-copier { position: absolute; top: 10px; right: 10px; background: #60a5fa; color: #0b0b14; border: none; border-radius: 999px; padding: 8px 16px; font-size: 0.8rem; font-weight: 600; cursor: pointer; }
+.admin-copier:active { transform: scale(0.97); }

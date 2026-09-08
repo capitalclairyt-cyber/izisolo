@@ -4,6 +4,7 @@ import matter from 'gray-matter';
 import { marked } from 'marked';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import BlocsACopier from './BlocsACopier';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,6 +27,7 @@ export default async function AdminGuidePage({ params }) {
       <h1 className="admin-title" style={{ marginBottom: 4 }}>{data.titre || slug}</h1>
       {data.maj && <p style={{ color: '#475569', fontSize: '0.75rem', margin: '0 0 18px' }}>Mis à jour le {String(data.maj).slice(0, 10)} · source : content/admin-guides/{slug}.md</p>}
       <div className="admin-md" dangerouslySetInnerHTML={{ __html: html }} />
+      <BlocsACopier />
     </div>
   );
 }
