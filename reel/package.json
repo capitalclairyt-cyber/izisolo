@@ -5,11 +5,13 @@
   "scripts": {
     "studio": "remotion studio",
     "render": "remotion render Reel ../../reseaux/reel/izisolo-reel.mp4",
-    "still": "remotion still Reel"
+    "still": "remotion still Reel",
+    "videos": "node scripts/preparer-videos.mjs"
   },
   "dependencies": {
     "@remotion/cli": "4.0.522",
     "@remotion/google-fonts": "4.0.522",
+    "@remotion/media": "^4.0.522",
     "@remotion/transitions": "4.0.522",
     "react": "19.2.3",
     "react-dom": "19.2.3",

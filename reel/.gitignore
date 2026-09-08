@@ -1,2 +1,5 @@
 node_modules/
 out/
+# Plans vidéo préparés par scripts/preparer-videos.mjs depuis reseaux/ressources (hors repo)
+public/*.mp4
+public/*-fin.jpg

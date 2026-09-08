@@ -1,7 +1,7 @@
 # Le réel IziSolo (Remotion)
 
-Une vidéo verticale 1080×1920, 30 i/s, ~38 s, tout mobile : intro (logo + « Moins de soucis.
-Plus de tapis. »), huit écrans RÉELS du démo Atelier Soleil dans un téléphone, annotés par des
+Une vidéo verticale 1080×1920, 30 i/s, ~41 s, tout mobile : intro (le rush de Maude au studio,
+l'accroche « Prof de yoga, pilates ou danse ? », puis le logo et « Moins de soucis. Plus de tapis. »), huit écrans RÉELS du démo Atelier Soleil dans un téléphone, annotés par des
 flèches animées et des cartes de couleur vive (terracotta, sauge), puis l'appel à l'essai 30 jours.
 L'ordre suit la journée d'une prof :
 
@@ -26,6 +26,11 @@ L'ordre suit la journée d'une prof :
   (sinon le démo a vécu et les cibles se décalent, constaté le 2026-09-08) et, une fois pour
   toutes, `node scripts/habiller-demo-portail.mjs` (couverture, avatar, photos par type, tons,
   onglet À propos : le refresh préserve le profil).
+- **Le rush de Colin (Maude au studio) ouvre et ferme le réel** : `npm run videos` le prépare depuis
+  `reseaux/ressources/` (hors repo) en deux plans H.264 sans son, 0 → 2,5 s sous l'accroche « Prof de yoga,
+  pilates ou danse ? » et le titre, 2,5 → 6,4 s sous l'outro (la fin est coupée). Les fichiers produits
+  (`public/intro.mp4`, `public/outro.mp4` et leurs dernières images) sont ignorés par git : à refaire
+  après un clone, avant le rendu.
 - **Le tunnel de vente et les deux formulaires sont REMPLIS mais jamais validés** par le script de
   capture : rien n'est écrit dans le démo (ni vente, ni offre, ni cours).
 - **Les flèches visent des pixels de la capture** (`src/scenes.js`, champ `cible`, en px de
@@ -43,9 +48,10 @@ L'ordre suit la journée d'une prof :
 ```bash
 npm install
 npm run studio          # aperçu interactif dans le navigateur
+npm run videos          # prépare intro.mp4 / outro.mp4 depuis le rush (une fois, hors repo)
 npm run render          # → ../../reseaux/reel/izisolo-reel.mp4 (hors repo, fichier marketing)
 npm run still -- out/f307.png --frame=307   # une image précise, pour vérifier une scène
 ```
 
-Repères de temps (image 30 i/s) : intro 0–78, navigation 64, cours 200, offre 336, page publique 472,
-pointage 628, encaisser 714, revenus 850, messagerie 936, outro 1022. Les fondus durent 14 images.
+Repères de temps (image 30 i/s) : intro 0–159 (titre à 75), navigation 145, cours 281, offre 417, page
+publique 553, pointage 709, encaisser 795, revenus 931, messagerie 1017, outro 1103. Fondus de 14 images.

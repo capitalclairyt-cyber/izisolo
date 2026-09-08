@@ -32,6 +32,8 @@ export const FPS = 30;
 
 // Durées (en images). Les transitions se chevauchent : la durée totale est
 // la somme des séquences moins les transitions (calculée dans Root.jsx).
-export const DUREE_INTRO = 78;
-export const DUREE_OUTRO = 108;
+// L'accroche joue sur le rush nu (2,5 s), puis le titre prend 84 images.
+export const DUREE_ACCROCHE = 75;
+export const DUREE_INTRO = DUREE_ACCROCHE + 84;
+export const DUREE_OUTRO = 120;
 export const DUREE_TRANSITION = 14;
