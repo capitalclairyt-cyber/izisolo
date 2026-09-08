@@ -66,12 +66,28 @@ export const POST = withRoute({ auth: 'active' }, async ({ request, params, auth
       .single();
     if (!coursCheck) return Response.json({ error: 'Ce cours n\'existe plus.' }, { status: 409 });
     if (coursCheck.est_annule) return Response.json({ error: 'Ce cours a été annulé — impossible de valider l\'essai dessus.' }, { status: 409 });
-    if (coursDejaCommence(coursCheck)) {
-      return Response.json({ error: 'Cette séance est déjà passée — propose-lui un autre créneau (ou refuse avec un mot gentil).' }, { status: 409 });
+    // Séance passée : on refuse PAR DÉFAUT (la validation crée une inscription
+    // et envoie « Cours d'essai confirmé », absurde après coup), mais la prof
+    // peut valider quand même, en le disant (`apresCoup`) : la personne est
+    // venue sans que la demande ait été traitée à temps, et sa fiche, son
+    // inscription et son pointage doivent exister (retour Maude 2026-09-07 :
+    // « doit pouvoir accepter après le cours »). Dans ce cas, aucun email ni
+    // push de confirmation : on écrit l'historique, on ne promet rien.
+    const seancePassee = coursDejaCommence(coursCheck);
+    const apresCoup = seancePassee && body.apresCoup === true;
+    if (seancePassee && !apresCoup) {
+      return Response.json({
+        error: 'Cette séance est déjà passée. Elle est venue quand même ? Tu peux valider après coup : sa fiche et son inscription seront créées, sans email de confirmation.',
+        code: 'SEANCE_PASSEE',
+      }, { status: 409 });
     }
 
     try {
       const { client_id, presence_id } = await finaliserDemande(supabaseAdmin, demande);
+
+      if (apresCoup) {
+        return Response.json({ ok: true, client_id, presence_id, apresCoup: true });
+      }
 
       // Email confirmation au visiteur
       const { data: cours } = await supabaseAdmin

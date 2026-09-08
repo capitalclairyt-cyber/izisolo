@@ -43,13 +43,18 @@ export default function EssaisClient({ profile, demandes: initialDemandes, surch
   const [refusingId, setRefusingId] = useState(null);
   const [refusMotif, setRefusMotif] = useState('');
 
-  const handleAction = async (id, action, motif = null) => {
+  const handleAction = async (id, action, motif = null, { apresCoup = false } = {}) => {
+    // Séance passée : la validation reste possible, mais on le dit avant (retour
+    // Maude 2026-09-07). Elle crée la fiche et l'inscription, sans email.
+    if (action === 'valider' && apresCoup && !confirm(
+      'Cette séance est déjà passée.\n\nValider quand même crée sa fiche élève et l\'inscrit sur cette séance passée (pointe-la ensuite si elle est venue). Aucun email de confirmation ne lui sera envoyé.'
+    )) return;
     setPendingId(id);
     try {
       const res = await fetch(`/api/admin/essais/${id}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action, motif }),
+        body: JSON.stringify({ action, motif, ...(apresCoup ? { apresCoup: true } : {}) }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Erreur');
@@ -57,7 +62,9 @@ export default function EssaisClient({ profile, demandes: initialDemandes, surch
         ? { ...d, statut: action === 'valider' ? 'finalisee' : 'refusee', motif_refus: motif }
         : d
       ));
-      toast.success(action === 'valider' ? 'Demande validée, fiche client créée' : 'Demande refusée');
+      toast.success(action === 'valider'
+        ? (json.apresCoup ? 'Validée après coup : fiche créée et inscrite, sans email' : 'Demande validée, fiche client créée')
+        : 'Demande refusée');
       setRefusingId(null);
       setRefusMotif('');
     } catch (err) {
@@ -183,7 +190,7 @@ export default function EssaisClient({ profile, demandes: initialDemandes, surch
                     </span>
                     {seancePassee && canAct && (
                       <span style={{ display: 'inline-block', marginTop: 4, fontSize: '0.72rem', fontWeight: 600, color: '#b45309', background: '#fef3e2', borderRadius: 6, padding: '1px 8px' }}>
-                        ⏳ Séance passée : valider est impossible, propose un autre créneau
+                        ⏳ Séance passée : si elle est venue, tu peux encore valider (sans email), sinon propose un autre créneau
                       </span>
                     )}
                   </div>
@@ -211,7 +218,7 @@ export default function EssaisClient({ profile, demandes: initialDemandes, surch
                   <div className="essai-card-actions">
                     <button
                       type="button"
-                      onClick={() => handleAction(d.id, 'valider')}
+                      onClick={() => handleAction(d.id, 'valider', null, { apresCoup: !!seancePassee })}
                       disabled={isPending}
                       className="essai-btn essai-btn-validate"
                     >

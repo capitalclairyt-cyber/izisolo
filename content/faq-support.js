@@ -266,4 +266,11 @@ export const FAQ_SUPPORT = [
     a: "Ce n'est ni elle ni toi : c'est sa messagerie. Certaines boîtes mail (Hotmail et Outlook surtout, mais aussi des antivirus et des filtres d'entreprise) ouvrent les liens reçus avant la personne, pour les vérifier. Un lien de connexion ne sert qu'une fois : ouvert par ce robot, il était déjà usé quand elle cliquait. Depuis le 8 septembre 2026, le lien n'ouvre plus rien tout seul : il affiche une page avec un bouton « Ouvrir mon espace », et c'est son appui qui la connecte. Un robot suit les liens, il n'appuie pas sur les boutons. Demande-lui simplement un nouveau lien depuis « Mon espace » (ou renvoie-lui une invitation depuis sa fiche) : celui-là tiendra. Et si elle préfère, une fois dans son espace, elle peut se choisir un mot de passe pour ne plus dépendre de sa messagerie.",
     lien: { href: '/aide#eleves', label: 'Voir le pas-à-pas' },
   },
+  {
+    // Valider un essai après la séance, 2026-09-08 (retour Maude : « doit
+    // pouvoir accepter après le cours »). AJOUTÉE EN FIN de liste.
+    q: "Je n'ai pas validé une demande de cours d'essai avant la séance, mais la personne est venue : je peux encore l'accepter ?",
+    a: "Oui. Dans « Cours d'essai », la demande porte la mention « Séance passée » mais garde son bouton Valider. Un message te demande de confirmer, puis IziSolo crée sa fiche (statut prospect) et l'inscrit sur cette séance passée, exactement comme si tu l'avais validée à temps. Deux différences : aucun email « cours d'essai confirmé » ne lui est envoyé (ce serait absurde après coup), et c'est à toi de la pointer présente depuis la séance si tu veux que sa venue compte dans son historique. Si elle n'est pas venue, refuse plutôt la demande avec un mot gentil et propose-lui un autre créneau.",
+    lien: { href: '/aide#cours-essai', label: 'Voir le pas-à-pas' },
+  },
 ];
