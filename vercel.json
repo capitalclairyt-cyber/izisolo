@@ -18,5 +18,5 @@
     }
   ],
 
-  "ignoreCommand": "git diff --quiet HEAD^ HEAD -- ':(glob,exclude)*.md' ':!mockups/' ':!migrations*.sql' ':!.env.local.example' ':!.gitignore' ':!docs/' && exit 0 || exit 1"
+  "ignoreCommand": "git diff --quiet HEAD^ HEAD -- ':(glob,exclude)*.md' ':!mockups/' ':!migrations*.sql' ':!.env.local.example' ':!.gitignore' ':!docs/' ':!reel/' && exit 0 || exit 1"
 }
