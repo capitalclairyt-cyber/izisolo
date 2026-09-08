@@ -8,12 +8,18 @@ import { createServerClient } from '@/lib/supabase-server';
  *
  * 1) PKCE (recommandé moderne) — `?code=...`
  *    Magic links, OAuth, reset password configurés en mode PKCE.
+ *    Sûr face aux robots de messagerie : l'échange exige le « verifier »
+ *    posé en cookie dans le navigateur qui a demandé le lien.
  *
  * 2) OTP server-side — `?token_hash=...&type=signup|recovery|email|invite|magiclink`
  *    Format moderne pour confirmation email / magic link / reset
  *    quand le template utilise `{{ .TokenHash }}` (recommandé par Supabase
- *    pour Next.js SSR). Le serveur appelle `verifyOtp` directement.
- *    → Pas de fragment URL, pas de tokens perdus.
+ *    pour Next.js SSR). ⚠️ Depuis le 2026-09-08 le GET ne vérifie PLUS le
+ *    jeton : il renvoie vers /auth/ouvrir, une page à bouton, et c'est le
+ *    POST de ce bouton (ci-dessous) qui appelle `verifyOtp`. Sinon le robot
+ *    de la messagerie (Outlook/Hotmail « Safe Links », antivirus) consomme
+ *    le jeton avant la personne, qui trouve son lien « expiré » à chaque
+ *    fois (cas Juliette côté élève, même mécanique ici).
  *
  * 3) Fallback legacy fragment — pas de code ni token_hash
  *    Le template email pointe vers la racine avec `#access_token=...` dans
@@ -65,22 +71,42 @@ export async function GET(request) {
   }
 
   // ─── 2) OTP server-side (`?token_hash=...&type=...`) ──────────────────
+  // On ne consomme RIEN ici : page à bouton, le POST fait le travail.
   if (tokenHash && type) {
-    const supabase = await createServerClient();
-    const { error } = await supabase.auth.verifyOtp({
-      type,         // signup | recovery | email | invite | magiclink
-      token_hash: tokenHash,
-    });
-    if (!error) {
-      if (type === 'recovery') {
-        return NextResponse.redirect(`${origin}/nouveau-mot-de-passe`);
-      }
-      return NextResponse.redirect(`${origin}${next}`);
-    }
+    const q = new URLSearchParams({ token_hash: tokenHash, type, next });
+    return NextResponse.redirect(`${origin}/auth/ouvrir?${q.toString()}`);
   }
 
   // ─── 3) Aucun code/token_hash en query → erreur ───────────────────────
   // Probablement un lien legacy avec fragment URL : on renvoie vers une
   // page cliente capable de lire `window.location.hash`.
   return NextResponse.redirect(`${origin}/auth/finaliser?next=${encodeURIComponent(next)}`);
+}
+
+/**
+ * POST /auth/callback — LE geste qui consomme un lien à jeton (token_hash).
+ * Formulaire de /auth/ouvrir. Réussite → 303 (le navigateur repart en GET),
+ * recovery → /nouveau-mot-de-passe, sinon `next`. Échec → /login avec le
+ * message « lien invalide ou expiré, demande un nouveau lien ».
+ */
+export async function POST(request) {
+  const { origin } = new URL(request.url);
+  let form = null;
+  try { form = await request.formData(); } catch { /* corps illisible : on retombe sur le login */ }
+  const champ = (k) => { const v = form?.get(k); return typeof v === 'string' ? v : ''; };
+  const tokenHash = champ('token_hash');
+  const type = champ('type');
+  const next = safeNext(champ('next'));
+
+  if (tokenHash && type) {
+    const supabase = await createServerClient();
+    const { error } = await supabase.auth.verifyOtp({ type, token_hash: tokenHash });
+    if (!error) {
+      if (type === 'recovery') {
+        return NextResponse.redirect(`${origin}/nouveau-mot-de-passe`, 303);
+      }
+      return NextResponse.redirect(`${origin}${next}`, 303);
+    }
+  }
+  return NextResponse.redirect(`${origin}/login?error=auth_callback`, 303);
 }

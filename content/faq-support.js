@@ -258,4 +258,12 @@ export const FAQ_SUPPORT = [
     a: "Essentiel, c'est ton cahier en mieux : élèves illimités, agenda, carnets et abonnements gérés à la main, pointage, versements, factures, déclaration URSSAF, export comptable, et ta page publique vitrine avec le planning. Ce qui n'y est pas, c'est tout ce que tes élèves feraient elles-mêmes en ligne : réserver et annuler, avoir un espace élève, demander un cours d'essai, s'inscrire en liste d'attente, t'écrire dans la messagerie, voter à un sondage, acheter ou demander une offre en ligne. Avec Essentiel, ta page publique n'affiche ni ta bio, ni ta FAQ, ni les boutons de demande : uniquement ton planning et tes tarifs si tu les as activés. Dans ton menu, ces fonctions gardent leur entrée avec un petit cadenas, et la page te dit en un clic ce qu'elle fait et comment passer en Complet, sans engagement, à tout moment.",
     lien: { href: '/aide#abonnement', label: 'Voir le pas-à-pas' },
   },
+  {
+    // Lien « ouvert avant toi », 2026-09-08 (retour Manon/Soleya : une élève
+    // sur Hotmail trouvait chaque lien « expiré ou déjà utilisé »).
+    // AJOUTÉE EN FIN de liste.
+    q: "Une élève me dit que son lien de connexion est « expiré ou déjà utilisé » alors qu'elle vient de le recevoir",
+    a: "Ce n'est ni elle ni toi : c'est sa messagerie. Certaines boîtes mail (Hotmail et Outlook surtout, mais aussi des antivirus et des filtres d'entreprise) ouvrent les liens reçus avant la personne, pour les vérifier. Un lien de connexion ne sert qu'une fois : ouvert par ce robot, il était déjà usé quand elle cliquait. Depuis le 8 septembre 2026, le lien n'ouvre plus rien tout seul : il affiche une page avec un bouton « Ouvrir mon espace », et c'est son appui qui la connecte. Un robot suit les liens, il n'appuie pas sur les boutons. Demande-lui simplement un nouveau lien depuis « Mon espace » (ou renvoie-lui une invitation depuis sa fiche) : celui-là tiendra. Et si elle préfère, une fois dans son espace, elle peut se choisir un mot de passe pour ne plus dépendre de sa messagerie.",
+    lien: { href: '/aide#eleves', label: 'Voir le pas-à-pas' },
+  },
 ];
