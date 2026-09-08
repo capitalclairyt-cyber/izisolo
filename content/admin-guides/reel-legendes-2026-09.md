@@ -1,6 +1,6 @@
 ---
 titre: "🎬 Le réel « Ton studio dans ta poche » : légendes prêtes à coller"
-description: "La légende Instagram, le texte LinkedIn et son premier commentaire, écrits dans la voix de Maude, avec un bouton Copier pour publier depuis le téléphone."
+description: "La légende Instagram du réel, le texte LinkedIn et son premier commentaire, la légende du carrousel, écrits dans la voix de Maude, avec un bouton Copier pour publier depuis le téléphone."
 maj: "2026-09-08"
 ---
 
@@ -99,7 +99,27 @@ Et pour celles et ceux qui préfèrent qu'on monte le studio à leur place, grat
 - Le premier commentaire part dans la minute qui suit le post.
 - Les 30 premières minutes comptent : répondre à chaque commentaire, et poser une question en retour.
 
-## 4. Si tu veux adapter
+## 4. Carrousel « Prof le jour. Secrétaire le soir. » (Claude Design) : la légende Instagram
+
+Texte de Colin, tel quel. Le carrousel est fait à part, dans Claude Design.
+
+```texte
+Prof le jour. Secrétaire le soir. 🌙
+
+Toi aussi, tes soirées ressemblent à ça ? « C'est complet mardi ? » · « Je peux payer en 2 fois ? » · « Tu peux me renvoyer le lien visio ? »
+
+On a fait l'addition : environ 3 h 30 par semaine de relances, tableurs et messages. Soit ± 180 heures par an. Non facturées, et prises sur tes cours, ta pratique, ta vie.
+
+IziSolo, c'est l'outil de gestion pensé pour les profs de yoga, pilates et bien-être qui travaillent en solo : ✨ tes élèves réservent seules (portail à ton nom, liste d'attente auto) 💳 paiement CB sur ton propre Stripe, relances d'impayés automatiques 📩 messagerie, annonces, sondage planning 🧾 vraies factures et déclaration URSSAF mâchée
+
+Et le plus dur ? On le fait pour toi : tu envoies ton planning, Maude (prof de yoga, fondatrice) monte ton studio sous 48 h. Gratuit, sans engagement.
+
+30 jours d'essai, sans carte bancaire → le lien est dans la bio. Code LANCEMENT50 : moitié prix pendant 3 mois. 🌿
+
+#profdeyoga #profdepilates #yogafrance #pilatesfrance #yogabusiness #bienetre #entrepreneuse #yogateacher #gestionstudio
+```
+
+## 5. Si tu veux adapter
 
 - Le hook Instagram et le hook LinkedIn sont volontairement différents : Instagram parle à la personne qui vient de voir le réel, LinkedIn à celle qui lit d'abord le texte.
 - Les six puces sont les six scènes du réel, dans le même ordre. Si le réel change, elles changent avec lui.
