@@ -281,4 +281,11 @@ export const FAQ_SUPPORT = [
     a: "C'est normal : le crayon d'une séance ne modifie que cette séance, pour que tu puisses ouvrir une grande salle un jour donné sans toucher au reste. Pour changer les places de toute la série, ouvre n'importe quelle séance de la série, clique sur « Modifier toute la série » et renseigne « Places max (toute la série) ». Toutes les séances à venir prennent le nouveau nombre, et les séances que tu ajouteras plus tard en rallongeant la série naîtront avec lui. Les séances passées ne changent pas. Si une séance a déjà plus d'inscrites que le nouveau nombre, l'aperçu te prévient avant de confirmer : personne n'est retiré, elle reste simplement complète jusqu'à ce qu'une place se libère.",
     lien: { href: '/aide#agenda', label: 'Voir le pas-à-pas' },
   },
+  {
+    // Rétablir une séance annulée, 2026-09-09 (retour Maude : deux séances de
+    // séries annulées qu'elle voulait remettre). AJOUTÉE EN FIN de liste.
+    q: "J'ai annulé une séance de ma série récurrente et je veux la remettre : comment faire ?",
+    a: "Ouvre la séance annulée (elle est toujours sur ton agenda, barrée) et clique sur « Rétablir cette séance ». Elle redevient normale, dans sa série, avec le même horaire, sans doublon. Si des élèves y étaient encore inscrites, elles reçoivent un email « séance maintenue » ; les carnets ne bougent pas, c'est le pointage qui fera le décompte, comme d'habitude. Le même geste existe dans Cours récurrents : la case rouge barrée du calendrier porte un bouton ↺. Deux choses à ne pas faire : recréer la séance à la main (tu obtiendrais une séance orpheline, hors série, à côté de l'annulée) et rallonger la série en espérant qu'elle revienne (« Ajuster la série » ne recrée jamais une date déjà occupée, il te renvoie vers le calendrier). Une séance passée ne se rétablit pas.",
+    lien: { href: '/aide#agenda', label: 'Voir le pas-à-pas' },
+  },
 ];

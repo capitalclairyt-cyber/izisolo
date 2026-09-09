@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   ArrowLeft, Repeat, Calendar, ChevronLeft, ChevronRight, Plus, Trash2,
-  Sun, AlertTriangle, ToggleRight, ToggleLeft, X, Pencil, Save, CalendarPlus,
+  Sun, AlertTriangle, ToggleRight, ToggleLeft, X, Pencil, Save, CalendarPlus, RotateCcw,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase';
 import { getAllTypesFromCategories } from '@/lib/utils';
@@ -81,6 +81,10 @@ export default function RecurrencesClient({ recurrences: initialRecurrences, cou
   // par l'ajustement. Erreur de lecture = tout protégé (fail-closed).
   const [prolongerFutures, setProlongerFutures] = useState([]);
   const [prolongerProteges, setProlongerProteges] = useState(new Set());
+  // Dates des séances ANNULÉES de la série : « Ajuster » ne les recrée jamais
+  // (dédup sur toutes les dates), il les nomme pour renvoyer au calendrier,
+  // où « rétablir » remet la même séance (retour Maude 2026-09-09).
+  const [prolongerAnnulees, setProlongerAnnulees] = useState(new Set());
   // Une série « hors vacances » prolongée sur l'été donnerait 0 séance (été =
   // 04/07→31/08 dans le référentiel). Or c'est exactement le cas d'usage de
   // Maude : des cours d'été. Cette case permet d'outrepasser l'exclusion POUR
@@ -139,7 +143,13 @@ export default function RecurrencesClient({ recurrences: initialRecurrences, cou
     // ?ajuster=1 : on arrive depuis la fiche d'un cours, où la prof cherchait
     // le nombre de séances de sa série (retour Léa 2026-08-21). On ouvre le
     // panneau directement plutôt que de la laisser le chercher ici aussi.
-    if (autoAjuster && selected) setProlonger(true);
+    // ⚠️ Pas un simple setProlonger(true) : sans ouvrirProlonger(), le
+    // panneau s'ouvrait SANS date de fin ni lecture des séances existantes,
+    // donc aperçu vide et « Enregistrer » qui répondait « Un instant,
+    // vérification… » pour toujours (attrapé par la preuve du 2026-09-09 —
+    // le lien « Changer le nombre de séances » de la fiche était un cul-de-sac
+    // depuis le 21/08).
+    if (autoAjuster && selected) ouvrirProlonger();
     // au montage uniquement
   }, []);
 
@@ -188,7 +198,8 @@ export default function RecurrencesClient({ recurrences: initialRecurrences, cou
     return cells;
   }, [monthDate, coursDeRec, selected]);
 
-  const totalCoursFuturs = coursDeRec.length;
+  // Une séance annulée n'est pas « à venir » : elle occupe sa date, pas le compteur.
+  const totalCoursFuturs = coursDeRec.filter(c => !c.est_annule).length;
 
   // ─── Actions ─────────────────────────────────────────────────────────────
   const supprimerCours = async (coursId, iso) => {
@@ -220,6 +231,26 @@ export default function RecurrencesClient({ recurrences: initialRecurrences, cou
     } else {
       setCours(prev => prev.filter(c => c.id !== coursId));
       toast.success('Séance supprimée');
+    }
+    setActionPending(null);
+  };
+
+  // Rétablir une séance annulée depuis le calendrier (retour Maude
+  // 2026-09-09) : la MÊME séance redevient normale, même id, même série,
+  // mêmes inscrites — jamais de doublon. La route prévient les inscrites.
+  const retablirCours = async (coursId, iso) => {
+    if (!confirm(`Rétablir la séance du ${iso.split('-').reverse().join('/')} ?\n\nElle redevient normale, dans sa série, sans doublon. Les élèves encore inscrites sont prévenues par email ; les carnets ne bougent pas.`)) return;
+    setActionPending(iso);
+    try {
+      const res = await fetch(`/api/cours/${coursId}/retablir`, { method: 'POST' });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json.error || `Erreur ${res.status}`);
+      setCours(prev => prev.map(c => c.id === coursId ? { ...c, est_annule: false } : c));
+      setProlongerAnnulees(prev => { const s = new Set(prev || []); s.delete(iso); return s; });
+      const n = json.notifications?.envoyees || 0;
+      toast.success(n > 0 ? `Séance rétablie · ${n} email${n > 1 ? 's' : ''} envoyé${n > 1 ? 's' : ''}` : 'Séance rétablie');
+    } catch (err) {
+      toast.error('Erreur : ' + err.message);
     }
     setActionPending(null);
   };
@@ -454,8 +485,11 @@ export default function RecurrencesClient({ recurrences: initialRecurrences, cou
     const auDela = prolongerFutures.filter(c => c.date > prolongerFin);
     const supprimables = auDela.filter(c => !prolongerProteges.has(c.id));
     const conservees = auDela.filter(c => prolongerProteges.has(c.id));
-    return { ...generation, depuis, supprimables, conservees };
-  }, [prolonger, selected, prolongerFin, coursDeRec, prolongerInclureVacances, prolongerExistantes, prolongerFutures, prolongerProteges]);
+    // Annulées dans la fenêtre : jamais recréées (ce serait un doublon),
+    // nommées pour renvoyer au calendrier et à son bouton « rétablir ».
+    const annulees = [...prolongerAnnulees].filter(d => d >= depuis && d <= prolongerFin).sort();
+    return { ...generation, depuis, supprimables, conservees, annulees };
+  }, [prolonger, selected, prolongerFin, coursDeRec, prolongerInclureVacances, prolongerExistantes, prolongerFutures, prolongerProteges, prolongerAnnulees]);
 
   const ouvrirProlonger = async () => {
     if (!selected) return;
@@ -473,19 +507,21 @@ export default function RecurrencesClient({ recurrences: initialRecurrences, cou
     setProlongerExistantes(null);
     setProlongerFutures([]);
     setProlongerProteges(new Set());
+    setProlongerAnnulees(new Set());
     setProlonger(true);
     // Dédup sur les dates RÉELLES de la série, sans fenêtre ni cap — et ids
     // des occurrences futures pour la réduction.
     const supabase = createClient();
     const { data, error } = await supabase
       .from('cours')
-      .select('id, date')
+      .select('id, date, est_annule')
       .eq('recurrence_parent_id', selected.id);
     if (error || !data) {
       if (error) toast.error('Lecture des séances existantes impossible : ' + error.message);
       return;
     }
     setProlongerExistantes(new Set(data.map(c => c.date)));
+    setProlongerAnnulees(new Set(data.filter(c => c.est_annule).map(c => c.date)));
     const today = toISO(new Date());
     const futures = data.filter(c => c.date >= today);
     setProlongerFutures(futures);
@@ -685,7 +721,7 @@ export default function RecurrencesClient({ recurrences: initialRecurrences, cou
       {/* Liste des récurrences (chips horizontales scrollables) */}
       <div className="rec-list">
         {recurrences.map(rec => {
-          const nbCours = cours.filter(c => c.recurrence_parent_id === rec.id).length;
+          const nbCours = cours.filter(c => c.recurrence_parent_id === rec.id && !c.est_annule).length;
           return (
             <button
               key={rec.id}
@@ -828,6 +864,11 @@ export default function RecurrencesClient({ recurrences: initialRecurrences, cou
                         <strong>{previewProlongation.conservees.length} séance{previewProlongation.conservees.length > 1 ? 's' : ''}</strong> avec inscrites ou historique ser{previewProlongation.conservees.length > 1 ? 'ont' : 'a'} conservée{previewProlongation.conservees.length > 1 ? 's' : ''} : annule-les depuis le détail du cours pour prévenir les élèves.{' '}
                       </>
                     )}
+                    {previewProlongation.annulees?.length > 0 && (
+                      <span className="rec-prolonger-annulees">
+                        <strong>{previewProlongation.annulees.length} séance{previewProlongation.annulees.length > 1 ? 's' : ''} annulée{previewProlongation.annulees.length > 1 ? 's' : ''}</strong> sur cette période ({previewProlongation.annulees.map(d => d.split('-').reverse().slice(0, 2).join('/')).join(', ')}) : rien n&apos;est recréé en double, le calendrier ci-dessous permet de {previewProlongation.annulees.length > 1 ? 'les' : 'la'} rétablir.{' '}
+                      </span>
+                    )}
                     {previewProlongation.incluses.length === 0 && previewProlongation.supprimables.length === 0 && previewProlongation.conservees.length === 0 && (
                       <>Rien à créer ni à supprimer sur cette période{previewProlongation.exclues.length > 0 ? ` (${previewProlongation.exclues.length} date${previewProlongation.exclues.length > 1 ? 's' : ''} exclue${previewProlongation.exclues.length > 1 ? 's' : ''} : vacances/fériés)` : ''}.</>
                     )}
@@ -904,17 +945,32 @@ export default function RecurrencesClient({ recurrences: initialRecurrences, cou
                 return (
                   <div
                     key={i}
-                    className={`rec-cal-cell ${cell.cours ? 'has-cours' : ''} ${cell.dansVacances ? 'vacances' : ''} ${cell.ferie ? 'ferie' : ''} ${isToday ? 'today' : ''} ${isPast ? 'past' : ''}`}
+                    className={`rec-cal-cell ${cell.cours ? 'has-cours' : ''} ${cell.cours?.est_annule ? 'annulee' : ''} ${cell.dansVacances ? 'vacances' : ''} ${cell.ferie ? 'ferie' : ''} ${isToday ? 'today' : ''} ${isPast ? 'past' : ''}`}
                     title={
                       cell.cours
-                        ? `Cours : ${cell.cours.nom}${cell.cours.heure ? ' à ' + cell.cours.heure.slice(0,5) : ''}`
+                        ? `${cell.cours.est_annule ? 'Séance ANNULÉE' : 'Cours'} : ${cell.cours.nom}${cell.cours.heure ? ' à ' + cell.cours.heure.slice(0,5) : ''}${cell.cours.est_annule && !isPast ? ' (rétablir ↺)' : ''}`
                         : cell.ferie ? 'Jour férié'
                         : cell.dansVacances ? `Vacances : ${cell.periodeVacances?.label || ''}`
                         : ''
                     }
                   >
                     <span className="rec-cal-day">{cell.date.getDate()}</span>
-                    {cell.cours && !isPast && (
+                    {/* Une séance annulée occupe sa date (jamais de doublon)
+                        mais se RÉTABLIT au lieu de se supprimer — avant, la
+                        case affichait « Cours prévu » et une croix, sans issue
+                        (retour Maude 2026-09-09). */}
+                    {cell.cours && cell.cours.est_annule && !isPast && (
+                      <button
+                        type="button"
+                        className="rec-cal-action retablir"
+                        onClick={() => retablirCours(cell.cours.id, cell.iso)}
+                        disabled={actionPending === cell.iso}
+                        aria-label="Rétablir cette séance annulée"
+                      >
+                        <RotateCcw size={10} />
+                      </button>
+                    )}
+                    {cell.cours && !cell.cours.est_annule && !isPast && (
                       <button
                         type="button"
                         className="rec-cal-action remove"
@@ -943,6 +999,7 @@ export default function RecurrencesClient({ recurrences: initialRecurrences, cou
 
             <div className="rec-cal-legend">
               <span><span className="dot dot-cours" /> Cours prévu</span>
+              <span><span className="dot dot-annulee" /> Séance annulée (↺ pour la rétablir)</span>
               <span><span className="dot dot-vacances" /> Vacances scolaires</span>
               <span><span className="dot dot-ferie" /> Jour férié</span>
             </div>
@@ -1091,6 +1148,15 @@ const styleBlock = (
     .rec-cal-cell.empty { background: transparent; }
     .rec-cal-cell.has-cours { background: var(--brand); color: white; }
     .rec-cal-cell.has-cours .rec-cal-day { color: white; font-weight: 700; }
+    /* Annulée : après .has-cours, même sélecteur + classe → elle gagne. */
+    .rec-cal-cell.has-cours.annulee { background: #fee2e2; color: #991b1b; border: 1px dashed #dc2626; }
+    .rec-cal-cell.has-cours.annulee .rec-cal-day { color: #991b1b; text-decoration: line-through; }
+    .rec-cal-action.retablir {
+      background: rgba(255,255,255,0.95); color: #15803d;
+      border: 1px solid #15803d; opacity: 1;
+    }
+    .rec-prolonger-annulees { display: block; margin-top: 4px; color: #991b1b; }
+    .dot-annulee { background: #fee2e2; border: 1px dashed #dc2626; }
     .rec-cal-cell.vacances:not(.has-cours) {
       background: #fef9c3; border: 1px dashed #fde047;
     }

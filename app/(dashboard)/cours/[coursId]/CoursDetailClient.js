@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
-  ArrowLeft, Save, Calendar, Clock, MapPin, Users, Repeat, UserPlus,
+  ArrowLeft, Save, Calendar, Clock, MapPin, Users, Repeat, UserPlus, RotateCcw,
   Trash2, AlertTriangle, CheckCircle2, Edit3, X, Copy,
   ChevronDown, ChevronUp, Mail, Send, ShieldAlert, Smartphone, CheckCheck, Lock,
   Home, Navigation, Euro, MessageSquare, CalendarPlus, ArrowRight,
@@ -20,6 +20,7 @@ import {
   JOURS_SEMAINE, JOUR_LONG, serieDeplacable, planDeplacement, apercuDeplacement, decalerJours,
 } from '@/lib/serie-jour';
 import { parseCapacite, capaciteInchangee, planCapacite, apercuCapacite } from '@/lib/serie-capacite';
+import { retablissable, planRetablissement, apercuRetablissement } from '@/lib/retablir-seance';
 import TypeCoursHint from '@/components/cours/TypeCoursHint';
 import CouvertureCours from '@/components/cours/CouvertureCours';
 import ConfierPointage from '@/components/cours/ConfierPointage';
@@ -347,10 +348,35 @@ export default function CoursDetailClient({ intervenantes = [], intervenantInit 
   // partait direct, sans confirm ni vérification du résultat — un mis-clic
   // emailait tous les inscrits, irréversible).
   const [cancelling, setCancelling] = useState(false);
+
+  // Rétablir une séance annulée (retour Maude 2026-09-09 : deux séances de
+  // séries annulées qu'elle voulait remettre — l'annulation était
+  // « définitive » par construction, la fiche ne proposait que la corbeille).
+  // La MÊME séance redevient normale : même id, même série, mêmes inscrites.
+  const [retablissant, setRetablissant] = useState(false);
+  const verdictRetablir = retablissable({ est_annule: cours.est_annule, date: cours.date });
+  const handleRetablir = async () => {
+    const plan = planRetablissement({ presences });
+    if (!confirm(`Rétablir cette séance ?\n\n${apercuRetablissement(plan)}`)) return;
+    setRetablissant(true);
+    try {
+      const res = await fetch(`/api/cours/${cours.id}/retablir`, { method: 'POST' });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json.error || `Erreur ${res.status}`);
+      const n = json.notifications?.envoyees || 0;
+      toast.success(n > 0 ? `Séance rétablie · ${n} email${n > 1 ? 's' : ''} envoyé${n > 1 ? 's' : ''}` : 'Séance rétablie');
+      router.refresh();
+    } catch (err) {
+      toast.error('Erreur : ' + err.message);
+    } finally {
+      setRetablissant(false);
+    }
+  };
+
   const handleCancel = async () => {
     const n = presences.length;
     if (!confirm(
-      `Annuler cette séance ?${n > 0 ? `\n\nLes ${n} inscrit·e${n > 1 ? 's' : ''} seront prévenu·es par email, et les crédits restitués selon ta règle « Cours annulé ».` : ''}\n\nElle restera visible (barrée) sur ton agenda : c'est ce qui informe tes élèves. Tu pourras ensuite la supprimer (corbeille) pour la faire disparaître.\n\nCette action est définitive (pas de ré-activation).`
+      `Annuler cette séance ?${n > 0 ? `\n\nLes ${n} inscrit·e${n > 1 ? 's' : ''} seront prévenu·es par email, et les crédits restitués selon ta règle « Cours annulé ».` : ''}\n\nElle restera visible (barrée) sur ton agenda : c'est ce qui informe tes élèves. Tu pourras ensuite la supprimer (corbeille) pour la faire disparaître, ou la rétablir tant qu'elle n'est pas passée.`
     )) return;
     setCancelling(true);
     try {
@@ -796,9 +822,22 @@ export default function CoursDetailClient({ intervenantes = [], intervenantInit 
           <X size={18} />
           <span>
             Cette séance est annulée. Elle reste affichée <strong>barrée</strong> sur ton agenda pour
-            que tes élèves voient l'annulation. Si tu veux la faire disparaître complètement,
-            supprime-la avec la corbeille <Trash2 size={13} style={{ display: 'inline', verticalAlign: '-2px' }} /> ci-dessous.
+            que tes élèves voient l'annulation.
+            {verdictRetablir.ok
+              ? <> Changement de programme ? <strong>Rétablis-la</strong> : elle redevient normale, dans sa série, sans doublon.</>
+              : <> {verdictRetablir.raison}</>}
+            {' '}Pour la faire disparaître complètement, la corbeille <Trash2 size={13} style={{ display: 'inline', verticalAlign: '-2px' }} /> ci-dessous.
           </span>
+          {verdictRetablir.ok && (
+            <button
+              type="button"
+              className="izi-btn izi-btn-primary annule-retablir-btn"
+              onClick={handleRetablir}
+              disabled={retablissant}
+            >
+              <RotateCcw size={15} /> {retablissant ? 'Rétablissement…' : 'Rétablir cette séance'}
+            </button>
+          )}
         </div>
       )}
 
@@ -2065,8 +2104,10 @@ export default function CoursDetailClient({ intervenantes = [], intervenantInit 
         }
         .warning-banner-serie-btn:hover { background: #d97706; }
 
+        .annule-banner .annule-retablir-btn { flex: 0 0 auto; margin-left: auto; gap: 6px; }
         .annule-banner {
           display: flex;
+          flex-wrap: wrap;
           align-items: center;
           gap: 8px;
           padding: 10px 16px;
