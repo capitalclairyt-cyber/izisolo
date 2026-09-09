@@ -1,13 +1,14 @@
 'use client';
 
 // Carte « Ma déclaration URSSAF » (v93). FRANCE SEULEMENT : la rubrique est
-// masquée par lib/parametres-rubriques quand le pays n'a pas de déclaration
-// automatisable (v105), et la carte le re-vérifie (le commentaire ne suffit
-// pas, leçon du proof pays). Découpe mécanique de page.js.
+// masquée par lib/parametres-rubriques hors de France (v105), et la carte le
+// re-vérifie. Lot 2 : une ligne d'aide par champ, le reste replié.
 import { Landmark } from 'lucide-react';
 import { aDeclarationAutomatisable } from '@/lib/pays';
 import { REGIMES, PERIODICITES, configUrssafAffichee, sanitizeConfigUrssaf } from '@/lib/urssaf';
+import { resumeCarte } from '@/lib/parametres-rubriques';
 import { useParametres, BtnSauver } from '../ParametresContext';
+import CarteReglage, { EnSavoirPlus } from '../CarteReglage';
 
 export default function UrssafCarte() {
   const { profile, setUrssaf } = useParametres();
@@ -16,12 +17,9 @@ export default function UrssafCarte() {
   const configuree = !!sanitizeConfigUrssaf(profile.urssaf_config);
 
   return (
-    <div className="section izi-card">
-      <div className="section-top"><div className="section-icon"><Landmark size={20} /></div><h2>Ma déclaration URSSAF</h2></div>
+    <CarteReglage id="urssaf" titre="Ma déclaration URSSAF" icone={Landmark} resume={resumeCarte('urssaf', profile)} ouverte>
       <p className="section-desc">
-        Dis-nous comment tu déclares : IziSolo te prépare le montant à recopier à chaque échéance,
-        sur la page <strong>Revenus</strong>. On compte ce que tu as <strong>réellement encaissé</strong>,
-        jamais ce qui est encore dû.
+        Dis-nous comment tu déclares : IziSolo te prépare le montant à recopier à chaque échéance, sur la page <strong>Revenus</strong>.
       </p>
 
       <div className="form-group">
@@ -41,7 +39,7 @@ export default function UrssafCarte() {
             <option key={k} value={k}>{p.label}</option>
           ))}
         </select>
-        <p className="form-hint">Le choix que tu as fait à ta création d'entreprise. Il fixe tes échéances.</p>
+        <p className="form-hint">Le choix fait à ta création d'entreprise : il fixe tes échéances.</p>
       </div>
 
       {u.regime !== 'autre' && (
@@ -63,9 +61,7 @@ export default function UrssafCarte() {
             </div>
           </div>
           <p className="form-hint" style={{ marginTop: '-4px' }}>
-            Ces taux changent d&apos;une année à l&apos;autre et selon ta caisse de retraite.
-            Recopie ceux de ton compte <a href="https://www.autoentrepreneur.urssaf.fr" target="_blank" rel="noopener noreferrer">autoentrepreneur.urssaf.fr</a>.
-            Ce que t&apos;affiche IziSolo reste une estimation, jamais un montant officiel.
+            Recopie les taux de ton compte <a href="https://www.autoentrepreneur.urssaf.fr" target="_blank" rel="noopener noreferrer">autoentrepreneur.urssaf.fr</a> : ce qu&apos;affiche IziSolo reste une estimation.
           </p>
 
           <div className="form-group">
@@ -88,8 +84,12 @@ export default function UrssafCarte() {
           <input type="checkbox" checked={u.rappel_email !== false} onChange={e => setUrssaf('rappel_email', e.target.checked)} />
           <span>Préviens-moi par email quand c&apos;est l&apos;heure de déclarer</span>
         </label>
-        <p className="form-hint">Un seul email par période, le lendemain de sa clôture, avec le montant déjà calculé.</p>
+        <p className="form-hint">Un seul email par période, le lendemain de sa clôture, avec le montant.</p>
       </div>
+
+      <EnSavoirPlus>
+        <p>On compte ce que tu as réellement encaissé, jamais ce qui est encore dû. Les taux changent d&apos;une année à l&apos;autre et selon ta caisse de retraite : ceux proposés ne sont que des défauts.</p>
+      </EnSavoirPlus>
 
       {!configuree && (
         <p className="form-hint" style={{ color: 'var(--c-accent-deep, #8a5a2b)' }}>
@@ -97,6 +97,6 @@ export default function UrssafCarte() {
         </p>
       )}
       <BtnSauver carte="urssaf" />
-    </div>
+    </CarteReglage>
   );
 }

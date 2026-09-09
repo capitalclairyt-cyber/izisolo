@@ -1,12 +1,14 @@
 'use client';
 
-// Carte « Facturation » (v84 + pays v105 + facture auto v106). Découpe
-// mécanique de page.js : mêmes champs, mêmes routes, mêmes garde-fous.
+// Carte « Facturation » (v84 + pays v105 + facture auto v106). Lot 2 : une
+// ligne d'aide par champ, le reste derrière « En savoir plus ».
 import { useState } from 'react';
 import { FileText } from 'lucide-react';
 import { useToast } from '@/components/ui/ToastProvider';
 import { PAYS, CODES_PAYS, paysDe, validerIdentifiant, mentionSuggeree, aDeclarationAutomatisable } from '@/lib/pays';
+import { resumeCarte } from '@/lib/parametres-rubriques';
 import { useParametres, BtnSauver } from '../ParametresContext';
+import CarteReglage, { EnSavoirPlus } from '../CarteReglage';
 
 export default function FacturationCarte() {
   const { profile, setProfile, handleChange } = useParametres();
@@ -18,16 +20,15 @@ export default function FacturationCarte() {
   const active = !!String(profile.facturation_siret || '').trim();
 
   return (
-    <div className="section izi-card">
-      <div className="section-top"><div className="section-icon"><FileText size={20} /></div><h2>Facturation</h2></div>
+    <CarteReglage id="facturation" titre="Facturation" icone={FileText} resume={resumeCarte('facturation', profile)} ouverte>
       <p className="section-desc">
-        Avec ton {pays.identifiant.label.toLowerCase()} renseigné, tes élèves téléchargent de <strong>vraies factures acquittées</strong> depuis
-        leur espace (CSE, mutuelles…), à la place du simple reçu. Numérotation automatique et séquentielle
-        (FAC-{new Date().getFullYear()}-0001), documents figés à l'émission, re-téléchargeables à l'identique.
+        Avec ton {pays.identifiant.label.toLowerCase()}, tes élèves téléchargent de <strong>vraies factures acquittées</strong> à la place du simple reçu.
       </p>
-      {/* Le pays d'exercice (v105) : il décide du libellé de ton numéro
-          d'entreprise, de la mention sur tes factures, et de la présence
-          du bloc de déclaration. Retour Melyflow (Belgique), 2026-08-25. */}
+      <EnSavoirPlus>
+        <p>Numérotation automatique et séquentielle (FAC-{new Date().getFullYear()}-0001), documents figés à l'émission, re-téléchargeables à l'identique depuis leur espace (CSE, mutuelles…) et depuis leur fiche.</p>
+      </EnSavoirPlus>
+      {/* Le pays d'exercice (v105) décide du libellé du numéro, de la mention
+          sur les factures et de la présence de la déclaration URSSAF. */}
       <div className="form-group">
         <label className="form-label">Pays d&apos;exercice</label>
         <select className="izi-input" value={profile.pays || 'FR'} onChange={handleChange('pays')} style={{ maxWidth: 260 }}>
@@ -37,8 +38,8 @@ export default function FacturationCarte() {
         </select>
         <p className="form-hint">
           {aDeclarationAutomatisable(profile?.pays)
-            ? "En France, tu déclares toi-même ton chiffre d'affaires : le bloc URSSAF de Revenus est là pour ça."
-            : `Chez toi, c'est ${pays.declarationSociale.nom} qui appelle tes cotisations : IziSolo ne te demande aucune déclaration, il te donne juste tes recettes au propre.`}
+            ? "En France, tu déclares toi-même ton chiffre d'affaires : la rubrique Déclaration URSSAF est là pour ça."
+            : `Chez toi, c'est ${pays.declarationSociale.nom} qui appelle tes cotisations : aucune déclaration à préparer ici.`}
         </p>
       </div>
       <div className="form-group">
@@ -63,9 +64,7 @@ export default function FacturationCarte() {
         {!siretCheck.valide ? (
           <p className="form-hint" style={{ color: '#dc2626' }}>{siretCheck.message}</p>
         ) : (
-          <p className="form-hint">
-            {active ? 'Facturation active ✓' : `${pays.identifiant.aide} Sans lui, tes élèves téléchargent un simple reçu de paiement.`}
-          </p>
+          <p className="form-hint">{active ? 'Facturation active ✓' : `${pays.identifiant.aide} Sans lui, simple reçu de paiement.`}</p>
         )}
       </div>
       <div className="form-group">
@@ -78,15 +77,12 @@ export default function FacturationCarte() {
         />
         <p className="form-hint">
           {pays.mentionDefaut
-            ? <>Vide = « {pays.mentionDefaut} » (franchise de TVA, le cas micro-entreprise). Adapte si tu factures la TVA.</>
-            : <>⚠️ Aucune mention n&apos;est écrite par défaut hors de France : nous ne devinons pas
-               ce qui doit figurer sur ta facture. Souvent «&nbsp;{mentionSuggeree(profile?.pays)}&nbsp;»,
-               mais <strong>vérifie la formulation exacte auprès de ton comptable</strong> : c&apos;est
-               ta responsabilité qui est engagée, pas la nôtre.</>}
+            ? <>Vide = « {pays.mentionDefaut} » (franchise de TVA). Adapte si tu factures la TVA.</>
+            : <>⚠️ Hors de France, rien n&apos;est écrit par défaut : <strong>vérifie la formulation exacte auprès de ton comptable</strong>, c&apos;est ta responsabilité qui est engagée.</>}
         </p>
       </div>
-      {/* Facture automatique (v106). Route DÉDIÉE : la colonne est neuve, un
-          échec ne coûte que ce réglage et le dit, jamais la carte entière. */}
+      {/* Facture automatique (v106). Route DÉDIÉE : un échec ne coûte que ce
+          réglage et le dit, jamais la carte entière. */}
       <div className="form-group" style={{ marginTop: 6 }}>
         <label className="form-label" style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: active ? 'pointer' : 'not-allowed', opacity: active ? 1 : 0.6 }}>
           <input
@@ -115,13 +111,16 @@ export default function FacturationCarte() {
           <span>
             <strong>Envoyer la facture à l&apos;élève par email à chaque encaissement</strong>
             <span className="form-hint" style={{ display: 'block', fontWeight: 400 }}>
-              Dès qu&apos;un paiement passe « réglé » (bouton Encaisser, vente payée comptant, paiement en ligne), sa facture est émise et part en pièce jointe. C&apos;est le même document, le même numéro, que celui qu&apos;elle télécharge dans son espace. Pour un abonnement au mois : un versement encaissé chaque mois, une facture qui part chaque mois.
+              Dès qu&apos;un paiement passe « réglé », sa facture part en pièce jointe, enregistrée tout de suite.
               {!active && ' Renseigne d\'abord ton numéro d\'entreprise.'}
             </span>
           </span>
         </label>
+        <EnSavoirPlus>
+          <p>Bouton Encaisser, vente payée comptant ou paiement en ligne : c&apos;est le même document et le même numéro que celui qu&apos;elle télécharge dans son espace. Pour un abonnement au mois : un versement encaissé chaque mois, une facture qui part chaque mois.</p>
+        </EnSavoirPlus>
       </div>
       <BtnSauver carte="facturation" />
-    </div>
+    </CarteReglage>
   );
 }

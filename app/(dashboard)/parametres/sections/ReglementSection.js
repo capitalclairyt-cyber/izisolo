@@ -11,8 +11,8 @@
 // défaut — §12) ; l'écriture passe par sanitizeReglementConfig (SERIALIZERS).
 // ════════════════════════════════════════════════════════════════════════════
 
-import { Landmark } from 'lucide-react';
 import { validerIban, EMAIL_MODES, VARIANTES_EMAIL } from '@/lib/reglement';
+import { EnSavoirPlus } from '../CarteReglage';
 
 const LIBELLES_DEFAUT = {
   virement: 'Virement (RIB)',
@@ -40,17 +40,13 @@ export default function ReglementSection({ profile, setProfile, setDirty, bouton
   const emailDefaut = VARIANTES_EMAIL.includes(cfg.email_defaut) ? cfg.email_defaut : 'virement';
 
   return (
-    <div className="section izi-card">
-      <div className="section-top">
-        <div className="section-icon"><Landmark size={20} /></div>
-        <h2>Règlement par virement</h2>
-      </div>
+    <>
       <p className="section-desc">
-        Avec ton RIB renseigné, une vente « à régler plus tard » peut envoyer à l&apos;élève un email
-        <strong> « comment régler »</strong> : ton IBAN, une <strong>référence de virement</strong> (pour reconnaître
-        son règlement sur ton relevé) et, dans son espace, un <strong>QR code</strong> à scanner avec son application
-        bancaire. Sans RIB, l&apos;email peut quand même proposer espèces ou chèque au studio.
+        Avec ton RIB, une vente « à régler plus tard » envoie à l&apos;élève un email <strong>« comment régler »</strong> : IBAN, référence de virement, QR code bancaire.
       </p>
+      <EnSavoirPlus>
+        <p>La référence de virement est stable par élève : elle te permet de reconnaître son règlement sur ton relevé. Le QR code (standard SEPA) préremplit le virement dans son application bancaire. Sans RIB, l&apos;email peut quand même proposer espèces ou chèque au studio.</p>
+      </EnSavoirPlus>
 
       <div className="form-group">
         <label className="form-label">Titulaire du compte</label>
@@ -76,7 +72,7 @@ export default function ReglementSection({ profile, setProfile, setDirty, bouton
           <p className="form-hint" style={{ color: '#dc2626' }}>{ibanCheck.erreur}</p>
         ) : (
           <p className="form-hint">
-            {ibanCheck?.ok ? 'IBAN valide ✓' : 'Un RIB se partage par nature : il permet de recevoir un virement, jamais d\'en émettre.'}
+            {ibanCheck?.ok ? 'IBAN valide ✓' : 'Un RIB se partage : il permet de recevoir un virement, jamais d\'en émettre.'}
           </p>
         )}
       </div>
@@ -136,10 +132,7 @@ export default function ReglementSection({ profile, setProfile, setDirty, bouton
             <span>Ne jamais envoyer d&apos;email</span>
           </label>
         </div>
-        <p className="form-hint">
-          Dans tous les cas, le choix reste modifiable au moment de la vente. « Part tout seul » avec
-          « Virement (RIB) » ne présélectionne le virement que si ton RIB est renseigné.
-        </p>
+        <p className="form-hint">Le choix reste modifiable à chaque vente ; « part tout seul » avec le virement demande un RIB renseigné.</p>
       </div>
 
       {boutonSauver}
@@ -159,6 +152,6 @@ export default function ReglementSection({ profile, setProfile, setDirty, bouton
         }
         .reg-email-defaut:disabled { opacity: 0.5; }
       `}</style>
-    </div>
+    </>
   );
 }

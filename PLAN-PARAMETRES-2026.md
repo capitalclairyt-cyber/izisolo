@@ -179,7 +179,7 @@ objet (aucune colonne nouvelle).
 - Aide : les 39 mentions « Paramètres → … » du guide, de la FAQ, des emails et
   des écrans sont réécrites (table de correspondance ancien vers nouveau chemin).
 
-**Lot 2 : le repli (le lot qui répond à la demande)**
+**Lot 2 : le repli (le lot qui répond à la demande) — ✅ LIVRÉ le 2026-09-09**, prouvé 35/35 (`scripts/proof-parametres-repli.mjs`, relevé avant/après figé dans le script) : Ma page 2 276 → 1 375 px et 332 → 106 mots, Abonnement 1 950 → 276 px, Types de cours 1 585 → 764 px, Cours d'essai 1 686 → 1 023 px, 19 rubriques 3 299 → 1 890 mots, aucune au-dessus de 1 400 px fermée sur desktop. Non-régression : structure 73/73, pays 27/27, virement 16/16, offres-espace 18/18, paiement en ligne 22/22, vignettes 35/35, frontière des plans 38/38.
 - Composant `CarteReglage` : titre, résumé d'état, ouvert/fermé, bouton
   Enregistrer à l'intérieur. Résumés dérivés du profil (PURS, testés).
 - Textes : une ligne par champ, le reste en « ? » ou « En savoir plus ».

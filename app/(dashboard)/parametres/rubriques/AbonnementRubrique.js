@@ -1,14 +1,18 @@
 'use client';
 
-// « Mon abonnement IziSolo » : le plan actuel (effectif, essai compris), la
-// matrice des capacités (can() = source unique, B3a), les cartes de plans
-// (AbonnementCheckout) et la note sur les frais. Découpe mécanique de page.js.
-import { Crown } from 'lucide-react';
+// « Mon abonnement IziSolo » : le plan actuel (carte ouverte, compacte, le
+// détail des capacités derrière « Ce que ton plan comprend »), puis
+// « Changer de plan » (repliée, sauf en essai ou essai terminé : choisir est
+// alors l'action attendue) qui porte les cartes de plans et la note sur les
+// frais. Lot 2 « le repli », 2026-09-09.
+import { Crown, ArrowLeftRight } from 'lucide-react';
 import { PLANS } from '@/lib/constantes';
 import { getTrialStatus, effectivePlan as effectivePlanFromTrial } from '@/lib/trial';
 import { can } from '@/lib/plan-guard';
+import { resumeCarte, carteOuverteParDefaut } from '@/lib/parametres-rubriques';
 import AbonnementCheckout from '../sections/AbonnementCheckout';
 import { useParametres } from '../ParametresContext';
+import CarteReglage, { EnSavoirPlus } from '../CarteReglage';
 
 export default function AbonnementRubrique() {
   const { profile } = useParametres();
@@ -34,12 +38,7 @@ export default function AbonnementRubrique() {
 
   return (
     <>
-      <div className="section izi-card">
-        <div className="section-top">
-          <div className="section-icon abo-icon"><Crown size={20} /></div>
-          <h2>Mon abonnement IziSolo</h2>
-        </div>
-
+      <CarteReglage id="plan_actuel" titre="Mon abonnement IziSolo" icone={Crown} resume={resumeCarte('plan_actuel', profile)} ouverte>
         <div className="abo-current">
           <div className="abo-badge">{currentPlan.nom}</div>
           <p className="abo-status">
@@ -62,29 +61,30 @@ export default function AbonnementRubrique() {
           </p>
         </div>
 
-        <div className="abo-features">
-          {featuresList.map((f, i) => (
-            <div key={i} className={`abo-feature ${f.included ? 'included' : 'locked'}`}>
-              <span className={f.included ? 'abo-check' : 'abo-lock'}>{f.included ? '✓' : '🔒'}</span>
-              <span>{f.label}</span>
-            </div>
-          ))}
-        </div>
+        <EnSavoirPlus libelle="Ce que ton plan comprend">
+          <div className="abo-features">
+            {featuresList.map((f, i) => (
+              <div key={i} className={`abo-feature ${f.included ? 'included' : 'locked'}`}>
+                <span className={f.included ? 'abo-check' : 'abo-lock'}>{f.included ? '✓' : '🔒'}</span>
+                <span>{f.label}</span>
+              </div>
+            ))}
+          </div>
+        </EnSavoirPlus>
+      </CarteReglage>
 
-        {currentPlanKey !== 'pro' && !isFree && (
-          <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', marginTop: 12 }}>
-            Tu peux changer de plan ci-dessous pour débloquer plus de fonctionnalités.
-          </p>
-        )}
-      </div>
-
-      <AbonnementCheckout currentPlan={profile?.plan || 'solo'} profile={profile} />
-
-      <div className="section izi-card" style={{ background: 'var(--bg-soft, #faf8f5)', border: '1px dashed var(--border)' }}>
-        <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.5 }}>
-          <strong>Frais de fonctionnement IziSolo</strong> : 1 % du volume payé en ligne via Stripe, ajoutés à ta facture mensuelle, jamais prélevés sur tes paiements. Tu encaisses sur ton propre compte Stripe, IziSolo ne touche jamais l'argent de tes élèves.
+      <CarteReglage
+        id="changer_plan"
+        titre="Changer de plan"
+        icone={ArrowLeftRight}
+        resume={resumeCarte('changer_plan', profile)}
+        ouverte={carteOuverteParDefaut('changer_plan', profile)}
+      >
+        <AbonnementCheckout currentPlan={profile?.plan || 'solo'} profile={profile} />
+        <p className="form-hint" style={{ margin: 0 }}>
+          <strong>Frais de fonctionnement IziSolo</strong> : 1 % du volume payé en ligne via Stripe, ajouté à ta facture mensuelle, jamais prélevé sur tes paiements. Tu encaisses sur ton propre compte Stripe.
         </p>
-      </div>
+      </CarteReglage>
     </>
   );
 }

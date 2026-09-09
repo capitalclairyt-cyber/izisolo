@@ -99,15 +99,9 @@ export default function ReglesMetierTab({ profileId }) {
         <AlertCircle size={18} />
         <div>
           <strong>Cadre les cas particuliers une fois pour toutes.</strong> L'app
-          appliquera tes règles automatiquement, ou te remontera le cas dans une
-          inbox « À traiter » si tu choisis le mode manuel. Tu peux modifier
-          ces règles à tout moment.
-          <div style={{ marginTop: 10 }}>
-            💡 <em>Pas envie de tout configurer ?</em> Les valeurs par défaut sont
-            déjà saines (équilibre strict/souple, notif élève quand pertinent).
-            Tu peux <strong>cliquer Enregistrer en bas tout de suite</strong> et
-            ajuster plus tard si besoin.
-          </div>
+          applique tes règles, ou te remonte le cas dans « À traiter » en mode
+          manuel. Les valeurs par défaut sont déjà saines : tu peux enregistrer
+          tout de suite et ajuster plus tard.
         </div>
       </div>
 

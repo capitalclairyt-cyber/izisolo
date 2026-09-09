@@ -2,17 +2,18 @@
 
 // ════════════════════════════════════════════════════════════════════════════
 // Section « Documents d'inscription » (v85, demande Patricia 2026-08-18) —
-// questionnaire santé (QS-SPORT), CGV / règlement intérieur… La prof dépose
-// jusqu'à MAX_DOCS PDF (Vercel Blob via /api/documents/upload) ; les élèves
-// les téléchargent sur le formulaire d'essai + dans leur espace avec la
-// consigne « imprime et rapporte signé » (pas de signature électronique).
-// La LISTE est sauvée par la carte 'docs' (profiles.docs_inscription).
+// questionnaire santé (QS-SPORT), CGV / règlement intérieur… jusqu'à MAX_DOCS
+// PDF (Vercel Blob via /api/documents/upload) ; les élèves les téléchargent
+// sur le formulaire d'essai + dans leur espace avec la consigne « imprime et
+// rapporte signé ». La LISTE est sauvée par la carte 'docs'. La carte (titre,
+// résumé, bouton) est rendue par la rubrique (lot 2).
 // ════════════════════════════════════════════════════════════════════════════
 
 import { useRef, useState } from 'react';
-import { FileText, Upload, Trash2, ExternalLink, Loader2 } from 'lucide-react';
+import { Upload, Trash2, ExternalLink, Loader2 } from 'lucide-react';
 import { MAX_DOCS, sanitizeDocs } from '@/lib/docs-inscription';
 import { useToast } from '@/components/ui/ToastProvider';
+import { EnSavoirPlus } from '../CarteReglage';
 
 export default function DocsInscriptionSection({ profile, setProfile, setDirty }) {
   const { toast } = useToast();
@@ -46,16 +47,9 @@ export default function DocsInscriptionSection({ profile, setProfile, setDirty }
   };
 
   return (
-    <div className="section izi-card">
-      <div className="section-top">
-        <div className="section-icon"><FileText size={20} /></div>
-        <h2>Documents d'inscription</h2>
-      </div>
+    <>
       <p className="section-desc">
-        Questionnaire de santé (QS-SPORT), conditions générales, règlement intérieur…
-        Tes élèves les téléchargent sur le <strong>formulaire d'essai</strong> et dans
-        <strong> leur espace</strong>, avec la consigne de te les rapporter <strong>imprimés
-        et signés</strong>. PDF, {MAX_DOCS} documents max.
+        Questionnaire de santé, CGV, règlement intérieur : tes élèves les téléchargent à l&apos;inscription, à te rapporter <strong>imprimés et signés</strong>. PDF, {MAX_DOCS} max.
       </p>
 
       {docs.length > 0 && (
@@ -72,13 +66,7 @@ export default function DocsInscriptionSection({ profile, setProfile, setDirty }
               <a href={d.url} target="_blank" rel="noopener noreferrer" className="docs-voir" title="Voir le PDF">
                 <ExternalLink size={15} />
               </a>
-              <button
-                type="button"
-                className="docs-suppr"
-                onClick={() => update(docs.filter((_, j) => j !== i))}
-                title="Retirer ce document"
-                aria-label="Retirer ce document"
-              >
+              <button type="button" className="docs-suppr" onClick={() => update(docs.filter((_, j) => j !== i))} title="Retirer ce document" aria-label="Retirer ce document">
                 <Trash2 size={15} />
               </button>
             </div>
@@ -88,33 +76,19 @@ export default function DocsInscriptionSection({ profile, setProfile, setDirty }
 
       {docs.length < MAX_DOCS && (
         <>
-          <input
-            ref={fileRef}
-            type="file"
-            accept="application/pdf"
-            style={{ display: 'none' }}
-            onChange={e => uploadDoc(e.target.files?.[0])}
-          />
-          <button
-            type="button"
-            className="izi-btn izi-btn-secondary docs-add-btn"
-            onClick={() => fileRef.current?.click()}
-            disabled={uploading}
-          >
+          <input ref={fileRef} type="file" accept="application/pdf" style={{ display: 'none' }} onChange={e => uploadDoc(e.target.files?.[0])} />
+          <button type="button" className="izi-btn izi-btn-secondary docs-add-btn" onClick={() => fileRef.current?.click()} disabled={uploading}>
             {uploading ? <Loader2 size={16} className="spin" /> : <Upload size={16} />}
             {uploading ? 'Téléversement…' : 'Ajouter un PDF'}
           </button>
         </>
       )}
-      {docs.length === 0 && (
-        <p className="form-hint">
-          💡 Le questionnaire officiel QS-SPORT se télécharge sur service-public.fr
-          (cherche « QS-SPORT cerfa ») : dépose-le ici tel quel.
-        </p>
-      )}
+      <EnSavoirPlus>
+        <p>Ils sont proposés sur le formulaire d&apos;essai et dans l&apos;espace de chaque élève. Le questionnaire officiel QS-SPORT se télécharge sur service-public.fr (cherche « QS-SPORT cerfa ») : dépose-le ici tel quel.</p>
+      </EnSavoirPlus>
 
       <style jsx>{`
-        .docs-liste { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+        .docs-liste { display: flex; flex-direction: column; gap: 8px; }
         .docs-row { display: flex; align-items: center; gap: 8px; }
         .docs-nom-input { flex: 1; }
         .docs-voir, .docs-suppr {
@@ -127,6 +101,6 @@ export default function DocsInscriptionSection({ profile, setProfile, setDirty }
         .docs-suppr:hover { color: var(--danger, #dc2626); border-color: var(--danger, #dc2626); }
         .docs-add-btn { align-self: flex-start; }
       `}</style>
-    </div>
+    </>
   );
 }

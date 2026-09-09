@@ -18,6 +18,7 @@ import { test, expect } from '@playwright/test';
 import {
   GROUPES, RUBRIQUES, RUBRIQUE_IDS, rubriqueParId, rubriquesVisibles,
   rubriquesParGroupe, resumeRubrique, rubriqueDepuisAncienLien, ANCIENS_LIENS_CONNUS,
+  resumeCarte, carteOuverteParDefaut, CARTES_RESUMEES,
 } from '../../lib/parametres-rubriques.js';
 import { CARTES, payloadCarte, carteDuChamp } from '../../lib/parametres-cartes.js';
 
@@ -210,5 +211,36 @@ test.describe('Cartes : le payload n\'écrit que ses colonnes (règle B2e)', () 
 
   test('le SMS n\'est plus un réglage écrit par les Paramètres (décision 2026-09-09)', () => {
     expect(Object.values(CARTES).flat()).not.toContain('sms_seuil_mois');
+  });
+});
+
+test.describe('Cartes repliées (lot 2) : chaque carte dit son état', () => {
+  test('chaque carte de CARTES a un résumé, et aucun résumé ne jette', () => {
+    for (const c of Object.keys(CARTES)) expect(CARTES_RESUMEES, `la carte ${c} n'a pas de résumé : fermée, elle serait muette`).toContain(c);
+    for (const c of CARTES_RESUMEES) for (const p of [null, PROFIL_VIDE, PROFIL_DIFFORME, PROFIL_COMPLET]) {
+      expect(typeof resumeCarte(c, p, { lieux: [{ nom: 'Salle A' }] }), c).toBe('string');
+    }
+    expect(resumeCarte('inconnue', PROFIL_COMPLET)).toBe('');
+  });
+
+  test('les résumés disent l\'état réel', () => {
+    expect(resumeCarte('lieux', {}, { lieux: [{ nom: 'Salle A' }, { nom: 'Salle B' }] })).toBe('2 lieux · Salle A, Salle B');
+    expect(resumeCarte('lieux', {}, { lieux: [] })).toBe('Aucun lieu pour l\'instant');
+    expect(resumeCarte('page_affichage', { afficher_tarifs: true })).toBe('horaires masqués · tarifs affichés · offres dans l\'espace élève');
+    expect(resumeCarte('page_affichage', { offres_espace: false })).toContain('offres hors de l\'espace élève');
+    expect(resumeCarte('page_plus', { annees_experience: 9, formations: 'x', faq_publique: [{}, {}] })).toBe('9 ans d\'expérience · formations · 2 questions');
+    expect(resumeCarte('page_plus', {})).toBe('Expérience, formations, philosophie, FAQ');
+    expect(resumeCarte('seuils', {})).toBe('2 séances · 7 jours avant la fin');
+    expect(resumeCarte('seuils_prof', { alerte_paiement_attente_jours: 30 })).toBe('après 30 jours d\'attente');
+    expect(resumeCarte('anniv', { anniversaire_mode: 'off' })).toBe('Désactivé');
+    expect(resumeCarte('notifs_eleves', PROFIL_COMPLET)).toBe('2 emails automatiques activés');
+    expect(resumeCarte('facturation', PROFIL_COMPLET)).toContain('SIRET');
+  });
+
+  test('« Changer de plan » ne s\'ouvre tout seul qu\'en essai ou essai terminé', () => {
+    expect(carteOuverteParDefaut('changer_plan', { plan: 'solo', trial_started_at: new Date().toISOString() })).toBe(true);
+    expect(carteOuverteParDefaut('changer_plan', { plan: 'solo', trial_started_at: new Date(Date.now() - 400 * 86400000).toISOString() })).toBe(true);
+    expect(carteOuverteParDefaut('changer_plan', PROFIL_COMPLET)).toBe(false);
+    expect(carteOuverteParDefaut('anniv', PROFIL_COMPLET)).toBe(false);
   });
 });

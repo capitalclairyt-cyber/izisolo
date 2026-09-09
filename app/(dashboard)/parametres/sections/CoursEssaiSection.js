@@ -2,10 +2,12 @@
 
 // ════════════════════════════════════════════════════════════════════════════
 // Section "Cours d'essai" — pour les visiteurs non encore clients.
-// Extrait de parametres/page.js en B2d (découpe mécanique, zéro changement).
+// Lot 2 « le repli » (2026-09-09) : le prix n'apparaît que si l'essai est
+// payant, le prix par type que si on le demande. La carte (titre, résumé,
+// bouton) est rendue par la rubrique.
 // ════════════════════════════════════════════════════════════════════════════
 
-import { Zap } from 'lucide-react';
+import { useState } from 'react';
 import { getAllTypesFromCategories } from '@/lib/utils';
 
 export default function CoursEssaiSection({ profile, setProfile, setDirty }) {
@@ -17,12 +19,16 @@ export default function CoursEssaiSection({ profile, setProfile, setDirty }) {
   const mode  = profile?.essai_mode || 'manuel';
   const paiement = profile?.essai_paiement || 'gratuit';
 
-  // Tarif par type de cours (v92, retour Kim 2026-08-20 : essai particulier
-  // ≠ essai collectif). L'éditeur lit BRUT (règle bible : un input montre le
-  // vide, pas le défaut) — la sanitization vit dans le serializer de la carte.
+  // Tarif par type de cours (v92, retour Kim 2026-08-20). L'éditeur lit BRUT
+  // (un input montre le vide, pas le défaut) ; la sanitization vit dans le
+  // serializer de la carte.
   const typesCours = getAllTypesFromCategories(profile?.types_cours);
   const surcharges = (profile?.essai_prix_par_type && typeof profile.essai_prix_par_type === 'object')
     ? profile.essai_prix_par_type : {};
+  const aDesSurcharges = Object.keys(surcharges).length > 0;
+  // La grille par type ne s'affiche que si elle sert déjà, ou si on la demande.
+  const [parTypeDemande, setParTypeDemande] = useState(false);
+  const montrerParType = paiement === 'sur_place' && typesCours.length > 0 && (aDesSurcharges || parTypeDemande);
   const setSurcharge = (type) => (val) => {
     const next = { ...surcharges };
     if (val === '' || val == null) delete next[type];
@@ -31,24 +37,13 @@ export default function CoursEssaiSection({ profile, setProfile, setDirty }) {
   };
 
   return (
-    <div className="section izi-card">
-      <div className="section-top">
-        <div className="section-icon"><Zap size={20} /></div>
-        <h2>Cours d'essai</h2>
-      </div>
-      <p className="section-desc">
-        Permets aux visiteurs de demander un cours d'essai depuis ta page publique.
-        Idéal pour tester ton activité avant de s'inscrire.
-      </p>
-
+    <>
       {/* Toggle actif */}
       <div className="essai-toggle-row" onClick={() => set('essai_actif')(!actif)}>
         <div>
           <div className="essai-toggle-label">{actif ? 'Activé' : 'Désactivé'}</div>
           <div className="essai-toggle-sub">
-            {actif
-              ? 'Le bouton "Cours d\'essai" est visible sur ton portail public.'
-              : 'Aucun bouton de demande d\'essai sur ton portail public.'}
+            {actif ? 'Le bouton « Cours d\'essai » est visible sur ta page publique.' : 'Aucun bouton de demande d\'essai sur ta page publique.'}
           </div>
         </div>
         <div className={`essai-switch ${actif ? 'on' : ''}`}>
@@ -58,23 +53,16 @@ export default function CoursEssaiSection({ profile, setProfile, setDirty }) {
 
       {actif && (
         <div className="essai-config">
-          {/* Mode de validation */}
           <div className="form-group">
             <label className="form-label">Mode de validation</label>
             <div className="essai-radio-group">
               {[
-                { val: 'auto',   label: 'Automatique',   desc: 'La demande est validée immédiatement, sans intervention de ta part.' },
-                { val: 'semi',   label: 'Semi-automatique', desc: 'Validée immédiatement, tu reçois juste un email de notification.' },
-                { val: 'manuel', label: 'Manuel',         desc: 'Tu reçois la demande, tu la valides ou la refuses depuis l\'app.' },
+                { val: 'auto',   label: 'Automatique',      desc: 'Validée tout de suite, sans toi.' },
+                { val: 'semi',   label: 'Semi-automatique', desc: 'Validée tout de suite, tu reçois un email.' },
+                { val: 'manuel', label: 'Manuel',           desc: 'Tu valides ou refuses depuis l\'app.' },
               ].map(opt => (
                 <label key={opt.val} className={`essai-radio-opt ${mode === opt.val ? 'active' : ''}`}>
-                  <input
-                    type="radio"
-                    name="essai_mode"
-                    value={opt.val}
-                    checked={mode === opt.val}
-                    onChange={() => set('essai_mode')(opt.val)}
-                  />
+                  <input type="radio" name="essai_mode" value={opt.val} checked={mode === opt.val} onChange={() => set('essai_mode')(opt.val)} />
                   <div>
                     <div className="essai-radio-label">{opt.label}</div>
                     <div className="essai-radio-desc">{opt.desc}</div>
@@ -84,23 +72,16 @@ export default function CoursEssaiSection({ profile, setProfile, setDirty }) {
             </div>
           </div>
 
-          {/* Paiement */}
           <div className="form-group">
             <label className="form-label">Paiement</label>
             <div className="essai-radio-group">
               {[
-                { val: 'gratuit',  label: 'Gratuit',         desc: 'Le cours d\'essai est offert.' },
-                { val: 'sur_place', label: 'Payant sur place', desc: 'Le visiteur règle le jour du cours, en espèces / CB / chèque.' },
-                { val: 'stripe',   label: 'Paiement Stripe',  desc: 'Le visiteur règle en ligne via un Stripe Payment Link.' },
+                { val: 'gratuit',   label: 'Gratuit',          desc: 'Le cours d\'essai est offert.' },
+                { val: 'sur_place', label: 'Payant sur place', desc: 'Réglé le jour du cours.' },
+                { val: 'stripe',    label: 'Paiement Stripe',  desc: 'Réglé en ligne par un lien de paiement.' },
               ].map(opt => (
                 <label key={opt.val} className={`essai-radio-opt ${paiement === opt.val ? 'active' : ''}`}>
-                  <input
-                    type="radio"
-                    name="essai_paiement"
-                    value={opt.val}
-                    checked={paiement === opt.val}
-                    onChange={() => set('essai_paiement')(opt.val)}
-                  />
+                  <input type="radio" name="essai_paiement" value={opt.val} checked={paiement === opt.val} onChange={() => set('essai_paiement')(opt.val)} />
                   <div>
                     <div className="essai-radio-label">{opt.label}</div>
                     <div className="essai-radio-desc">{opt.desc}</div>
@@ -110,7 +91,6 @@ export default function CoursEssaiSection({ profile, setProfile, setDirty }) {
             </div>
           </div>
 
-          {/* Prix (sauf si gratuit) */}
           {paiement !== 'gratuit' && (
             <div className="form-group">
               <label className="form-label">Prix du cours d'essai (€)</label>
@@ -122,19 +102,22 @@ export default function CoursEssaiSection({ profile, setProfile, setDirty }) {
                 value={profile?.essai_prix || ''}
                 onChange={e => set('essai_prix')(parseFloat(e.target.value) || 0)}
                 placeholder="ex : 10"
+                style={{ maxWidth: 160 }}
               />
             </div>
           )}
 
           {/* Tarif par type de cours (v92) — sur place uniquement : un lien
               Stripe porte UN prix, un tarif variable y mentirait. */}
-          {paiement === 'sur_place' && typesCours.length > 0 && (
+          {paiement === 'sur_place' && typesCours.length > 0 && !montrerParType && (
+            <button type="button" className="essai-lien" onClick={() => setParTypeDemande(true)}>
+              + Un prix différent selon le type de cours
+            </button>
+          )}
+          {montrerParType && (
             <div className="form-group">
-              <label className="form-label">Un prix différent selon le type de cours ? (optionnel)</label>
-              <span className="form-hint" style={{ display: 'block', margin: '0 0 8px' }}>
-                Laisse vide pour appliquer le prix ci-dessus. Exemple : essai collectif à un prix,
-                essai particulier à un autre.
-              </span>
+              <label className="form-label">Prix selon le type de cours</label>
+              <span className="form-hint" style={{ display: 'block', margin: '0 0 8px' }}>Vide = le prix ci-dessus.</span>
               <div className="essai-types-grid">
                 {typesCours.map(type => (
                   <label key={type} className="essai-type-row">
@@ -155,7 +138,6 @@ export default function CoursEssaiSection({ profile, setProfile, setDirty }) {
             </div>
           )}
 
-          {/* Stripe Payment Link */}
           {paiement === 'stripe' && (
             <div className="form-group">
               <label className="form-label">Lien de paiement Stripe</label>
@@ -166,18 +148,15 @@ export default function CoursEssaiSection({ profile, setProfile, setDirty }) {
                 onChange={e => set('essai_stripe_payment_link')(e.target.value)}
                 placeholder="https://buy.stripe.com/..."
               />
-              <span className="form-hint">
-                Crée un Payment Link dans ton dashboard Stripe (Produits → Payment links) et colle l'URL ici.
-              </span>
+              <span className="form-hint">Stripe → Produits → Payment links, puis colle l&apos;URL ici.</span>
             </div>
           )}
 
-          {/* Message d'accueil */}
           <div className="form-group">
             <label className="form-label">Message d'accueil (optionnel)</label>
             <textarea
               className="izi-input"
-              rows={3}
+              rows={2}
               maxLength={500}
               value={profile?.essai_message || ''}
               onChange={e => set('essai_message')(e.target.value)}
@@ -191,9 +170,8 @@ export default function CoursEssaiSection({ profile, setProfile, setDirty }) {
       <style jsx>{`
         .essai-toggle-row {
           display: flex; align-items: center; justify-content: space-between;
-          gap: 12px; padding: 14px; cursor: pointer;
+          gap: 12px; padding: 12px 14px; cursor: pointer;
           background: var(--bg-soft, #faf8f5); border-radius: 12px;
-          margin-top: 4px;
         }
         .essai-toggle-label { font-weight: 700; color: var(--text-primary); font-size: 0.9375rem; }
         .essai-toggle-sub   { font-size: 0.8125rem; color: var(--text-muted); margin-top: 2px; }
@@ -212,9 +190,9 @@ export default function CoursEssaiSection({ profile, setProfile, setDirty }) {
         }
         .essai-switch.on .essai-switch-knob { transform: translateX(18px); }
         .essai-config {
-          margin-top: 16px; padding-top: 16px;
+          margin-top: 4px; padding-top: 14px;
           border-top: 1px solid var(--border);
-          display: flex; flex-direction: column; gap: 16px;
+          display: flex; flex-direction: column; gap: 14px;
         }
         .essai-radio-group { display: flex; flex-direction: column; gap: 6px; }
         .essai-types-grid { display: flex; flex-direction: column; gap: 6px; }
@@ -222,9 +200,14 @@ export default function CoursEssaiSection({ profile, setProfile, setDirty }) {
         .essai-type-nom { flex: 1; font-size: 0.875rem; color: var(--text-primary); }
         .essai-type-prix { width: 90px; text-align: right; }
         .essai-type-euro { font-size: 0.875rem; color: var(--text-muted); }
+        .essai-lien {
+          align-self: flex-start; background: none; border: none; cursor: pointer; padding: 0;
+          font: inherit; font-size: 0.8125rem; font-weight: 600; color: var(--brand-700);
+        }
+        .essai-lien:hover { text-decoration: underline; }
         .essai-radio-opt {
           display: flex; align-items: flex-start; gap: 10px;
-          padding: 10px 12px; border: 1.5px solid var(--border);
+          padding: 8px 12px; border: 1.5px solid var(--border);
           border-radius: 10px; cursor: pointer; transition: all 0.15s;
         }
         .essai-radio-opt.active { border-color: var(--brand); background: var(--brand-light); }
@@ -232,6 +215,6 @@ export default function CoursEssaiSection({ profile, setProfile, setDirty }) {
         .essai-radio-label { font-size: 0.875rem; font-weight: 600; color: var(--text-primary); }
         .essai-radio-desc { font-size: 0.75rem; color: var(--text-secondary); margin-top: 2px; line-height: 1.4; }
       `}</style>
-    </div>
+    </>
   );
 }

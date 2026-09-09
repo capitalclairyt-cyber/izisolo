@@ -8,7 +8,8 @@
 // ════════════════════════════════════════════════════════════════════════════
 
 import { useState } from 'react';
-import { CreditCard, Check, Copy, AlertCircle } from 'lucide-react';
+import { Check, Copy, AlertCircle } from 'lucide-react';
+import { EnSavoirPlus } from '../CarteReglage';
 
 export default function StripePaiementSection({ profile, setProfile, setDirty }) {
   const [copied, setCopied] = useState(false);
@@ -33,19 +34,14 @@ export default function StripePaiementSection({ profile, setProfile, setDirty })
   };
 
   return (
-    <div className="section izi-card">
-      <div className="section-top">
-        <div className="section-icon"><CreditCard size={20} /></div>
-        <h2>Paiement en ligne</h2>
-        {configured && (
-          <span className="stripe-status-pill"><Check size={11} /> Configuré</span>
-        )}
-      </div>
+    <>
       <p className="section-desc">
-        Branche Stripe pour permettre à tes élèves de payer leurs carnets et abonnements
-        par CB depuis ton portail. <strong>Frais de fonctionnement IziSolo : 1%</strong> du volume, ajoutés
-        à ta facture mensuelle, jamais prélevés sur tes paiements.
+        {configured && <span className="stripe-status-pill"><Check size={11} /> Configuré</span>}
+        Tes élèves paient leurs carnets et abonnements par carte, sur ton propre Stripe. Deux gestes : l&apos;endpoint et son secret.
       </p>
+      <EnSavoirPlus>
+        <p><strong>Frais de fonctionnement IziSolo : 1 %</strong> du volume payé en ligne, ajoutés à ta facture mensuelle, jamais prélevés sur tes paiements. IziSolo ne touche jamais l&apos;argent de tes élèves.</p>
+      </EnSavoirPlus>
 
       <div className="stripe-config">
         <div className="stripe-step">
@@ -125,9 +121,9 @@ export default function StripePaiementSection({ profile, setProfile, setDirty })
           background: #ecfdf5; color: #065f46;
           font-size: 0.7rem; font-weight: 700;
           padding: 3px 9px; border-radius: 99px;
-          margin-left: auto; border: 1px solid #6ee7b7;
+          margin-right: 8px; border: 1px solid #6ee7b7; vertical-align: middle;
         }
-        .stripe-config { display: flex; flex-direction: column; gap: 18px; margin-top: 14px; }
+        .stripe-config { display: flex; flex-direction: column; gap: 14px; margin-top: 4px; }
         .stripe-step { display: flex; gap: 12px; }
         .stripe-step-num {
           flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%;
@@ -174,6 +170,6 @@ export default function StripePaiementSection({ profile, setProfile, setDirty })
         .stripe-warning svg { flex-shrink: 0; margin-top: 1px; color: #f59e0b; }
         .stripe-label { font-size: 0.875rem; }
       `}</style>
-    </div>
+    </>
   );
 }

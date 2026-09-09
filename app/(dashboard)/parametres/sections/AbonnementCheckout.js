@@ -114,11 +114,8 @@ export default function AbonnementCheckout({ currentPlan, profile }) {
   };
 
   return (
-    <div className="section izi-card">
-      <h2 style={{ fontSize: '1.125rem', fontWeight: 700, marginBottom: 4 }}>Mon abonnement IziSolo</h2>
-      <p className="section-desc">
-        30 jours d'essai gratuit sur tous les plans. Tu peux changer ou annuler à tout moment.
-      </p>
+    <>
+      <p className="section-desc">30 jours d'essai sur tous les plans. Tu changes ou annules quand tu veux.</p>
 
       {/* ── Bandeau d'état subscription ───────────────────────────────────── */}
       {subStatus === 'past_due' && (
@@ -266,6 +263,6 @@ export default function AbonnementCheckout({ currentPlan, profile }) {
         TVA non applicable (art. 293 B du CGI). Frais Stripe natifs (1,5 % + 0,25 €) toujours dus à Stripe.
         Les frais IziSolo (1 % sur le paiement en ligne, plan Complet) viennent en plus.
       </p>
-    </div>
+    </>
   );
 }

@@ -421,6 +421,10 @@ try {
 
     await pageProf.goto(`${BASE}/parametres/types-cours`, { waitUntil: 'networkidle' });
     await attendre(800);
+    // Lot 2 (2026-09-09) : une ligne par type, repliée ; les couleurs et le
+    // dépôt de photo n'existent qu'une fois la ligne dépliée.
+    for (const entete of await pageProf.locator('.tc-ligne .tc-entete').all()) { await entete.click(); await attendre(120); }
+    await attendre(300);
     const carte = await pageProf.evaluate(() => {
       const lignes = [...document.querySelectorAll('.tc-ligne')];
       return {

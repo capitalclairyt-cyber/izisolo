@@ -161,6 +161,9 @@ try {
     const optPrive = await page.locator('select option[value="prive"]').count();
     c(`formulaire de cours : option « Privé (sur invitation) » ${complet ? 'proposée' : 'absente'}`, complet ? optPrive >= 1 : optPrive === 0, String(optPrive));
     await aller(page, `${BASE}/parametres/page`);
+    // Lot 2 (2026-09-09) : la philosophie vit dans la carte repliée « Aller plus loin ».
+    await page.waitForSelector('[data-carte-reglage="page_plus"] .carte-reglage-entete', { timeout: 90000 });
+    await page.click('[data-carte-reglage="page_plus"] .carte-reglage-entete');
     await page.waitForSelector('text=Ma philosophie', { timeout: 90000 });
     const hint = await page.locator('[data-testid="hint-portail-enrichi"]').count();
     c(`Ma page : avertissement bio/FAQ ${complet ? 'absent' : 'présent'}`, complet ? hint === 0 : hint === 1);

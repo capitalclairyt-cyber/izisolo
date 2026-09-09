@@ -70,12 +70,8 @@ export default function ChampsElevesSection({ profile, setProfile, setDirty }) {
   };
 
   return (
-    <div className="section izi-card">
-      <h2 style={{ fontSize: '1.125rem', fontWeight: 700, marginBottom: 4 }}>Infos collectées sur tes élèves</h2>
-      <p className="section-desc">
-        Choisis les champs que tu veux remplir sur chaque fiche élève. Tu peux activer/désactiver
-        les champs prédéfinis ou ajouter tes propres champs (allergies, contact urgence, etc.).
-      </p>
+    <>
+      <p className="section-desc">Les champs de tes fiches élèves : les prédéfinis, et les tiens (allergies, contact d&apos;urgence…).</p>
 
       {/* Champs prédéfinis */}
       <div className="cfc-section-label">Champs prédéfinis</div>
@@ -203,6 +199,6 @@ export default function ChampsElevesSection({ profile, setProfile, setDirty }) {
           }
         }
       `}</style>
-    </div>
+    </>
   );
 }

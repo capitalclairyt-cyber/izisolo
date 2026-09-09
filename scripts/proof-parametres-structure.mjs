@@ -91,7 +91,7 @@ const RUBRIQUES = [
   ['seuils', "Seuils d'alerte", 'Carnet bientôt épuisé'],
   ['mes-notifications', 'Ce que je reçois', 'Mes notifications'],
   ['notifications-eleves', 'Ce que tes élèves reçoivent', 'Anniversaires'],
-  ['abonnement', 'Mon abonnement IziSolo', 'Frais de fonctionnement IziSolo'],
+  ['abonnement', 'Mon abonnement IziSolo', 'Changer de plan'],
 ];
 
 let chromium; try { ({ chromium } = await import('playwright')); } catch { ({ chromium } = await import('@playwright/test')); }
@@ -183,6 +183,9 @@ try {
   c('la rubrique Abonnement n\'a aucun bouton Enregistrer (rien à écrire)', boutons.length === 0);
   await aller('/parametres/seuils');
   await page.waitForSelector('text=Carnet bientôt épuisé', { timeout: 60000 });
+  // Lot 2 : la seconde carte est repliée, son bouton n'existe qu'ouverte.
+  await page.click('[data-carte-reglage="seuils_prof"] .carte-reglage-entete');
+  await page.waitForSelector('button.save-btn[data-carte="seuils_prof"]', { timeout: 20000 });
   const boutonsSeuils = await page.evaluate(() => Array.from(document.querySelectorAll('button.save-btn')).map(b => b.dataset.carte).sort());
   c('Seuils d\'alerte réunit les deux cartes (seuils + seuils_prof)', JSON.stringify(boutonsSeuils) === JSON.stringify(['seuils', 'seuils_prof']), boutonsSeuils.join(','));
 

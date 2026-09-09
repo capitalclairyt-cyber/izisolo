@@ -2,14 +2,18 @@
 
 // ════════════════════════════════════════════════════════════════════════════
 // Le registre : id de rubrique → composant. Chaque rubrique rend ses cartes
-// (les mêmes sections qu'avant, réutilisées telles quelles) et lit l'état
-// partagé par useParametres(). Rien ici ne change ce qui est enregistré.
+// (CarteReglage, lot 2 : la première ouverte, les suivantes repliées avec leur
+// résumé d'état) et lit l'état partagé par useParametres(). Rien ici ne
+// change ce qui est enregistré.
 // ════════════════════════════════════════════════════════════════════════════
 
 import { useSearchParams } from 'next/navigation';
 import { useEffect } from 'react';
+import { FileText, Palette, Eye, Sparkles, CreditCard, Landmark, ClipboardList, Clock, Send } from 'lucide-react';
 import { useToast } from '@/components/ui/ToastProvider';
+import { resumeCarte } from '@/lib/parametres-rubriques';
 import { useParametres, BtnSauver } from '../ParametresContext';
+import CarteReglage from '../CarteReglage';
 
 import PagePubliqueSection from '../sections/PagePubliqueSection';
 import DocsInscriptionSection from '../sections/DocsInscriptionSection';
@@ -33,25 +37,37 @@ import MesNotifications from './MesNotifications';
 import AnniversairesCarte from './AnniversairesCarte';
 import AbonnementRubrique from './AbonnementRubrique';
 
-// Une carte « section + son bouton » : le patron de 9 rubriques sur 19.
-function Carte({ Section, carte }) {
-  const { profile, setProfile, marquer } = useParametres();
+// Une carte « section + son bouton » : le patron de la plupart des rubriques.
+// `ouverte` : la première carte d'une rubrique s'ouvre d'elle-même.
+export function Carte({ Section, carte, titre, icone, ouverte = true, props = {} }) {
+  const { profile, setProfile, marquer, lieux } = useParametres();
   return (
-    <>
-      <Section profile={profile} setProfile={setProfile} setDirty={() => marquer(carte)} />
+    <CarteReglage id={carte} titre={titre} icone={icone} resume={resumeCarte(carte, profile, { lieux })} ouverte={ouverte}>
+      <Section profile={profile} setProfile={setProfile} setDirty={() => marquer(carte)} {...props} />
       <BtnSauver carte={carte} />
-    </>
+    </CarteReglage>
   );
 }
 
-const PageRubrique       = () => <Carte Section={PagePubliqueSection} carte="page" />;
-const TypesCoursRubrique = () => <Carte Section={TypesCoursSection} carte="apparence" />;
-const EssaiRubrique      = () => <Carte Section={CoursEssaiSection} carte="essai" />;
-const DocumentsRubrique  = () => <Carte Section={DocsInscriptionSection} carte="docs" />;
-const PaiementRubrique   = () => <Carte Section={StripePaiementSection} carte="paiement" />;
-const ChampsRubrique     = () => <Carte Section={ChampsElevesSection} carte="champs" />;
-const VisibiliteRubrique = () => <Carte Section={VisibiliteSection} carte="visibilite" />;
-const AnnulationRubrique = () => <Carte Section={ReglesAnnulationSection} carte="annulation" />;
+const TypesCoursRubrique = () => <Carte Section={TypesCoursSection} carte="apparence" titre="Types de cours" icone={Palette} />;
+const EssaiRubrique      = () => <Carte Section={CoursEssaiSection} carte="essai" titre="Cours d'essai" icone={Sparkles} />;
+const DocumentsRubrique  = () => <Carte Section={DocsInscriptionSection} carte="docs" titre="Documents d'inscription" icone={FileText} />;
+const PaiementRubrique   = () => <Carte Section={StripePaiementSection} carte="paiement" titre="Paiement en ligne" icone={CreditCard} />;
+const ChampsRubrique     = () => <Carte Section={ChampsElevesSection} carte="champs" titre="Infos collectées sur tes élèves" icone={ClipboardList} />;
+const VisibiliteRubrique = () => <Carte Section={VisibiliteSection} carte="visibilite" titre="Visibilité des cours" icone={Eye} />;
+const AnnulationRubrique = () => <Carte Section={ReglesAnnulationSection} carte="annulation" titre="Règles d'annulation" icone={Clock} />;
+
+function PageRubrique() {
+  // Ma page se replie en trois cartes DANS la section (ouvert / ce que ta page
+  // montre / aller plus loin) : un seul bouton Enregistrer pour la carte `page`.
+  const { profile, setProfile, marquer } = useParametres();
+  return (
+    <>
+      <PagePubliqueSection profile={profile} setProfile={setProfile} setDirty={() => marquer('page')} />
+      <BtnSauver carte="page" />
+    </>
+  );
+}
 
 function IntegrerRubrique() {
   const { profile, setProfile } = useParametres();
@@ -61,12 +77,14 @@ function IntegrerRubrique() {
 function VirementRubrique() {
   const { profile, setProfile, marquer } = useParametres();
   return (
-    <ReglementSection
-      profile={profile}
-      setProfile={setProfile}
-      setDirty={() => marquer('reglement')}
-      boutonSauver={<BtnSauver carte="reglement" />}
-    />
+    <CarteReglage id="reglement" titre="Règlement par virement" icone={Landmark} resume={resumeCarte('reglement', profile)} ouverte>
+      <ReglementSection
+        profile={profile}
+        setProfile={setProfile}
+        setDirty={() => marquer('reglement')}
+        boutonSauver={<BtnSauver carte="reglement" />}
+      />
+    </CarteReglage>
   );
 }
 
@@ -78,7 +96,7 @@ function CasParticuliersRubrique() {
 function NotificationsElevesRubrique() {
   return (
     <>
-      <Carte Section={NotifsElevesSection} carte="notifs_eleves" />
+      <Carte Section={NotifsElevesSection} carte="notifs_eleves" titre="Emails automatiques à tes élèves" icone={Send} />
       <AnniversairesCarte />
     </>
   );
@@ -86,8 +104,7 @@ function NotificationsElevesRubrique() {
 
 function AbonnementAvecRetourStripe() {
   // Retour Stripe Checkout (?abo=success ou ?abo=cancel) : toast + URL
-  // nettoyée pour ne pas re-déclencher au refresh. Avant, ce code vivait dans
-  // le monolithe et basculait l'onglet ; l'URL de la rubrique s'en charge.
+  // nettoyée pour ne pas re-déclencher au refresh.
   const searchParams = useSearchParams();
   const { toast } = useToast();
   useEffect(() => {

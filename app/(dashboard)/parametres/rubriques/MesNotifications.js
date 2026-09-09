@@ -1,27 +1,21 @@
 'use client';
 
 // « Ce que je reçois » : push de cet appareil + choix par type (notif_prefs,
-// sauvegarde immédiate au toggle par /api/profile). Découpe de page.js ; le
-// seuil « paiement en attente » a rejoint la rubrique Seuils d'alerte.
+// sauvegarde immédiate au toggle par /api/profile).
 import { Bell } from 'lucide-react';
 import PushToggle from '@/components/push/PushToggle';
 import NotifPrefsPanel from '@/components/push/NotifPrefsPanel';
 import { useParametres } from '../ParametresContext';
+import CarteReglage from '../CarteReglage';
 
 export default function MesNotifications() {
   const { profile, setProfile } = useParametres();
   return (
-    <div className="section izi-card">
-      <div className="section-top">
-        <div className="section-icon"><Bell size={20} /></div>
-        <h2>Mes notifications</h2>
-      </div>
+    <CarteReglage id="notif_prefs" titre="Mes notifications" icone={Bell} resume="Cloche, push et emails, type par type" ouverte>
       <p className="section-desc">
-        Reçois une notification (et un email) quand il se passe quelque chose
-        dans ton studio. Active-les d'abord sur cet appareil, puis choisis ce
-        que tu veux recevoir.
+        Active-les d&apos;abord sur cet appareil, puis choisis ce que tu veux recevoir.
       </p>
-      <div style={{ marginBottom: 14 }}>
+      <div style={{ marginBottom: 6 }}>
         <PushToggle />
       </div>
       <NotifPrefsPanel
@@ -37,6 +31,6 @@ export default function MesNotifications() {
           setProfile(prev => ({ ...prev, notif_prefs: next }));
         }}
       />
-    </div>
+    </CarteReglage>
   );
 }

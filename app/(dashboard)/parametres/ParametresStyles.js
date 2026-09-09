@@ -531,6 +531,46 @@ export default function ParametresStyles() {
           .parametres-retour-mobile { display: inline-flex; width: 100%; margin-bottom: 2px; }
           .parametres-main { max-width: none; }
         }
+
+        /* ═══ Lot 2 « le repli » : carte repliable + En savoir plus ═══ */
+        .carte-reglage { padding: 0; gap: 0; }
+        .carte-reglage-entete {
+          display: flex; align-items: center; gap: 12px; width: 100%;
+          padding: 14px 18px; background: none; border: none; cursor: pointer;
+          text-align: left; color: var(--text-primary); font: inherit;
+        }
+        .carte-reglage-entete:hover { background: var(--cream, #faf8f5); }
+        .carte-reglage.ouverte .carte-reglage-entete { padding-bottom: 8px; }
+        .carte-reglage-texte { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+        .carte-reglage-titre { font-size: 1.0625rem; font-weight: 700; line-height: 1.25; }
+        .carte-reglage-resume {
+          font-size: 0.8rem; color: var(--text-muted); line-height: 1.35;
+          overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        }
+        .carte-reglage-chevron { color: var(--text-muted); flex-shrink: 0; transition: transform 0.18s; }
+        .carte-reglage.ouverte .carte-reglage-chevron { transform: rotate(180deg); }
+        .carte-reglage-corps { display: flex; flex-direction: column; gap: 12px; padding: 4px 18px 18px; }
+        .carte-reglage-corps > .save-btn { margin-top: 4px; }
+        .carte-reglage-corps .section-desc { margin: 0; }
+        @media (max-width: 560px) {
+          .carte-reglage-entete { padding: 12px 14px; }
+          .carte-reglage-corps { padding: 4px 14px 14px; }
+          .carte-reglage-resume { white-space: normal; }
+        }
+        .ensavoir { font-size: 0.78rem; color: var(--text-muted); line-height: 1.5; }
+        .ensavoir summary {
+          cursor: pointer; color: var(--brand-700); font-weight: 600; list-style: none;
+          display: inline-flex; align-items: center; gap: 4px;
+        }
+        .ensavoir summary::-webkit-details-marker { display: none; }
+        .ensavoir summary::before { content: '+'; font-weight: 700; }
+        .ensavoir[open] summary::before { content: '−'; }
+        .ensavoir-corps { margin-top: 6px; padding: 8px 10px; background: var(--bg-soft, #faf8f5); border-radius: 8px; }
+        .ensavoir-corps p { margin: 0 0 6px; }
+        .ensavoir-corps p:last-child { margin-bottom: 0; }
+        /* L'aperçu de couverture n'a pas besoin de 16/7 dans une carte de réglages :
+           on règle un point focal, pas une photo plein écran (lot 2, Ma page ≤ 1 400 px). */
+        .carte-reglage .cover-editor-preview { max-height: 220px; }
       `}</style>
   );
 }

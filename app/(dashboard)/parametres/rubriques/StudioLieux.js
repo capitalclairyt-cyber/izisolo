@@ -2,10 +2,10 @@
 
 // ════════════════════════════════════════════════════════════════════════════
 // Rubrique « Studio & lieux » (fusion Activité + Lieux, décision Colin
-// 2026-09-09) : le nom, le métier, la ville, puis la liste des lieux.
-// La carte Lieux n'a pas de bouton Enregistrer : chaque lieu est écrit dès
-// la validation du modal, et l'écran le dit (retour Léa 2026-08-21).
-// Découpe mécanique de page.js : la logique des lieux est inchangée.
+// 2026-09-09) : le nom, le métier, la ville (carte ouverte), puis la liste des
+// lieux (carte repliée, son résumé nomme les lieux). La carte Lieux n'a pas de
+// bouton Enregistrer : chaque lieu est écrit dès la validation du modal, et
+// l'écran le dit (retour Léa 2026-08-21).
 // ════════════════════════════════════════════════════════════════════════════
 
 import { useState } from 'react';
@@ -13,13 +13,13 @@ import { Building2, MapPin, Plus, X, Trash2, Pencil, Loader2 } from 'lucide-reac
 import { createClient } from '@/lib/supabase';
 import { useToast } from '@/components/ui/ToastProvider';
 import { METIERS } from '@/lib/constantes';
+import { resumeCarte } from '@/lib/parametres-rubriques';
 import { useParametres, BtnSauver } from '../ParametresContext';
+import CarteReglage from '../CarteReglage';
 
 export default function StudioLieux() {
   const { profile, handleChange, lieux, setLieux, studioId } = useParametres();
   const { toast } = useToast();
-  // Modal d'édition d'un lieu : null = fermée, { id: null } = création,
-  // { id: 'uuid' } = édition.
   const [lieuEdit, setLieuEdit] = useState(null);
   const [lieuSaving, setLieuSaving] = useState(false);
 
@@ -66,8 +66,7 @@ export default function StudioLieux() {
 
   return (
     <>
-      <div className="section izi-card">
-        <div className="section-top"><div className="section-icon"><Building2 size={20} /></div><h2>Mon activité</h2></div>
+      <CarteReglage id="activite" titre="Mon activité" icone={Building2} resume={resumeCarte('activite', profile)} ouverte>
         <div className="form-group">
           <label className="form-label">Nom du studio</label>
           <input className="izi-input" value={profile.studio_nom || ''} onChange={handleChange('studio_nom')} />
@@ -87,14 +86,10 @@ export default function StudioLieux() {
           </div>
         </div>
         <BtnSauver carte="activite" />
-      </div>
+      </CarteReglage>
 
-      <div className="section izi-card">
-        <div className="section-top"><div className="section-icon"><MapPin size={20} /></div><h2>Mes lieux</h2></div>
-        <p className="section-desc">
-          Les salles et espaces où tu donnes tes cours.
-          <br />Chaque lieu est enregistré dès que tu l&apos;ajoutes ou le modifies, il n&apos;y a rien d&apos;autre à valider.
-        </p>
+      <CarteReglage id="lieux" titre="Mes lieux" icone={MapPin} resume={resumeCarte('lieux', profile, { lieux })} ouverte={lieux.length === 0}>
+        <p className="section-desc">Les salles où tu donnes tes cours. Chaque lieu est enregistré dès que tu le valides.</p>
 
         {lieux.length > 0 ? (
           <div className="lieux-list">
@@ -122,14 +117,14 @@ export default function StudioLieux() {
         ) : (
           <div className="lieux-empty">
             <MapPin size={20} />
-            <span>Aucun lieu pour l'instant. Ajoute ta première salle pour pouvoir l'associer à tes cours.</span>
+            <span>Aucun lieu pour l'instant. Ajoute ta première salle pour l'associer à tes cours.</span>
           </div>
         )}
 
         <button className="izi-btn izi-btn-secondary lieu-add-btn" onClick={() => openLieuModal(null)} type="button">
           <Plus size={18} /> Ajouter un lieu
         </button>
-      </div>
+      </CarteReglage>
 
       {lieuEdit && (
         <div className="modal-backdrop" onClick={e => { if (e.target === e.currentTarget) closeLieuModal(); }}>

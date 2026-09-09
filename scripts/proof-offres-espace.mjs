@@ -126,6 +126,9 @@ try {
   // ── A. L'interrupteur ────────────────────────────────────────────────────
   console.log('\n— A. Paramètres → Ma page publique → Ma page —');
   await page.goto(`${BASE}/parametres/page`, { waitUntil: 'domcontentloaded', timeout: 120000 });
+  // Lot 2 (2026-09-09) : l'interrupteur vit dans la carte repliée « Ce que ta page montre ».
+  await page.waitForSelector('[data-carte-reglage="page_affichage"] .carte-reglage-entete', { timeout: 90000 });
+  await page.click('[data-carte-reglage="page_affichage"] .carte-reglage-entete');
   await page.waitForSelector('text=Proposer mes offres dans l\'espace de mes élèves', { timeout: 90000 });
   c('l\'interrupteur « Proposer mes offres dans l\'espace de mes élèves » est rendu', true);
   const bouton = page.locator('button.toggle-btn', { hasText: 'Proposer mes offres dans l\'espace' });

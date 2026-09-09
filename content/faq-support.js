@@ -248,7 +248,7 @@ export const FAQ_SUPPORT = [
     // offres sur le profil des clientes ? je gère ça via mon site internet ».
     // AJOUTÉE EN FIN de liste.
     q: "Je vends mes carnets sur mon propre site : comment enlever les offres de l'espace de mes élèves ?",
-    a: "Paramètres → Ma page publique → Ma page, désactive « Proposer mes offres dans l'espace de mes élèves ». La section « Les offres du studio » disparaît de leur espace, et avec elle le bouton « Demander ». Tout le reste reste en place : leurs paiements, leurs carnets, leurs factures, et toi tu continues d'attribuer tes offres depuis leurs fiches (« Ajouter une offre »), comme aujourd'hui. Ce réglage est indépendant de « Afficher mes tarifs sur ma page publique » : tu peux masquer l'un sans l'autre. Le jour où tu veux vendre depuis IziSolo, tu le réactives et tout revient.",
+    a: "Paramètres → Ma page publique → Ma page, carte « Ce que ta page montre », désactive « Proposer mes offres dans l'espace de mes élèves ». La section « Les offres du studio » disparaît de leur espace, et avec elle le bouton « Demander ». Tout le reste reste en place : leurs paiements, leurs carnets, leurs factures, et toi tu continues d'attribuer tes offres depuis leurs fiches (« Ajouter une offre »), comme aujourd'hui. Ce réglage est indépendant de « Afficher mes tarifs sur ma page publique » : tu peux masquer l'un sans l'autre. Le jour où tu veux vendre depuis IziSolo, tu le réactives et tout revient.",
     lien: { href: '/aide#offres', label: 'Voir le pas-à-pas' },
   },
   {

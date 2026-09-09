@@ -1,22 +1,23 @@
 'use client';
 
 // Anniversaires — réduit au réel (B2e) : cloche J-1/J-0 → clic → messagerie
-// préremplie avec ce message → envoi MANUEL. Découpe mécanique de page.js.
+// préremplie avec ce message → envoi MANUEL. Lot 2 : carte repliée, le
+// résumé dit si c'est activé.
 import { Cake, ToggleLeft, ToggleRight } from 'lucide-react';
+import { resumeCarte } from '@/lib/parametres-rubriques';
 import { useParametres, BtnSauver } from '../ParametresContext';
+import CarteReglage from '../CarteReglage';
 
 export default function AnniversairesCarte() {
   const { profile, setProfile, handleChange, marquer } = useParametres();
   const actif = (profile.anniversaire_mode || 'semi') !== 'off';
   return (
-    <div className="section izi-card">
-      <div className="section-top">
-        <div className="section-icon"><Cake size={20} /></div>
-        <h2>Anniversaires</h2>
+    <CarteReglage id="anniv" titre="Anniversaires" icone={Cake} resume={resumeCarte('anniv', profile)}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         <button
           type="button"
           className="param-toggle-switch"
-          style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'inline-flex' }}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'inline-flex' }}
           onClick={() => {
             setProfile(prev => ({ ...prev, anniversaire_mode: actif ? 'off' : 'manuel' }));
             marquer('anniv');
@@ -28,26 +29,23 @@ export default function AnniversairesCarte() {
             ? <ToggleRight size={30} style={{ color: 'var(--brand)' }} />
             : <ToggleLeft size={30} style={{ color: 'var(--border)' }} />}
         </button>
+        <span style={{ fontSize: '0.875rem', fontWeight: 600 }}>{actif ? 'Activé' : 'Désactivé'}</span>
       </div>
       <p className="section-desc">
-        La veille et le jour J de l'anniversaire d'un·e élève, tu reçois une
-        alerte dans ta cloche. Un clic ouvre la messagerie avec ton message
-        prérempli : tu n'as plus qu'à l'envoyer (rien ne part tout seul).
+        La veille et le jour J, une alerte dans ta cloche ouvre la messagerie avec ce message prérempli. Rien ne part tout seul.
       </p>
 
       {actif && (
         <div className="form-group">
           <label className="form-label">Message d'anniversaire</label>
-          <p className="form-hint" style={{ marginTop: 0 }}>
-            Utilise <code>{'{prenom}'}</code> pour personnaliser avec le prénom de l'élève.
-          </p>
           <textarea
             className="izi-input anniv-textarea"
             value={profile.anniversaire_message || ''}
             onChange={handleChange('anniversaire_message')}
-            rows={4}
+            rows={3}
             placeholder="Joyeux anniversaire {prenom} ! 🎂"
           />
+          <p className="form-hint"><code>{'{prenom}'}</code> devient le prénom de l'élève.</p>
           <div className="anniv-preview">
             <span className="anniv-preview-label">Aperçu :</span>
             {(profile.anniversaire_message || '')
@@ -59,6 +57,6 @@ export default function AnniversairesCarte() {
         </div>
       )}
       <BtnSauver carte="anniv" />
-    </div>
+    </CarteReglage>
   );
 }
