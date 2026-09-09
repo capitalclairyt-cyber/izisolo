@@ -124,3 +124,35 @@ Et le plus dur ? On le fait pour toi : tu envoies ton planning, Maude (prof de y
 - Le hook Instagram et le hook LinkedIn sont volontairement différents : Instagram parle à la personne qui vient de voir le réel, LinkedIn à celle qui lit d'abord le texte.
 - Les six puces sont les six scènes du réel, dans le même ordre. Si le réel change, elles changent avec lui.
 - Chaque texte ne contient qu'une question, à la fin. Si tu ajoutes une phrase, garde cette règle.
+
+## 6. Groupes belges et luxembourgeois : la puce URSSAF change
+
+Retour reçu le 9 septembre dans le groupe YogaBelgium (commentaire d'Ari Aude) :
+« Ça n'existe pas l'Urssaf en Belgique. » Elle a raison. L'appli, elle, connaît la
+Belgique et le Luxembourg depuis fin août (pays choisi à l'inscription, numéro
+d'entreprise à la place du SIRET, aucun bloc URSSAF), mais la légende parlait
+depuis la France.
+
+Dans tout groupe hors de France, remplacer la puce par sa version neutre :
+
+```texte
+🪷 mes revenus et ce que j'ai vraiment encaissé, sans tableur
+```
+
+Et pour la légende du carrousel (bloc 4), remplacer « vraies factures et
+déclaration URSSAF mâchée » par « vraies factures numérotées, au numéro
+d'entreprise de ton pays ».
+
+Réponse à coller sous le commentaire, en « je », depuis le compte Maude Yoga :
+
+```texte
+Merci Ari, vous avez raison. J'ai écrit ce texte depuis la France, où je déclare à l'URSSAF, et je l'ai collé ici tel quel : c'est une maladresse de ma part, je corrige le post.
+
+L'appli, elle, connaît la Belgique : on choisit son pays à l'inscription, les factures portent le numéro d'entreprise BCE à la place du SIRET, et tout ce qui concerne l'URSSAF disparaît. C'est d'ailleurs une prof de Genly qui nous l'a fait corriger il y a deux semaines.
+
+Si vous voyez autre chose qui sonne « français » pour une prof en Belgique, je prends volontiers 🙏
+```
+
+Puis modifier le post lui-même (menu ··· du post, « Modifier ») pour y mettre la
+puce neutre. Un post corrigé vaut mieux qu'une réponse seule : les personnes qui
+arrivent après ne lisent pas les commentaires.
