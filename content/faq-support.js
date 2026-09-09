@@ -53,7 +53,7 @@ export const FAQ_SUPPORT = [
   {
     // Demandé 2× dans les feedbacks (19-20/07) — enfin une réponse écrite.
     q: "Comment faire apparaître le lieu d'une séance ?",
-    a: "Le lieu se choisit sur le cours : à la création, ou après coup via l'icône crayon (cette séance) / « Modifier toute la série » (toutes). Tes lieux se gèrent dans Paramètres → Profil & studio → Lieux, ils sont illimités. Une fois posé, le lieu s'affiche sur l'agenda, le portail et les emails à tes élèves.",
+    a: "Le lieu se choisit sur le cours : à la création, ou après coup via l'icône crayon (cette séance) / « Modifier toute la série » (toutes). Tes lieux se gèrent dans Paramètres → Mon studio → Studio & lieux, ils sont illimités. Une fois posé, le lieu s'affiche sur l'agenda, le portail et les emails à tes élèves.",
     lien: { href: '/aide#agenda', label: 'Voir le pas-à-pas' },
   },
   {
@@ -72,12 +72,12 @@ export const FAQ_SUPPORT = [
   },
   {
     q: "Où je règle mon délai d'annulation et mes règles (absences, retards…) ?",
-    a: "Paramètres → Règles : délai d'annulation, absence non prévenue, annulation tardive… Tes élèves voient la règle au moment d'annuler, et les cas ambigus remontent dans « À traiter » pour que tu tranches.",
+    a: "Paramètres → Élèves & cours (Annulation, Cas particuliers) : délai d'annulation, absence non prévenue, annulation tardive… Tes élèves voient la règle au moment d'annuler, et les cas ambigus remontent dans « À traiter » pour que tu tranches.",
     lien: { href: '/aide#regles-annulation', label: 'Voir le pas-à-pas' },
   },
   {
     q: "Une élève me demande une facture pour son CSE ou son employeur, comment faire ?",
-    a: "Renseigne ton SIRET une fois pour toutes : Paramètres → Profil & studio → Activité, carte « Facturation ». Ensuite chaque paiement réglé produit une vraie facture acquittée numérotée : l'élève la télécharge elle-même depuis son espace, et toi depuis sa fiche. Sans SIRET, c'est un reçu de paiement simple.",
+    a: "Renseigne ton SIRET une fois pour toutes : Paramètres → Argent → Facturation. Ensuite chaque paiement réglé produit une vraie facture acquittée numérotée : l'élève la télécharge elle-même depuis son espace, et toi depuis sa fiche. Sans SIRET, c'est un reçu de paiement simple.",
     lien: { href: '/aide#factures', label: 'Voir le pas-à-pas' },
   },
   {
@@ -102,7 +102,7 @@ export const FAQ_SUPPORT = [
   },
   {
     q: "Comment gérer mon abonnement IziSolo ?",
-    a: "Paramètres → Abonnement IziSolo. Pour une facture ou une question de facturation, écris-nous depuis ta messagerie (fil « 💬 Équipe IziSolo ») ou à bonjour@izisolo.fr : on te répond vite.",
+    a: "Paramètres → Mon abonnement IziSolo. Pour une facture ou une question de facturation, écris-nous depuis ta messagerie (fil « 💬 Équipe IziSolo ») ou à bonjour@izisolo.fr : on te répond vite.",
   },
   {
     // Cours en ligne v86 + déblocage CB par séance (2026-08-19, cas Ariana).
@@ -131,7 +131,7 @@ export const FAQ_SUPPORT = [
   {
     // URSSAF v93/v94 (2026-08-22).
     q: "Combien dois-je déclarer à l'URSSAF ce trimestre ?",
-    a: "Configure une fois ta déclaration (Paramètres → Profil & studio → Activité, carte « Ma déclaration URSSAF » : régime, périodicité, taux), puis le bloc « Ma déclaration URSSAF » de la page Revenus affiche le montant de la période close, arrondi à l'euro, avec un bouton Copier. « Voir le détail à l'écran » ouvre la déclaration complète, et « J'ai déclaré ces X € » archive le montant : si ta compta bouge après coup, IziSolo t'affiche l'écart.",
+    a: "Configure une fois ta déclaration (Paramètres → Argent → Déclaration URSSAF : régime, périodicité, taux), puis le bloc « Ma déclaration URSSAF » de la page Revenus affiche le montant de la période close, arrondi à l'euro, avec un bouton Copier. « Voir le détail à l'écran » ouvre la déclaration complète, et « J'ai déclaré ces X € » archive le montant : si ta compta bouge après coup, IziSolo t'affiche l'écart.",
     lien: { href: '/aide#urssaf', label: 'Voir le pas-à-pas' },
   },
   {
@@ -142,19 +142,19 @@ export const FAQ_SUPPORT = [
   {
     // Règlement par virement (v98, 2026-08-23).
     q: "Comment envoyer mon RIB à une élève pour un virement ?",
-    a: "Renseigne-le une fois : Paramètres → Profil & studio → Activité, carte « Règlement par virement » (IBAN vérifié à la saisie). Ensuite, à chaque vente « à régler plus tard », tu choisis l'email qui part tout seul : « Virement (RIB) » envoie ton IBAN avec une référence de virement (pour reconnaître le règlement sur ton relevé), et l'espace de l'élève affiche aussi le RIB avec un QR code à scanner avec son application bancaire. Tu peux aussi régler ça en automatique (carte « Règlement par virement », « il part tout seul »).",
+    a: "Renseigne-le une fois : Paramètres → Argent → Virement (RIB) (IBAN vérifié à la saisie). Ensuite, à chaque vente « à régler plus tard », tu choisis l'email qui part tout seul : « Virement (RIB) » envoie ton IBAN avec une référence de virement (pour reconnaître le règlement sur ton relevé), et l'espace de l'élève affiche aussi le RIB avec un QR code à scanner avec son application bancaire. Tu peux aussi régler ça en automatique (carte « Règlement par virement », « il part tout seul »).",
     lien: { href: '/aide#encaisser', label: 'Voir le pas-à-pas' },
   },
   {
     // Vignettes de cours (v99, 2026-08-24).
     q: "Puis-je mettre une photo sur mes cours ?",
-    a: "Oui, à deux niveaux. Par type de cours d'abord : Paramètres → Portail public → « Types de cours », tu choisis la couleur de chaque type et tu peux y déposer une photo. Elle habille toutes les séances de ce type, y compris celles que tu créeras plus tard. Et pour un atelier qui mérite son image à lui, la photo se met directement sur la séance, au moment de la créer : elle passe devant celle du type. Sans photo, la couleur suffit, ta page reste lisible.",
+    a: "Oui, à deux niveaux. Par type de cours d'abord : Paramètres → Ma page publique → « Types de cours », tu choisis la couleur de chaque type et tu peux y déposer une photo. Elle habille toutes les séances de ce type, y compris celles que tu créeras plus tard. Et pour un atelier qui mérite son image à lui, la photo se met directement sur la séance, au moment de la créer : elle passe devant celle du type. Sans photo, la couleur suffit, ta page reste lisible.",
     lien: { href: '/aide#apparence-cours', label: 'Voir le pas-à-pas' },
   },
   {
     // Second bloc intégrable (v99, 2026-08-24).
     q: "Puis-je afficher mes tarifs sur mon propre site ?",
-    a: "Oui, comme le planning : Paramètres → Portail public → « Ma page », bloc « Et tes offres, si tu veux ». Tu copies une ligne de code et tu la colles dans un bloc HTML de ton site. Tes offres actives s'affichent avec leur prix, et un clic emmène ton élève sur tes tarifs IziSolo où elle peut payer en ligne ou te demander l'offre. Les deux blocs prennent les mêmes couleurs, pour qu'ils aillent ensemble sur ta page.",
+    a: "Oui, comme le planning : Paramètres → Ma page publique → « Intégrer sur mon site », bloc « Et tes offres, si tu veux ». Tu copies une ligne de code et tu la colles dans un bloc HTML de ton site. Tes offres actives s'affichent avec leur prix, et un clic emmène ton élève sur tes tarifs IziSolo où elle peut payer en ligne ou te demander l'offre. Les deux blocs prennent les mêmes couleurs, pour qu'ils aillent ensemble sur ta page.",
     lien: { href: '/aide#page-publique', label: 'Voir le pas-à-pas' },
   },
   {
@@ -179,13 +179,13 @@ export const FAQ_SUPPORT = [
   {
     // Question d'une prospecte Instagram, 2026-08-25 : le branding avant tout.
     q: "Si j'intègre mon planning à mon site, mes élèves en sortent-elles ?",
-    a: "Pour consulter, non : le planning et tes tarifs s'affichent DANS ton site, dans tes couleurs. Au moment de réserver ou de payer, un nouvel onglet s'ouvre sur ta page IziSolo. Ce n'est pas un choix de facilité : les navigateurs bloquent les connexions et les paiements à l'intérieur d'une page intégrée dans un autre site, et aucun outil du secteur ne fait autrement. Ce que tu peux soigner, en revanche, c'est à quoi ressemble cette page : Paramètres → Portail public → « Ma page » → « Tes couleurs » (deux codes, ils habillent le bloc intégré ET ta page publique), plus ta photo de couverture, ta bio, et une couleur et une photo par type de cours.",
+    a: "Pour consulter, non : le planning et tes tarifs s'affichent DANS ton site, dans tes couleurs. Au moment de réserver ou de payer, un nouvel onglet s'ouvre sur ta page IziSolo. Ce n'est pas un choix de facilité : les navigateurs bloquent les connexions et les paiements à l'intérieur d'une page intégrée dans un autre site, et aucun outil du secteur ne fait autrement. Ce que tu peux soigner, en revanche, c'est à quoi ressemble cette page : Paramètres → Ma page publique → « Intégrer sur mon site » → « Tes couleurs » (deux codes, ils habillent le bloc intégré ET ta page publique), plus ta photo de couverture, ta bio, et une couleur et une photo par type de cours.",
     lien: { href: '/aide#page-publique', label: 'Voir le pas-à-pas' },
   },
   {
     // Retour Melyflow (Belgique), 2026-08-25. AJOUTÉE EN FIN de liste.
     q: "Je ne suis pas en France (Belgique, Luxembourg) : la facturation marche-t-elle ?",
-    a: "Oui. Va dans Paramètres → Profil & studio → Activité et choisis ton pays d'exercice en haut de la carte « Facturation ». Le champ s'adapte : « SIRET » en France, « Numéro d'entreprise » en Belgique, « Numéro RCS » au Luxembourg, et c'est ce libellé qui s'imprime sur tes factures. Deux points importants : le bloc « Ma déclaration URSSAF » disparaît, parce que chez toi ce sont tes caisses qui appellent les cotisations et qu'il n'y a rien à déclarer depuis IziSolo (ton export de recettes, lui, reste disponible dans Revenus) ; et la mention de TVA n'est PAS pré-remplie hors de France, parce que nous ne devinons pas ce qui doit figurer sur ta facture. On te propose une formulation courante, mais vérifie-la auprès de ton comptable : c'est ta responsabilité qui est engagée.",
+    a: "Oui. Va dans Paramètres → Argent → Facturation et choisis ton pays d'exercice en haut de la carte. Le champ s'adapte : « SIRET » en France, « Numéro d'entreprise » en Belgique, « Numéro RCS » au Luxembourg, et c'est ce libellé qui s'imprime sur tes factures. Deux points importants : le bloc « Ma déclaration URSSAF » disparaît, parce que chez toi ce sont tes caisses qui appellent les cotisations et qu'il n'y a rien à déclarer depuis IziSolo (ton export de recettes, lui, reste disponible dans Revenus) ; et la mention de TVA n'est PAS pré-remplie hors de France, parce que nous ne devinons pas ce qui doit figurer sur ta facture. On te propose une formulation courante, mais vérifie-la auprès de ton comptable : c'est ta responsabilité qui est engagée.",
   },
   {
     // Retour Melyflow (Belgique), 2026-08-25 — 5 « Cours découverte » le même
@@ -207,7 +207,7 @@ export const FAQ_SUPPORT = [
     // depuis l'app, aucune trace côté prof. Payment Links collés, webhook
     // jamais déclaré. AJOUTÉE EN FIN de liste.
     q: "Une élève dit avoir payé en ligne, mais je ne vois ni le paiement ni son carnet, que faire ?",
-    a: "Vérifie d'abord Paramètres → Portail public → Paiement en ligne. Brancher le paiement demande DEUX gestes : coller un lien Stripe sur l'offre, et déclarer le webhook (les étapes 1 et 2 de cet écran). Le webhook est ce qui prévient IziSolo qu'une élève a payé : sans lui, l'argent arrive bien sur ton compte Stripe, mais l'app n'en sait rien, donc ni paiement ni carnet ne sont créés. Si le bandeau « Configuré » n'est pas affiché, c'est ça. Pour retrouver l'argent : va sur dashboard.stripe.com → Paiements, en mode Live (l'interrupteur « Mode test » doit être éteint, c'est le piège le plus courant) et cherche l'email de ton élève. Si le paiement y est, termine la configuration, puis dans Stripe → Webhooks, ouvre l'événement et clique « Resend » : IziSolo créera le paiement et le carnet tout seuls, à la bonne date, sans risque de doublon. Depuis le 26/08/2026, tant que le webhook manque, tes élèves ne voient plus de bouton « payer » mais un bouton « Demander » : leur demande arrive en tête de ta page Offres et tu encaisses comme tu veux.",
+    a: "Vérifie d'abord Paramètres → Argent → Paiement en ligne. Brancher le paiement demande DEUX gestes : coller un lien Stripe sur l'offre, et déclarer le webhook (les étapes 1 et 2 de cet écran). Le webhook est ce qui prévient IziSolo qu'une élève a payé : sans lui, l'argent arrive bien sur ton compte Stripe, mais l'app n'en sait rien, donc ni paiement ni carnet ne sont créés. Si le bandeau « Configuré » n'est pas affiché, c'est ça. Pour retrouver l'argent : va sur dashboard.stripe.com → Paiements, en mode Live (l'interrupteur « Mode test » doit être éteint, c'est le piège le plus courant) et cherche l'email de ton élève. Si le paiement y est, termine la configuration, puis dans Stripe → Webhooks, ouvre l'événement et clique « Resend » : IziSolo créera le paiement et le carnet tout seuls, à la bonne date, sans risque de doublon. Depuis le 26/08/2026, tant que le webhook manque, tes élèves ne voient plus de bouton « payer » mais un bouton « Demander » : leur demande arrive en tête de ta page Offres et tu encaisses comme tu veux.",
     lien: { href: '/aide#offres', label: 'Voir le pas-à-pas' },
   },
   {
@@ -233,14 +233,14 @@ export const FAQ_SUPPORT = [
     // début de mois ? Je n'arrive à générer qu'une facture pour août. »
     // AJOUTÉE EN FIN de liste.
     q: "Mes élèves ont un abonnement au mois : comment avoir une facture chaque mois, sans y penser ?",
-    a: "Une facture IziSolo est une facture acquittée : elle naît d'un paiement reçu, jamais avant. Une facture par mois, c'est donc un paiement par mois. Deux gestes, puis plus rien. (1) Le paiement de chaque mois : à la vente, choisis « En plusieurs fois » puis « Chaque mois jusqu'à la fin » et saisis le montant du mois (55 € par exemple) : un versement par mois se remplit tout seul jusqu'à la fin de l'abonnement, le premier réglé tout de suite, les suivants dans « À percevoir » de ta page Revenus et dans « À régler » de l'espace de l'élève. Pour un abonnement déjà vendu, ouvre-le depuis la fiche de l'élève et clique « Programmer chaque mois » : les mois déjà réglés sont sautés, jamais doublés. (2) La facture : dans Paramètres → Profil & studio → Activité, carte « Facturation », coche « Envoyer la facture à l'élève par email à chaque encaissement ». Ensuite, chaque mois, quand l'argent arrive, tu cliques « Encaisser » sur le versement : la facture est émise et part en pièce jointe. Le prélèvement automatique par carte, où même ce clic disparaît, est le prochain chantier.",
+    a: "Une facture IziSolo est une facture acquittée : elle naît d'un paiement reçu, jamais avant. Une facture par mois, c'est donc un paiement par mois. Deux gestes, puis plus rien. (1) Le paiement de chaque mois : à la vente, choisis « En plusieurs fois » puis « Chaque mois jusqu'à la fin » et saisis le montant du mois (55 € par exemple) : un versement par mois se remplit tout seul jusqu'à la fin de l'abonnement, le premier réglé tout de suite, les suivants dans « À percevoir » de ta page Revenus et dans « À régler » de l'espace de l'élève. Pour un abonnement déjà vendu, ouvre-le depuis la fiche de l'élève et clique « Programmer chaque mois » : les mois déjà réglés sont sautés, jamais doublés. (2) La facture : dans Paramètres → Argent → Facturation, coche « Envoyer la facture à l'élève par email à chaque encaissement ». Ensuite, chaque mois, quand l'argent arrive, tu cliques « Encaisser » sur le versement : la facture est émise et part en pièce jointe. Le prélèvement automatique par carte, où même ce clic disparaît, est le prochain chantier.",
     lien: { href: '/aide#factures', label: 'Voir le pas-à-pas' },
   },
   {
     // Colin, 2026-09-07, dans la foulée de la question de Manon : « et le
     // prélèvement auto par carte ? ». AJOUTÉE EN FIN de liste.
     q: "Mes élèves peuvent-elles être prélevées automatiquement chaque mois par carte ?",
-    a: "Oui, avec le plan Complet et ton compte Stripe. Dans Stripe, crée un lien de paiement récurrent (type « Abonnement », prix « par mois ») et colle-le sur ton offre d'abonnement, exactement comme un lien de paiement classique. Sur ton endpoint Stripe (Paramètres → Portail public → Paiement en ligne), coche aussi invoice.paid, invoice.payment_failed et customer.subscription.deleted. Ensuite tout suit : quand une élève souscrit depuis ton portail, Stripe la prélève chaque mois, IziSolo enregistre chaque prélèvement dans ses paiements, prolonge son abonnement et lui envoie sa facture si tu as activé l'envoi automatique. Sur sa fiche, l'abonnement porte le badge « 💳 Prélèvement auto ». Trois choses se règlent dans ton Stripe et pas dans IziSolo : la pause, le changement de carte et la résiliation (elle garde l'accès jusqu'à la fin de la période déjà payée). Si un prélèvement échoue, ta cloche te prévient et l'élève reçoit un email ; après trois échecs, l'abonnement passe en pause tout seul et se réactive dès qu'un prélèvement passe. Un engagement sur douze mois se règle dans Stripe, IziSolo ne l'impose pas.",
+    a: "Oui, avec le plan Complet et ton compte Stripe. Dans Stripe, crée un lien de paiement récurrent (type « Abonnement », prix « par mois ») et colle-le sur ton offre d'abonnement, exactement comme un lien de paiement classique. Sur ton endpoint Stripe (Paramètres → Argent → Paiement en ligne), coche aussi invoice.paid, invoice.payment_failed et customer.subscription.deleted. Ensuite tout suit : quand une élève souscrit depuis ton portail, Stripe la prélève chaque mois, IziSolo enregistre chaque prélèvement dans ses paiements, prolonge son abonnement et lui envoie sa facture si tu as activé l'envoi automatique. Sur sa fiche, l'abonnement porte le badge « 💳 Prélèvement auto ». Trois choses se règlent dans ton Stripe et pas dans IziSolo : la pause, le changement de carte et la résiliation (elle garde l'accès jusqu'à la fin de la période déjà payée). Si un prélèvement échoue, ta cloche te prévient et l'élève reçoit un email ; après trois échecs, l'abonnement passe en pause tout seul et se réactive dès qu'un prélèvement passe. Un engagement sur douze mois se règle dans Stripe, IziSolo ne l'impose pas.",
     lien: { href: '/aide#offres', label: 'Voir le pas-à-pas' },
   },
   {
@@ -248,7 +248,7 @@ export const FAQ_SUPPORT = [
     // offres sur le profil des clientes ? je gère ça via mon site internet ».
     // AJOUTÉE EN FIN de liste.
     q: "Je vends mes carnets sur mon propre site : comment enlever les offres de l'espace de mes élèves ?",
-    a: "Paramètres → Portail public → Ma page, désactive « Proposer mes offres dans l'espace de mes élèves ». La section « Les offres du studio » disparaît de leur espace, et avec elle le bouton « Demander ». Tout le reste reste en place : leurs paiements, leurs carnets, leurs factures, et toi tu continues d'attribuer tes offres depuis leurs fiches (« Ajouter une offre »), comme aujourd'hui. Ce réglage est indépendant de « Afficher mes tarifs sur ma page publique » : tu peux masquer l'un sans l'autre. Le jour où tu veux vendre depuis IziSolo, tu le réactives et tout revient.",
+    a: "Paramètres → Ma page publique → Ma page, désactive « Proposer mes offres dans l'espace de mes élèves ». La section « Les offres du studio » disparaît de leur espace, et avec elle le bouton « Demander ». Tout le reste reste en place : leurs paiements, leurs carnets, leurs factures, et toi tu continues d'attribuer tes offres depuis leurs fiches (« Ajouter une offre »), comme aujourd'hui. Ce réglage est indépendant de « Afficher mes tarifs sur ma page publique » : tu peux masquer l'un sans l'autre. Le jour où tu veux vendre depuis IziSolo, tu le réactives et tout revient.",
     lien: { href: '/aide#offres', label: 'Voir le pas-à-pas' },
   },
   {

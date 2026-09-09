@@ -298,7 +298,7 @@ export default function ClientsClient({ clients: clientsInit, profile, statutMap
             se règlent dans Paramètres, mais on y accède d'ici — c'est ICI
             qu'on pense « il me manque un champ allergies ». */}
         <Link
-          href="/parametres?tab=profil&s=champs"
+          href="/parametres/champs"
           className="izi-btn izi-btn-secondary invite-btn"
           title="Personnaliser les champs collectés sur les fiches élèves"
         >

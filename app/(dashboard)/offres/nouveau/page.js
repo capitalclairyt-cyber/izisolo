@@ -349,7 +349,7 @@ export default function NouvelleOffre() {
             <strong>Limite atteinte</strong>. Tu as atteint la limite d'offres du plan Essentiel.
             Passe en Complet pour cr{'é'}er des offres illimit{'é'}es.
           </div>
-          <Link href="/parametres?tab=abonnement" className="izi-btn izi-btn-primary" style={{ whiteSpace: 'nowrap', fontSize: '0.8125rem', padding: '8px 14px' }}>
+          <Link href="/parametres/abonnement" className="izi-btn izi-btn-primary" style={{ whiteSpace: 'nowrap', fontSize: '0.8125rem', padding: '8px 14px' }}>
             D{'é'}couvrir Complet
           </Link>
         </div>

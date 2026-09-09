@@ -176,7 +176,7 @@ try {
 
   // ═══ 3. La carte Lieux dit qu'elle enregistre toute seule ═══
   console.log('\n— 3. La carte Lieux —');
-  await naviguer(page, `${BASE}/parametres?tab=profil&s=lieux`);
+  await naviguer(page, `${BASE}/parametres/studio`);
   await page.waitForSelector('.section-desc', { timeout: 30000 });
   await attendre(2000);
   const txtLieux = await lireTexte(page);

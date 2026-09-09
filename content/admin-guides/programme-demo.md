@@ -60,7 +60,7 @@ Reprendre ses réponses de qualification à voix haute. Une question : « Qu'est
 
 🪷 **Messagerie** : l'annonce au canal Pleine Lune (les réactions 🙏✨🌕).
 
-🪷 **Paramètres → Ma page** : les documents d'inscription (QS-SPORT, CGV).
+🪷 **Paramètres → Ma page publique → Documents d'inscription** : les PDF (QS-SPORT, CGV).
 
 🪷 Le **Guide** dans la nav : « tout ce que je te montre est écrit là, avec une recherche : tu n'as pas besoin de tout retenir ».
 

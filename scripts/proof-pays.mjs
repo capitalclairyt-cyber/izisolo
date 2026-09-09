@@ -126,9 +126,9 @@ const naviguer = async (page, url) => {
   }
 };
 
-/** Ouvre Paramètres → Profil & studio → Activité (là où vit la Facturation). */
+/** Ouvre Paramètres → Argent → Facturation. */
 async function ouvrirActivite(page) {
-  await naviguer(page, `http://localhost:${PORT}/parametres?tab=profil&s=activite`);
+  await naviguer(page, `http://localhost:${PORT}/parametres/facturation`);
   await page.waitForSelector('text=Facturation', { timeout: 20000 });
   await attendre(700); // hydratation : le select ne réagit pas avant
 }
@@ -239,9 +239,14 @@ try {
     'la suggestion ne cite aucun article de loi française', mentionValeur.placeholder);
 
   // ══ F. L'URSSAF s'éteint ══════════════════════════════════════════════════
+  // Depuis le lot 1 Paramètres (2026-09-09), la déclaration URSSAF est une
+  // RUBRIQUE à part (/parametres/urssaf), listée dans la colonne de gauche
+  // seulement en France. Le pays choisi dans la carte Facturation (pas encore
+  // enregistré) suffit à la faire disparaître de la liste : l'état est partagé.
   console.log('\nF. Le bloc URSSAF n\'existe que là où il a un sens');
-  check(!/Ma déclaration URSSAF/.test(corps),
-    'la carte « Ma déclaration URSSAF » disparaît en Belgique');
+  const rubriqueUrssaf = async () => page.locator('.parametres-aside [data-rubrique="urssaf"]').count();
+  check((await rubriqueUrssaf()) === 0,
+    'la rubrique « Déclaration URSSAF » disparaît de la liste en Belgique');
   check(/appelle tes cotisations/.test(corps),
     'et l\'écran DIT qui appelle ses cotisations à la place');
 
@@ -253,7 +258,7 @@ try {
     sel.dispatchEvent(new Event('change', { bubbles: true }));
   });
   await attendre(400);
-  check(/Ma déclaration URSSAF/.test(await texte(page)),
+  check((await rubriqueUrssaf()) === 1,
     'elle revient en repassant en France (rien n\'est perdu)');
 
   if (!V105) {

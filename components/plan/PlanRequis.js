@@ -25,7 +25,7 @@ export default function PlanRequis({ capacite, titre, texte }) {
         Cette fonction fait partie du plan <strong>{plan.nom}</strong>{plan.prix ? <> ({plan.prix} € par mois, sans engagement)</> : null}.
         Tu peux y passer à tout moment, et revenir en arrière tout aussi simplement.
       </p>
-      <Link href="/parametres?tab=abonnement" className="izi-btn izi-btn-primary plan-requis-cta">
+      <Link href="/parametres/abonnement" className="izi-btn izi-btn-primary plan-requis-cta">
         Voir les plans
       </Link>
       <style>{`

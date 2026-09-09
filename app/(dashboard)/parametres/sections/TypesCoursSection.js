@@ -19,7 +19,6 @@
 
 import { Palette, ImageIcon } from 'lucide-react';
 import PhotoUploader from '@/components/ui/PhotoUploader';
-import AideContextuelle from '@/components/AideContextuelle';
 import { getAllTypesFromCategories } from '@/lib/utils';
 import { TONES, TONES_LABELS, toneCours } from '@/lib/vignette-cours';
 
@@ -45,7 +44,6 @@ export default function TypesCoursSection({ profile, setProfile, setDirty }) {
       <div className="section izi-card">
         <h2 className="section-title">
           <Palette size={18} /> Types de cours
-          <AideContextuelle ancre="apparence-cours" titre="Ouvrir le tuto « La couleur et la photo de tes cours »" />
         </h2>
         <p className="tc-intro">
           Tes types de cours (Hatha, Pilates, Atelier…) donnent leur couleur aux séances
@@ -61,7 +59,6 @@ export default function TypesCoursSection({ profile, setProfile, setDirty }) {
     <div className="section izi-card">
       <h2 className="section-title">
         <Palette size={18} /> Types de cours
-        <AideContextuelle ancre="apparence-cours" titre="Ouvrir le tuto « La couleur et la photo de tes cours »" />
       </h2>
       <p className="tc-intro">
         Chaque type porte une couleur sur ton planning public, et peut porter une photo.

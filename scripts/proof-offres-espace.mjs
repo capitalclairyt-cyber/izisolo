@@ -7,7 +7,7 @@
  * l'ESPACE élève n'avait aucun réglage.
  *
  * Vrai navigateur (dev :3333), session prof démo + session élève témoin :
- *   A. Paramètres → Portail public → Ma page : l'interrupteur existe ; le
+ *   A. Paramètres → Ma page publique → Ma page : l'interrupteur existe ; le
  *      désactiver écrit EN BASE (v108) ou répond 503 honnête (sans v108).
  *   B. Espace élève : masqué → ni section « Les offres du studio », ni
  *      question « Comment acheter » dans la mini-aide ; paiements et carnets
@@ -124,8 +124,8 @@ try {
   c('la mini-aide propose « Comment acheter un carnet ou un abonnement ? »', avant.includes('Comment acheter un carnet ou un abonnement'));
 
   // ── A. L'interrupteur ────────────────────────────────────────────────────
-  console.log('\n— A. Paramètres → Portail public → Ma page —');
-  await page.goto(`${BASE}/parametres?tab=portail&s=page`, { waitUntil: 'domcontentloaded', timeout: 120000 });
+  console.log('\n— A. Paramètres → Ma page publique → Ma page —');
+  await page.goto(`${BASE}/parametres/page`, { waitUntil: 'domcontentloaded', timeout: 120000 });
   await page.waitForSelector('text=Proposer mes offres dans l\'espace de mes élèves', { timeout: 90000 });
   c('l\'interrupteur « Proposer mes offres dans l\'espace de mes élèves » est rendu', true);
   const bouton = page.locator('button.toggle-btn', { hasText: 'Proposer mes offres dans l\'espace' });

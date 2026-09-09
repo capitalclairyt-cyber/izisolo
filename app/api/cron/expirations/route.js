@@ -244,7 +244,7 @@ export const GET = withRoute({ auth: 'cron' }, async () => {
                 Pour continuer à gérer ton studio sans interruption, choisis ton plan dès maintenant.
               </p>
               <div style="text-align:center;margin:24px 0;">
-                <a href="${appUrl}/parametres?tab=abonnement" style="display:inline-block;padding:14px 28px;background:#b87333;color:white;text-decoration:none;border-radius:99px;font-weight:700;">
+                <a href="${appUrl}/parametres/abonnement" style="display:inline-block;padding:14px 28px;background:#b87333;color:white;text-decoration:none;border-radius:99px;font-weight:700;">
                   Choisir mon plan
                 </a>
               </div>

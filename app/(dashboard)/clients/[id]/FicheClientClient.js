@@ -1474,7 +1474,7 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
           {!facturationActive && paiements.length > 0 && (
             <p style={{ fontSize: '0.75rem', color: '#888', margin: '0 0 12px', lineHeight: 1.5 }}>
               💡 Renseigne ton SIRET dans{' '}
-              <Link href="/parametres?tab=profil&s=activite" style={{ fontWeight: 600 }}>Paramètres → Activité</Link>
+              <Link href="/parametres/facturation" style={{ fontWeight: 600 }}>Paramètres → Argent → Facturation</Link>
               {' '}pour émettre de vraies factures (CSE, mutuelles). En attendant, tes élèves téléchargent un simple reçu.
             </p>
           )}

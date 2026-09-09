@@ -130,7 +130,7 @@ try {
     c('l\'email client = l\'email de connexion (reçus et relances d\'impayé)', (sessionSolo.customer_email || '').toLowerCase() === EMAIL);
     c('profile_id et plan en métadonnées (le webhook s\'en sert)', sessionSolo.metadata?.profile_id === profileId && sessionSolo.metadata?.plan === 'solo');
     c('aucun essai Stripe (les 30 jours sont comptés par IziSolo)', !sessionSolo.subscription_data?.trial_end);
-    c('retour vers Paramètres → Abonnement avec l\'id de session', /parametres\?tab=abonnement&abo=success&session_id=/.test(sessionSolo.success_url || ''));
+    c('retour vers Paramètres → Abonnement avec l\'id de session', /parametres\/abonnement\?abo=success&session_id=/.test(sessionSolo.success_url || ''));
   }
   const r1b = await checkout('solo');
   c('re-cliquer donne la MÊME session (clé d\'idempotence)', r1b.status === 200 && idDepuisUrl(r1b.corps.url) === idSolo);

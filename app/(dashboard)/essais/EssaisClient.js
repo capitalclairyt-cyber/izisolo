@@ -96,7 +96,7 @@ export default function EssaisClient({ profile, demandes: initialDemandes, surch
         title="Cours d'essai non activé"
         description="Active la fonctionnalité dans les paramètres pour permettre aux visiteurs de demander un cours d'essai depuis ton portail public."
       >
-        <Link href="/parametres?tab=portail&s=essai" className="izi-btn izi-btn-primary">
+        <Link href="/parametres/essai" className="izi-btn izi-btn-primary">
           <SettingsIcon size={16} /> Activer dans les paramètres
         </Link>
         {/* Le « ? » sert SURTOUT ici : comprendre la feature avant de l'activer

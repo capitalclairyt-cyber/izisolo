@@ -165,13 +165,13 @@ if (coursPointage) {
 }
 // cas-a-traiter — l'inbox (3 cas ouverts du seed).
 await shoot(ctx, 'cas-a-traiter', '/cas-a-traiter', { attendre: 'text=À traiter' });
-// regles-annulation — l'onglet Règles (deep-link B2e).
-await shoot(ctx, 'regles-annulation', '/parametres?tab=regles', { attendre: 'text=Annulation' });
+// regles-annulation — la rubrique Annulation (lot 1 Paramètres, 2026-09-09).
+await shoot(ctx, 'regles-annulation', '/parametres/annulation', { attendre: 'text=Annulation' });
 // messagerie — la LISTE (les non-lus sont l'illustration ; on n'ouvre RIEN :
 // ouvrir marquerait lu, leçon du script de captures d'origine).
 await shoot(ctx, 'messagerie', '/messagerie', { attendre: 'text=Messagerie' });
 // factures — la carte « Facturation » des Paramètres (élément seul).
-await shoot(ctx, 'factures', '/parametres?tab=profil&s=activite', {
+await shoot(ctx, 'factures', '/parametres/facturation', {
   attendre: 'text=Facturation',
   element: 'div.section:has-text("Facturation")',
 });

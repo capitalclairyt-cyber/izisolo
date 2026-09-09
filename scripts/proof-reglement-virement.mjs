@@ -132,7 +132,7 @@ try {
 
   // ── A. La carte Paramètres + validation IBAN à la saisie ────────────────
   console.log('\n— A. Paramètres : carte « Règlement par virement » —');
-  await page.goto(`${BASE}/parametres?tab=profil&s=activite`, { waitUntil: 'domcontentloaded', timeout: 120000 });
+  await page.goto(`${BASE}/parametres/virement`, { waitUntil: 'domcontentloaded', timeout: 120000 });
   await page.waitForSelector('text=Règlement par virement', { timeout: 90000 });
   c('la carte « Règlement par virement » est rendue', true);
   const inputIban = page.locator('input[placeholder^="FR76"]');

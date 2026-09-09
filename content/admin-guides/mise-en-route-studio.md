@@ -69,7 +69,7 @@ Dans l'ordre utile, pas tout d'un coup :
 
 🪷 Tuile Portail du tableau de bord : **partager le lien** (SMS/WhatsApp, message pré-rédigé), le **QR code** (3 formats : carte → portail, flyer → essai, affiche A4 → connexion).
 
-🪷 Elle a un site ? Paramètres → Ma page → le **planning intégrable** (deux lignes à coller, aperçu en direct, couleurs réglables).
+🪷 Elle a un site ? Paramètres → Ma page publique → Intégrer sur mon site → le **planning intégrable** (deux lignes à coller, aperçu en direct, couleurs réglables).
 
 ## Étape 7 : l'app sur son téléphone (2 min, à ne pas sauter)
 

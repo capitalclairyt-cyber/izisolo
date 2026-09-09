@@ -160,7 +160,7 @@ try {
     await page.waitForTimeout(1500); // le profil se charge après l'hydratation
     const optPrive = await page.locator('select option[value="prive"]').count();
     c(`formulaire de cours : option « Privé (sur invitation) » ${complet ? 'proposée' : 'absente'}`, complet ? optPrive >= 1 : optPrive === 0, String(optPrive));
-    await aller(page, `${BASE}/parametres?tab=portail&s=page`);
+    await aller(page, `${BASE}/parametres/page`);
     await page.waitForSelector('text=Ma philosophie', { timeout: 90000 });
     const hint = await page.locator('[data-testid="hint-portail-enrichi"]').count();
     c(`Ma page : avertissement bio/FAQ ${complet ? 'absent' : 'présent'}`, complet ? hint === 0 : hint === 1);

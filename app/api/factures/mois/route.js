@@ -26,7 +26,7 @@ export const GET = withRoute({ auth: 'active' }, async ({ request, auth }) => {
 
   const { active, facturation } = await chargerFacturation(admin, user.id);
   if (!active) {
-    return new Response('Renseigne d\'abord ton SIRET (Paramètres → Profil & studio → Activité) pour émettre des factures.', { status: 409 });
+    return new Response('Renseigne d\'abord ton SIRET (Paramètres → Argent → Facturation) pour émettre des factures.', { status: 409 });
   }
 
   const { data: client, error: cliErr } = await admin

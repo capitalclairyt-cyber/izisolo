@@ -60,7 +60,7 @@ export const POST = withRoute({ auth: 'user' }, async ({ auth }) => {
     // moment où elle vient changer sa carte. Le script de setup imprime cet id.
     const session = await stripe.billingPortal.sessions.create({
       customer: profile.stripe_customer_id,
-      return_url: `${baseUrl}/parametres?tab=abonnement`,
+      return_url: `${baseUrl}/parametres/abonnement`,
       ...(process.env.STRIPE_PORTAL_CONFIG_ID
         ? { configuration: process.env.STRIPE_PORTAL_CONFIG_ID }
         : {}),

@@ -195,12 +195,12 @@ export default function Sidebar({ studioNom = 'Mon Studio', vocabulaire = {}, il
         </Link>
         )}
         {peut(membre, 'parametres') && (
-        <Link href="/parametres" className={`sidebar-item ${pathname === '/parametres' ? 'active' : ''}`} onClick={triggerPulse}>
+        <Link href="/parametres" className={`sidebar-item ${pathname.startsWith('/parametres') ? 'active' : ''}`} onClick={triggerPulse}>
           <span className="sidebar-icon-wrap">
-            <Settings size={20} strokeWidth={pathname === '/parametres' ? 2.2 : 1.8} />
+            <Settings size={20} strokeWidth={pathname.startsWith('/parametres') ? 2.2 : 1.8} />
           </span>
           <span className="sidebar-label">Paramètres</span>
-          {pathname === '/parametres' && <ChevronRight size={14} className="sidebar-chevron" />}
+          {pathname.startsWith('/parametres') && <ChevronRight size={14} className="sidebar-chevron" />}
         </Link>
         )}
       </nav>

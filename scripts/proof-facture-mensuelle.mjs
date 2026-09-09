@@ -182,7 +182,7 @@ try {
 
   // ── A. Le réglage dans Paramètres ────────────────────────────────────────
   console.log('\n— A. Paramètres : « envoyer la facture à chaque encaissement » —');
-  await page.goto(`${BASE}/parametres?tab=profil&s=activite`, { waitUntil: 'domcontentloaded', timeout: 120000 });
+  await page.goto(`${BASE}/parametres/facturation`, { waitUntil: 'domcontentloaded', timeout: 120000 });
   await page.waitForSelector('text=Envoyer la facture à l\'élève par email', { timeout: 90000 });
   c('la case « Envoyer la facture à l\'élève par email à chaque encaissement » est rendue', true);
   const caseAuto = page.locator('label:has-text("Envoyer la facture à l\'élève par email") input[type=checkbox]');

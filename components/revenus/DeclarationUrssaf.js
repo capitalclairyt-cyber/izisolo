@@ -68,7 +68,7 @@ export default function DeclarationUrssaf() {
   if (!data.configuree) {
     return (
       <>
-        <Link href="/parametres?tab=profil&s=activite" className="urssaf-invite izi-card">
+        <Link href="/parametres/urssaf" className="urssaf-invite izi-card">
           <Landmark size={18} />
           <span>
             <strong>Prépare ta déclaration URSSAF</strong>
@@ -248,7 +248,7 @@ export default function DeclarationUrssaf() {
               {telechargement ? <Loader2 size={14} className="spin" /> : <FileText size={14} />}
               Livre des recettes (PDF)
             </button>
-            <Link href="/parametres?tab=profil&s=activite" className="urssaf-lien">Modifier mes réglages</Link>
+            <Link href="/parametres/urssaf" className="urssaf-lien">Modifier mes réglages</Link>
           </div>
           <p className="urssaf-muted">
             Le livre des recettes est le registre chronologique que tu dois tenir en micro-entreprise.

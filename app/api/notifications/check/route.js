@@ -52,7 +52,7 @@ export const POST = withRoute({ auth: 'user' }, async ({ auth }) => {
   }
 
   // ── 2. Paiements en retard (non réglés depuis X jours) ───────────────────
-  // Seuil réglable : Paramètres → Notifications → « Alerte paiement en
+  // Seuil réglable : Paramètres → Élèves & cours → Seuils d'alerte → « Paiement en
   // attente » (B2e — avant, 7 j codés en dur pendant que l'UI affichait un
   // réglage à 14 jamais sauvegardé ni lu).
   if (wantInapp('paiement_retard')) {

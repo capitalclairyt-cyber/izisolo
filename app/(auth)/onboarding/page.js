@@ -536,7 +536,7 @@ export default function OnboardingPage() {
                 />
                 <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '6px 0 0' }}>
                   Si tu donnes cours dans plusieurs lieux, tu pourras les ajouter individuellement
-                  dans <em>Paramètres → Mes lieux</em>.
+                  dans <em>Paramètres → Studio & lieux</em>.
                 </p>
               </div>
             </div>

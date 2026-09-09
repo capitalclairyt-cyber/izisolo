@@ -12,7 +12,7 @@
  *   • 'free'          → null (compte interne)
  *
  * Posé en haut du DashboardLayoutClient → visible sur toutes les pages.
- * Le bouton "Re-souscrire" envoie sur /parametres?tab=abonnement.
+ * Le bouton "Re-souscrire" envoie sur /parametres/abonnement.
  *
  * Note : pour past_due, le bouton ouvre directement le Customer Portal
  * via /api/stripe/customer-portal (changement de carte = action urgente).
@@ -58,7 +58,7 @@ export default function AccountStatusBanner({ profile }) {
         <span className="acc-trial-text">
           Essai <strong>Pro</strong> · {trial.daysLeft} {daysWord} restant{trial.daysLeft > 1 ? 's' : ''}
         </span>
-        <Link href="/parametres?tab=abonnement" className="acc-cta">
+        <Link href="/parametres/abonnement" className="acc-cta">
           Choisir mon abo
         </Link>
         <BannerStyle />
@@ -75,7 +75,7 @@ export default function AccountStatusBanner({ profile }) {
           <strong>Ton essai 30 jours est terminé.</strong> Choisis un plan pour
           continuer à ajouter élèves, cours et paiements.
         </div>
-        <Link href="/parametres?tab=abonnement" className="acc-cta acc-cta--primary">
+        <Link href="/parametres/abonnement" className="acc-cta acc-cta--primary">
           Souscrire maintenant
         </Link>
         <BannerStyle />
@@ -110,7 +110,7 @@ export default function AccountStatusBanner({ profile }) {
           données mais plus en ajouter. <strong>Le trial 30 j a déjà été utilisé</strong> :
           re-souscris pour ré-accéder à toutes les features.
         </div>
-        <Link href="/parametres?tab=abonnement" className="acc-cta acc-cta--primary">
+        <Link href="/parametres/abonnement" className="acc-cta acc-cta--primary">
           Re-souscrire
         </Link>
         <BannerStyle />

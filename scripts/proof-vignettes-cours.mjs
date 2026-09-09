@@ -143,6 +143,17 @@ try {
   // ═══ PHASE A — le dégradé est invisible ═══════════════════════════════════
   console.log('\n── Phase A : le planning et les blocs, sans aucune photo ──');
 
+  // Le démo porte des photos par type depuis son habillage (2026-09-08) : la
+  // phase A mesure « sans aucune photo », on les retire le temps de la mesure
+  // (le finally restaure les réglages d'origine, même en cas d'échec).
+  if (migree) {
+    reglagesOriginaux = {
+      tons_par_type: sondeProfil.data?.tons_par_type ?? null,
+      vignettes_par_type: sondeProfil.data?.vignettes_par_type ?? null,
+    };
+    await admin.from('profiles').update({ vignettes_par_type: null }).eq('id', studio.id);
+  }
+
   await page.goto(`${BASE}/p/${STUDIO_SLUG}`, { waitUntil: 'networkidle' });
   const portailA = await page.evaluate(() => {
     const cartes = [...document.querySelectorAll('.portail-cours-card')];
@@ -408,7 +419,7 @@ try {
     await ctx.addCookies(await sessionCookies(emailProf));
     const pageProf = await ctx.newPage();
 
-    await pageProf.goto(`${BASE}/parametres?tab=portail&s=apparence`, { waitUntil: 'networkidle' });
+    await pageProf.goto(`${BASE}/parametres/types-cours`, { waitUntil: 'networkidle' });
     await attendre(800);
     const carte = await pageProf.evaluate(() => {
       const lignes = [...document.querySelectorAll('.tc-ligne')];
@@ -429,12 +440,14 @@ try {
         })(),
       };
     });
-    assert(carte.presente, 'Paramètres → Portail public → Types de cours : la carte s\'affiche');
+    assert(carte.presente, 'Paramètres → Ma page publique → Types de cours : la carte s\'affiche');
     assert(carte.types > 0, `la carte liste les ${carte.types} types du studio`);
     assert(carte.pastillesParLigne === 5, 'chaque type propose les 5 couleurs de la palette');
     assert(carte.actives === carte.types, 'chaque type montre la couleur qui lui est appliquée aujourd\'hui');
     assert(carte.uploaders === carte.types, 'chaque type a son dépôt de photo');
-    assert(carte.aide && carte.aideStyle?.display === 'inline-flex',
+    // Depuis le lot 1 Paramètres (2026-09-09), le « ? » vit dans l'en-tête de la
+    // rubrique : enfant d'un conteneur flex, son inline-flex est blockifié en flex.
+    assert(carte.aide && ['inline-flex', 'flex'].includes(carte.aideStyle?.display) && carte.aideStyle?.largeur === '28px',
       `le « ? » du guide est branché et stylé (largeur ${carte.aideStyle?.largeur})`);
 
     // Changer une couleur → le bouton Enregistrer de la carte se réveille

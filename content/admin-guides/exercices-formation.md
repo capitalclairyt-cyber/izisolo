@@ -57,7 +57,7 @@ maj: 2026-08-21
 
 1. ☐ Créer le compte (autonomie guidée) et faire l'onboarding : prénom Léa,
    studio « Yoga Doux Annecy », activité yoga.
-2. ☐ Paramètres → **Lieux** : ajouter « Salle des Marquisats » avec l'adresse.
+2. ☐ Paramètres → **Studio & lieux** : ajouter « Salle des Marquisats » avec l'adresse.
 3. ☐ Créer le **cours du mardi** : nom « Yoga doux », 18h30, 60 min, 12 places,
    lieu Marquisats, **récurrence hebdomadaire jusqu'au 30 juin**, et ❗ cocher
    **« créer aussi pendant les vacances scolaires »**.
@@ -114,7 +114,7 @@ quel geste elle va faire et pourquoi**, puis le fait.
 - **Email** : `formation-sophie@example.com` · **Téléphone** : 06 88 77 66 55
 - **SIRET** : elle l'a, mais refuse de le donner en visio (« je le mettrai
   moi-même »). Réponse à donner : « aucun souci, c'est 30 secondes quand tu
-  veux, dans Paramètres → Activité. »
+  veux, dans Paramètres → Argent → Facturation. »
 - **Ses cours** : lundi 12h15 (Part-Dieu), mercredi 19h00 (Croix-Rousse),
   samedi 10h00 (Croix-Rousse), 55 min, 10 places.
 - **Ses tarifs** : carnet 5 séances 75 €, carnet 10 séances 140 €, abonnement
@@ -131,7 +131,7 @@ quel geste elle va faire et pourquoi**, puis le fait.
 1. ☐ Compte + onboarding.
 2. ☐ **Deux lieux** avec leurs adresses exactes.
 3. ☐ Les **3 cours récurrents** sur les bons lieux, jusqu'au 30 juin.
-4. ☐ Paramètres → **Règles d'annulation** : délai 24 h, séance décomptée après.
+4. ☐ Paramètres → Élèves & cours → **Annulation** : délai 24 h, séance décomptée après.
 5. ☐ Les **3 offres**. ❗ Pour l'abonnement : **« Illimitées »** + cadence
    **2 séances par semaine**. (Piège : « Nombre fixe » laissé vide bloque
    désormais la sauvegarde, avec un message. Si le message apparaît, c'est
@@ -194,9 +194,9 @@ quel geste elle va faire et pourquoi**, puis le fait.
 ### Séance A : on construit (35 min)
 
 1. ☐ Compte + onboarding + les **2 lieux**.
-2. ☐ Paramètres → Activité → **Facturation** : raison sociale + SIRET.
-3. ☐ Paramètres → Ma page → **Documents d'inscription** : uploader les 2 PDF.
-4. ☐ Paramètres → **Cours d'essai** : 12 €, et **15 € pour le type
+2. ☐ Paramètres → Argent → **Facturation** : raison sociale + SIRET.
+3. ☐ Paramètres → Ma page publique → **Documents d'inscription** : uploader les 2 PDF.
+4. ☐ Paramètres → Ma page publique → **Cours d'essai** : 12 €, et **15 € pour le type
    « individuel »** (tarif par type).
 5. ☐ Les 2 cours récurrents.
 6. ☐ Offre **« Trimestre » à 96 €** (période fixe : dates du trimestre).
@@ -267,7 +267,7 @@ quel geste elle va faire et pourquoi**, puis le fait.
    tout le monde : la durée totale ne bouge jamais, ce sont les semaines
    restantes qui baissent.
 6. ☐ Les 3 fiches élèves.
-7. ☐ Paramètres → Ma page → **afficher la grille tarifaire** + générer le
+7. ☐ Paramètres → Ma page publique → Ma page → **afficher la grille tarifaire** + générer le
    **QR code** (préréglage « flyer »).
 
 ### Séance B : on fait vivre (30 min)
@@ -325,7 +325,7 @@ quel geste elle va faire et pourquoi**, puis le fait.
 3. ☐ Offres : abonnement annuel 420 €, carnet 10 à 150 €.
 4. ☐ Le **stage** : cours ponctuel avec **tarif à l'unité 25 €** + case
    **« carnets acceptés »** (le cours mixte).
-5. ☐ Paramètres → règle **no-show : décompter**.
+5. ☐ Paramètres → Cas particuliers → règle **no-show : décompter**.
 6. ☐ **Import du CSV** : ❗ corriger le **mapping** (colonnes en désordre) et
    décider quoi faire de la colonne « Niveau » (notes ou ignorée).
 7. ☐ Créer le **sondage planning** à 2 créneaux.

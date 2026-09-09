@@ -31,7 +31,7 @@ Android/Chrome : menu ⋮ → Installer. iPhone : Partager → Sur l'écran d'ac
 Rien d'obligatoire côté élèves : elles peuvent réserver sans compte, et TOI tu pointes et encaisses comme avant. L'espace élève est un bonus qui se propage tout seul.
 
 **« Il me faut le questionnaire santé signé »** *(Patricia)*
-Paramètres → Ma page → Documents d'inscription : tes PDF proposés à l'inscription, « à rapporter signés ».
+Paramètres → Ma page publique → Documents d'inscription : tes PDF proposés à l'inscription, « à rapporter signés ».
 
 **« Une élève veut une facture pour son CSE »** *(Manon)*
 Renseigne ton SIRET une fois : vraies factures numérotées, l'élève se sert seule dans son espace.

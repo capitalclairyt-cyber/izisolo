@@ -58,7 +58,7 @@ export const POST = withRoute({ auth: 'active', schema, perm: 'argent_gerer' }, 
 
   if (body.variante === 'virement' && !config?.rib) {
     return Response.json({
-      error: 'Renseigne d\'abord ton RIB : Paramètres → Profil & studio → Activité, carte « Règlement par virement ».',
+      error: 'Renseigne d\'abord ton RIB : Paramètres → Argent → Virement (RIB).',
     }, { status: 400 });
   }
 

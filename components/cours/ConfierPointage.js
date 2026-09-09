@@ -140,7 +140,7 @@ export default function ConfierPointage({ cours }) {
           {sansPlan && (
             <p className="cp-alerte">
               Confier le pointage fait partie du plan Complet.{' '}
-              <a href="/parametres?tab=abonnement">Voir les plans</a>
+              <a href="/parametres/abonnement">Voir les plans</a>
             </p>
           )}
 

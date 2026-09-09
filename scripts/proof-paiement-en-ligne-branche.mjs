@@ -253,7 +253,7 @@ try {
   assert(/n'est pas terminé/.test(alerte), 'C · elle dit que la configuration est incomplete');
   assert(/Demander/.test(alerte), 'C · elle dit ce que voient les eleves en attendant');
   const href = await pageProf.locator('.webhook-alerte a').first().getAttribute('href');
-  assert(href === '/parametres?tab=portail&s=paiement', `C · le lien mene au bon ecran (${href})`);
+  assert(href === '/parametres/paiement-en-ligne', `C · le lien mene au bon ecran (${href})`);
 
   // ── E. Le rattrapage : un evenement REJOUE, date du jour du paiement ──────
   console.log('\nE. Rattrapage — un evenement Stripe rejoue cree le paiement ET le carnet');

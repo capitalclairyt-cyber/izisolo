@@ -146,8 +146,8 @@ export const POST = withRoute({ auth: 'user' }, async ({ request, auth }) => {
       // La session revient dans l'URL : l'écran peut CONSTATER l'abonnement au
       // lieu d'annoncer « activé » sur la foi d'une redirection, même quand le
       // webhook a échoué.
-      success_url: `${baseUrl}/parametres?tab=abonnement&abo=success&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${baseUrl}/parametres?tab=abonnement&abo=cancel`,
+      success_url: `${baseUrl}/parametres/abonnement?abo=success&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${baseUrl}/parametres/abonnement?abo=cancel`,
       allow_promotion_codes: true,
     }, {
       // Double clic sur « Passer à Complet » : une seule session créée.

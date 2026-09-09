@@ -112,7 +112,7 @@ export default function EquipeClient({ membresInit, planOk, indisponible, studio
             Un seul abonnement pour tout le studio, autant de profs que tu veux. Les personnes déjà
             invitées gardent leur place : elles retrouvent tout dès que l&apos;abonnement reprend.
           </p>
-          <a href="/parametres?tab=abonnement">Voir les plans</a>
+          <a href="/parametres/abonnement">Voir les plans</a>
         </div>
       )}
 

@@ -164,7 +164,7 @@ Chaque lot suit la règle immuable : preuve en vrai navigateur, centre d'aide
 dans le même commit, commit, push. Aucune migration, `verifier-selects` sans
 objet (aucune colonne nouvelle).
 
-**Lot 1 : la structure (le plus gros, zéro changement de champ)**
+**Lot 1 : la structure (le plus gros, zéro changement de champ) — ✅ LIVRÉ le 2026-09-09**, prouvé 73/73 en vrai navigateur (`scripts/proof-parametres-structure.mjs`) + non-régression pays 27/27, virement 16/16, offres-espace 18/18, paiement en ligne 22/22, vignettes 35/35, frontière des plans 38/38, 725 specs CI. Décisions Colin appliquées dans ce lot : « Argent », fusion Studio & lieux, SMS retiré. Reste après déploiement : refaire les illustrations du guide qui photographient Paramètres (`node scripts/shoot-aide-illustrations.mjs`).
 - `/parametres` = liste des rubriques avec résumés d'état ; `/parametres/[rubrique]`
   = une rubrique ; layout deux colonnes desktop, écran + retour mobile.
 - Table d'alias `?tab=…&s=…` vers rubrique (les 17 sites du code + 2 URL Stripe +
@@ -207,7 +207,12 @@ objet (aucune colonne nouvelle).
   le SMS, qui n'a jamais existé côté produit.
 - On ne réintroduit pas `ReglesTab` (le constructeur SI/ALORS), retiré en mai.
 
-## 7. Décisions attendues de Colin
+## 7. Décisions de Colin (tranchées le 2026-09-09)
+
+Argent · fusion Studio & lieux · SMS retiré · structure d'abord. Les quatre
+questions ci-dessous sont conservées pour mémoire.
+
+### Questions posées
 
 1. Rubrique « Argent » : ce nom, ou « Paiements & facturation » ?
 2. « Studio & lieux » fusionnés, ou garder « Lieux » à part ?

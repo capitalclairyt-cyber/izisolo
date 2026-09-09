@@ -84,7 +84,7 @@ try {
 
   // ── 1. Le SW s'enregistre tout seul ────────────────────────────────────────
   console.log('\n— 1. RegisterSW : le service worker s\'active à l\'arrivée —');
-  await page.goto(`${BASE}/parametres?tab=notifications`, { waitUntil: 'domcontentloaded', timeout: 120000 });
+  await page.goto(`${BASE}/parametres/mes-notifications`, { waitUntil: 'domcontentloaded', timeout: 120000 });
   await page.waitForSelector('text=Mes notifications', { timeout: 90000 });
   // Ce que RegisterSW promet : l'ENREGISTREMENT sans geste. L'ACTIVATION, elle,
   // dépend du premier précache (0 s en local, 30-90 s en prod sur profil

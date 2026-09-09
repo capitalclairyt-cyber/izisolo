@@ -384,7 +384,7 @@ export default function OffresClient({ offres, profile, planKey, limiteOffres, d
             En attendant, tes élèves ne voient pas le bouton « payer » : elles voient
             <strong> « Demander »</strong>, leur demande arrive ici, et tu encaisses comme tu veux.
           </p>
-          <Link href="/parametres?tab=portail&s=paiement" className="izi-btn btn-sm izi-btn-primary">
+          <Link href="/parametres/paiement-en-ligne" className="izi-btn btn-sm izi-btn-primary">
             Terminer la configuration
           </Link>
         </div>
@@ -561,7 +561,7 @@ export default function OffresClient({ offres, profile, planKey, limiteOffres, d
                 Passe en Complet pour cr{'é'}er des offres illimit{'é'}es et d{'é'}bloquer toutes les fonctionnalit{'é'}s avanc{'é'}es.
               </p>
               <Link
-                href="/parametres?tab=abonnement"
+                href="/parametres/abonnement"
                 className="izi-btn izi-btn-primary upgrade-cta-btn"
                 onClick={() => setShowUpgradePrompt(false)}
               >
