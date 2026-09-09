@@ -6,6 +6,23 @@ import Image from 'next/image';
 import { IziSoloLogo } from './Brand';
 import { FAQ_ITEMS } from '@/content/faq';
 import VISUELS from '@/public/icons/landing/manifest.json';
+import ReelPhone from './ReelPhone';
+import Callouts from './Callouts';
+
+/* ================================================================
+   Landing v4 « en mouvement » (2026-09-09, demande Colin : « des vidéos
+   du même genre que le réel, alterner avec des hauts de mockups, des
+   flèches animées, une belle photo en fond de section »).
+   · Les CLIPS du réel (reel/src/scenes.js → reel/scripts/rendre-clips.mjs)
+     vivent dans les téléphones : hero (navigation), réservation (portail),
+     encaissement (vente, haut du téléphone seulement), messagerie.
+   · Entre deux clips, un HAUT DE MOCKUP desktop fixe (agenda, revenus)
+     fléché en SVG dans la page (Callouts) : net à toute taille, texte vrai.
+   · UNE photo pleine largeur, en fond du CTA final (photo-mala.jpg) : la
+     seule image de banque qui tient la palette ; les images Gemini restent
+     hors landing (zéro faux, jusque dans les écrans qu'elles affichent).
+   La discipline v3 tient : un alignement, un souligné, des visuels réels.
+   ================================================================ */
 
 /* ================================================================
    Landing v3 « claire » (2026-09-06, plan de lancement rentrée).
@@ -24,14 +41,24 @@ import VISUELS from '@/public/icons/landing/manifest.json';
 // Visuels réels (public/icons/landing/, dimensions du manifest écrit par le script).
 const V = (id, alt) => ({ src: `/icons/landing/${id}.jpg`, alt, width: VISUELS[id].w, height: VISUELS[id].h });
 const VISUEL = {
-  pointage:   V('hero-pointage',  'Pointage d\'une séance sur IziSolo : six présentes, carnets décomptés'),
-  agenda:     V('row-agenda',     'Agenda IziSolo en vue semaine'),
-  portail:    V('row-portail',    'Planning public d\'un studio sur IziSolo, réservable depuis un téléphone'),
-  revenus:    V('row-revenus',    'Revenus IziSolo : encaissé sur trois mois, par mode de paiement, et le reste à percevoir'),
-  messagerie: V('row-messagerie', 'Messagerie IziSolo : le canal d\'un cours de yoga pleine lune, avec une photo'),
+  agenda:  V('row-agenda',  'Agenda IziSolo en vue semaine'),
+  revenus: V('row-revenus', 'Revenus IziSolo : encaissé sur trois mois, par mode de paiement, et le reste à percevoir'),
 };
 
 /* ---- Helpers partagés ---------------------------------------- */
+
+// Haut de mockup desktop : barre de navigateur + capture, le bas qui s'efface
+// (`coupe`) quand la capture est plus haute que ce qu'on veut montrer.
+function MockupDesktop({ visuel, url, coupe = false, hauteur, sizes = '(max-width: 760px) 92vw, 700px' }) {
+  return (
+    <div className={`mock-desk ${coupe ? 'mock-coupe' : ''}`} style={hauteur ? { '--mock-h': `${hauteur}px` } : undefined}>
+      <div className="mock-bar" aria-hidden="true"><i /><i /><i /><span className="mock-url">izisolo.fr/{url}</span></div>
+      <div className="mock-body">
+        <Image src={visuel.src} alt={visuel.alt} width={visuel.width} height={visuel.height} sizes={sizes} data-cible-ref="" />
+      </div>
+    </div>
+  );
+}
 
 function CheckIcon() {
   return (
@@ -64,16 +91,6 @@ function Head({ eyebrow, sub, children }) {
 
 // Téléphone : cadre sombre, écran arrondi, une image dedans. `coupe` = le bas
 // du téléphone sort du panneau (rangées), sinon téléphone entier (hero).
-function Phone({ visuel, coupe = false, priority = false, sizes = '300px' }) {
-  return (
-    <div className={`phone ${coupe ? 'phone-coupe' : ''}`}>
-      <div className="phone-ecran">
-        <Image src={visuel.src} alt={visuel.alt} width={visuel.width} height={visuel.height} priority={priority} sizes={sizes} />
-      </div>
-    </div>
-  );
-}
-
 /* ---- NAV ----------------------------------------------------- */
 export function Nav() {
   const [scrolled, setScrolled] = useState(false);
@@ -145,7 +162,8 @@ export function Hero() {
           </p>
         </div>
         <div className="hero-v3-visuel">
-          <Phone visuel={VISUEL.pointage} priority sizes="(max-width: 900px) 260px, 300px" />
+          <ReelPhone clip="navigation" priorite sizes="(max-width: 900px) 260px, 300px"
+            titre="IziSolo sur un téléphone : l'accueil du studio, le menu qui s'ouvre, l'agenda de la semaine" />
         </div>
       </div>
     </section>
@@ -215,9 +233,14 @@ export function Features() {
             'Planning intégrable sur ton propre site',
           ]}
           media={(
-            <div className="feat-shot">
-              <Image src={VISUEL.agenda.src} alt={VISUEL.agenda.alt} width={VISUEL.agenda.width} height={VISUEL.agenda.height} sizes="(max-width: 760px) 92vw, 700px" />
-            </div>
+            <Callouts points={[
+              { cible: [36, 76], carte: [3, 82], courbure: -40,
+                label: 'Séries récurrentes', sous: 'Vacances et fériés sautés, une fois pour toutes' },
+              { cible: [82, 9], carte: [56, 82], courbure: 40,
+                label: 'Jour, semaine, mois', sous: 'Ton planning à l’échelle du moment' },
+            ]}>
+              <MockupDesktop visuel={VISUEL.agenda} url="agenda" />
+            </Callouts>
           )}
         />
 
@@ -233,29 +256,52 @@ export function Features() {
           ]}
           media={(
             <div className="feat-panneau">
-              <Phone visuel={VISUEL.portail} coupe sizes="(max-width: 760px) 240px, 300px" />
+              <ReelPhone clip="portail" coupe sizes="(max-width: 760px) 240px, 300px"
+                titre="Le planning public d'un studio sur IziSolo, qui défile jusqu'aux places disponibles" />
             </div>
           )}
         />
 
         <FeatRow
-          k="Revenus"
-          title="L'argent rentre, et tu vois tout"
-          desc="Carnets, abonnements, séances à l'unité. Payé maintenant, à régler plus tard ou en plusieurs fois : l'app suit chaque centime, et te mâche ta déclaration URSSAF."
+          k="Encaisser"
+          title="Encaisse comme tes élèves te paient"
+          desc="Payé maintenant, à régler plus tard, en plusieurs fois, ou en plusieurs moyens le même jour : chaque euro est enregistré avec son mode de règlement, et part en compta au bon endroit."
           bullets={[
-            '« À percevoir » : tout ce qu\'on te doit, encaissable en un clic',
-            'Vraies factures numérotées, téléchargées par tes élèves',
-            'Paiement CB en ligne sur ton propre Stripe, y compris à la séance',
+            'Espèces + carte le même jour, chacun sur sa ligne',
+            'Échéancier : le reste s\'encaisse en un clic, à chaque versement',
+            'Virement : RIB et QR code envoyés à l\'élève par email',
           ]}
           media={(
-            <div className="feat-shot">
-              <Image src={VISUEL.revenus.src} alt={VISUEL.revenus.alt} width={VISUEL.revenus.width} height={VISUEL.revenus.height} sizes="(max-width: 760px) 92vw, 700px" />
+            <div className="feat-panneau feat-panneau-court">
+              <ReelPhone clip="vente" coupe sizes="(max-width: 760px) 240px, 300px"
+                titre="Le tunnel de vente IziSolo : espèces et carte le même jour, puis un échéancier en trois fois" />
             </div>
           )}
         />
 
         <FeatRow
           flip
+          k="Revenus"
+          title="L'argent rentre, et tu vois tout"
+          desc="Carnets, abonnements, séances à l'unité : l'app suit chaque centime, sépare ce qui est encaissé de ce qu'on te doit, et te mâche ta déclaration URSSAF."
+          bullets={[
+            '« À percevoir » : tout ce qu\'on te doit, encaissable en un clic',
+            'Vraies factures numérotées, téléchargées par tes élèves',
+            'Paiement CB en ligne sur ton propre Stripe, y compris à la séance',
+          ]}
+          media={(
+            <Callouts points={[
+              { cible: [25, 32], carte: [4, 80], courbure: 50,
+                label: 'Encaissé, à jour', sous: 'À chaque paiement, par mode de règlement' },
+              { cible: [58, 30], carte: [56, 80], courbure: -40,
+                label: 'Ce qu’on te doit', sous: 'Relancé pour toi, encaissable en un clic' },
+            ]}>
+              <MockupDesktop visuel={VISUEL.revenus} url="revenus" coupe hauteur={340} />
+            </Callouts>
+          )}
+        />
+
+        <FeatRow
           k="Communication"
           title="Ta communication, sans y passer tes soirées"
           desc="Messagerie intégrée, annonces groupées, canaux par cours. Tes élèves reçoivent un email dès que tu écris, avec ta vraie adresse en réponse. Une séance annulée ? Chaque élève est prévenue, et son crédit restitué."
@@ -266,7 +312,8 @@ export function Features() {
           ]}
           media={(
             <div className="feat-panneau">
-              <Phone visuel={VISUEL.messagerie} coupe sizes="(max-width: 760px) 240px, 300px" />
+              <ReelPhone clip="messagerie" coupe sizes="(max-width: 760px) 240px, 300px"
+                titre="La messagerie IziSolo : le canal d'un cours de yoga pleine lune, avec une photo et les réponses des élèves" />
             </div>
           )}
         />
@@ -481,7 +528,14 @@ export function FAQ() {
 /* ---- CTA FINAL ----------------------------------------------- */
 export function FinalCta() {
   return (
-    <section id="cta" className="final-v3">
+    <section id="cta" className="final-v4">
+      {/* La photo pleine largeur de la page (v4) : mains en mudra, bokeh sable et
+          sauge, aucun visage — photo de banque libre de droits, la seule de la
+          banque qui tient la palette. Décorative : alt vide, le texte porte. */}
+      <div className="final-photo" aria-hidden="true">
+        <Image src="/icons/photo-mala.jpg" alt="" fill sizes="100vw" quality={70} />
+      </div>
+      <div className="final-voile" aria-hidden="true" />
       <div className="container">
         <div className="final-carte">
           <div className="final-copy">

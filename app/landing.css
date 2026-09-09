@@ -1611,3 +1611,176 @@ section.tight { padding-block: clamp(48px, 6vw, 80px); }
   .calc-hero h1 { font-size: var(--fs-h3); }
   .calc-inputs { flex-direction: column; }
 }
+
+
+/* ================================================================
+   LANDING v4 « en mouvement » (2026-09-09) — les clips du réel dans
+   les téléphones, des hauts de mockups fléchés en SVG, une bande photo
+   pleine largeur. Une règle : tout ce qui bouge respecte reduced-motion.
+   ================================================================ */
+
+/* Téléphone vidéo (ReelPhone) : le poster est une <Image>, peinte en premier
+   (c'est elle qui compte pour le LCP du hero) ; la vidéo se pose par-dessus
+   dès qu'elle joue. Le bouton est l'écran entier (tap = pause / lecture). */
+.phone-clip .phone-ecran {
+  position: relative;
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  cursor: pointer;
+  font: inherit;
+  aspect-ratio: auto;
+  background: var(--c-bg);
+}
+.phone-clip .phone-ecran img { width: 100%; height: auto; display: block; }
+.phone-clip video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top;
+  opacity: 0;
+  transition: opacity 0.4s var(--ease);
+}
+.phone-clip.is-playing video { opacity: 1; }
+.phone-coupe.phone-clip .phone-ecran { height: 100%; overflow: hidden; }
+.clip-play {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 58px;
+  height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: oklch(0.24 0.012 60 / 0.75);
+  color: #fff;
+  padding-left: 4px; /* centre optique du triangle */
+}
+/* Un panneau plus bas : seul le HAUT du téléphone se voit (le geste y vit) */
+.feat-panneau-court { height: 380px; }
+@media (max-width: 760px) { .feat-panneau-court { height: 320px; } }
+
+/* Haut de mockup desktop : barre de navigateur, capture, et le bas qui
+   s'efface dans la page (mask sur toute la carte, ombre comprise). */
+.mock-desk {
+  border-radius: var(--r-lg);
+  background: var(--c-surface);
+  border: 1px solid var(--c-line);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+}
+.mock-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--c-line);
+  background: var(--c-bg-warm);
+}
+.mock-bar i { width: 10px; height: 10px; border-radius: 50%; background: var(--c-line-strong); }
+.mock-url {
+  margin-left: 10px;
+  flex: 1;
+  height: 22px;
+  border-radius: 6px;
+  background: var(--c-surface);
+  border: 1px solid var(--c-line);
+  font-size: 0.72rem;
+  color: var(--c-ink-muted);
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+}
+.mock-body { overflow: hidden; }
+.mock-body img { width: 100%; height: auto; display: block; }
+.mock-coupe .mock-body { max-height: var(--mock-h, 340px); }
+.mock-coupe {
+  -webkit-mask-image: linear-gradient(#000 62%, transparent 100%);
+  mask-image: linear-gradient(#000 62%, transparent 100%);
+}
+
+/* Callouts : les flèches du réel, dessinées dans la page. Les cartes sont
+   positionnées en % du visuel, les flèches calculées en px après mesure. */
+.co { position: relative; }
+.co-svg { position: absolute; inset: 0; overflow: visible; pointer-events: none; }
+.co-path { fill: none; stroke: currentColor; stroke-width: 3.5; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; }
+.co-tete { fill: none; stroke: currentColor; stroke-width: 3.5; stroke-linecap: round; stroke-linejoin: round; opacity: 0; }
+.co-anneau { fill: none; stroke: currentColor; stroke-width: 3; opacity: 0; transform-box: fill-box; transform-origin: center; }
+.co-onde { fill: none; stroke: currentColor; stroke-width: 2.5; opacity: 0; transform-box: fill-box; transform-origin: center; }
+.co.is-on .co-path { animation: coDraw 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) forwards; animation-delay: calc(var(--d) + 0.2s); }
+.co.is-on .co-tete { animation: coTete 0.2s ease-out forwards; animation-delay: calc(var(--d) + 1s); }
+.co.is-on .co-anneau { animation: coAnneau 0.35s cubic-bezier(0.3, 1.6, 0.5, 1) forwards; animation-delay: calc(var(--d) + 1.05s); }
+.co.is-on .co-onde { animation: coOnde 1.8s ease-out infinite; animation-delay: calc(var(--d) + 1.3s); }
+.co-carte {
+  position: absolute;
+  z-index: 2;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  max-width: min(260px, 46%);
+  padding: 10px 14px 11px;
+  border-radius: 14px;
+  background: var(--teinte);
+  color: #fff;
+  box-shadow: 0 14px 34px rgba(44, 33, 24, 0.22);
+  opacity: 0;
+  transform: translateY(14px) scale(0.94);
+}
+.co.is-on .co-carte { animation: coCarte 0.5s cubic-bezier(0.3, 1.4, 0.5, 1) forwards; animation-delay: var(--d); }
+.co-num {
+  flex: none;
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  background: #fff;
+  color: var(--teinte);
+  font-weight: 700;
+  font-size: 0.85rem;
+  display: grid; place-items: center;
+  margin-top: 1px;
+}
+.co-texte { display: flex; flex-direction: column; gap: 2px; line-height: 1.2; text-align: left; }
+.co-texte b { font-weight: 700; font-size: 0.95rem; }
+.co-texte small { font-size: 0.8rem; opacity: 0.92; }
+@keyframes coDraw { to { stroke-dashoffset: 0; } }
+@keyframes coTete { to { opacity: 1; } }
+@keyframes coAnneau { from { opacity: 0; transform: scale(0.3); } to { opacity: 1; transform: scale(1); } }
+@keyframes coOnde { from { opacity: 0.7; transform: scale(1); } to { opacity: 0; transform: scale(3.2); } }
+@keyframes coCarte { to { opacity: 1; transform: none; } }
+@media (max-width: 760px) {
+  .co-carte { max-width: min(200px, 52%); padding: 8px 10px; gap: 8px; }
+  .co-texte b { font-size: 0.82rem; }
+  .co-texte small { font-size: 0.7rem; }
+  .co-num { width: 20px; height: 20px; font-size: 0.75rem; }
+}
+
+/* CTA final v4 : la photo pleine largeur (photo-mala.jpg, la seule vraie photo
+   de banque qui tient la palette), un voile sombre pour le texte, un lent
+   zoom. La carte sombre de la v3 devient transparente : la photo porte. */
+.final-v4 {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  margin-top: clamp(24px, 4vw, 48px);
+  padding-block: clamp(80px, 10vw, 140px);
+}
+.final-photo { position: absolute; inset: 0; z-index: -2; }
+.final-photo img { object-fit: cover; object-position: 62% 45%; }
+.final-voile {
+  position: absolute; inset: 0; z-index: -1;
+  background: linear-gradient(100deg, oklch(0.2 0.02 60 / 0.88) 0%, oklch(0.2 0.02 60 / 0.66) 55%, oklch(0.2 0.02 60 / 0.42) 100%);
+}
+.final-v4 .final-carte { background: none; padding: 0; border-radius: 0; }
+@keyframes kenburns { from { transform: scale(1); } to { transform: scale(1.08); } }
+@media (prefers-reduced-motion: no-preference) {
+  .final-photo img { animation: kenburns 28s ease-in-out infinite alternate; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .co .co-path { stroke-dashoffset: 0; }
+  .co .co-tete, .co .co-anneau, .co .co-carte { opacity: 1; transform: none; animation: none; }
+  .co .co-onde { display: none; }
+  .phone-clip video { transition: none; }
+}

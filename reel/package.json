@@ -6,7 +6,8 @@
     "studio": "remotion studio",
     "render": "remotion render Reel ../../reseaux/reel/izisolo-reel.mp4",
     "still": "remotion still Reel",
-    "videos": "node scripts/preparer-videos.mjs"
+    "videos": "node scripts/preparer-videos.mjs",
+    "clips": "node scripts/rendre-clips.mjs"
   },
   "dependencies": {
     "@remotion/cli": "4.0.522",

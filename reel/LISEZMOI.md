@@ -43,6 +43,24 @@ L'ordre suit la journée d'une prof :
 - **Licence** : Remotion est gratuit pour les particuliers et les structures de 3 personnes ou moins.
 - Le paquet est INDÉPENDANT du site (son propre `package.json`, `reel/` est exclu des builds Vercel).
 
+## Les clips de la landing (2026-09-09)
+
+La landing v4 réutilise les scènes du réel sous forme de **clips « écran seul »** :
+`src/Clip.jsx` rend une scène sans cadre, sans titre ni carte (la page fournit les
+siens), mais avec le doigt, les écrans qui s'enchaînent, le défilement et un
+**anneau qui pulse** là où le réel fléchait. Chaque scène a sa composition
+`Clip-<id>` (720 de large, 1558 de haut ou la hauteur de la capture si elle est
+plus courte, cf. `src/dimensions.js`), avec un fondu vers le sable au début et à
+la fin pour que la boucle ne claque pas.
+
+`npm run clips` (`scripts/rendre-clips.mjs`) rend les quatre clips retenus
+(navigation, portail, vente, messagerie) en H.264 muet CRF 28 dans
+`../public/videos/` du site, avec un poster JPEG (image 14, après le fondu) et un
+`manifest.json` de dimensions lu par `components/landing/ReelPhone.js`. Budget
+tenu par le script : 1,5 Mo par clip, 5 Mo le lot (mesuré : 1,4 Mo pour les
+quatre). Ces fichiers sont VERSIONNÉS, contrairement à intro/outro. Ils se
+refont avec les captures, donc quand l'UI d'un écran montré change.
+
 ## Commandes (depuis `reel/`)
 
 ```bash
@@ -50,6 +68,7 @@ npm install
 npm run studio          # aperçu interactif dans le navigateur
 npm run videos          # prépare intro.mp4 / outro.mp4 depuis le rush (une fois, hors repo)
 npm run render          # → ../../reseaux/reel/izisolo-reel.mp4 (hors repo, fichier marketing)
+npm run clips           # → ../public/videos/<id>.mp4 + poster + manifest (les clips de la landing, versionnés)
 npm run still -- out/f307.png --frame=307   # une image précise, pour vérifier une scène
 ```
 
