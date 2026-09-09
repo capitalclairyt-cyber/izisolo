@@ -19,6 +19,7 @@ import { sanitizeLienPaiement } from '@/lib/paiement-seance';
 import {
   JOURS_SEMAINE, JOUR_LONG, serieDeplacable, planDeplacement, apercuDeplacement, decalerJours,
 } from '@/lib/serie-jour';
+import { parseCapacite, capaciteInchangee, planCapacite, apercuCapacite } from '@/lib/serie-capacite';
 import TypeCoursHint from '@/components/cours/TypeCoursHint';
 import CouvertureCours from '@/components/cours/CouvertureCours';
 import ConfierPointage from '@/components/cours/ConfierPointage';
@@ -181,7 +182,18 @@ export default function CoursDetailClient({ intervenantes = [], intervenantInit 
     tarif_unitaire: cours.tarif_unitaire != null ? String(cours.tarif_unitaire) : '',
     carnets_acceptes: cours.carnets_acceptes === true,
     stripe_payment_link_unit: cours.stripe_payment_link_unit || '',
+    // Places (retour Maude 2026-09-09 : « Yoga enfants » de 8 à 13, elle
+    // ne trouvait pas où). Initialisées depuis la SÉRIE quand elle en porte,
+    // sinon depuis cette séance : c'est la valeur que les prochaines
+    // générations recopient, donc la vérité de la série.
+    capacite_max: (cours.recurrence?.capacite_max ?? cours.capacite_max) != null
+      ? String(cours.recurrence?.capacite_max ?? cours.capacite_max)
+      : '',
   });
+  // On n'écrit les places QUE si la prof les a changées : enregistrer un
+  // nouveau nom ne doit pas écraser une capacité réglée séance par séance
+  // (grande salle un jour donné).
+  const capaciteInitiale = cours.recurrence?.capacite_max ?? cours.capacite_max ?? null;
 
   // ── Changer le JOUR de la série (retour Colin 2026-08-23 : « on devrait
   // avoir la modif du jour sur cet écran pour les cours récurrents »).
@@ -232,6 +244,15 @@ export default function CoursDetailClient({ intervenantes = [], intervenantInit 
       ? planDeplacement({ occurrences: occurrencesSerie || [], jourVise })
       : null
   ), [deplacable, jourVise, occurrencesSerie]);
+
+  // Ce que le changement de places va faire aux séances à venir. Null tant
+  // que la prof n'a rien changé (rien à annoncer, rien à écrire).
+  const capaciteSaisie = useMemo(() => parseCapacite(recurrenceForm.capacite_max), [recurrenceForm.capacite_max]);
+  const planCap = useMemo(() => (
+    capaciteSaisie.ok && !capaciteInchangee(capaciteInitiale, capaciteSaisie.capacite)
+      ? planCapacite({ occurrences: occurrencesSerie || [], capacite: capaciteSaisie.capacite })
+      : null
+  ), [capaciteSaisie, capaciteInitiale, occurrencesSerie]);
 
   // ---- Message aux participants ----
   const [showMessageModal, setShowMessageModal] = useState(false);
@@ -462,10 +483,12 @@ export default function CoursDetailClient({ intervenantes = [], intervenantInit 
   // ---- Modifier toute la série ----
   const handleSaveRecurrence = async () => {
     if (!recurrenceConfirmed) return;
+    if (!capaciteSaisie.ok) { toast.error(capaciteSaisie.raison); return; }
     setSavingRecurrence(true);
     try {
       const supabase  = createClient();
       const lieuNom   = lieux.find(l => l.id === recurrenceForm.lieu_id)?.nom || null;
+      const majCapacite = planCap ? { capacite_max: planCap.capacite } : {};
       const today     = (() => { const n = new Date(); return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`; })();
       const payload   = {
         nom:           recurrenceForm.nom?.trim() || cours.nom, // nom NOT NULL — jamais vide
@@ -479,6 +502,9 @@ export default function CoursDetailClient({ intervenantes = [], intervenantInit 
         tarif_unitaire: recurrenceForm.tarif_unitaire ? parseFloat(recurrenceForm.tarif_unitaire) : null,
         carnets_acceptes: recurrenceForm.tarif_unitaire ? recurrenceForm.carnets_acceptes === true : false,
         stripe_payment_link_unit: recurrenceForm.tarif_unitaire ? (sanitizeLienPaiement(recurrenceForm.stripe_payment_link_unit) || null) : null,
+        // Places : seulement si changées (cf. capaciteInitiale). Une séance
+        // déjà plus remplie garde ses inscrites : on n'en retire jamais.
+        ...majCapacite,
       };
 
       // 1. Mettre à jour toutes les occurrences futures
@@ -498,9 +524,17 @@ export default function CoursDetailClient({ intervenantes = [], intervenantInit 
           duree_minutes: payload.duree_minutes,
           lieu_id:       payload.lieu_id,
           type_cours:    payload.type_cours,
+          // La récurrence porte sa propre capacité, recopiée sur chaque
+          // séance que « Ajuster la série » fabrique : sans cette ligne,
+          // toute prolongation renaîtrait à l'ancienne capacité.
+          ...majCapacite,
         })
         .eq('id', cours.recurrence_parent_id);
       if (e2) throw e2;
+      if (planCap?.depassements.length) {
+        const n = planCap.depassements.length;
+        toast.warning(`Places mises à jour. ${n} séance${n > 1 ? 's ont' : ' a'} déjà plus d'inscrites que ${planCap.capacite} : personne n'a été retiré.`);
+      }
 
       // 3. Changement de JOUR — en DERNIER : les deux updates ci-dessus
       //    filtrent sur les dates actuelles. On décale chaque séance à venir
@@ -1433,6 +1467,29 @@ export default function CoursDetailClient({ intervenantes = [], intervenantInit 
                   </select>
                 </div>
 
+                {/* Places de TOUTE la série (retour Maude 2026-09-09). Le
+                    crayon d'une séance n'en change qu'une ; ici on écrit les
+                    séances à venir ET la récurrence, pour que les prochaines
+                    générations suivent. */}
+                <div className="form-group">
+                  <label className="form-label"><Users size={14} /> Places max (toute la série)</label>
+                  <input className="izi-input" type="number" min="1" step="1"
+                    value={recurrenceForm.capacite_max}
+                    onChange={e => setRecurrenceForm(p => ({ ...p, capacite_max: e.target.value }))}
+                    placeholder="Vide = illimité"
+                    style={{ maxWidth: 200 }}
+                    aria-label="Places max de toute la série" />
+                  {!capaciteSaisie.ok ? (
+                    <span className="jour-serie-hint" style={{ color: 'var(--danger, #b3261e)' }}>{capaciteSaisie.raison}</span>
+                  ) : planCap ? (
+                    <div className="jour-serie-apercu capacite-serie-apercu">{apercuCapacite(planCap)}</div>
+                  ) : (
+                    <span className="jour-serie-hint">
+                      {capaciteInitiale == null ? 'Places illimitées pour le moment.' : `${capaciteInitiale} place${capaciteInitiale > 1 ? 's' : ''} aujourd'hui.`} Change le nombre pour l&apos;appliquer aux séances à venir.
+                    </span>
+                  )}
+                </div>
+
                 {typesCours.length > 0 && (
                   <div className="form-group">
                     <label className="form-label">Type</label>
@@ -1508,6 +1565,7 @@ export default function CoursDetailClient({ intervenantes = [], intervenantInit 
                 <span>
                   Je confirme vouloir modifier les <strong>{nbOccurrences} prochaines séances</strong> de cette série
                   {planJour ? <> et les <strong>déplacer au {JOUR_LONG[jourVise]}</strong></> : null}
+                  {planCap ? <> et les passer à <strong>{planCap.capacite == null ? 'places illimitées' : `${planCap.capacite} place${planCap.capacite > 1 ? 's' : ''}`}</strong></> : null}
                 </span>
               </label>
 

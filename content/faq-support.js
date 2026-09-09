@@ -273,4 +273,12 @@ export const FAQ_SUPPORT = [
     a: "Oui. Dans « Cours d'essai », la demande porte la mention « Séance passée » mais garde son bouton Valider. Un message te demande de confirmer, puis IziSolo crée sa fiche (statut prospect) et l'inscrit sur cette séance passée, exactement comme si tu l'avais validée à temps. Deux différences : aucun email « cours d'essai confirmé » ne lui est envoyé (ce serait absurde après coup), et c'est à toi de la pointer présente depuis la séance si tu veux que sa venue compte dans son historique. Si elle n'est pas venue, refuse plutôt la demande avec un mot gentil et propose-lui un autre créneau.",
     lien: { href: '/aide#cours-essai', label: 'Voir le pas-à-pas' },
   },
+  {
+    // Places d'une série entière, 2026-09-09 (retour Maude : passer « Yoga
+    // enfants » de 8 à 13 places, impossible autrement que séance par
+    // séance). AJOUTÉE EN FIN de liste.
+    q: "J'ai changé le nombre de places sur une séance, mais les autres séances de la série n'ont pas bougé",
+    a: "C'est normal : le crayon d'une séance ne modifie que cette séance, pour que tu puisses ouvrir une grande salle un jour donné sans toucher au reste. Pour changer les places de toute la série, ouvre n'importe quelle séance de la série, clique sur « Modifier toute la série » et renseigne « Places max (toute la série) ». Toutes les séances à venir prennent le nouveau nombre, et les séances que tu ajouteras plus tard en rallongeant la série naîtront avec lui. Les séances passées ne changent pas. Si une séance a déjà plus d'inscrites que le nouveau nombre, l'aperçu te prévient avant de confirmer : personne n'est retiré, elle reste simplement complète jusqu'à ce qu'une place se libère.",
+    lien: { href: '/aide#agenda', label: 'Voir le pas-à-pas' },
+  },
 ];
