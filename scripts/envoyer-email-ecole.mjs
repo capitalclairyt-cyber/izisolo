@@ -48,9 +48,13 @@ if (journal[id]) { console.error(`💥 « ${id} » a déjà été envoyé le ${j
 // et le texte brut devient des paragraphes HTML sobres, sans mise en page.
 const echapper = (t) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const fr = (t) => t.replace(/ ([?!;:])/g, ' $1');
+// « izisolo.fr » (et toute adresse izisolo.fr/…) devient un vrai lien : un texte
+// nu n'est cliquable que dans certaines messageries (retour Colin, 2026-09-10).
+const lier = (t) => t.replace(/\b(www\.)?izisolo\.fr(\/[\w\-./?=&]*)?/g,
+  (m) => `<a href="https://www.izisolo.fr${m.replace(/^(www\.)?izisolo\.fr/, '')}" style="color:#8f5a37">${m}</a>`);
 const paragraphes = email.corps.trim().split(/\n\s*\n/);
 const html = `<div style="font-family:Georgia,'Times New Roman',serif;font-size:16px;line-height:1.55;color:#2c2118;max-width:600px">`
-  + paragraphes.map((p) => `<p style="margin:0 0 16px">${echapper(fr(p)).replace(/\n/g, '<br>')}</p>`).join('')
+  + paragraphes.map((p) => `<p style="margin:0 0 16px">${lier(echapper(fr(p))).replace(/\n/g, '<br>')}</p>`).join('')
   + `</div>`;
 
 console.log(`De      : ${FROM}\nRépondre: ${REPLY_TO}\nÀ       : ${email.to}\nObjet   : ${fr(email.objet)}\n\n${fr(email.corps.trim())}\n`);
