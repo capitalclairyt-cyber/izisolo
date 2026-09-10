@@ -74,3 +74,24 @@ npm run still -- out/f307.png --frame=307   # une image précise, pour vérifier
 
 Repères de temps (image 30 i/s) : intro 0–159 (titre à 75), navigation 145, cours 281, offre 417, page
 publique 553, pointage 709, encaisser 795, revenus 931, messagerie 1017, outro 1103. Fondus de 14 images.
+
+## Les réels « POV » en texte pur (2026-09-10)
+
+Cinq réels de 13 secondes sans aucune capture : une situation (« Il est 23 h. »),
+trois messages ou notes qu'une prof reconnaît, une question en terracotta, et UN seul
+geste demandé, **« Commente STUDIO »** (le commentaire ouvre un DM, que Maude honore à
+la main avec le message concierge). Ils répondent au constat du 10 septembre : deux
+réels de démo sponsorisés (130 €, 18 000 vues) ont fait 14 j'aime et zéro message,
+parce que des écrans d'appli n'arrêtent pas le pouce d'une inconnue.
+
+- Textes et chronologie dans `src/pov-variantes.js` (⚠️ le fichier ne s'appelle pas
+  `pov.js` : sur un disque insensible à la casse, `./pov` et `./Pov` se confondent et
+  le composant arrive `undefined`) ; le composant dans `src/Pov.jsx` ; une composition
+  `Pov-<id>` par variante (soiree, cheques, tableur, remplacement, urssaf).
+- `npm run pov [id ...]` (`scripts/rendre-pov.mjs`) rend les MP4 (H.264, CRF 18, muets)
+  et la dernière image de chacun dans `../../reseaux/reel/pov/`, HORS repo comme le réel.
+- Règles d'écriture : tutoiement, aucun chiffre non mesuré, aucun concurrent, des
+  prénoms d'exemple seulement, et rien que le produit ne fasse pas. Espace fine
+  insécable avant « ? » (`fr()` dans Pov.jsx) : un signe ne commence jamais une ligne.
+- Zones sûres : le texte vit entre 300 et 1260 px, l'appel entre 1318 et 1660 ; le logo
+  en bas est décoratif. Rien d'essentiel sous la barre de légende d'Instagram.
