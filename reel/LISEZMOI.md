@@ -95,3 +95,33 @@ parce que des écrans d'appli n'arrêtent pas le pouce d'une inconnue.
   insécable avant « ? » (`fr()` dans Pov.jsx) : un signe ne commence jamais une ligne.
 - Zones sûres : le texte vit entre 300 et 1260 px, l’appel entre 1340 et 1660 ; le logo
   en bas est décoratif. Rien d'essentiel sous la barre de légende d'Instagram.
+
+## Les formats « déclencheurs » (2026-09-10, suite des POV)
+
+Quatre formats de plus, tous terminés par la même carte de fin « Commente STUDIO »
+(`src/composants/AppelStudio.jsx`, partagée) et le même anneau qui pulse sur le point
+visé (`src/composants/Repere.jsx`, en coordonnées de composition). Réglages dans
+`src/formats.js` ; `npm run formats [id ...]` (`scripts/rendre-formats.mjs`) rend les MP4
+et la dernière image de chacun dans `../../reseaux/reel/formats/`, hors repo.
+
+- **Split** (`src/Split.jsx`, 16,7 s) : en haut la messagerie de 23 h, trois messages qui
+  arrivent ; en bas le téléphone qui y répond, écran après écran (places restantes,
+  échéancier, annonce), une carte par réponse. Le troisième message parle de la pleine
+  lune parce que la capture de messagerie du démo montre exactement cette annonce.
+- **ReponseDM** (`src/ReponseDM.jsx`, 21,3 s) : la vraie question d'une prof reçue en DM le
+  9 septembre, anonymisée (« Ok, c'est quoi les fonctions ? Tu attises ma curiosité 🤣 »),
+  puis huit écrans, un mot chacun, deux secondes chacun, avec un compteur à points.
+- **Rentree** (`src/Rentree.jsx`, 17,7 s) : l'agenda de la semaine se remplit séance par
+  séance (chaque pastille est un morceau de la VRAIE capture, masqué puis révélé, zones
+  relevées sur `public/agenda.jpg`), puis les revenus et le bloc URSSAF. Rien n'est
+  dessiné à la main.
+- **Fonction-<scène>** (`src/Fonction.jsx`, 7 à 9 s) : une scène du réel principal, seule,
+  avec ses flèches et ses cartes, puis la carte de fin. Huit réels à partir de ce qui existe
+  (navigation, cours, offre, portail, pointage, vente, revenus, messagerie) : à cette taille
+  de compte, la cadence compte plus que le montage.
+
+⚠️ Les repères visent des pixels de capture, comme dans `scenes.js` : si une capture est
+refaite, revoir les `cible` de `src/formats.js`. Trois ont été recalées sur les images
+fixes avant le rendu (l'annonce de la messagerie, la ligne « CB » du tunnel, le montant
+des revenus) : la première position d'un anneau se vérifie toujours sur une image, jamais
+dans le code.

@@ -1,6 +1,6 @@
 ---
-titre: "🎬 Les cinq réels « POV » : légendes, réponse aux commentaires STUDIO, et les anciennes légendes à corriger"
-description: "Les légendes des cinq réels texte pur (soirée, chèques, tableur, remplaçante, URSSAF), le message à envoyer à qui commente STUDIO, et les corrections des sept publications déjà en ligne. Écrit dans la voix de Maude, avec un bouton Copier."
+titre: "🎬 Réels POV et formats déclencheurs : légendes, réponse aux commentaires STUDIO, et les anciennes légendes à corriger"
+description: "Les légendes des cinq réels texte pur, des quatre formats déclencheurs (avant/après, réponse au DM, rentrée, une fonction par réel), le message à envoyer à qui commente STUDIO, et les corrections des sept publications déjà en ligne. Voix de Maude, bouton Copier."
 maj: "2026-09-10"
 ---
 
@@ -196,3 +196,72 @@ Commente STUDIO et je t'envoie le lien en message.
 - Remplacer « Lien en bio. » par « Commente STUDIO et je t'envoie le lien en message 🌿 » : même geste que les réels POV, sur toutes les publications.
 
 Les réels du 27 août, du 6 septembre et du 7 septembre n'ont rien de faux. Y ajouter seulement, en fin de légende : « Commente STUDIO et je t'envoie le lien en message 🌿 ».
+
+## 9. Les formats déclencheurs (rendus le 10 septembre, dossier `reseaux/reel/formats/`)
+
+Même geste à la fin de chacun : « Commente STUDIO ». Même réponse en commentaire et en message (bloc 1).
+
+**Avant / après** (`split.mp4`, 17 s)
+
+```texte
+Tes soirées, avant et après. 🌙
+
+Avant : trois messages à 23 h, et c'est toi qui réponds. Après : l'appli répond à ta place. Les places qui restent, le paiement en plusieurs fois, l'annonce à tout le monde.
+
+Et toi, tes soirées ressemblent à quoi ?
+
+Commente STUDIO et je t'envoie le lien en message 🌿
+30 jours gratuits, sans carte.
+
+#profdeyoga #profdepilates #yogafrance #pilatesfrance #yogabusiness #entrepreneuse
+```
+
+**Réponse au DM** (`reponse-dm.mp4`, 21 s)
+
+```texte
+Une prof m'a écrit hier : « Ok, c'est quoi les fonctions ? Tu attises ma curiosité 🤣 »
+
+Alors voilà, en huit écrans : réserver, planifier, créer, vendre, pointer, encaisser, déclarer, écrire. Le reste, je te le montre sur tes vrais cours.
+
+Commente STUDIO et je t'envoie le lien en message 🌿
+30 jours gratuits, sans carte.
+
+#profdeyoga #profdepilates #yogafrance #pilatesfrance #yogabusiness #entrepreneuse
+```
+
+**Ta rentrée qui se range toute seule** (`rentree.mp4`, 18 s)
+
+```texte
+Ta rentrée, si elle se rangeait toute seule. 📅
+
+Six séries posées une fois, vacances et fériés sautés. L'encaissé à jour à chaque paiement. Le montant URSSAF prêt à recopier. Ce que tu vois, c'est un vrai studio, pas une maquette.
+
+Ta rentrée peut encore se ranger.
+
+Commente STUDIO et je t'envoie le lien en message 🌿
+30 jours gratuits, sans carte.
+
+#profdeyoga #profdepilates #yogafrance #pilatesfrance #yogabusiness #entrepreneuse
+```
+
+**Une fonction, un réel** (`fonction-<scène>.mp4`, 7 à 9 s chacun, huit réels)
+
+Une ligne par réel, à coller avant l'appel commun. La cadence compte plus que le texte : un tous les deux jours, en alternance avec les POV.
+
+```texte
+navigation : Ton studio dans ta poche. Agenda, élèves, offres, revenus, messagerie, tout au même endroit.
+cours : Une série en deux minutes. Douze séances créées d'un coup, vacances et fériés sautés.
+offre : Carnets et abos, à ta façon. Séances, validité, prix, et les cours qu'ils couvrent.
+portail : Ta page publique, sans site web. Tes élèves réservent seules, sans compte.
+pointage : Fais l'appel en un clic, sur le tapis. Les carnets se décomptent tout seuls.
+vente : Encaisse comme tes élèves te paient. Espèces, carte, chèque, en plusieurs fois.
+revenus : Tes revenus sans tableur, et le montant URSSAF prêt à recopier.
+messagerie : Un fil direct avec tes élèves, sans groupe WhatsApp.
+```
+
+```texte
+Commente STUDIO et je t'envoie le lien en message 🌿
+30 jours gratuits, sans carte.
+
+#profdeyoga #profdepilates #yogafrance #pilatesfrance #yogabusiness #entrepreneuse
+```

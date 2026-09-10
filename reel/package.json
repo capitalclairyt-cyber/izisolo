@@ -8,7 +8,8 @@
     "still": "remotion still Reel",
     "videos": "node scripts/preparer-videos.mjs",
     "clips": "node scripts/rendre-clips.mjs",
-    "pov": "node scripts/rendre-pov.mjs"
+    "pov": "node scripts/rendre-pov.mjs",
+    "formats": "node scripts/rendre-formats.mjs"
   },
   "dependencies": {
     "@remotion/cli": "4.0.522",
