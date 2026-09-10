@@ -93,7 +93,7 @@ Ce qu'on refuse, et pourquoi :
 
 Séquence type (à réécrire dans la voix de Maude, sans une seule tournure d'IA) :
 
-> **Email 1.** Objet : ta rentrée. « Je suis prof de yoga à Bordeaux et j'ai passé trois ans à gérer mes élèves sur un tableur. J'ai fini par faire construire l'outil que je voulais. Si tu m'envoies ton planning et ta liste, je te monte ton espace demain, gratuitement, et tu regardes si ça te sert. Ça te dit ? »
+> **Email 1.** Objet : ta rentrée. « Je suis prof de yoga entre Lyon et Grenoble et j’ai passé trois ans à gérer mes élèves sur un tableur. J'ai fini par faire construire l'outil que je voulais. Si tu m'envoies ton planning et ta liste, je te monte ton espace demain, gratuitement, et tu regardes si ça te sert. Ça te dit ? »
 > **Email 2 (J+4).** Un chiffre de Manon (« Manon gère 38 élèves et 144 séances dessus depuis juillet ») et la même question.
 > **Email 3 (J+8).** « Je ne t'écrirai plus après ça. Si un jour le tableur déborde, je suis là. » Et le lien de désinscription bien visible.
 
