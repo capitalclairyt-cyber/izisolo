@@ -53,6 +53,8 @@ const STATIC_PATHS = [
   // Guichet public de la création concierge (v96, 23/08) — oublié du sitemap
   // à sa livraison : page d'acquisition jamais soumise pendant 5 jours.
   { path: '/creer-mon-studio',     changeFrequency: 'monthly',  priority: 0.8 },
+  // « Déjà équipée ? » (2026-09-10) : la page du segment le plus nombreux en DM.
+  { path: '/changer-d-outil',      changeFrequency: 'monthly',  priority: 0.8 },
   { path: '/legal/cgu',            changeFrequency: 'yearly',   priority: 0.3 },
   { path: '/legal/cgv',            changeFrequency: 'yearly',   priority: 0.3 },
   { path: '/legal/mentions',       changeFrequency: 'yearly',   priority: 0.3 },

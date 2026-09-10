@@ -16,6 +16,11 @@
  *   vente-echeancier.jpg  le même, « En plusieurs fois » (3 versements arrondis)
  *   offre.jpg        le formulaire Nouvelle offre rempli (jamais créée), pleine page
  *   cours.jpg        le formulaire Nouveau cours rempli en série (jamais créé), pleine page
+ *   eleves.jpg       la liste des élèves (clip « changer d'outil », 2026-09-10) + lignesEleves
+ *   fiche.jpg        la fiche d'une élève avec un carnet entamé + repère carnet
+ *
+ * --seulement=eleves,fiche : ne refait que ces captures et FUSIONNE le manifest
+ * existant (les autres coordonnées du réel ne bougent pas).
  *
  * Prérequis : refresh du démo + node scripts/habiller-demo-portail.mjs.
  * Usage : node scripts/shoot-reel-visuels.mjs
@@ -70,7 +75,9 @@ let browser;
 try { browser = await chromium.launch(); } catch { browser = await chromium.launch({ channel: 'msedge' }); }
 
 const HIDE = `[class*="fab" i], [class*="feedback" i] { display: none !important; }`;
-const manifest = {};
+const SEULEMENT = process.argv.find((a) => a.startsWith('--seulement='))?.slice('--seulement='.length).split(',').filter(Boolean) || null;
+const veut = (id) => !SEULEMENT || SEULEMENT.includes(id);
+const manifest = SEULEMENT ? JSON.parse(readFileSync(join(OUT, 'manifest.json'), 'utf8')) : {};
 let ok = 0, ko = 0;
 
 async function ouvrir(ctx, url) {
@@ -81,6 +88,7 @@ async function ouvrir(ctx, url) {
   return page;
 }
 async function ecrire(id, buf, { extract, width = LARGEUR, quality = 82 } = {}) {
+  if (!veut(id)) return;
   try {
     let img = sharp(buf);
     if (extract) img = img.extract(extract);
@@ -301,6 +309,61 @@ const ECHELLE = LARGEUR / 1170; // px de capture → px de l'image écrite
   await page.waitForTimeout(800);
   await ecrire('cours', await page.screenshot({ fullPage: true }));
   await page.close();
+}
+
+// 10. LA LISTE DES ÉLÈVES (clip « changer d'outil ») : chaque ligne de la capture est
+//     relevée, pour que le clip les fasse apparaître une à une depuis l'export.
+if (veut('eleves')) {
+  const page = await ouvrir(mob, '/clients');
+  await cacherBurger(page);
+  await page.waitForTimeout(500);
+  const lignes = await page.evaluate(() => {
+    const vus = new Set();
+    const out = [];
+    for (const a of document.querySelectorAll('a[href^="/clients/"]')) {
+      const href = a.getAttribute('href');
+      if (!/^\/clients\/[0-9a-f-]{36}$/.test(href) || vus.has(href)) continue;
+      const r = a.getBoundingClientRect();
+      if (r.height < 30 || r.top < 0 || r.bottom > window.innerHeight) continue;
+      vus.add(href);
+      out.push({ top: r.top, bottom: r.bottom, texte: a.textContent.replace(/\s+/g, ' ').trim().slice(0, 60) });
+    }
+    return out;
+  });
+  await ecrire('eleves', await page.screenshot());
+  manifest.lignesEleves = lignes.map((l) => [Math.round(l.top * 3 * ECHELLE), Math.round(l.bottom * 3 * ECHELLE)]);
+  console.log('   ' + lignes.length + " ligne(s) d'élève relevée(s)");
+  await page.close();
+}
+
+// 11. LA FICHE D'UNE ÉLÈVE avec un carnet entamé (Léa Marchand, 6/10 dans le seed) :
+//     le clip cercle les séances restantes, ce qu'on reprend d'un autre outil.
+if (veut('fiche')) {
+  const { data: lea } = await admin.from('clients').select('id').eq('profile_id', PROFILE_ID).ilike('prenom', 'Léa').ilike('nom', 'Marchand').limit(1).single();
+  if (!lea) { console.log('❌ Léa Marchand introuvable : lancer le refresh du démo'); ko++; }
+  else {
+    const page = await ouvrir(mob, '/clients/' + lea.id);
+    await cacherBurger(page);
+    await page.waitForTimeout(500);
+    const carnet = await page.evaluate(() => {
+      const motif = /restant|\b\d+\s*\/\s*10\b/i;
+      const feuilles = [...document.querySelectorAll('body *')]
+        .filter((el) => motif.test(el.textContent) && el.textContent.trim().length < 60
+          && ![...el.children].some((c) => motif.test(c.textContent) && c.textContent.trim().length < 60));
+      const el = feuilles[0];
+      if (!el) return null;
+      const r = el.getBoundingClientRect();
+      return { x: r.left + r.width / 2, y: r.top + r.height / 2 + window.scrollY, texte: el.textContent.trim() };
+    });
+    await ecrire('fiche', await page.screenshot({ fullPage: true }));
+    if (!carnet) { console.log('❌ repère carnet introuvable sur la fiche'); ko++; }
+    else {
+      manifest.reperes = manifest.reperes || {};
+      manifest.reperes.carnet = [Math.round(carnet.x * 3 * ECHELLE), Math.round(carnet.y * 3 * ECHELLE)];
+      console.log('   repère carnet : « ' + carnet.texte + ' »');
+    }
+    await page.close();
+  }
 }
 
 await browser.close();

@@ -16,7 +16,7 @@ const OUT = join(ROOT, '..', '..', 'reseaux', 'reel', 'formats');
 mkdirSync(OUT, { recursive: true });
 
 const SCENES = ['navigation', 'cours', 'offre', 'portail', 'pointage', 'vente', 'revenus', 'messagerie'];
-const COMPOSITIONS = { split: 'Split', 'reponse-dm': 'ReponseDM', rentree: 'Rentree', ...Object.fromEntries(SCENES.map((s) => [`fonction-${s}`, `Fonction-${s}`])) };
+const COMPOSITIONS = { split: 'Split', 'reponse-dm': 'ReponseDM', rentree: 'Rentree', migration: 'Migration', ...Object.fromEntries(SCENES.map((s) => [`fonction-${s}`, `Fonction-${s}`])) };
 
 const ids = process.argv.slice(2).length ? process.argv.slice(2) : Object.keys(COMPOSITIONS);
 const inconnus = ids.filter((id) => !COMPOSITIONS[id]);
@@ -30,7 +30,9 @@ for (const id of ids) {
   const fin = join(OUT, `${id}-fin.jpg`);
   remotion(['render', COMPOSITIONS[id], mp4, '--codec', 'h264', '--crf', '18', '--muted', '--log', 'error']);
   // La dernière image porte la carte de fin ; l'avant-dernière seconde, le contenu : on garde les deux.
-  remotion(['still', COMPOSITIONS[id], fin, '--frame', '-1', '--jpeg-quality', '80', '--log', 'error']);
+  // ⚠️ `--frame=-1` en UN argument : séparé, « -1 » est pris pour un drapeau et
+  // c'est la PREMIÈRE image qui sort (vu sur les -fin.jpg du 10/09 au matin).
+  remotion(['still', COMPOSITIONS[id], fin, '--frame=-1', '--jpeg-quality', '80', '--log', 'error']);
   console.log(`🎬 ${id}.mp4 ${Mo(statSync(mp4).size)}`);
 }
 console.log(`→ ${OUT}`);

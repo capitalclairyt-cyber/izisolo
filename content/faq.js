@@ -58,4 +58,11 @@ export const FAQ_ITEMS = [
     q: 'Pourquoi pas une app sur l\'App Store ?',
     a: "Par choix. IziSolo est une PWA (Progressive Web App) : ton studio et le portail élève s'installent sur l'écran d'accueil en un tap, sans téléchargement, sans mise à jour manuelle, sans attendre la validation Apple ou Google. Tu as toujours la dernière version. Tes élèves n'ont rien à installer : ils ouvrent un lien et c'est prêt. Et côté toi, ça marche sur téléphone, tablette et ordi sans rien changer.",
   },
+  {
+    // « Déjà équipée ? » (2026-09-10) : la réponse la plus fréquente en DM.
+    // AJOUTÉE EN FIN de liste (la home n'en montre que six, les autres se
+    // déplient : cette question vit dans le DOM pour Schema.org).
+    q: 'Je suis déjà équipée d\'une autre appli : je perds tout en changeant ?',
+    a: "Non. On reprend tes élèves depuis l'export de ton outil (CSV ou Excel, accents compris, doublons fusionnés), tes carnets en cours avec les séances qui restent, et ton planning recréé en séries. C'est Maude qui s'en charge, en 48 h, gratuitement. Ce qu'on ne reprend pas, on te le dit : l'historique de tes paiements et de tes présences reste dans ton ancien outil, exporte-le avant de le fermer. Et tu gardes cet outil ouvert le temps de comparer, rien ne t'oblige à couper le premier jour. Tout est expliqué sur izisolo.fr/changer-d-outil.",
+  },
 ];

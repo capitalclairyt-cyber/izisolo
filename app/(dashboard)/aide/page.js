@@ -88,7 +88,7 @@ const SECTIONS = [
     titre: 'Fais entrer tes élèves',
     intro: 'Ta liste d\'élèves en quelques minutes, même depuis un autre outil ou un tableur.',
     etapes: [
-      <>Page <strong>Élèves</strong> → <strong>« Importer »</strong> : dépose le CSV exporté de ton ancien outil (ou de ton tableur). IziSolo reconnaît les colonnes, te montre un aperçu, et n'écrase jamais une fiche existante.</>,
+      <>Page <strong>Élèves</strong> → <strong>« Importer »</strong> : dépose le CSV exporté de ton ancien outil (ou de ton tableur). IziSolo reconnaît les colonnes, te montre un aperçu, et n'écrase jamais une fiche existante. Tu changes d'outil et tu préfères que tout soit remis en place pour toi (fiches, carnets avec les séances restantes, planning) ? C'est gratuit : <a href="/changer-d-outil" target="_blank" rel="noreferrer">izisolo.fr/changer-d-outil</a>.</>,
       <>À la fin de l'import, un écran te propose d'<strong>inviter tout le monde par email</strong> : chaque élève reçoit son lien d'accès personnel. Elle clique, appuie sur <strong>« Ouvrir mon espace »</strong>, et elle est dedans (ce bouton protège son lien des messageries qui l'ouvrent avant elle).</>,
       <>Au fil de l'eau : bouton <strong>« Inviter »</strong> sur la liste ou depuis une fiche. Et pour les nouvelles têtes, partage ton portail (voir <a href="#page-publique">Ta page publique</a>) : la première réservation crée la fiche toute seule.</>,
       <>Ce que voit un·e élève dans son espace : ses prochaines séances, son carnet (séances restantes, validité), ses paiements, et une messagerie directe avec toi.</>,

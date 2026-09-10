@@ -9,6 +9,7 @@ import { ReponseDM } from './ReponseDM';
 import { Rentree } from './Rentree';
 import { Fonction, dureeFonction } from './Fonction';
 import { SPLIT, REPONSE_DM, RENTREE } from './formats';
+import { Migration, MigrationClip, DUREE_MIGRATION, DUREE_CLIP_MIGRATION } from './Migration';
 import { FPS, H, W } from './theme';
 
 // Trois familles : le réel complet (Instagram / Facebook), pour la landing un
@@ -26,6 +27,8 @@ export const RemotionRoot = () => (
     <Composition id="Split" component={Split} durationInFrames={SPLIT.duree} fps={FPS} width={W} height={H} />
     <Composition id="ReponseDM" component={ReponseDM} durationInFrames={REPONSE_DM.duree} fps={FPS} width={W} height={H} />
     <Composition id="Rentree" component={Rentree} durationInFrames={RENTREE.duree} fps={FPS} width={W} height={H} />
+    <Composition id="Migration" component={Migration} durationInFrames={DUREE_MIGRATION} fps={FPS} width={W} height={H} />
+    <Composition id="Clip-migration" component={MigrationClip} durationInFrames={DUREE_CLIP_MIGRATION} fps={FPS} width={LARGEUR_CLIP} height={hauteurClip(1558)} />
     {SCENES.map((scene) => (
       <Composition key={`f-${scene.id}`} id={`Fonction-${scene.id}`} component={Fonction} defaultProps={{ sceneId: scene.id }}
         durationInFrames={dureeFonction(scene)} fps={FPS} width={W} height={H} />

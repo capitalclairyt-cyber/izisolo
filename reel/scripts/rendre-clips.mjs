@@ -34,7 +34,7 @@ const Mo = (o) => (o / 1048576).toFixed(2) + ' Mo';
 const CAPTURES = JSON.parse(readFileSync(join(ROOT, 'public', 'manifest.json'), 'utf8'));
 const MANIFEST = join(OUT, 'manifest.json');
 const manifest = existsSync(MANIFEST) ? JSON.parse(readFileSync(MANIFEST, 'utf8')) : {};
-const captureDe = { navigation: 'dashboard', portail: 'portail', vente: 'vente-moyens', messagerie: 'messagerie', pointage: 'pointage', revenus: 'revenus', cours: 'cours', offre: 'offre' };
+const captureDe = { navigation: 'dashboard', portail: 'portail', vente: 'vente-moyens', messagerie: 'messagerie', pointage: 'pointage', revenus: 'revenus', cours: 'cours', offre: 'offre', migration: 'eleves' };
 
 let total = 0;
 for (const id of CLIPS) {

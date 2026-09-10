@@ -119,6 +119,7 @@ export function Nav() {
               <Link href="/blog">Le journal</Link>
               <Link href="/outils">Outils gratuits</Link>
               <Link href="/calculateur">Calculateur de frais</Link>
+              <Link href="/changer-d-outil">Changer d’outil</Link>
               <a href="#faq">Questions fréquentes</a>
             </div>
           </div>
@@ -481,7 +482,7 @@ export function Pricing() {
 }
 
 /* ---- FAQ ---------------------------------------------------- */
-// Les 12 questions de content/faq.js restent toutes dans le DOM (Schema.org
+// Les 13 questions de content/faq.js restent toutes dans le DOM (Schema.org
 // FAQPage de app/page.js) ; l'écran en montre six, les autres se déplient.
 const FAQ_VISIBLES = 6;
 export function FAQ() {
@@ -575,6 +576,7 @@ export function Footer() {
             { label: 'Pour qui', href: '#pour-qui' },
             { label: 'Questions fréquentes', href: '#faq' },
             { label: 'On monte ton studio', href: '/creer-mon-studio' },
+            { label: 'Changer d’outil', href: '/changer-d-outil' },
           ]}
         />
         <FooterCol

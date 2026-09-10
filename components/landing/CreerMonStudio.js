@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { Nav, Footer } from './Sections';
 import ScrollReveal from './ScrollReveal';
 import { ACTIVITES, DELAI_HEURES } from '@/lib/demande-studio';
@@ -21,6 +22,22 @@ const VIDE = {
   studio_nom: '', activite: '', ville: '', site_web: '',
   planning: '', offres: '', message: '',
 };
+
+// Depuis /changer-d-outil (`?src=changer`) le champ libre arrive prérempli :
+// la prospecte n'a plus qu'à dire d'où elle vient. Lu par useSearchParams dans
+// un enfant sous Suspense (exigé par Next sur une page statique) : lire
+// window.location dans un effet rendait l'ANCIENNE URL en navigation client,
+// le routeur ne l'ayant pas encore poussée quand l'effet de l'enfant tourne.
+const MESSAGE_CHANGER = "Je viens d'une autre appli. Je vous envoie mon export d'élèves, mon planning, mes tarifs et, pour chaque carnet en cours, le nombre de séances restantes.";
+
+function PreremplirDepuisSrc({ setForm }) {
+  const params = useSearchParams();
+  const src = params.get('src');
+  useEffect(() => {
+    if (src === 'changer') setForm(f => (f.message ? f : { ...f, message: MESSAGE_CHANGER }));
+  }, [src, setForm]);
+  return null;
+}
 
 export default function CreerMonStudio() {
   useEffect(() => { document.documentElement.dataset.palette = 'sable'; }, []);
@@ -57,6 +74,7 @@ export default function CreerMonStudio() {
   return (
     <div className="izi-landing-root" data-palette="sable">
       <ScrollReveal />
+      <Suspense fallback={null}><PreremplirDepuisSrc setForm={setForm} /></Suspense>
       <Nav />
       <main>
         <section className="cms-hero">

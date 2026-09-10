@@ -125,3 +125,26 @@ refaite, revoir les `cible` de `src/formats.js`. Trois ont été recalées sur l
 fixes avant le rendu (l'annonce de la messagerie, la ligne « CB » du tunnel, le montant
 des revenus) : la première position d'un anneau se vérifie toujours sur une image, jamais
 dans le code.
+
+
+## Le réel et le clip « Changer d'outil » (2026-09-10)
+
+`src/Migration.jsx` porte DEUX compositions sur la même scène : **Migration** (1080×1920,
+~17 s, titre « On reprend ce qui se reprend. », trois cartes, carte de fin « Commente
+STUDIO ») pour Instagram, et **Clip-migration** (720×1558, écran seul, boucle avec fondu)
+pour le hero de `/changer-d-outil` via `ReelPhone clip="migration"`. La scène ne montre que
+ce que le produit reprend aujourd'hui : un fichier `mes-eleves.csv` dont les lignes tombent
+dans la liste Élèves (anneau sur « Importer »), la fiche de Léa Marchand avec son carnet
+« 4/10 séances » (anneau dessus : les séances restantes), puis l'agenda de la semaine qui se
+remplit (les pastilles de `RENTREE`). Aucun paiement ni présence de l'ancien outil, parce
+qu'on ne les reprend pas.
+
+Captures dédiées : `public/eleves.jpg` (liste, avec `manifest.lignesEleves`, les rectangles
+des trois premières lignes) et `public/fiche.jpg` (fiche pleine page, `manifest.reperes.carnet`
+= le centre du texte « N/10 séances »), prises par
+`node scripts/shoot-reel-visuels.mjs --seulement=eleves,fiche` depuis le repo. Rendu :
+`npm run clips migration` (→ `public/videos/migration.mp4` du site, budget 1,5 Mo, mesuré
+0,47 Mo) et `npm run formats migration` (→ `reseaux/reel/formats/migration.mp4`).
+
+⚠️ Le cache blanc d'une pastille tient jusqu'à 85 % du ressort (`Rentree.jsx` aussi) : avant,
+il s'effaçait pendant que la copie grandissait encore et la séance se voyait en double.

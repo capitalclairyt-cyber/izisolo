@@ -288,4 +288,13 @@ export const FAQ_SUPPORT = [
     a: "Ouvre la séance annulée (elle est toujours sur ton agenda, barrée) et clique sur « Rétablir cette séance ». Elle redevient normale, dans sa série, avec le même horaire, sans doublon. Si des élèves y étaient encore inscrites, elles reçoivent un email « séance maintenue » ; les carnets ne bougent pas, c'est le pointage qui fera le décompte, comme d'habitude. Le même geste existe dans Cours récurrents : la case rouge barrée du calendrier porte un bouton ↺. Deux choses à ne pas faire : recréer la séance à la main (tu obtiendrais une séance orpheline, hors série, à côté de l'annulée) et rallonger la série en espérant qu'elle revienne (« Ajuster la série » ne recrée jamais une date déjà occupée, il te renvoie vers le calendrier). Une séance passée ne se rétablit pas.",
     lien: { href: '/aide#agenda', label: 'Voir le pas-à-pas' },
   },
+  {
+    // Changer d'outil, 2026-09-10 : la page publique « déjà équipée ? » promet
+    // la reprise des élèves, des carnets (séances restantes) et du planning.
+    // Cette entrée dit à la prof CE QU'ELLE PEUT FAIRE ELLE-MÊME et ce que
+    // Maude fait pour elle. AJOUTÉE EN FIN de liste.
+    q: "Je viens d'une autre appli : comment récupérer mes élèves, leurs carnets et mon planning ?",
+    a: "Tes élèves : exporte ta liste depuis ton ancien outil (CSV ou Excel), puis page Élèves → « Importer ». IziSolo reconnaît les colonnes, garde les accents, fusionne les doublons et n'écrase jamais une fiche. Tes carnets : crée tes offres, puis sur chaque fiche « Ajouter une offre » et, dans « Modifier les séances déjà faites », pose le nombre de séances déjà utilisées pour que le compteur reparte juste. Ton planning : crée chaque cours en série (jour, heure, lieu, places, vacances sautées). Si tu préfères que ce soit fait pour toi, envoie-nous ton export, ton planning et les séances restantes de chaque carnet depuis izisolo.fr/changer-d-outil : Maude monte le tout en 48 h, gratuitement. Ce qui ne se reprend pas : l'historique des paiements et des présences de ton ancien outil, garde-en une copie avant de le fermer.",
+    lien: { href: '/aide#eleves', label: 'Voir le pas-à-pas' },
+  },
 ];

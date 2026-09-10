@@ -21,7 +21,7 @@
  *   · prefers-reduced-motion : AUCUNE vidéo ne démarre seule, le bouton ▶
  *     est là, et les flèches sont dessinées d'emblée sans animation ;
  *   · les invariants v3 : hiérarchie des CTA, opacité sans scroll, zéro .zen,
- *     tarifs 15/29, FAQ 6/12, zéro « 14 jours », zéro tiret quadratin,
+ *     tarifs 15/29, FAQ 6/13, zéro « 14 jours », zéro tiret quadratin,
  *     mobile 390 sans débordement (cartes de callout comprises).
  * Usage : node scripts/proof-landing-v4.mjs [dossier-captures]
  */
@@ -42,9 +42,9 @@ console.log('\n0. Le poids des clips');
 const videos = readdirSync('public/videos');
 const mp4 = videos.filter(f => f.endsWith('.mp4')).map(f => ({ f, o: statSync('public/videos/' + f).size }));
 const posters = videos.filter(f => f.endsWith('-poster.jpg')).map(f => ({ f, o: statSync('public/videos/' + f).size }));
-ok(mp4.length === 4 && mp4.every(v => v.o < 1.5 * 1048576), `4 clips, chacun sous 1,5 Mo (${mp4.map(v => `${v.f} ${(v.o / 1048576).toFixed(2)}`).join(', ')})`);
+ok(mp4.length === 5 && mp4.every(v => v.o < 1.5 * 1048576), `5 clips sur disque (4 de la home + migration), chacun sous 1,5 Mo (${mp4.map(v => `${v.f} ${(v.o / 1048576).toFixed(2)}`).join(', ')})`);
 ok(mp4.reduce((t, v) => t + v.o, 0) < 5 * 1048576, `Le lot sous 5 Mo (${(mp4.reduce((t, v) => t + v.o, 0) / 1048576).toFixed(2)} Mo)`);
-ok(posters.length === 4 && posters.every(p => p.o < 150 * 1024), `4 posters sous 150 Ko (${posters.map(p => Math.round(p.o / 1024)).join('/')})`);
+ok(posters.length === 5 && posters.every(p => p.o < 150 * 1024), `5 posters sous 150 Ko (${posters.map(p => Math.round(p.o / 1024)).join('/')})`);
 ok(!videos.some(f => f.startsWith('reel-paiement')), 'L\'ancien MP4 d\'août n\'est plus là');
 
 // ── Desktop 1440 ────────────────────────────────────────────────────────────
@@ -136,7 +136,7 @@ ok(structure.clips === 4, `Quatre clips dans un téléphone, hero compris (${str
 ok(structure.callouts === 2 && structure.cartes === 4 && structure.fleches === 4, `Callouts : 2 blocs, 4 cartes, 4 flèches (${structure.callouts}/${structure.cartes}/${structure.fleches})`);
 ok(structure.bordsColles === 0, `Aucune section collée au bord gauche (${structure.bordsColles})`);
 ok(structure.pucesTarifs.length === 2 && structure.pucesTarifs.every(n => n === 5), `Cinq puces par tarif (${structure.pucesTarifs.join('/')})`);
-ok(structure.faqVisibles === 6 && structure.faqDom === 12, `FAQ : 6 visibles, 12 dans le DOM (${structure.faqVisibles}/${structure.faqDom})`);
+ok(structure.faqVisibles === 6 && structure.faqDom === 13, `FAQ : 6 visibles, 13 dans le DOM (la 13e, « déjà équipée », est arrivée le 10/09) (${structure.faqVisibles}/${structure.faqDom})`);
 ok(structure.personas === 6, `Pour qui : six liens métier (${structure.personas})`);
 ok(/Fraunces/i.test(structure.fonts), 'H1 en Fraunces');
 
@@ -209,7 +209,7 @@ ok(fin.ctas === 2, `Deux CTA sur la photo (${fin.ctas})`);
 await page.locator('.faq-more').click();
 await page.waitForTimeout(300);
 const faqApres = await page.evaluate(() => [...document.querySelectorAll('.faq-item')].filter(b => !b.hidden).length);
-ok(faqApres === 12, `FAQ : « voir les autres » révèle les 12 (${faqApres})`);
+ok(faqApres === 13, `FAQ : « voir les autres » révèle les 13 (${faqApres})`);
 
 await page.evaluate(() => window.scrollTo(0, 0));
 await page.waitForTimeout(500);

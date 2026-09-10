@@ -25,7 +25,7 @@ const Pastille = ({ zone, echelle, screenW, agenda, delai }) => {
     <>
       {/* Le cache blanc : la ligne du jour reste, la séance n'est pas encore posée. */}
       <div style={{ position: 'absolute', left: x1 * echelle - 2, top: y1 * echelle - 2, width: (x2 - x1) * echelle + 4, height: (y2 - y1) * echelle + 4,
-        background: '#fff', opacity: 1 - Math.min(1, s * 1.5) }} />
+        background: '#fff', opacity: 1 - interpolate(s, [0.85, 1], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' }) }} />
       {s > 0 && (
         <Img src={staticFile(agenda.src)} style={{ position: 'absolute', left: 0, top: 0, width: screenW, height: agenda.imgH * echelle,
           clipPath: `inset(${y1 * echelle}px ${screenW - x2 * echelle}px ${agenda.imgH * echelle - y2 * echelle}px ${x1 * echelle}px)`,

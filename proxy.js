@@ -39,6 +39,7 @@ const PUBLIC_ROUTES = [
   '/outils',                // /outils/calculateur-revenu-prof-yoga, etc. (lead magnets HTML)
   '/calculateur',                // calculateur de frais (lead magnet)
   '/creer-mon-studio',      // guichet public de la creation concierge (v96)
+  '/changer-d-outil',       // « déjà équipée ? » : on reprend élèves, carnets, planning (2026-09-10)
   '/ressources/',           // /ressources/voyage-abeille.html, etc. (cours HTML offerts)
   '/sitemap.xml', '/robots.txt',
 ];
@@ -53,7 +54,7 @@ const MARKETING_EXACT = [
   '/profs-de-meditation', '/profs-de-danse', '/coachs-bien-etre',
   '/therapeutes', '/sophrologues', '/logiciel-gestion-prof-yoga',
   '/logiciel-comptabilite-prof-yoga', '/calculateur',
-  '/creer-mon-studio',
+  '/creer-mon-studio', '/changer-d-outil',
 ];
 const MARKETING_PREFIXES = ['/prof-yoga-', '/prof-pilates-'];
 
