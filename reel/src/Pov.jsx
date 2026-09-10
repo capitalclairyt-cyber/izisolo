@@ -84,20 +84,20 @@ export const Pov = ({ varianteId }) => {
             {v.pov}
           </div>
           <div style={{ ...titre, fontFamily: FONT_DISPLAY, fontWeight: 500, fontSize: 92, lineHeight: 1.04, letterSpacing: '-0.02em', color: P.ink,
-            fontVariationSettings: '"opsz" 120, "SOFT" 30', marginBottom: 26 }}>
+            fontVariationSettings: '"opsz" 120, "SOFT" 30', marginBottom: 10 }}>
             {v.titre.map((l, i) => <div key={i}>{fr(l)}</div>)}
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 26 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
             {v.bulles.map((b, i) => <Bulle key={i} {...b} depuis={CHRONO.bulles[i]} estompe={estompe} />)}
           </div>
-          <div style={{ ...pivot, marginTop: 34, fontFamily: FONT_DISPLAY, fontWeight: 500, fontSize: 68, lineHeight: 1.1, letterSpacing: '-0.015em',
+          <div style={{ ...pivot, marginTop: 22, fontFamily: FONT_DISPLAY, fontWeight: 500, fontSize: 62, lineHeight: 1.1, letterSpacing: '-0.015em',
             color: TERRACOTTA, fontVariationSettings: '"opsz" 120, "SOFT" 30' }}>
             {fr(v.pivot)}
           </div>
         </div>
 
         {/* L'appel, ancré en bas, identique sur les cinq variantes. */}
-        <div style={{ position: 'absolute', left: 0, right: 0, top: 1318, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        <div style={{ position: 'absolute', left: 0, right: 0, top: 1340, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           <div style={{ opacity: Math.min(1, pill * 1.3), transform: `scale(${interpolate(pill, [0, 1], [0.85, 1]) * battement})`,
             background: P.accent, color: '#fff', fontFamily: FONT_BODY, fontWeight: 700, fontSize: 46, padding: '28px 70px', borderRadius: 999,
             letterSpacing: '0.01em', boxShadow: '0 22px 54px rgba(185,121,77,0.38)' }}>

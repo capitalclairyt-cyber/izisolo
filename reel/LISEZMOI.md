@@ -93,5 +93,5 @@ parce que des écrans d'appli n'arrêtent pas le pouce d'une inconnue.
 - Règles d'écriture : tutoiement, aucun chiffre non mesuré, aucun concurrent, des
   prénoms d'exemple seulement, et rien que le produit ne fasse pas. Espace fine
   insécable avant « ? » (`fr()` dans Pov.jsx) : un signe ne commence jamais une ligne.
-- Zones sûres : le texte vit entre 300 et 1260 px, l'appel entre 1318 et 1660 ; le logo
+- Zones sûres : le texte vit entre 300 et 1260 px, l’appel entre 1340 et 1660 ; le logo
   en bas est décoratif. Rien d'essentiel sous la barre de légende d'Instagram.
