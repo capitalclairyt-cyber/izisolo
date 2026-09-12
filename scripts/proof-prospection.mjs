@@ -122,11 +122,11 @@ try {
     const a2 = await appel('/api/admin/prospection/ajouter', { nom: 'Doublon', email: `${MARQUE.toUpperCase()}-A@example.com`, source: 'site' }, 'POST');
     assert(a2.status === 409 && a2.json?.code === 'DEJA_LA', `la même adresse, casse différente → 409 DEJA_LA (${a2.status})`);
     const a3 = await appel('/api/admin/prospection/ajouter', { nom: 'Suisse', email: `${MARQUE}-ch@example.com`, ville: 'Genève', source: 'site' }, 'POST');
-    assert(a3.status === 400 && a3.json?.code === 'INELIGIBLE', `Genève refusée (${a3.status} ${a3.json?.message})`);
+    assert(a3.status === 400 && a3.json?.code === 'INELIGIBLE', `Genève refusée (${a3.status} ${a3.json?.error})`);
 
     console.log('\n— Le gabarit tel quel ne part pas');
     const e1 = await appel(`/api/admin/prospection/emails/${emailA.id}`, { action: 'envoyer' });
-    assert(e1.status === 400 && e1.json?.code === 'TEXTE' && /crochet/.test(e1.json.message), `envoi refusé : crochets (${e1.json?.message})`);
+    assert(e1.status === 400 && e1.json?.code === 'TEXTE' && /crochet/.test(e1.json.error || ''), `envoi refusé : crochets (${e1.json?.error})`);
     const s1 = await appel(`/api/admin/prospection/emails/${emailA.id}`, { action: 'enregistrer', objet: 'ton mardi soir', corps: TEXTE_OK });
     assert(s1.status === 200 && s1.json?.email?.corps === TEXTE_OK, 'texte enregistré');
     const e2 = await appel(`/api/admin/prospection/emails/${emailA.id}`, { action: 'envoyer' });
@@ -183,21 +183,29 @@ try {
 
     console.log('\n— Envoi programmé puis annulé (vers nous-mêmes)');
     const nous = await appel('/api/admin/prospection/ajouter', { nom: `${MARQUE} Nous`, email: 'bonjour@izisolo.fr', source: 'site' }, 'POST');
-    assert(nous.status === 200, `fiche bonjour@izisolo.fr créée (${nous.status} ${nous.json?.message || ''})`);
+    assert(nous.status === 200, `fiche bonjour@izisolo.fr créée (${nous.status} ${nous.json?.error || ""})`);
     if (nous.status === 200) {
       const emailN = nous.json.email;
       await appel(`/api/admin/prospection/emails/${emailN.id}`, { action: 'enregistrer', objet: `${MARQUE} test programmé`, corps: TEXTE_OK });
       const dans4 = new Date(Date.now() + 4 * 60000).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris', hour12: false });
       const pr = await appel(`/api/admin/prospection/emails/${emailN.id}`, { action: 'envoyer', a: dans4 });
-      assert(pr.status === 200 && pr.json?.programme === true && pr.json.email?.statut === 'programme' && pr.json.email.resend_id, `programmé à ${dans4} (${pr.status} ${pr.json?.message || ''}) avec un id Resend`);
+      assert(pr.status === 200 && pr.json?.programme === true && pr.json.email?.statut === 'programme' && pr.json.email.resend_id, `programmé à ${dans4} (${pr.status} ${pr.json?.error || ""}) avec un id Resend`);
       const { data: pnb } = await admin.from('prospects').select('statut').eq('id', nous.json.prospect.id).maybeSingle();
       assert(pnb?.statut === 'contactee', 'la prof passe « contactée » dès la programmation');
       const an = await appel(`/api/admin/prospection/emails/${emailN.id}`, { action: 'annuler' });
-      assert(an.status === 200 && an.json?.email?.statut === 'brouillon' && !an.json.email.resend_id, `annulé chez Resend, revenu en brouillon (${an.status} ${an.json?.message || ''})`);
-      const { data: pnb2 } = await admin.from('prospects').select('statut').eq('id', nous.json.prospect.id).maybeSingle();
-      assert(pnb2?.statut === 'en_cours', 'la prof redevient « à rédiger »');
-      const an2 = await appel(`/api/admin/prospection/emails/${emailN.id}`, { action: 'annuler' });
-      assert(an2.status === 409, `annuler un brouillon → 409 (${an2.status})`);
+      if (an.status === 502 && an.json?.code === 'RESEND_CLE_RESTREINTE') {
+        // La clé du projet n'autorise que l'envoi : l'annulation est refusée
+        // HONNÊTEMENT (statut inchangé), et l'email part vers nous-mêmes.
+        const { data: enc } = await admin.from('prospection_emails').select('statut').eq('id', emailN.id).maybeSingle();
+        assert(enc?.statut === 'programme', `clé d'envoi seul : annulation refusée avec la raison, l'email reste « programmé » (partira vers bonjour@izisolo.fr à ${dans4})`);
+        console.log('  ⚠️  pour prouver l\'annulation, poser RESEND_API_KEY_GESTION (clé à accès complet) dans .env.local');
+      } else {
+        assert(an.status === 200 && an.json?.email?.statut === 'brouillon' && !an.json.email.resend_id, `annulé chez Resend, revenu en brouillon (${an.status} ${an.json?.error || ''})`);
+        const { data: pnb2 } = await admin.from('prospects').select('statut').eq('id', nous.json.prospect.id).maybeSingle();
+        assert(pnb2?.statut === 'en_cours', 'la prof redevient « à rédiger »');
+        const an2 = await appel(`/api/admin/prospection/emails/${emailN.id}`, { action: 'annuler' });
+        assert(an2.status === 409, `annuler un brouillon → 409 (${an2.status})`);
+      }
     }
 
     console.log('\n— La page');

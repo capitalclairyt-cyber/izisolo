@@ -253,10 +253,11 @@ function CarteRedaction({ prospect, email, occupe, onEmail, onProspect, relance 
       <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap', alignItems: 'center' }}>
         <button onClick={enregistrer} disabled={!!occupe || !modifie} style={bouton}>💾 Enregistrer</button>
         <button onClick={() => setApercu((v) => !v)} style={bouton}>{apercu ? 'Fermer l’aperçu' : '👁 Aperçu'}</button>
-        <button onClick={() => envoyer(null)} disabled={!!occupe || !validation.ok} style={{ ...bouton, background: '#b87333', color: '#fff' }}>📨 Envoyer maintenant</button>
+        {/* Un bouton désactivé qui garde sa couleur pleine ment : on l'éteint. */}
+        <button onClick={() => envoyer(null)} disabled={!!occupe || !validation.ok} style={{ ...bouton, background: '#b87333', color: '#fff', ...(validation.ok ? {} : eteint) }}>📨 Envoyer maintenant</button>
         <span style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}>
           <input type="time" value={heure} onChange={(e) => setHeure(e.target.value)} style={champ} aria-label="Heure d'envoi (Paris)" />
-          <button onClick={() => envoyer(heure)} disabled={!!occupe || !validation.ok || !heure} style={bouton}>⏰ Programmer à cette heure</button>
+          <button onClick={() => envoyer(heure)} disabled={!!occupe || !validation.ok || !heure} style={{ ...bouton, ...(validation.ok && heure ? {} : eteint) }}>⏰ Programmer à cette heure</button>
         </span>
         <span style={{ flex: 1 }} />
         {!relance && <button onClick={() => onProspect(prospect, { action: 'remettre' })} disabled={!!occupe} style={bouton}>↩ Remettre dans la pile</button>}
@@ -351,6 +352,7 @@ const carte = { background: '#1c1c1c', border: '1px solid #2e2e2e', borderRadius
 const bandeau = { background: '#3a2e14', color: '#fbbf24', padding: '12px 16px', borderRadius: 10, marginBottom: 18, fontSize: '0.9rem' };
 const badge = { borderRadius: 999, padding: '2px 10px', fontSize: '0.72rem', fontWeight: 700 };
 const bouton = { background: '#262626', border: '1px solid #3a3a3a', color: '#ddd', borderRadius: 8, padding: '7px 12px', fontSize: '0.82rem', cursor: 'pointer' };
+const eteint = { opacity: 0.4, cursor: 'not-allowed' };
 const champ = { background: '#141414', border: '1px solid #3a3a3a', color: '#eee', borderRadius: 8, padding: '7px 10px', fontSize: '0.85rem' };
 const etiquette = { color: '#888', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 };
 const lien = { color: '#60a5fa' };
