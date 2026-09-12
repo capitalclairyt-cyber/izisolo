@@ -79,6 +79,18 @@ export default async function AdminLayout({ children }) {
     if (!error && count) nbDemandesNew = count;
   } catch { /* table absente (pré-v96) : badge à 0 */ }
 
+  // Profs « à rédiger » dans la prospection (badge nav, v109) — jamais bloquant.
+  // Le badge compte ce qui attend un texte : un tirage fait et pas rédigé.
+  let nbProspectsARediger = 0;
+  try {
+    const { createAdminClient } = await import('@/lib/supabase-admin');
+    const { count, error } = await createAdminClient()
+      .from('prospects')
+      .select('id', { count: 'exact', head: true })
+      .eq('statut', 'en_cours');
+    if (!error && count) nbProspectsARediger = count;
+  } catch { /* table absente (pré-v109) : badge à 0 */ }
+
   // Fils support « à répondre » (badge nav messagerie, v87) — jamais bloquant.
   let nbSupportNonLus = 0;
   try {
@@ -135,6 +147,14 @@ export default async function AdminLayout({ children }) {
             {nbDemandesNew > 0 && (
               <span style={{ marginLeft: '6px', background: '#3a2e14', color: '#fbbf24', borderRadius: '999px', padding: '1px 7px', fontSize: '0.7rem', fontWeight: 700 }}>
                 {nbDemandesNew}
+              </span>
+            )}
+          </Link>
+          <Link href="/admin/prospection" className="admin-nav-item">
+            ✉️ Prospection
+            {nbProspectsARediger > 0 && (
+              <span style={{ marginLeft: '6px', background: '#3a2e14', color: '#fbbf24', borderRadius: '999px', padding: '1px 7px', fontSize: '0.7rem', fontWeight: 700 }}>
+                {nbProspectsARediger}
               </span>
             )}
           </Link>
