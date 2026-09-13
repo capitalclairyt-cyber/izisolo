@@ -334,6 +334,9 @@ export function ForWhom() {
     { name: 'Danse et mouvement', href: '/profs-de-danse' },
     { name: 'Coachs bien-être', href: '/coachs-bien-etre' },
     { name: 'Thérapeutes', href: '/therapeutes' },
+    // Les deux familles de structure (lot 5 Assos & Studios, 2026-09-13).
+    { name: 'Associations', href: '/associations' },
+    { name: 'Studios', href: '/studios' },
   ];
   return (
     <section id="pour-qui" className="pourqui">
@@ -485,7 +488,8 @@ export function Pricing() {
         <p className="stripe-note structures-note">
           <strong>Une association ou un studio à plusieurs profs ?</strong> Le plan Association est à 39 € par mois,
           le plan Studio à 59 € : tout Complet, des profs illimitées avec leurs droits, et deux mois offerts à l'année.{' '}
-          <Link href="/creer-mon-studio">On installe ton espace avec toi, gratuitement.</Link>
+          <Link href="/associations">Pour une association</Link> · <Link href="/studios">pour un studio</Link> ·{' '}
+          <Link href="/creer-mon-studio">on installe ton espace avec toi, gratuitement.</Link>
         </p>
       </div>
     </section>

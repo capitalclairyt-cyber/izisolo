@@ -18,7 +18,7 @@ import { CircleHelp, ChevronDown, ChevronUp } from 'lucide-react';
  * @param {string} studioNom   nom du studio (les réponses parlent de « ton studio »)
  * @param {string} studioSlug  pour les liens internes (messages)
  */
-export default function AideEleve({ studioNom = 'ton studio', studioSlug, sansCatalogue = false, aDesAdhesions = false }) {
+export default function AideEleve({ studioNom = 'ton studio', studioSlug, sansCatalogue = false, aDesAdhesions = false, plusieursStudios = false }) {
   const [ouverte, setOuverte] = useState(null);
 
   const QUESTIONS = [
@@ -57,6 +57,11 @@ export default function AideEleve({ studioNom = 'ton studio', studioSlug, sansCa
       q: 'Comment obtenir un reçu ou une facture ?',
       r: <>Dans <strong>« Mes paiements »</strong>, chaque paiement réglé a son bouton de téléchargement. Si {studioNom} a activé la facturation, tu obtiens une vraie <strong>facture numérotée</strong> (acceptée par les CSE, employeurs et mutuelles), et « Facture du mois » regroupe plusieurs paiements en un seul document. Il se peut aussi que {studioNom} te l'envoie <strong>par email, en pièce jointe</strong>, dès qu'un paiement est enregistré : c'est exactement le même document, avec le même numéro.</>,
     },
+    // Pont 6 (lot 5 Assos & Studios) : l'élève de plusieurs studios a un hub.
+    ...(plusieursStudios ? [{
+      q: 'Je suis inscrite dans plusieurs studios, où retrouver tout ?',
+      r: <>Ton compte est le même partout (la même adresse email). Chaque studio a son espace, et la page <Link href="/mes-studios" style={{ color: '#8a5a44', fontWeight: 600 }}>Mes studios</Link> les réunit : tes prochaines séances toutes structures confondues, et une entrée vers chaque espace. Tes carnets, tes paiements et tes messages restent propres à chaque studio.</>,
+    }] : []),
     // v113 : une association affiche « Mon adhésion » dans l'espace.
     ...(aDesAdhesions ? [{
       q: 'C\'est quoi, « Mon adhésion » ?',

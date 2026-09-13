@@ -187,7 +187,7 @@ function CoursCard({ presence, profile, studioSlug, onAnnuler, annulEnCours, vis
   );
 }
 
-export default function EspaceClient({ profile, client, aVenir, passes, paiements = [], offresStripe = [], offresCatalogue = [], catalogueMasque = false, abonnements = [], aRegler = [], seancesWorkshopDues = [], annulationsDues = [], unreadMessages = 0, clientPrefs = {}, studioSlug, userEmail, isDemo = false, facturationActive = false, facturesParPaiement = {}, docsInscription = [], visioParPresence = {}, ribStudio = null, refVirement = null, adhesions = [] }) {
+export default function EspaceClient({ profile, client, aVenir, passes, paiements = [], offresStripe = [], offresCatalogue = [], catalogueMasque = false, abonnements = [], aRegler = [], seancesWorkshopDues = [], annulationsDues = [], unreadMessages = 0, clientPrefs = {}, studioSlug, userEmail, isDemo = false, facturationActive = false, facturesParPaiement = {}, docsInscription = [], visioParPresence = {}, ribStudio = null, refVirement = null, adhesions = [], nbStudios = 1 }) {
   const router = useRouter();
   const { toast } = useToast();
   const [notifsOpen, setNotifsOpen] = useState(false);
@@ -729,6 +729,13 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
         </div>
       )}
 
+      {/* Pont 6 (lot 5) : une élève inscrite dans plusieurs studios a un hub. */}
+      {nbStudios > 1 && (
+        <div style={{ marginTop: 16, padding: '10px 14px', borderRadius: 12, background: '#fdfbf7', border: '1px solid #eee5d8', fontSize: '.86rem' }} data-testid="espace-mes-studios">
+          Tu es inscrite dans {nbStudios} studios sur IziSolo. <Link href="/mes-studios" style={{ color: '#8a5a44', fontWeight: 600 }}>Voir tous mes studios et mes prochaines séances →</Link>
+        </div>
+      )}
+
       {/* Mon adhésion (association, v113) : la saison, à jour ou pas. */}
       {adhesions.length > 0 && (
         <div style={{ marginTop: 28, paddingTop: 20, borderTop: '1px solid #f0ebe8' }} data-testid="espace-adhesion">
@@ -1237,7 +1244,7 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
       )}
 
       {/* Mini-aide élève (2026-08-18) — les questions récurrentes, réponses vérifiées */}
-      <AideEleve studioNom={profile.studio_nom} studioSlug={studioSlug} sansCatalogue={catalogueMasque} aDesAdhesions={adhesions.length > 0} />
+      <AideEleve studioNom={profile.studio_nom} studioSlug={studioSlug} sansCatalogue={catalogueMasque} aDesAdhesions={adhesions.length > 0} plusieursStudios={nbStudios > 1} />
 
       {/* Bouton rebooking */}
       <div style={{ marginTop: 28, paddingTop: 20, borderTop: '1px solid #f0ebe8', textAlign: 'center' }}>

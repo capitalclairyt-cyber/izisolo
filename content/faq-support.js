@@ -388,4 +388,17 @@ export const FAQ_SUPPORT = [
     a: "Oui : Compta → Relevés, coche « Envoyer chaque relevé tout seul le 1er du mois ». Dans les premiers jours de chaque mois, chaque intervenante active reçoit par email le relevé de ses séances du mois passé, en PDF, une seule fois ; un relevé sans séance ne part pas. Tu valides ensuite le relevé comme d'habitude (c'est la validation qui crée la prestation et la dépense). Son contrat de prestation se dépose sur sa ligne de la page Équipe (« Contrat », PDF ou photo scannée) : pas de signature électronique.",
     lien: { href: '/aide#studio', label: 'Voir le pas-à-pas' },
   },
+  {
+    // Les portails qui se citent (v115, lot 5 Associations & Studios,
+    // 2026-09-13). AJOUTÉE EN FIN.
+    q: "Je donne aussi des cours dans une association qui est sur IziSolo : nos pages peuvent-elles se citer ?",
+    a: "Oui, si tu le décides : page Équipe → volet « Ailleurs » → sur la structure, coche « Relier nos pages ». Ta page publique affiche alors « Je donne aussi des cours à … » avec le lien, et sur la page de la structure ta carte d'équipe propose « Sa page » vers la tienne. Rien n'est relié tant que tu ne coches pas, et tu décoches quand tu veux. Chaque intervenante a aussi sa page sur le portail de la structure (son nom dans « L'équipe »), avec sa bio, sa photo et ses prochaines séances.",
+    lien: { href: '/aide#equipe', label: 'Voir le pas-à-pas' },
+  },
+  {
+    // Le hub de l'élève (pont 6). AJOUTÉE EN FIN.
+    q: "Une élève suit mes cours et ceux d'un autre studio sur IziSolo : elle a deux comptes ?",
+    a: "Non, un seul : la même adresse email ouvre l'espace de chaque studio. Dès qu'elle est inscrite dans deux studios, son espace lui propose « Mes studios » (izisolo.fr/mes-studios) : tous ses studios, ses prochaines séances toutes structures confondues, une entrée vers chaque espace. Ses carnets, ses paiements et ses messages restent propres à chaque studio : tu ne vois jamais ce qu'elle fait ailleurs.",
+    lien: { href: '/aide#eleves', label: 'Voir le pas-à-pas' },
+  },
 ];

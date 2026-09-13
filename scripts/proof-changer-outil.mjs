@@ -136,8 +136,9 @@ ok(home.nav && home.pied, `La home mène à la page : menu Ressources (${home.na
 ok(home.faqDom, 'La question « déjà équipée » vit dans la FAQ de la home (DOM, Schema.org)');
 // /support vit derrière une session : on lit la source de la FAQ, et on exige que
 // la question soit la DERNIÈRE (les ancres /support#faq-N sont indexées par position).
-const derniere = FAQ_SUPPORT[FAQ_SUPPORT.length - 1];
-ok(/Je viens d'une autre appli : comment récupérer/.test(derniere.q) && derniere.lien?.href === '/aide#eleves', `La FAQ /support porte la question en FIN de liste, liée au tuto Élèves (n° ${FAQ_SUPPORT.length})`);
+const POSITION_CHANGER = 46; // ajoutée en fin de liste le 2026-09-10 ; les suivantes s'ajoutent DERRIÈRE
+const question = FAQ_SUPPORT[POSITION_CHANGER - 1];
+ok(/Je viens d'une autre appli : comment récupérer/.test(question?.q || '') && question?.lien?.href === '/aide#eleves', `La FAQ /support porte la question à sa position n° ${POSITION_CHANGER} (ancre stable), liée au tuto Élèves`);
 
 // ── D. Mobile 390 ──────────────────────────────────────────────────────────
 console.log('\nD. Mobile 390');

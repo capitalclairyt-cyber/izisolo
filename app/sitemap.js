@@ -55,6 +55,9 @@ const STATIC_PATHS = [
   { path: '/creer-mon-studio',     changeFrequency: 'monthly',  priority: 0.8 },
   // « Déjà équipée ? » (2026-09-10) : la page du segment le plus nombreux en DM.
   { path: '/changer-d-outil',      changeFrequency: 'monthly',  priority: 0.8 },
+  // Les vitrines des deux plans de structure (lot 5 Assos & Studios, 2026-09-13).
+  { path: '/associations',         changeFrequency: 'monthly',  priority: 0.8 },
+  { path: '/studios',              changeFrequency: 'monthly',  priority: 0.8 },
   { path: '/legal/cgu',            changeFrequency: 'yearly',   priority: 0.3 },
   { path: '/legal/cgv',            changeFrequency: 'yearly',   priority: 0.3 },
   { path: '/legal/mentions',       changeFrequency: 'yearly',   priority: 0.3 },

@@ -3,7 +3,8 @@
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { MapPin, Calendar, Clock, ChevronRight, ChevronLeft, ChevronDown, Search, CreditCard, Ticket, CalendarCheck, Zap, Instagram, Facebook, Globe, Award, BookOpen, LayoutGrid, List, Check, Loader, User, BadgeCheck } from 'lucide-react';
+import { MapPin, Calendar, Clock, ChevronRight, ChevronLeft, ChevronDown, Search, CreditCard, Ticket, CalendarCheck, Zap, Instagram, Facebook, Globe, Award, BookOpen, LayoutGrid, List, Check, Loader, User, BadgeCheck, Building2 } from 'lucide-react';
+import { phraseAilleurs } from '@/lib/ponts';
 import { toneCours, vignetteCours, altVignette, imageOptimisable } from '@/lib/vignette-cours';
 import { useToast } from '@/components/ui/ToastProvider';
 import { matchRecherche } from '@/lib/utils';
@@ -85,7 +86,7 @@ function PlacesBadge({ capacite, inscrits, afficherInscrits = true }) {
   return <span className="portail-tag portail-tag-green">Places disponibles</span>;
 }
 
-export default function PortailHome({ profile, cours, offresStripe = [], offresPubliques = [], sondageActif = null, studioSlug, isPreview = false, isDemo = false, currentClient = null, reservedCoursIds = [], canReserve = true, essaiVisible = true, canDemander = true, surchargesEssai = null, tonsParType = null, vignettesParType = null, tabInitial = null, equipe = [] }) {
+export default function PortailHome({ profile, cours, offresStripe = [], offresPubliques = [], sondageActif = null, studioSlug, isPreview = false, isDemo = false, currentClient = null, reservedCoursIds = [], canReserve = true, essaiVisible = true, canDemander = true, surchargesEssai = null, tonsParType = null, vignettesParType = null, tabInitial = null, equipe = [], liensEquipe = {}, ailleurs = [] }) {
   // v111 : les profs de la structure. Le filtre et l'onglet n'apparaissent
   // qu'à partir de deux personnes (une prof seule n'a rien à filtrer).
   const [filterProf, setFilterProf] = useState('');
@@ -1095,8 +1096,13 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
                   ? <span className="portail-equipe-photo"><Image src={m.photo_url} alt={m.prenom} width={96} height={96} sizes="72px" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /></span>
                   : <span className="portail-equipe-photo portail-equipe-initiale" aria-hidden="true">{m.prenom.charAt(0)}</span>}
                 <div>
-                  <div className="portail-equipe-nom">{m.prenom}{m.nom ? ` ${m.nom}` : ''}</div>
+                  <div className="portail-equipe-nom">
+                    {m.proprietaire ? <>{m.prenom}{m.nom ? ` ${m.nom}` : ''}</> : <Link href={`/p/${studioSlug}/equipe/${m.id}`} className="portail-equipe-nom-lien" data-testid="equipe-page-lien">{m.prenom}{m.nom ? ` ${m.nom}` : ''}</Link>}
+                  </div>
                   {m.bio && <p className="portail-equipe-bio">{m.bio}</p>}
+                  {liensEquipe[m.id] && (
+                    <a href={`/p/${liensEquipe[m.id].slug}`} className="portail-equipe-lien" data-testid="equipe-sa-page">Sa page : {liensEquipe[m.id].nom} →</a>
+                  )}
                   {profs.some(p => p.id === m.id) && (
                     <button type="button" className="portail-equipe-lien" onClick={() => { setFilterProf(m.id); setTab('cours'); }}>
                       Voir ses cours
@@ -1213,6 +1219,16 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
           Melyflow) : trois liens ne sont pas du contenu long, ils n'ont rien à
           faire derrière un onglet que personne n'ouvre. Rendus UNE fois, en
           pied, visibles depuis n'importe quel onglet. */}
+      {/* Pont 5 (v115) : la prof cite les structures où elle donne aussi des
+          cours, quand elle a choisi de relier les pages. */}
+      {ailleurs.length > 0 && (
+        <section className="portail-ailleurs" data-testid="portail-ailleurs">
+          <Building2 size={15} />
+          <span>{phraseAilleurs(ailleurs)} :</span>
+          {ailleurs.map(s => <a key={s.id} href={`/p/${s.slug}`} className="portail-ailleurs-lien">{s.nom} →</a>)}
+        </section>
+      )}
+
       {hasSocial && (
         <section className="portail-social reveal">
           <div className="portail-social-row">
@@ -1236,6 +1252,11 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
       )}
 
       <style jsx global>{`
+        /* ─── Pont 5 (v115) : les portails qui se citent ─────────────────── */
+        .portail-ailleurs { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; justify-content: center; margin: 18px 0 6px; font-size: .86rem; color: var(--text-soft, #7a6f6a); }
+        .portail-ailleurs-lien { color: var(--brand, #b87333); font-weight: 600; text-decoration: none; }
+        .portail-equipe-nom-lien { color: inherit; text-decoration: none; }
+        .portail-equipe-nom-lien:hover { text-decoration: underline; }
         /* ─── Accroche « à propos » sur l'accueil (2026-08-25) ──────────────
            Une bio est le premier argument d'une prof : elle ne doit pas vivre
            uniquement derrière un onglet. */

@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation';
 import { countUnread } from '@/lib/messagerie';
 import EspaceClient from './EspaceClient';
 import { resoudreFicheEleve } from '@/lib/fiche-eleve';
+import { escapeIlike } from '@/lib/utils';
 import { getDocsInscription } from '@/lib/docs-inscription';
 import EspaceIndisponible from '@/components/portail/EspaceIndisponible';
 import { getVisioCoursMap, lienVisioVisible } from '@/lib/visio';
@@ -481,7 +482,16 @@ async function getData(studioSlug, user) {
     if (!error) adhesions = data || [];
   } catch { /* pré-v113 */ }
 
-  return { profile, client, aVenir, passes, paiements: paiements || [], offresStripe: offresStripe || [], offresCatalogue, abonnements: abonnementsAvecPrelevement, catalogueMasque, aRegler, seancesWorkshopDues, annulationsDues, unreadMessages, clientPrefs, facturationActive, facturesParPaiement, docsInscription, visioParPresence, ribStudio, refVirement, adhesions };
+  // Pont 6 (lot 5) : combien de studios ont une fiche à son nom (par compte
+  // v83, puis par email). Dès deux, l'espace propose le hub /mes-studios.
+  let nbStudios = 1;
+  try {
+    const { data: parCompte } = await supabase.from('clients').select('profile_id').eq('auth_user_id', user.id).neq('statut', 'archive');
+    const { data: parEmail } = user.email ? await supabase.from('clients').select('profile_id').ilike('email', escapeIlike(user.email)).neq('statut', 'archive') : { data: [] };
+    nbStudios = Math.max(1, new Set([...(parCompte || []), ...(parEmail || [])].map(c => c.profile_id)).size);
+  } catch { /* rien */ }
+
+  return { profile, client, aVenir, passes, paiements: paiements || [], offresStripe: offresStripe || [], offresCatalogue, abonnements: abonnementsAvecPrelevement, catalogueMasque, aRegler, seancesWorkshopDues, annulationsDues, unreadMessages, clientPrefs, facturationActive, facturesParPaiement, docsInscription, visioParPresence, ribStudio, refVirement, adhesions, nbStudios };
 }
 
 export default async function EspacePage({ params, searchParams }) {
@@ -566,6 +576,7 @@ export default async function EspacePage({ params, searchParams }) {
       refVirement={data.refVirement || null}
       visioParPresence={data.visioParPresence || {}}
       adhesions={data.adhesions || []}
+      nbStudios={data.nbStudios || 1}
       studioSlug={studioSlug}
       userEmail={user.email}
     />

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Building2, Send, Loader2, Copy, Check } from 'lucide-react';
 import { useToast } from '@/components/ui/ToastProvider';
-import { useStudios, useStudioId } from '@/components/studio/StudioProvider';
+import { useStudios, useStudioId, useAppartenances } from '@/components/studio/StudioProvider';
 import { TYPES_INVITABLES } from '@/lib/parrainage';
 import { TYPES_STRUCTURE } from '@/lib/structure';
 
@@ -22,6 +22,31 @@ export default function Ailleurs() {
   const studios = useStudios();
   const studioId = useStudioId();
   const autres = (studios || []).filter(s => s.id !== studioId);
+  // Pont 5 (v115) : relier SA page et celle de la structure, appartenance par
+  // appartenance. Le choix est le sien ; la route n'écrit que sur SA ligne.
+  const appartenances = useAppartenances();
+  const [croises, setCroises] = useState({});
+  const [relie, setRelie] = useState(null);
+  useEffect(() => {
+    let vivant = true;
+    for (const a of (appartenances || []).filter(x => x.profile_id !== studioId)) {
+      fetch(`/api/structures/appartenance/${a.id}`).then(r => r.json()).then(d => { if (vivant) setCroises(prev => ({ ...prev, [a.profile_id]: d?.portail_croise === true })); }).catch(() => {});
+    }
+    return () => { vivant = false; };
+  }, []);
+  const relier = async (s) => {
+    const app = (appartenances || []).find(a => a.profile_id === s.id);
+    if (!app) return;
+    const cible = !croises[s.id];
+    setRelie(s.id);
+    try {
+      const res = await fetch(`/api/structures/appartenance/${app.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ portail_croise: cible }) });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) { toast.error(data.error || 'Réglage impossible.'); return; }
+      setCroises(prev => ({ ...prev, [s.id]: data.portail_croise === true }));
+      toast.success(data.portail_croise ? `Ta page et celle de ${s.nom} se citent désormais.` : 'Les pages ne se citent plus.');
+    } finally { setRelie(null); }
+  };
   const [ouvert, setOuvert] = useState(false);
   const [form, setForm] = useState({ nom: '', email: '', type: 'association', message: '' });
   const [envoi, setEnvoi] = useState(false);
@@ -77,6 +102,10 @@ export default function Ailleurs() {
             <li key={s.id} className="ail-studio">
               <Building2 size={15} /> <strong>{s.nom}</strong>
               <span>tu y es intervenante · bascule dessus depuis le nom du studio, en haut de la barre latérale</span>
+              <label className="ail-relier" data-testid="ailleurs-relier">
+                <input type="checkbox" checked={!!croises[s.id]} onChange={() => relier(s)} disabled={relie === s.id} data-testid="ailleurs-relier-case" />
+                Relier nos pages : « Je donne aussi des cours à {s.nom} » sur ma page, et « Sa page » sur la leur
+              </label>
             </li>
           ))}
         </ul>
@@ -157,6 +186,7 @@ export default function Ailleurs() {
         .ail-titre { display: flex; align-items: center; gap: 8px; font-family: var(--font-fraunces, Georgia, serif); font-size: 1.3rem; margin: 0 0 4px; }
         .ail-sous { margin: 0 0 14px; color: var(--text-soft, #7a6f6a); font-size: .9rem; line-height: 1.5; }
         .ail-liste { list-style: none; padding: 0; margin: 0 0 16px; display: grid; gap: 8px; }
+        .ail-relier { flex-basis: 100%; display: flex; align-items: flex-start; gap: 8px; font-size: .8rem; color: var(--text-soft, #7a6f6a); cursor: pointer; margin-top: 4px; }
         .ail-studio { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: .9rem; }
         .ail-studio span { color: var(--text-soft, #7a6f6a); font-size: .8rem; }
         .ail-vide { margin: 0 0 14px; color: var(--text-soft, #7a6f6a); font-size: .88rem; }

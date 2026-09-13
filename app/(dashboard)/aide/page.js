@@ -335,7 +335,7 @@ const SECTIONS = [
       <><strong>Prestations</strong> : chacune passe <strong>à facturer</strong> (Léa a le relevé), <strong>facturée</strong> (si elle a son IziSolo, elle a émis sa facture en un clic, et tu la reçois en PDF), puis <strong>réglée</strong> quand tu cliques « Réglée » avec la date et le mode. Ce clic solde ta dépense, et chez elle, l'encaissement apparaît dans ses revenus avec sa facture marquée payée. Sans compte IziSolo, elle facture à sa façon : le relevé lui sert de détail.</>,
       <><strong>Export</strong> : le fichier de l'exercice (la saison de septembre à août pour une association, l'année civile pour un studio) : recettes encaissées, dépenses avec justificatifs, récapitulatif par catégorie, résultat. C'est le rapport financier de ton AG, ou le dossier de ton comptable.</>,
     ],
-    astuce: "Une intervenante sans compte trouve aussi son relevé sur son lien permanent, rubrique « Mon relevé de séances », mois par mois.",
+    astuce: "Une intervenante sans compte trouve aussi son relevé sur son lien permanent, rubrique « Mon relevé de séances », mois par mois. Et si tu donnes des cours dans une structure qui est aussi sur IziSolo, page Équipe → Ailleurs → « Relier nos pages » : ta page dit « Je donne aussi des cours à … », la leur propose « Sa page » sur ta carte d'équipe, et chaque intervenante a sa page (/p/le-studio/equipe/…) avec ses prochaines séances.",
   },
   {
     id: 'association',

@@ -11,6 +11,7 @@ import { reportError } from '@/lib/report';
 import { getEssaiPrixParType } from '@/lib/essai-tarif';
 import { chargerVignettesConfig, chargerPhotosCours, greffePhotos } from '@/lib/vignette-cours';
 import { lireIntervenantes, chargerIntervenantes, equipePourPortail, prenomIntervenante } from '@/lib/intervenante';
+import { structuresCitees, pageDeLIntervenante } from '@/lib/ponts';
 import { masquerLiensSiNonBranche } from '@/lib/paiement-en-ligne';
 import { urlPortail } from '@/lib/studio-host';
 
@@ -174,6 +175,26 @@ async function getStudioData(studioSlug) {
     chargerIntervenantes(supabase, profile.id),
   ]);
   const equipe = equipePourPortail(profile, membresBruts);
+  // Pont 5 (v115) : « Sa page » sur la carte d'une intervenante qui a relié,
+  // et « Je donne aussi des cours à … » quand CE portail est celui d'une prof
+  // membre ailleurs. Lectures séparées et défensives : sans v115, rien.
+  const liensEquipe = {};
+  let ailleurs = [];
+  try {
+    const reliees = membresBruts.filter(m => m.portail_croise === true && m.auth_user_id);
+    if (reliees.length > 0) {
+      const { data: persos } = await supabase.from('profiles').select('id, studio_nom, studio_slug, portail_actif').in('id', reliees.map(m => m.auth_user_id));
+      for (const m of reliees) {
+        const p = pageDeLIntervenante(m, (persos || []).find(x => x.id === m.auth_user_id));
+        if (p) liensEquipe[m.id] = p;
+      }
+    }
+    const { data: mesApp, error: eApp } = await supabase.from('studio_membres').select('profile_id, statut, portail_croise').eq('auth_user_id', profile.id).eq('portail_croise', true);
+    if (!eApp && (mesApp || []).length > 0) {
+      const { data: structures } = await supabase.from('profiles').select('id, studio_nom, studio_slug, portail_actif, type_structure').in('id', mesApp.map(a => a.profile_id));
+      ailleurs = structuresCitees(mesApp, structures || [], profile.id);
+    }
+  } catch { /* pré-v115 */ }
   const intervenantes = Object.fromEntries(
     membresBruts.map(m => [m.id, prenomIntervenante(m)]).filter(([, p]) => !!p)
   );
@@ -213,6 +234,8 @@ async function getStudioData(studioSlug) {
       intervenante_id: intervenantsParCours[c.id] || null,
     })), photosSeances),
     equipe,
+    liensEquipe,
+    ailleurs,
     tonsParType: apparence.tons,
     vignettesParType: apparence.vignettes,
     offresStripe: canAcheter ? masquerLiensSiNonBranche(offresStripe, confStripe).filter(o => o.stripe_payment_link) : [],
@@ -278,6 +301,8 @@ export default async function PortailPage({ params, searchParams }) {
       tonsParType={data.tonsParType}
       vignettesParType={data.vignettesParType}
       equipe={data.equipe}
+      liensEquipe={data.liensEquipe || {}}
+      ailleurs={data.ailleurs || []}
       tabInitial={typeof sp?.tab === 'string' ? sp.tab : null}
       canReserve={studioCan(profile, 'reservation_en_ligne')}
       essaiVisible={studioCan(profile, 'cours_essai')}

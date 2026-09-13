@@ -138,7 +138,7 @@ ok(structure.callouts === 2 && structure.cartes === 4 && structure.fleches === 4
 ok(structure.bordsColles === 0, `Aucune section collée au bord gauche (${structure.bordsColles})`);
 ok(structure.pucesTarifs.length === 2 && structure.pucesTarifs.every(n => n === 5), `Cinq puces par tarif (${structure.pucesTarifs.join('/')})`);
 ok(structure.faqVisibles === 6 && structure.faqDom === 13, `FAQ : 6 visibles, 13 dans le DOM (la 13e, « déjà équipée », est arrivée le 10/09) (${structure.faqVisibles}/${structure.faqDom})`);
-ok(structure.personas === 6, `Pour qui : six liens métier (${structure.personas})`);
+ok(structure.personas === 8, `Pour qui : six liens métier + Associations + Studios (${structure.personas})`);
 ok(/Fraunces/i.test(structure.fonts), 'H1 en Fraunces');
 
 // ── Ce qui bouge au scroll : flèches qui se tracent, clips qui démarrent ───

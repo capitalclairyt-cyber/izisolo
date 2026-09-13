@@ -146,6 +146,11 @@ try {
     const { data: p } = await svc.from('profiles').select('offres_espace').eq('id', demo.id).maybeSingle();
     c('profiles.offres_espace = false EN BASE', p?.offres_espace === false);
     await page.waitForTimeout(500);
+    if ((await bouton.count()) === 0) {
+      await page.waitForSelector('[data-carte-reglage="page_affichage"] .carte-reglage-entete', { timeout: 60000 });
+      await page.click('[data-carte-reglage="page_affichage"] .carte-reglage-entete');
+      await page.waitForSelector('text=Proposer mes offres dans l\'espace de mes élèves', { timeout: 60000 });
+    }
     c('l\'interrupteur passe à désactivé à l\'écran', (await bouton.getAttribute('aria-pressed')) === 'false');
   } else {
     c('sans v108 : 503 MIGRATION_V108_REQUISE, jamais un faux « ok »', rep.status() === 503 && corps.code === 'MIGRATION_V108_REQUISE', `status ${rep.status()} · ${JSON.stringify(corps).slice(0, 120)}`);
