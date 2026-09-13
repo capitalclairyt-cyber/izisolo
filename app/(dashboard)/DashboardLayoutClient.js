@@ -54,7 +54,9 @@ export default function DashboardLayoutClient({ children, profile, trial, nbCasA
           cours_essai: can(profile, 'cours_essai'),
           liste_attente: can(profile, 'liste_attente'),
           depenses: can(profile, 'depenses'),
+          vie_asso: can(profile, 'vie_asso'),
         }}
+        typeStructure={profile?.type_structure || 'solo'}
       />
 
       <main className="dashboard-content">

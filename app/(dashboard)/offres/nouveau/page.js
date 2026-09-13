@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
-  ArrowLeft, Save, Ticket, CalendarCheck,
+  ArrowLeft, Save, Ticket, CalendarCheck, BadgeCheck,
   Percent, Info, Calculator, ToggleLeft, ToggleRight,
   Loader2,
 } from 'lucide-react';
@@ -33,6 +33,10 @@ import { useStudioId } from '@/components/studio/StudioProvider';
 const TYPES = [
   { value: 'carnet',      label: 'Carnet de séances', Icon: Ticket,      desc: 'Ex : 10 cours pour 120€' },
   { value: 'abonnement',  label: 'Abonnement',         Icon: CalendarCheck, desc: 'Ex : mensuel, ou saison sept.–juin' },
+  // v113 : l'adhésion d'une association (de saison, sans séance). Proposée
+  // seulement à une association ; se vend depuis la fiche, jamais par le
+  // tunnel des carnets.
+  { value: 'adhesion',    label: 'Adhésion',           Icon: BadgeCheck,  desc: 'Cotisation de saison, sans séance', asso: true },
 ];
 
 // Presets séances carnet
@@ -80,6 +84,7 @@ export default function NouvelleOffre() {
 
   // État principal
   const [type, setType]           = useState('carnet');
+  const [estAssociation, setEstAssociation] = useState(false);
   const [nom, setNom]             = useState('');
   const [nomModifie, setNomModifie] = useState(false); // true si user a changé le nom manuellement
   const [prix, setPrix]           = useState('');
@@ -143,6 +148,7 @@ export default function NouvelleOffre() {
 
       setOffresUnitaires(unitaires || []);
       setTypesCoursDisponibles(getAllTypesFromCategories(profile?.types_cours));
+      setEstAssociation(profile?.type_structure === 'association');
 
       // Vérifier la limite du plan
       const planKey = effectivePlan(profile);
@@ -270,6 +276,13 @@ export default function NouvelleOffre() {
         actif:  true,
       };
 
+      if (type === 'adhesion') {
+        // Une adhésion ne porte NI séance NI dates : la saison est posée à la
+        // vente (lib/vie-asso, saisonDe), jamais sur l'offre.
+        payload.seances = null;
+        payload.duree_jours = null;
+      }
+
       if (type === 'carnet') {
         payload.seances          = seances ? parseInt(seances) : null;
         payload.prix_unitaire_ref = prixUnitaireRef ? parseFloat(prixUnitaireRef) : null;
@@ -361,7 +374,7 @@ export default function NouvelleOffre() {
         <div className="no-field">
           <label className="no-label">Type d'offre</label>
           <div className="no-type-grid">
-            {TYPES.map(({ value, label, Icon, desc }) => (
+            {TYPES.filter(t => !t.asso || estAssociation).map(({ value, label, Icon, desc }) => (
               <button
                 key={value}
                 type="button"

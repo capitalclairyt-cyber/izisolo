@@ -2,6 +2,7 @@ import { createServerClient } from '@/lib/supabase-server';
 import { resoudreStudioActif } from '@/lib/studio-actif';
 import { notFound } from 'next/navigation';
 import PointageClient from './PointageClient';
+import { adherentesAJourLe } from '@/lib/vie-asso-service';
 import Link from 'next/link';
 import { peutPointerCours } from '@/lib/studio-membre';
 import { lireIntervenantes } from '@/lib/intervenante';
@@ -102,9 +103,18 @@ export default async function PointagePage({ params }) {
   // Charger le profil (vocabulaire + règles d'annulation + règles métier)
   const { data: profile } = await supabase
     .from('profiles')
-    .select('metier, vocabulaire, regles_annulation, regles_metier, essais_par_defaut')
+    .select('metier, vocabulaire, regles_annulation, regles_metier, essais_par_defaut, type_structure')
     .eq('id', studioId)
     .single();
+
+  // Association (v113) : qui est à jour d'adhésion au jour de la séance. Un
+  // repère sur la ligne, jamais un refus de pointer. Null hors association ou
+  // sans la migration : aucun repère, rien ne change.
+  let adherentesAJour = null;
+  if (profile?.type_structure === 'association') {
+    const { map, migrationManquante } = await adherentesAJourLe(supabase, studioId, cours.date);
+    if (!migrationManquante) adherentesAJour = [...map.keys()];
+  }
 
   // Compter les dettes différées par client (pour alerte multi-impayés)
   const { data: dettesRaw } = await supabase
@@ -134,6 +144,7 @@ export default async function PointagePage({ params }) {
       dettesParClient={dettesParClient}
       regles={regles || []}
       initialPaiementsSeance={paiementsSeance}
+      adherentesAJour={adherentesAJour}
     />
   );
 }

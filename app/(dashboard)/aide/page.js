@@ -8,7 +8,7 @@ import {
   BookOpen, CalendarDays, Users, Wallet, ClipboardList, Globe,
   LifeBuoy, MessageSquarePlus, ArrowRight, ArrowLeft, Package, Inbox,
   MessageSquare, FileText, Smartphone, CalendarClock, Hourglass, Search, X,
-  Sparkles, ListOrdered, Landmark, Palette, UserCog, Coins
+  Sparkles, ListOrdered, Landmark, Palette, UserCog, Coins, BadgeCheck
 } from 'lucide-react';
 import { FAQ_SUPPORT } from '@/content/faq-support';
 
@@ -336,6 +336,22 @@ const SECTIONS = [
       <><strong>Export</strong> : le fichier de l'exercice (la saison de septembre à août pour une association, l'année civile pour un studio) : recettes encaissées, dépenses avec justificatifs, récapitulatif par catégorie, résultat. C'est le rapport financier de ton AG, ou le dossier de ton comptable.</>,
     ],
     astuce: "Une intervenante sans compte trouve aussi son relevé sur son lien permanent, rubrique « Mon relevé de séances », mois par mois.",
+  },
+  {
+    id: 'association',
+    icon: BadgeCheck,
+    titre: "La vie de ton association",
+    intro: "Le bureau, les adhésions, les documents et l'assemblée générale : ce qu'une association a en plus, et rien de plus. IziSolo reste l'outil des cours, des adhérentes et de l'argent des cours.",
+    etapes: [
+      <>Dans la nav, <strong>« Association »</strong> (plan Association). Quatre onglets : <strong>Bureau</strong>, <strong>Adhésions</strong>, <strong>Documents</strong>, <strong>Assemblées</strong>.</>,
+      <><strong>Le bureau</strong> : en invitant quelqu'un depuis Équipe, choisis sa <strong>fonction</strong> (présidente, trésorière, secrétaire, membre du bureau, prof, bénévole). Elle propose des droits (la trésorière voit et gère l'argent, la secrétaire les adhérentes, les convocations et les documents) que tu ajustes ensuite case par case. C'est une étiquette : les droits appliqués sont ceux cochés.</>,
+      <><strong>L'adhésion</strong> : crée une offre de type <strong>« Adhésion »</strong> (Offres → Créer, un tarif par offre : plein, réduit, famille). Sur la fiche d'une personne, <strong>« Enregistrer une adhésion »</strong> : la saison (septembre à août), payée ou à régler, et le mode de règlement. Une adhésion ne donne droit à aucune séance : elle ne se décompte jamais au pointage. Le <strong>reçu de cotisation</strong> se télécharge depuis la fiche (avec ton numéro RNA ou SIRET renseigné dans Paramètres → Facturation, il porte un numéro comme une facture).</>,
+      <><strong>Adhésion requise pour réserver</strong> : Paramètres → Cas particuliers → « Réservation sans adhésion à jour ». Accepter (par défaut) laisse réserver et pose un repère « sans adhésion » sur la ligne au pointage, pour régulariser sur place ; bloquer refuse la réservation avec un message clair. Jamais un refus de pointer.</>,
+      <>Page Élèves, le filtre <strong>« Adhérentes à jour »</strong> liste celles dont l'adhésion couvre aujourd'hui : c'est la liste du quorum. Dans l'espace élève, chacune voit <strong>« Mon adhésion »</strong> et sa saison.</>,
+      <><strong>Les documents</strong> : statuts, récépissé de préfecture, règlement intérieur, assurance, agrément, PV d'assemblée, contrat d'intervenante, autre. Dépose un PDF ou une photo ; pour les documents à version (statuts, récépissé…), le dernier déposé est la version courante, les anciens restent dessous. Pas de signature électronique.</>,
+      <><strong>L'assemblée générale</strong> : date, heure, lieu, ordre du jour. <strong>« Convoquer »</strong> envoie la convocation par la messagerie (message dans l'espace + email) aux adhérentes à jour au jour de l'AG, et te rappelle le délai de tes statuts sans l'imposer. La <strong>feuille d'émargement</strong> s'imprime (nom, signature, pouvoir). Après l'AG, note les présentes et les pouvoirs : le quorum s'affiche (à comparer à tes statuts), et tu déposes le PV comme document rattaché. Pas de vote électronique.</>,
+    ],
+    astuce: "Ton rapport financier de saison sort de Compta → Export : recettes, dépenses avec justificatifs, résultat. Une association n'a pas de déclaration URSSAF : ce sont ses intervenantes qui déclarent ce qu'elle leur règle.",
   },
   {
     id: 'installer',

@@ -165,12 +165,14 @@ test.describe('getRegle — config effective d\'un cas (défauts + merge du stoc
 });
 
 test.describe('defaultRegles / shouldAutoApply / getChoixLabel', () => {
-  test('defaultRegles → les 7 cas exactement, chacun avec messageCustom null', () => {
+  test('defaultRegles → les 8 cas exactement (le 8e, sans_adhesion, réservé aux associations), chacun avec messageCustom null', () => {
     const d = defaultRegles();
     expect(Object.keys(d).sort()).toEqual([
       'annulation_hors_delai', 'carnet_expire_avant_cours', 'cours_annule_prof',
-      'eleve_sans_carnet', 'liste_attente', 'no_show', 'workshop_vs_cours',
+      'eleve_sans_carnet', 'liste_attente', 'no_show', 'sans_adhesion', 'workshop_vs_cours',
     ]);
+    // v113 : un seul cas est réservé à un type de structure, et c'est celui-là.
+    expect(CASES.filter(c => c.uniquement).map(c => [c.id, c.uniquement])).toEqual([['sans_adhesion', 'association']]);
     expect(Object.keys(d).length).toBe(CASES.length);
     for (const id of Object.keys(d)) expect(d[id].messageCustom).toBe(null);
   });

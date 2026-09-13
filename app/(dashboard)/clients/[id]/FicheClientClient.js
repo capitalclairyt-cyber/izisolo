@@ -28,6 +28,7 @@ import { createClient } from '@/lib/supabase';
 import { calcProRata as calcProRataLib } from '@/lib/prorata';
 import { useToast } from '@/components/ui/ToastProvider';
 import PaiementStep from '@/components/paiements/PaiementStep';
+import AdhesionFiche from '@/components/association/AdhesionFiche';
 import { AdresseDisplay } from '@/components/forms/AdresseInput';
 import { useStudioId } from '@/components/studio/StudioProvider';
 
@@ -102,7 +103,8 @@ function AssignerOffreModal({ client, onClose, onSuccess, offreInitialeId = null
         .eq('profile_id', studioId)
         .eq('actif', true)
         .order('ordre');
-      setOffres(data || []);
+      // v113 : une adhésion ne se vend jamais par ce tunnel (bloc Adhésion).
+      setOffres((data || []).filter(o => o.type !== 'adhesion'));
       // Ouvert depuis une demande d'offre (v97) : l'élève a déjà choisi, le
       // tunnel s'ouvre DIRECTEMENT sur le règlement — même principe que la
       // file de /offres (clientInitial de VenteOffreModal).
@@ -370,7 +372,7 @@ function AssignerOffreModal({ client, onClose, onSuccess, offreInitialeId = null
 // ═══════════════════════════════════════════════════════════════════════════
 // Composant principal
 // ═══════════════════════════════════════════════════════════════════════════
-export default function FicheClientClient({ client, profile, abonnements: abosInit, presences, paiements: paiementsInit = [], lieux, statutCompte = null, facturationActive = false, facturesParPaiement = {}, demandesOffre = [] }) {
+export default function FicheClientClient({ client, profile, abonnements: abosInit, presences, paiements: paiementsInit = [], lieux, statutCompte = null, facturationActive = false, facturesParPaiement = {}, demandesOffre = [], adhesions = null }) {
   // Le studio affiché (v101) : `user.id` ne suffit plus, une prof peut être
   // invitée dans le studio d'une autre. Résolu une seule fois par le layout.
   const studioId = useStudioId();
@@ -1234,6 +1236,9 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
           </button>
         </div>
       )}
+
+      {/* Adhésion (association, v113) : la saison en cours, en prendre une, le reçu. */}
+      {adhesions !== null && <AdhesionFiche client={client} adhesionsInit={adhesions} />}
 
       {/* Demande d'offre en attente (v97, 2026-08-23) : avant, la demande ne
           vivait QUE dans la file de /offres — la prof qui ouvrait la fiche de

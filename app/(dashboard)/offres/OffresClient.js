@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
-  Plus, Package, Ticket, CalendarCheck, Zap, Trash2,
+  Plus, Package, Ticket, CalendarCheck, Zap, Trash2, BadgeCheck,
   ToggleLeft, ToggleRight, UserPlus, X, Crown, ArrowRight, Pencil,
 } from 'lucide-react';
 import AideContextuelle from '@/components/AideContextuelle';
@@ -20,7 +20,7 @@ import EmptyState from '@/components/ui/EmptyState';
 import VenteOffreModal from '@/components/paiements/VenteOffreModal';
 import { useStudioId } from '@/components/studio/StudioProvider';
 
-const TYPE_ICONS = { carnet: Ticket, abonnement: CalendarCheck, cours_unique: Zap };
+const TYPE_ICONS = { carnet: Ticket, abonnement: CalendarCheck, cours_unique: Zap, adhesion: BadgeCheck };
 
 // Le tunnel de vente (ex-AssignerClientModal) vit désormais dans
 // components/paiements/VenteOffreModal.js — partagé avec Carnets & abos

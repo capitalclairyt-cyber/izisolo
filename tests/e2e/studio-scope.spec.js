@@ -137,7 +137,8 @@ test.describe('la matrice — SQL et JS doivent parler la même langue', () => {
     // 'parametres'). Renommer une de ces clés ici sans migration ferait dire
     // deux choses différentes à l'écran et à la base — et la base gagnerait.
     const dansRls = PERMISSIONS.filter(p => p.rls).map(p => p.cle).sort();
-    expect(dansRls).toEqual(['argent_voir', 'messagerie', 'parametres']);
+    // v113 ajoute `documents` (documents_structure, assemblees).
+    expect(dansRls).toEqual(['argent_voir', 'documents', 'messagerie', 'parametres']);
   });
 
   test('chaque permission a une clé, un libellé et une aide en français', () => {

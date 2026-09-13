@@ -148,7 +148,9 @@ try {
     const cadenas = new Set(await page.locator('nav.sidebar-nav a:has([data-testid="sidebar-lock"])').evaluateAll(els => els.map(e => e.getAttribute('href')))).size;
     // Lot 1 Assos & Studios (2026-09-13) : Équipe est toujours dans la nav de
     // la propriétaire, avec un cadenas hors plan d'équipe (Association / Studio).
-    c(complet ? 'un seul cadenas dans la navigation : Équipe' : 'cinq cadenas : Messagerie, Sondages, Essais, Liste d\'attente, Équipe', complet ? cadenas === 1 : cadenas === 5, String(cadenas));
+    // v112 : « Compta » (dépenses, relevés, prestations) est un palier
+    // d'équipe, cadenas en Essentiel COMME en Complet.
+    c(complet ? 'deux cadenas dans la navigation : Équipe, Compta' : 'six cadenas : Messagerie, Sondages, Essais, Liste d\'attente, Équipe, Compta', complet ? cadenas === 2 : cadenas === 6, String(cadenas));
     for (const [href, cap] of [['/messagerie', 'messagerie'], ['/sondages', 'sondages'], ['/essais', 'cours_essai'], ['/liste-attente', 'liste_attente']]) {
       await aller(page, `${BASE}${href}`);
       await page.waitForSelector('main', { timeout: 90000 });

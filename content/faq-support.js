@@ -350,4 +350,23 @@ export const FAQ_SUPPORT = [
     a: "Page Compta → Dépenses → « Ajouter une dépense » : quoi, quand, combien TTC, une catégorie, un justificatif (PDF ou photo du ticket), et « à régler » ou « réglée ». Le HT et la TVA sont facultatifs : une association non assujettie n'en a pas. Les tuiles du haut totalisent l'exercice. Compta → Export sort ensuite un seul fichier CSV pour ton trésorier ou ton comptable : les recettes encaissées (à la date d'encaissement), les dépenses avec leurs justificatifs, le récapitulatif par catégorie et le résultat. Pour une association, l'exercice suit la saison, de septembre à août : c'est exactement le rapport financier de ton assemblée générale.",
     lien: { href: '/aide#compta', label: 'Voir le pas-à-pas' },
   },
+  {
+    // L'adhésion d'une association (v113, lot 3 Associations & Studios,
+    // 2026-09-13). AJOUTÉE EN FIN.
+    q: "Comment enregistrer les adhésions de mon association, et exiger l'adhésion pour réserver ?",
+    a: "Crée d'abord une offre de type « Adhésion » (Offres → Créer ; une offre par tarif : plein, réduit, famille). Puis, sur la fiche de chaque personne, « Enregistrer une adhésion » : la saison (de septembre à août), payée ou à régler, et le mode de règlement. Le reçu de cotisation se télécharge depuis la fiche. Une adhésion ne donne droit à aucune séance : elle ne se décompte jamais au pointage, et elle ne passe pas par le tunnel des carnets. Pour l'exiger, Paramètres → Cas particuliers → « Réservation sans adhésion à jour » → « Bloquer » : la personne reçoit un message clair et prend son adhésion auprès de toi. Par défaut, la réservation est acceptée et la ligne porte un repère « sans adhésion » au pointage, pour régulariser sur place. Page Élèves, « Adhérentes à jour » donne la liste, celle de ton quorum.",
+    lien: { href: '/aide#association', label: 'Voir le pas-à-pas' },
+  },
+  {
+    // L'assemblée générale (v113). AJOUTÉE EN FIN.
+    q: "Comment convoquer mon assemblée générale et tenir la feuille d'émargement ?",
+    a: "Page Association → Assemblées → « Nouvelle assemblée » : type (ordinaire ou extraordinaire), date, heure, lieu, ordre du jour. « Convoquer » envoie la convocation par la messagerie (un message dans l'espace de chaque adhérente et un email) à toutes celles dont l'adhésion est à jour au jour de l'AG, et te rappelle le délai de convocation de tes statuts sans l'imposer. « Feuille d'émargement » ouvre la liste imprimable : nom, signature, pouvoir donné à. Après l'AG, note les présentes et les pouvoirs : le quorum s'affiche en pourcentage des adhérentes à jour, à comparer à ce que tes statuts exigent. Dépose ensuite le PV signé comme document rattaché à l'assemblée. Le vote électronique n'existe pas : il se fait en séance.",
+    lien: { href: '/aide#association', label: 'Voir le pas-à-pas' },
+  },
+  {
+    // Les documents d'une association et le bureau (v113). AJOUTÉE EN FIN.
+    q: "Où ranger les statuts, le récépissé et le règlement intérieur, et qui peut les voir ?",
+    a: "Page Association → Documents : dépose un PDF ou une photo, choisis le type (statuts, récépissé de préfecture, règlement intérieur, assurance, agrément, PV d'assemblée, contrat, autre) et sa date. Pour les documents à version, le dernier déposé devient la version courante et les précédents restent dans l'historique. Toute l'équipe peut les lire ; les déposer ou les retirer demande le droit « Gérer les documents », que la fonction secrétaire propose d'office (Équipe → inviter → sa fonction). Les documents ne sont jamais publics ni visibles des élèves. Pas de signature électronique : un document signé se dépose scanné.",
+    lien: { href: '/aide#association', label: 'Voir le pas-à-pas' },
+  },
 ];

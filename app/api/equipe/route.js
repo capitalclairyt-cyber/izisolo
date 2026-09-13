@@ -4,7 +4,8 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { sendEmail } from '@/lib/email';
 import { reportError } from '@/lib/report';
 import { sanitizeRole, sanitizePermissions, permissionsParDefaut, CLES_PERMISSIONS, sanitizePortee } from '@/lib/studio-membre';
-import { emailInvitation, verifierEmailInvitation, normaliserEmail, membrePublic, poserPortee, poserIdentite } from '@/lib/equipe';
+import { emailInvitation, verifierEmailInvitation, normaliserEmail, membrePublic, poserPortee, poserIdentite, poserFonction } from '@/lib/equipe';
+import { CODES_FONCTION, presetPourFonction } from '@/lib/vie-asso';
 
 /**
  * /api/equipe — l'équipe d'un studio (lot 3 du chantier multi-prof).
@@ -26,6 +27,8 @@ const inviterSchema = z.object({
   role: z.enum(['admin', 'prof']).optional(),
   permissions: z.record(z.string(), z.boolean()).optional(),
   portee_pointage: z.enum(['tous', 'miens']).optional(),
+  // v113 : la fonction du bureau d'une association (étiquette + préréglage).
+  fonction: z.enum(CODES_FONCTION).optional(),
 });
 
 export const GET = withRoute({ auth: 'user', plan: 'equipe', perm: 'equipe_gerer' }, async ({ auth }) => {
@@ -60,13 +63,16 @@ export const POST = withRoute(
     }
     const email = verdict.email;
 
-    const role = sanitizeRole(body.role);
+    // La fonction du bureau (v113) PROPOSE un rôle et une matrice ; un rôle ou
+    // des permissions envoyés explicitement priment (elle ajuste après coup).
+    const preset = body.fonction ? presetPourFonction(body.fonction) : null;
+    const role = body.role !== undefined ? sanitizeRole(body.role) : (preset ? preset.role : sanitizeRole(undefined));
     // Permissions : celles envoyées si elles sont fournies, sinon le préréglage
-    // du rôle. Dans les deux cas passées au tamis — une clé inventée ne doit
-    // jamais atterrir en base, elle y deviendrait indéchiffrable.
+    // de la fonction, sinon celui du rôle. Dans tous les cas passées au tamis :
+    // une clé inventée ne doit jamais atterrir en base.
     const permissions = body.permissions
       ? sanitizePermissions(body.permissions)
-      : permissionsParDefaut(role);
+      : (preset ? preset.permissions : permissionsParDefaut(role));
 
     // Déjà dans l'équipe ? On le dit, plutôt que de heurter l'index unique et
     // de renvoyer un 500 illisible.
@@ -171,6 +177,8 @@ export const POST = withRoute(
     await poserPortee(supabase, membre.id, sanitizePortee(body.portee_pointage));
     // Prénom et nom À PART (v111) : le planning et le portail la nomment.
     await poserIdentite(supabase, membre.id, { prenom: body.prenom, nom: body.nom });
+    // La fonction du bureau À PART (v113), même patron.
+    if (body.fonction) await poserFonction(supabase, membre.id, body.fonction);
     const { data: relu } = await supabase.from('studio_membres').select('*').eq('id', membre.id).maybeSingle();
 
     const { subject, html } = emailInvitation({

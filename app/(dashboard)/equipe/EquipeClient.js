@@ -8,6 +8,7 @@ import LienIntervenante from '@/components/equipe/LienIntervenante';
 import Ailleurs from '@/components/equipe/Ailleurs';
 import Remuneration from '@/components/equipe/Remuneration';
 import { labelIntervenante } from '@/lib/intervenante';
+import { FONCTIONS, CODES_FONCTION, labelFonction, presetPourFonction } from '@/lib/vie-asso';
 import {
   PERMISSIONS, PRESETS, permissionsParDefaut,
   labelRole, labelStatut, resumeDroits, labelPortee,
@@ -22,16 +23,25 @@ import {
  * sont tenues par la base — pour que personne ne croie qu'un bouton caché
  * suffirait.
  */
-export default function EquipeClient({ membresInit, planOk, indisponible, studioNom }) {
+export default function EquipeClient({ membresInit, planOk, indisponible, studioNom, typeStructure = 'solo' }) {
+  const estAsso = typeStructure === 'association';
   const { toast } = useToast();
   const [membres, setMembres] = useState(membresInit || []);
   const [ouvert, setOuvert] = useState(false);
   const [envoi, setEnvoi] = useState(false);
   const [form, setForm] = useState({
     email: '', prenom: '', nom: '', role: 'prof', permissions: permissionsParDefaut('prof'),
-    portee_pointage: 'tous',
+    portee_pointage: 'tous', fonction: '',
   });
   const [edite, setEdite] = useState(null); // id du membre déplié
+
+  // v113 : une fonction du bureau PROPOSE un rôle et une matrice ; la prof
+  // ajuste ensuite case par case.
+  const choisirFonction = (fonction) => {
+    if (!fonction) { majForm({ fonction: '' }); return; }
+    const p = presetPourFonction(fonction);
+    majForm({ fonction, role: p.role, permissions: p.permissions });
+  };
 
   const majForm = (patch) => setForm(f => ({ ...f, ...patch }));
 
@@ -55,12 +65,13 @@ export default function EquipeClient({ membresInit, planOk, indisponible, studio
           role: form.role,
           permissions: form.permissions,
           portee_pointage: form.portee_pointage,
+          fonction: form.fonction || undefined,
         }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) { toast.error(data.error || "L'invitation n'est pas partie."); return; }
       setMembres(prev => [...prev.filter(m => m.id !== data.membre.id), data.membre]);
-      setForm({ email: '', prenom: '', role: 'prof', permissions: permissionsParDefaut('prof'), portee_pointage: 'tous' });
+      setForm({ email: '', prenom: '', role: 'prof', permissions: permissionsParDefaut('prof'), portee_pointage: 'tous', fonction: '' });
       setOuvert(false);
       toast.success(data.compteExistant
         ? `${data.membre.email} a déjà un compte : le studio apparaîtra à sa prochaine connexion.`
@@ -162,6 +173,17 @@ export default function EquipeClient({ membresInit, planOk, indisponible, studio
                 Pas de compte, pas de problème : une fois invitée, tu peux lui créer un <strong>lien permanent</strong> qui ouvre ses séances et leur pointage, sans mot de passe.
               </p>
 
+              {estAsso && (
+                <label className="eq-portee" data-testid="eq-fonction">
+                  <span>Sa fonction dans l&apos;association</span>
+                  <select value={form.fonction} onChange={e => choisirFonction(e.target.value)}>
+                    <option value="">Aucune (prof ou bénévole sans fonction)</option>
+                    {CODES_FONCTION.map(c => <option key={c} value={c}>{FONCTIONS[c].label}</option>)}
+                  </select>
+                  <em>{form.fonction ? FONCTIONS[form.fonction].aide : 'Une fonction propose des droits ; tu ajustes ensuite case par case. Ce n\'est qu\'une étiquette : les droits appliqués sont ceux cochés.'}</em>
+                </label>
+              )}
+
               <div className="eq-roles">
                 <button type="button" className={`eq-role ${form.role === 'prof' ? 'actif' : ''}`}
                         onClick={() => choisirRole('prof')}>
@@ -223,6 +245,7 @@ export default function EquipeClient({ membresInit, planOk, indisponible, studio
                     <strong>{labelIntervenante(m)}</strong>
                     {(m.prenom || m.nom) && <span className="eq-email">{m.email}</span>}
                     <span className={`eq-badge role-${m.role}`}>{labelRole(m.role)}</span>
+                    {m.fonction && <span className="eq-badge fonction" data-testid="eq-badge-fonction">{labelFonction(m.fonction)}</span>}
                     <span className={`eq-badge statut-${m.statut}`}>{labelStatut(m.statut)}</span>
                     {m.statut === 'invite' && !m.liee && <span className="eq-attente">jamais venue</span>}
                   </div>
@@ -323,6 +346,7 @@ export default function EquipeClient({ membresInit, planOk, indisponible, studio
         .eq-badge { font-size: .68rem; padding: 2px 8px; border-radius: 999px;
           background: #f5f5f4; border: 1px solid rgba(0,0,0,.08); color: #57534e; }
         .eq-badge.role-proprietaire { background: #fff7ed; border-color: #fed7aa; color: #c2410c; }
+        .eq-badge.fonction { background: #eef2ff; border-color: #c7d2fe; color: #3730a3; }
         .eq-badge.statut-actif { background: #ecfdf5; border-color: #a7f3d0; color: #047857; }
         .eq-attente { font-size: .72rem; color: var(--text-soft, #7a6f6a); }
         .eq-droits { font-size: .8rem; color: var(--text-soft, #7a6f6a); margin-top: 3px; }

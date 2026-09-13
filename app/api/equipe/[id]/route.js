@@ -1,7 +1,8 @@
 import { z } from 'zod';
 import { withRoute } from '@/lib/api-route';
 import { sanitizeRole, sanitizePermissions, sanitizePortee } from '@/lib/studio-membre';
-import { peutModifierMembre, membrePublic, poserPortee } from '@/lib/equipe';
+import { peutModifierMembre, membrePublic, poserPortee, poserFonction } from '@/lib/equipe';
+import { CODES_FONCTION } from '@/lib/vie-asso';
 
 /**
  * /api/equipe/[id] — modifier ou retirer un membre (lot 3).
@@ -19,6 +20,7 @@ const patchSchema = z.object({
   role: z.enum(['admin', 'prof']).optional(),
   permissions: z.record(z.string(), z.boolean()).optional(),
   portee_pointage: z.enum(['tous', 'miens']).optional(),
+  fonction: z.enum(CODES_FONCTION).nullable().optional(),
 });
 
 async function charger(supabase, studioId, id) {
@@ -50,9 +52,13 @@ export const PATCH = withRoute(
     if (body.portee_pointage !== undefined) {
       await poserPortee(supabase, cible.id, sanitizePortee(body.portee_pointage));
     }
+    // La fonction du bureau à part (v113), même patron.
+    if (body.fonction !== undefined) {
+      await poserFonction(supabase, cible.id, body.fonction);
+    }
 
     if (Object.keys(patch).length === 0) {
-      if (body.portee_pointage !== undefined) {
+      if (body.portee_pointage !== undefined || body.fonction !== undefined) {
         const apres = await charger(supabase, studioId, cible.id);
         return Response.json({ membre: membrePublic(apres || cible) });
       }

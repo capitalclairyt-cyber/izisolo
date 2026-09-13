@@ -1,6 +1,7 @@
 import { createServerClient } from '@/lib/supabase-server';
 import { resoudreStudioActif } from '@/lib/studio-actif';
 import ClientsClient from './ClientsClient';
+import { adherentesAJourLe } from '@/lib/vie-asso-service';
 
 // Boucle .range() (AUDIT-PERF cat 2.8) : le select nu plafonne à 1000 fiches
 // EN SILENCE — au-delà, des élèves « disparaissaient » de la liste ET de
@@ -33,7 +34,7 @@ export default async function ClientsPage() {
     { data: statuts },
     { data: segments, error: segmentsError },
   ] = await Promise.all([
-    supabase.from('profiles').select('metier, vocabulaire, niveaux, sources, studio_slug, studio_nom, prenom').eq('id', studioId).single(),
+    supabase.from('profiles').select('metier, vocabulaire, niveaux, sources, studio_slug, studio_nom, prenom, type_structure').eq('id', studioId).single(),
     fetchTousLesClients(supabase, user.id),
     // Statut de compte (RPC v67) — dégrade proprement si la migration n'est pas
     // appliquée (rpc renvoie une erreur → statuts null → aucun badge « actif »).
@@ -66,5 +67,14 @@ export default async function ClientsPage() {
     }
   }
 
-  return <ClientsClient clients={clients || []} profile={profile} statutMap={statutMap} presenceInfo={presenceInfo} />;
+  // Association (v113) : les adhérentes à jour AUJOURD'HUI, pour le filtre
+  // (la liste qui sert le quorum). Null hors association : pas de filtre.
+  let adherentesAJour = null;
+  if (profile?.type_structure === 'association') {
+    const aujourdhui = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Paris' });
+    const { map, migrationManquante } = await adherentesAJourLe(supabase, studioId, aujourdhui);
+    if (!migrationManquante) adherentesAJour = [...map.entries()].map(([id, a]) => ({ id, saison: a.saison }));
+  }
+
+  return <ClientsClient clients={clients || []} profile={profile} statutMap={statutMap} presenceInfo={presenceInfo} adherentesAJour={adherentesAJour} />;
 }

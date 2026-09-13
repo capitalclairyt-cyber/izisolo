@@ -9,6 +9,7 @@ import { sendNotifElevePourRegle } from '@/lib/notif-eleve-regle';
 import { sendPushToUser } from '@/lib/push-server';
 import { wantsNotif } from '@/lib/notif-prefs';
 import { studioCan } from '@/lib/plan-guard';
+import { adherentesAJourLe } from '@/lib/vie-asso-service';
 import { infosPratiquesBlock } from '@/lib/email-helpers';
 import { sendEmail } from '@/lib/email';
 import { reportError } from '@/lib/report';
@@ -53,7 +54,7 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
   // Charge aussi regles_metier pour appliquer la règle "élève sans carnet".
   const { data: profile } = await supabaseAdmin
     .from('profiles')
-    .select('id, studio_nom, regles_metier, regles_annulation, adresse, code_postal, ville, telephone, email_contact, notif_prefs, plan, trial_started_at, created_at, stripe_subscription_status, stripe_current_period_end')
+    .select('id, studio_nom, regles_metier, regles_annulation, adresse, code_postal, ville, telephone, email_contact, notif_prefs, plan, trial_started_at, created_at, stripe_subscription_status, stripe_current_period_end, type_structure')
     .eq('studio_slug', studioSlug)
     .single();
 
@@ -300,6 +301,22 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
 
   const regleSansCarnet = getRegle({ regles_metier: profile.regles_metier }, 'eleve_sans_carnet');
   const regleExpireAvant = getRegle({ regles_metier: profile.regles_metier }, 'carnet_expire_avant_cours');
+
+  // ─── Association : « adhésion requise pour réserver » (v113) ─────────────
+  // Une règle de la structure, jamais un refus de POINTER : au pointage, la
+  // ligne porte seulement un repère. Lecture DÉFENSIVE : sans v113, rien.
+  if (profile.type_structure === 'association') {
+    const regleAdhesion = getRegle({ regles_metier: profile.regles_metier }, 'sans_adhesion');
+    if (regleAdhesion.mode === 'auto' && regleAdhesion.choix === 'bloquer') {
+      const { map: aJour, migrationManquante } = await adherentesAJourLe(supabaseAdmin, profile.id, cours.date);
+      if (!migrationManquante && !aJour.has(clientId)) {
+        return Response.json({
+          error: `${profile.studio_nom || "L'association"} demande une adhésion à jour pour réserver ses cours. Prends ton adhésion auprès de l'association, et reviens réserver.`,
+          code: 'ADHESION_REQUISE',
+        }, { status: 403 });
+      }
+    }
+  }
 
   // ─── Limite de fréquence (seances_par_semaine) ───────────────────────────
   // Si l'élève a un abonnement valide avec un cap de séances/semaine, on

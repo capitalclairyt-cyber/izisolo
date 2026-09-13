@@ -394,8 +394,10 @@ export const GET = withRoute({ auth: 'cron' }, async () => {
     // jamais bloquante pour le reste du cron.
     const { data: profs, error: profsErr } = await supabaseAdmin
       .from('profiles')
-      .select('id, prenom, email_contact, urssaf_config')
-      .not('urssaf_config', 'is', null);
+      .select('id, prenom, email_contact, urssaf_config, type_structure')
+      .not('urssaf_config', 'is', null)
+      // v113 : une association ne déclare pas à l'URSSAF.
+      .neq('type_structure', 'association');
     if (profsErr) throw profsErr;
 
     for (const prof of (profs || [])) {

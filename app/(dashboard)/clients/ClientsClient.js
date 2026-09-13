@@ -31,9 +31,14 @@ const FILTRES_PRIMAIRES = [
   { key: 'ponctuels',    label: 'Ponctuel·les'      },
   { key: 'jamais_venu',  label: 'Jamais venu·e'     },
   { key: 'inactifs_30j', label: 'Pas de nouvelles >30j' },
+  // Association (v113) : la liste des adhérentes à jour = celle du quorum.
+  { key: 'adherentes',    label: 'Adhérentes à jour', asso: true },
+  { key: 'sans_adhesion', label: 'Sans adhésion',     asso: true },
 ];
 
-export default function ClientsClient({ clients: clientsInit, profile, statutMap = {}, presenceInfo = {} }) {
+export default function ClientsClient({ clients: clientsInit, profile, statutMap = {}, presenceInfo = {}, adherentesAJour = null }) {
+  // v113 (association) : id → saison de l'adhésion à jour ; null hors asso.
+  const adherentes = adherentesAJour ? new Map(adherentesAJour.map(a => [a.id, a.saison])) : null;
   const vocab = getVocabulaire(profile?.metier || 'yoga', profile?.vocabulaire);
   const router = useRouter();
   const [search, setSearch] = useState('');
@@ -142,6 +147,14 @@ export default function ClientsClient({ clients: clientsInit, profile, statutMap
 
   // Filtres : 1 principal visible toujours + un panel "avancé" repliable
   const [filtrePrimaire, setFiltrePrimaire] = useState('tous');
+  // v113 : /clients?filtre=adherentes (depuis la page Association) ouvre le
+  // filtre directement. Lu au montage, jamais en rendu serveur.
+  useEffect(() => {
+    try {
+      const f = new URLSearchParams(window.location.search).get('filtre');
+      if (f && FILTRES_PRIMAIRES.some(x => x.key === f) && (!['adherentes', 'sans_adhesion'].includes(f) || adherentes)) setFiltrePrimaire(f);
+    } catch { /* rien */ }
+  }, []);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [filtreStatut, setFiltreStatut] = useState('tous');
   const [filtreType, setFiltreType]     = useState('tous'); // tous | particulier | pro
@@ -185,6 +198,10 @@ export default function ClientsClient({ clients: clientsInit, profile, statutMap
     const now = Date.now();
     if (filtrePrimaire === 'carnet_actif') {
       list = list.filter(hasActiveAbo);
+    } else if (filtrePrimaire === 'adherentes' && adherentes) {
+      list = list.filter(c => adherentes.has(c.id));
+    } else if (filtrePrimaire === 'sans_adhesion' && adherentes) {
+      list = list.filter(c => !adherentes.has(c.id) && c.statut !== 'archive');
     } else if (filtrePrimaire === 'sans_carnet') {
       list = list.filter(c => !hasActiveAbo(c));
     } else if (filtrePrimaire === 'ponctuels') {
@@ -394,7 +411,7 @@ export default function ClientsClient({ clients: clientsInit, profile, statutMap
           presenceInfo null (RPC v72 absente) → les 2 segments basés sur les
           présences sont masqués plutôt que de mentir. */}
       <div className="filters animate-slide-up">
-        {FILTRES_PRIMAIRES.filter(f => presenceInfo || !['ponctuels', 'jamais_venu'].includes(f.key)).map(f => (
+        {FILTRES_PRIMAIRES.filter(f => (presenceInfo || !['ponctuels', 'jamais_venu'].includes(f.key)) && (!f.asso || adherentes)).map(f => (
           <button
             key={f.key}
             className={`filter-btn ${filtrePrimaire === f.key ? 'active' : ''}`}

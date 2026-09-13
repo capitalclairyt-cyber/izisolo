@@ -91,6 +91,7 @@ export default function VenteOffreModal({ offre: offreInitiale = null, clientIni
           .eq('profile_id', studioId)
           .eq('actif', true)
           .neq('type', 'cours_unique') // legacy, plus jamais vendu
+          .neq('type', 'adhesion')     // v113 : se vend depuis la fiche (bloc Adhésion)
           .order('prix'),
       ]);
       setClients(cls || []);

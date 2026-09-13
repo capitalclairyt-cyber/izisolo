@@ -7,7 +7,7 @@ import {
   Home, CalendarDays, Users, Settings,
   BookOpen, BookMarked, ChevronRight, Sparkles,
   Package, BarChart3, LogOut, Menu, X, GraduationCap, LifeBuoy, ClipboardList,
-  MessageSquare, Inbox, Clock, UserCog, Lock, Wallet,
+  MessageSquare, Inbox, Clock, UserCog, Lock, Wallet, Landmark,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase';
 import NotificationBell from '@/components/notifications/NotificationBell';
@@ -35,6 +35,9 @@ const NAV_SECTIONS = [
       // relevés d'intervenantes, prestations, export d'exercice). Cadenas
       // pour une prof seule : la page dit ce que c'est et qui l'ouvre.
       { href: '/compta',         label: 'Compta',         icon: Wallet,    perm: 'argent_voir', cap: 'depenses' },
+      // v113 : la vie de l'association (bureau, adhésions, documents, AG).
+      // Rendue SEULEMENT à une association ; cadenas si son plan a lâché.
+      { href: '/association',    label: 'Association',    icon: Landmark,  perm: 'eleves_voir', cap: 'vie_asso', structure: 'association' },
       { href: '/abonnements',    label: 'Carnets & abos', icon: BookOpen,  perm: 'eleves_voir' },
     ],
   },
@@ -52,7 +55,7 @@ const NAV_SECTIONS = [
   },
 ];
 
-export default function Sidebar({ studioNom = 'Mon Studio', vocabulaire = {}, illustration = 'lotus', nbCasATraiter = 0, nbEssais = 0, peutEquipe = false, caps = {} }) {
+export default function Sidebar({ studioNom = 'Mon Studio', vocabulaire = {}, illustration = 'lotus', nbCasATraiter = 0, nbEssais = 0, peutEquipe = false, caps = {}, typeStructure = 'solo' }) {
   // Ce que CETTE personne a le droit de faire dans CE studio (lot 3). Pour une
   // prof seule, `membre` est propriétaire : `peut()` renvoie true partout et la
   // nav est exactement celle d'avant. Une porte qui ne mène nulle part est un
@@ -98,6 +101,7 @@ export default function Sidebar({ studioNom = 'Mon Studio', vocabulaire = {}, il
     ...section,
     items: section.items
       .filter(item => !item.perm || peut(membre, item.perm))
+      .filter(item => !item.structure || item.structure === typeStructure)
       .map(item => {
         if (item.href === '/clients' && vocabulaire.Clients) {
           return { ...item, label: vocabulaire.Clients };

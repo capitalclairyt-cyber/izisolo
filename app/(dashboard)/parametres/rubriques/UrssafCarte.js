@@ -13,6 +13,7 @@ import CarteReglage, { EnSavoirPlus } from '../CarteReglage';
 export default function UrssafCarte() {
   const { profile, setUrssaf } = useParametres();
   if (!aDeclarationAutomatisable(profile?.pays)) return null;
+  if (profile?.type_structure === 'association') return null; // v113
   const u = configUrssafAffichee(profile.urssaf_config);
   const configuree = !!sanitizeConfigUrssaf(profile.urssaf_config);
 

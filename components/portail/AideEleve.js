@@ -18,7 +18,7 @@ import { CircleHelp, ChevronDown, ChevronUp } from 'lucide-react';
  * @param {string} studioNom   nom du studio (les réponses parlent de « ton studio »)
  * @param {string} studioSlug  pour les liens internes (messages)
  */
-export default function AideEleve({ studioNom = 'ton studio', studioSlug, sansCatalogue = false }) {
+export default function AideEleve({ studioNom = 'ton studio', studioSlug, sansCatalogue = false, aDesAdhesions = false }) {
   const [ouverte, setOuverte] = useState(null);
 
   const QUESTIONS = [
@@ -57,6 +57,11 @@ export default function AideEleve({ studioNom = 'ton studio', studioSlug, sansCa
       q: 'Comment obtenir un reçu ou une facture ?',
       r: <>Dans <strong>« Mes paiements »</strong>, chaque paiement réglé a son bouton de téléchargement. Si {studioNom} a activé la facturation, tu obtiens une vraie <strong>facture numérotée</strong> (acceptée par les CSE, employeurs et mutuelles), et « Facture du mois » regroupe plusieurs paiements en un seul document. Il se peut aussi que {studioNom} te l'envoie <strong>par email, en pièce jointe</strong>, dès qu'un paiement est enregistré : c'est exactement le même document, avec le même numéro.</>,
     },
+    // v113 : une association affiche « Mon adhésion » dans l'espace.
+    ...(aDesAdhesions ? [{
+      q: 'C\'est quoi, « Mon adhésion » ?',
+      r: <>{studioNom} est une association : l'adhésion est ta cotisation de membre pour la <strong>saison</strong> (de septembre à août). Le bloc <strong>« Mon adhésion »</strong> te dit si tu es à jour. Elle ne donne droit à aucune séance : tes cours passent par tes carnets ou abonnements, comme d'habitude. Selon les règles de l'association, une adhésion à jour peut être demandée pour réserver : dans ce cas, prends-la auprès de l'association (elle te remet un reçu de cotisation).</>,
+    }] : []),
     {
       q: 'Comment installer l\'app sur mon téléphone ?',
       r: <>Ton espace s'installe comme une vraie app, sans App Store. Android + Chrome : menu <strong>⋮</strong> → « Installer l'application ». iPhone : bouton <strong>Partager</strong> → « Sur l'écran d'accueil ». Ensuite, ouvre toujours depuis l'icône : tu restes connecté·e, sans redemander de lien par email.</>,

@@ -19,7 +19,7 @@ export default async function FicheClientPage({ params }) {
     { data: paiements },
   ] = await Promise.all([
     supabase.from('clients').select('*').eq('id', id).eq('profile_id', studioId).single(),
-    supabase.from('profiles').select('metier, vocabulaire, client_fields_config, studio_slug, studio_nom, prenom').eq('id', studioId).single(),
+    supabase.from('profiles').select('metier, vocabulaire, client_fields_config, studio_slug, studio_nom, prenom, type_structure').eq('id', studioId).single(),
     supabase.from('abonnements').select('*, offre:offres(nom, type)').eq('client_id', id).eq('profile_id', studioId).order('created_at', { ascending: false }),
     supabase.from('presences').select('*, cours_id, cours(nom, date, heure, recurrence_parent_id, tarif_unitaire)').eq('client_id', id).eq('profile_id', studioId).order('created_at', { ascending: false }).limit(50),
     supabase.from('paiements').select('id, intitule, type, montant, statut, mode, date, date_encaissement, notes, numero_cheque, abonnement_id, echeancier_id, offre_id, abonnement:abonnements(id, offre:offres(nom))').eq('client_id', id).eq('profile_id', studioId).order('date', { ascending: false }),
@@ -76,6 +76,19 @@ export default async function FicheClientPage({ params }) {
     demandesOffre = data || [];
   } catch { /* pré-v97 : pas de bandeau, jamais bloquant */ }
 
+  // Association (v113) : ses adhésions. Null hors association (pas de bloc),
+  // liste (vide ou non) sinon ; sans la migration, null aussi.
+  let adhesions = null;
+  if (profile?.type_structure === 'association') {
+    const { data, error } = await supabase
+      .from('adhesions')
+      .select('id, offre_nom, saison, date_debut, date_fin, montant, paiement_id, statut, created_at')
+      .eq('profile_id', studioId)
+      .eq('client_id', id)
+      .order('date_debut', { ascending: false });
+    if (!error) adhesions = data || [];
+  }
+
   // Fetch lieux linked to this client pro
   let lieux = [];
   if (client.type_client && client.type_client !== 'particulier') {
@@ -99,6 +112,7 @@ export default async function FicheClientPage({ params }) {
       facturationActive={facturationActive}
       facturesParPaiement={facturesParPaiement}
       demandesOffre={demandesOffre}
+      adhesions={adhesions}
     />
   );
 }

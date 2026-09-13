@@ -86,7 +86,7 @@ function inPeriode(dateStr, periode) {
   return true;
 }
 
-export default function RevenusClient({ paiements: initialPaiements, seancesDues = [], annulationsDues = [], pays = 'FR', aDesPrestations = false }) {
+export default function RevenusClient({ paiements: initialPaiements, seancesDues = [], annulationsDues = [], pays = 'FR', aDesPrestations = false, urssafVisible = true }) {
   // Le studio affiché (v101) : `user.id` ne suffit plus, une prof peut être
   // invitée dans le studio d'une autre. Résolu une seule fois par le layout.
   const studioId = useStudioId();
@@ -456,7 +456,7 @@ export default function RevenusClient({ paiements: initialPaiements, seancesDues
           structures où je donne cours, à facturer d'ici. */}
       {aDesPrestations && <MesPrestations />}
 
-      {aDeclarationAutomatisable(pays) && <DeclarationUrssaf />}
+      {aDeclarationAutomatisable(pays) && urssafVisible && <DeclarationUrssaf />}
 
       {/* Récap par mode */}
       {stats.countPaid > 0 && (

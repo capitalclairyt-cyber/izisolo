@@ -51,6 +51,7 @@ export default async function EquipePage() {
       planOk={planOk}
       indisponible={indisponible}
       studioNom={profile?.studio_nom || 'ton studio'}
+      typeStructure={profile?.type_structure || 'solo'}
     />
   );
 }

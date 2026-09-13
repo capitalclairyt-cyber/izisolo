@@ -467,7 +467,21 @@ async function getData(studioSlug, user) {
     } catch { /* pré-v107 */ }
   }
 
-  return { profile, client, aVenir, passes, paiements: paiements || [], offresStripe: offresStripe || [], offresCatalogue, abonnements: abonnementsAvecPrelevement, catalogueMasque, aRegler, seancesWorkshopDues, annulationsDues, unreadMessages, clientPrefs, facturationActive, facturesParPaiement, docsInscription, visioParPresence, ribStudio, refVirement };
+  // Association (v113) : ses adhésions (lecture séparée, défensive : pré-v113
+  // ou studio non associatif, rien).
+  let adhesions = [];
+  try {
+    const { data, error } = await supabase
+      .from('adhesions')
+      .select('id, offre_nom, saison, date_debut, date_fin, montant, statut')
+      .eq('profile_id', profile.id)
+      .eq('client_id', client.id)
+      .eq('statut', 'active')
+      .order('date_debut', { ascending: false });
+    if (!error) adhesions = data || [];
+  } catch { /* pré-v113 */ }
+
+  return { profile, client, aVenir, passes, paiements: paiements || [], offresStripe: offresStripe || [], offresCatalogue, abonnements: abonnementsAvecPrelevement, catalogueMasque, aRegler, seancesWorkshopDues, annulationsDues, unreadMessages, clientPrefs, facturationActive, facturesParPaiement, docsInscription, visioParPresence, ribStudio, refVirement, adhesions };
 }
 
 export default async function EspacePage({ params, searchParams }) {
@@ -551,6 +565,7 @@ export default async function EspacePage({ params, searchParams }) {
       ribStudio={data.ribStudio || null}
       refVirement={data.refVirement || null}
       visioParPresence={data.visioParPresence || {}}
+      adhesions={data.adhesions || []}
       studioSlug={studioSlug}
       userEmail={user.email}
     />

@@ -41,6 +41,24 @@ export default async function DeclarationPage({ params }) {
     const { data, error } = await supabase.from('profiles').select('pays').eq('id', studioId).maybeSingle();
     if (!error && data?.pays) paysStudio = data.pays;
   } catch { /* pré-v105 : la France */ }
+  // v113 : une association ne déclare pas à l'URSSAF (lecture séparée).
+  let association = false;
+  try {
+    const { data } = await supabase.from('profiles').select('type_structure').eq('id', studioId).maybeSingle();
+    association = data?.type_structure === 'association';
+  } catch { /* pré-v110 */ }
+  if (association) {
+    return (
+      <div className="section" style={{ maxWidth: 560, margin: '32px auto', textAlign: 'center', padding: 28 }}>
+        <div style={{ fontSize: 34, marginBottom: 8 }}>🤝</div>
+        <h1 style={{ fontSize: '1.4rem', margin: '0 0 10px' }}>Pas de déclaration URSSAF pour une association</h1>
+        <p style={{ margin: '0 0 16px', lineHeight: 1.6, color: 'var(--text-soft, #7a6f6a)' }}>
+          Une association ne déclare pas de chiffre d&apos;affaires : ce sont ses intervenantes qui déclarent ce qu&apos;elle leur règle. Ton rapport financier, lui, sort de <strong>Compta → Export</strong>, saison par saison.
+        </p>
+        <a href="/compta?onglet=export" className="izi-btn btn-sm izi-btn-secondary">Ouvrir la compta</a>
+      </div>
+    );
+  }
   if (!aDeclarationAutomatisable(paysStudio)) {
     const p = paysDe(paysStudio);
     return (

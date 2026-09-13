@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Calendar, Clock, MapPin, ArrowLeft, LogOut, CheckCircle, XCircle, Loader, AlertCircle, User, Lock, CreditCard, Ticket, CalendarCheck, Zap, Download, Receipt, MessageCircle, Send, X, Phone, Home, Pencil, Save, Wallet, Bell, FileText } from 'lucide-react';
+import { Calendar, Clock, MapPin, ArrowLeft, LogOut, CheckCircle, XCircle, Loader, AlertCircle, User, Lock, CreditCard, Ticket, CalendarCheck, Zap, Download, Receipt, MessageCircle, Send, X, Phone, Home, Pencil, Save, Wallet, Bell, FileText, BadgeCheck } from 'lucide-react';
 import PushToggle from '@/components/push/PushToggle';
 import PushPrompt from '@/components/push/PushPrompt';
 import NotifPrefsPanel from '@/components/push/NotifPrefsPanel';
@@ -17,7 +17,7 @@ import { confirmationEleve } from '@/lib/demande-offre';
 import { epcQrPayload, formatIban } from '@/lib/reglement';
 import AideEleve from '@/components/portail/AideEleve';
 
-const STRIPE_TYPE_ICONS = { carnet: Ticket, abonnement: CalendarCheck, cours_unique: Zap };
+const STRIPE_TYPE_ICONS = { carnet: Ticket, abonnement: CalendarCheck, cours_unique: Zap, adhesion: BadgeCheck };
 
 const MOIS  = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
 const JOURS = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
@@ -187,7 +187,7 @@ function CoursCard({ presence, profile, studioSlug, onAnnuler, annulEnCours, vis
   );
 }
 
-export default function EspaceClient({ profile, client, aVenir, passes, paiements = [], offresStripe = [], offresCatalogue = [], catalogueMasque = false, abonnements = [], aRegler = [], seancesWorkshopDues = [], annulationsDues = [], unreadMessages = 0, clientPrefs = {}, studioSlug, userEmail, isDemo = false, facturationActive = false, facturesParPaiement = {}, docsInscription = [], visioParPresence = {}, ribStudio = null, refVirement = null }) {
+export default function EspaceClient({ profile, client, aVenir, passes, paiements = [], offresStripe = [], offresCatalogue = [], catalogueMasque = false, abonnements = [], aRegler = [], seancesWorkshopDues = [], annulationsDues = [], unreadMessages = 0, clientPrefs = {}, studioSlug, userEmail, isDemo = false, facturationActive = false, facturesParPaiement = {}, docsInscription = [], visioParPresence = {}, ribStudio = null, refVirement = null, adhesions = [] }) {
   const router = useRouter();
   const { toast } = useToast();
   const [notifsOpen, setNotifsOpen] = useState(false);
@@ -729,6 +729,28 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
         </div>
       )}
 
+      {/* Mon adhésion (association, v113) : la saison, à jour ou pas. */}
+      {adhesions.length > 0 && (
+        <div style={{ marginTop: 28, paddingTop: 20, borderTop: '1px solid #f0ebe8' }} data-testid="espace-adhesion">
+          <h2 className="espace-section-title">
+            <BadgeCheck size={16} style={{ color: '#b87333' }} />
+            Mon adhésion
+          </h2>
+          {adhesions.map(a => {
+            const today = new Date().toISOString().slice(0, 10);
+            const aJour = a.date_debut <= today && today <= a.date_fin;
+            return (
+              <div key={a.id} style={{ padding: '12px 16px', borderRadius: 12, background: aJour ? '#ecfdf5' : '#fafaf9', border: `1px solid ${aJour ? '#a7f3d0' : 'rgba(0,0,0,.07)'}`, marginBottom: 8 }}>
+                <div style={{ fontWeight: 600 }}>{a.offre_nom} · saison {a.saison}</div>
+                <div style={{ fontSize: '.85rem', color: '#7a6f6a', marginTop: 2 }}>
+                  {aJour ? 'À jour' : (a.date_debut > today ? `Commence le ${formatDate(a.date_debut)}` : `Terminée le ${formatDate(a.date_fin)}`)}{a.montant > 0 ? ` · ${a.montant} €` : ' · offerte'}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
       {/* Section "Mes carnets & abonnements" — solde séances + expiration */}
       {abonnements.length > 0 && (
         <div style={{ marginTop: 28, paddingTop: 20, borderTop: '1px solid #f0ebe8' }}>
@@ -1215,7 +1237,7 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
       )}
 
       {/* Mini-aide élève (2026-08-18) — les questions récurrentes, réponses vérifiées */}
-      <AideEleve studioNom={profile.studio_nom} studioSlug={studioSlug} sansCatalogue={catalogueMasque} />
+      <AideEleve studioNom={profile.studio_nom} studioSlug={studioSlug} sansCatalogue={catalogueMasque} aDesAdhesions={adhesions.length > 0} />
 
       {/* Bouton rebooking */}
       <div style={{ marginTop: 28, paddingTop: 20, borderTop: '1px solid #f0ebe8', textAlign: 'center' }}>

@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { MapPin, Calendar, Clock, ChevronRight, ChevronLeft, ChevronDown, Search, CreditCard, Ticket, CalendarCheck, Zap, Instagram, Facebook, Globe, Award, BookOpen, LayoutGrid, List, Check, Loader, User } from 'lucide-react';
+import { MapPin, Calendar, Clock, ChevronRight, ChevronLeft, ChevronDown, Search, CreditCard, Ticket, CalendarCheck, Zap, Instagram, Facebook, Globe, Award, BookOpen, LayoutGrid, List, Check, Loader, User, BadgeCheck } from 'lucide-react';
 import { toneCours, vignetteCours, altVignette, imageOptimisable } from '@/lib/vignette-cours';
 import { useToast } from '@/components/ui/ToastProvider';
 import { matchRecherche } from '@/lib/utils';
@@ -52,7 +52,7 @@ function fmtWeekRange(start) {
 }
 const JOURS_LONG = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
 
-const TYPE_ICONS = { carnet: Ticket, abonnement: CalendarCheck, cours_unique: Zap };
+const TYPE_ICONS = { carnet: Ticket, abonnement: CalendarCheck, cours_unique: Zap, adhesion: BadgeCheck };
 
 const JOURS = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
 const MOIS = ['jan', 'fév', 'mar', 'avr', 'mai', 'jun', 'jul', 'aoû', 'sep', 'oct', 'nov', 'déc'];
@@ -1017,6 +1017,7 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
               const sub =
                 o.type === 'carnet'      ? `Carnet de ${o.seances} séances` :
                 o.type === 'abonnement'  ? [libelleSeances(o), o.duree_jours ? `${o.duree_jours} jours` : null].filter(Boolean).join(' · ') :
+                o.type === 'adhesion'    ? 'Adhésion à l\'association, pour la saison' :
                                             'Cours à l\'unité';
               const handleSpotlight = (e) => {
                 const r = e.currentTarget.getBoundingClientRect();
@@ -1043,6 +1044,10 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
                     if (demandeOffreId !== o.id) {
                       // Frontière des plans : la demande d'offre est Complet.
                       if (!canDemander) return null;
+                      // Une adhésion (v113) se prend auprès de l'association,
+                      // jamais par la file des offres (elle ne se vend pas
+                      // par le tunnel des carnets).
+                      if (o.type === 'adhesion') return <div className="pp-demande-ok" style={{ opacity: .8 }}>À prendre auprès de l\'association</div>;
                       return (
                         <button type="button" className="pp-demande-btn" onClick={() => setDemandeOffreId(o.id)}>
                           Demander cette offre

@@ -201,5 +201,12 @@ export default async function RevenusPage() {
     if (!error && data?.pays) pays = data.pays;
   } catch { /* pré-v105 : la France, c'est-à-dire le comportement d'avant */ }
 
-  return <RevenusClient paiements={paiementsAvecFlag} seancesDues={seancesDues} annulationsDues={annulationsDues} pays={pays} aDesPrestations={aDesPrestations} />;
+  // v113 : une association n'a pas de déclaration URSSAF (lecture séparée).
+  let urssafVisible = true;
+  try {
+    const { data } = await supabase.from('profiles').select('type_structure').eq('id', studioId).maybeSingle();
+    if (data?.type_structure === 'association') urssafVisible = false;
+  } catch { /* pré-v110 */ }
+
+  return <RevenusClient paiements={paiementsAvecFlag} seancesDues={seancesDues} annulationsDues={annulationsDues} pays={pays} aDesPrestations={aDesPrestations} urssafVisible={urssafVisible} />;
 }

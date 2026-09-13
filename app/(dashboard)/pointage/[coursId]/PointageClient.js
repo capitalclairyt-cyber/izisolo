@@ -315,7 +315,7 @@ function PaymentModal({ presence, coursNom, coursDate, montantDefaut = '', paiem
 // ─────────────────────────────────────────────────────────
 //  Carte de présence (split cell)
 // ─────────────────────────────────────────────────────────
-function PresenceCard({ presence, resolvedCarnet, estPayAsYouGo, paye, paiement, onMarquer, onPayer, onTypePresence, onExcuserTardive, onRelier, onDesinscrire, coursInfo, loading, locked, impaye, ptard, nbDettes, essaisRestants }) {
+function PresenceCard({ presence, resolvedCarnet, estPayAsYouGo, paye, paiement, onMarquer, onPayer, onTypePresence, onExcuserTardive, onRelier, onDesinscrire, coursInfo, loading, locked, impaye, ptard, nbDettes, essaisRestants, sansAdhesion = false }) {
   const [showTypeMenu, setShowTypeMenu] = useState(false);
 
   // Fermer le menu au premier clic en dehors
@@ -435,6 +435,7 @@ function PresenceCard({ presence, resolvedCarnet, estPayAsYouGo, paye, paiement,
         <div className="pres-body">
           <div className="pres-name-row">
             <span className="pres-name">{client.prenom} {client.nom}</span>
+            {sansAdhesion && <span className="adh-badge" title="Pas d'adhésion à jour pour cette saison : à régulariser sur place" data-testid="pointage-sans-adhesion">sans adhésion</span>}
             {/* Badge à régler (carnet épuisé OU séance à l'unité non payée) */}
             {(impaye || (estPayAsYouGo && !paye && !ptard)) && !locked && (
               <button className="impaye-btn" onClick={e => { e.stopPropagation(); onPayer(presence); }} title="À régler : encaisser" aria-label="Encaisser">€</button>
@@ -616,7 +617,10 @@ function PresenceCard({ presence, resolvedCarnet, estPayAsYouGo, paye, paiement,
 // ─────────────────────────────────────────────────────────
 //  Composant principal
 // ─────────────────────────────────────────────────────────
-export default function PointageClient({ cours, presences: initialPresences, tousClients, profile, dettesParClient = {}, regles = [], initialPaiementsSeance = [] }) {
+export default function PointageClient({ cours, presences: initialPresences, tousClients, profile, dettesParClient = {}, regles = [], initialPaiementsSeance = [], adherentesAJour = null }) {
+  // v113 : dans une association, une inscrite sans adhésion à jour porte un
+  // repère (« sans adhésion ») pour régulariser sur place. Jamais un refus.
+  const adherentesSet = adherentesAJour ? new Set(adherentesAJour) : null;
   // Le studio affiché (v101) : `user.id` ne suffit plus, une prof peut être
   // invitée dans le studio d'une autre. Résolu une seule fois par le layout.
   const studioId = useStudioId();
@@ -1619,6 +1623,7 @@ export default function PointageClient({ cours, presences: initialPresences, tou
                 paiement={paiementSeance}
                 onMarquer={handleMarquer}
                 onPayer={setPaymentTarget}
+                sansAdhesion={!!adherentesSet && !!p.client_id && !adherentesSet.has(p.client_id)}
                 onTypePresence={handleTypePresence}
                 onExcuserTardive={handleExcuserTardive}
                 onRelier={handleRelier}
@@ -2527,6 +2532,8 @@ export default function PointageClient({ cours, presences: initialPresences, tou
         .ptard-btn:active { transform: scale(0.88); }
         .pres-row.pres-ptard { border-left: 4px solid #fb923c; }
 
+        /* ── Repère « sans adhésion » (association, v113) ── */
+        .adh-badge { font-size: .66rem; padding: 1px 7px; border-radius: 999px; background: #fffbeb; border: 1px solid #fde68a; color: #92400e; margin-left: 6px; white-space: nowrap; }
         /* ── Badge alerte multi-dettes ── */
         .dette-alert {
           font-size: 0.6rem; font-weight: 700;

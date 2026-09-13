@@ -35,10 +35,10 @@ export default function ReglesMetierTab({ profileId }) {
       const supabase = createClient();
       const { data } = await supabase
         .from('profiles')
-        .select('regles_metier')
+        .select('regles_metier, type_structure')
         .eq('id', profileId)
         .single();
-      const fakeProfile = { regles_metier: data?.regles_metier || null };
+      const fakeProfile = { regles_metier: data?.regles_metier || null, type_structure: data?.type_structure || 'solo' };
       setProfile(fakeProfile);
       // Charge les valeurs effectives (avec fallback sur les défauts)
       const initial = {};
@@ -107,7 +107,7 @@ export default function ReglesMetierTab({ profileId }) {
 
       {/* Cards des 7 cas */}
       <div className="rm-cards">
-        {CASES.map(caseDef => {
+        {CASES.filter(c => !c.uniquement || c.uniquement === profile?.type_structure).map(caseDef => {
           const r = regles[caseDef.id] || caseDef.defaut;
           const expanded = expandedId === caseDef.id;
           const isAuto = r.mode === 'auto';
