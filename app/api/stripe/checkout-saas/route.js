@@ -1,6 +1,8 @@
 import { z } from 'zod';
 import { withRoute } from '@/lib/api-route';
 import { estCompteTest } from '@/lib/admin-stats';
+import { PLANS_PAYANTS, PLANS_ANNUEL } from '@/lib/constantes';
+import { typeStructure } from '@/lib/structure';
 import Stripe from 'stripe';
 import { STRIPE_API_VERSION } from '@/lib/stripe-api-version';
 import { reportError } from '@/lib/report';
@@ -8,49 +10,56 @@ import { reportError } from '@/lib/report';
 export const runtime = 'nodejs';
 
 /**
- * Crée une Checkout Session Stripe pour que le pro souscrive à Solo / Pro / Studio.
+ * Crée une Checkout Session Stripe pour qu'une structure souscrive à un plan
+ * PAYANT : Complet (29 €/mois), Association (39 €/mois ou 390 €/an), Studio
+ * (59 €/mois ou 590 €/an).
  *
- * Trial 30 jours appliqué automatiquement (cf. TRIAL_DAYS dans constantes.js).
+ * Depuis le freemium (Colin, 2026-09-13) : Essentiel est GRATUIT, il n'a
+ * aucun Price et ne se souscrit pas ; `plan: 'solo'` est refusé en 400.
+ * Multi (49 €) est retiré : refusé aussi.
  *
- * MENSUEL UNIQUEMENT pour l'instant (l'annuel sera réintroduit plus tard
- * avec -20%, mais on garde la signature `periode` pour ne pas casser l'API).
+ * L'annuel n'existe que pour Association et Studio (deux mois offerts) :
+ * une asso vote un budget et paie par virement après décision du bureau.
  *
- * Env vars requises (côté Mélutek) :
- *   - STRIPE_SECRET_KEY (clé secrète Mélutek)
- *   - STRIPE_PRICE_ID_SOLO_MENSUEL    (15 €/mois — Essentiel)
- *   - STRIPE_PRICE_ID_PRO_MENSUEL     (29 €/mois — Complet)
- *   - STRIPE_PRICE_ID_MULTI_MENSUEL   (49 €/mois — Multi, forfait plat)
- *   - STRIPE_PRICE_ID_PREMIUM_MENSUEL (legacy Studio — plus vendu, jamais posée :
- *     un checkout premium répond « plan indisponible », c'est voulu)
+ * Le plan Association exige une structure de type `association` (RNA saisi à
+ * l'onboarding) : c'est le garde-fou contre le studio qui se déclarerait asso
+ * pour payer 20 € de moins.
+ *
+ * Env vars requises (côté vendeur, compte Stripe « Maude Yoga ») :
+ *   - STRIPE_SECRET_KEY
+ *   - STRIPE_PRICE_ID_PRO_MENSUEL
+ *   - STRIPE_PRICE_ID_ASSO_MENSUEL, STRIPE_PRICE_ID_ASSO_ANNUEL
+ *   - STRIPE_PRICE_ID_STUDIO_MENSUEL, STRIPE_PRICE_ID_STUDIO_ANNUEL
  *   - NEXT_PUBLIC_APP_URL
  *
- * Body : { plan: 'solo'|'pro'|'multi', periode: 'mensuel' }
+ * Body : { plan: 'pro'|'asso'|'studio', periode: 'mensuel'|'annuel' }
  */
 
-// 'premium' (ex-Studio) est LEGACY : plus jamais vendu, aucun Product ni Price
-// créé côté Stripe. Le laisser dans l'enum rendait un 500 qui nommait des env
-// vars internes à qui le demandait.
 const schema = z.object({
-  plan: z.enum(['solo', 'pro', 'multi']),
-  periode: z.enum(['mensuel']), // 'annuel' désactivé temporairement
+  plan: z.enum(PLANS_PAYANTS),
+  periode: z.enum(['mensuel', 'annuel']).default('mensuel'),
 });
 
 const PRICE_IDS = {
-  solo: {
-    mensuel: process.env.STRIPE_PRICE_ID_SOLO_MENSUEL,
-  },
   pro: {
     mensuel: process.env.STRIPE_PRICE_ID_PRO_MENSUEL,
   },
-  multi: {
-    mensuel: process.env.STRIPE_PRICE_ID_MULTI_MENSUEL,
+  asso: {
+    mensuel: process.env.STRIPE_PRICE_ID_ASSO_MENSUEL,
+    annuel: process.env.STRIPE_PRICE_ID_ASSO_ANNUEL,
+  },
+  studio: {
+    mensuel: process.env.STRIPE_PRICE_ID_STUDIO_MENSUEL,
+    annuel: process.env.STRIPE_PRICE_ID_STUDIO_ANNUEL,
   },
 };
 
 // Un abonnement déjà vivant : re-souscrire créerait un SECOND abonnement chez
 // Stripe, facturé immédiatement, et le webhook écraserait l'id du premier —
 // qui continuerait de débiter en étant devenu invisible dans l'app.
-const STATUTS_ABONNEE = ['active', 'trialing', 'past_due'];
+const STATUTS_ABONNEE = ['active', 'trialing', 'past_due', 'unpaid'];
+
+const colonneInconnue = (e) => e && (e.code === '42703' || e.code === 'PGRST204');
 
 export const POST = withRoute({ auth: 'user' }, async ({ request, auth }) => {
   const { studioId, user, supabase } = auth;
@@ -64,31 +73,39 @@ export const POST = withRoute({ auth: 'user' }, async ({ request, auth }) => {
   }
   const parsed = schema.safeParse(body);
   if (!parsed.success) {
-    return Response.json({ error: 'Plan ou période invalide' }, { status: 400 });
+    // 'solo' (Essentiel) arrive ici : gratuit, il ne se souscrit pas.
+    const demande = body?.plan;
+    if (demande === 'solo') {
+      return Response.json({
+        error: 'Essentiel est gratuit : il n\'y a rien à souscrire, tu y es déjà.',
+        code: 'PLAN_GRATUIT',
+      }, { status: 400 });
+    }
+    return Response.json({ error: 'Plan ou période invalide', code: 'PLAN_INVALIDE' }, { status: 400 });
   }
   const { plan, periode } = parsed.data;
 
-  const priceId = PRICE_IDS[plan]?.[periode];
-  if (!priceId) {
+  if (periode === 'annuel' && !PLANS_ANNUEL.includes(plan)) {
     return Response.json({
-      error: `Prix Stripe non configuré pour ${plan}/${periode}. L'admin doit définir l'env var.`,
-    }, { status: 500 });
+      error: 'L\'abonnement annuel n\'existe que pour les plans Association et Studio.',
+      code: 'PERIODE_INVALIDE',
+    }, { status: 400 });
   }
 
-  if (!process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET_KEY.startsWith('sk_dummy')) {
-    return Response.json({
-      error: 'Stripe SaaS pas encore configuré côté Mélutek. Contacte le support.',
-    }, { status: 503 });
-  }
-
-  // Récupérer le profile (pour stripe_customer_id existant + état du trial)
-  const { data: profile } = await supabase
+  // Récupérer le profile (stripe_customer_id existant, état de l'abonnement,
+  // type de structure). `type_structure` est neuve (v110) : on relit sans elle
+  // si la base ne la connaît pas encore, une prof seule reste une prof seule.
+  const colonnes = 'id, stripe_customer_id, plan, trial_started_at, stripe_subscription_status, studio_slug, studio_nom';
+  let { data: profile, error: eProfil } = await supabase
     .from('profiles')
-    .select('id, stripe_customer_id, plan, trial_started_at, stripe_subscription_status, studio_slug, studio_nom')
+    .select(`${colonnes}, type_structure`)
     .eq('id', studioId)
     .single();
+  if (colonneInconnue(eProfil)) {
+    ({ data: profile } = await supabase.from('profiles').select(colonnes).eq('id', studioId).single());
+  }
 
-  // ── Trois refus, avant que Stripe ne voie quoi que ce soit ───────────────
+  // ── Quatre refus, avant que Stripe ne voie quoi que ce soit ──────────────
   // (a) Déjà abonnée : sinon double prélèvement, et le premier abonnement
   //     devient invisible tout en continuant de débiter.
   if (STATUTS_ABONNEE.includes(profile?.stripe_subscription_status)) {
@@ -98,7 +115,24 @@ export const POST = withRoute({ auth: 'user' }, async ({ request, auth }) => {
     }, { status: 409 });
   }
 
-  // (b) Comptes internes : le démo est en plan 'free', donc getTrialStatus rend
+  // (b) Le plan Association est réservé aux associations déclarées (RNA).
+  const type = typeStructure(profile);
+  if (plan === 'asso' && type !== 'association') {
+    return Response.json({
+      error: 'Le plan Association est réservé aux associations déclarées : indique ton numéro RNA dans Paramètres → Studio & lieux.',
+      code: 'ASSOCIATION_REQUISE',
+    }, { status: 403 });
+  }
+  // (c) Et inversement, une association ne prend pas le plan Studio : ses
+  //     rubriques (bureau, adhésions, AG) vivent dans le sien.
+  if (plan === 'studio' && type === 'association') {
+    return Response.json({
+      error: 'Ton IziSolo est déclaré comme association : son plan est Association, pas Studio.',
+      code: 'PLAN_HORS_FAMILLE',
+    }, { status: 403 });
+  }
+
+  // (d) Comptes internes : le démo est en plan 'free', donc getTrialStatus rend
   //     active:false, donc AUCUN trial_end n'est posé — un clic curieux pendant
   //     une démo débiterait pour de vrai, immédiatement.
   if (profile?.plan === 'free' || estCompteTest({ email: user.email, studio_slug: profile?.studio_slug, studio_nom: profile?.studio_nom })) {
@@ -106,6 +140,23 @@ export const POST = withRoute({ auth: 'user' }, async ({ request, auth }) => {
       error: 'Ce compte est un compte de démonstration : il ne peut pas souscrire.',
       code: 'COMPTE_TEST',
     }, { status: 403 });
+  }
+
+  // Les refus « métier » passent AVANT la configuration : une prof seule qui
+  // demande Association doit lire « réservé aux associations », jamais « prix
+  // non configuré » (trouvé par la preuve du lot 0, en local sans env vars).
+  const priceId = PRICE_IDS[plan]?.[periode];
+  if (!priceId) {
+    return Response.json({
+      error: `Prix Stripe non configuré pour ${plan}/${periode}. L'admin doit définir l'env var.`,
+      code: 'PRIX_NON_CONFIGURE',
+    }, { status: 500 });
+  }
+
+  if (!process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET_KEY.startsWith('sk_dummy')) {
+    return Response.json({
+      error: 'Stripe SaaS pas encore configuré côté Mélutek. Contacte le support.',
+    }, { status: 503 });
   }
 
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
@@ -116,12 +167,6 @@ export const POST = withRoute({ auth: 'user' }, async ({ request, auth }) => {
 
   // AUCUN trial Stripe (décision Colin 2026-08-22) : les 30 jours sont déjà
   // comptés par IziSolo, la prof paie le jour où elle décide de rester.
-  //
-  // Ce choix supprime un bug qui frappait au pire moment : l'ancien code posait
-  // trial_end dès que `daysLeft >= 2`, or daysLeft est un Math.ceil — à 25 h
-  // restantes il vaut 2, et Stripe REFUSE un trial_end à moins de 48 h. Le
-  // checkout rendait donc 500 pendant les dernières 24 h d'essai, c'est-à-dire
-  // le jour de l'email de relance J-1, le pic de conversion.
   const subscriptionData = {
     metadata: { profile_id: studioId, plan, periode },
   };

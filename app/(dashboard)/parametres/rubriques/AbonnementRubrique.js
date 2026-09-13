@@ -7,7 +7,7 @@
 // frais. Lot 2 « le repli », 2026-09-09.
 import { Crown, ArrowLeftRight } from 'lucide-react';
 import { PLANS } from '@/lib/constantes';
-import { getTrialStatus, effectivePlan as effectivePlanFromTrial } from '@/lib/trial';
+import { getTrialStatus, getAccountStatus, effectivePlan as effectivePlanFromTrial } from '@/lib/trial';
 import { can } from '@/lib/plan-guard';
 import { resumeCarte, carteOuverteParDefaut } from '@/lib/parametres-rubriques';
 import AbonnementCheckout from '../sections/AbonnementCheckout';
@@ -21,6 +21,8 @@ export default function AbonnementRubrique() {
   const currentPlan = PLANS[currentPlanKey] || PLANS.solo;
   const isFree = currentPlanKey === 'free';
   const isTrialActive = trial.active;
+  const statut = getAccountStatus(profile);
+  const nomEssai = PLANS[trial.planEssai]?.nom || 'Complet';
   // Matrice B3a (§5 plan de bataille) : chaque ligne = une capacité testée
   // par can() — LA source unique, plus de flags par plan.
   const featuresList = [
@@ -44,14 +46,19 @@ export default function AbonnementRubrique() {
           <p className="abo-status">
             {isTrialActive ? (
               <>
-                Tu profites d'un essai <strong>Complet</strong> : il te reste{' '}
+                Tu profites d'un essai <strong>{nomEssai}</strong> : il te reste{' '}
                 <strong>{trial.daysLeft} {trial.daysLeft > 1 ? 'jours' : 'jour'}</strong>.
-                Choisis ton abonnement ci-dessous quand tu es prêt·e.
+                Ensuite tu passes sur Essentiel, gratuit, sauf si tu choisis de garder {nomEssai} ci-dessous.
               </>
             ) : isFree ? (
               <>Tu utilises actuellement le plan <strong>{currentPlan.nom}</strong> (compte interne, full access).</>
-            ) : trial.expired ? (
-              <>Ton essai est terminé. Choisis ton plan ci-dessous pour continuer à utiliser IziSolo.</>
+            ) : statut === 'impaye' ? (
+              <>Ton abonnement <strong>{currentPlan.nom}</strong> a une facture impayée : règle-la pour retrouver l'accès complet.</>
+            ) : statut === 'gratuit' || statut === 'canceled' ? (
+              <>
+                Tu es sur <strong>Essentiel</strong>, gratuit, pour toujours. Tout ce que tu gères seule
+                continue de marcher ; pour que tes élèves réservent et paient en ligne, choisis un plan ci-dessous.
+              </>
             ) : (
               <>
                 Tu utilises actuellement le plan <strong>{currentPlan.nom}</strong>

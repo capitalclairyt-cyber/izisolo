@@ -15,7 +15,7 @@ faq:
   - question: "Miranda Flow, quel avis en 2026 ?"
     answer: "Un outil français attachant, au positionnement clair : un tarif unique de 29 €/mois tout compris (relevé du 21 août 2026), un site vitrine inclus, le multi-coachs et multi-lieux sans surcoût, un support joignable par téléphone depuis la Bretagne, et 30 jours d'essai, ce qui est généreux (le nôtre en fait 14). C'est un vrai concurrent sérieux pour les studios qui cherchent simple et français."
   - question: "Quelle différence de prix entre IziSolo et Miranda Flow ?"
-    answer: "Miranda Flow : 29 €/mois tarif unique (relevé du 21 août 2026). IziSolo : deux plans, 15 €/mois (Essentiel, toute la gestion sans la réservation en ligne) et 29 €/mois (Complet, avec réservation, paiement en ligne et espace élève). À 29 €, les deux se comparent fonction par fonction ; à 15 €, IziSolo offre une porte d'entrée moins chère si tes élèves ne réservent pas en ligne."
+    answer: "Miranda Flow : 29 €/mois tarif unique (relevé du 21 août 2026). IziSolo : deux plans, Essentiel gratuit (toute la gestion sans la réservation en ligne) et 29 €/mois (Complet, avec réservation, paiement en ligne et espace élève). À 29 €, les deux se comparent fonction par fonction ; en gratuit, IziSolo offre une porte d'entrée sans rien payer si tes élèves ne réservent pas en ligne."
 ---
 
 Voici le comparatif le plus délicat de la série, et on te dit pourquoi d'entrée : Miranda Flow est ce qui ressemble le plus à IziSolo sur ce marché. Français, simple, prix rond, pensé pour les studios de yoga et de Pilates plutôt que pour les chaînes de fitness. Quand deux voisins se comparent, l'honnêteté est encore plus obligatoire. Méthode habituelle : cette page est écrite par IziSolo (je m'appelle Maude, prof de yoga et cofondatrice, juge et partie), tout ce qui concerne Miranda Flow vient de leurs pages publiques relevées le **21 août 2026**, et la moindre erreur signalée à bonjour@izisolo.fr sera corrigée.
@@ -24,9 +24,9 @@ Voici le comparatif le plus délicat de la série, et on te dit pourquoi d'entr�
 
 **Miranda Flow** : un tarif unique de **29 €/mois par studio**, tout compris, facturé mensuellement, avec **30 jours d'essai gratuit** sans engagement.
 
-**IziSolo** : deux plans, **15 €/mois** (Essentiel : toute ta gestion, élèves, agenda, carnets, encaissements, factures, sans la boucle de réservation en ligne) et **29 €/mois** (Complet : tes élèves réservent, annulent, paient en ligne et ont leur espace), sans engagement, **30 jours d'essai** sans carte bancaire.
+**IziSolo** : deux plans, **gratuit** (Essentiel : toute ta gestion, élèves, agenda, carnets, encaissements, factures, sans la boucle de réservation en ligne) et **29 €/mois** (Complet : tes élèves réservent, annulent, paient en ligne et ont leur espace), sans engagement, **30 jours d'essai** sans carte bancaire.
 
-Deux observations honnêtes : leur essai de 30 jours est plus généreux que le nôtre, et leur tarif unique est plus simple à comprendre. En face, notre plan à 15 € offre une porte d'entrée moitié moins chère si la réservation en ligne n'est pas encore ton sujet.
+Deux observations honnêtes : leur essai de 30 jours est plus généreux que le nôtre, et leur tarif unique est plus simple à comprendre. En face, notre plan gratuit offre une porte d'entrée sans rien payer si la réservation en ligne n'est pas encore ton sujet.
 
 ## Ce que Miranda Flow fait très bien
 
@@ -51,7 +51,7 @@ Et ce qu'on n'a pas face à eux : pas de site vitrine complet (notre portail est
 
 **Choisis Miranda Flow si** tu veux un site vitrine fourni avec l'outil, que vous êtes plusieurs coachs, ou que le support téléphonique est important pour toi.
 
-**Choisis IziSolo si** tu enseignes seul·e, qu'une partie de ton argent arrive en espèces, chèques ou en plusieurs fois, que tu veux les no-shows et impayés mâchés, et une porte d'entrée à 15 €.
+**Choisis IziSolo si** tu enseignes seul·e, qu'une partie de ton argent arrive en espèces, chèques ou en plusieurs fois, que tu veux les no-shows et impayés mâchés, et une porte d'entrée gratuite.
 
 Dans les deux cas tu peux essayer sans risque, et c'est le vrai conseil de cette page : 30 jours chez eux, 14 chez nous, mêmes cas de test réels ([la méthode est dans le guide](/blog/comment-choisir-logiciel-gestion-studio-yoga-2026)). Deux outils français qui se tirent vers le haut, c'est bon pour tout le monde, à commencer par toi.
 

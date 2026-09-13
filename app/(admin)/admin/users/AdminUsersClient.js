@@ -5,20 +5,20 @@ import Link from 'next/link';
 import { Search, Filter, ChevronDown, Check, X, Pencil } from 'lucide-react';
 import { matchRecherche } from '@/lib/utils';
 
-// `studio` retiré de l'admin (plan obsolète, jamais finalisé). Si des
-// utilisateurs ont encore plan='studio' en BDD historique, l'UI les affichera
-// quand même (l'enum ne filtre que les options du dropdown), et l'admin
-// pourra les migrer en cliquant pour changer.
-const PLANS = ['free', 'solo', 'pro', 'multi', 'multi_free', 'premium'];
-const PLAN_COLORS = { free: 'free', solo: 'solo', pro: 'pro', multi: 'pro', multi_free: 'free', premium: 'premium' };
+// Grille du 2026-09-13 : solo (Essentiel, gratuit) / pro (Complet) / asso
+// (Association) / studio (Studio). multi, multi_free et premium restent
+// posables pour les comptes historiques (traduits par effectivePlan).
+const PLANS = ['free', 'solo', 'pro', 'asso', 'studio', 'multi', 'multi_free', 'premium'];
+const PLAN_COLORS = { free: 'free', solo: 'solo', pro: 'pro', asso: 'studio', studio: 'studio', multi: 'studio', multi_free: 'free', premium: 'premium' };
 
 // Statuts de compte (calculés serveur via lib/trial getAccountStatus)
 const STATUTS_COMPTE = {
   subscribed:    { label: 'Abonné',        cls: 'st-subscribed' },
   offert:        { label: 'Offert',        cls: 'st-offert' },
   trial_active:  { label: 'Essai',         cls: 'st-trial' },
-  trial_expired: { label: 'Essai expiré',  cls: 'st-expired' },
-  past_due:      { label: 'Impayé ⚠️',     cls: 'st-pastdue' },
+  gratuit:       { label: 'Gratuit',       cls: 'st-expired' },
+  past_due:      { label: 'Paiement échoué ⚠️', cls: 'st-pastdue' },
+  impaye:        { label: 'Impayé (gelé)', cls: 'st-pastdue' },
   canceled:      { label: 'Résilié',       cls: 'st-canceled' },
   free:          { label: 'Free (interne)', cls: 'st-free' },
 };

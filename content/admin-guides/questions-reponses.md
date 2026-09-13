@@ -40,7 +40,7 @@ Renseigne ton SIRET une fois : vraies factures numérotées, l'élève se sert s
 Export CSV de tout, à tout moment, même compte gelé. Tes données t'appartiennent, la portabilité n'est pas une option payante.
 
 **« C'est combien ? »**
-Essentiel 15 € / Complet 29 € TTC, sans engagement, annulable en 1 clic. 30 jours d'essai sans carte. *(⚠️ LANCEMENT50 : seulement quand la caisse Stripe sera branchée.)*
+Essentiel gratuit, pour toujours, sans carte / Complet 29 € TTC, 30 jours d'essai sans carte, sans engagement, annulable en 1 clic. Association 39 € et Studio 59 € par mois (ou à l'année, deux mois offerts) pour les structures à plusieurs profs. *(⚠️ LANCEMENT50 : seulement quand la caisse Stripe sera branchée.)*
 
 **« Vous êtes qui ? »**
 « Je suis prof de yoga, j'ai cofondé IziSolo parce que je gérais mes élèves sur un cahier. » La transparence EST l'argument.
@@ -63,7 +63,7 @@ Le réflexe dans tous les cas : « on a publié un comparatif honnête, chiffres
 
 **Mindbody** : « Le géant mondial, très puissant, à partir de 99 €/mois par établissement et en vente accompagnée. C'est un paquebot pensé pour les chaînes et les spas ; à toi de voir si ces briques valent ce budget pour une personne seule. »
 
-**Mirandaflow** : « Français comme nous, sympa : 29 € tout compris, 30 jours d'essai, site vitrine et multi-coachs. Nos terrains à nous : le plan à 15 €, le suivi espèces/chèques/plusieurs fois, les no-shows et impayés mâchés, les factures SIRET. Essaie les deux, sincèrement. »
+**Mirandaflow** : « Français comme nous, sympa : 29 € tout compris, 30 jours d'essai, site vitrine et multi-coachs. Nos terrains à nous : le plan gratuit, le suivi espèces/chèques/plusieurs fois, les no-shows et impayés mâchés, les factures SIRET. Essaie les deux, sincèrement. »
 
 **Calendly** : « Excellent agenda, beaucoup démarrent avec et c'est un bon réflexe. Sa frontière : pas de carnets qui se décomptent, pas de pointage, pas d'encaissement espèces ou en plusieurs fois, pas de factures françaises. Quand tu vends des carnets, il te faut un outil métier. »
 
@@ -95,7 +95,7 @@ Le réflexe dans tous les cas : « on a publié un comparatif honnête, chiffres
 « La seule IA du produit lit les photos de fiches papier que TU importes, image jetée après extraction, jamais stockée. Ta messagerie, tes élèves et tes chiffres ne passent par aucune IA. »
 
 **« Pourquoi je paierais alors que [X] est gratuit ? »**
-« Regarde ce que le gratuit facture ailleurs : souvent un pourcentage sur chaque paiement en ligne, des plafonds, ou tes données difficiles à sortir. Fais le calcul à ton volume (notre calculateur est public et marche pour tous les outils). 15 € fixes, c'est souvent moins cher qu'un gratuit à commission. »
+« Regarde ce que le gratuit facture ailleurs : souvent un pourcentage sur chaque paiement en ligne, des plafonds, ou tes données difficiles à sortir. Fais le calcul à ton volume (notre calculateur est public et marche pour tous les outils). Chez nous le gratuit est vraiment gratuit : zéro commission tant que tes élèves ne paient pas en ligne, et l'export de tes données à tout moment. »
 
 ---
 

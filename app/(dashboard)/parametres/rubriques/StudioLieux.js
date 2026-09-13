@@ -9,19 +9,47 @@
 // ════════════════════════════════════════════════════════════════════════════
 
 import { useState } from 'react';
-import { Building2, MapPin, Plus, X, Trash2, Pencil, Loader2 } from 'lucide-react';
+import { Building2, MapPin, Plus, X, Trash2, Pencil, Loader2, Users } from 'lucide-react';
 import { createClient } from '@/lib/supabase';
 import { useToast } from '@/components/ui/ToastProvider';
 import { METIERS } from '@/lib/constantes';
+import { TYPES_STRUCTURE, CODES_STRUCTURE, typeStructure, erreurRna, normaliserRna } from '@/lib/structure';
 import { resumeCarte } from '@/lib/parametres-rubriques';
 import { useParametres, BtnSauver } from '../ParametresContext';
 import CarteReglage from '../CarteReglage';
 
 export default function StudioLieux() {
-  const { profile, handleChange, lieux, setLieux, studioId } = useParametres();
+  const { profile, setProfile, handleChange, lieux, setLieux, studioId } = useParametres();
   const { toast } = useToast();
   const [lieuEdit, setLieuEdit] = useState(null);
   const [lieuSaving, setLieuSaving] = useState(false);
+
+  // ── La structure (lot 0 Associations & Studios, 2026-09-13) ──────────────
+  // État LOCAL et route DÉDIÉE (patron v104) : les colonnes sont neuves (v110)
+  // et ne doivent jamais entrer dans le payload d'une autre carte.
+  const [typeStr, setTypeStr] = useState(typeStructure(profile));
+  const [rna, setRna] = useState(profile?.rna || '');
+  const [structSaving, setStructSaving] = useState(false);
+  const structDirty = typeStr !== typeStructure(profile) || (typeStr === 'association' && normaliserRna(rna) !== normaliserRna(profile?.rna || ''));
+  const erreurStruct = erreurRna(typeStr, rna);
+
+  const saveStructure = async () => {
+    if (erreurStruct) { toast.error(erreurStruct); return; }
+    setStructSaving(true);
+    try {
+      const res = await fetch('/api/profile/structure', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type_structure: typeStr, rna: typeStr === 'association' ? rna : null }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) { toast.error(json.error || 'Le réglage n\'a pas pu être enregistré.'); return; }
+      setProfile(prev => ({ ...prev, type_structure: json.type_structure, rna: json.rna }));
+      toast.success(typeStr === 'association' ? 'Association enregistrée' : typeStr === 'studio' ? 'Studio enregistré' : 'Enregistré');
+    } finally {
+      setStructSaving(false);
+    }
+  };
 
   const openLieuModal = (lieu = null) => {
     setLieuEdit(lieu ? { ...lieu } : { id: null, nom: '', adresse: '', ville: '', notes: '' });
@@ -86,6 +114,64 @@ export default function StudioLieux() {
           </div>
         </div>
         <BtnSauver carte="activite" />
+      </CarteReglage>
+
+      <CarteReglage id="structure" titre="Ma structure" icone={Users} resume={resumeCarte('structure', profile)}>
+        <p className="section-desc">
+          Prof à ton compte, association ou studio : ce choix décide des plans qui te sont proposés
+          (Association pour une asso déclarée, Studio pour un lieu avec des intervenantes) et des
+          écrans propres à chaque famille.
+        </p>
+        <div className="structure-choix" role="radiogroup" aria-label="Type de structure">
+          {CODES_STRUCTURE.map(code => (
+            <label key={code} className={`structure-option ${typeStr === code ? 'on' : ''}`}>
+              <input type="radio" name="type_structure" value={code} checked={typeStr === code} onChange={() => setTypeStr(code)} />
+              <span className="structure-option-emoji">{TYPES_STRUCTURE[code].emoji}</span>
+              <span>
+                <strong>{TYPES_STRUCTURE[code].label}</strong>
+                <small>{TYPES_STRUCTURE[code].description}</small>
+              </span>
+            </label>
+          ))}
+        </div>
+        {typeStr === 'association' && (
+          <div className="form-group" style={{ marginTop: 12 }}>
+            <label className="form-label" htmlFor="param-rna">Numéro RNA de l'association</label>
+            <input
+              id="param-rna"
+              className="izi-input"
+              value={rna}
+              onChange={e => setRna(e.target.value)}
+              placeholder="W751234567"
+              autoCapitalize="characters"
+              aria-invalid={!!erreurStruct && rna.length > 0}
+            />
+            <p className="form-hint" style={{ margin: '6px 0 0', color: erreurStruct && rna.length > 0 ? 'var(--danger, #b42318)' : undefined }}>
+              {erreurStruct && rna.length > 0 ? erreurStruct : 'Sur ton récépissé de préfecture : la lettre W suivie de neuf chiffres. C\'est ce qui ouvre le plan Association.'}
+            </p>
+          </div>
+        )}
+        <button
+          type="button"
+          onClick={saveStructure}
+          className="izi-btn izi-btn-primary save-btn"
+          data-carte="structure"
+          disabled={structSaving || !structDirty || !!erreurStruct}
+        >
+          {structSaving ? 'Enregistrement...' : 'Enregistrer'}
+        </button>
+        <style jsx>{`
+          .structure-choix { display: grid; gap: 8px; }
+          .structure-option {
+            display: flex; align-items: flex-start; gap: 10px;
+            padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px;
+            cursor: pointer; background: var(--bg-card, white);
+          }
+          .structure-option.on { border-color: var(--brand, #b87333); background: var(--brand-light, #faf2eb); }
+          .structure-option input { margin-top: 4px; }
+          .structure-option-emoji { font-size: 1.2rem; line-height: 1.2; }
+          .structure-option small { display: block; color: var(--text-muted); font-size: 0.78rem; line-height: 1.35; margin-top: 2px; }
+        `}</style>
       </CarteReglage>
 
       <CarteReglage id="lieux" titre="Mes lieux" icone={MapPin} resume={resumeCarte('lieux', profile, { lieux })} ouverte={lieux.length === 0}>

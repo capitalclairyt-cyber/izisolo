@@ -30,12 +30,18 @@ export const POST = withRoute({ auth: 'user' }, async ({ auth }) => {
     );
   }
 
-  // Récupérer le stripe_customer_id de la prof
-  const { data: profile } = await supabase
+  // Récupérer le stripe_customer_id de la structure, et son type : le portail
+  // n'a pas la même configuration pour une prof seule (Complet, rien d'autre
+  // à changer) et pour une structure (Association ↔ Studio, mensuel ↔ annuel).
+  // `type_structure` est neuve (v110) : on relit sans elle si elle manque.
+  let { data: profile, error: eProfil } = await supabase
     .from('profiles')
-    .select('stripe_customer_id')
+    .select('stripe_customer_id, type_structure')
     .eq('id', studioId)
     .single();
+  if (eProfil && (eProfil.code === '42703' || eProfil.code === 'PGRST204')) {
+    ({ data: profile } = await supabase.from('profiles').select('stripe_customer_id').eq('id', studioId).single());
+  }
 
   if (!profile?.stripe_customer_id) {
     return Response.json(
@@ -58,12 +64,20 @@ export const POST = withRoute({ auth: 'user' }, async ({ auth }) => {
     // n'existe que si quelqu'un a cliqué « Save » dans le Dashboard : la route
     // répondait alors 503 à une prof en past_due, c'est-à-dire exactement au
     // moment où elle vient changer sa carte. Le script de setup imprime cet id.
+    //
+    // Deux configurations depuis le 2026-09-13 (une configuration de portail
+    // est GLOBALE, pas par client) : STRIPE_PORTAL_CONFIG_ID pour les profs
+    // seules (Complet seul), STRIPE_PORTAL_CONFIG_ID_STRUCTURES pour les
+    // associations et studios (leurs deux plans, mensuel ou annuel). Sans la
+    // seconde, tout le monde passe par la première : rien ne casse.
+    const estStructure = ['association', 'studio'].includes(profile?.type_structure);
+    const configuration = (estStructure && process.env.STRIPE_PORTAL_CONFIG_ID_STRUCTURES)
+      || process.env.STRIPE_PORTAL_CONFIG_ID
+      || null;
     const session = await stripe.billingPortal.sessions.create({
       customer: profile.stripe_customer_id,
       return_url: `${baseUrl}/parametres/abonnement`,
-      ...(process.env.STRIPE_PORTAL_CONFIG_ID
-        ? { configuration: process.env.STRIPE_PORTAL_CONFIG_ID }
-        : {}),
+      ...(configuration ? { configuration } : {}),
     });
     return Response.json({ url: session.url });
   } catch (err) {

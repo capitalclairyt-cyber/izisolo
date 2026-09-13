@@ -8,6 +8,7 @@ import { getVocabulaire } from '@/lib/vocabulaire';
 import { genererSlugStudioUnique } from '@/lib/slug-studio';
 import { Sparkles, ArrowRight, ArrowLeft, Check, Copy, ExternalLink, PartyPopper, Upload } from 'lucide-react';
 import { PAYS, CODES_PAYS } from '@/lib/pays';
+import { TYPES_STRUCTURE, CODES_STRUCTURE, sanitizeTypeStructure, sanitizeRna, erreurRna } from '@/lib/structure';
 
 const ETAPES = ['metier', 'studio', 'offre', 'portail'];
 
@@ -41,6 +42,18 @@ export default function OnboardingPage() {
   // première facture. Retour Melyflow (Belgique) : l'app lui affichait
   // « SIRET : 14 chiffres » en rouge des semaines après son inscription.
   const [pays, setPays] = useState('FR');
+  // Le TYPE de structure (lot 0 Associations & Studios, 2026-09-13) : la prof
+  // seule, une association (RNA obligatoire) ou un studio. Il décide du plan
+  // essayé (Complet / Association / Studio) et des libellés. Pré-rempli par
+  // `?structure=` quand une prof fait entrer son asso (pont 1 du plan).
+  const [typeStructure, setTypeStructure] = useState('solo');
+  const [rna, setRna] = useState('');
+  useEffect(() => {
+    try {
+      const voulu = new URLSearchParams(window.location.search).get('structure');
+      if (voulu) setTypeStructure(sanitizeTypeStructure(voulu));
+    } catch { /* rien */ }
+  }, []);
   const [telephone, setTelephone] = useState('');
   const [adresse, setAdresse] = useState('');
   const [offreNom, setOffreNom] = useState('');
@@ -154,6 +167,8 @@ export default function OnboardingPage() {
       studio_nom: studioNom || 'Mon Studio',
       studio_slug: slug,
       metier,
+      type_structure: typeStructure,
+      rna: typeStructure === 'association' ? sanitizeRna(rna) : null,
       prenom: prenom || null,
       nom: nom || null,
       ville: ville || null,
@@ -165,13 +180,17 @@ export default function OnboardingPage() {
       vocabulaire,
       portail_actif: true,
     };
-    // ⚠️ `pays` est neuf (v105). PostgREST refuse TOUTE la requête quand une
-    // colonne lui est inconnue : déployer avant d'appliquer la migration
-    // empêcherait alors CHAQUE nouvelle prof de créer son studio. On rejoue
-    // donc sans le pays — elle le choisira dans ses Paramètres, et la France
-    // reste le défaut, ce qu'elle était déjà pour tout le monde.
+    // ⚠️ PostgREST refuse TOUTE la requête quand une colonne lui est inconnue :
+    // déployer avant d'appliquer une migration empêcherait alors CHAQUE
+    // nouvelle prof de créer son studio. On rejoue donc en retirant les
+    // colonnes neuves, de la plus récente à la plus ancienne : d'abord
+    // `type_structure` et `rna` (v110), puis `pays` (v105). Ce qui n'a pas pu
+    // être enregistré se choisira dans les Paramètres ; les défauts (prof
+    // seule, France) sont ce que tout le monde avait déjà.
     const colonneInconnue = (e) => e && (e.code === '42703' || e.code === 'PGRST204');
-    const sansPays = () => { const d = { ...profilData }; delete d.pays; return d; };
+    const sansStructure = (d) => { const c = { ...d }; delete c.type_structure; delete c.rna; return c; };
+    const sansPays = (d) => { const c = { ...d }; delete c.pays; return c; };
+    const rejeux = [sansStructure(profilData), sansPays(sansStructure(profilData))];
 
     let { data: updated, error: profileError } = await supabase
       .from('profiles')
@@ -179,11 +198,12 @@ export default function OnboardingPage() {
       .eq('id', user.id)
       .select('id');
 
-    if (colonneInconnue(profileError)) {
-      console.warn('[onboarding] pays non enregistré (migration v105 en attente)');
+    for (const donnees of rejeux) {
+      if (!colonneInconnue(profileError)) break;
+      console.warn('[onboarding] colonne neuve non enregistrée (migration en attente), rejeu sans elle');
       ({ data: updated, error: profileError } = await supabase
         .from('profiles')
-        .update(sansPays())
+        .update(donnees)
         .eq('id', user.id)
         .select('id'));
     }
@@ -203,10 +223,11 @@ export default function OnboardingPage() {
       let { error: insertErr } = await supabase
         .from('profiles')
         .insert({ id: user.id, ...profilData });
-      if (colonneInconnue(insertErr)) {
+      for (const donnees of rejeux) {
+        if (!colonneInconnue(insertErr)) break;
         ({ error: insertErr } = await supabase
           .from('profiles')
-          .insert({ id: user.id, ...sansPays() }));
+          .insert({ id: user.id, ...donnees }));
       }
       if (insertErr && insertErr.code !== '23505') {
         console.error('Erreur création profil:', insertErr);
@@ -440,20 +461,72 @@ export default function OnboardingPage() {
         {etape === 1 && (
           <div className="onboarding-step animate-fade-in">
             <div className="step-header">
-              <h2>Parle-nous de ton studio</h2>
+              <h2>{typeStructure === 'association' ? 'Parle-nous de ton association' : 'Parle-nous de ton studio'}</h2>
               <p className="step-hint">
-                Ces infos apparaîtront sur ton portail public et tes reçus de paiement.
+                Ces infos apparaîtront sur ta page publique et tes reçus de paiement.
                 Tu pourras tout modifier dans <em>Paramètres</em> plus tard.
               </p>
             </div>
             <div className="step-fields">
+              {/* Le type de structure : une prof seule, une association ou un
+                  studio. Il décide du plan essayé et des rubriques propres à
+                  chaque famille ; il se change dans Paramètres → Studio & lieux. */}
               <div className="auth-field">
-                <label htmlFor="onb-studio-nom">Nom du studio *</label>
+                <label>C'est quoi, ton IziSolo ?</label>
+                <div className="structure-grid" role="radiogroup" aria-label="Type de structure">
+                  {CODES_STRUCTURE.map(code => (
+                    <button
+                      key={code}
+                      type="button"
+                      role="radio"
+                      aria-checked={typeStructure === code}
+                      data-structure={code}
+                      className={`structure-card izi-card izi-card-interactive ${typeStructure === code ? 'selected' : ''}`}
+                      onClick={() => setTypeStructure(code)}
+                    >
+                      <span className="structure-emoji">{TYPES_STRUCTURE[code].emoji}</span>
+                      <span className="structure-label">{TYPES_STRUCTURE[code].label}</span>
+                      <span className="structure-desc">{TYPES_STRUCTURE[code].description}</span>
+                    </button>
+                  ))}
+                </div>
+                {typeStructure !== 'solo' && (
+                  <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '6px 0 0' }}>
+                    Tu pourras inviter tes profs et régler leurs droits dès ton espace créé
+                    (30 jours d'essai du plan {typeStructure === 'association' ? 'Association' : 'Studio'}, sans carte).
+                  </p>
+                )}
+              </div>
+              {typeStructure === 'association' && (
+                <div className="auth-field">
+                  <label htmlFor="onb-rna">Numéro RNA de l'association *</label>
+                  <input
+                    id="onb-rna"
+                    type="text"
+                    className="izi-input"
+                    placeholder="W751234567"
+                    value={rna}
+                    onChange={e => setRna(e.target.value)}
+                    aria-required="true"
+                    aria-invalid={!!erreurRna(typeStructure, rna) && rna.length > 0}
+                    autoCapitalize="characters"
+                  />
+                  {rna.length > 0 && erreurRna(typeStructure, rna) ? (
+                    <p className="structure-erreur" role="alert">{erreurRna(typeStructure, rna)}</p>
+                  ) : (
+                    <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '6px 0 0' }}>
+                      Il est sur ton récépissé de déclaration en préfecture : la lettre W suivie de neuf chiffres.
+                    </p>
+                  )}
+                </div>
+              )}
+              <div className="auth-field">
+                <label htmlFor="onb-studio-nom">{typeStructure === 'association' ? "Nom de l'association *" : 'Nom du studio *'}</label>
                 <input
                   id="onb-studio-nom"
                   type="text"
                   className="izi-input"
-                  placeholder="Yoga avec Marie"
+                  placeholder={typeStructure === 'association' ? 'Yoga pour tous Lyon 3' : typeStructure === 'studio' ? 'Studio Lumière' : 'Yoga avec Marie'}
                   value={studioNom}
                   onChange={e => setStudioNom(e.target.value)}
                   autoFocus
@@ -547,7 +620,7 @@ export default function OnboardingPage() {
               <button
                 type="button"
                 className="izi-btn izi-btn-primary"
-                disabled={!studioNom.trim() || !prenom.trim() || !nom.trim() || !ville.trim()}
+                disabled={!studioNom.trim() || !prenom.trim() || !nom.trim() || !ville.trim() || !!erreurRna(typeStructure, rna)}
                 onClick={() => setEtape(2)}
               >
                 Continuer <ArrowRight size={18} />
@@ -755,6 +828,32 @@ export default function OnboardingPage() {
           font-size: 0.875rem;
           color: var(--text-secondary);
           margin-top: 4px;
+        }
+        .structure-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 10px;
+          margin-top: 6px;
+        }
+        .structure-card {
+          display: flex; flex-direction: column; align-items: flex-start; gap: 4px;
+          padding: 12px 12px;
+          text-align: left;
+          cursor: pointer;
+          border: 2px solid var(--border);
+          background: var(--bg-card, white);
+          font-family: inherit;
+        }
+        .structure-card.selected {
+          border-color: var(--brand, #b87333);
+          background: var(--brand-light, #faf2eb);
+        }
+        .structure-emoji { font-size: 1.3rem; }
+        .structure-label { font-weight: 600; font-size: 0.9rem; }
+        .structure-desc { font-size: 0.75rem; color: var(--text-muted); line-height: 1.35; }
+        .structure-erreur { font-size: 0.75rem; color: var(--danger, #b42318); margin: 6px 0 0; }
+        @media (max-width: 640px) {
+          .structure-grid { grid-template-columns: 1fr; }
         }
         .metier-grid {
           display: grid;

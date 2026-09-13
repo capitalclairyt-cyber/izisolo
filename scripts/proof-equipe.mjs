@@ -129,20 +129,20 @@ try {
   const pProf = await ctxProf.newPage();
 
   // ══ A. Le plan garde la porte, des DEUX côtés ═════════════════════════════
-  console.log('A. Le plan Multi garde la porte');
+  console.log('A. Les plans Association et Studio gardent la porte (Multi retiré le 2026-09-13)');
   await poserPlan('pro');
   await pProf.goto(`${BASE}/equipe`, { waitUntil: 'domcontentloaded' });
   await pProf.waitForTimeout(5000);
   const texteSansPlan = await pProf.innerText('body');
-  assert(/plan Multi/i.test(texteSansPlan), 'sur Complet, l\'écran Équipe explique qu\'il faut Multi');
+  assert(/plans Association et Studio/i.test(texteSansPlan), 'sur Complet, l\'écran Équipe explique qu\'il faut Association ou Studio');
   await pProf.screenshot({ path: join(OUT, 'A-sans-plan.png') });
 
   const refus = await pProf.request.post(`${BASE}/api/equipe`, { data: { email: CLAIRE, role: 'prof' } });
   const corpsRefus = await refus.json().catch(() => ({}));
   assert(refus.status() === 403 && corpsRefus.code === 'PLAN_REQUIS',
     'et la ROUTE refuse aussi (403 PLAN_REQUIS) : l\'écran n\'est jamais la garde');
-  assert(corpsRefus.upgradeTo === 'multi',
-    `le refus nomme le BON plan (${corpsRefus.upgradeTo}) — envoyer vers Complet serait faire payer le mauvais abonnement`);
+  assert(corpsRefus.upgradeTo === 'asso' && (corpsRefus.plans || []).join(',') === 'asso,studio',
+    `le refus nomme les BONS plans (${corpsRefus.upgradeTo} / ${(corpsRefus.plans || []).join('+')}) — envoyer vers Complet serait faire payer le mauvais abonnement`);
 
   const navSansPlan = await pProf.innerText('nav').catch(() => texteSansPlan);
   assert(!/Équipe/.test(navSansPlan), 'la nav ne propose pas Équipe sans le plan');

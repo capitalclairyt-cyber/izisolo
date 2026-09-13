@@ -1,31 +1,48 @@
 'use client';
 
 /**
- * Banner persistant unifié — affiche le bon message selon le statut du
- * compte de la prof. Gère 4 états visibles + 2 invisibles :
+ * Bandeau persistant unifié : le bon message selon le statut du compte.
+ * Refondu pour le FREEMIUM (2026-09-13, PLAN-ASSOS-STUDIOS §3) : plus
+ * jamais de « compte gelé » à la fin d'un essai.
  *
- *   • 'trial_active'  → bandeau slim "X jours d'essai Pro restants"
- *   • 'trial_expired' → bandeau urgent "Ton essai est terminé, souscris"
- *   • 'past_due'      → bandeau warning "Paiement échoué, mets à jour ta carte"
- *   • 'canceled'      → bandeau warning "Compte gelé, re-souscris"
- *   • 'subscribed'    → null (rien à dire)
- *   • 'free'          → null (compte interne)
+ *   • 'trial_active' → bandeau slim « X jours d'essai restants », à J-5
+ *   • 'gratuit'      → invitation, FERMABLE, seulement dans les 14 jours qui
+ *                      suivent la fin de l'essai (« tes élèves n'ont plus leur
+ *                      espace, le rouvrir coûte 29 € »), jamais à vie
+ *   • 'canceled'     → même invitation, fermable (abonnement terminé)
+ *   • 'past_due'     → bandeau warning « Paiement échoué, mets à jour ta carte »
+ *   • 'impaye'       → bandeau urgent : LE seul cas qui gèle encore
+ *   • 'subscribed'   → null (rien à dire)
+ *   • 'free'         → null (compte interne)
  *
  * Posé en haut du DashboardLayoutClient → visible sur toutes les pages.
- * Le bouton "Re-souscrire" envoie sur /parametres/abonnement.
  *
- * Note : pour past_due, le bouton ouvre directement le Customer Portal
- * via /api/stripe/customer-portal (changement de carte = action urgente).
+ * Note : pour past_due et impaye, le bouton ouvre directement le Customer
+ * Portal via /api/stripe/customer-portal (changement de carte = action urgente).
  */
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Sparkles, AlertTriangle, Snowflake, CreditCard } from 'lucide-react';
-import { getAccountStatus, getTrialStatus } from '@/lib/trial';
+import { Sparkles, AlertTriangle, Snowflake, CreditCard, X } from 'lucide-react';
+import { getAccountStatus, getTrialStatus, essaiFiniDepuisMoinsDe } from '@/lib/trial';
+import { PLANS } from '@/lib/constantes';
+import { planEssai } from '@/lib/structure';
+
+const CLE_FERME = 'izi_bandeau_gratuit_ferme';
 
 export default function AccountStatusBanner({ profile }) {
   const status = getAccountStatus(profile);
   const [portalLoading, setPortalLoading] = useState(false);
+  // Fermeture mémorisée par navigateur (localStorage, jamais bloquant : un
+  // accès qui jette rend simplement le bandeau à nouveau visible).
+  const [ferme, setFerme] = useState(true);
+  useEffect(() => {
+    try { setFerme(localStorage.getItem(CLE_FERME) === '1'); } catch { setFerme(false); }
+  }, []);
+  const fermer = () => {
+    setFerme(true);
+    try { localStorage.setItem(CLE_FERME, '1'); } catch { /* rien */ }
+  };
 
   // États sans bandeau
   if (status === 'subscribed' || status === 'free') return null;
@@ -44,40 +61,52 @@ export default function AccountStatusBanner({ profile }) {
     }
   };
 
+  const nomEssai = PLANS[planEssai(profile)]?.nom || 'Complet';
+  const prixEssai = PLANS[planEssai(profile)]?.prix || 29;
+
   // ─── trial_active : on n'affiche le bandeau que dans la dernière
   //     ligne droite (≤ 5 jours restants) pour ne pas marteler la prof
-  //     pendant les 9 premiers jours où elle découvre l'app sereinement.
+  //     pendant les premiers jours où elle découvre l'app sereinement.
   if (status === 'trial_active') {
     const trial = getTrialStatus(profile);
     if (trial.daysLeft > 5) return null; // discret : on attend J-5
 
     const daysWord = trial.daysLeft > 1 ? 'jours' : 'jour';
     return (
-      <div className="acc-banner acc-banner--trial-active">
+      <div className="acc-banner acc-banner--trial-active" data-testid="bandeau-essai">
         <Sparkles size={14} className="acc-icon" />
         <span className="acc-trial-text">
-          Essai <strong>Pro</strong> · {trial.daysLeft} {daysWord} restant{trial.daysLeft > 1 ? 's' : ''}
+          Essai <strong>{nomEssai}</strong> · {trial.daysLeft} {daysWord} restant{trial.daysLeft > 1 ? 's' : ''}, puis Essentiel gratuit
         </span>
         <Link href="/parametres/abonnement" className="acc-cta">
-          Choisir mon abo
+          Garder {nomEssai}
         </Link>
         <BannerStyle />
       </div>
     );
   }
 
-  // ─── trial_expired : bandeau urgent ────────────────────────────────
-  if (status === 'trial_expired') {
+  // ─── gratuit / canceled : une invitation, pas une alarme ───────────
+  // Le compte marche entièrement en Essentiel. On le dit une fois, dans les
+  // deux semaines qui suivent la fin de l'essai, et la prof peut fermer.
+  if (status === 'gratuit' || status === 'canceled') {
+    if (ferme) return null;
+    if (status === 'gratuit' && !essaiFiniDepuisMoinsDe(profile, 14)) return null;
     return (
-      <div className="acc-banner acc-banner--expired">
-        <AlertTriangle size={16} className="acc-icon" />
+      <div className="acc-banner acc-banner--gratuit" data-testid="bandeau-gratuit">
+        <Sparkles size={16} className="acc-icon" />
         <div className="acc-text">
-          <strong>Ton essai 30 jours est terminé.</strong> Choisis un plan pour
-          continuer à ajouter élèves, cours et paiements.
+          {status === 'canceled'
+            ? <><strong>Ton abonnement est terminé :</strong> tu es sur Essentiel, gratuit.</>
+            : <><strong>Ton essai {nomEssai} est fini :</strong> tu es sur Essentiel, gratuit, pour toujours.</>}
+          {' '}Tes élèves n'ont plus leur espace ni la réservation en ligne : le rouvrir coûte {prixEssai} € par mois, sans engagement.
         </div>
         <Link href="/parametres/abonnement" className="acc-cta acc-cta--primary">
-          Souscrire maintenant
+          Voir {nomEssai}
         </Link>
+        <button type="button" onClick={fermer} className="acc-close" aria-label="Fermer ce message">
+          <X size={14} />
+        </button>
         <BannerStyle />
       </div>
     );
@@ -90,7 +119,7 @@ export default function AccountStatusBanner({ profile }) {
         <CreditCard size={16} className="acc-icon" />
         <div className="acc-text">
           <strong>Paiement échoué.</strong> Mets à jour ta carte pour ne pas perdre l'accès.
-          Stripe va re-essayer plusieurs fois avant l'annulation définitive.
+          Stripe va re-essayer plusieurs fois avant d'abandonner.
         </div>
         <button onClick={openPortal} disabled={portalLoading} className="acc-cta acc-cta--primary">
           {portalLoading ? 'Redirection…' : 'Mettre à jour ma carte'}
@@ -100,19 +129,18 @@ export default function AccountStatusBanner({ profile }) {
     );
   }
 
-  // ─── canceled : compte gelé ────────────────────────────────────────
-  if (status === 'canceled') {
+  // ─── impaye : LE cas qui gèle ──────────────────────────────────────
+  if (status === 'impaye') {
     return (
-      <div className="acc-banner acc-banner--canceled">
+      <div className="acc-banner acc-banner--expired" data-testid="bandeau-impaye">
         <Snowflake size={16} className="acc-icon" />
         <div className="acc-text">
-          <strong>Compte gelé, abo annulé.</strong> Tu peux toujours consulter tes
-          données mais plus en ajouter. <strong>Le trial 30 j a déjà été utilisé</strong> :
-          re-souscris pour ré-accéder à toutes les features.
+          <strong>Ton abonnement a un impayé.</strong> Tu peux consulter tes
+          données mais plus rien ajouter tant que la facture n'est pas réglée.
         </div>
-        <Link href="/parametres/abonnement" className="acc-cta acc-cta--primary">
-          Re-souscrire
-        </Link>
+        <button onClick={openPortal} disabled={portalLoading} className="acc-cta acc-cta--primary">
+          {portalLoading ? 'Redirection…' : 'Régler ma facture'}
+        </button>
         <BannerStyle />
       </div>
     );
@@ -150,7 +178,13 @@ function BannerStyle() {
       }
       .acc-trial-text {
         white-space: nowrap;
-        margin-right: 4px;  /* espace clair avant le bouton "Choisir mon abo" */
+        margin-right: 4px;  /* espace clair avant le bouton */
+      }
+      .acc-banner--gratuit {
+        background: var(--brand-light, #faf2eb);
+        border: 1px solid var(--brand-200, #e8c8a8);
+        border-left: 4px solid var(--brand, #b87333);
+        color: var(--brand-700, #8c5826);
       }
       .acc-banner--expired {
         background: #fff7ed;
@@ -163,12 +197,6 @@ function BannerStyle() {
         border: 1px solid #fbbf24;
         border-left: 4px solid #d97706;
         color: #92400e;
-      }
-      .acc-banner--canceled {
-        background: #eff6ff;
-        border: 1px solid #93c5fd;
-        border-left: 4px solid #2563eb;
-        color: #1e40af;
       }
 
       .acc-icon { flex-shrink: 0; }
@@ -200,6 +228,11 @@ function BannerStyle() {
       .acc-cta--primary:hover:not(:disabled) {
         opacity: 0.85;
       }
+      .acc-close {
+        background: none; border: none; cursor: pointer; color: inherit;
+        padding: 4px; border-radius: 6px; display: inline-flex; opacity: 0.7;
+      }
+      .acc-close:hover { opacity: 1; background: rgba(0,0,0,0.06); }
 
       @media (max-width: 600px) {
         .acc-banner { font-size: 0.8125rem; }

@@ -413,17 +413,21 @@ export function Founder() {
   );
 }
 
-/* ---- TARIFS — 2 plans (grille définitive Colin 2026-07-27 :
-   Essentiel 15 € / Complet 29 € TTC). Cinq puces par plan, alignées
-   sur la matrice CAPACITES (constantes.js) : tout ce qui touche l'élève
-   = Complet, tout ce que la prof gère seule = Essentiel. Le détail
-   complet vit sur la page d'inscription et dans le guide. */
+/* ---- TARIFS : 2 plans pour la prof seule (freemium, décision Colin
+   2026-09-13 : Essentiel 0 € pour toujours / Complet 29 € TTC). Cinq puces
+   par plan, alignées sur la matrice CAPACITES (constantes.js) : tout ce qui
+   touche l'élève = Complet, tout ce que la prof gère seule = Essentiel. Les
+   associations et studios ont leurs plans (39 € / 59 €), annoncés sous la
+   grille et installés par le concierge. Le détail complet vit sur la page
+   d'inscription et dans le guide. */
 export function Pricing() {
   const plans = [
     {
       name: 'Essentiel',
-      price: '15',
-      desc: 'Ton cahier, en mieux. Tout ce que tu gères toi-même, au même endroit.',
+      price: '0',
+      periode: 'pour toujours',
+      cta: 'Commencer gratuitement',
+      desc: 'Ton cahier, en mieux. Tout ce que tu gères toi-même, au même endroit. Gratuit, sans carte, sans limite de temps.',
       features: [
         'Élèves illimités, agenda, récurrences, lieux',
         'Pointage en un clic, carnets et abonnements',
@@ -436,6 +440,8 @@ export function Pricing() {
     {
       name: 'Complet',
       price: '29',
+      periode: '/ mois',
+      cta: 'Essayer 30 jours',
       desc: 'Tes élèves font le travail à ta place : elles réservent, elles paient, elles reçoivent.',
       features: [
         'Tout Essentiel',
@@ -451,7 +457,7 @@ export function Pricing() {
   return (
     <section id="tarifs" className="pricing-v3">
       <div className="container">
-        <Head eyebrow="Tarifs" sub="30 jours d'essai gratuit, sans carte bancaire, résiliable en un clic. Offre de lancement : moitié prix pendant 3 mois avec le code LANCEMENT50.">
+        <Head eyebrow="Tarifs" sub="Essentiel est gratuit, sans carte, pour toujours. Complet s'essaie 30 jours, sans carte, résiliable en un clic. Offre de lancement : moitié prix pendant 3 mois avec le code LANCEMENT50.">
           Simple, <span className="accent">comme tout le reste.</span>
         </Head>
         <div className="prices reveal r-stagger">
@@ -459,7 +465,7 @@ export function Pricing() {
             <div key={i} className={`price ${p.featured ? 'featured' : ''}`}>
               {p.featured && <span className="tag">Le plus choisi</span>}
               <div className="nm serif">{p.name}</div>
-              <div className="amt"><b className="serif">{p.price} €</b><span>/ mois</span></div>
+              <div className="amt"><b className="serif">{p.price} €</b><span>{p.periode}</span></div>
               <div className="ds">{p.desc}</div>
               <ul>
                 {p.features.map(f => (
@@ -467,7 +473,7 @@ export function Pricing() {
                 ))}
               </ul>
               <Link href="/register" className={`btn ${p.featured ? 'btn-primary' : 'btn-ghost'}`}>
-                Essayer 30 jours
+                {p.cta}
               </Link>
             </div>
           ))}
@@ -475,6 +481,11 @@ export function Pricing() {
         <p className="stripe-note">
           Paiements en ligne (Complet) : <strong>tu encaisses sur ton propre compte Stripe</strong>.
           1 % IziSolo sur ta facture mensuelle, jamais prélevé sur tes paiements, plus les frais Stripe standard (1,5 % + 0,25 € par transaction).
+        </p>
+        <p className="stripe-note structures-note">
+          <strong>Une association ou un studio à plusieurs profs ?</strong> Le plan Association est à 39 € par mois,
+          le plan Studio à 59 € : tout Complet, des profs illimitées avec leurs droits, et deux mois offerts à l'année.{' '}
+          <Link href="/creer-mon-studio">On installe ton espace avec toi, gratuitement.</Link>
         </p>
       </div>
     </section>

@@ -18,8 +18,9 @@ const STATUTS_COMPTE = {
   subscribed:    { label: 'Abonnée',       couleur: '#4ade80' },
   offert:        { label: 'Offert (à la main, sans Stripe)', couleur: '#c084fc' },
   trial_active:  { label: 'En essai',      couleur: '#60a5fa' },
-  trial_expired: { label: 'Essai expiré',  couleur: '#fb923c' },
-  past_due:      { label: 'Impayé',        couleur: '#f87171' },
+  gratuit:       { label: 'Sur Essentiel gratuit', couleur: '#fb923c' },
+  past_due:      { label: 'Paiement échoué (Stripe relance)', couleur: '#f87171' },
+  impaye:        { label: 'Impayé (compte gelé)', couleur: '#f87171' },
   canceled:      { label: 'Résiliée',      couleur: '#64748b' },
   free:          { label: 'Free',          couleur: '#94a3b8' },
 };

@@ -47,7 +47,7 @@ export default function LogicielGestionLanding() {
           <Link href="/register" className="lg-btn lg-btn-primary">Essayer gratuitement 30 jours</Link>
           <Link href="/profs-de-yoga" className="lg-btn lg-btn-ghost">Voir pour les profs de yoga →</Link>
         </div>
-        <p className="lg-cta-hint">Sans carte bancaire · dès 15 €/mois</p>
+        <p className="lg-cta-hint">Sans carte bancaire · gratuit pour commencer</p>
       </header>
 
       <section className="lg-features">

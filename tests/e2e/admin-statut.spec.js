@@ -4,6 +4,8 @@
 // Pour l'app, un plan payant posé à la main sans Stripe vaut « subscribed »
 // (le compte reste ouvert). Pour l'admin, il vaut « offert » : même pastille
 // que les payants = compteur « Abonnés » gonflé à chaque bêta.
+// Depuis le freemium (2026-09-13) : plus de `trial_expired`, un essai fini
+// vaut `gratuit` ; le seul gel est `impaye`.
 // ═══════════════════════════════════════════════════════════════════════════
 import { test, expect } from '@playwright/test';
 import { getAccountStatus, getAdminStatus, isAccountFrozen } from '../../lib/trial.js';
@@ -18,20 +20,23 @@ test.describe('getAdminStatus — offert vs abonné', () => {
     expect(getAdminStatus(atoutGym)).toBe('offert');
   });
 
-  test('pro ou multi posés à la main sans Stripe : offert aussi', () => {
+  test('pro, asso, studio ou multi posés à la main sans Stripe : offert aussi', () => {
     expect(getAdminStatus({ plan: 'pro', trial_started_at: il_y_a(90), stripe_subscription_status: null })).toBe('offert');
+    expect(getAdminStatus({ plan: 'asso', trial_started_at: il_y_a(90) })).toBe('offert');
+    expect(getAdminStatus({ plan: 'studio', trial_started_at: il_y_a(90) })).toBe('offert');
     expect(getAdminStatus({ plan: 'multi', trial_started_at: il_y_a(90) })).toBe('offert');
   });
 
   test('une prof qui PAIE (Stripe actif) reste « subscribed »', () => {
     expect(getAdminStatus({ plan: 'pro', trial_started_at: il_y_a(90), stripe_subscription_status: 'active' })).toBe('subscribed');
-    expect(getAdminStatus({ plan: 'solo', stripe_subscription_status: 'trialing' })).toBe('subscribed');
+    expect(getAdminStatus({ plan: 'asso', stripe_subscription_status: 'trialing' })).toBe('subscribed');
   });
 
   test('les autres statuts passent tels quels', () => {
     expect(getAdminStatus({ plan: 'solo', trial_started_at: il_y_a(3) })).toBe('trial_active');
-    expect(getAdminStatus({ plan: 'solo', trial_started_at: il_y_a(90) })).toBe('trial_expired');
+    expect(getAdminStatus({ plan: 'solo', trial_started_at: il_y_a(90) })).toBe('gratuit');
     expect(getAdminStatus({ plan: 'pro', stripe_subscription_status: 'past_due' })).toBe('past_due');
+    expect(getAdminStatus({ plan: 'pro', stripe_subscription_status: 'unpaid' })).toBe('impaye');
     expect(getAdminStatus({ plan: 'pro', stripe_subscription_status: 'canceled', trial_started_at: il_y_a(90) })).toBe('canceled');
     expect(getAdminStatus({ plan: 'free' })).toBe('free');
   });

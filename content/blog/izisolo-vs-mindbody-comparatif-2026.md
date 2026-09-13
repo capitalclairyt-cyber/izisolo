@@ -24,7 +24,7 @@ Mindbody, c'est le nom que tu croises dès que tu cherches un [logiciel de gesti
 
 **Mindbody** affiche « à partir de 99 € par mois et par établissement ». Trois plans (Starter, Accelerate, Ultimate), et sur chacun le même bouton : « Let's talk ». Le prix exact s'obtient donc auprès de leur équipe commerciale. À noter aussi : l'application mobile à ta marque est un supplément, et lors de notre relevé, la page tarifs était servie en anglais.
 
-**IziSolo** : 15 €/mois (Essentiel) ou 29 €/mois (Complet), TTC, affichés publiquement, sans engagement, essai 30 jours sans carte bancaire.
+**IziSolo** : Essentiel gratuit, pour toujours, ou Complet à 29 €/mois TTC, affichés publiquement, sans engagement, essai 30 jours sans carte bancaire.
 
 L'écart n'est pas un détail : le ticket d'entrée Mindbody représente 3 à 6 fois nos deux plans. Ça ne le rend pas « trop cher » dans l'absolu : ça dit pour qui il est construit.
 

@@ -21,7 +21,7 @@
  *   · prefers-reduced-motion : AUCUNE vidéo ne démarre seule, le bouton ▶
  *     est là, et les flèches sont dessinées d'emblée sans animation ;
  *   · les invariants v3 : hiérarchie des CTA, opacité sans scroll, zéro .zen,
- *     tarifs 15/29, FAQ 6/13, zéro « 14 jours », zéro tiret quadratin,
+ *     tarifs 0/29 (freemium), FAQ 6/13, zéro « 14 jours », zéro tiret quadratin,
  *     mobile 390 sans débordement (cartes de callout comprises).
  * Usage : node scripts/proof-landing-v4.mjs [dossier-captures]
  */
@@ -65,7 +65,8 @@ ok(body.includes('Tout ce qu\'il te faut.'), 'Fonctionnalités : la tête de sec
 ok(body.includes('Encaisse comme tes élèves te paient'), 'Rangée Encaisser : la nouvelle rangée');
 ok(body.includes('On monte ton studio,'), 'Concierge : la section');
 ok(body.includes('Je voulais un outil calme, qui me ressemble.'), 'Fondatrice : la citation');
-ok(body.includes('15 €') && body.includes('29 €') && body.includes('LANCEMENT50'), 'Tarifs : 15/29 + code');
+ok(body.includes('0 €') && body.includes('pour toujours') && body.includes('29 €') && body.includes('LANCEMENT50') && !body.includes('15 €'), 'Tarifs : Essentiel 0 € pour toujours, Complet 29 €, code, plus jamais 15 €');
+ok(body.includes('39 €') && body.includes('59 €') && body.includes('Association'), 'Tarifs : les plans Association et Studio annoncés sous la grille');
 ok(!/\[Témoignage/.test(body) && !body.includes('Manon'), 'Aucun témoignage en attente affiché');
 ok(!body.includes('14 jours') && body.includes('30 jours'), 'Essai : 30 jours, plus jamais 14');
 ok(!body.includes('—'), 'Zéro tiret quadratin dans le texte rendu');

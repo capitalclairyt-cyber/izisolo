@@ -1,8 +1,10 @@
 import { createAdminClient } from '@/lib/supabase-admin';
 
-// Grille définitive 2026-07-27 (cf. lib/constantes.js) : 2 plans publics
-// Essentiel/Complet (clés DB solo/pro), zéro quota (v80), frontière = la
-// boucle élève. free = interne, premium = legacy traité comme pro.
+// Grille du 2026-09-13 (cf. lib/constantes.js) : Essentiel GRATUIT (solo),
+// Complet 29 € (pro), Association 39 € (asso), Studio 59 € (studio) ; zéro
+// quota (v80), frontière = la boucle élève, puis l'équipe et la famille.
+// free = interne ; premium, multi et multi_free = legacy (traités comme pro /
+// studio par effectivePlan).
 const PLANS_CONFIG = [
   {
     id: 'free',
@@ -16,8 +18,8 @@ const PLANS_CONFIG = [
   {
     id: 'solo',
     label: 'Essentiel',
-    price: '15 €/mois TTC',
-    description: 'Ton cahier, en mieux — tout ce que la prof gère seule, sans quota',
+    price: '0 € : gratuit, sans carte',
+    description: 'Ton cahier, en mieux : tout ce que la prof gère seule, sans quota (freemium depuis le 2026-09-13)',
     features: ['Élèves illimités + import/export CSV', 'Agenda, récurrences, lieux illimités', 'Pointage + carnets/abos manuels', 'Mini-compta + export comptable', 'Cas à traiter', 'Page publique vitrine (PWA)'],
     color: '#60a5fa',
     bg: '#1e3a5f',
@@ -32,8 +34,26 @@ const PLANS_CONFIG = [
     bg: '#1c3a2e',
   },
   {
+    id: 'asso',
+    label: 'Association',
+    price: '39 €/mois ou 390 €/an TTC',
+    description: 'Une asso loi 1901 (RNA obligatoire) : Complet + équipe + la vie de l\'asso (bureau, adhésions, documents, AG)',
+    features: ['Tout Complet', 'Profs illimitées, droits par personne', 'Fonctions du bureau (lot 3)', 'Adhésions et reçus de cotisation (lot 3)', 'Documents et AG (lot 3)'],
+    color: '#c084fc',
+    bg: '#2d1f3f',
+  },
+  {
+    id: 'studio',
+    label: 'Studio',
+    price: '59 €/mois ou 590 €/an TTC',
+    description: 'Un studio commercial : Complet + équipe + la gestion du studio (dépenses, marge, salles, relevés d\'intervenantes)',
+    features: ['Tout Complet', 'Intervenantes illimitées, droits par personne', 'Relevés et rémunération par intervenante (lot 2)', 'Dépenses, marge, salles (lot 4)'],
+    color: '#c084fc',
+    bg: '#2d1f3f',
+  },
+  {
     id: 'premium',
-    label: 'Studio (legacy)',
+    label: 'Studio (legacy 2026)',
     price: '79 €/mois — plus vendu',
     description: 'Plus jamais vendu (2026-07-26) : les comptes premium existants sont traités comme Complet (effectivePlan). Vidéos/white-label au backlog.',
     features: ['Traité comme Complet partout', 'Aucun Product/Price Stripe créé', 'Conservé pour l\'affichage des comptes legacy'],

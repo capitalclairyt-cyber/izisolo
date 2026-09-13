@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { withRoute } from '@/lib/api-route';
 import { getTrialStatus } from '@/lib/trial';
+import { PLANS } from '@/lib/constantes';
 import { sendEmail } from '@/lib/email';
 import { reportError } from '@/lib/report';
 import { choisirEmailOnboarding, renderEmailOnboarding } from '@/lib/onboarding-emails';
@@ -191,16 +192,31 @@ export const GET = withRoute({ auth: 'cron' }, async () => {
   // ── Relance de fin d'essai SaaS (J-3 / J-1) ───────────────────────────────
   // Email transactionnel au prof dont l'essai 30 j se termine bientôt (conversion
   // vers un plan payant). Flags trial_reminder_sent_j3/j1 (v33) = anti-doublon.
+  // FREEMIUM (2026-09-13) : la fin d'essai ne gèle plus rien, elle ramène sur
+  // Essentiel gratuit. L'email n'annonce donc plus une coupure, mais ce que la
+  // prof PERD (la boucle élève) et ce qu'elle garde.
   // Pas de push (cron à 3h ≈ 5h Paris) : le canal email + la bannière in-app
   // suffisent. ⚠️ Sûr depuis v57 (plus d'élèves fantômes en faux trial).
   let trialJ3 = 0, trialJ1 = 0;
   try {
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.izisolo.fr';
-    const { data: trialProfiles } = await supabaseAdmin
+    // `type_structure` (v110) décide du nom du plan essayé dans l'email. Si la
+    // colonne manque encore, on relit sans elle : une colonne inconnue ferait
+    // échouer TOUTE la requête et plus aucune prof ne serait relancée.
+    const colonnesEssai = 'id, prenom, email_contact, plan, trial_started_at, stripe_subscription_status, trial_reminder_sent_j3, trial_reminder_sent_j1';
+    let { data: trialProfiles, error: eEssai } = await supabaseAdmin
       .from('profiles')
-      .select('id, prenom, email_contact, plan, trial_started_at, stripe_subscription_status, trial_reminder_sent_j3, trial_reminder_sent_j1')
+      .select(`${colonnesEssai}, type_structure`)
       .not('trial_started_at', 'is', null)
       .neq('plan', 'free');
+    if (eEssai && (eEssai.code === '42703' || eEssai.code === 'PGRST204')) {
+      ({ data: trialProfiles, error: eEssai } = await supabaseAdmin
+        .from('profiles')
+        .select(colonnesEssai)
+        .not('trial_started_at', 'is', null)
+        .neq('plan', 'free'));
+    }
+    if (eEssai) reportError('[cron/expirations] lecture des essais:', eEssai, { route: '/api/cron/expirations' });
 
     for (const prof of (trialProfiles || [])) {
       const st = getTrialStatus(prof);
@@ -227,9 +243,11 @@ export const GET = withRoute({ auth: 'cron' }, async () => {
       const finLe = st.endsAt
         ? new Date(st.endsAt).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Europe/Paris' })
         : null;
+      const nomEssai = PLANS[st.planEssai]?.nom || 'Complet';
+      const prixEssai = PLANS[st.planEssai]?.prix || 29;
       const sujet = jours <= 1
-        ? `Ton essai IziSolo se termine ${finLe ? `le ${finLe}` : 'très bientôt'}`
-        : `Ton essai IziSolo se termine dans ${jours} jours`;
+        ? `Ton essai ${nomEssai} se termine ${finLe ? `le ${finLe}` : 'très bientôt'}`
+        : `Ton essai ${nomEssai} se termine dans ${jours} jours`;
       try {
         const r = await sendEmail({
           categorie: 'transactionnel',
@@ -237,15 +255,20 @@ export const GET = withRoute({ auth: 'cron' }, async () => {
           subject: sujet,
           html: `
             <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:560px;margin:0 auto;padding:24px;">
-              <h2 style="color:#b87333;margin:0 0 6px;">Ton essai touche à sa fin</h2>
+              <h2 style="color:#b87333;margin:0 0 6px;">Ton essai ${nomEssai} touche à sa fin</h2>
               <p style="color:#555;margin:0 0 14px;">Bonjour ${prof.prenom || ''},</p>
               <p style="color:#555;margin:0 0 14px;">
-                Ton essai gratuit de 30 jours se termine ${jours <= 1 ? (finLe ? `le ${finLe}` : 'très bientôt') : `dans ${jours} jours`}.
-                Pour continuer à gérer ton studio sans interruption, choisis ton plan dès maintenant.
+                Ton essai ${nomEssai} se termine ${jours <= 1 ? (finLe ? `le ${finLe}` : 'très bientôt') : `dans ${jours} jours`}.
+                Ensuite, rien ne s'arrête : tu passes sur <strong>Essentiel, gratuit, pour toujours</strong>
+                (tes élèves, ton agenda, tes carnets, tes encaissements, tes factures).
+              </p>
+              <p style="color:#555;margin:0 0 14px;">
+                Ce que tu perds, c'est ce que tes élèves font en ligne : réserver, annuler, payer, recevoir
+                leurs rappels, te parler dans la messagerie. Pour le garder, c'est ${nomEssai} à ${prixEssai} € par mois, sans engagement.
               </p>
               <div style="text-align:center;margin:24px 0;">
                 <a href="${appUrl}/parametres/abonnement" style="display:inline-block;padding:14px 28px;background:#b87333;color:white;text-decoration:none;border-radius:99px;font-weight:700;">
-                  Choisir mon plan
+                  Garder ${nomEssai}
                 </a>
               </div>
               <p style="color:#999;margin:16px 0 0;font-size:0.8125rem;">

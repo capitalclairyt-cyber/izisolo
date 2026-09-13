@@ -71,8 +71,9 @@ const STATUT_CARDS = [
   { key: 'subscribed',    label: 'Abonnés',        accent: '#4ade80', hint: 'Stripe actif' },
   { key: 'offert',        label: 'Offerts',        accent: '#c084fc', hint: 'plan posé à la main, sans Stripe' },
   { key: 'trial_active',  label: 'Essais en cours', accent: '#60a5fa' },
-  { key: 'trial_expired', label: 'Essais expirés',  accent: '#fb923c', hint: 'à relancer' },
-  { key: 'past_due',      label: 'Impayés',         accent: '#f87171', hint: 'action urgente' },
+  { key: 'gratuit',       label: 'Sur Essentiel',   accent: '#fb923c', hint: 'gratuit, à convertir' },
+  { key: 'past_due',      label: 'Paiements échoués', accent: '#f87171', hint: 'Stripe relance' },
+  { key: 'impaye',        label: 'Impayés (gelés)', accent: '#f87171', hint: 'action urgente' },
   { key: 'canceled',      label: 'Résiliés',        accent: '#94a3b8' },
 ];
 
@@ -92,13 +93,14 @@ export default async function AdminDashboard() {
   const stats = await getStats(supabase);
 
   const recentUsers = stats.reels.slice(0, 10);
-  const PLAN_COLORS = { free: 'free', solo: 'solo', pro: 'pro', premium: 'premium' };
+  const PLAN_COLORS = { free: 'free', solo: 'solo', pro: 'pro', asso: 'studio', studio: 'studio', multi: 'studio', premium: 'premium' };
   const STATUT_BADGES = {
     subscribed: ['Abonné', '#1c3a2e', '#4ade80'],
     offert: ['Offert', '#2e1f3f', '#c084fc'],
     trial_active: ['Essai', '#1e3a5f', '#60a5fa'],
-    trial_expired: ['Essai expiré', '#3f2d1f', '#fb923c'],
-    past_due: ['Impayé', '#3f1f1f', '#f87171'],
+    gratuit: ['Gratuit', '#3f2d1f', '#fb923c'],
+    past_due: ['Paiement échoué', '#3f1f1f', '#f87171'],
+    impaye: ['Impayé (gelé)', '#3f1f1f', '#f87171'],
     canceled: ['Résilié', '#2a2a35', '#94a3b8'],
     free: ['Free', '#1e293b', '#94a3b8'],
   };

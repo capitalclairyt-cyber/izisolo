@@ -297,4 +297,18 @@ export const FAQ_SUPPORT = [
     a: "Tes élèves : exporte ta liste depuis ton ancien outil (CSV ou Excel), puis page Élèves → « Importer ». IziSolo reconnaît les colonnes, garde les accents, fusionne les doublons et n'écrase jamais une fiche. Tes carnets : crée tes offres, puis sur chaque fiche « Ajouter une offre » et, dans « Modifier les séances déjà faites », pose le nombre de séances déjà utilisées pour que le compteur reparte juste. Ton planning : crée chaque cours en série (jour, heure, lieu, places, vacances sautées). Si tu préfères que ce soit fait pour toi, envoie-nous ton export, ton planning et les séances restantes de chaque carnet depuis izisolo.fr/changer-d-outil : Maude monte le tout en 48 h, gratuitement. Ce qui ne se reprend pas : l'historique des paiements et des présences de ton ancien outil, garde-en une copie avant de le fermer.",
     lien: { href: '/aide#eleves', label: 'Voir le pas-à-pas' },
   },
+  {
+    // Freemium, 2026-09-13 (décision Colin : Essentiel passe à 0 €). La
+    // question que pose toute prof dont l'essai se termine. AJOUTÉE EN FIN.
+    q: "Mon essai est terminé : est-ce que je perds mes données, ou est-ce que je dois payer pour continuer ?",
+    a: "Ni l'un ni l'autre. À la fin des 30 jours, tu passes sur Essentiel, qui est gratuit, sans carte bancaire et sans limite de temps : tes élèves, ton agenda, tes carnets, tes encaissements, tes factures et ta déclaration URSSAF continuent de marcher exactement pareil, et tu peux toujours tout exporter. Ce que tu perds, c'est ce que tes élèves faisaient en ligne pendant l'essai : réserver, annuler, payer par carte, recevoir leurs rappels, te parler dans la messagerie. Pour le garder, c'est Complet à 29 € par mois, sans engagement, résiliable en un clic ; et si tu résilies un jour, tu retombes sur Essentiel, jamais sur un compte bloqué. Le seul cas où IziSolo bloque les nouvelles saisies, c'est une facture d'abonnement restée impayée après les relances de Stripe.",
+    lien: { href: '/aide#abonnement', label: 'Voir le pas-à-pas' },
+  },
+  {
+    // Plans Association et Studio, 2026-09-13. Le RNA est le garde-fou du
+    // plan Association. AJOUTÉE EN FIN.
+    q: "Je gère une association ou un studio avec plusieurs profs : quel plan, et pourquoi on me demande un numéro RNA ?",
+    a: "Deux plans existent pour les structures à plusieurs profs, tous deux avec profs illimitées et un forfait fixe : Association à 39 € par mois et Studio à 59 € par mois, ou à l'année avec deux mois offerts (390 € et 590 €). Ils contiennent tout Complet plus l'équipe : chaque prof a son accès et ses droits, et tu dis qui donne quelle séance. Le plan Association est réservé aux associations déclarées : IziSolo te demande ton numéro RNA (la lettre W suivie de neuf chiffres, sur ton récépissé de préfecture) à la création de ton espace ou dans Paramètres → Studio & lieux → Ma structure. C'est ce qui permet de proposer un tarif plus bas aux assos sans qu'un studio commercial se déclare association pour l'obtenir. Tu peux essayer ton plan 30 jours sans carte, puis tu choisis ; si tu ne prends rien, ton espace reste ouvert sur Essentiel, gratuit, et les profs invitées retrouvent leur place dès que l'abonnement reprend.",
+    lien: { href: '/aide#equipe', label: 'Voir le pas-à-pas' },
+  },
 ];

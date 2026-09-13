@@ -143,7 +143,8 @@ test.describe('Rubriques : résumés d\'état', () => {
     expect(r('champs', PROFIL_COMPLET)).toBe('3 champs perso');
     expect(r('abonnement', PROFIL_COMPLET)).toBe('Complet · 29 €/mois');
     expect(r('abonnement', { plan: 'solo', trial_started_at: new Date(Date.now() - 2 * 86400000).toISOString() })).toMatch(/^Essai · Complet · \d+ jours? restants?$/);
-    expect(r('abonnement', { plan: 'solo', trial_started_at: new Date(Date.now() - 400 * 86400000).toISOString() })).toBe('Essai terminé · choisis ton plan');
+    // Freemium (2026-09-13) : un essai fini, c'est Essentiel gratuit, un état stable.
+    expect(r('abonnement', { plan: 'solo', trial_started_at: new Date(Date.now() - 400 * 86400000).toISOString() })).toBe('Essentiel · gratuit');
   });
 
   test('un résumé ne contient jamais un secret', () => {
@@ -237,9 +238,9 @@ test.describe('Cartes repliées (lot 2) : chaque carte dit son état', () => {
     expect(resumeCarte('facturation', PROFIL_COMPLET)).toContain('SIRET');
   });
 
-  test('« Changer de plan » ne s\'ouvre tout seul qu\'en essai ou essai terminé', () => {
+  test('« Changer de plan » ne s\'ouvre tout seul qu\'en essai (un essai fini = Essentiel gratuit, état stable)', () => {
     expect(carteOuverteParDefaut('changer_plan', { plan: 'solo', trial_started_at: new Date().toISOString() })).toBe(true);
-    expect(carteOuverteParDefaut('changer_plan', { plan: 'solo', trial_started_at: new Date(Date.now() - 400 * 86400000).toISOString() })).toBe(true);
+    expect(carteOuverteParDefaut('changer_plan', { plan: 'solo', trial_started_at: new Date(Date.now() - 400 * 86400000).toISOString() })).toBe(false);
     expect(carteOuverteParDefaut('changer_plan', PROFIL_COMPLET)).toBe(false);
     expect(carteOuverteParDefaut('anniv', PROFIL_COMPLET)).toBe(false);
   });

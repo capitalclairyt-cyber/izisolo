@@ -2,20 +2,22 @@
  * IziSolo — Installation Stripe SaaS en 1 commande (idempotent)
  * ─────────────────────────────────────────────────────────────────────────────
  * Crée/retrouve tout ce que la chaîne d'abonnement attend :
- *   1. Products  : IziSolo Essentiel / IziSolo Complet / IziSolo Multi
- *      (les produits d'un éventuel run précédent sont RENOMMÉS s'ils portent
- *      encore les anciens noms Solo/Pro — retrouvés par metadata izisolo_plan)
- *   2. Prices    : 15 € / 29 € / 49 € par mois (EUR), tax_behavior INCLUSIVE
+ *   1. Products  : IziSolo Complet / IziSolo Association / IziSolo Studio
+ *      (retrouvés par metadata izisolo_plan, renommés si besoin). Essentiel
+ *      (gratuit depuis le 2026-09-13) et Multi (retiré) sont ARCHIVÉS.
+ *   2. Prices    : Complet 29 €/mois ; Association 39 €/mois ou 390 €/an ;
+ *      Studio 59 €/mois ou 590 €/an (EUR), tax_behavior INCLUSIVE
  *   3. Coupon + promotion code de lancement : LANCEMENT50, −50 % pendant 3 mois,
  *      borné dans le temps et réservé aux nouvelles clientes.
  *   4. Webhook endpoint : https://www.izisolo.fr/api/stripe/webhook-saas
  *      ⚠️ CRÉÉ EN MODE LIVE UNIQUEMENT. En test, on passe par `stripe listen`
  *      (deux endpoints sur la même URL = deux secrets pour une seule env var,
  *      donc un des deux mondes répond 400 sur chaque event).
- *   5. Customer Portal : une configuration explicite, dont l'id part en env var
- *      STRIPE_PORTAL_CONFIG_ID (une config créée par l'API naît is_default:false,
- *      donc la route DOIT la nommer, sinon Stripe cherche une config par défaut
- *      qui n'existe que si on a cliqué « Save » dans le Dashboard).
+ *   5. Customer Portal : DEUX configurations explicites (profs seules : Complet ;
+ *      structures : Association et Studio, mensuel ou annuel), dont les ids
+ *      partent en env vars STRIPE_PORTAL_CONFIG_ID et
+ *      STRIPE_PORTAL_CONFIG_ID_STRUCTURES (une config créée par l'API naît
+ *      is_default:false, donc la route DOIT la nommer).
  *
  * Usage :
  *   node scripts/setup-stripe-saas.mjs --key=sk_test_...     # répétition en test
@@ -30,12 +32,13 @@
  * modifient plus après création. Une erreur se corrige en archivant le Price et
  * en migrant les abonnements à la main.
  *
- * Grille canonique (bible + lib/constantes.js) :
- *   Essentiel 15 € / Complet 29 € / Multi 49 € (forfait plat, profs illimitées,
- *   ajouté le 2026-09-07 avec l'accord de Colin) · lancement −50 % pendant 3 mois.
- *   Vendeur : Maude Yoga (EI), franchise de TVA art. 293 B — d'où
+ * Grille canonique (bible + lib/constantes.js, décisions Colin 2026-09-13) :
+ *   Essentiel 0 € (freemium, aucun Price) / Complet 29 € / Association 39 €
+ *   ou 390 €/an / Studio 59 € ou 590 €/an (forfaits plats, profs illimitées)
+ *   · lancement −50 % pendant 3 mois sur le mensuel.
+ *   Vendeur : Maude Yoga (EI), franchise de TVA art. 293 B, d'où
  *   tax_behavior INCLUSIVE : le montant affiché est le montant débité.
- *   Studio/premium : legacy, plus jamais vendu — aucun Product/Price créé.
+ *   premium (legacy 2026) : jamais recréé. multi : archivé par ce script.
  */
 
 import Stripe from 'stripe';
@@ -79,14 +82,24 @@ const WEBHOOK_EVENTS = [
   'invoice.payment_failed',
 ];
 
-// planKey = clé interne DB (solo/pro) ; noms marketing Essentiel/Complet.
+// planKey = clé interne DB ; noms marketing Complet / Association / Studio.
+// Grille du 2026-09-13 (FREEMIUM) : Essentiel est GRATUIT (aucun Price),
+// Multi est RETIRÉ (archivé plus bas), Association et Studio ont chacun un
+// mensuel et un annuel (deux mois offerts). Forfaits PLATS, jamais par siège.
+// `famille` = quelle configuration de Customer Portal propose ce Price.
 const PLANS = [
-  { planKey: 'solo', nom: 'IziSolo Essentiel', prix: 1500, envVar: 'STRIPE_PRICE_ID_SOLO_MENSUEL', lookup: 'izisolo_essentiel_mensuel' },
-  { planKey: 'pro',  nom: 'IziSolo Complet',   prix: 2900, envVar: 'STRIPE_PRICE_ID_PRO_MENSUEL',  lookup: 'izisolo_complet_mensuel' },
-  // Multi : forfait PLAT, profs illimitées (décision gravée B3a / multi-prof) —
-  // jamais un prix par siège.
-  { planKey: 'multi', nom: 'IziSolo Multi',    prix: 4900, envVar: 'STRIPE_PRICE_ID_MULTI_MENSUEL', lookup: 'izisolo_multi_mensuel' },
+  { planKey: 'pro',    nom: 'IziSolo Complet',     prix: 2900,  interval: 'month', envVar: 'STRIPE_PRICE_ID_PRO_MENSUEL',    lookup: 'izisolo_complet_mensuel',     famille: 'profs' },
+  { planKey: 'asso',   nom: 'IziSolo Association', prix: 3900,  interval: 'month', envVar: 'STRIPE_PRICE_ID_ASSO_MENSUEL',   lookup: 'izisolo_association_mensuel', famille: 'structures' },
+  { planKey: 'asso',   nom: 'IziSolo Association', prix: 39000, interval: 'year',  envVar: 'STRIPE_PRICE_ID_ASSO_ANNUEL',    lookup: 'izisolo_association_annuel',  famille: 'structures' },
+  { planKey: 'studio', nom: 'IziSolo Studio',      prix: 5900,  interval: 'month', envVar: 'STRIPE_PRICE_ID_STUDIO_MENSUEL', lookup: 'izisolo_studio_mensuel',      famille: 'structures' },
+  { planKey: 'studio', nom: 'IziSolo Studio',      prix: 59000, interval: 'year',  envVar: 'STRIPE_PRICE_ID_STUDIO_ANNUEL',  lookup: 'izisolo_studio_annuel',       famille: 'structures' },
 ];
+
+// Plans d'un run précédent qu'on n'encaisse PLUS : leurs Prices et Products
+// sont ARCHIVÉS (jamais supprimés : un abonnement en cours garde son Price, et
+// l'historique reste lisible). `solo` : Essentiel est devenu gratuit ; `multi` :
+// retiré au profit d'Association / Studio.
+const PLANS_A_ARCHIVER = ['solo', 'multi'];
 
 const COUPON_ID = 'LANCEMENT50';   // id déterministe : le rejeu retrouve le coupon
 const COUPON = {
@@ -97,12 +110,14 @@ const COUPON = {
   months: 3,
 };
 
-const out = { prices: {}, webhookSecret: null, portalConfigId: null, produits: {} };
+const out = { prices: {}, webhookSecret: null, portalConfigs: {}, produits: {} };
 const log = (s) => console.log(s);
 let alertes = 0;
 const alerte = (s) => { alertes++; log(`  ⚠ ${s}`); };
 
-async function ensureProductAndPrice({ planKey, nom, prix, envVar, lookup }) {
+async function ensureProductAndPrice({ planKey, nom, prix, interval, envVar, lookup }) {
+  const parAn = interval === 'year';
+  const unite = parAn ? 'an' : 'mois';
   // products.list plutôt que products.search : l'index de recherche est en
   // retard sur les écritures (la doc déconseille explicitement de lire juste
   // après avoir écrit), ce qui fabriquait des Products en double au rejeu.
@@ -118,22 +133,22 @@ async function ensureProductAndPrice({ planKey, nom, prix, envVar, lookup }) {
     product = await stripe.products.create({ name: nom, metadata: { izisolo_plan: planKey } });
     log(`  ＋ Product créé : ${nom} (${product.id})`);
   } else if (product.name !== nom) {
-    // Run précédent avec les anciens noms marketing (Solo/Pro) : on renomme —
-    // c'est CE nom qui s'affiche au checkout et sur les factures.
+    // Run précédent avec un ancien nom marketing : on renomme, c'est CE nom
+    // qui s'affiche au checkout et sur les factures.
     if (VERIFY_ONLY) { log(`  ✗ Product ${product.name} : à renommer en ${nom}`); }
     else {
       await stripe.products.update(product.id, { name: nom });
       log(`  ✎ Product renommé : ${product.name} → ${nom} (${product.id})`);
     }
-  } else {
+  } else if (!out.produits[planKey]) {
     log(`  ✓ Product : ${nom} (${product.id})`);
   }
   out.produits[planKey] = product.id;
 
-  // Price mensuel EUR au bon montant ET au bon tax_behavior.
+  // Price EUR au bon montant, au bon INTERVALLE et au bon tax_behavior.
   const prices = await stripe.prices.list({ product: product.id, active: true, limit: 100 });
   const memeMontant = prices.data.filter(p =>
-    p.currency === 'eur' && p.recurring?.interval === 'month' && p.unit_amount === prix
+    p.currency === 'eur' && p.recurring?.interval === interval && p.unit_amount === prix
   );
   let price = memeMontant.find(p => p.tax_behavior === 'inclusive');
 
@@ -145,21 +160,49 @@ async function ensureProductAndPrice({ planKey, nom, prix, envVar, lookup }) {
   }
 
   if (!price) {
-    if (VERIFY_ONLY) { log(`  ✗ Price ${prix / 100} €/mois inclusive : ABSENT`); return; }
+    if (VERIFY_ONLY) { log(`  ✗ Price ${prix / 100} €/${unite} inclusive : ABSENT`); return; }
     price = await stripe.prices.create({
       product: product.id,
       currency: 'eur',
       unit_amount: prix,
-      recurring: { interval: 'month' },
-      tax_behavior: 'inclusive',  // IRRÉVERSIBLE — franchise 293 B, le prix affiché est le prix débité
+      recurring: { interval },
+      tax_behavior: 'inclusive',  // IRRÉVERSIBLE, franchise 293 B : le prix affiché est le prix débité
       lookup_key: lookup,
-      metadata: { izisolo_plan: planKey },
+      metadata: { izisolo_plan: planKey, periode: parAn ? 'annuel' : 'mensuel' },
     });
-    log(`  ＋ Price créé : ${prix / 100} €/mois inclusive (${price.id})`);
+    log(`  ＋ Price créé : ${prix / 100} €/${unite} inclusive (${price.id})`);
   } else {
-    log(`  ✓ Price : ${prix / 100} €/mois inclusive (${price.id})`);
+    log(`  ✓ Price : ${prix / 100} €/${unite} inclusive (${price.id})`);
   }
   out.prices[envVar] = price.id;
+}
+
+/**
+ * Archive les Products et Prices des plans qu'on n'encaisse plus (Essentiel
+ * devenu gratuit, Multi retiré). Archiver ≠ supprimer : un abonnement en cours
+ * garde son Price, et l'historique des factures reste lisible. Un Price
+ * archivé ne peut plus être choisi au checkout ni dans le portail.
+ */
+async function archiverLegacy() {
+  const tous = await stripe.products.list({ limit: 100, active: true });
+  for (const planKey of PLANS_A_ARCHIVER) {
+    const produits = tous.data.filter(p => p.metadata?.izisolo_plan === planKey);
+    if (!produits.length) { log(`  ✓ ${planKey} : rien d'actif à archiver`); continue; }
+    for (const product of produits) {
+      const prices = await stripe.prices.list({ product: product.id, active: true, limit: 100 });
+      if (VERIFY_ONLY) {
+        log(`  ✗ ${planKey} : ${product.name} (${product.id}) encore actif avec ${prices.data.length} Price(s) : à archiver`);
+        alertes++;
+        continue;
+      }
+      for (const p of prices.data) {
+        await stripe.prices.update(p.id, { active: false });
+        log(`  ▪ Price archivé : ${p.unit_amount / 100} € (${p.id})`);
+      }
+      await stripe.products.update(product.id, { active: false });
+      log(`  ▪ Product archivé : ${product.name} (${product.id})`);
+    }
+  }
 }
 
 async function ensureCoupon() {
@@ -262,62 +305,108 @@ async function ensureWebhook() {
   log(`  ＋ Webhook créé : ${WEBHOOK_URL} (${hook.id})`);
 }
 
+/**
+ * Deux configurations de Customer Portal depuis le 2026-09-13, parce qu'une
+ * configuration est GLOBALE (pas par client) et qu'on ne veut pas qu'une
+ * association « monte » en Studio par erreur, ni qu'une prof seule voie les
+ * plans de structure :
+ *   - famille `profs`      (metadata izisolo=saas)            : Complet seul
+ *   - famille `structures` (metadata izisolo=saas-structures) : Association et
+ *     Studio, mensuel ou annuel
+ * Une configuration existante est MISE À JOUR (ses produits autorisés suivent
+ * la grille) : le run précédent proposait Essentiel et Multi, qu'on n'encaisse
+ * plus. La route customer-portal choisit la configuration selon le type de
+ * structure.
+ */
 async function ensurePortalConfig() {
-  const prixAutorises = PLANS.map(p => out.prices[p.envVar]).filter(Boolean);
-  const produits = PLANS
-    .map(p => ({ product: out.produits[p.planKey], prices: [out.prices[p.envVar]].filter(Boolean) }))
-    .filter(p => p.product && p.prices.length);
-
   const configs = await stripe.billingPortal.configurations.list({ active: true, limit: 100 });
-  // On cherche NOTRE config (metadata), pas « une config active » : le contrôle
-  // d'avant s'affichait vert alors que la route répondait 503.
-  const notre = configs.data.find(c => c.metadata?.izisolo === 'saas');
   const parDefaut = configs.data.find(c => c.is_default);
 
-  if (notre) {
-    out.portalConfigId = notre.id;
-    const f = notre.features || {};
-    const manques = [];
-    if (!f.invoice_history?.enabled) manques.push('invoice_history');
-    if (!f.payment_method_update?.enabled) manques.push('payment_method_update');
-    if (!f.subscription_cancel?.enabled) manques.push('subscription_cancel');
-    if (!f.subscription_update?.enabled) manques.push('subscription_update');
-    if (manques.length) alerte(`Customer Portal : fonctionnalités désactivées — ${manques.join(', ')}`);
-    else log(`  ✓ Customer Portal : configuration IziSolo (${notre.id})`);
-    if (!parDefaut) {
-      log('  ℹ️ Aucune configuration par DÉFAUT sur ce compte : sans risque ici,');
-      log('     la route nomme explicitement STRIPE_PORTAL_CONFIG_ID.');
+  const FAMILLES = [
+    { famille: 'profs',      meta: 'saas',            envVar: 'STRIPE_PORTAL_CONFIG_ID',            headline: 'IziSolo — ton abonnement' },
+    { famille: 'structures', meta: 'saas-structures', envVar: 'STRIPE_PORTAL_CONFIG_ID_STRUCTURES', headline: 'IziSolo — l\'abonnement de ta structure' },
+  ];
+
+  for (const { famille, meta, envVar, headline } of FAMILLES) {
+    const plansFamille = PLANS.filter(p => p.famille === famille);
+    // Un Product, TOUS ses Prices résolus (mensuel + annuel) : c'est ainsi
+    // que le portail propose « passer à l'année ».
+    const parProduit = new Map();
+    for (const p of plansFamille) {
+      const product = out.produits[p.planKey];
+      const price = out.prices[p.envVar];
+      if (!product || !price) continue;
+      if (!parProduit.has(product)) parProduit.set(product, []);
+      parProduit.get(product).push(price);
     }
-    return;
+    const produits = [...parProduit].map(([product, prices]) => ({ product, prices }));
+
+    // On cherche NOTRE config (metadata), pas « une config active » : le
+    // contrôle d'avant s'affichait vert alors que la route répondait 503.
+    const notre = configs.data.find(c => c.metadata?.izisolo === meta);
+
+    if (notre) {
+      out.portalConfigs[envVar] = notre.id;
+      const f = notre.features || {};
+      const manques = [];
+      if (!f.invoice_history?.enabled) manques.push('invoice_history');
+      if (!f.payment_method_update?.enabled) manques.push('payment_method_update');
+      if (!f.subscription_cancel?.enabled) manques.push('subscription_cancel');
+      if (!f.subscription_update?.enabled) manques.push('subscription_update');
+      if (manques.length) alerte(`Customer Portal ${famille} : fonctionnalités désactivées — ${manques.join(', ')}`);
+
+      // Les produits autorisés doivent être EXACTEMENT ceux de la grille.
+      const actuels = (f.subscription_update?.products || [])
+        .map(p => `${p.product}:${[...(p.prices || [])].sort().join('+')}`).sort().join('|');
+      const voulus = produits.map(p => `${p.product}:${[...p.prices].sort().join('+')}`).sort().join('|');
+      if (actuels !== voulus) {
+        if (VERIFY_ONLY) { log(`  ✗ Customer Portal ${famille} (${notre.id}) : produits autorisés à mettre à jour`); alertes++; }
+        else if (!produits.length) { alerte(`Customer Portal ${famille} : aucun Price résolu, produits non mis à jour`); }
+        else {
+          await stripe.billingPortal.configurations.update(notre.id, {
+            features: { subscription_update: { enabled: true, default_allowed_updates: ['price'], products: produits, proration_behavior: 'create_prorations' } },
+          });
+          log(`  ✎ Customer Portal ${famille} : produits autorisés mis à jour (${notre.id})`);
+        }
+      } else if (!manques.length) {
+        log(`  ✓ Customer Portal ${famille} : configuration IziSolo (${notre.id})`);
+      }
+      continue;
+    }
+
+    if (VERIFY_ONLY) { log(`  ✗ Customer Portal ${famille} : aucune configuration IziSolo`); alertes++; continue; }
+    if (!produits.length) { alerte(`Customer Portal ${famille} non créé : aucun Price résolu`); continue; }
+
+    const cfg = await stripe.billingPortal.configurations.create({
+      business_profile: {
+        headline,
+        privacy_policy_url: 'https://www.izisolo.fr/legal/rgpd',
+        terms_of_service_url: 'https://www.izisolo.fr/legal/cgv',
+      },
+      features: {
+        invoice_history: { enabled: true },
+        payment_method_update: { enabled: true },
+        customer_update: { enabled: true, allowed_updates: ['email', 'address'] },
+        subscription_cancel: { enabled: true, mode: 'at_period_end' },
+        // Changement de plan en self-service (décision Colin 2026-08-22) : exige
+        // des Prices en tax_behavior explicite, d'où l'inclusive plus haut.
+        subscription_update: {
+          enabled: true,
+          default_allowed_updates: ['price'],
+          products: produits,
+          proration_behavior: 'create_prorations',
+        },
+      },
+      metadata: { izisolo: meta },
+    });
+    out.portalConfigs[envVar] = cfg.id;
+    log(`  ＋ Customer Portal ${famille} configuré (${cfg.id})`);
   }
 
-  if (VERIFY_ONLY) { log('  ✗ Customer Portal : aucune configuration IziSolo'); return; }
-  if (!prixAutorises.length) { alerte('Customer Portal non créé : aucun Price résolu'); return; }
-
-  const cfg = await stripe.billingPortal.configurations.create({
-    business_profile: {
-      headline: 'IziSolo — ton abonnement',
-      privacy_policy_url: 'https://www.izisolo.fr/legal/rgpd',
-      terms_of_service_url: 'https://www.izisolo.fr/legal/cgv',
-    },
-    features: {
-      invoice_history: { enabled: true },
-      payment_method_update: { enabled: true },
-      customer_update: { enabled: true, allowed_updates: ['email', 'address'] },
-      subscription_cancel: { enabled: true, mode: 'at_period_end' },
-      // Changement de plan en self-service (décision Colin 2026-08-22) : exige
-      // des Prices en tax_behavior explicite, d'où l'inclusive plus haut.
-      subscription_update: {
-        enabled: true,
-        default_allowed_updates: ['price'],
-        products: produits,
-        proration_behavior: 'create_prorations',
-      },
-    },
-    metadata: { izisolo: 'saas' },
-  });
-  out.portalConfigId = cfg.id;
-  log(`  ＋ Customer Portal configuré (${cfg.id})`);
+  if (!parDefaut) {
+    log('  ℹ️ Aucune configuration par DÉFAUT sur ce compte : sans risque ici,');
+    log('     la route nomme explicitement la configuration.');
+  }
 }
 
 (async () => {
@@ -326,6 +415,9 @@ async function ensurePortalConfig() {
 
   log('— Products & Prices');
   for (const plan of PLANS) await ensureProductAndPrice(plan);
+
+  log('\n— Plans retirés (Essentiel devenu gratuit, Multi)');
+  await archiverLegacy();
 
   log('\n— Coupon de lancement');
   await ensureCoupon();
@@ -348,10 +440,11 @@ async function ensurePortalConfig() {
   log('\n════════════════════════════════════════════════════════════');
   log('📋 ENV VARS À POSER SUR VERCEL (scope Production) :\n');
   for (const [envVar, id] of Object.entries(out.prices)) log(`${envVar}=${id}`);
-  if (out.portalConfigId) log(`STRIPE_PORTAL_CONFIG_ID=${out.portalConfigId}`);
+  for (const [envVar, id] of Object.entries(out.portalConfigs)) log(`${envVar}=${id}`);
   if (out.webhookSecret) log(`STRIPE_WEBHOOK_SECRET_SAAS=${out.webhookSecret}`);
   else log('# STRIPE_WEBHOOK_SECRET_SAAS : déjà posé, ou à révéler dans le dashboard (cf. note webhook)');
   log(`# STRIPE_SECRET_KEY : ta clé ${IS_LIVE ? 'sk_live' : 'sk_test'}, la même que celle passée à ce script`);
+  log('# STRIPE_PRICE_ID_SOLO_MENSUEL et STRIPE_PRICE_ID_MULTI_MENSUEL : à RETIRER de Vercel (plans archivés)');
   log('\n⚠️ Puis REDÉPLOYER : une env var ne s\'applique qu\'aux nouveaux déploiements,');
   log('   et un commit de doc ne suffit pas (vercel.json ignore *.md).');
   if (alertes) log(`\n⚠ ${alertes} point(s) signalé(s) plus haut : relis avant de continuer.`);

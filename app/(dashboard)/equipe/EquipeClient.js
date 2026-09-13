@@ -107,9 +107,9 @@ export default function EquipeClient({ membresInit, planOk, indisponible, studio
 
       {!planOk && (
         <div className="eq-alerte">
-          <strong>Travailler à plusieurs fait partie du plan Multi.</strong>
+          <strong>Travailler à plusieurs fait partie des plans Association et Studio.</strong>
           <p>
-            Un seul abonnement pour tout le studio, autant de profs que tu veux. Les personnes déjà
+            Un seul abonnement pour toute la structure, autant de profs que tu veux. Les personnes déjà
             invitées gardent leur place : elles retrouvent tout dès que l&apos;abonnement reprend.
           </p>
           <a href="/parametres/abonnement">Voir les plans</a>

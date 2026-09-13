@@ -27,91 +27,92 @@ import {
 
 const RACINE = process.cwd();
 
-test.describe('plan Multi — et sa bêta, qui doit être fidèle', () => {
-  test('Multi existe, forfait plat à 49 €, aucun quota', () => {
-    expect(PLANS.multi.prix).toBe(49);
-    expect(PLANS.multi.limiteClients).toBeNull();
-    expect(PLANS.multi.limiteLieux).toBeNull();
-    expect(PLANS.multi.limiteOffres).toBeNull();
+test.describe('plans Association et Studio — et la bêta, qui doit être fidèle', () => {
+  test('Association 39 € et Studio 59 €, forfaits plats, aucun quota ; Multi retiré (legacy)', () => {
+    expect(PLANS.asso.prix).toBe(39);
+    expect(PLANS.studio.prix).toBe(59);
+    for (const p of ['asso', 'studio']) {
+      expect(PLANS[p].limiteClients).toBeNull();
+      expect(PLANS[p].limiteLieux).toBeNull();
+      expect(PLANS[p].limiteOffres).toBeNull();
+    }
+    expect(PLANS.multi.public).toBe(false);
+    expect(effectivePlan({ plan: 'multi' })).toBe('studio');
   });
 
-  test("LE test de la bêta : multi_free est Multi à l'identique, pas un god mode", () => {
+  test("LE test de la bêta : multi_free est Studio à l'identique, pas un god mode", () => {
     // Une bêta posée sur le plan `free` ouvrirait TOUTES les capacités (can()
     // y court-circuite) : les testeuses valideraient un produit qui n'existe
     // pas, et ne remonteraient aucune friction réelle.
-    expect(effectivePlan({ plan: 'multi_free' })).toBe('multi');
+    expect(effectivePlan({ plan: 'multi_free' })).toBe('studio');
     const beta = { plan: 'multi_free' };
-    const payant = { plan: 'multi' };
+    const payant = { plan: 'studio' };
     for (const cle of Object.keys(CAPACITES)) {
       expect(can(beta, cle), `capacité ${cle}`).toBe(can(payant, cle));
     }
-    // Et surtout, elle ne prend PAS le court-circuit de `free`. La nuance
-    // n'est pas visible sur une capacité inconnue (rien n'existe au-dessus de
-    // Multi, donc elle passe légitimement) : elle se lit sur le plan effectif.
     // `free` = « ce compte ne suit aucune règle » ; `multi_free` = « ce compte
-    // suit exactement les règles de Multi, on ne lui envoie pas la facture ».
+    // suit exactement les règles de Studio, on ne lui envoie pas la facture ».
     expect(effectivePlan(beta)).not.toBe('free');
-    expect(effectivePlan(beta)).toBe('multi');
     expect(effectivePlan({ plan: 'free' })).toBe('free');
   });
 
   test('la bêta est invisible au public, facturée 0, mais garde la même économie', () => {
     expect(PLANS.multi_free.public).toBe(false);
     expect(PLANS.multi_free.prix).toBe(0);
-    expect(PLANS.multi_free.fraisStripeIziSolo).toBe(PLANS.multi.fraisStripeIziSolo);
+    expect(PLANS.multi_free.fraisStripeIziSolo).toBe(PLANS.studio.fraisStripeIziSolo);
   });
 
-  test("Multi est public depuis que la caisse Stripe sait l'encaisser (2026-09-07)", () => {
-    // Ce test disait « pas encore public » tant que le checkout aurait rendu
-    // 500 sur Multi. Le Price live existe (setup-stripe-saas), le checkout
-    // accepte plan:'multi' : la carte peut s'afficher. multi_free reste
-    // INTERNE (posé depuis /admin), jamais vendu.
-    expect(PUBLIC_PLANS).toEqual(['solo', 'pro', 'multi']);
+  test('Association et Studio sont publics, Multi ne l\'est plus (2026-09-13)', () => {
+    expect(PUBLIC_PLANS).toEqual(['solo', 'pro', 'asso', 'studio']);
+    expect(PUBLIC_PLANS).not.toContain('multi');
     expect(PUBLIC_PLANS).not.toContain('multi_free');
-    expect(ALL_PLANS).toContain('multi');
+    expect(ALL_PLANS).toContain('multi'); // encore en base, traduit
     expect(ALL_PLANS).toContain('multi_free');
   });
 
-  test("l'échelle classe Multi au-dessus de Complet, sans rien lui retirer", () => {
+  test("l'équipe est ouverte par les deux plans de structure, et rien ne leur est retiré", () => {
     expect(can({ plan: 'solo' }, 'equipe')).toBe(false);
     expect(can({ plan: 'pro' }, 'equipe')).toBe(false);
-    expect(can({ plan: 'multi' }, 'equipe')).toBe(true);
+    expect(can({ plan: 'asso' }, 'equipe')).toBe(true);
+    expect(can({ plan: 'studio' }, 'equipe')).toBe(true);
     expect(can({ plan: 'multi_free' }, 'equipe')).toBe(true);
-    expect(can({ plan: 'multi' }, 'reservation_en_ligne')).toBe(true);
-    expect(can({ plan: 'multi' }, 'export_compta')).toBe(true);
-    expect(can({ plan: 'multi' }, 'lien_pointage')).toBe(true);
+    for (const plan of ['asso', 'studio']) {
+      expect(can({ plan }, 'reservation_en_ligne'), plan).toBe(true);
+      expect(can({ plan }, 'export_compta'), plan).toBe(true);
+      expect(can({ plan }, 'lien_pointage'), plan).toBe(true);
+    }
   });
 
-  test("le trial reste Complet : inviter une collègue EST le moment d'upsell", () => {
-    // Décision Colin 2026-08-25. Sinon une asso en essai perdrait ses profs
-    // au 15e jour, d'un coup, sans écran pour l'annoncer.
+  test("l'essai d'une prof seule reste Complet : inviter une collègue EST le moment d'upsell", () => {
+    // Décision Colin 2026-08-25, confirmée le 13/09 : une STRUCTURE, elle,
+    // essaie son propre plan (freemium.spec.js).
     const enEssai = { plan: 'solo', trial_started_at: new Date().toISOString() };
     expect(effectivePlan(enEssai)).toBe('pro');
     expect(can(enEssai, 'equipe')).toBe(false);
+    expect(can({ ...enEssai, type_structure: 'association' }, 'equipe')).toBe(true);
   });
 
-  test('LE piège du plan posé à la main : ni Stripe, ni essai, et pourtant PAS gelé', () => {
-    // Un studio Multi posé depuis /admin n'a AUCUN abonnement Stripe (la
-    // caisse ne sait pas encore l'encaisser) et la bêta offerte n'en aura
-    // jamais. Leur essai des 30 jours est fini depuis des mois : sans les
-    // nommer explicitement, ils tombent en `trial_expired` → compte GELÉ →
-    // 402 sur toute écriture. C'est ce qui serait arrivé au PREMIER studio de
-    // la bêta ; trouvé par la preuve, pas par la relecture.
+  test('LE piège du plan posé à la main : ni Stripe, ni essai, et pourtant ouvert', () => {
+    // Un studio posé depuis /admin n'a AUCUN abonnement Stripe et la bêta
+    // offerte n'en aura jamais. Leur essai est fini depuis des mois : sans les
+    // nommer explicitement (PLANS_OFFRABLES), ils retomberaient sur Essentiel
+    // gratuit et perdraient leur équipe. Trouvé par la preuve du lot 3.
     const vieilEssai = new Date(Date.now() - 200 * 86400000).toISOString();
-    for (const plan of ['multi', 'multi_free']) {
+    for (const plan of ['asso', 'studio', 'multi', 'multi_free']) {
       const studio = { plan, trial_started_at: vieilEssai, stripe_subscription_status: null };
       expect(getAccountStatus(studio), plan).toBe('subscribed');
       expect(isAccountFrozen(studio), plan).toBe(false);
       expect(isReadOnly(studio), plan).toBe(false);
       expect(can(studio, 'equipe'), plan).toBe(true);
     }
-    // Et un Essentiel dans la même situation reste gelé : on n'a rien ouvert
-    // au passage.
+    // Un Essentiel dans la même situation est GRATUIT et ouvert (freemium),
+    // mais sans équipe : on n'a rien ouvert au passage.
     const solo = { plan: 'solo', trial_started_at: vieilEssai, stripe_subscription_status: null };
-    expect(isAccountFrozen(solo)).toBe(true);
+    expect(isAccountFrozen(solo)).toBe(false);
+    expect(can(solo, 'equipe')).toBe(false);
   });
 
-  test('premium reste mappé sur pro : les deux alias cohabitent', () => {
+  test('premium reste mappé sur pro : les alias cohabitent', () => {
     expect(effectivePlan({ plan: 'premium' })).toBe('pro');
     expect(can({ plan: 'premium' }, 'equipe')).toBe(false);
   });

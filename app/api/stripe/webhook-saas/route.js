@@ -154,6 +154,21 @@ export const POST = withRoute({ auth: 'public' }, async ({ request }) => {
           stripe_current_period_end: finPeriodeISO(sub),
         }, 'subscription');
         if (!r.ok) return await echoue('subscription : profil non mis à jour', { ...r, profileId, sub: sub.id });
+
+        // Une prof seule qui achète Studio DEVIENT un studio (PLAN-ASSOS-STUDIOS
+        // §6.1 : elle change le type de sa structure, pas de compte). Écrit à
+        // part et sans exiger la ligne : `type_structure` est neuve (v110) et
+        // une colonne inconnue ferait échouer TOUT l'update du plan avec elle.
+        if (plan === 'studio' && ['active', 'trialing'].includes(sub.status)) {
+          const { error: eType } = await supabase
+            .from('profiles')
+            .update({ type_structure: 'studio' })
+            .eq('id', profileId)
+            .eq('type_structure', 'solo');
+          if (eType && !['42703', 'PGRST204'].includes(eType.code)) {
+            await reportError('[webhook-saas] type_structure non posé', { profileId, error: eType.message });
+          }
+        }
         break;
       }
 
@@ -165,15 +180,19 @@ export const POST = withRoute({ auth: 'public' }, async ({ request }) => {
           break;
         }
 
-        // `plan` reste sur le dernier plan payé : c'est `stripe_subscription_status`
-        // qui fait foi pour l'accès (lib/trial.js), et garder le plan permet de
-        // proposer la bonne re-souscription. On ne descend PAS vers 'free', qui
-        // est le plan interne exempté (Colin, Maude, démos).
+        // FREEMIUM (2026-09-13) : un abonnement terminé ramène sur ESSENTIEL
+        // GRATUIT, rien n'est gelé. On écrit `plan: 'solo'` en plus du statut :
+        // lib/trial.js le déduirait déjà du statut `canceled`, mais la base
+        // doit dire la vérité à qui la lit sans passer par effectivePlan()
+        // (admin, exports, plan_effectif SQL). On ne descend JAMAIS vers 'free',
+        // qui est le plan interne exempté (Colin, Maude, démos).
         //
         // Le filtre sur stripe_subscription_id est essentiel : un `deleted`
-        // livré après un `created` (ordre non garanti, ou rejeu) gèlerait une
+        // livré après un `created` (ordre non garanti, ou rejeu) dégraderait une
         // prof qui vient de re-souscrire.
+        const { data: avant } = await supabase.from('profiles').select('plan').eq('id', profileId).maybeSingle();
         const r = await majProfil(supabase, { id: profileId, stripe_subscription_id: sub.id }, {
+          ...(avant?.plan === 'free' ? {} : { plan: 'solo' }),
           stripe_subscription_status: 'canceled',
           stripe_subscription_id: null,
         }, 'deleted');

@@ -23,7 +23,7 @@ export const FAQ_LOGICIEL = [
   },
   {
     q: "Combien ça coûte, et qu'est-ce qui est inclus ?",
-    r: "Deux plans, sans engagement. Essentiel à 15 €/mois couvre toute ta gestion : agenda, élèves, carnets, encaissements, factures, livre des recettes et export comptable. Complet à 29 €/mois ajoute la boucle élève, c'est-à-dire la réservation en ligne, l'espace élève, le paiement en carte, la messagerie et les cours d'essai. Quatorze jours d'essai sans carte bancaire, et le code LANCEMENT50 enlève la moitié du prix pendant trois mois.",
+    r: "Essentiel est gratuit, pour toujours, et couvre toute ta gestion : agenda, élèves, carnets, encaissements, factures, livre des recettes et export comptable. Complet à 29 €/mois ajoute la boucle élève, c'est-à-dire la réservation en ligne, l'espace élève, le paiement en carte, la messagerie et les cours d'essai. Complet s'essaie 30 jours sans carte bancaire, et le code LANCEMENT50 enlève la moitié du prix pendant trois mois.",
   },
   {
     q: "J'enseigne dans plusieurs salles, est-ce que ça suit ?",
@@ -62,7 +62,7 @@ export const FAQ_COMPTA = [
   },
   {
     q: "Mon expert-comptable peut-il récupérer mes chiffres ?",
-    r: "Oui. L'export comptable sort en CSV, filtrable par période, par état, par mode de règlement et par offre, avec une ligne de total, une colonne par mois et un récapitulatif qui reprend ton identité, la période et les ventilations. Il est inclus dès le plan Essentiel à 15 €, parce qu'une obligation légale n'a pas à dépendre du niveau d'abonnement.",
+    r: "Oui. L'export comptable sort en CSV, filtrable par période, par état, par mode de règlement et par offre, avec une ligne de total, une colonne par mois et un récapitulatif qui reprend ton identité, la période et les ventilations. Il est inclus dans Essentiel, le plan gratuit, parce qu'une obligation légale n'a pas à dépendre du niveau d'abonnement.",
   },
   {
     q: "Je n'exerce pas en France, est-ce que ça marche ?",

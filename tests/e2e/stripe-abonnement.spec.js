@@ -61,10 +61,17 @@ test.describe('planDepuisSubscription — le price fait foi', () => {
     expect(planDepuisSubscription(inconnu, ENV)).toBe('pro');
   });
 
-  test('multi (49 €, forfait plat) est reconnu dès que son prix est posé', () => {
+  test('Association et Studio (2026-09-13) sont reconnus dès que leurs prix sont posés, mensuel comme annuel', () => {
+    const env = { ...ENV, STRIPE_PRICE_ID_ASSO_MENSUEL: 'price_asso_m', STRIPE_PRICE_ID_ASSO_ANNUEL: 'price_asso_a', STRIPE_PRICE_ID_STUDIO_ANNUEL: 'price_studio_a' };
+    expect(tablePlansParPrice(env).price_asso_m).toBe('asso');
+    expect(tablePlansParPrice(env).price_asso_a).toBe('asso');
+    expect(planDepuisSubscription({ items: { data: [{ price: { id: 'price_studio_a' } }] } }, env)).toBe('studio');
+    expect(planDepuisSubscription({ metadata: { plan: 'asso' } }, ENV)).toBe('asso');
+  });
+
+  test('multi (legacy, archivé) reste lisible : un abonnement historique ne doit pas devenir illisible', () => {
     const env = { ...ENV, STRIPE_PRICE_ID_MULTI_MENSUEL: 'price_multi' };
     expect(tablePlansParPrice(env).price_multi).toBe('multi');
-    expect(planDepuisSubscription({ items: { data: [{ price: { id: 'price_multi' } }] } }, env)).toBe('multi');
     expect(planDepuisSubscription({ metadata: { plan: 'multi' } }, ENV)).toBe('multi');
   });
 

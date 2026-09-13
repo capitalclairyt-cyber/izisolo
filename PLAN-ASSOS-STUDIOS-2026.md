@@ -478,8 +478,8 @@ dessine après ce retour.
 
 ## 10. Suivi
 
-- [ ] Décisions §9 « à trancher » prises (date, réponses)
-- [ ] Lot 0 · socle + freemium
+- [x] Décisions §9 « à trancher » prises : « ok, go » de Colin le 2026-09-13 sur les onze.
+- [x] Lot 0 · socle + freemium : LIVRÉ le 2026-09-13 (commit du jour), prouvé 33/33 en phase dégradée. Restes côté Colin : appliquer v110, relancer `setup-stripe-saas.mjs` en live, poser les env vars, redéployer (bible §8).
 - [ ] Lot 1 · intervenantes + ponts 1 à 3 (+ l'asso de Maude en vrai)
 - [ ] Lot 2 · l'argent (relevé, dépenses, prestations, factures v2)
 - [ ] Lot 3 · vie de l'asso

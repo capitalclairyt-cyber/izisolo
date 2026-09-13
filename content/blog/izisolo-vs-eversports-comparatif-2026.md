@@ -34,7 +34,7 @@ Eversports est un des grands noms européens du [logiciel de gestion pour studio
 
 Trois choses à savoir en lisant cette grille : les prix sont **hors TVA** (compte environ 20 % de plus sur ta facture), ils supposent une **facturation annuelle** (le mensuel est plus cher, leur remise annuelle affichée va jusqu'à 17 %), et la souscription passe par une **consultation** avec leur équipe. Aucun frais de mise en place, c'est écrit noir sur blanc et c'est appréciable.
 
-**IziSolo** : 15 €/mois (Essentiel) ou 29 €/mois (Complet), TTC, au mois, sans engagement, essai 30 jours sans carte. Et surtout : le prix ne dépend pas de ton activité.
+**IziSolo** : Essentiel gratuit, pour toujours, ou Complet à 29 €/mois TTC, sans engagement, essai 30 jours sans carte. Et surtout : le prix ne dépend pas de ton activité.
 
 ## Le détail qui change tout : ton succès fait-il monter ta facture ?
 

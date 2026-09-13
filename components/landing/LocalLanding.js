@@ -265,7 +265,7 @@ export default function LocalLanding({ city, discipline = 'yoga' }) {
                 Démarre ton studio {d} à {city.name} <em>en 15 minutes</em>.
               </h2>
               <p>
-                30 jours d'essai gratuit sans CB. Dès 15 €/mois, et −50 % pendant
+                Essentiel gratuit, sans carte bancaire. Complet à 29 €/mois, et −50 % pendant
                 tes 3 premiers mois avec le code LANCEMENT50. Setup offert.
               </p>
               <Link href="/register" className="btn btn-primary btn-lg">

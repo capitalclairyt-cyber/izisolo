@@ -48,7 +48,7 @@ const OBLIGATIONS = [
   {
     Icon: Download,
     titre: 'Un export pour ton comptable',
-    desc: "CSV filtrable par période, état, mode de règlement et offre, avec ligne de total, colonne par mois et récapitulatif. Inclus dès le plan à 15 €.",
+    desc: "CSV filtrable par période, état, mode de règlement et offre, avec ligne de total, colonne par mois et récapitulatif. Inclus dans Essentiel, le plan gratuit.",
   },
 ];
 
@@ -75,7 +75,7 @@ export default function ComptabiliteLanding() {
           <Link href="/register" className="lg-btn lg-btn-primary">Essayer gratuitement 30 jours</Link>
           <Link href="/logiciel-gestion-prof-yoga" className="lg-btn lg-btn-ghost">Voir tout l&apos;outil →</Link>
         </div>
-        <p className="lg-cta-hint">Sans carte bancaire · toute la partie compta est dans le plan à 15 €/mois</p>
+        <p className="lg-cta-hint">Sans carte bancaire · toute la partie compta est dans Essentiel, gratuit</p>
       </header>
 
       {/* On dit d'abord ce qu'on n'est pas. Une prof qui découvre la nuance
