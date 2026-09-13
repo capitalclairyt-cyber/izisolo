@@ -27,7 +27,11 @@ export default async function RevenusPage() {
   const { data: { user } } = await supabase.auth.getUser();
   // Le studio affiché (v101) : pour une prof seule c'est elle-même,
   // pour une prof invitée dans une association c'est le studio de l'asso.
-  const { studioId } = await resoudreStudioActif(supabase, user);
+  const { studioId, membres } = await resoudreStudioActif(supabase, user);
+  // v112 (pont 4) : « Mes prestations » ne s'affiche qu'à une personne qui
+  // donne des cours AILLEURS (au moins une appartenance hors son studio) : une
+  // prof seule ne paie pas cette requête.
+  const aDesPrestations = (membres || []).some(m => m.profile_id && m.profile_id !== user.id);
 
   // On charge les paiements des 12 derniers mois ; le filtrage par période
   // se fait côté client pour un UX réactif sans round-trip serveur.
@@ -197,5 +201,5 @@ export default async function RevenusPage() {
     if (!error && data?.pays) pays = data.pays;
   } catch { /* pré-v105 : la France, c'est-à-dire le comportement d'avant */ }
 
-  return <RevenusClient paiements={paiementsAvecFlag} seancesDues={seancesDues} annulationsDues={annulationsDues} pays={pays} />;
+  return <RevenusClient paiements={paiementsAvecFlag} seancesDues={seancesDues} annulationsDues={annulationsDues} pays={pays} aDesPrestations={aDesPrestations} />;
 }

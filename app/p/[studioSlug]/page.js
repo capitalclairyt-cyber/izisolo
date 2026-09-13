@@ -1,7 +1,6 @@
 import { createServerClient } from '@/lib/supabase-server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { notFound } from 'next/navigation';
-import Link from 'next/link';
 import PortailHome from './PortailHome';
 import { resolveClientInfo, filterCoursVisibles } from '@/lib/visibilite';
 import { ogPortail } from '@/lib/portail-metadata';

@@ -6,6 +6,7 @@ import { useToast } from '@/components/ui/ToastProvider';
 import AideContextuelle from '@/components/AideContextuelle';
 import LienIntervenante from '@/components/equipe/LienIntervenante';
 import Ailleurs from '@/components/equipe/Ailleurs';
+import Remuneration from '@/components/equipe/Remuneration';
 import { labelIntervenante } from '@/lib/intervenante';
 import {
   PERMISSIONS, PRESETS, permissionsParDefaut,
@@ -251,6 +252,9 @@ export default function EquipeClient({ membresInit, planOk, indisponible, studio
                 )}
                 {!m.proprietaire && m.statut !== 'revoque' && (
                   <LienIntervenante membre={m} onMaj={(maj) => setMembres(prev => prev.map(x => x.id === maj.id ? maj : x))} />
+                )}
+                {!m.proprietaire && m.statut !== 'revoque' && (
+                  <Remuneration membre={m} onMaj={(rem) => setMembres(prev => prev.map(x => x.id === m.id ? { ...x, remuneration: rem } : x))} />
                 )}
               </li>
             ))}

@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { Building2, MapPin, Monitor, Users, Loader2, ArrowRight } from 'lucide-react';
 
 /**
@@ -19,7 +18,6 @@ function dateLisible(iso, heure) {
 }
 
 export default function SeancesAilleurs({ seances = [], titre = 'Tes séances ailleurs' }) {
-  const router = useRouter();
   const [enCours, setEnCours] = useState(null);
   if (!seances.length) return null;
 

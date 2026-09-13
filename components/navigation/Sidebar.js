@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   Home, CalendarDays, Users, Settings,
-  BookOpen, BookMarked, Mail, ChevronRight, Sparkles,
+  BookOpen, BookMarked, ChevronRight, Sparkles,
   Package, BarChart3, LogOut, Menu, X, GraduationCap, LifeBuoy, ClipboardList,
-  MessageSquare, Inbox, Clock, UserCog, Lock,
+  MessageSquare, Inbox, Clock, UserCog, Lock, Wallet,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase';
 import NotificationBell from '@/components/notifications/NotificationBell';
@@ -31,6 +31,10 @@ const NAV_SECTIONS = [
     items: [
       { href: '/offres',         label: 'Offres',         icon: Package,   perm: 'argent_voir' },
       { href: '/revenus',        label: 'Revenus',        icon: BarChart3, perm: 'argent_voir' },
+      // v112 (lot 2 Assos & Studios) : l'argent de la STRUCTURE (dépenses,
+      // relevés d'intervenantes, prestations, export d'exercice). Cadenas
+      // pour une prof seule : la page dit ce que c'est et qui l'ouvre.
+      { href: '/compta',         label: 'Compta',         icon: Wallet,    perm: 'argent_voir', cap: 'depenses' },
       { href: '/abonnements',    label: 'Carnets & abos', icon: BookOpen,  perm: 'eleves_voir' },
     ],
   },

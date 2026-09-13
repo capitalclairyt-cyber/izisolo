@@ -53,6 +53,7 @@ export default function DashboardLayoutClient({ children, profile, trial, nbCasA
           sondages: can(profile, 'sondages'),
           cours_essai: can(profile, 'cours_essai'),
           liste_attente: can(profile, 'liste_attente'),
+          depenses: can(profile, 'depenses'),
         }}
       />
 

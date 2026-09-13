@@ -330,4 +330,24 @@ export const FAQ_SUPPORT = [
     a: "Le studio a arrêté le plan qui permet de travailler à plusieurs (Association ou Studio). Ta place n'est pas supprimée : tu entres toujours, tu vois tout ce que tu voyais, mais tu ne peux plus rien modifier ni pointer tant que l'abonnement n'a pas repris. Rien à faire de ton côté : préviens simplement la personne qui gère le studio. Ton propre IziSolo, s'il est à toi, n'est pas concerné.",
     lien: { href: '/aide#equipe', label: 'Voir le pas-à-pas' },
   },
+  {
+    // Le relevé mensuel d'une intervenante (v112, lot 2 Associations &
+    // Studios, 2026-09-13). AJOUTÉE EN FIN.
+    q: "Comment savoir combien je dois à chacune de mes profs à la fin du mois ?",
+    a: "Deux réglages, puis tout se calcule. D'abord, sur chaque séance ou série, « Qui donne cette séance ? » nomme l'intervenante. Ensuite, page Équipe, sur sa ligne, « Convenir » une rémunération : par séance, à l'heure, un pourcentage du chiffre d'affaires de ses séances, ou un forfait mensuel. Page Compta → Relevés, choisis la prof et le mois : IziSolo compte ses séances passées et pointées, leurs présentes, le chiffre d'affaires rattaché (carnets au prorata, séances à l'unité) et le montant dû. Tu peux l'ajuster, le télécharger en PDF, et « Valider le relevé » : ta dépense « Séances de Léa » passe à régler et elle reçoit le relevé par email. Rien n'est inventé : un abonnement illimité n'a pas de prix par séance, le relevé le dit.",
+    lien: { href: '/aide#compta', label: 'Voir le pas-à-pas' },
+  },
+  {
+    // La boucle facture v2 → règlement → encaissement chez la prof (v112).
+    // AJOUTÉE EN FIN.
+    q: "Je donne des cours dans une association qui est sur IziSolo : comment je lui facture mes séances, et où arrive l'argent ?",
+    a: "Quand l'association valide ton relevé du mois, il apparaît dans ton propre IziSolo, page Revenus → « Mes prestations ». « Facturer » émet ta facture en un clic, avec le prochain numéro de ta séquence, et l'envoie à l'association en PDF (il te faut avoir renseigné ton SIRET dans Paramètres → Facturation : une facture sans numéro d'entreprise n'en est pas une). Quand l'association clique « Réglée » de son côté, l'encaissement apparaît tout seul dans tes revenus, mode virement, à la date qu'elle a saisie, et ta facture passe « payée ». Cet encaissement compte dans ta déclaration URSSAF comme n'importe quel autre. Tu n'as jamais de lien vers les élèves ni la caisse de l'association : seulement ton relevé et ta facture.",
+    lien: { href: '/aide#compta', label: 'Voir le pas-à-pas' },
+  },
+  {
+    // Les dépenses et l'export d'exercice (v112). AJOUTÉE EN FIN.
+    q: "Où j'enregistre le loyer de la salle, l'assurance, le matériel, et comment je sors le rapport financier pour l'AG ?",
+    a: "Page Compta → Dépenses → « Ajouter une dépense » : quoi, quand, combien TTC, une catégorie, un justificatif (PDF ou photo du ticket), et « à régler » ou « réglée ». Le HT et la TVA sont facultatifs : une association non assujettie n'en a pas. Les tuiles du haut totalisent l'exercice. Compta → Export sort ensuite un seul fichier CSV pour ton trésorier ou ton comptable : les recettes encaissées (à la date d'encaissement), les dépenses avec leurs justificatifs, le récapitulatif par catégorie et le résultat. Pour une association, l'exercice suit la saison, de septembre à août : c'est exactement le rapport financier de ton assemblée générale.",
+    lien: { href: '/aide#compta', label: 'Voir le pas-à-pas' },
+  },
 ];

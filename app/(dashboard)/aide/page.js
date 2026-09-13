@@ -8,7 +8,7 @@ import {
   BookOpen, CalendarDays, Users, Wallet, ClipboardList, Globe,
   LifeBuoy, MessageSquarePlus, ArrowRight, ArrowLeft, Package, Inbox,
   MessageSquare, FileText, Smartphone, CalendarClock, Hourglass, Search, X,
-  Sparkles, ListOrdered, Landmark, Palette, UserCog
+  Sparkles, ListOrdered, Landmark, Palette, UserCog, Coins
 } from 'lucide-react';
 import { FAQ_SUPPORT } from '@/content/faq-support';
 
@@ -318,8 +318,24 @@ const SECTIONS = [
       <>Une fois dedans, <strong>tes séances chez elle apparaissent dans ton propre IziSolo</strong>, en tête de ton Accueil et de ton agenda, taguées de son nom : un clic bascule sur la structure et ouvre la séance au pointage.</>,
       <>Tu changes d'avis ? <strong>« Droits »</strong> sur sa ligne, et c'est immédiat. <strong>La corbeille</strong> la retire du studio : elle est dehors à la seconde d'après, son historique reste, et tu peux la réinviter plus tard.</>,
       <>Travailler à plusieurs fait partie des plans <strong>Association</strong> (39 € par mois, réservé aux associations déclarées avec leur numéro RNA) et <strong>Studio</strong> (59 € par mois) : un seul abonnement pour toute la structure, autant de profs que tu veux, et deux mois offerts à l'année. Si l'abonnement s'arrête, personne n'est effacé : chacune entre en <strong>lecture seule</strong> (elle voit tout, ne modifie rien, un bandeau le lui dit) et retrouve tout dès qu'il reprend.</>,
+      <>Tu la paies ? Sur sa ligne, <strong>« Convenir »</strong> une rémunération (par séance, à l'heure, en pourcentage du chiffre d'affaires de ses séances, ou un forfait mensuel). Le <strong>relevé du mois</strong> (page Compta → Relevés) en déduit ce qui lui est dû, depuis les séances qu'elle a réellement données et pointées.</>,
     ],
     astuce: "Tu te fais juste remplacer une fois ? Pas besoin d'invitation : « Confier le pointage » sur la séance suffit, et ça marche sans compte.",
+  },
+  {
+    id: 'compta',
+    icon: Coins,
+    titre: "L'argent de ta structure",
+    intro: "Une association ou un studio dépense aussi : loyer de salle, assurance, matériel, et surtout ses profs. La page Compta tient tout ça, et sort le fichier de l'exercice.",
+    etapes: [
+      <>Dans la nav, <strong>« Compta »</strong> (plans Association et Studio). Quatre onglets : <strong>Dépenses</strong>, <strong>Relevés</strong>, <strong>Prestations</strong>, <strong>Export</strong>.</>,
+      <><strong>Dépenses</strong> → <strong>« Ajouter une dépense »</strong> : quoi, quand, combien TTC, une catégorie, un fournisseur si tu veux, le HT et la TVA seulement si tu y es assujettie, et un justificatif (PDF ou photo du ticket). « À régler » ou « Réglée » avec sa date et son mode. Les tuiles du haut font les totaux de l'exercice.</>,
+      <><strong>Relevés</strong> : choisis une intervenante et un mois. Le relevé compte ses séances <strong>passées et pointées</strong> (celles où tu l'as désignée dans « Qui donne cette séance ? »), leurs présentes et le chiffre d'affaires rattaché : carnets décomptés au prorata, séances payées à l'unité. Un abonnement illimité n'a pas de prix par séance, et le relevé te le dit plutôt que d'inventer.</>,
+      <>Avec une <strong>rémunération convenue</strong> (page Équipe, sur sa ligne), le relevé affiche <strong>ce qui lui est dû</strong>. Tu peux ajuster le montant, télécharger le PDF, puis <strong>« Valider le relevé »</strong> : une <strong>prestation</strong> naît, ta dépense « Séances de Léa » passe à régler, et Léa reçoit le relevé par email.</>,
+      <><strong>Prestations</strong> : chacune passe <strong>à facturer</strong> (Léa a le relevé), <strong>facturée</strong> (si elle a son IziSolo, elle a émis sa facture en un clic, et tu la reçois en PDF), puis <strong>réglée</strong> quand tu cliques « Réglée » avec la date et le mode. Ce clic solde ta dépense, et chez elle, l'encaissement apparaît dans ses revenus avec sa facture marquée payée. Sans compte IziSolo, elle facture à sa façon : le relevé lui sert de détail.</>,
+      <><strong>Export</strong> : le fichier de l'exercice (la saison de septembre à août pour une association, l'année civile pour un studio) : recettes encaissées, dépenses avec justificatifs, récapitulatif par catégorie, résultat. C'est le rapport financier de ton AG, ou le dossier de ton comptable.</>,
+    ],
+    astuce: "Une intervenante sans compte trouve aussi son relevé sur son lien permanent, rubrique « Mon relevé de séances », mois par mois.",
   },
   {
     id: 'installer',

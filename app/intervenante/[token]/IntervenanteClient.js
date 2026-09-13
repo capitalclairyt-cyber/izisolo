@@ -18,6 +18,11 @@ const STATUTS = [
   { cle: 'excuse', label: 'Excusé·e', Icone: Clock, couleur: '#8a5a44', fond: '#fdf3e2', bord: '#e9c79a' },
 ];
 
+function labelMoisCourt(mois) {
+  const [a, m] = String(mois).split('-');
+  return new Date(Number(a), Number(m) - 1, 1).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+}
+
 function dateLisible(iso, heure) {
   if (!iso) return '';
   const d = new Date(`${iso}T${heure || '12:00'}:00`);
@@ -106,6 +111,13 @@ export default function IntervenanteClient({ token }) {
   }, [api, enCours, ouverte]);
 
   const pointables = useMemo(() => (ouverte?.presences || []).filter(p => !p.info), [ouverte]);
+  // Les trois derniers mois (le courant compris), pour le relevé (v112).
+  const moisReleve = useMemo(() => {
+    const out = [];
+    const d = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Paris' }));
+    for (let i = 0; i < 3; i++) { const x = new Date(d.getFullYear(), d.getMonth() - i, 1); out.push(`${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}`); }
+    return out;
+  }, []);
   const faits = pointables.filter(p => p.statut !== 'inscrit').length;
 
   if (etat === 'chargement') {
@@ -217,6 +229,16 @@ export default function IntervenanteClient({ token }) {
         </section>
       )}
 
+      <section className="itv-releve" data-testid="intervenante-releve">
+        <h2 className="itv-h2">Mon relevé de séances</h2>
+        <p className="itv-vide">Le détail de tes séances données, présentes et montant convenu, mois par mois. Le PDF s&apos;ouvre dans un nouvel onglet.</p>
+        <div className="itv-releve-mois">
+          {moisReleve.map(m => (
+            <a key={m} href={`${api}/releve?mois=${m}&format=pdf`} target="_blank" rel="noreferrer" className="itv-releve-lien">{labelMoisCourt(m)}</a>
+          ))}
+        </div>
+      </section>
+
       {!moi?.a_un_compte && (
         <section className="itv-compte">
           <strong>Tu donnes aussi des cours à ton compte ?</strong>
@@ -278,7 +300,10 @@ function Styles() {
       .itv-btn.actif { color: var(--c); background: var(--f); border-color: var(--b); font-weight: 600; }
       .itv-btn:disabled { opacity: .6; }
       .itv-cadre { margin: 16px 0 0; font-size: .82rem; color: #6b5f5a; line-height: 1.5; }
-      .itv-compte { margin-top: 22px; padding: 14px; border-radius: 12px; background: #faf2eb; border: 1px solid #e8c8a8; font-size: .9rem; }
+      .itv-releve { margin-top: 18px; }
+        .itv-releve-mois { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+        .itv-releve-lien { display: inline-flex; padding: 8px 12px; border-radius: 999px; border: 1px solid rgba(0,0,0,.14); background: #fff; color: inherit; text-decoration: none; font-size: .86rem; text-transform: capitalize; }
+        .itv-compte { margin-top: 22px; padding: 14px; border-radius: 12px; background: #faf2eb; border: 1px solid #e8c8a8; font-size: .9rem; }
       .itv-compte p { margin: 6px 0 10px; line-height: 1.5; color: #4a3f3a; }
       .itv-compte-btn { display: inline-block; padding: 9px 16px; border-radius: 10px; background: #1a1612; color: #fff; text-decoration: none; font-weight: 600; font-size: .88rem; }
       .itv-pied { margin-top: 28px; text-align: center; font-size: .8rem; color: #8b8078; }

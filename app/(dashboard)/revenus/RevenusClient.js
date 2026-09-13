@@ -14,6 +14,7 @@ import { useToast } from '@/components/ui/ToastProvider';
 import Pagination, { usePagination } from '@/components/ui/Pagination';
 import EmptyState from '@/components/ui/EmptyState';
 import DeclarationUrssaf from '@/components/revenus/DeclarationUrssaf';
+import MesPrestations from '@/components/revenus/MesPrestations';
 import { aDeclarationAutomatisable } from '@/lib/pays';
 import { periodesDeclarables, aujourdhuiParis } from '@/lib/urssaf';
 import { normaliserMode, labelMode } from '@/lib/modes-paiement';
@@ -85,7 +86,7 @@ function inPeriode(dateStr, periode) {
   return true;
 }
 
-export default function RevenusClient({ paiements: initialPaiements, seancesDues = [], annulationsDues = [], pays = 'FR' }) {
+export default function RevenusClient({ paiements: initialPaiements, seancesDues = [], annulationsDues = [], pays = 'FR', aDesPrestations = false }) {
   // Le studio affiché (v101) : `user.id` ne suffit plus, une prof peut être
   // invitée dans le studio d'une autre. Résolu une seule fois par le layout.
   const studioId = useStudioId();
@@ -451,6 +452,10 @@ export default function RevenusClient({ paiements: initialPaiements, seancesDues
       {/* ⚠️ FRANCE SEULEMENT (v105) : ailleurs, une caisse appelle les
           cotisations et il n'y a rien à déclarer. L'export des recettes, lui,
           reste disponible partout — c'est ce qui aide vraiment. */}
+      {/* Mes prestations (v112, pont 4) : les relevés validés par les
+          structures où je donne cours, à facturer d'ici. */}
+      {aDesPrestations && <MesPrestations />}
+
       {aDeclarationAutomatisable(pays) && <DeclarationUrssaf />}
 
       {/* Récap par mode */}

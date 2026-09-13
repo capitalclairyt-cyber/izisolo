@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
   ArrowLeft, Save, Banknote, CreditCard, Landmark, FileText,
-  Search, User, X, Loader2, Ticket, CalendarCheck, Zap,
+  Search, X, Loader2, Ticket, CalendarCheck, Zap,
   Package, Pencil, Lightbulb, UserX, Check,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase';
