@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Wallet, Receipt, FileText, Download, Plus, Trash2, Loader2, Check, Paperclip, ExternalLink, Pencil } from 'lucide-react';
+import { Wallet, Receipt, FileText, Download, Plus, Trash2, Loader2, Check, Paperclip, ExternalLink, Pencil, BarChart3 } from 'lucide-react';
 import AideContextuelle from '@/components/AideContextuelle';
 import { useToast } from '@/components/ui/ToastProvider';
 import { CATEGORIES_DEPENSE, CODES_CATEGORIE, MODES_REGLEMENT_DEPENSE, totauxDepenses } from '@/lib/depenses';
@@ -14,6 +14,8 @@ const ONGLETS = [
   { id: 'releves', label: 'Relevés', Icone: FileText },
   { id: 'prestations', label: 'Prestations', Icone: Receipt },
   { id: 'export', label: 'Export', Icone: Download },
+  // v114 : l'analyse d'exercice (marge, salle, intervenante, type) est Studio.
+  { id: 'analyse', label: 'Analyse', Icone: BarChart3, cap: 'analyse' },
 ];
 const MODE_LABEL = { virement: 'Virement', cb: 'CB', especes: 'Espèces', cheque: 'Chèque', prelevement: 'Prélèvement' };
 const fmtJour = (d) => (d ? String(d).slice(0, 10).split('-').reverse().join('/') : '');
@@ -26,9 +28,10 @@ const aujourdhui = () => new Date().toLocaleDateString('sv-SE', { timeZone: 'Eur
  * de l'exercice ». Rien n'est calculé ici qui ne le soit aussi côté serveur :
  * l'écran affiche, les routes décident.
  */
-export default function ComptaClient({ studioNom, typeStructure, exercice, exercices, depensesInit, membres, prestationsInit, indisponible, peutGerer }) {
+export default function ComptaClient({ studioNom, typeStructure, exercice, exercices, depensesInit, membres, prestationsInit, indisponible, peutGerer, peutParametres = false, peutAnalyse = false, releveAutoInit = false, releveAutoDispo = true }) {
   const sp = useSearchParams();
-  const [onglet, setOnglet] = useState(() => (ONGLETS.some(o => o.id === sp.get('onglet')) ? sp.get('onglet') : 'depenses'));
+  const onglets = ONGLETS.filter(o => !o.cap || (o.cap === 'analyse' && peutAnalyse));
+  const [onglet, setOnglet] = useState(() => (onglets.some(o => o.id === sp.get('onglet')) ? sp.get('onglet') : 'depenses'));
   const [depenses, setDepenses] = useState(depensesInit || []);
   const [prestations, setPrestations] = useState(prestationsInit || []);
 
@@ -47,7 +50,7 @@ export default function ComptaClient({ studioNom, typeStructure, exercice, exerc
       )}
 
       <div className="cp-onglets" role="tablist">
-        {ONGLETS.map(({ id, label, Icone }) => (
+        {onglets.map(({ id, label, Icone }) => (
           <button key={id} type="button" role="tab" aria-selected={onglet === id} className={`cp-onglet ${onglet === id ? 'actif' : ''}`} onClick={() => setOnglet(id)} data-testid={`compta-onglet-${id}`}>
             <Icone size={15} /> {label}
             {id === 'prestations' && prestations.some(p => p.statut === 'facturee') && <span className="cp-pastille">{prestations.filter(p => p.statut === 'facturee').length}</span>}
@@ -56,7 +59,8 @@ export default function ComptaClient({ studioNom, typeStructure, exercice, exerc
       </div>
 
       {onglet === 'depenses' && <Depenses depenses={depenses} setDepenses={setDepenses} membres={membres} exercice={exercice} peutGerer={peutGerer} />}
-      {onglet === 'releves' && <Releves membres={membres} peutGerer={peutGerer} onValide={(p) => { setPrestations(prev => [p, ...prev]); setOnglet('prestations'); }} />}
+      {onglet === 'releves' && <Releves membres={membres} peutGerer={peutGerer} peutParametres={peutParametres} releveAutoInit={releveAutoInit} releveAutoDispo={releveAutoDispo} onValide={(p) => { setPrestations(prev => [p, ...prev]); setOnglet('prestations'); }} />}
+      {onglet === 'analyse' && peutAnalyse && <Analyse exercice={exercice} exercices={exercices} />}
       {onglet === 'prestations' && <Prestations prestations={prestations} setPrestations={setPrestations} setDepenses={setDepenses} peutGerer={peutGerer} />}
       {onglet === 'export' && <Export exercices={exercices} exerciceCourant={exercice} typeStructure={typeStructure} />}
 
@@ -247,8 +251,22 @@ function Depenses({ depenses, setDepenses, membres, exercice, peutGerer }) {
 }
 
 // ── Relevés ───────────────────────────────────────────────────────────────────
-function Releves({ membres, peutGerer, onValide }) {
+function Releves({ membres, peutGerer, peutParametres, releveAutoInit, releveAutoDispo, onValide }) {
   const { toast } = useToast();
+  // v114 : le relevé du mois précédent part tout seul le 1er (opt-in).
+  const [releveAuto, setReleveAuto] = useState(!!releveAutoInit);
+  const [autoEnvoi, setAutoEnvoi] = useState(false);
+  const basculerAuto = async () => {
+    const cible = !releveAuto;
+    setAutoEnvoi(true);
+    try {
+      const res = await fetch('/api/profile/releve-auto', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ actif: cible }) });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) { toast.error(data.error || 'Réglage impossible.'); return; }
+      setReleveAuto(data.actif === true);
+      toast.success(data.actif ? 'Les relevés partiront tout seuls le 1er du mois.' : 'Envoi automatique désactivé.');
+    } finally { setAutoEnvoi(false); }
+  };
   const mois = useMemo(() => derniersMois(6), []);
   const [membreId, setMembreId] = useState(membres[0]?.id || '');
   const [moisChoisi, setMoisChoisi] = useState(mois[1] || mois[0]);
@@ -295,6 +313,14 @@ function Releves({ membres, peutGerer, onValide }) {
 
   return (
     <section data-testid="compta-releves">
+      {peutParametres && (
+        <div className="cp-form" style={{ padding: '10px 14px' }} data-testid="releve-auto">
+          <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: '.86rem', cursor: 'pointer' }}>
+            <input type="checkbox" checked={releveAuto} onChange={basculerAuto} disabled={autoEnvoi} data-testid="releve-auto-case" />
+            <span><strong>Envoyer chaque relevé tout seul le 1er du mois</strong> : chaque intervenante reçoit par email le relevé de ses séances du mois passé, en PDF. Tu le valides ensuite ici, comme d&apos;habitude.{!releveAutoDispo ? ' Cette mise à jour n\'est pas encore appliquée sur ton compte.' : ''}</span>
+          </label>
+        </div>
+      )}
       <div className="cp-form">
         <div className="cp-champs">
           <label>Intervenante<select value={membreId} onChange={e => setMembreId(e.target.value)} data-testid="releve-membre">{membres.map(m => <option key={m.id} value={m.id}>{m.label}</option>)}</select></label>
@@ -341,6 +367,84 @@ function Releves({ membres, peutGerer, onValide }) {
           </div>
           <p className="cp-note">Valider fige ce relevé : une prestation naît, ta dépense « Séances de {membre?.label} » passe à régler, et {membre?.label} reçoit le PDF{membre?.a_un_compte ? ' avec « Facturer » dans son IziSolo' : ''}.</p>
         </div>
+      )}
+    </section>
+  );
+}
+
+// ── Analyse (Studio, v114) ────────────────────────────────────────────────────
+function Analyse({ exercice, exercices }) {
+  const [ex, setEx] = useState(exercice?.id || exercices[0]?.id);
+  const [a, setA] = useState(null);
+  const [erreur, setErreur] = useState('');
+  useEffect(() => {
+    let vivant = true;
+    setA(null); setErreur('');
+    fetch(`/api/compta/analyse?exercice=${encodeURIComponent(ex)}`).then(async r => {
+      const d = await r.json().catch(() => ({}));
+      if (!vivant) return;
+      if (!r.ok) { setErreur(d.error || 'Analyse indisponible.'); return; }
+      setA(d);
+    }).catch(() => vivant && setErreur('Analyse indisponible, réessaie.'));
+    return () => { vivant = false; };
+  }, [ex]);
+  const Tableau = ({ titre, lignes, testid }) => (
+    <div className="cp-scroll" style={{ marginBottom: 16 }} data-testid={testid}>
+      <table className="cp-table">
+        <thead><tr><th>{titre}</th><th className="num">Recettes</th><th className="num">Dépenses</th><th className="num">Résultat</th><th className="num">Séances</th><th className="num">Présentes</th></tr></thead>
+        <tbody>
+          {lignes.map(l => <tr key={String(l.id)}><td>{l.label ?? l.id}</td><td className="num">{euros(l.recettes)}</td><td className="num">{euros(l.depenses)}</td><td className="num" style={{ color: l.resultat < 0 ? '#b91c1c' : '#047857' }}>{euros(l.resultat)}</td><td className="num">{l.nb_seances}</td><td className="num">{l.nb_presentes}</td></tr>)}
+          {lignes.length === 0 && <tr><td colSpan={6} style={{ color: 'var(--text-soft, #7a6f6a)' }}>Rien sur cet exercice.</td></tr>}
+        </tbody>
+      </table>
+    </div>
+  );
+  return (
+    <section data-testid="compta-analyse">
+      <div className="cp-form">
+        <div className="cp-champs">
+          <label>Exercice<select value={ex} onChange={e => setEx(e.target.value)} data-testid="analyse-exercice">{exercices.map(e => <option key={e.id} value={e.id}>{e.label} ({fmtJour(e.from)} au {fmtJour(e.to)})</option>)}</select></label>
+        </div>
+        <p className="cp-note">Tout est recalculé à la lecture, rien n&apos;est inventé : le chiffre d&apos;affaires d&apos;une séance est celui du relevé (séance payée à l&apos;unité, ou prix du carnet au prorata ; un abonnement sans prix par séance compte zéro), le coût d&apos;une intervenante suit ce qui est convenu avec elle, et une recette qui ne se rattache à aucune séance (adhésion, carnet jamais pointé) compte dans le mois, pas dans une salle.</p>
+        <div className="cp-actions" style={{ marginTop: 8 }}>
+          <a className="izi-btn btn-sm izi-btn-ghost" href={`/api/compta/analyse?exercice=${encodeURIComponent(ex)}&format=csv`} data-testid="analyse-csv"><Download size={14} /> Exporter l&apos;analyse (CSV)</a>
+        </div>
+      </div>
+      {erreur && <div className="cp-alerte">{erreur}</div>}
+      {!a && !erreur && <p className="cp-note"><Loader2 size={14} className="cp-spin" /> Calcul…</p>}
+      {a && (
+        <>
+          {a.depenses_indisponibles && <div className="cp-alerte">Les dépenses ne sont pas encore disponibles (mise à jour en cours) : l&apos;analyse ne compte que les recettes.</div>}
+          <div className="cp-tuiles">
+            <div className="cp-tuile"><div className="cp-tuile-label">Recettes encaissées</div><div className="cp-tuile-valeur" data-testid="analyse-recettes">{euros(a.totaux.recettes)}</div></div>
+            <div className="cp-tuile"><div className="cp-tuile-label">Dépenses</div><div className="cp-tuile-valeur">{euros(a.totaux.depenses)}</div></div>
+            <div className="cp-tuile"><div className="cp-tuile-label">Résultat</div><div className="cp-tuile-valeur" style={{ color: a.totaux.resultat < 0 ? '#b91c1c' : '#047857' }} data-testid="analyse-resultat">{euros(a.totaux.resultat)}</div></div>
+            <div className="cp-tuile"><div className="cp-tuile-label">CA rattaché aux séances</div><div className="cp-tuile-valeur" data-testid="analyse-ca-rattache">{euros(a.totaux.ca_rattache)}</div></div>
+            <div className="cp-tuile"><div className="cp-tuile-label">Non rattaché à une séance</div><div className="cp-tuile-valeur">{euros(a.totaux.non_rattache)}</div></div>
+          </div>
+          <Tableau titre="Par mois" lignes={a.par_mois.map(m => ({ ...m, label: labelMois(m.id) }))} testid="analyse-mois" />
+          <Tableau titre="Par salle" lignes={a.par_salle} testid="analyse-salle" />
+          <Tableau titre="Par intervenante" lignes={a.par_intervenante} testid="analyse-intervenante" />
+          <Tableau titre="Par type de cours" lignes={a.par_type} testid="analyse-type" />
+          {a.tva.length > 0 && (
+            <div className="cp-scroll" style={{ marginBottom: 16 }}>
+              <table className="cp-table">
+                <thead><tr><th>TVA déductible</th><th className="num">HT</th><th className="num">TVA</th><th className="num">TTC</th></tr></thead>
+                <tbody>{a.tva.map(t => <tr key={t.taux}><td>{t.taux} %</td><td className="num">{euros(t.ht)}</td><td className="num">{euros(t.tva)}</td><td className="num">{euros(t.ttc)}</td></tr>)}</tbody>
+              </table>
+            </div>
+          )}
+          <div className="cp-scroll" data-testid="analyse-seances">
+            <table className="cp-table">
+              <thead><tr><th>Séance</th><th className="num">Présentes</th><th className="num">CA</th><th className="num">Intervenante</th><th className="num">Dépenses</th><th className="num">Marge</th></tr></thead>
+              <tbody>
+                {a.seances.slice(0, 60).map(s => <tr key={s.id} data-testid="analyse-seance"><td>{fmtJour(s.date)} · {s.nom}</td><td className="num">{s.nb_presentes}</td><td className="num">{euros(s.ca)}{s.ca_inconnu ? ' *' : ''}</td><td className="num">{s.cout_intervenante == null ? '—' : euros(s.cout_intervenante)}</td><td className="num">{euros(s.depenses)}</td><td className="num" style={{ color: s.marge != null && s.marge < 0 ? '#b91c1c' : undefined }}>{s.marge == null ? '—' : euros(s.marge)}</td></tr>)}
+                {a.seances.length === 0 && <tr><td colSpan={6} style={{ color: 'var(--text-soft, #7a6f6a)' }}>Aucune séance passée sur cet exercice.</td></tr>}
+              </tbody>
+            </table>
+            <p className="cp-note">Une marge « — » : aucune rémunération convenue avec l&apos;intervenante (page Équipe). Un CA « * » : une présente décomptée d&apos;un abonnement sans prix par séance, compté zéro.{a.seances.length > 60 ? ` Les ${a.seances.length - 60} séances plus anciennes sont dans l'export CSV.` : ''}</p>
+          </div>
+        </>
       )}
     </section>
   );

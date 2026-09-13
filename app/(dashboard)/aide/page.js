@@ -8,7 +8,7 @@ import {
   BookOpen, CalendarDays, Users, Wallet, ClipboardList, Globe,
   LifeBuoy, MessageSquarePlus, ArrowRight, ArrowLeft, Package, Inbox,
   MessageSquare, FileText, Smartphone, CalendarClock, Hourglass, Search, X,
-  Sparkles, ListOrdered, Landmark, Palette, UserCog, Coins, BadgeCheck
+  Sparkles, ListOrdered, Landmark, Palette, UserCog, Coins, BadgeCheck, BarChart3
 } from 'lucide-react';
 import { FAQ_SUPPORT } from '@/content/faq-support';
 
@@ -352,6 +352,20 @@ const SECTIONS = [
       <><strong>L'assemblée générale</strong> : date, heure, lieu, ordre du jour. <strong>« Convoquer »</strong> envoie la convocation par la messagerie (message dans l'espace + email) aux adhérentes à jour au jour de l'AG, et te rappelle le délai de tes statuts sans l'imposer. La <strong>feuille d'émargement</strong> s'imprime (nom, signature, pouvoir). Après l'AG, note les présentes et les pouvoirs : le quorum s'affiche (à comparer à tes statuts), et tu déposes le PV comme document rattaché. Pas de vote électronique.</>,
     ],
     astuce: "Ton rapport financier de saison sort de Compta → Export : recettes, dépenses avec justificatifs, résultat. Une association n'a pas de déclaration URSSAF : ce sont ses intervenantes qui déclarent ce qu'elle leur règle.",
+  },
+  {
+    id: 'studio',
+    icon: BarChart3,
+    titre: "Gérer ton studio : salles, marge, contrats",
+    intro: "Ce qu'un studio a en plus (plan Studio) : des salles qui ne se chevauchent pas, la marge de chaque séance, le résultat par salle, par intervenante et par type de cours, le contrat de chaque intervenante, et le relevé qui part tout seul.",
+    etapes: [
+      <><strong>Les salles</strong> : Paramètres → Studio & lieux → sur un lieu, <strong>« Ajouter une salle »</strong> (nom, capacité). En créant un cours ou une série, choisis la salle dans le sélecteur de lieu (elle est indentée sous son lieu). Sa capacité est proposée comme « Places max ».</>,
+      <><strong>Pas de chevauchement</strong> : deux séances ne peuvent pas occuper la même salle en même temps. À la création, à la série et à la modification d'une séance, l'écran te dit laquelle gêne (« le 03/10 à 18:00, Salle Zen est déjà prise par Yin ») et rien n'est écrit. Un lieu sans salle n'est jamais bloquant : deux profs peuvent y être en même temps.</>,
+      <><strong>L'analyse</strong> : Compta → <strong>Analyse</strong>. Recettes, dépenses et résultat par mois, par salle, par intervenante et par type de cours, la TVA déductible par taux, et la <strong>marge de chaque séance</strong> (son chiffre d'affaires moins le coût de l'intervenante et les dépenses rattachées à la séance). Le chiffre d'affaires d'une séance est celui du relevé ; sans rémunération convenue, la marge reste « — » : rien n'est inventé. « Exporter l'analyse (CSV) » pour ton comptable.</>,
+      <><strong>Le contrat d'une intervenante</strong> : page Équipe, sur sa ligne, <strong>« Contrat »</strong> → « Déposer un contrat » (PDF ou photo, scanné). Pas de signature électronique. Une association le trouve aussi dans Association → Documents.</>,
+      <><strong>Le relevé qui part tout seul</strong> : Compta → Relevés, case <strong>« Envoyer chaque relevé tout seul le 1er du mois »</strong>. Chaque intervenante reçoit par email le relevé de ses séances du mois passé, en PDF ; tu le valides ensuite comme d'habitude, c'est la validation qui crée la prestation. Un relevé sans séance ne part pas.</>,
+    ],
+    astuce: "Pour que l'analyse par intervenante et par salle dise quelque chose, désigne qui donne chaque séance (« Qui donne cette séance ? ») et pose la salle sur tes séries : les séances qui n'ont ni l'une ni l'autre tombent dans « Sans intervenante » et « Sans salle ».",
   },
   {
     id: 'installer',

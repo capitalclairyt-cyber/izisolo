@@ -7,6 +7,7 @@ import AideContextuelle from '@/components/AideContextuelle';
 import LienIntervenante from '@/components/equipe/LienIntervenante';
 import Ailleurs from '@/components/equipe/Ailleurs';
 import Remuneration from '@/components/equipe/Remuneration';
+import Contrat from '@/components/equipe/Contrat';
 import { labelIntervenante } from '@/lib/intervenante';
 import { FONCTIONS, CODES_FONCTION, labelFonction, presetPourFonction } from '@/lib/vie-asso';
 import {
@@ -279,6 +280,7 @@ export default function EquipeClient({ membresInit, planOk, indisponible, studio
                 {!m.proprietaire && m.statut !== 'revoque' && (
                   <Remuneration membre={m} onMaj={(rem) => setMembres(prev => prev.map(x => x.id === m.id ? { ...x, remuneration: rem } : x))} />
                 )}
+                {!m.proprietaire && m.statut !== 'revoque' && <Contrat membre={m} />}
               </li>
             ))}
           </ul>

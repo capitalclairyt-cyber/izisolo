@@ -11,9 +11,10 @@ const ALLOWED = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'];
 /**
  * POST /api/association/documents/upload — dépôt d'un document de la
  * structure (v113) : statuts, récépissé, PV… Même chemin que v85 (Vercel
- * Blob, URL non devinable). Permission `documents`.
+ * Blob, URL non devinable). Permission `documents`. Plan `depenses` (palier
+ * équipe) : un studio y dépose le contrat d'une intervenante (v114).
  */
-export const POST = withRoute({ auth: 'active', plan: 'vie_asso', perm: 'documents', rateLimit: { max: 30, windowSeconds: 3600, scope: 'asso-docs' } }, async ({ request, auth }) => {
+export const POST = withRoute({ auth: 'active', plan: 'depenses', perm: 'documents', rateLimit: { max: 30, windowSeconds: 3600, scope: 'asso-docs' } }, async ({ request, auth }) => {
   if (!process.env.BLOB_READ_WRITE_TOKEN) {
     return Response.json({ error: 'Dépôt de documents non configuré côté serveur.', code: 'BLOB_ABSENT' }, { status: 503 });
   }

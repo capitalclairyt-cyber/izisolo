@@ -26,6 +26,7 @@ import CouvertureCours from '@/components/cours/CouvertureCours';
 import ConfierPointage from '@/components/cours/ConfierPointage';
 import IntervenanteCours from '@/components/cours/IntervenanteCours';
 import RepereDate from '@/components/cours/RepereDate';
+import { optionsLieux, labelLieu, estSalle, chevauchementsPour, texteChevauchement, estRefusChevauchement } from '@/lib/salles';
 import AttachmentPicker from '@/components/messagerie/AttachmentPicker';
 import { resoudreCarnetApplicable } from '@/lib/carnet-resolution';
 import { sanitizeLienVisio } from '@/lib/visio';
@@ -313,7 +314,16 @@ export default function CoursDetailClient({ intervenantes = [], intervenantInit 
     setLoading(true);
     try {
       const supabase = createClient();
-      const lieuNom = lieux.find(l => l.id === form.lieu_id)?.nom || null;
+      const lieuNom = labelLieu(lieux, form.lieu_id) || null;
+
+      // v114 : dans une SALLE, la séance modifiée ne doit recouvrir aucune
+      // autre (miroir du trigger, pour nommer celle qui gêne).
+      const lieuChoisi = lieux.find(l => l.id === form.lieu_id);
+      if (form.lieu_id && estSalle(lieuChoisi) && form.date && form.heure) {
+        const { data: existantes } = await supabase.from('cours').select('id, nom, date, heure, duree_minutes, est_annule, lieu_id').eq('lieu_id', form.lieu_id).eq('date', form.date);
+        const conflits = chevauchementsPour([{ id: cours.id, lieu_id: form.lieu_id, date: form.date, heure: form.heure, duree_minutes: form.duree_minutes ? parseInt(form.duree_minutes) : 60, nom: form.nom }], existantes || []);
+        if (conflits.length) throw new Error(`${texteChevauchement(conflits[0], labelLieu(lieux, form.lieu_id))} Choisis une autre salle ou un autre horaire.`);
+      }
 
       const { error } = await supabase
         .from('cours')
@@ -338,7 +348,7 @@ export default function CoursDetailClient({ intervenantes = [], intervenantInit 
       setEditing(false);
       router.refresh();
     } catch (err) {
-      toast.error('Erreur : ' + err.message);
+      toast.error(estRefusChevauchement(err) ? 'Cette salle est déjà prise à cet horaire (' + String(err.message).replace(/^.*CHEVAUCHEMENT_SALLE:\s*/, '') + ').' : 'Erreur : ' + err.message);
     } finally {
       setLoading(false);
     }
@@ -367,7 +377,7 @@ export default function CoursDetailClient({ intervenantes = [], intervenantInit 
       toast.success(n > 0 ? `Séance rétablie · ${n} email${n > 1 ? 's' : ''} envoyé${n > 1 ? 's' : ''}` : 'Séance rétablie');
       router.refresh();
     } catch (err) {
-      toast.error('Erreur : ' + err.message);
+      toast.error(estRefusChevauchement(err) ? 'Cette salle est déjà prise à cet horaire (' + String(err.message).replace(/^.*CHEVAUCHEMENT_SALLE:\s*/, '') + ').' : 'Erreur : ' + err.message);
     } finally {
       setRetablissant(false);
     }
@@ -500,7 +510,7 @@ export default function CoursDetailClient({ intervenantes = [], intervenantInit 
       router.push(cours.date ? `/agenda?date=${cours.date}` : '/agenda');
       router.refresh();
     } catch (err) {
-      toast.error('Erreur : ' + err.message);
+      toast.error(estRefusChevauchement(err) ? 'Cette salle est déjà prise à cet horaire (' + String(err.message).replace(/^.*CHEVAUCHEMENT_SALLE:\s*/, '') + ').' : 'Erreur : ' + err.message);
     } finally {
       setLoading(false);
     }
@@ -513,7 +523,7 @@ export default function CoursDetailClient({ intervenantes = [], intervenantInit 
     setSavingRecurrence(true);
     try {
       const supabase  = createClient();
-      const lieuNom   = lieux.find(l => l.id === recurrenceForm.lieu_id)?.nom || null;
+      const lieuNom   = labelLieu(lieux, recurrenceForm.lieu_id) || null;
       const majCapacite = planCap ? { capacite_max: planCap.capacite } : {};
       const today     = (() => { const n = new Date(); return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`; })();
       const payload   = {
@@ -600,7 +610,7 @@ export default function CoursDetailClient({ intervenantes = [], intervenantInit 
       setOccurrencesSerie(null); // rechargées au prochain ouvrir : les dates ont bougé
       router.refresh();
     } catch (err) {
-      toast.error('Erreur : ' + err.message);
+      toast.error(estRefusChevauchement(err) ? 'Cette salle est déjà prise à cet horaire (' + String(err.message).replace(/^.*CHEVAUCHEMENT_SALLE:\s*/, '') + ').' : 'Erreur : ' + err.message);
     } finally {
       setSavingRecurrence(false);
     }
@@ -710,7 +720,7 @@ export default function CoursDetailClient({ intervenantes = [], intervenantInit 
       setMessageForm({ sujet: '', message: '' });
       setMsgAttachments([]);
     } catch (err) {
-      toast.error('Erreur : ' + err.message);
+      toast.error(estRefusChevauchement(err) ? 'Cette salle est déjà prise à cet horaire (' + String(err.message).replace(/^.*CHEVAUCHEMENT_SALLE:\s*/, '') + ').' : 'Erreur : ' + err.message);
     } finally {
       setSendingMessage(false);
     }
@@ -1021,9 +1031,10 @@ export default function CoursDetailClient({ intervenantes = [], intervenantInit 
               <label className="form-label"><MapPin size={14} /> Lieu</label>
               <select className="izi-input" value={form.lieu_id} onChange={handleChange('lieu_id')}>
                 <option value="">-- Aucun --</option>
-                {lieux.map(l => (
-                  <option key={l.id} value={l.id}>{l.nom}{l.adresse ? `, ${l.adresse}` : ''}</option>
-                ))}
+                {optionsLieux(lieux).map(o => {
+                  const l = lieux.find(x => x.id === o.id);
+                  return <option key={o.id} value={o.id}>{o.label}{!o.salle && l?.adresse ? `, ${l.adresse}` : ''}</option>;
+                })}
               </select>
             </div>
 
@@ -1500,9 +1511,10 @@ export default function CoursDetailClient({ intervenantes = [], intervenantInit 
                     value={recurrenceForm.lieu_id}
                     onChange={e => setRecurrenceForm(p => ({ ...p, lieu_id: e.target.value }))}>
                     <option value="">-- Aucun --</option>
-                    {lieux.map(l => (
-                      <option key={l.id} value={l.id}>{l.nom}{l.adresse ? `, ${l.adresse}` : ''}</option>
-                    ))}
+                    {optionsLieux(lieux).map(o => {
+                      const l = lieux.find(x => x.id === o.id);
+                      return <option key={o.id} value={o.id}>{o.label}{!o.salle && l?.adresse ? `, ${l.adresse}` : ''}</option>;
+                    })}
                   </select>
                 </div>
 

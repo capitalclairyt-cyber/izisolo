@@ -29,6 +29,7 @@ import { useToast } from '@/components/ui/ToastProvider';
 import TypeCoursHint from '@/components/cours/TypeCoursHint';
 import { useStudioId, useMembre } from '@/components/studio/StudioProvider';
 import { chargerIntervenantes, poserIntervenante, poserIntervenanteRecurrence, labelIntervenante } from '@/lib/intervenante';
+import { optionsLieux, labelLieu, estSalle, chevauchementsPour, texteChevauchement, estRefusChevauchement } from '@/lib/salles';
 
 const FREQUENCES = [
   { value: 'unique', label: 'Cours unique', desc: 'Une seule date' },
@@ -458,7 +459,7 @@ function NouveauCoursInner() {
       setNewTypeName('');
       setShowNewType(false);
     } catch (err) {
-      toast.error('Erreur : ' + err.message);
+      toast.error(estRefusChevauchement(err) ? 'Cette salle est déjà prise à cet horaire (' + String(err.message).replace(/^.*CHEVAUCHEMENT_SALLE:\s*/, '') + ').' : 'Erreur : ' + err.message);
     } finally {
       setSavingType(false);
     }
@@ -483,6 +484,29 @@ function NouveauCoursInner() {
     }
     return lieux.filter(l => !l.client_pro_id);
   }, [lieux, form.client_pro_id]);
+
+  // v114 : une salle avec capacité PROPOSE ses places (jamais n'écrase une
+  // valeur saisie).
+  const lieuChoisi = lieux.find(l => l.id === form.lieu_id);
+  useEffect(() => {
+    if (lieuChoisi?.salle_de && lieuChoisi.capacite && !form.capacite_max) {
+      setForm(prev => (prev.capacite_max ? prev : { ...prev, capacite_max: String(lieuChoisi.capacite) }));
+    }
+  }, [form.lieu_id]);
+
+  // v114 : dans une SALLE, deux séances ne se recouvrent pas. Miroir du
+  // trigger de la base (lib/salles), vérifié AVANT d'écrire pour dire
+  // laquelle gêne, sur la séance unique comme sur toute la série.
+  const verifierSalle = async (supabase, dates) => {
+    if (!form.lieu_id || form.format === 'visio' || !estSalle(lieuChoisi) || !dates.length) return;
+    const { data: existantes } = await supabase.from('cours').select('id, nom, date, heure, duree_minutes, est_annule, lieu_id').eq('profile_id', studioId).eq('lieu_id', form.lieu_id).in('date', dates);
+    const candidates = dates.map(d => ({ lieu_id: form.lieu_id, date: d, heure: form.heure || null, duree_minutes: form.duree_minutes ? parseInt(form.duree_minutes) : 60, nom: form.nom.trim() }));
+    const conflits = chevauchementsPour(candidates, existantes || []);
+    if (conflits.length) {
+      const nomSalle = labelLieu(lieux, form.lieu_id);
+      throw new Error(`${texteChevauchement(conflits[0], nomSalle)}${conflits.length > 1 ? ` (et ${conflits.length - 1} autre${conflits.length > 2 ? 's' : ''})` : ''} Choisis une autre salle ou un autre horaire.`);
+    }
+  };
 
   // Ajouter un lieu à la volée
   const addLieuInline = async () => {
@@ -542,6 +566,9 @@ function NouveauCoursInner() {
         lieu: domicileClient.adresse_postale?.split('\n')[0] || 'Domicile',
       } : {};
 
+      // v114 : le chevauchement de salle se vérifie avant d'écrire quoi que ce soit.
+      await verifierSalle(supabase, form.frequence === 'unique' ? [form.date] : calculerDates(form).incluses.map(d => toDateStr(d)));
+
       if (form.frequence === 'unique') {
         const { data: newCours, error } = await supabase.from('cours').insert({
           profile_id: studioId,
@@ -550,7 +577,7 @@ function NouveauCoursInner() {
           date: form.date,
           heure: form.heure || null,
           duree_minutes: form.duree_minutes ? parseInt(form.duree_minutes) : 60,
-          lieu: estVisio ? null : (lieuxFiltres.find(l => l.id === form.lieu_id)?.nom || null),
+          lieu: estVisio ? null : (labelLieu(lieuxFiltres, form.lieu_id) || null),
           lieu_id: estVisio ? null : (form.lieu_id || null),
           format: form.format || 'presentiel', // v18 — colonne existante, insert direct sûr
           client_pro_id: form.client_pro_id || null,
@@ -619,7 +646,7 @@ function NouveauCoursInner() {
             date: toDateStr(d),
             heure: form.heure || null,
             duree_minutes: form.duree_minutes ? parseInt(form.duree_minutes) : 60,
-            lieu: estVisio ? null : (lieuxFiltres.find(l => l.id === form.lieu_id)?.nom || null),
+            lieu: estVisio ? null : (labelLieu(lieuxFiltres, form.lieu_id) || null),
             lieu_id: estVisio ? null : (form.lieu_id || null),
             format: form.format || 'presentiel', // v18 — colonne existante
             client_pro_id: form.client_pro_id || null,
@@ -680,7 +707,7 @@ function NouveauCoursInner() {
       router.push(form.date ? `/agenda?date=${form.date}` : '/agenda');
       router.refresh();
     } catch (err) {
-      toast.error('Erreur : ' + err.message);
+      toast.error(estRefusChevauchement(err) ? 'Cette salle est déjà prise à cet horaire (' + String(err.message).replace(/^.*CHEVAUCHEMENT_SALLE:\s*/, '') + ').' : 'Erreur : ' + err.message);
     } finally {
       setLoading(false);
     }
@@ -1004,11 +1031,14 @@ function NouveauCoursInner() {
             <div className="lieu-select-row">
               <select className="izi-input" value={form.lieu_id} onChange={handleChange('lieu_id')} style={{ flex: 1 }}>
                 <option value="">-- Choisir un lieu --</option>
-                {lieuxFiltres.map(l => (
-                  <option key={l.id} value={l.id}>
-                    {l.nom}{l.clients?.nom_structure ? ` (${l.clients.nom_structure})` : ''}{l.adresse ? `, ${l.adresse}` : ''}
-                  </option>
-                ))}
+                {optionsLieux(lieuxFiltres).map(o => {
+                  const l = lieuxFiltres.find(x => x.id === o.id);
+                  return (
+                    <option key={o.id} value={o.id}>
+                      {o.label}{!o.salle && l?.clients?.nom_structure ? ` (${l.clients.nom_structure})` : ''}{!o.salle && l?.adresse ? `, ${l.adresse}` : ''}
+                    </option>
+                  );
+                })}
               </select>
               <button type="button" className="izi-btn izi-btn-secondary new-lieu-btn" onClick={() => setShowNewLieu(true)}>
                 <Plus size={16} />

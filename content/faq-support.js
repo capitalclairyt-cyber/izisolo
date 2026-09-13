@@ -369,4 +369,23 @@ export const FAQ_SUPPORT = [
     a: "Page Association → Documents : dépose un PDF ou une photo, choisis le type (statuts, récépissé de préfecture, règlement intérieur, assurance, agrément, PV d'assemblée, contrat, autre) et sa date. Pour les documents à version, le dernier déposé devient la version courante et les précédents restent dans l'historique. Toute l'équipe peut les lire ; les déposer ou les retirer demande le droit « Gérer les documents », que la fonction secrétaire propose d'office (Équipe → inviter → sa fonction). Les documents ne sont jamais publics ni visibles des élèves. Pas de signature électronique : un document signé se dépose scanné.",
     lien: { href: '/aide#association', label: 'Voir le pas-à-pas' },
   },
+  {
+    // Les salles et le chevauchement (v114, lot 4 Associations & Studios,
+    // 2026-09-13). AJOUTÉE EN FIN.
+    q: "Mon studio a plusieurs salles : comment éviter que deux cours tombent dans la même salle au même moment ?",
+    a: "Paramètres → Studio & lieux : sur ton lieu, « Ajouter une salle » (nom, capacité). Ensuite, en créant un cours, une série ou en modifiant une séance, choisis la salle dans le sélecteur de lieu (elle apparaît indentée sous son lieu). Dès que deux séances se recouvrent dans la même salle, l'écran refuse en nommant celle qui gêne, et rien n'est écrit : c'est aussi la base qui le garantit. Un lieu sans salle ne bloque jamais (deux profs peuvent y donner cours en même temps). La capacité de la salle est proposée comme « Places max » de la séance.",
+    lien: { href: '/aide#studio', label: 'Voir le pas-à-pas' },
+  },
+  {
+    // La marge et l'analyse (v114). AJOUTÉE EN FIN.
+    q: "Comment connaître la marge d'un cours, et ce que me rapporte chaque salle ou chaque intervenante ?",
+    a: "Compta → Analyse (plan Studio). L'écran recalcule tout à la lecture : recettes, dépenses et résultat par mois, par salle, par intervenante et par type de cours, la TVA déductible par taux, et la marge de chaque séance (son chiffre d'affaires, celui du relevé : séance payée à l'unité ou prix du carnet au prorata, moins le coût de l'intervenante selon ce qui est convenu avec elle et les dépenses rattachées à la séance). Rien n'est inventé : sans rémunération convenue, la marge reste vide, et une recette qui ne se rattache à aucune séance (une adhésion, un carnet jamais pointé) compte dans le mois, pas dans une salle. « Exporter l'analyse (CSV) » pour ton comptable.",
+    lien: { href: '/aide#studio', label: 'Voir le pas-à-pas' },
+  },
+  {
+    // Le relevé automatique et le contrat (v114). AJOUTÉE EN FIN.
+    q: "Mes intervenantes peuvent-elles recevoir leur relevé de séances sans que je le fasse à la main chaque mois ?",
+    a: "Oui : Compta → Relevés, coche « Envoyer chaque relevé tout seul le 1er du mois ». Dans les premiers jours de chaque mois, chaque intervenante active reçoit par email le relevé de ses séances du mois passé, en PDF, une seule fois ; un relevé sans séance ne part pas. Tu valides ensuite le relevé comme d'habitude (c'est la validation qui crée la prestation et la dépense). Son contrat de prestation se dépose sur sa ligne de la page Équipe (« Contrat », PDF ou photo scannée) : pas de signature électronique.",
+    lien: { href: '/aide#studio', label: 'Voir le pas-à-pas' },
+  },
 ];

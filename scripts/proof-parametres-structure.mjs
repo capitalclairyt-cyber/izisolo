@@ -136,7 +136,10 @@ try {
   c('six groupes, dans l\'ordre', JSON.stringify(groupes) === JSON.stringify(['Mon studio', 'Ma page publique', 'Argent', 'Élèves & cours', 'Notifications', 'Abonnement IziSolo']), groupes.join(' | '));
   const lignes = await page.locator('.rubrique-ligne').count();
   // 19 rubriques rendues (le démo est Complet, pas Multi : pas d'Équipe ; en France : URSSAF visible)
-  c('dix-neuf lignes (Complet, France : pas d\'Équipe, URSSAF présente)', lignes === 19, String(lignes));
+  // Lot 1 Assos & Studios (2026-09-13) : la rubrique Équipe est TOUJOURS
+  // visible (le volet « Ailleurs » est un geste de la personne, sans plan) :
+  // 19 lignes sont devenues 20, Complet ou pas.
+  c('vingt lignes (Complet, France : Équipe toujours là depuis le lot 1, URSSAF présente)', lignes === 20, String(lignes));
   c('aucune barre d\'onglets (les deux niveaux ont disparu)', (await page.locator('.tabs-bar, .subtabs-bar').count()) === 0);
   const resumeFact = await page.locator('[data-rubrique="facturation"] .rubrique-resume').innerText();
   c('le résumé de Facturation dit l\'état (SIRET ou « à renseigner »)', /SIRET/.test(resumeFact), resumeFact);
@@ -161,7 +164,7 @@ try {
   await page.click('[data-rubrique="facturation"]');
   await page.waitForSelector('text=Mention TVA', { timeout: 60000 });
   c('un clic sur une ligne ouvre sa rubrique', new URL(page.url()).pathname === '/parametres/facturation');
-  c('la colonne de gauche liste les rubriques en compact', (await page.locator('.parametres-aside .rubrique-ligne').count()) === 19);
+  c('la colonne de gauche liste les rubriques en compact', (await page.locator('.parametres-aside .rubrique-ligne').count()) === 20);
   c('la ligne courante est marquée active dans la colonne', (await page.locator('.parametres-aside .rubrique-ligne.active[data-rubrique="facturation"]').count()) === 1);
   c('la sidebar de l\'app garde « Paramètres » actif sur une rubrique', (await page.locator('.sidebar-item.active:has-text("Paramètres")').count()) >= 1); // desktop + tiroir mobile
   await page.screenshot({ path: join(OUT, 'B-rubrique-desktop.png'), fullPage: false });

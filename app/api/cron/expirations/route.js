@@ -10,12 +10,17 @@ import {
   rappelUrssafDuJour, renderEmailUrssaf, filtreDateComptable,
   totauxPaiements, aujourdhuiParis,
 } from '@/lib/urssaf';
+import { moisAEnvoyer, refReleveAuto, releveAEnvoyer, emailReleveAuto } from '@/lib/releve-auto';
+import { chargerReleve } from '@/lib/releve-service';
+import { genererRelevePdf } from '@/lib/releve-pdf';
+import { labelIntervenante, prenomIntervenante } from '@/lib/intervenante';
 
 // Durée max explicite (fluid compute : 300 s = plafond Hobby)
 export const maxDuration = 300;
 
 // Cron quotidien : marquer les abonnements expirés
-export const GET = withRoute({ auth: 'cron' }, async () => {
+export const GET = withRoute({ auth: 'cron' }, async ({ request }) => {
+  const jourForce = (() => { try { const j = new URL(request.url).searchParams.get('jour'); return /^\d{4}-\d{2}-\d{2}$/.test(j || '') ? j : null; } catch { return null; } })();
   const today = new Date().toISOString().split('T')[0];
 
   // Marquer comme expiré les abonnements dont la date_fin est dépassée
@@ -467,7 +472,67 @@ export const GET = withRoute({ auth: 'cron' }, async () => {
     reportError('[cron/expirations] section rappel urssaf:', e?.message);
   }
 
+  // ── Relevé automatique des intervenantes (v114, 2026-09-13) ──
+  // Dans les cinq premiers jours du mois, pour chaque structure qui l'a
+  // demandé (releve_auto), le relevé du mois PRÉCÉDENT part en PDF à chaque
+  // intervenante active, une fois (claim emails_envoyes type 'releve_auto',
+  // libéré si l'envoi échoue). Jamais un relevé vide. Lecture défensive :
+  // pré-v114 la colonne n'existe pas, la section se tait.
+  let relevesAuto = 0;
+  try {
+    const moisReleve = moisAEnvoyer(jourForce || aujourdhuiParis());
+    if (moisReleve) {
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.izisolo.fr';
+      const { data: structures, error: eS } = await supabaseAdmin
+        .from('profiles')
+        .select('id, studio_nom, studio_slug, email_contact')
+        .eq('releve_auto', true);
+      if (eS) throw eS;
+      for (const st of (structures || [])) {
+        const { data: membres } = await supabaseAdmin
+          .from('studio_membres')
+          .select('*')
+          .eq('profile_id', st.id)
+          .eq('statut', 'actif')
+          .neq('role', 'proprietaire');
+        for (const m of (membres || [])) {
+          const to = String(m.email || '').trim().toLowerCase();
+          if (!to) continue;
+          try {
+            const ref = refReleveAuto(st.id, m.id, moisReleve);
+            const { data: claim, error: clErr } = await supabaseAdmin
+              .from('emails_envoyes')
+              .upsert({ type: 'releve_auto', destinataire: to, ref }, { onConflict: 'type,destinataire,ref', ignoreDuplicates: true })
+              .select('id');
+            if (clErr) throw clErr;
+            if ((claim || []).length === 0) continue;
+            const r = await chargerReleve(supabaseAdmin, { studioId: st.id, membreId: m.id, mois: moisReleve });
+            if (!r.ok || !releveAEnvoyer(r.releve)) {
+              await supabaseAdmin.from('emails_envoyes').delete().match({ type: 'releve_auto', destinataire: to, ref }).then(() => {}, () => {});
+              continue;
+            }
+            const pdf = await genererRelevePdf({ structureNom: st.studio_nom, intervenanteNom: labelIntervenante(m), mois: moisReleve, releve: r.releve });
+            const { subject, html } = emailReleveAuto({ prenom: prenomIntervenante(m), nomStructure: st.studio_nom || 'la structure', mois: moisReleve, releve: r.releve, aUnCompte: !!m.auth_user_id, lien: `${appUrl}/revenus` });
+            const env = await sendEmail({ categorie: 'transactionnel', to, subject, html, replyTo: st.email_contact || null, attachments: [{ filename: `releve-${moisReleve}.pdf`, content: Buffer.from(pdf) }] });
+            if (!env.ok) {
+              await supabaseAdmin.from('emails_envoyes').delete().match({ type: 'releve_auto', destinataire: to, ref }).then(() => {}, () => {});
+              if (!env.skipped) reportError('[cron/expirations] relevé auto envoi échoué:', String(env.error || 'send failed'), { route: '/api/cron/expirations' });
+              continue;
+            }
+            relevesAuto++;
+          } catch (e) {
+            reportError('[cron/expirations] relevé auto err', st.id, e?.message);
+          }
+        }
+      }
+    }
+  } catch (e) {
+    // Inclut « colonne releve_auto absente » (v114 pas encore appliquée).
+    if (!['PGRST204', '42703'].includes(e?.code)) reportError('[cron/expirations] section relevé auto:', e?.message);
+  }
+
   return NextResponse.json({
+    relevesAuto,
     expires: data?.length || 0,
     epuises: epuises?.length || 0,
     promoActif: promoCount,

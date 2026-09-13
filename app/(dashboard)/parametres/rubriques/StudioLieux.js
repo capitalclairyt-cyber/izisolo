@@ -15,6 +15,7 @@ import { useToast } from '@/components/ui/ToastProvider';
 import { METIERS } from '@/lib/constantes';
 import { TYPES_STRUCTURE, CODES_STRUCTURE, typeStructure, erreurRna, normaliserRna } from '@/lib/structure';
 import { resumeCarte } from '@/lib/parametres-rubriques';
+import { lieuxRacine, sallesDe, sanitizeSalle } from '@/lib/salles';
 import { useParametres, BtnSauver } from '../ParametresContext';
 import CarteReglage from '../CarteReglage';
 
@@ -23,6 +24,44 @@ export default function StudioLieux() {
   const { toast } = useToast();
   const [lieuEdit, setLieuEdit] = useState(null);
   const [lieuSaving, setLieuSaving] = useState(false);
+  // v114 : une salle EST un lieu rattaché (salle_de) ; la liste ne montre que
+  // les lieux, chaque salle sous le sien.
+  const [salleEdit, setSalleEdit] = useState(null);
+  const [salleSaving, setSalleSaving] = useState(false);
+  const racines = lieuxRacine(lieux);
+
+  const saveSalle = async () => {
+    const v = sanitizeSalle(salleEdit);
+    if (!v.ok) { toast.error(v.raison); return; }
+    setSalleSaving(true);
+    const supabase = createClient();
+    const payload = { nom: v.salle.nom, capacite: v.salle.capacite };
+    if (salleEdit.id) {
+      const { error } = await supabase.from('lieux').update(payload).eq('id', salleEdit.id);
+      if (error) { toast.error('Erreur : ' + error.message); setSalleSaving(false); return; }
+      setLieux(prev => prev.map(l => l.id === salleEdit.id ? { ...l, ...payload } : l));
+      toast.success('Salle modifiée');
+    } else {
+      const { data, error } = await supabase.from('lieux').insert({ ...payload, salle_de: salleEdit.salle_de, profile_id: studioId, ordre: sallesDe(lieux, salleEdit.salle_de).length }).select().single();
+      if (error || !data) {
+        const absente = ['PGRST204', '42703'].includes(error?.code) || /salle_de|capacite/.test(error?.message || '');
+        toast.error(absente ? 'Les salles arrivent très bientôt : cette mise à jour n\'est pas encore appliquée sur ton compte.' : 'Erreur : ' + (error?.message || 'salle non créée'));
+        setSalleSaving(false); return;
+      }
+      setLieux(prev => [...prev, data]);
+      toast.success('Salle ajoutée');
+    }
+    setSalleSaving(false);
+    setSalleEdit(null);
+  };
+  const removeSalle = async (salle) => {
+    if (!confirm(`Supprimer la salle "${salle.nom}" ? Les séances qui y sont posées garderont leur référence textuelle.`)) return;
+    const supabase = createClient();
+    const { error } = await supabase.from('lieux').delete().eq('id', salle.id);
+    if (error) { toast.error('Erreur : ' + error.message); return; }
+    setLieux(prev => prev.filter(l => l.id !== salle.id));
+    toast.success('Salle supprimée');
+  };
 
   // ── La structure (lot 0 Associations & Studios, 2026-09-13) ──────────────
   // État LOCAL et route DÉDIÉE (patron v104) : les colonnes sont neuves (v110)
@@ -175,12 +214,12 @@ export default function StudioLieux() {
       </CarteReglage>
 
       <CarteReglage id="lieux" titre="Mes lieux" icone={MapPin} resume={resumeCarte('lieux', profile, { lieux })} ouverte={lieux.length === 0}>
-        <p className="section-desc">Les salles où tu donnes tes cours. Chaque lieu est enregistré dès que tu le valides.</p>
+        <p className="section-desc">Les lieux où tu donnes tes cours, et leurs salles si un lieu en a plusieurs (deux séances ne peuvent pas occuper la même salle en même temps). Chaque lieu est enregistré dès que tu le valides.</p>
 
-        {lieux.length > 0 ? (
+        {racines.length > 0 ? (
           <div className="lieux-list">
-            {lieux.map(lieu => (
-              <div key={lieu.id} className="lieu-card">
+            {racines.map(lieu => (
+              <div key={lieu.id} className="lieu-card" data-testid="lieu-card">
                 <div className="lieu-card-icon"><MapPin size={18} /></div>
                 <div className="lieu-card-info">
                   <div className="lieu-card-nom">{lieu.nom}</div>
@@ -188,6 +227,16 @@ export default function StudioLieux() {
                     <div className="lieu-card-adresse">{[lieu.adresse, lieu.ville].filter(Boolean).join(', ')}</div>
                   )}
                   {lieu.notes && <div className="lieu-card-notes">{lieu.notes}</div>}
+                  <div className="salles-list" data-testid="salles">
+                    {sallesDe(lieux, lieu.id).map(s => (
+                      <span key={s.id} className="salle-chip" data-testid="salle-chip">
+                        {s.nom}{s.capacite ? ` · ${s.capacite} places` : ''}
+                        <button type="button" className="salle-chip-btn" onClick={() => setSalleEdit({ ...s })} title="Modifier la salle" aria-label={`Modifier ${s.nom}`}><Pencil size={11} /></button>
+                        <button type="button" className="salle-chip-btn danger" onClick={() => removeSalle(s)} title="Supprimer la salle" aria-label={`Supprimer ${s.nom}`}><Trash2 size={11} /></button>
+                      </span>
+                    ))}
+                    <button type="button" className="salle-add" onClick={() => setSalleEdit({ id: null, salle_de: lieu.id, nom: '', capacite: '' })} data-testid="salle-ajouter"><Plus size={12} /> Ajouter une salle</button>
+                  </div>
                 </div>
                 <div className="lieu-card-actions">
                   <button className="lieu-action-btn" onClick={() => openLieuModal(lieu)} title="Modifier" aria-label={`Modifier ${lieu.nom}`}>
@@ -210,7 +259,43 @@ export default function StudioLieux() {
         <button className="izi-btn izi-btn-secondary lieu-add-btn" onClick={() => openLieuModal(null)} type="button">
           <Plus size={18} /> Ajouter un lieu
         </button>
+        {/* v114 : les puces de salles (global : la classe est posée dans la carte, le style vit ici). */}
+        <style jsx global>{`
+          .salles-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; align-items: center; }
+          .salle-chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 999px; background: #f5f0ea; border: 1px solid rgba(0,0,0,.08); font-size: .78rem; }
+          .salle-chip-btn { background: none; border: none; padding: 2px; cursor: pointer; color: var(--text-soft, #7a6f6a); display: inline-flex; }
+          .salle-chip-btn.danger { color: #b91c1c; }
+          .salle-add { background: none; border: 1px dashed rgba(0,0,0,.2); border-radius: 999px; padding: 3px 9px; font: inherit; font-size: .76rem; color: var(--brand, #b87333); cursor: pointer; display: inline-flex; align-items: center; gap: 4px; }
+        `}</style>
       </CarteReglage>
+
+      {salleEdit && (
+        <div className="modal-backdrop" onClick={e => { if (e.target === e.currentTarget && !salleSaving) setSalleEdit(null); }}>
+          <div className="modal-sheet animate-slide-up" role="dialog" aria-modal="true" data-testid="salle-modal">
+            <div className="modal-header">
+              <span className="modal-title">{salleEdit.id ? 'Modifier la salle' : 'Nouvelle salle'}</span>
+              <button className="modal-close" onClick={() => !salleSaving && setSalleEdit(null)} type="button" aria-label="Fermer"><X size={20} /></button>
+            </div>
+            <div className="modal-body">
+              <div className="form-group">
+                <label className="form-label">Nom de la salle *</label>
+                <input className="izi-input" value={salleEdit.nom || ''} onChange={e => setSalleEdit(prev => ({ ...prev, nom: e.target.value }))} placeholder="Ex : Salle Zen, Grande salle…" autoFocus data-testid="salle-nom" />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Capacité (places)</label>
+                <input className="izi-input" type="number" min="1" max="500" value={salleEdit.capacite ?? ''} onChange={e => setSalleEdit(prev => ({ ...prev, capacite: e.target.value }))} placeholder="Facultatif" data-testid="salle-capacite" />
+                <p className="form-hint" style={{ margin: '6px 0 0' }}>Proposée comme « Places max » quand tu poses une séance dans cette salle.</p>
+              </div>
+              <div className="modal-footer">
+                <button className="izi-btn izi-btn-secondary" onClick={() => setSalleEdit(null)} type="button" disabled={salleSaving}>Annuler</button>
+                <button className="izi-btn izi-btn-primary" onClick={saveSalle} type="button" disabled={salleSaving || !salleEdit.nom?.trim()} data-testid="salle-enregistrer">
+                  {salleSaving ? <><Loader2 size={16} className="spin" /> Enregistrement…</> : (salleEdit.id ? 'Enregistrer' : 'Ajouter')}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {lieuEdit && (
         <div className="modal-backdrop" onClick={e => { if (e.target === e.currentTarget) closeLieuModal(); }}>

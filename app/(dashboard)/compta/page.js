@@ -72,6 +72,14 @@ export default async function ComptaPage() {
     .map(m => ({ id: m.id, label: labelIntervenante(m), email: m.email, a_un_compte: !!m.auth_user_id, remuneration: sanitizeRemuneration(m.remuneration), statut: m.statut }));
   const parId = Object.fromEntries(membres.map(m => [m.id, m]));
 
+  // v114 : le relevé automatique (colonne neuve, lecture SÉPARÉE et défensive).
+  let releveAuto = false, releveAutoDispo = true;
+  {
+    const { data, error } = await supabase.from('profiles').select('releve_auto').eq('id', studioId).maybeSingle();
+    if (error) releveAutoDispo = !ABSENT.includes(error.code);
+    else releveAuto = data?.releve_auto === true;
+  }
+
   const { prestations: pBrutes, migrationManquante } = await chargerPrestationsStructure(supabase, studioId);
   const prestations = pBrutes.map(p => prestationPourStructure(p, parId[p.membre_id]));
   if (migrationManquante) indisponible = true;
@@ -88,6 +96,10 @@ export default async function ComptaPage() {
       prestationsInit={prestations}
       indisponible={indisponible}
       peutGerer={peut(membre, 'argent_gerer')}
+      peutParametres={peut(membre, 'parametres')}
+      peutAnalyse={can(profile, 'analyse_compta')}
+      releveAutoInit={releveAuto}
+      releveAutoDispo={releveAutoDispo}
     />
     </Suspense>
   );
