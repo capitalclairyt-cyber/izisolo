@@ -42,7 +42,7 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
     // ⚠️ Ne JAMAIS re-sélectionner twilio_* : colonnes SUPPRIMÉES par v21 →
     // 42703 → profile null → « Studio introuvable » pour TOUTES les annulations
     // élève (bug muet depuis v21, découvert par Manon/Soleya le 2026-07-24).
-    .select('id, studio_nom, regles_annulation, regles_metier, notifs_eleves, notif_prefs, plan, trial_started_at, stripe_subscription_status')
+    .select('id, studio_nom, regles_annulation, regles_metier, notifs_eleves, notif_prefs, plan, trial_started_at, stripe_subscription_status, type_structure')
     .eq('studio_slug', studioSlug)
     .single();
 

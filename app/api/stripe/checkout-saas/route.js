@@ -95,14 +95,18 @@ export const POST = withRoute({ auth: 'user' }, async ({ request, auth }) => {
   // Récupérer le profile (stripe_customer_id existant, état de l'abonnement,
   // type de structure). `type_structure` est neuve (v110) : on relit sans elle
   // si la base ne la connaît pas encore, une prof seule reste une prof seule.
-  const colonnes = 'id, stripe_customer_id, plan, trial_started_at, stripe_subscription_status, studio_slug, studio_nom';
+  // (Listes écrites en toutes lettres : verifier-selects ne lit pas un template, §12.)
   let { data: profile, error: eProfil } = await supabase
     .from('profiles')
-    .select(`${colonnes}, type_structure`)
+    .select('id, stripe_customer_id, plan, trial_started_at, stripe_subscription_status, studio_slug, studio_nom, type_structure')
     .eq('id', studioId)
     .single();
   if (colonneInconnue(eProfil)) {
-    ({ data: profile } = await supabase.from('profiles').select(colonnes).eq('id', studioId).single());
+    ({ data: profile } = await supabase
+      .from('profiles')
+      .select('id, stripe_customer_id, plan, trial_started_at, stripe_subscription_status, studio_slug, studio_nom')
+      .eq('id', studioId)
+      .single());
   }
 
   // ── Quatre refus, avant que Stripe ne voie quoi que ce soit ──────────────

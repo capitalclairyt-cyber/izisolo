@@ -185,13 +185,18 @@ export default function Sidebar({ studioNom = 'Mon Studio', vocabulaire = {}, il
           <span className="sidebar-label">Support</span>
           {pathname === '/support' && <ChevronRight size={14} className="sidebar-chevron" />}
         </Link>
-        {peutEquipe && peut(membre, 'equipe_gerer') && (
+        {/* Équipe : visible dès qu'on peut la gérer, même sans le plan (l'écran
+            porte aussi « Ailleurs » : les structures où JE donne cours, un
+            geste de la personne qui ne dépend d'aucun plan, lot 1 Assos &
+            Studios). Sans le plan, un cadenas, comme les autres entrées. */}
+        {peut(membre, 'equipe_gerer') && (
         <Link href="/equipe" className={`sidebar-item ${pathname === '/equipe' ? 'active' : ''}`} onClick={triggerPulse}>
           <span className="sidebar-icon-wrap">
             <UserCog size={20} strokeWidth={pathname === '/equipe' ? 2.2 : 1.8} />
           </span>
           <span className="sidebar-label">Équipe</span>
-          {pathname === '/equipe' && <ChevronRight size={14} className="sidebar-chevron" />}
+          {!peutEquipe && <Lock size={13} className="sidebar-lock" aria-label="Plans Association et Studio" data-testid="sidebar-lock" />}
+          {pathname === '/equipe' && peutEquipe && <ChevronRight size={14} className="sidebar-chevron" />}
         </Link>
         )}
         {peut(membre, 'parametres') && (

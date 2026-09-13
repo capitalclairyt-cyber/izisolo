@@ -20,12 +20,12 @@ export default async function DashboardLayout({ children }) {
   // ce qui rend cette bascule invisible le jour où elle est déployée.
   const { studioId, membre, membres, equipeSuspendue } = await resoudreStudioActif(supabase, user);
 
-  // Invitée dans un studio qui n'a plus le plan Multi : sa ligne existe
-  // toujours (re-souscrire rendra tout), mais la porte est fermée. On lui dit
-  // POURQUOI plutôt que de la renvoyer sur un onboarding qui n'a rien à voir.
-  if (equipeSuspendue) {
-    redirect('/acces-suspendu');
-  }
+  // Invitée dans un studio qui n'a plus le plan d'équipe : depuis le lot 1
+  // Associations & Studios elle ENTRE, en lecture seule (le membre porte
+  // `lecture_seule`, `peut()` refuse les écritures, un bandeau le dit).
+  // `equipeSuspendue` ne redirige plus : /acces-suspendu reste pour les liens
+  // anciens.
+  void equipeSuspendue;
 
   // Ni studio à soi, ni invitation : il n'y a rien à montrer ici. C'est aussi
   // le chemin des comptes élève (v57), qui n'ont pas de profil.

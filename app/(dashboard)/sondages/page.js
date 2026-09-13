@@ -20,7 +20,7 @@ export default async function SondagesPage() {
 
   // Frontière des plans (2026-09-07) : le sondage planning est Complet.
   const { data: profilPlan } = await supabase
-    .from('profiles').select('plan, trial_started_at, stripe_subscription_status').eq('id', studioId).maybeSingle();
+    .from('profiles').select('plan, trial_started_at, stripe_subscription_status, type_structure').eq('id', studioId).maybeSingle();
   if (!can(profilPlan, 'sondages')) {
     return <PlanRequis capacite="sondages" titre="Sondage planning" texte="Propose des créneaux, tes élèves votent depuis un lien, et tu crées les cours gagnants en deux clics." />;
   }

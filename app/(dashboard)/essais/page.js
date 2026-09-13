@@ -17,7 +17,7 @@ export default async function EssaisPage() {
   // Profil pro pour vérifier que essai_actif et récupérer la config
   const { data: profile } = await supabase
     .from('profiles')
-    .select('id, studio_nom, essai_actif, essai_mode, essai_paiement, essai_prix, plan, trial_started_at, stripe_subscription_status')
+    .select('id, studio_nom, essai_actif, essai_mode, essai_paiement, essai_prix, plan, trial_started_at, stripe_subscription_status, type_structure')
     .eq('id', studioId)
     .single();
 

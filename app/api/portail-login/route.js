@@ -39,7 +39,7 @@ export const POST = withRoute({ auth: 'public' }, async ({ request: req }) => {
     // Vérifie que le studio existe (et récupère son nom pour l'email)
     const { data: studio, error: studioErr } = await supabaseAdmin
       .from('profiles')
-      .select('studio_nom, studio_slug, prenom, plan, trial_started_at, stripe_subscription_status')
+      .select('studio_nom, studio_slug, prenom, plan, trial_started_at, stripe_subscription_status, type_structure')
       .eq('studio_slug', studioSlug)
       .single();
 

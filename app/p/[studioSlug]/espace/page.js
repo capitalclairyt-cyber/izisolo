@@ -161,7 +161,7 @@ async function getData(studioSlug, user) {
   // capacité Complet, comme le Payment Link des offres)
   const { data: profile } = await supabase
     .from('profiles')
-    .select('id, studio_nom, studio_slug, regles_annulation, plan, trial_started_at, stripe_subscription_status')
+    .select('id, studio_nom, studio_slug, regles_annulation, plan, trial_started_at, stripe_subscription_status, type_structure')
     .eq('studio_slug', studioSlug)
     .single();
   if (!profile) return null;
@@ -487,7 +487,7 @@ export default async function EspacePage({ params, searchParams }) {
   // pas le lire avec son propre client à cause des RLS → null → notFound().
   const { data: ownerProfile } = await supabaseAdmin
     .from('profiles')
-    .select('id, studio_nom, studio_slug, regles_annulation, plan, trial_started_at, stripe_subscription_status')
+    .select('id, studio_nom, studio_slug, regles_annulation, plan, trial_started_at, stripe_subscription_status, type_structure')
     .eq('studio_slug', studioSlug)
     .single();
 

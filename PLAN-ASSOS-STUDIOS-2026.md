@@ -433,7 +433,7 @@ navigateur, centre d'aide, commit, push.
 | **5. Les vitrines et le hub** (2 j) | `/associations`, `/studios`, section landing, portails croisés, hub élève `/mes-studios`, page par intervenante, tutos, FAQ | proof-landing étendu, Safari, mobile 390, une élève jetable inscrite dans deux studios |
 | 6. Les stats (plus tard) | remplissage, no-show, panier moyen | après un vrai mois d'usage |
 
-**Le lot 1 se livre avec l'association de Maude comme première équipe réelle**
+**Le lot 1 est livré (2026-09-13). Il se COMPLÈTE avec l'association de Maude comme première équipe réelle**
 (plan `asso` posé à la main avant même que la caisse sache l'encaisser) : c'est
 là qu'on apprend si les rôles, le lien d'intervenante, l'invitation sortante
 et l'agenda de la personne tiennent devant de vraies personnes. Le lot 3 se
@@ -480,7 +480,7 @@ dessine après ce retour.
 
 - [x] Décisions §9 « à trancher » prises : « ok, go » de Colin le 2026-09-13 sur les onze.
 - [x] Lot 0 · socle + freemium : LIVRÉ le 2026-09-13 (commit du jour), prouvé 33/33 en phase dégradée. Restes côté Colin : appliquer v110, relancer `setup-stripe-saas.mjs` en live, poser les env vars, redéployer (bible §8).
-- [ ] Lot 1 · intervenantes + ponts 1 à 3 (+ l'asso de Maude en vrai)
+- [x] Lot 1 · intervenantes + ponts 1 à 3 : LIVRÉ le 2026-09-13 (commit du jour), prouvé 15/15 en phase dégradée (v111 absente ; v103 et v110 appliquées le jour même) en vrai navigateur. Restes côté Colin : appliquer v103 puis v111, faire entrer l'association de Maude (le retour qui dessine le lot 3). Choix consigné : la lecture seule au downgrade est une garde d'application (routes + écrans), pas de la base (la RLS v101 gate sur l'appartenance) ; scinder ~20 policies « for all » pour l'ancrer en SQL est un chantier à part, à ouvrir si une structure en lecture seule pose problème en vrai.
 - [ ] Lot 2 · l'argent (relevé, dépenses, prestations, factures v2)
 - [ ] Lot 3 · vie de l'asso
 - [ ] Lot 4 · gestion du studio

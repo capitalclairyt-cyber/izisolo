@@ -34,7 +34,7 @@ export default async function SondagePublicPage({ params }) {
   // Le studio
   const { data: profile } = await supabase
     .from('profiles')
-    .select('id, studio_nom, studio_slug, photo_url, plan, trial_started_at, stripe_subscription_status')
+    .select('id, studio_nom, studio_slug, photo_url, plan, trial_started_at, stripe_subscription_status, type_structure')
     .eq('studio_slug', studioSlug)
     .maybeSingle();
   if (!profile) notFound();

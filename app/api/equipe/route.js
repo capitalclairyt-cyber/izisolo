@@ -4,7 +4,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { sendEmail } from '@/lib/email';
 import { reportError } from '@/lib/report';
 import { sanitizeRole, sanitizePermissions, permissionsParDefaut, CLES_PERMISSIONS, sanitizePortee } from '@/lib/studio-membre';
-import { emailInvitation, verifierEmailInvitation, normaliserEmail, membrePublic, poserPortee } from '@/lib/equipe';
+import { emailInvitation, verifierEmailInvitation, normaliserEmail, membrePublic, poserPortee, poserIdentite } from '@/lib/equipe';
 
 /**
  * /api/equipe — l'équipe d'un studio (lot 3 du chantier multi-prof).
@@ -22,6 +22,7 @@ import { emailInvitation, verifierEmailInvitation, normaliserEmail, membrePublic
 const inviterSchema = z.object({
   email: z.string().trim().toLowerCase().email().max(254),
   prenom: z.string().trim().max(60).optional(),
+  nom: z.string().trim().max(80).optional(),
   role: z.enum(['admin', 'prof']).optional(),
   permissions: z.record(z.string(), z.boolean()).optional(),
   portee_pointage: z.enum(['tous', 'miens']).optional(),
@@ -168,6 +169,9 @@ export const POST = withRoute(
     // La portée APRÈS coup (cf. poserPortee) : la nommer dans l'insert
     // ci-dessus ferait perdre l'invitation entière tant que v103 n'est pas là.
     await poserPortee(supabase, membre.id, sanitizePortee(body.portee_pointage));
+    // Prénom et nom À PART (v111) : le planning et le portail la nomment.
+    await poserIdentite(supabase, membre.id, { prenom: body.prenom, nom: body.nom });
+    const { data: relu } = await supabase.from('studio_membres').select('*').eq('id', membre.id).maybeSingle();
 
     const { subject, html } = emailInvitation({
       studioNom: profile?.studio_nom,
@@ -183,6 +187,6 @@ export const POST = withRoute(
     sendEmail({ to: email, subject, html, categorie: 'transactionnel', replyTo: profile?.email_contact || undefined })
       .catch(e => reportError('[equipe] email invitation', e, { route: '/api/equipe' }));
 
-    return Response.json({ membre: membrePublic(membre), compteExistant, clesPermissions: CLES_PERMISSIONS });
+    return Response.json({ membre: membrePublic(relu || membre), compteExistant, clesPermissions: CLES_PERMISSIONS });
   }
 );

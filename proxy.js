@@ -19,6 +19,10 @@ const PUBLIC_ROUTES = [
   '/mot-de-passe-oublie', '/nouveau-mot-de-passe',
   '/auth/',                 // /auth/callback Supabase
   '/p/',                    // portails publics studio (sondages, cours, espace, etc.)
+  '/intervenante/',         // lien permanent d'une intervenante sans compte (v111) :
+                            // même frontière que v100, routes en service_role
+  '/parrainage/',           // le lien reçu par une structure invitée (pont 1, v111) :
+                            // pose un cookie et renvoie vers /register
   '/pointage-invite/',      // lien de pointage confié (v100) : la remplaçante n'a PAS
                             // de compte — sans cette ligne, le default-deny la
                             // renverrait sur /login (le piège §12, déjà mordu 2×)

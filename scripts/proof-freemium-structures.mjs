@@ -297,7 +297,9 @@ try {
     c('Studio refusé à une association : 403 PLAN_HORS_FAMILLE', rStudio.status === 403 && rStudio.body?.code === 'PLAN_HORS_FAMILLE', `${rStudio.status} ${rStudio.body?.code}`);
     for (const periode of ['mensuel', 'annuel']) {
       const r = await api(cookieA, '/api/stripe/checkout-saas', { method: 'POST', body: JSON.stringify({ plan: 'asso', periode }) });
-      const accepte = (r.status === 200 && /^https:\/\//.test(r.body?.url || '')) || (r.status === 500 && r.body?.code === 'PRIX_NON_CONFIGURE') || r.status === 503;
+      // Le témoin est un compte de test (@example.com) : la route le refuse
+      // APRÈS les refus de famille, c'est exactement ce qu'on veut lire ici.
+      const accepte = (r.status === 200 && /^https:\/\//.test(r.body?.url || '')) || (r.status === 500 && r.body?.code === 'PRIX_NON_CONFIGURE') || r.status === 503 || (r.status === 403 && r.body?.code === 'COMPTE_TEST');
       c(`Association ${periode} accepté par la route (${r.status === 200 ? 'URL Stripe' : r.body?.code || r.status})`, accepte, `${r.status}`);
     }
   }

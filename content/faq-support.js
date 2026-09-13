@@ -311,4 +311,23 @@ export const FAQ_SUPPORT = [
     a: "Deux plans existent pour les structures à plusieurs profs, tous deux avec profs illimitées et un forfait fixe : Association à 39 € par mois et Studio à 59 € par mois, ou à l'année avec deux mois offerts (390 € et 590 €). Ils contiennent tout Complet plus l'équipe : chaque prof a son accès et ses droits, et tu dis qui donne quelle séance. Le plan Association est réservé aux associations déclarées : IziSolo te demande ton numéro RNA (la lettre W suivie de neuf chiffres, sur ton récépissé de préfecture) à la création de ton espace ou dans Paramètres → Studio & lieux → Ma structure. C'est ce qui permet de proposer un tarif plus bas aux assos sans qu'un studio commercial se déclare association pour l'obtenir. Tu peux essayer ton plan 30 jours sans carte, puis tu choisis ; si tu ne prends rien, ton espace reste ouvert sur Essentiel, gratuit, et les profs invitées retrouvent leur place dès que l'abonnement reprend.",
     lien: { href: '/aide#equipe', label: 'Voir le pas-à-pas' },
   },
+  {
+    // Le lien permanent d'une intervenante sans compte (v111, lot 1
+    // Associations & Studios, 2026-09-13). AJOUTÉE EN FIN.
+    q: "Une de mes profs ne veut pas créer de compte : comment peut-elle pointer ses séances ?",
+    a: "Invite-la quand même depuis Équipe (son email, son prénom), puis sur sa ligne clique « Créer son lien (sans compte) ». Tu obtiens un lien permanent, affiché une seule fois : copie-le et envoie-le-lui par SMS ou message. En l'ouvrant sur son téléphone, elle voit ses séances des prochaines semaines (celles où tu l'as désignée intervenante, plus celles que personne n'a prises), elle pointe présent, absent ou excusé, et c'est tout : ni coordonnées, ni carnets, ni paiements. Le lien vaut jusqu'à la fin de la saison ; « Désactiver » le ferme immédiatement, et un nouveau lien remplace l'ancien. Si un jour elle veut son propre IziSolo, il est gratuit : en s'inscrivant avec la même adresse, ton studio apparaît chez elle automatiquement.",
+    lien: { href: '/aide#equipe', label: 'Voir le pas-à-pas' },
+  },
+  {
+    // Le pont 1 : faire entrer sa structure (v111). AJOUTÉE EN FIN.
+    q: "Je donne des cours dans une association qui n'est pas sur IziSolo : comment l'y faire venir, et est-ce que je garde mon IziSolo à moi ?",
+    a: "Les deux vivent côte à côte : ton IziSolo reste le tien (tes élèves, ton agenda, tes encaissements), et l'association a le sien, avec son propre compte. Pour la faire entrer, page Équipe → « Ailleurs » → « Inviter mon asso ou mon studio » : tu saisis son nom et son adresse email (celle de l'association ou de la personne qui la gère, pas la tienne). Elle reçoit un lien ; en ouvrant son espace depuis ce lien, tu y es inscrite comme intervenante sans rien ressaisir, et ses séances où tu es désignée apparaissent dans ton propre IziSolo, en tête de ton Accueil et de ton agenda. Le nom du studio, en haut de ta barre latérale, devient un sélecteur pour basculer de l'une à l'autre. Ce que tu vois chez elle dépend des droits qu'elle te donne ; ses élèves et son argent restent chez elle.",
+    lien: { href: '/aide#equipe', label: 'Voir le pas-à-pas' },
+  },
+  {
+    // Lecture seule au downgrade (v111). AJOUTÉE EN FIN.
+    q: "Le studio qui m'avait invitée n'a plus son abonnement : j'ai un bandeau « lecture seule », qu'est-ce que ça veut dire ?",
+    a: "Le studio a arrêté le plan qui permet de travailler à plusieurs (Association ou Studio). Ta place n'est pas supprimée : tu entres toujours, tu vois tout ce que tu voyais, mais tu ne peux plus rien modifier ni pointer tant que l'abonnement n'a pas repris. Rien à faire de ton côté : préviens simplement la personne qui gère le studio. Ton propre IziSolo, s'il est à toi, n'est pas concerné.",
+    lien: { href: '/aide#equipe', label: 'Voir le pas-à-pas' },
+  },
 ];

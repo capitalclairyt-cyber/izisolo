@@ -31,11 +31,17 @@ export default function RegisterPage() {
       return;
     }
 
+    // Le type de structure (lot 1 Associations & Studios) : arrivé par
+    // /parrainage/<jeton> (?structure=association) ou par un lien direct. Il
+    // voyage dans la metadata pour survivre à la confirmation d'email, et
+    // l'onboarding le relit pour pré-cocher la bonne carte.
+    let structure = null;
+    try { structure = new URLSearchParams(window.location.search).get('structure') || null; } catch { /* rien */ }
     const { data, error: authError } = await supabase.auth.signUp({
       email: email.trim().toLowerCase(),
       password,
       options: {
-        data: { prenom },
+        data: { prenom, ...(structure ? { structure } : {}) },
         emailRedirectTo: `${window.location.origin}/auth/callback?next=/onboarding`,
       },
     });
@@ -114,7 +120,7 @@ export default function RegisterPage() {
             <h1>IziSolo</h1>
           </div>
           <p className="auth-subtitle">Crée ton studio en 2 minutes</p>
-          <p className="auth-reassurance">30 jours d'essai · Sans carte bancaire · Sans engagement</p>
+          <p className="auth-reassurance">Essentiel gratuit pour toujours · 30 jours d'essai des autres plans · Sans carte bancaire</p>
         </div>
 
         <form onSubmit={handleRegister} className="auth-form">

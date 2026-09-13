@@ -48,11 +48,24 @@ export default function OnboardingPage() {
   // `?structure=` quand une prof fait entrer son asso (pont 1 du plan).
   const [typeStructure, setTypeStructure] = useState('solo');
   const [rna, setRna] = useState('');
+  // Le pont 1 (v111) : une prof a fait entrer cette structure. Le cookie posé
+  // par /parrainage/<jeton> dit qui invite ; on pré-remplit le nom et le
+  // type, on le DIT à l'écran, et l'acceptation se fait APRÈS la création.
+  const [parrainage, setParrainage] = useState(null);
   useEffect(() => {
     try {
       const voulu = new URLSearchParams(window.location.search).get('structure');
       if (voulu) setTypeStructure(sanitizeTypeStructure(voulu));
     } catch { /* rien */ }
+    fetch('/api/structures/parrainage')
+      .then(r => r.json())
+      .then(d => {
+        if (!d?.invitation) return;
+        setParrainage(d.invitation);
+        setTypeStructure(sanitizeTypeStructure(d.invitation.type_structure));
+        setStudioNom(prev => prev || d.invitation.nom_structure || '');
+      })
+      .catch(() => {});
   }, []);
   const [telephone, setTelephone] = useState('');
   const [adresse, setAdresse] = useState('');
@@ -67,6 +80,8 @@ export default function OnboardingPage() {
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
+        // Le type choisi à l'inscription (metadata, posée par /register?structure=).
+        if (user.user_metadata?.structure) setTypeStructure(sanitizeTypeStructure(user.user_metadata.structure));
         // Élève arrivé côté app prof (login, mot de passe oublié, lien
         // direct) : écran dédié, pas de wizard. On charge ses portails.
         if (user.user_metadata?.role === 'eleve') {
@@ -257,6 +272,12 @@ export default function OnboardingPage() {
         console.error('Erreur offre onboarding:', offreErr);
         setOffreWarning(true); // non bloquant : affiché sur l'écran final
       }
+    }
+
+    // Le pont 1 : la structure vient d'une invitation → la prof qui l'a
+    // invitée devient membre, ici, une fois le studio créé. Jamais bloquant.
+    if (parrainage) {
+      try { await fetch('/api/structures/parrainage', { method: 'POST' }); } catch { /* la prof pourra être invitée à la main */ }
     }
 
     setCreatedSlug(slug);
@@ -468,6 +489,11 @@ export default function OnboardingPage() {
               </p>
             </div>
             <div className="step-fields">
+              {parrainage && (
+                <p className="structure-parrainage" data-testid="onb-parrainage">
+                  🤝 <strong>{parrainage.parrain_prenom || 'Une prof'}</strong>{parrainage.parrain_studio ? ` (${parrainage.parrain_studio})` : ''} t&apos;a invitée à ouvrir l&apos;espace de <strong>{parrainage.nom_structure}</strong>. Dès qu&apos;il existe, elle y sera inscrite comme intervenante.
+                </p>
+              )}
               {/* Le type de structure : une prof seule, une association ou un
                   studio. Il décide du plan essayé et des rubriques propres à
                   chaque famille ; il se change dans Paramètres → Studio & lieux. */}
@@ -852,6 +878,7 @@ export default function OnboardingPage() {
         .structure-label { font-weight: 600; font-size: 0.9rem; }
         .structure-desc { font-size: 0.75rem; color: var(--text-muted); line-height: 1.35; }
         .structure-erreur { font-size: 0.75rem; color: var(--danger, #b42318); margin: 6px 0 0; }
+        .structure-parrainage { font-size: 0.85rem; line-height: 1.5; padding: 10px 12px; border-radius: 10px; background: var(--brand-light, #faf2eb); border: 1px solid var(--brand-200, #e8c8a8); margin: 0 0 12px; }
         @media (max-width: 640px) {
           .structure-grid { grid-template-columns: 1fr; }
         }

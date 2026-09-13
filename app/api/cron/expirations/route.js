@@ -203,16 +203,16 @@ export const GET = withRoute({ auth: 'cron' }, async () => {
     // `type_structure` (v110) décide du nom du plan essayé dans l'email. Si la
     // colonne manque encore, on relit sans elle : une colonne inconnue ferait
     // échouer TOUTE la requête et plus aucune prof ne serait relancée.
-    const colonnesEssai = 'id, prenom, email_contact, plan, trial_started_at, stripe_subscription_status, trial_reminder_sent_j3, trial_reminder_sent_j1';
+    // (Listes écrites en toutes lettres : verifier-selects ne lit pas un template, §12.)
     let { data: trialProfiles, error: eEssai } = await supabaseAdmin
       .from('profiles')
-      .select(`${colonnesEssai}, type_structure`)
+      .select('id, prenom, email_contact, plan, trial_started_at, stripe_subscription_status, trial_reminder_sent_j3, trial_reminder_sent_j1, type_structure')
       .not('trial_started_at', 'is', null)
       .neq('plan', 'free');
     if (eEssai && (eEssai.code === '42703' || eEssai.code === 'PGRST204')) {
       ({ data: trialProfiles, error: eEssai } = await supabaseAdmin
         .from('profiles')
-        .select(colonnesEssai)
+        .select('id, prenom, email_contact, plan, trial_started_at, stripe_subscription_status, trial_reminder_sent_j3, trial_reminder_sent_j1')
         .not('trial_started_at', 'is', null)
         .neq('plan', 'free'));
     }

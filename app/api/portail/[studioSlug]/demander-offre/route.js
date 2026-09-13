@@ -48,7 +48,7 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
   const admin = createAdminClient();
   const { data: profile } = await admin
     .from('profiles')
-    .select('id, studio_nom, studio_slug, prenom, email_contact, notif_prefs, plan, trial_started_at, stripe_subscription_status')
+    .select('id, studio_nom, studio_slug, prenom, email_contact, notif_prefs, plan, trial_started_at, stripe_subscription_status, type_structure')
     .eq('studio_slug', studioSlug)
     .maybeSingle();
   if (!profile) return Response.json({ error: 'Studio introuvable' }, { status: 404 });

@@ -94,12 +94,14 @@ test.describe('Rubriques : visibilité', () => {
     expect(ids({ pays: 'LU' })).not.toContain('urssaf');
   });
 
-  test('Équipe ne s\'affiche qu\'avec la capacité Multi', () => {
+  test('Équipe est toujours visible (le volet « Ailleurs » ne dépend d\'aucun plan, lot 1 Assos & Studios)', () => {
     const ids = (p) => rubriquesVisibles(p).map(r => r.id);
-    expect(ids({ plan: 'pro', stripe_subscription_status: 'active' })).not.toContain('equipe');
+    expect(ids({ plan: 'pro', stripe_subscription_status: 'active' })).toContain('equipe');
     expect(ids({ plan: 'multi', stripe_subscription_status: 'active' })).toContain('equipe');
     expect(ids({ plan: 'multi_free' })).toContain('equipe');
-    expect(ids(null)).not.toContain('equipe');
+    const r = rubriqueParId('equipe');
+    expect(r.resume({ plan: 'solo', trial_started_at: new Date(Date.now() - 400 * 86400000).toISOString() })).toBe('Les structures où je donne cours');
+    expect(r.resume({ plan: 'asso' })).toContain('Inviter des profs');
   });
 
   test('les groupes vides disparaissent, les autres gardent l\'ordre', () => {

@@ -18,7 +18,8 @@
  *      refuser. Une permission qui ne vit que dans l'UI ne vaut rien.
  *   G. La propriétaire élargit ses droits : la même route passe.
  *   H. Retirée, elle est dehors immédiatement.
- *   I. Downgrade du studio : une invitée encore listée voit /acces-suspendu.
+ *   I. Downgrade du studio : une invitée encore listée entre en LECTURE SEULE
+ *      (lot 1 Assos & Studios, 2026-09-13 : plus de /acces-suspendu).
  *   J. Ménage : plan démo restauré, comptes jetables supprimés, MÊME en échec.
  *
  * ⚠️ Modifie TEMPORAIREMENT le plan du studio de démo (restauré en fin de
@@ -86,8 +87,16 @@ const { data: profilInitial } = await admin.from('profiles').select('plan, preno
 const PLAN_INITIAL = profilInitial?.plan || 'pro';
 console.log(`studio démo : plan « ${PLAN_INITIAL} », propriétaire « ${profilInitial?.prenom} »\n`);
 
+// La fiche TÉMOIN des sections F/G : créée par la preuve, jamais une vraie
+// fiche du démo. ⚠️ Avant le 2026-09-13, la preuve supprimait UNE vraie fiche
+// du studio démo melutek à chaque exécution (section G) : après trois
+// semaines de lots, il n'en restait plus aucune (0 élève, 0 abonnement, 0
+// présence par cascade). Une preuve ne consomme jamais une donnée qu'elle
+// n'a pas créée.
+const FICHE_TEMOIN = 'preuve-equipe-fiche@example.com';
 const purger = async () => {
   await admin.from('studio_membres').delete().eq('profile_id', profId).ilike('email', CLAIRE);
+  await admin.from('clients').delete().eq('profile_id', profId).ilike('email', FICHE_TEMOIN);
   const { data } = await admin.auth.admin.listUsers({ page: 1, perPage: 200 });
   const u = (data?.users || []).find(x => x.email === CLAIRE);
   if (u) {
@@ -144,8 +153,12 @@ try {
   assert(corpsRefus.upgradeTo === 'asso' && (corpsRefus.plans || []).join(',') === 'asso,studio',
     `le refus nomme les BONS plans (${corpsRefus.upgradeTo} / ${(corpsRefus.plans || []).join('+')}) — envoyer vers Complet serait faire payer le mauvais abonnement`);
 
+  // Lot 1 Assos & Studios (2026-09-13) : l'entrée Équipe reste visible à la
+  // propriétaire SANS le plan (le volet « Ailleurs » ne dépend d'aucun plan),
+  // avec un cadenas, comme Messagerie en Essentiel.
   const navSansPlan = await pProf.innerText('nav').catch(() => texteSansPlan);
-  assert(!/Équipe/.test(navSansPlan), 'la nav ne propose pas Équipe sans le plan');
+  const cadenasEquipe = await pProf.evaluate(() => !!document.querySelector('a[href="/equipe"] [data-testid="sidebar-lock"]'));
+  assert(/Équipe/.test(navSansPlan) && cadenasEquipe, 'la nav propose Équipe sans le plan, avec un cadenas (le volet Ailleurs est à tout le monde)');
 
   // ══ Bêta Multi : le plan offert ouvre EXACTEMENT ce que le payant ouvre ══
   console.log('\nA2. La bêta offerte (multi_free)');
@@ -215,7 +228,10 @@ try {
 
   // ══ F. LE test : la route refuse aussi ═══════════════════════════════════
   console.log('\nF. La permission vit dans la ROUTE, pas dans l\'écran');
-  const { data: unClient } = await admin.from('clients').select('id').eq('profile_id', profId).limit(1).maybeSingle();
+  const { data: unClient, error: eFiche } = await admin.from('clients')
+    .insert({ profile_id: profId, prenom: 'Fiche', nom: 'Témoin', email: FICHE_TEMOIN, statut: 'prospect' })
+    .select('id').single();
+  if (eFiche || !unClient) throw new Error('fiche témoin non créée : ' + (eFiche?.message || 'inconnue'));
   const suppr = await pC.request.delete(`${BASE}/api/clients/${unClient.id}`);
   const corpsSuppr = await suppr.json().catch(() => ({}));
   assert(suppr.status() === 403 && corpsSuppr.code === 'PERMISSION_REQUISE',
@@ -260,10 +276,13 @@ try {
   await pC.goto(`${BASE}/dashboard`, { waitUntil: 'domcontentloaded' });
   await pC.waitForTimeout(4000);
   const texteSuspendu = await pC.innerText('body');
-  assert(pC.url().includes('/acces-suspendu'),
-    'un studio repassé en Complet ferme la porte à ses invitées');
-  assert(/en pause/i.test(texteSuspendu) && /place est gardée/i.test(texteSuspendu),
+  assert(pC.url().includes('/dashboard') && !pC.url().includes('/acces-suspendu'),
+    'un studio repassé en Complet laisse entrer ses invitées, en lecture seule (plus de porte fermée)');
+  assert(/Lecture seule/i.test(texteSuspendu) && /place est gardée/i.test(texteSuspendu),
     'et on lui DIT pourquoi, en lui garantissant que sa place reste');
+  const ecritureLS = await pC.request.post(`${BASE}/api/equipe`, { data: { email: 'x-' + CLAIRE, role: 'prof' } });
+  assert([403].includes(ecritureLS.status()),
+    `une écriture (inviter) est refusée en lecture seule (${ecritureLS.status()})`);
   await pC.screenshot({ path: join(OUT, 'I-acces-suspendu.png') });
 
   const { data: ligneGardee } = await admin.from('studio_membres').select('statut').eq('id', idMembre).maybeSingle();

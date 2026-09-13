@@ -16,7 +16,7 @@ export default async function OffresPage() {
     { data: profile },
   ] = await Promise.all([
     supabase.from('offres').select('*').eq('profile_id', studioId).order('ordre'),
-    supabase.from('profiles').select('metier, vocabulaire, plan, trial_started_at, stripe_subscription_status, afficher_tarifs, studio_slug').eq('id', studioId).single(),
+    supabase.from('profiles').select('metier, vocabulaire, plan, trial_started_at, stripe_subscription_status, type_structure, afficher_tarifs, studio_slug').eq('id', studioId).single(),
   ]);
 
   // Demandes d'élèves en attente (v97) — lecture DÉFENSIVE et séparée : sans

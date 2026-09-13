@@ -1,13 +1,16 @@
 import { createServerClient } from '@/lib/supabase-server';
 import { resoudreStudioActif } from '@/lib/studio-actif';
 import AgendaClient from './AgendaClient';
+import SeancesAilleurs from '@/components/equipe/SeancesAilleurs';
+import { chargerSeancesAilleurs } from '@/lib/seances-ailleurs';
 
 export default async function AgendaPage({ searchParams }) {
   const supabase = await createServerClient();
   const { data: { user } } = await supabase.auth.getUser();
   // Le studio affiché (v101) : pour une prof seule c'est elle-même,
   // pour une prof invitée dans une association c'est le studio de l'asso.
-  const { studioId } = await resoudreStudioActif(supabase, user);
+  const { studioId, membres } = await resoudreStudioActif(supabase, user);
+  const seancesAilleurs = await chargerSeancesAilleurs(supabase, studioId, membres, { jours: 30 });
 
   const { data: profile } = await supabase
     .from('profiles')
@@ -60,11 +63,14 @@ export default async function AgendaPage({ searchParams }) {
   const todayStr = dateParam || parisToday;
 
   return (
-    <AgendaClient
-      cours={cours || []}
-      profile={profile}
-      initialDate={todayStr}
-      listeAttenteByCours={laByCours}
-    />
+    <>
+      <SeancesAilleurs seances={seancesAilleurs} titre="Tes séances dans d'autres structures" />
+      <AgendaClient
+        cours={cours || []}
+        profile={profile}
+        initialDate={todayStr}
+        listeAttenteByCours={laByCours}
+      />
+    </>
   );
 }

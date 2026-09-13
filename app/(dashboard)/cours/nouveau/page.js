@@ -27,7 +27,8 @@ import PhotoUploader from '@/components/ui/PhotoUploader';
 import HeureSelect from '@/components/ui/HeureSelect';
 import { useToast } from '@/components/ui/ToastProvider';
 import TypeCoursHint from '@/components/cours/TypeCoursHint';
-import { useStudioId } from '@/components/studio/StudioProvider';
+import { useStudioId, useMembre } from '@/components/studio/StudioProvider';
+import { chargerIntervenantes, poserIntervenante, poserIntervenanteRecurrence, labelIntervenante } from '@/lib/intervenante';
 
 const FREQUENCES = [
   { value: 'unique', label: 'Cours unique', desc: 'Une seule date' },
@@ -215,6 +216,23 @@ function NouveauCoursInner() {
   // Le studio affiché (v101) : `user.id` ne suffit plus, une prof peut être
   // invitée dans le studio d'une autre. Résolu une seule fois par le layout.
   const studioId = useStudioId();
+  const membreConnecte = useMembre();
+  // Qui donne cette séance (v103 / v111) : proposé seulement dans un studio à
+  // plusieurs, pré-rempli sur la personne connectée. Chargé À PART, jamais
+  // dans le select des lieux.
+  const [intervenantes, setIntervenantes] = useState([]);
+  const [intervenantId, setIntervenantId] = useState('');
+  useEffect(() => {
+    if (!studioId) return;
+    let vivant = true;
+    chargerIntervenantes(createClient(), studioId).then(liste => {
+      if (!vivant) return;
+      setIntervenantes(liste);
+      if (liste.length >= 2 && membreConnecte?.id) setIntervenantId(prev => prev || membreConnecte.id);
+    });
+    return () => { vivant = false; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [studioId]);
   const router       = useRouter();
   const { toast }    = useToast();
   const searchParams = useSearchParams();
@@ -308,7 +326,7 @@ function NouveauCoursInner() {
       const supabase = createClient();
 
       const [{ data: prof }, { data: lieuxData }, { data: prosData }] = await Promise.all([
-        supabase.from('profiles').select('types_cours, metier, zone_vacances_default, visibilite_default, plan, trial_started_at, stripe_subscription_status').eq('id', studioId).single(),
+        supabase.from('profiles').select('types_cours, metier, zone_vacances_default, visibilite_default, plan, trial_started_at, stripe_subscription_status, type_structure').eq('id', studioId).single(),
         supabase.from('lieux').select('*, clients:client_pro_id(id, nom_structure)').eq('profile_id', studioId).eq('actif', true).order('ordre'),
         supabase.from('clients').select('id, nom, prenom, nom_structure, type_client')
           .eq('profile_id', studioId)
@@ -548,6 +566,7 @@ function NouveauCoursInner() {
         if (error) throw error;
         await poserLienVisio(supabase, newCours ? [newCours.id] : []);
         await poserPhotoCours(supabase, newCours ? [newCours.id] : []);
+        if (intervenantId && newCours) await poserIntervenante(supabase, [newCours.id], intervenantId);
 
         if (isDomicile && newCours) {
           // Erreur LUE (audit 2026-07-25 : l'insert muet créait le cours SANS
@@ -627,6 +646,12 @@ function NouveauCoursInner() {
           }
           await poserLienVisio(supabase, (createdCours || []).map(c => c.id));
           await poserPhotoCours(supabase, (createdCours || []).map(c => c.id));
+          // L'intervenante : sur chaque séance ET sur la série (v111), pour que
+          // les séances ajoutées plus tard en héritent. Rattrapage séparé.
+          if (intervenantId) {
+            await poserIntervenante(supabase, (createdCours || []).map(c => c.id), intervenantId);
+            await poserIntervenanteRecurrence(supabase, recurrence.id, intervenantId);
+          }
 
           if (isDomicile && createdCours?.length > 0) {
             const { error: presErr } = await supabase.from('presences').insert(
@@ -904,6 +929,22 @@ function NouveauCoursInner() {
             <input className="izi-input" type="number" value={form.capacite_max} onChange={handleChange('capacite_max')} placeholder="ex : 12, vide = illimité" />
           </div>
         </div>
+
+        {/* Qui donne cette séance ? (v103 / v111) : seulement dans un studio
+            à plusieurs. Le planning public la nomme, une prof bornée à ses
+            séances peut la pointer, et la série en garde la mémoire. */}
+        {intervenantes.length >= 2 && (
+          <div className="form-group" data-testid="champ-intervenante">
+            <label className="form-label" htmlFor="cours-intervenante">Qui donne {form.frequence === 'unique' ? 'cette séance' : 'ces séances'} ?</label>
+            <select id="cours-intervenante" className="izi-input" value={intervenantId} onChange={e => setIntervenantId(e.target.value)}>
+              <option value="">Personne en particulier</option>
+              {intervenantes.map(i => (
+                <option key={i.id} value={i.id}>{labelIntervenante(i)}{i.role === 'proprietaire' ? ' (toi)' : ''}</option>
+              ))}
+            </select>
+            <p className="form-hint">Le planning public le dit, et si tu ajustes la série plus tard, les nouvelles séances garderont cette intervenante.</p>
+          </div>
+        )}
 
         {/* Où se passe ce cours ? (v18 format réveillé par le feedback Ariana
             2026-08-19 : « un atelier en ligne, mes élèves vont croire que

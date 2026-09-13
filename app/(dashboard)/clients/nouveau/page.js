@@ -84,7 +84,7 @@ export default function NouveauClient() {
       if (!user) return;
       const { data } = await supabase
         .from('profiles')
-        .select('client_fields_config, plan, trial_started_at, stripe_subscription_status')
+        .select('client_fields_config, plan, trial_started_at, stripe_subscription_status, type_structure')
         .eq('id', studioId)
         .single();
       setProfilRow(data || null);

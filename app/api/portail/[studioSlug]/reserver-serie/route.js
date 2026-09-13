@@ -62,7 +62,7 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
   // stripe_subscription_status — sans eux, undefined → 'solo' → gate fermé
   // à tort pour un studio Pro (piège colonne fantôme, bible §12).
   const { data: profile } = await supabaseAdmin
-    .from('profiles').select('id, studio_nom, notif_prefs, regles_metier, plan, trial_started_at, stripe_subscription_status').eq('studio_slug', studioSlug).single();
+    .from('profiles').select('id, studio_nom, notif_prefs, regles_metier, plan, trial_started_at, stripe_subscription_status, type_structure').eq('studio_slug', studioSlug).single();
   if (!profile) return Response.json({ error: 'Studio introuvable' }, { status: 404 });
 
   // Matrice B3a : même gate que la résa unitaire (capacité Complet).

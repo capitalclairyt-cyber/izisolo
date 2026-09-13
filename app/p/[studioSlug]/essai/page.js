@@ -20,7 +20,7 @@ async function getData(studioSlug) {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('id, studio_nom, studio_slug, metier, ville, photo_url, essai_actif, essai_mode, essai_paiement, essai_prix, essai_stripe_payment_link, essai_message, plan, trial_started_at, stripe_subscription_status')
+    .select('id, studio_nom, studio_slug, metier, ville, photo_url, essai_actif, essai_mode, essai_paiement, essai_prix, essai_stripe_payment_link, essai_message, plan, trial_started_at, stripe_subscription_status, type_structure')
     .eq('studio_slug', studioSlug)
     .single();
 

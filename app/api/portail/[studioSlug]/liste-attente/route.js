@@ -39,7 +39,7 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
   // Vérifier studio + cours
   const { data: profile } = await supabaseAdmin
     .from('profiles')
-    .select('id, studio_nom, plan, trial_started_at, stripe_subscription_status, notif_prefs')
+    .select('id, studio_nom, plan, trial_started_at, stripe_subscription_status, type_structure, notif_prefs')
     .eq('studio_slug', studioSlug)
     .single();
   if (!profile) return Response.json({ error: 'Studio introuvable' }, { status: 404 });

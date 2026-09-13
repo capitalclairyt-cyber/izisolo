@@ -146,7 +146,9 @@ try {
     // La barre est rendue deux fois (bureau + tiroir mobile) : on compte les
     // ENTRÉES verrouillées, pas les icônes.
     const cadenas = new Set(await page.locator('nav.sidebar-nav a:has([data-testid="sidebar-lock"])').evaluateAll(els => els.map(e => e.getAttribute('href')))).size;
-    c(complet ? 'aucun cadenas dans la navigation' : 'quatre cadenas : Messagerie, Sondages, Essais, Liste d\'attente', complet ? cadenas === 0 : cadenas === 4, String(cadenas));
+    // Lot 1 Assos & Studios (2026-09-13) : Équipe est toujours dans la nav de
+    // la propriétaire, avec un cadenas hors plan d'équipe (Association / Studio).
+    c(complet ? 'un seul cadenas dans la navigation : Équipe' : 'cinq cadenas : Messagerie, Sondages, Essais, Liste d\'attente, Équipe', complet ? cadenas === 1 : cadenas === 5, String(cadenas));
     for (const [href, cap] of [['/messagerie', 'messagerie'], ['/sondages', 'sondages'], ['/essais', 'cours_essai'], ['/liste-attente', 'liste_attente']]) {
       await aller(page, `${BASE}${href}`);
       await page.waitForSelector('main', { timeout: 90000 });

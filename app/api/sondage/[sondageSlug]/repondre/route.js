@@ -72,7 +72,7 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
   // Frontière des plans (2026-09-07) : le sondage planning est Complet.
   {
     const { data: studio } = await supabase
-      .from('profiles').select('plan, trial_started_at, stripe_subscription_status').eq('id', sondage.profile_id).maybeSingle();
+      .from('profiles').select('plan, trial_started_at, stripe_subscription_status, type_structure').eq('id', sondage.profile_id).maybeSingle();
     if (!studioCan(studio, 'sondages')) {
       return Response.json({ error: 'Ce sondage n\'est pas ouvert.', code: 'PLAN_REQUIS' }, { status: 403 });
     }

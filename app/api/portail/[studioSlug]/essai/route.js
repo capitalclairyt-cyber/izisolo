@@ -71,7 +71,7 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
   // 1. Profil + config essai
   const { data: profile } = await supabaseAdmin
     .from('profiles')
-    .select('id, prenom, studio_nom, email_contact, adresse, code_postal, ville, telephone, essai_actif, essai_mode, essai_paiement, essai_prix, essai_stripe_payment_link, essai_message, plan, trial_started_at, stripe_subscription_status, notif_prefs')
+    .select('id, prenom, studio_nom, email_contact, adresse, code_postal, ville, telephone, essai_actif, essai_mode, essai_paiement, essai_prix, essai_stripe_payment_link, essai_message, plan, trial_started_at, stripe_subscription_status, type_structure, notif_prefs')
     .eq('studio_slug', studioSlug)
     .single();
 

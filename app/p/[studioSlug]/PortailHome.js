@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { MapPin, Calendar, Clock, ChevronRight, ChevronLeft, ChevronDown, Search, CreditCard, Ticket, CalendarCheck, Zap, Instagram, Facebook, Globe, Award, BookOpen, LayoutGrid, List, Check, Loader } from 'lucide-react';
+import { MapPin, Calendar, Clock, ChevronRight, ChevronLeft, ChevronDown, Search, CreditCard, Ticket, CalendarCheck, Zap, Instagram, Facebook, Globe, Award, BookOpen, LayoutGrid, List, Check, Loader, User } from 'lucide-react';
 import { toneCours, vignetteCours, altVignette, imageOptimisable } from '@/lib/vignette-cours';
 import { useToast } from '@/components/ui/ToastProvider';
 import { matchRecherche } from '@/lib/utils';
@@ -85,7 +85,16 @@ function PlacesBadge({ capacite, inscrits, afficherInscrits = true }) {
   return <span className="portail-tag portail-tag-green">Places disponibles</span>;
 }
 
-export default function PortailHome({ profile, cours, offresStripe = [], offresPubliques = [], sondageActif = null, studioSlug, isPreview = false, isDemo = false, currentClient = null, reservedCoursIds = [], canReserve = true, essaiVisible = true, canDemander = true, surchargesEssai = null, tonsParType = null, vignettesParType = null, tabInitial = null }) {
+export default function PortailHome({ profile, cours, offresStripe = [], offresPubliques = [], sondageActif = null, studioSlug, isPreview = false, isDemo = false, currentClient = null, reservedCoursIds = [], canReserve = true, essaiVisible = true, canDemander = true, surchargesEssai = null, tonsParType = null, vignettesParType = null, tabInitial = null, equipe = [] }) {
+  // v111 : les profs de la structure. Le filtre et l'onglet n'apparaissent
+  // qu'à partir de deux personnes (une prof seule n'a rien à filtrer).
+  const [filterProf, setFilterProf] = useState('');
+  const profs = useMemo(() => {
+    const vues = new Map();
+    for (const c of cours) if (c.intervenante_id && c.intervenante) vues.set(c.intervenante_id, c.intervenante);
+    return [...vues].map(([id, prenom]) => ({ id, prenom }));
+  }, [cours]);
+  const aUneEquipe = (equipe || []).length >= 2;
   // Suffixe de query pour préserver le mode demo dans les liens internes
   const demoQS = isDemo ? '?demo=1' : '';
 
@@ -184,6 +193,7 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
               <span><Clock size={12} /> {libelleGroupe(resume, formatHeure)}</span>
               {enLigne && <span>🖥 En ligne</span>}
               {modele.lieu && <span><MapPin size={12} /> {modele.lieu}</span>}
+              {modele.intervenante && <span className="portail-prof"><User size={12} /> avec {modele.intervenante}</span>}
               {modele.type_cours && <span className={`portail-tag portail-tag-${tone}`}>{modele.type_cours}</span>}
               {Number(modele.tarif_unitaire) > 0 && (
                 <span className="portail-tag portail-tag-amber">
@@ -316,6 +326,7 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
             <span><Clock size={12} /> {formatHeure(c.heure)}{c.duree_minutes ? ` · ${c.duree_minutes}min` : ''}</span>
             {enLigne && <span>🖥 En ligne</span>}
             {c.lieu && <span><MapPin size={12} /> {c.lieu}</span>}
+            {c.intervenante && <span className="portail-prof"><User size={12} /> avec {c.intervenante}</span>}
             {c.type_cours && <span className={`portail-tag portail-tag-${tone}`}>{c.type_cours}</span>}
             {Number(c.tarif_unitaire) > 0 && (
               <span className="portail-tag portail-tag-amber">{Number(c.tarif_unitaire).toFixed(2).replace('.', ',').replace(',00', '')} €{c.carnets_acceptes === true ? ' ou carnet' : ' / séance'}</span>
@@ -356,7 +367,7 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
   // ce qui permet au bloc « Mes offres » intégré ailleurs de renvoyer DIRECT
   // sur les tarifs. Onglet inconnu ou masqué (hasTarifs false) → 'cours'.
   const [tab, setTab] = useState(() => (
-    ['cours', 'propos', 'tarifs', 'infos'].includes(tabInitial) ? tabInitial : 'cours'
+    ['cours', 'propos', 'tarifs', 'infos', 'equipe'].includes(tabInitial) ? tabInitial : 'cours'
   ));
   // « Je veux cette offre » depuis la grille publique (v97). Une visiteuse
   // n'est pas connectée : on lui demande le minimum pour que la prof puisse
@@ -417,11 +428,12 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
     return cours.filter(c => {
       if (c.date < todayIso) return false;
       if (c.date === todayIso && c.heure && c.heure.slice(0, 5) <= nowHH) return false;
-      const matchSearch = matchRecherche(search, c.nom, c.type_cours, c.lieu);
+      const matchSearch = matchRecherche(search, c.nom, c.type_cours, c.lieu, c.intervenante);
       const matchType = !filterType || c.type_cours === filterType;
-      return matchSearch && matchType;
+      const matchProf = !filterProf || c.intervenante_id === filterProf;
+      return matchSearch && matchType && matchProf;
     });
-  }, [cours, search, filterType]);
+  }, [cours, search, filterType, filterProf]);
 
   // En mode "semaine" on filtre aussi par plage de dates
   const filteredForView = useMemo(() => {
@@ -758,6 +770,18 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
             <Ticket size={14} /> Tarifs
           </button>
         )}
+        {aUneEquipe && (
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === 'equipe'}
+            onClick={() => setTab('equipe')}
+            className={`portail-tab ${tab === 'equipe' ? 'is-active' : ''}`}
+            data-testid="portail-tab-equipe"
+          >
+            <User size={14} /> L'équipe
+          </button>
+        )}
         {hasInfos && (
           <button
             type="button"
@@ -842,6 +866,17 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
                 onClick={() => setFilterType(filterType === t ? '' : t)}
                 className={`portail-pill ${filterType === t ? 'active' : ''}`}
               >{t}</button>
+            ))}
+          </div>
+        )}
+        {/* v111 : filtrer par prof, dès que deux profs donnent des cours. */}
+        {profs.length > 1 && (
+          <div className="portail-type-pills portail-prof-pills" data-testid="portail-filtre-profs">
+            <button type="button" onClick={() => setFilterProf('')} className={`portail-pill ${!filterProf ? 'active' : ''}`}>Toutes les profs</button>
+            {profs.map(p => (
+              <button key={p.id} type="button" onClick={() => setFilterProf(filterProf === p.id ? '' : p.id)} className={`portail-pill ${filterProf === p.id ? 'active' : ''}`}>
+                <User size={12} /> {p.prenom}
+              </button>
             ))}
           </div>
         )}
@@ -1041,6 +1076,31 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
               );
             })}
           </div>
+        </section>
+      )}
+
+      {/* === ONGLET L'ÉQUIPE (v111) === */}
+      {tab === 'equipe' && aUneEquipe && (
+        <section className="portail-equipe" data-testid="portail-equipe">
+          <h2 className="portail-section-title">L&apos;équipe</h2>
+          <ul className="portail-equipe-liste">
+            {equipe.map(m => (
+              <li key={m.id} className="portail-equipe-carte">
+                {m.photo_url
+                  ? <span className="portail-equipe-photo"><Image src={m.photo_url} alt={m.prenom} width={96} height={96} sizes="72px" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /></span>
+                  : <span className="portail-equipe-photo portail-equipe-initiale" aria-hidden="true">{m.prenom.charAt(0)}</span>}
+                <div>
+                  <div className="portail-equipe-nom">{m.prenom}{m.nom ? ` ${m.nom}` : ''}</div>
+                  {m.bio && <p className="portail-equipe-bio">{m.bio}</p>}
+                  {profs.some(p => p.id === m.id) && (
+                    <button type="button" className="portail-equipe-lien" onClick={() => { setFilterProf(m.id); setTab('cours'); }}>
+                      Voir ses cours
+                    </button>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
         </section>
       )}
 
@@ -1591,6 +1651,16 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
         }
         .portail-search-input { flex: 1; border: none; outline: none; font-size: 0.9rem; background: transparent; }
         .portail-type-pills { display: flex; gap: 6px; flex-wrap: wrap; }
+        .portail-prof-pills { margin-top: 8px; }
+        .portail-prof-pills .portail-pill { display: inline-flex; align-items: center; gap: 4px; }
+        .portail-prof { display: inline-flex; align-items: center; gap: 4px; }
+        .portail-equipe-liste { list-style: none; padding: 0; margin: 0; display: grid; gap: 12px; }
+        .portail-equipe-carte { display: flex; gap: 14px; align-items: flex-start; padding: 14px; border-radius: 14px; background: #fff; border: 1px solid rgba(0,0,0,.07); }
+        .portail-equipe-photo { width: 64px; height: 64px; border-radius: 50%; overflow: hidden; flex-shrink: 0; background: #f1efe9; display: flex; align-items: center; justify-content: center; }
+        .portail-equipe-initiale { font-family: var(--font-fraunces, Georgia, serif); font-size: 1.5rem; color: var(--brand, #b87333); }
+        .portail-equipe-nom { font-weight: 600; margin-bottom: 4px; }
+        .portail-equipe-bio { margin: 0 0 8px; font-size: .88rem; line-height: 1.5; color: var(--text-soft, #7a6f6a); white-space: pre-line; }
+        .portail-equipe-lien { background: none; border: 1px solid rgba(0,0,0,.15); border-radius: 99px; padding: 5px 12px; font: inherit; font-size: .8rem; cursor: pointer; color: inherit; }
         .portail-pill {
           padding: 5px 12px; border-radius: 99px;
           border: 1px solid #e8e0db; background: white;

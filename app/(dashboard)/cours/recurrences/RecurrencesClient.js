@@ -12,6 +12,7 @@ import { getAllTypesFromCategories } from '@/lib/utils';
 import { semainesEntre } from '@/lib/dates';
 import { presenceEstReservationActive } from '@/lib/presences';
 import { imageOptimisable } from '@/lib/vignette-cours';
+import { lireIntervenanteRecurrence, poserIntervenante } from '@/lib/intervenante';
 import { useToast } from '@/components/ui/ToastProvider';
 import {
   estPendantVacances, estJourFerie, getPeriodeVacances, ZONES_VACANCES,
@@ -276,6 +277,15 @@ export default function RecurrencesClient({ recurrences: initialRecurrences, cou
     } catch { /* colonne absente : les séances porteront la vignette de leur type */ }
   };
 
+  // v111 : l'intervenante de la SÉRIE (recurrences.intervenant_id), recopiée
+  // sur les séances qu'on vient de créer. Lue et posée à part (pré-migration,
+  // rien ne se passe et rien ne casse), comme la photo ci-dessus.
+  const copierIntervenanteDeLaSerie = async (supabase, recurrenceId, ids) => {
+    if (!ids?.length || !recurrenceId) return;
+    const intervenantId = await lireIntervenanteRecurrence(supabase, recurrenceId);
+    if (intervenantId) await poserIntervenante(supabase, ids, intervenantId);
+  };
+
   const ajouterCours = async (iso) => {
     if (!selected) return;
     setActionPending(iso);
@@ -343,7 +353,10 @@ export default function RecurrencesClient({ recurrences: initialRecurrences, cou
         });
         if (presErr) toast.warning('Séance créée, mais l\'inscription de l\'élève a échoué : ' + presErr.message);
       }
-      if (data?.id) await copierPhotoDeLaSerie(supabase, selected.id, [data.id]);
+      if (data?.id) {
+        await copierPhotoDeLaSerie(supabase, selected.id, [data.id]);
+        await copierIntervenanteDeLaSerie(supabase, selected.id, [data.id]);
+      }
       setCours(prev => [...prev, data]);
       toast.success('Séance ajoutée');
     }
@@ -644,7 +657,10 @@ export default function RecurrencesClient({ recurrences: initialRecurrences, cou
         if (presErr) toast.warning('Séances créées, mais inscription de l\'élève échouée : ' + presErr.message);
       }
 
-      if (crees.length > 0) await copierPhotoDeLaSerie(supabase, selected.id, crees.map(c => c.id));
+      if (crees.length > 0) {
+        await copierPhotoDeLaSerie(supabase, selected.id, crees.map(c => c.id));
+        await copierIntervenanteDeLaSerie(supabase, selected.id, crees.map(c => c.id));
+      }
 
       // L'état local est mis à jour DÈS l'insert réussi : si l'update de
       // date_fin échoue ensuite, un re-clic ne peut plus dupliquer (la dédup

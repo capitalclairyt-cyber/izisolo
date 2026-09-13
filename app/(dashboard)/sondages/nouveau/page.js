@@ -16,7 +16,7 @@ export default async function NouveauSondagePage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('types_cours, studio_slug, plan, trial_started_at, stripe_subscription_status')
+    .select('types_cours, studio_slug, plan, trial_started_at, stripe_subscription_status, type_structure')
     .eq('id', studioId)
     .single();
 

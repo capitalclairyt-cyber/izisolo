@@ -3,6 +3,8 @@ import { resoudreStudioActif } from '@/lib/studio-actif';
 import { createAdminClient } from '@/lib/supabase-admin';
 import { escapeIlike } from '@/lib/utils';
 import DashboardClient from './DashboardClient';
+import SeancesAilleurs from '@/components/equipe/SeancesAilleurs';
+import { chargerSeancesAilleurs } from '@/lib/seances-ailleurs';
 import { SMS_PRIX_UNITAIRE } from '@/lib/notifs-eleves';
 
 export default async function DashboardPage() {
@@ -10,7 +12,10 @@ export default async function DashboardPage() {
   const { data: { user } } = await supabase.auth.getUser();
   // Le studio affiché (v101) : pour une prof seule c'est elle-même,
   // pour une prof invitée dans une association c'est le studio de l'asso.
-  const { studioId } = await resoudreStudioActif(supabase, user);
+  const { studioId, membres } = await resoudreStudioActif(supabase, user);
+  // Pont 2 (lot 1 Assos & Studios) : les séances que la personne donne dans
+  // d'AUTRES structures, vues d'ici. Vide pour une prof seule.
+  const seancesAilleurs = await chargerSeancesAilleurs(supabase, studioId, membres);
 
   const today = new Date().toISOString().split('T')[0];
   const debutMois = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10);
@@ -151,6 +156,8 @@ export default async function DashboardPage() {
   }
 
   return (
+    <>
+    <SeancesAilleurs seances={seancesAilleurs} />
     <DashboardClient
       profile={profile}
       coursDuJour={coursDuJour || []}
@@ -170,5 +177,6 @@ export default async function DashboardPage() {
       nbCasATraiter={nbCasOuverts || 0}
       espacesEleve={espacesEleve}
     />
+    </>
   );
 }

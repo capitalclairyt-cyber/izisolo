@@ -28,7 +28,7 @@ export default async function PortailConnexionLayout({ children, params }) {
   const { studioSlug } = await params;
   const { data: studio } = await supabaseAdmin
     .from('profiles')
-    .select('studio_nom, plan, trial_started_at, stripe_subscription_status')
+    .select('studio_nom, plan, trial_started_at, stripe_subscription_status, type_structure')
     .eq('studio_slug', studioSlug)
     .maybeSingle();
   if (studio && !studioCan(studio, 'espace_eleve')) {

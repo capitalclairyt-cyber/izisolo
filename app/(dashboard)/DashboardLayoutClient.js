@@ -4,6 +4,7 @@ import { usePathname } from 'next/navigation';
 import { can } from '@/lib/plan-guard';
 import Sidebar from '@/components/navigation/Sidebar';
 import AccountStatusBanner from '@/components/trial/AccountStatusBanner';
+import LectureSeuleBanner from '@/components/equipe/LectureSeuleBanner';
 import { getVocabulaire } from '@/lib/vocabulaire';
 import { ToastProvider } from '@/components/ui/ToastProvider';
 import { ConfirmProvider } from '@/components/ui/ConfirmDialog';
@@ -60,6 +61,7 @@ export default function DashboardLayoutClient({ children, profile, trial, nbCasA
           {/* Banner unifié — gère trial active/expired, past_due, canceled.
               Null si subscribed ou plan='free'. */}
           <AccountStatusBanner profile={profile} />
+          <LectureSeuleBanner />
           {children}
         </div>
       </main>

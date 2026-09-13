@@ -11,6 +11,7 @@ import { coursDejaCommence } from '@/lib/dates';
 import { reportError } from '@/lib/report';
 import { getEssaiPrixParType } from '@/lib/essai-tarif';
 import { chargerVignettesConfig, chargerPhotosCours, greffePhotos } from '@/lib/vignette-cours';
+import { lireIntervenantes, chargerIntervenantes, equipePourPortail, prenomIntervenante } from '@/lib/intervenante';
 import { masquerLiensSiNonBranche } from '@/lib/paiement-en-ligne';
 import { urlPortail } from '@/lib/studio-host';
 
@@ -163,10 +164,23 @@ async function getStudioData(studioSlug) {
   // Les 3 colonnes se chargent À PART (elles ne vont jamais dans un select
   // principal, anti-pattern §12), puis les photos sont greffées sur les cours
   // pour que l'affichage n'ait qu'un seul objet à lire.
-  const [apparence, photosSeances] = await Promise.all([
+  // v111 (lot 1 Assos & Studios) : QUI donne chaque séance, et l'équipe de la
+  // structure pour l'onglet « L'équipe ». Lectures séparées et défensives :
+  // pré-v103/v111, cartes vides, rien ne change.
+  const [apparence, photosSeances, intervenantsParCours, membresBruts] = await Promise.all([
     chargerVignettesConfig(supabase, profile.id),
     chargerPhotosCours(supabase, coursFutur.map(c => c.id)),
+    lireIntervenantes(supabase, coursFutur.map(c => c.id)),
+    chargerIntervenantes(supabase, profile.id),
   ]);
+  const equipe = equipePourPortail(profile, membresBruts);
+  const intervenantes = Object.fromEntries(
+    membresBruts.map(m => [m.id, prenomIntervenante(m)]).filter(([, p]) => !!p)
+  );
+  // Le propriétaire donne ses cours sous SON prénom (profil), pas un email.
+  for (const m of membresBruts) {
+    if (m.role === 'proprietaire' && profile.prenom) intervenantes[m.id] = profile.prenom;
+  }
 
   // Le paiement en ligne n'est branché que si le webhook Stripe est déclaré.
   // Sans lui, la visiteuse paierait sur un vrai lien dont IziSolo n'apprendrait
@@ -194,7 +208,11 @@ async function getStudioData(studioSlug) {
     cours: greffePhotos(coursFutur.map(c => ({
       ...c,
       nbInscrits: presencesCounts[c.id] || 0,
+      // Le prénom de la prof qui donne la séance (v111), ou null.
+      intervenante: intervenantsParCours[c.id] ? (intervenantes[intervenantsParCours[c.id]] || null) : null,
+      intervenante_id: intervenantsParCours[c.id] || null,
     })), photosSeances),
+    equipe,
     tonsParType: apparence.tons,
     vignettesParType: apparence.vignettes,
     offresStripe: canAcheter ? masquerLiensSiNonBranche(offresStripe, confStripe).filter(o => o.stripe_payment_link) : [],
@@ -259,6 +277,7 @@ export default async function PortailPage({ params, searchParams }) {
       surchargesEssai={data.surchargesEssai}
       tonsParType={data.tonsParType}
       vignettesParType={data.vignettesParType}
+      equipe={data.equipe}
       tabInitial={typeof sp?.tab === 'string' ? sp.tab : null}
       canReserve={studioCan(profile, 'reservation_en_ligne')}
       essaiVisible={studioCan(profile, 'cours_essai')}

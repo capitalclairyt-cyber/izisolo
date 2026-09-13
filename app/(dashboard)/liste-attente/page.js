@@ -17,7 +17,7 @@ export default async function ListeAttentePage() {
 
   // Frontière des plans (2026-09-07) : la liste d'attente est Complet.
   const { data: profilPlan } = await supabase
-    .from('profiles').select('plan, trial_started_at, stripe_subscription_status').eq('id', studioId).maybeSingle();
+    .from('profiles').select('plan, trial_started_at, stripe_subscription_status, type_structure').eq('id', studioId).maybeSingle();
   if (!can(profilPlan, 'liste_attente')) {
     return <PlanRequis capacite="liste_attente" titre="Liste d'attente" texte="Un cours complet ? Tes élèves s'inscrivent en liste d'attente depuis ta page, et la première est prévenue toute seule dès qu'une place se libère." />;
   }

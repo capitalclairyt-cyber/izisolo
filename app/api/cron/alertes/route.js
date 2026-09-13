@@ -108,7 +108,7 @@ export const GET = withRoute({ auth: 'cron' }, async () => {
       // plan + champs trial : le rappel J-1 est une capacité Complet (matrice
       // B3a, « espace élève connecté … rappels J-1 ») — sans ces champs, can()
       // lirait undefined et gâterait tout le monde.
-      .select('id, studio_nom, studio_slug, email_contact, notifs_eleves, plan, trial_started_at, stripe_subscription_status')
+      .select('id, studio_nom, studio_slug, email_contact, notifs_eleves, plan, trial_started_at, stripe_subscription_status, type_structure')
       .in('id', lot);
     if (profErr) {
       reportError('[cron/alertes] profiles err:', profErr, { route: '/api/cron/alertes' });

@@ -21,7 +21,7 @@ export default async function EquipePage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('plan, trial_started_at, stripe_subscription_status, created_at, studio_nom, prenom')
+    .select('plan, trial_started_at, stripe_subscription_status, type_structure, created_at, studio_nom, prenom')
     .eq('id', studioId)
     .single();
 

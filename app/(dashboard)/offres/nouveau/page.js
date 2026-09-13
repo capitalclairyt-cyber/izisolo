@@ -137,7 +137,7 @@ export default function NouvelleOffre() {
 
       const [{ data: unitaires }, { data: profile }, { count }] = await Promise.all([
         supabase.from('offres').select('id, nom, prix').eq('type', 'cours_unique').eq('actif', true).order('prix'),
-        supabase.from('profiles').select('plan, trial_started_at, stripe_subscription_status, types_cours').eq('id', studioId).single(),
+        supabase.from('profiles').select('plan, trial_started_at, stripe_subscription_status, type_structure, types_cours').eq('id', studioId).single(),
         supabase.from('offres').select('*', { count: 'exact', head: true }).eq('profile_id', studioId),
       ]);
 

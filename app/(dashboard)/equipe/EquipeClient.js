@@ -4,6 +4,9 @@ import { useState, useCallback } from 'react';
 import { UserPlus, Trash2, Loader2, Mail, ShieldCheck, Check } from 'lucide-react';
 import { useToast } from '@/components/ui/ToastProvider';
 import AideContextuelle from '@/components/AideContextuelle';
+import LienIntervenante from '@/components/equipe/LienIntervenante';
+import Ailleurs from '@/components/equipe/Ailleurs';
+import { labelIntervenante } from '@/lib/intervenante';
 import {
   PERMISSIONS, PRESETS, permissionsParDefaut,
   labelRole, labelStatut, resumeDroits, labelPortee,
@@ -24,7 +27,7 @@ export default function EquipeClient({ membresInit, planOk, indisponible, studio
   const [ouvert, setOuvert] = useState(false);
   const [envoi, setEnvoi] = useState(false);
   const [form, setForm] = useState({
-    email: '', prenom: '', role: 'prof', permissions: permissionsParDefaut('prof'),
+    email: '', prenom: '', nom: '', role: 'prof', permissions: permissionsParDefaut('prof'),
     portee_pointage: 'tous',
   });
   const [edite, setEdite] = useState(null); // id du membre déplié
@@ -47,6 +50,7 @@ export default function EquipeClient({ membresInit, planOk, indisponible, studio
         body: JSON.stringify({
           email: form.email.trim(),
           prenom: form.prenom.trim() || undefined,
+          nom: (form.nom || '').trim() || undefined,
           role: form.role,
           permissions: form.permissions,
           portee_pointage: form.portee_pointage,
@@ -143,11 +147,19 @@ export default function EquipeClient({ membresInit, planOk, indisponible, studio
                          onChange={e => majForm({ email: e.target.value })} />
                 </label>
                 <label>
-                  <span>Son prénom (facultatif)</span>
+                  <span>Son prénom</span>
                   <input type="text" value={form.prenom} placeholder="Claire" maxLength={60}
                          onChange={e => majForm({ prenom: e.target.value })} />
                 </label>
+                <label>
+                  <span>Son nom (facultatif)</span>
+                  <input type="text" value={form.nom || ''} placeholder="Martin" maxLength={80}
+                         onChange={e => majForm({ nom: e.target.value })} />
+                </label>
               </div>
+              <p className="eq-aide-lien">
+                Pas de compte, pas de problème : une fois invitée, tu peux lui créer un <strong>lien permanent</strong> qui ouvre ses séances et leur pointage, sans mot de passe.
+              </p>
 
               <div className="eq-roles">
                 <button type="button" className={`eq-role ${form.role === 'prof' ? 'actif' : ''}`}
@@ -207,7 +219,8 @@ export default function EquipeClient({ membresInit, planOk, indisponible, studio
               <li key={m.id} className={`eq-ligne ${m.statut}`}>
                 <div className="eq-ident">
                   <div className="eq-nom">
-                    <strong>{m.email}</strong>
+                    <strong>{labelIntervenante(m)}</strong>
+                    {(m.prenom || m.nom) && <span className="eq-email">{m.email}</span>}
                     <span className={`eq-badge role-${m.role}`}>{labelRole(m.role)}</span>
                     <span className={`eq-badge statut-${m.statut}`}>{labelStatut(m.statut)}</span>
                     {m.statut === 'invite' && !m.liee && <span className="eq-attente">jamais venue</span>}
@@ -236,14 +249,23 @@ export default function EquipeClient({ membresInit, planOk, indisponible, studio
                     setEdite(null);
                   }} />
                 )}
+                {!m.proprietaire && m.statut !== 'revoque' && (
+                  <LienIntervenante membre={m} onMaj={(maj) => setMembres(prev => prev.map(x => x.id === maj.id ? maj : x))} />
+                )}
               </li>
             ))}
           </ul>
         </>
       )}
 
+      {/* Ailleurs : les structures où JE donne cours (lot 1 Assos & Studios).
+          Un geste de la personne, hors plan : rendu quel que soit planOk. */}
+      <Ailleurs />
+
       <style jsx global>{`
         .eq-page { max-width: 860px; }
+        .eq-email { font-size: .78rem; color: var(--text-soft, #7a6f6a); font-weight: 400; }
+        .eq-aide-lien { margin: 0 0 12px; font-size: .82rem; color: var(--text-soft, #7a6f6a); line-height: 1.5; }
         .eq-entete h1 { font-family: var(--font-fraunces, Georgia, serif); font-size: 1.8rem; margin: 0 0 4px; }
         .eq-entete p { margin: 0 0 20px; color: var(--text-soft, #7a6f6a); }
 

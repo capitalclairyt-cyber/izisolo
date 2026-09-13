@@ -37,7 +37,9 @@ export const PATCH = withRoute(
         .select('id')
         .eq('id', body.intervenantId)
         .eq('profile_id', studioId)
-        .eq('statut', 'actif')
+        // 'invite' aussi (v111) : une intervenante sans compte travaille par
+        // son lien permanent et ne passe jamais « actif ».
+        .in('statut', ['actif', 'invite'])
         .maybeSingle();
       if (!membre) {
         return Response.json(

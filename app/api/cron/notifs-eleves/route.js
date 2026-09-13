@@ -46,7 +46,7 @@ export const GET = withRoute({ auth: 'cron' }, async () => {
       .from('profiles')
       // studio_slug : indispensable aux URLs des push (sans lui, tous les push
       // carnet/expiration pointaient sur « / » — audit 2026-07-25).
-      .select('id, studio_nom, studio_slug, notifs_eleves, alerte_seances_seuil, alerte_expiration_jours, sms_seuil_mois, plan, trial_started_at, stripe_subscription_status')
+      .select('id, studio_nom, studio_slug, notifs_eleves, alerte_seances_seuil, alerte_expiration_jours, sms_seuil_mois, plan, trial_started_at, stripe_subscription_status, type_structure')
       .order('id')
       .range(page * 1000, page * 1000 + 999);
     if (pErr) {
