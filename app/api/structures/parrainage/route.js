@@ -79,7 +79,21 @@ export const POST = withRoute({ auth: 'user' }, async ({ request, auth }) => {
   //    un compte) avec le préréglage « Prof ». Rejouer ne double rien
   //    (index unique profile_id + lower(email)).
   if (emailParrain && invitation.parrain_auth_user_id) {
-    const { error: eMembre } = await admin.from('studio_membres').upsert({
+    // ⚠️ Trouvé par la preuve en phase complète (2026-09-13) : un upsert
+    // `onConflict: 'profile_id,auth_user_id'` répond 42P10, parce que l'index
+    // unique de v101 sur ces deux colonnes est PARTIEL (where auth_user_id is
+    // not null) et qu'ON CONFLICT ne sait pas le viser sans son prédicat. La
+    // même famille que la cloche v63. On relit donc d'abord (par le compte,
+    // puis par l'adresse, comme l'index lower(email)), et on insère ou on
+    // réactive : idempotent, sans index à deviner.
+    const { data: existantes } = await admin
+      .from('studio_membres')
+      .select('id, statut')
+      .eq('profile_id', studioId)
+      .or(`auth_user_id.eq.${invitation.parrain_auth_user_id},email.ilike.${emailParrain.replace(/[%_,]/g, '')}`)
+      .limit(1);
+    const existante = (existantes || [])[0] || null;
+    const ligne = {
       profile_id: studioId,
       auth_user_id: invitation.parrain_auth_user_id,
       email: emailParrain,
@@ -88,7 +102,10 @@ export const POST = withRoute({ auth: 'user' }, async ({ request, auth }) => {
       statut: 'actif',
       accepte_at: new Date().toISOString(),
       invite_par: user.id,
-    }, { onConflict: 'profile_id,auth_user_id', ignoreDuplicates: true });
+    };
+    const { error: eMembre } = existante
+      ? await admin.from('studio_membres').update({ ...ligne, revoque_at: null }).eq('id', existante.id)
+      : await admin.from('studio_membres').insert(ligne);
     if (eMembre) await reportError('[parrainage] membre non créé', eMembre, { route: '/api/structures/parrainage' });
     // Le prénom de la prof, pour que le planning la nomme (v111, à part).
     await admin.from('studio_membres')

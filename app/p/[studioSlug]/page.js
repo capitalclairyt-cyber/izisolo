@@ -57,6 +57,7 @@ async function getStudioData(studioSlug) {
     .from('profiles')
     .select(`
       id, studio_nom, studio_slug, metier, adresse, code_postal, ville, types_cours,
+      prenom, nom,
       photo_url, photo_couverture, photo_couverture_focal_y,
       bio, philosophie, formations, annees_experience,
       horaires_studio, afficher_tarifs, afficher_horaires, afficher_inscrits, faq_publique,

@@ -262,6 +262,14 @@ try {
     if (eN) throw eN;
     COMPTES.nouvelle.id = creeN.user.id;
     await attendre(async () => { const { data } = await svc.from('profiles').select('id').eq('id', creeN.user.id).maybeSingle(); return data || null; }, 15000, 500);
+    // ⚠️ Piège de PREUVE (§12, « la PREMIÈRE compilation d'une route recharge
+    // la page en cours ») : compilée pendant l'onboarding, la route de lecture
+    // de l'invitation rechargeait l'assistant et le remettait à l'étape zéro.
+    // On la préchauffe AVANT d'ouvrir le navigateur, et on vérifie au passage
+    // qu'elle répond bien l'invitation par ce cookie.
+    const cookieN = await enteteCookie(COMPTES.nouvelle.email);
+    const prechauffe = await api(`${cookieN}; izi_parrainage=${tokenP}`, '/api/structures/parrainage');
+    c('la route de lecture de l\'invitation répond par le cookie (qui invite, quelle structure)', prechauffe.status === 200 && prechauffe.body?.invitation?.nom_structure === 'Yoga pour tous Preuve' && prechauffe.body?.invitation?.parrain_prenom === 'Léa', JSON.stringify(prechauffe.body || {}).slice(0, 120));
     const ctxN = await browser.newContext({ viewport: { width: 1280, height: 1000 } });
     await ctxN.addCookies([
       ...(await sessionCookies(COMPTES.nouvelle.email)).map(cc => ({ ...cc, url: BASE, sameSite: 'Lax' })),
@@ -273,7 +281,9 @@ try {
     for (let i = 0; i < 12 && !(await pN.$('.metier-card.selected')); i++) { await pN.click('.metier-card').catch(() => {}); await dormir(500); }
     await pN.click('button:has-text("Continuer")');
     await pN.waitForSelector('[data-structure="association"]', { timeout: 30000 });
-    await dormir(1500);
+    // Le bloc d'invitation arrive par un fetch : on l'attend, on ne dort pas.
+    await pN.waitForSelector('[data-testid="onb-parrainage"]', { timeout: 30000 }).catch(() => {});
+    await dormir(500);
     const tN = await texte(pN);
     c('l\'onboarding dit qui invite (« Léa … t\'a invitée à ouvrir l\'espace de Yoga pour tous Preuve »)', !!(await pN.$('[data-testid="onb-parrainage"]')) && tN.includes('Léa') && tN.includes('Yoga pour tous Preuve'));
     c('« Une association » est pré-cochée et le nom pré-rempli', await pN.evaluate(() => document.querySelector('[data-structure="association"]')?.getAttribute('aria-checked') === 'true' && document.querySelector('#onb-studio-nom')?.value.includes('Yoga pour tous')));
@@ -290,9 +300,15 @@ try {
       return data || null;
     }, 40000, 800);
     c('à la création de l\'espace, Léa est MEMBRE de la nouvelle structure EN BASE (actif, prof)', !!membreLea && membreLea.statut === 'actif' && membreLea.role === 'prof', JSON.stringify(membreLea || {}));
-    c('… avec son prénom (v111)', membreLea?.prenom === 'Léa');
-    const { data: invDb } = await svc.from('invitations_structure').select('statut, structure_profile_id').eq('parrain_profile_id', lea.id).maybeSingle();
+    // La route écrit l'appartenance, PUIS le prénom, PUIS l'invitation : on
+    // attend la dernière écriture avant de relire (sinon on lit une course).
+    const invDb = await attendre(async () => {
+      const { data } = await svc.from('invitations_structure').select('statut, structure_profile_id').eq('parrain_profile_id', lea.id).maybeSingle();
+      return data?.statut === 'acceptee' ? data : null;
+    }, 20000, 500);
     c('l\'invitation est acceptée et rattachée à la structure', invDb?.statut === 'acceptee' && invDb?.structure_profile_id === creeN.user.id);
+    const { data: membreLea2 } = await svc.from('studio_membres').select('prenom').eq('id', membreLea?.id || '00000000-0000-0000-0000-000000000000').maybeSingle();
+    c('… avec son prénom (v111)', membreLea2?.prenom === 'Léa', `${membreLea2?.prenom}`);
     const { data: profN } = await svc.from('profiles').select('parrainee_par, studio_slug').eq('id', creeN.user.id).maybeSingle();
     c('la structure porte parrainee_par = le studio de Léa', profN?.parrainee_par === lea.id && !!profN?.studio_slug);
     const rejeu = await api(null, `/parrainage/${tokenP}`);
