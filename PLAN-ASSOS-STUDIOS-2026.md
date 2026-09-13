@@ -1,10 +1,13 @@
-# Associations & Studios : deux plans, une seule fondation
+# Associations, Studios et l'écosystème : une personne, plusieurs structures
 
 > Document de brainstorm et de pilotage, ouvert le 2026-09-13 sur la demande de
 > Colin : « mettre le paquet sur les associations et les studios », deux plans
-> en plus d'Essentiel et Complet, 39 € pour les assos et 59 € pour les studios,
-> à calculer et discuter. Ce document propose, Colin tranche (§8), puis on
-> avance lot par lot avec une preuve par lot (§7).
+> en plus d'Essentiel et Complet. Révisé le même jour après ses décisions :
+> **Essentiel passe à 0 €** (freemium sans carte), Multi disparaît, l'annuel
+> s'active pour Association et Studio, le RNA est obligatoire, et l'app doit
+> devenir un **écosystème** où une prof qui a son IziSolo est aussi
+> intervenante dans l'IziSolo d'une asso et d'un studio. Ce document propose,
+> Colin tranche (§9), puis on avance lot par lot avec une preuve par lot (§8).
 
 ---
 
@@ -14,379 +17,471 @@
 a posé la fondation : `studio_membres` (v101, appliquée), rôles
 `proprietaire / admin / prof`, neuf permissions dont trois tenues par la RLS
 (`argent_voir`, `messagerie`, `parametres`), écran `/equipe`, invitation par
-email, sélecteur de studio, `cours.intervenant_id` et portée de pointage
-(v103, **écrite mais pas appliquée**), lien de pointage confié pour UNE séance
-(v100). Le plan `multi` à 49 € est public, son Price Stripe est live.
+email, **sélecteur de studio** (une personne qui possède son studio ET
+travaille ailleurs bascule de l'un à l'autre, lot 3b), `cours.intervenant_id`
+et portée de pointage (v103, **écrite mais pas appliquée**), lien de pointage
+confié pour UNE séance (v100). Le plan `multi` à 49 € est public, son Price
+Stripe est live.
 
 **Ce qui n'a jamais servi.** En prod : 27 profils, 15 Essentiel, 1 Complet,
 10 internes, **1 seul Multi** (Atout Gym, bêta offerte, 1 membre, 0 élève,
 jamais utilisé). Aucune invitation d'équipe réelle n'a été envoyée par une
-prof. Tout ce qu'on va construire au-dessus repose donc sur une fondation
-prouvée en navigateur (35/35, 33/33) mais jamais éprouvée par une vraie équipe.
-Conséquence directe pour l'ordre des lots : **la première association réelle
-(celle où Maude enseigne) doit entrer AVANT qu'on construise les features
-spécifiques aux assos**, sinon on dessine des rôles de bureau pour des gens
-qu'on n'a jamais vus utiliser l'écran Équipe.
+prof. **Aucune prof ne paie aujourd'hui** (la caisse Stripe est live depuis le
+7/09, son seul paiement est celui de la preuve) : passer Essentiel à 0 € ne
+retire aucun revenu existant.
+
+**La contrainte structurelle, vérifiée dans le schéma.** Une structure EST un
+compte de connexion : `profiles.id` est l'id du compte auth, posé par le
+trigger `handle_new_user`, avec suppression en cascade. La branche (a) de
+`mes_studios_staff()` (« mon studio = le profil dont l'id est le mien ») et
+tout l'onboarding reposent dessus. Conséquence : **un email = au plus une
+structure possédée**. Ce n'est pas un défaut à corriger, c'est la forme que
+prendra l'écosystème (§6.1).
 
 **Ce que l'app suppose encore.** Le studio est une personne : `profiles`
 porte le prénom, l'avatar, la bio et le SIRET de la prof, et le portail
 public raconte UNE prof. Il n'existe aucune notion de « type de structure »,
 ni de dépense (IziSolo ne connaît que des recettes), ni d'adhésion, ni de
-rémunération d'une intervenante.
+rémunération d'une intervenante, ni de vue « toutes mes structures ».
 
 ---
 
-## 2. La grille proposée
+## 2. La grille (décisions Colin du 2026-09-13 intégrées)
 
 | Plan | Clé DB | Prix | Pour qui | La frontière |
 |------|--------|------|----------|--------------|
-| Essentiel | `solo` | 15 € | La prof seule, son cahier en mieux | inchangé |
-| Complet | `pro` | 29 € | La prof seule, ses élèves dans la boucle | inchangé |
-| **Association** | `asso` | **39 €** | Une asso loi 1901 avec un bureau et des profs | Complet + équipe + la vie de l'asso |
-| **Studio** | `studio` | **59 €** | Un studio commercial avec des intervenantes | Complet + équipe + la gestion du studio |
+| **Essentiel** | `solo` | **0 €, sans carte, pour toujours** | La prof seule, son cahier en mieux | inchangée : tout ce qu'elle fait seule |
+| Complet | `pro` | 29 € | La prof seule, ses élèves dans la boucle | inchangée : tout ce qui fait agir l'élève |
+| **Association** | `asso` | **39 €** ou **390 €/an** | Une asso loi 1901 avec un bureau et des profs | Complet + équipe + la vie de l'asso |
+| **Studio** | `studio` | **59 €** ou **590 €/an** | Un studio commercial avec des intervenantes | Complet + équipe + la gestion du studio |
 
-**Que devient Multi.** Recommandation : **Multi disparaît comme plan public**.
-Trois plans « à plusieurs » (39, 49, 59) sont illisibles, et Multi n'a jamais
-été vendu. La clé `multi` reste en base comme legacy mappée vers `studio` par
-`effectivePlan()`, exactement le traitement de `premium` → `pro`. `multi_free`
-(Atout Gym) est mappé vers `studio` aussi. Le Price Stripe à 49 € est archivé
-(jamais supprimé : un Price archivé garde son historique).
+**Multi disparaît** (décidé). La clé `multi` reste en base comme legacy
+mappée vers `studio` par `effectivePlan()`, le traitement de `premium` → `pro`.
+`multi_free` (Atout Gym) est mappé vers `studio` aussi. Le Price Stripe 49 €
+est archivé, jamais supprimé.
 
-**Pourquoi l'asso paie moins que le studio, et pourquoi c'est tenable.** Une
-asso a un budget voté, des bénévoles, des subventions ; un studio a un chiffre
-d'affaires. Le risque évident : un studio qui se déclare asso pour payer 20 €
-de moins. Trois garde-fous, tous déjà dans l'esprit de l'app (SIRET Luhn,
-IBAN mod-97, numéro BCE belge) :
-1. **Le numéro RNA** (`W` + 9 chiffres) est demandé à l'onboarding Association
-   et validé par son format, comme le SIRET l'est pour la facturation. Pas de
-   RNA, pas de plan Association.
-2. Les deux plans ne contiennent **pas les mêmes choses** : un studio n'a que
-   faire des PV d'AG, une asso n'a pas de marge par salle. Chacun a une raison
-   d'être dans le bon plan.
-3. Le portail public affiche « Association loi 1901 » sur le plan Association :
-   un studio commercial ne voudra pas de cette mention.
+**L'annuel** (décidé) : activé pour Association et Studio seulement, deux mois
+offerts (390 et 590 €, à confirmer). Une asso vote un budget et paie par
+virement après décision du bureau ; l'annuel est son mode naturel. Reco :
+LANCEMENT50 s'applique au mensuel des trois plans payants, pas à l'annuel.
 
-**Le calcul, en ordre de grandeur.**
-- Studio à 59 € : un studio de 4 intervenantes paierait 4 × 29 = 116 € s'il
-  prenait quatre comptes Complet ; 59 € forfait plat, intervenantes
-  illimitées, plus 1 % sur le paiement en ligne. Un studio à 4 000 € de CA
-  mensuel encaissé en ligne paie donc ~99 €/mois tout compris. Les références
-  du marché studio (bsport, Eversports, Fitogram) démarrent entre 100 et
-  300 €/mois ou prennent 3 à 5 % du CA. 59 € est en bas de la fourchette, ce
-  qui est cohérent avec le positionnement « alternative simple et française »
-  et avec une équipe de deux personnes en support.
-- Association à 39 € : une asso de 80 adhérents à 200 €/an gère 16 000 €/an ;
-  468 €/an représente 2,9 % de son budget. Les références (AssoConnect
-  30 à 70 €/mois, HelloAsso gratuit mais sans planning ni pointage) placent
-  39 € dans la zone acceptable, à condition de proposer **l'annuel** : une
-  asso engage sur un mandat et paie par virement après vote, elle ne « teste »
-  pas en mensuel. Proposition : **390 €/an** (deux mois offerts) activé pour
-  les deux nouveaux plans seulement, `prixAnnuel` dormant depuis juillet.
-- LANCEMENT50 : à décider s'il s'applique aux deux nouveaux plans. Reco : oui
-  sur le mensuel, non sur l'annuel (l'annuel a déjà sa remise).
+**Le RNA obligatoire** (décidé) : `W` + 9 chiffres, validé par format à
+l'onboarding Association, comme le SIRET l'est pour la facturation. C'est le
+garde-fou contre le studio qui se déclare asso pour payer 20 € de moins, avec
+les deux autres : les plans ne contiennent pas les mêmes choses, et le portail
+d'une asso affiche « Association loi 1901 ».
 
-**L'essai.** Aujourd'hui l'essai 30 jours donne Complet. Proposition : l'essai
-donne **le plan choisi à l'onboarding** (une asso qui s'inscrit teste
-Association, pas Complet) ; le concierge pose le plan à la main comme
-aujourd'hui pour Multi.
+**L'essai** : 30 jours de Complet offerts à toute prof seule, puis Essentiel
+gratuit sans rien faire, ou Complet à 29 €. Une structure (asso, studio)
+essaie **son** plan 30 jours, puis retombe sur Essentiel gratuit (l'équipe
+passe en lecture seule, §6.7) ou paie. Plus jamais de compte gelé à la fin
+d'un essai (§3).
+
+### 2.1 Ce que le freemium veut dire, et ce qu'il coûte
+- **La thèse de Colin** : le prix rebute des visiteuses avant qu'elles aient
+  vu l'app. Un Essentiel gratuit fait entrer, la boucle élève fait payer. Les
+  faits qu'on a : quatre essais sur onze mouraient à zéro cours (§5 landing
+  v3), donc le frein est autant l'activation que le prix ; le freemium
+  n'exonère pas du concierge, il le rend plus rentable (une prof gratuite qui
+  a ses élèves dedans est une prof qui reste).
+- **Ce qui est gratuit est généreux** : factures acquittées, déclaration
+  URSSAF, livre des recettes, export comptable, carnets manuels, lieux
+  illimités, zéro quota. C'est le « cahier » et il doit rester complet, sinon
+  le gratuit ne vaut rien. Le levier vers Complet est UNIQUEMENT la boucle
+  élève (réservation, espace, rappels, paiement en ligne, messagerie,
+  demande d'offre). On mesure la conversion à 60 jours avant de bouger la
+  frontière ; deux candidats si elle est trop faible : la déclaration URSSAF
+  automatisée et les factures automatiques (déjà Complet).
+- **Le coût réel d'une prof gratuite** est le support, pas la base (aucun
+  email élève en Essentiel, des lignes Postgres négligeables). D'où l'ordre :
+  le guide et la FAQ avant tout chatbot (règle du 18/08), et le widget
+  feedback qui reste.
+- **Le freemium fait tourner l'écosystème** (§6) : chaque intervenante
+  invitée par une asso ou un studio peut ouvrir SON IziSolo gratuit en un
+  clic, et chaque prof gratuite peut faire entrer son asso et son studio. Les
+  deux boucles se nourrissent, et c'est là que 0 € rapporte.
 
 ---
 
-## 3. Ce que les deux plans partagent : les intervenantes
+## 3. Ce que le freemium change dans la mécanique de compte
 
-C'est le cœur commun, et c'est ce qu'il faut construire en premier parce que
-les deux plans en dépendent et que la fondation est déjà là.
+Aujourd'hui `getAccountStatus()` rend `trial_expired` à J+30 sans
+souscription, et `trial_expired` = **compte gelé** (402 sur toute écriture,
+triggers SQL `compte_gele()` v81, bandeaux). Le freemium retire le gel de la
+fin d'essai. Ce qui bouge, dans `lib/trial.js` et ses miroirs :
+1. `trial_expired` disparaît comme état terminal : après l'essai, `effectivePlan`
+   rend `solo` et le statut devient `free` (« sur Essentiel gratuit »). Aucune
+   écriture n'est refusée. Le bandeau de fin d'essai devient un bandeau
+   d'invitation (« ton essai Complet est fini, tes élèves n'ont plus leur
+   espace : le rouvrir coûte 29 € »), fermable.
+2. **Le gel ne reste que pour l'impayé** : `past_due` après les relances
+   Stripe. `isAccountFrozen()` et `compte_gele()` (SQL, v81) se réécrivent
+   ensemble, même règle des deux côtés, avec une migration.
+3. `canceled` (résiliation par le Customer Portal) → plan `solo`, statut
+   `free`, rien de gelé ; le webhook `customer.subscription.deleted` pose le
+   plan. L'élève perd son espace à la fin de la période payée, pas avant.
+4. Stripe : plus de Price pour `solo`, le checkout n'accepte que `pro`, `asso`,
+   `studio` ; le Customer Portal n'autorise le changement qu'entre plans de
+   même famille (pro ↔ rien, asso ↔ studio jamais).
+5. Les emails de relance J-3 / J-1 (cron `expirations`) se réécrivent : ils
+   annonçaient un gel, ils annoncent une perte de la boucle élève.
+6. L'admin : nouveau statut `gratuit` (distinct d'`essai`, `abonné`,
+   `offert`, `impayé`), le funnel et le MRR ne changent pas.
+7. La landing et la carte Paramètres → Abonnement : « Essentiel 0 €, sans
+   carte, pour toujours ». Les preuves qui citent « 30 jours d'essai » et
+   « sans carte » se relisent.
+8. `plan-guard`, `PlanRequis`, `requireCapacite` : inchangés dans leur
+   logique, mais `PlanRequis` doit dire « passe en Complet » à une prof
+   gratuite ET à une prof en fin d'essai avec les mêmes mots.
 
-### 3.1 Une intervenante peut ne jamais avoir de compte
-Aujourd'hui, une membre est un compte Supabase invité par email. Dans une asso
-comme dans un studio, la moitié des profs ne créeront jamais de compte : elles
-donnent leur cours et repartent. Colin demande « la génération de liens pour
-les différents intervenants profs » : c'est la généralisation de v100.
+---
 
-- Une **invitation** crée une ligne `studio_membres` dès l'envoi (c'est déjà
-  le cas, statut `invite`). On y ajoute un **accès par lien permanent** :
-  jeton 256 bits, sha256 seul en base (le patron de v100), révocable, qui
+## 4. Ce que les deux plans partagent : les intervenantes
+
+C'est le cœur commun, à construire en premier parce que les deux plans et
+l'écosystème en dépendent, et que la fondation est déjà là.
+
+### 4.1 Une intervenante peut ne jamais avoir de compte
+Dans une asso comme dans un studio, la moitié des profs ne créeront jamais de
+compte : elles donnent leur cours et repartent. Colin demande « la génération
+de liens pour les différents intervenants profs » : c'est la généralisation de
+v100.
+- Une **invitation** crée une ligne `studio_membres` dès l'envoi (déjà le cas,
+  statut `invite`). On y ajoute un **accès par lien permanent** : jeton 256
+  bits, sha256 seul en base (patron v100), révocable, valable la saison, qui
   ouvre `/intervenante/<jeton>` sans session Supabase : SES séances à venir,
   le pointage de chacune (même chemin que v100, même minimisation : prénom et
-  nom, jamais un email, un carnet ni un montant), et son relevé de séances
-  (§3.3). Rien d'autre.
-- Elle peut à tout moment « créer mon compte » depuis cette page : l'email est
+  nom, jamais un email, un carnet ni un montant), son relevé de séances (§4.3).
+- Cette page propose **« Ouvrir mon IziSolo gratuit »** (§6.2) : l'email est
   celui de l'invitation, le compte se rattache à la ligne existante
   (`activerInvitationsEnAttente` fait déjà ce rattachement par email).
 - Une intervenante sans compte n'a **aucune permission** au sens de la RLS :
   elle n'existe que par les routes service_role de son lien, qui re-vérifient
   `lien.membre_id` à chaque appel. C'est exactement la frontière de v100.
 
-### 3.2 Chaque séance a une intervenante, et ça se voit
-- v103 s'applique (elle est écrite). Le formulaire de cours et de série gagne
-  « Qui donne cette séance ? » (la carte existe sur la fiche, à remonter à la
-  création et sur les séries : `recurrences.intervenant_id` recopié sur chaque
-  séance, comme `capacite_max` v109/09).
-- **Le portail public nomme la prof** sur chaque carte de séance (« avec
-  Léa »), propose un **filtre par intervenante**, et une **page « L'équipe »**
-  (photo, bio par membre : `studio_membres.bio`, `photo_url`, nouvelles
-  colonnes) ; la bio du profil devient celle de la STRUCTURE. C'est le
-  « portail public revu » de la demande, et il vaut pour les deux plans.
-- L'agenda prof gagne une vue « par intervenante » (colonne ou couleur), et un
-  filtre « mes séances » pour une membre en portée `miens`.
+### 4.2 Chaque séance a une intervenante, et ça se voit
+- v103 s'applique. « Qui donne cette séance ? » remonte à la création d'un
+  cours et sur les séries (`recurrences.intervenant_id` recopié sur chaque
+  séance, comme `capacite_max`), avec un défaut = la personne connectée.
+- **Le portail public nomme la prof** sur chaque carte (« avec Léa »), propose
+  un **filtre par intervenante** et une **page « L'équipe »** (photo, bio par
+  membre : `studio_membres.bio`, `photo_url`) ; la bio du profil devient
+  celle de la STRUCTURE.
+- L'agenda gagne une vue « par intervenante » et un filtre « mes séances ».
 
-### 3.3 Le suivi financier par intervenante
+### 4.3 Le suivi financier par intervenante
 Un studio paie ses profs, une asso aussi (souvent des auto-entrepreneures qui
 facturent l'asso à la séance). Ce que l'app peut dire sans rien inventer :
 - **Le relevé de séances** : par intervenante et par mois, les séances
-  données (pointées), leur durée, le nombre de présentes, le CA rattaché
-  (présences décomptées de carnets ou payées à la séance, au prorata de la
-  valeur de la séance). Tout est déjà en base via `cours.intervenant_id` +
-  `presences` + `paiements`.
+  données (pointées), leur durée, les présentes, le CA rattaché (présences
+  décomptées de carnets ou payées à la séance, au prorata). Tout est en base
+  via `cours.intervenant_id` + `presences` + `paiements`.
 - **La rémunération convenue** (`studio_membres.remuneration`, jsonb :
   `par_seance | horaire | pourcentage_ca | forfait_mensuel`, montant) → le
-  relevé calcule ce qui est dû, la prof le télécharge en PDF pour facturer la
-  structure, la trésorière ou la gérante le marque « réglé » (une **dépense**,
-  §5.1). On n'émet pas la facture À LA PLACE de la prof (c'est SA facture),
-  on lui donne le relevé qui la rend triviale.
-- Ce lot est commun aux deux plans ; la profondeur (marge par cours, par
-  salle) est Studio.
+  relevé calcule ce qui est dû. La suite (la facture de la prof, la dépense de
+  la structure) est la boucle d'argent de l'écosystème, §6.5.
 
 ---
 
-## 4. Le plan Association : la vie de l'asso
+## 5. Les deux plans, chacun son périmètre
 
-Périmètre volontairement borné : IziSolo reste l'outil des cours, des
-adhérents et de l'argent des cours. On ne devient pas AssoConnect (compta
-analytique, subventions, budget prévisionnel) ; on donne au bureau ce qu'il
-lui manque pour que l'asso tourne avec ses profs.
+### 5.1 Association : la vie de l'asso
+Périmètre borné : IziSolo reste l'outil des cours, des adhérents et de
+l'argent des cours. On ne devient pas AssoConnect.
+- **Le bureau = des fonctions, pas un troisième système de rôles.**
+  `studio_membres.fonction` (`presidente | secretaire | tresoriere |
+  membre_bureau | prof | benevole`) est une étiquette (équipe, PV,
+  convocations) qui **propose un préréglage** de permissions à l'invitation :
+  présidente = tout (rôle admin), trésorière = `argent_voir` +
+  `argent_gerer` + `eleves_voir`, secrétaire = `eleves_gerer` + `messagerie`
+  + documents, prof = le préréglage existant. Les permissions restent ce que
+  la RLS applique.
+- **L'adhésion** : type d'offre `adhesion` (de saison, sans séance, un tarif
+  par offre : plein, réduit, famille = trois offres), règle de studio
+  « adhésion requise pour réserver » à côté de « carnet requis » (réservation
+  et bandeau au pointage, jamais un refus de pointer), **reçu de cotisation** =
+  la facture v84 intitulée « reçu de cotisation », liste des adhérents à jour
+  = un filtre de /clients qui sert le quorum.
+- **Les documents de l'asso** : table `documents_structure` (Blob, chemin de
+  v85 : statuts, récépissé, règlement intérieur, assurance, agrément, PV
+  d'AG, autre ; date, titre, version), une version courante par type,
+  l'historique dessous. Pas de signature électronique.
+- **L'AG** : date, lieu, ordre du jour, type ; convocation par le mailing
+  existant aux adhérents à jour (délai rappelé, pas imposé) ; feuille
+  d'émargement imprimable avec pouvoirs ; quorum au jour de l'AG ; PV déposé
+  comme document rattaché. **Pas de vote électronique** au premier tour.
+- **L'argent de l'asso** : recettes existantes + dépenses simples (§5.2) +
+  export du trésorier par saison (exercice réglable, sept → juin) avec
+  récapitulatif par catégorie pour le rapport financier. L'URSSAF s'éteint
+  sur ce plan.
 
-### 4.1 Le bureau : fonctions, pas un troisième système de rôles
-Colin demande « président, secrétaire, trésorier ». Il ne faut PAS ajouter
-ces rôles à `ROLES` : les permissions sont tenues par la RLS et les rôles y
-sont déjà câblés. Proposition : une **fonction** (`studio_membres.fonction`
-: `presidente | secretaire | tresoriere | membre_bureau | prof | benevole`)
-qui est une étiquette, affichée sur l'équipe, les PV et les convocations, et
-qui **propose un préréglage** de permissions à l'invitation :
-- Présidente = tout (rôle `admin`).
-- Trésorière = `argent_voir` + `argent_gerer` + `eleves_voir`.
-- Secrétaire = `eleves_gerer` + `messagerie` + documents de l'asso.
-- Prof = le préréglage `prof` existant.
-La propriétaire du compte reste la personne qui l'a créé (souvent Maude, qui
-l'installe) ; **le transfert de propriété** devient nécessaire (une asso
-change de bureau tous les deux ans) : geste sur /equipe, confirmé par email
-des deux côtés. Il manque aujourd'hui, et il manque aussi pour un studio.
-
-### 4.2 L'adhésion
-Une asso vend d'abord une **adhésion annuelle** (cotisation, assurance,
-certificat ou QS-Sport), puis des cours. Aujourd'hui une offre est un carnet,
-un abonnement ou une unité. Proposition :
-- Un type d'offre **`adhesion`** : de saison (dates fixes, le glissant existe
-  déjà si besoin), sans séance, avec plusieurs tarifs possibles (plein,
-  réduit, famille : trois offres d'adhésion, pas une offre à variantes).
-- Une règle de studio « **adhésion requise pour réserver** » (dans
-  `regles_metier`, à côté de « carnet requis »), appliquée à la réservation
-  portail et au pointage (bandeau « pas à jour d'adhésion », jamais un refus
-  de pointer).
-- Le **reçu de cotisation** = la facture v84 (elle existe, elle porte le nom
-  de la structure), avec la mention « reçu de cotisation » à la place de
-  « facture » quand l'offre est une adhésion. Attestation pour un CE ou une
-  mutuelle : même document.
-- La **liste des adhérents à jour** est une vue de /clients (filtre) et
-  c'est elle qui compte le quorum (§4.4).
-- Les documents d'inscription (v85) couvrent déjà le bulletin, le QS-Sport et
-  le règlement intérieur.
-
-### 4.3 Les documents de l'asso
-Colin demande « l'enregistrement des statuts à jour, des comptes rendus d'AG,
-etc. ». Une table `documents_structure` (Blob, même chemin que v85 :
-`type` = statuts, récépissé de préfecture, règlement intérieur, assurance,
-agrément, PV d'AG, autre ; `date`, `titre`, `version`), lisible par le
-bureau, avec **une version courante** par type et l'historique en dessous
-(des statuts modifiés en AG remplacent les précédents sans les effacer). Pas
-de signature électronique (hors périmètre, comme v85).
-
-### 4.4 L'assemblée générale
-Le minimum qui rend service sans fabriquer un outil de vote :
-- Une **AG** = date, lieu, ordre du jour, type (ordinaire / extraordinaire).
-- La **convocation** part par le mailing existant aux adhérents à jour (délai
-  légal rappelé par l'écran, souvent 15 jours selon les statuts, on ne
-  l'impose pas).
-- La **feuille d'émargement** imprimable (adhérents à jour, colonne
-  signature, pouvoirs) et le **quorum** calculé au jour de l'AG.
-- Le **PV** déposé ensuite comme document (§4.3), rattaché à l'AG.
-- Le vote électronique n'entre pas dans le premier lot (conditions légales
-  dans les statuts, identification, secret) ; on note le besoin.
-
-### 4.5 L'argent de l'asso
-- Recettes : ce qui existe (adhésions + cours + événements).
-- **Dépenses simples** (§5.1) : rémunérations des profs, location de salle,
-  assurance, matériel ; catégorie, date, montant, justificatif Blob.
-- **L'export du trésorier** : recettes et dépenses de la saison (sept → juin,
-  exercice de l'asso réglable) en CSV + un récapitulatif par catégorie pour le
-  rapport financier de l'AG. Pas de compta en partie double.
-- L'URSSAF s'éteint sur ce plan (une asso n'est pas une micro-entreprise), le
-  reçu de cotisation remplace la facture acquittée, le livre des recettes
-  reste utile.
+### 5.2 Studio : la gestion du studio
+- **Les dépenses et la marge** : première table `depenses` de l'app (date,
+  catégorie, HT/TTC, TVA, fournisseur, justificatif, rattachement facultatif
+  à une intervenante, une salle, un cours), page Compta (recettes, dépenses,
+  résultat par mois, salle, intervenante, type), marge par cours (CA de la
+  séance moins rémunération et salle), export complet pour l'expert-comptable.
+  Les dépenses simples servent aussi l'asso ; la profondeur analytique est
+  Studio.
+- **Les intervenantes côté gestion** : liste avec suivi financier (§4.3),
+  contrat de prestation stocké comme document, relevé mensuel PDF envoyé le
+  1er du mois (opt-in, mécanique v106).
+- **Les salles** : `lieux` gagne des salles (nom, capacité), une séance porte
+  sa salle, l'agenda refuse le chevauchement à la création et sur les séries.
+- **Le portail du studio** : le tronc commun (§4.2) + une page par
+  intervenante (`/p/<slug>/equipe/<membre>`), les champs Paramètres qui
+  parlent « votre studio » et non « ta bio ». Les sous-domaines (code livré,
+  DNS à brancher) prennent leur sens ici.
+- **Les stats** (plus tard) : remplissage par cours, intervenante, salle,
+  créneau ; no-show ; élèves actives ; panier moyen. Rien à stocker.
 
 ---
 
-## 5. Le plan Studio : la gestion du studio
+## 6. L'écosystème : une personne, plusieurs structures
 
-### 5.1 Les dépenses et la marge
-IziSolo ne connaît que les recettes. Une table `depenses` (date, catégorie,
-montant HT/TTC, TVA éventuelle, fournisseur, justificatif, rattachement
-facultatif à une intervenante, une salle ou un cours) donne :
-- une page **Compta** : recettes, dépenses, résultat par mois, par salle, par
-  intervenante, par type de cours ;
-- la **marge par cours** : CA de la séance (présences valorisées) moins la
-  rémunération de l'intervenante et le coût de la salle ;
-- un **export comptable** complet pour l'expert-comptable (le CSV actuel ne
-  porte que les encaissements).
-Les dépenses simples (sans marge ni TVA) servent aussi l'asso ; la profondeur
-analytique est Studio.
+C'est la demande du 13/09 : « une prof qui a son propre IziSolo puisse aussi
+être intervenante dans l'IziSolo d'une asso et d'un studio, et que tout puisse
+interagir ». Ce qui suit est une proposition en six ponts, sur un modèle en
+trois mots qui est DÉJÀ celui de la base.
 
-### 5.2 Les intervenantes, côté gestion
-- Liste des intervenantes avec leur **suivi financier** (§3.3) : séances du
-  mois, heures, CA généré, rémunération due, réglé / à régler, historique.
-- **Contrat de prestation** : dates, taux, périmètre (types de cours), stocké
-  comme document.
-- Le relevé mensuel en PDF envoyé automatiquement à chaque intervenante le
-  1er du mois (opt-in), même mécanique que la facture automatique v106.
+### 6.1 Le modèle : Personne, Structure, Appartenance
+- **Une personne** = un compte de connexion (un email). Prof, trésorière,
+  gérante, élève : la même personne peut être tout cela, dans des structures
+  différentes.
+- **Une structure** = une ligne `profiles`, avec SON plan, SON portail, SES
+  élèves, SON argent. Elle est de type `solo`, `association` ou `studio`
+  (nouvelle colonne `type_structure`). **La prof seule est une structure de
+  type solo dont elle est propriétaire** : son IziSolo est déjà une structure.
+- **Une appartenance** = une ligne `studio_membres` : personne × structure ×
+  rôle, permissions, fonction, portée de pointage, rémunération, lien
+  d'accès.
 
-### 5.3 Le planning par salle
-Les lieux existent (illimités depuis v66) mais une séance a un lieu, pas une
-salle. Un studio a deux ou trois salles au même lieu et veut voir les
-conflits. `lieux` gagne des **salles** (nom, capacité) ; une séance porte sa
-salle ; l'agenda détecte le **chevauchement** (même salle, même créneau) à la
-création et sur les séries. Le remplissage par salle vient avec.
+**La règle qui découle de la contrainte du §1 : une structure a son propre
+compte de connexion.** Une asso se crée avec l'adresse de l'asso
+(`contact@asso.fr`), un studio avec la sienne ; les humains y sont des
+appartenances. Trois conséquences, toutes bonnes :
+- une prof qui a son IziSolo (son email) peut créer celui de son asso (l'email
+  de l'asso) et y être admin ET intervenante, sans toucher au schéma ;
+- le compte de la structure **survit au bureau** : quand la présidente change,
+  on change des fonctions et des rôles, jamais le compte ; le « transfert de
+  propriété » se réduit à « qui connaît le mot de passe de la structure »
+  plus un geste de réinitialisation depuis /equipe pour une admin ;
+- une prof seule qui grandit (elle embauche) change le TYPE de sa structure
+  et son plan, pas de compte : son IziSolo devient un studio.
+Le découplage `profiles.id ≠ auth.uid` (une personne propriétaire de plusieurs
+structures avec un seul login) reste possible plus tard, mais il touche le
+trigger, le helper RLS, l'onboarding, l'admin et la suppression en cascade ; on
+ne l'ouvre que si la règle « un email par structure » bloque quelqu'un en vrai.
 
-### 5.4 Le portail du studio
-Le tronc commun (§3.2 : équipe, filtre, nom de la prof) plus : **une page par
-intervenante** (`/p/<slug>/equipe/<membre>` : bio, ses cours de la semaine,
-son lien de réservation), et la possibilité pour la gérante d'écrire la page
-d'accueil au nom du studio (elle l'est déjà, mais les champs parlent « ta
-bio », « ta photo »). Les sous-domaines (`mon-studio.izisolo.fr`, code livré,
-DNS à brancher) prennent tout leur sens ici.
+### 6.2 Pont 1 : l'invitation dans les deux sens (= le parrainage)
+- **Structure → prof** existe (/equipe). Chaque email d'invitation gagne une
+  ligne : « Tu n'as pas encore ton IziSolo ? Il est gratuit » avec le lien
+  d'inscription pré-rempli ; à la création, le compte se rattache à
+  l'invitation par email.
+- **Prof → structure** est à construire : depuis son IziSolo (dashboard,
+  Paramètres → Équipe → « Ailleurs »), la prof saisit le nom de son asso ou
+  studio et **l'adresse de la structure** (l'écran dit « pas la tienne »).
+  Email à la structure : « Maude te propose d'ouvrir l'espace IziSolo de
+  [asso] ; elle y est déjà inscrite comme intervenante ». Le lien ouvre
+  l'onboarding pré-typé (association → RNA demandé), et à la création de la
+  structure, la prof est **automatiquement membre** (rôle prof, intervenante)
+  et la structure entre en essai de son plan.
+- **C'est la mécanique de parrainage** annoncée depuis juillet et jamais
+  construite. Reco : un mois de Complet offert à la prof quand la structure
+  qu'elle a fait entrer devient payante, un mois offert à la structure sur
+  son premier abonnement. Rien n'est promis à l'écran tant que ce n'est pas
+  câblé (règle du 27/07).
+- Le concierge (« on installe ton asso », Maude en visio) reste la voie
+  humaine, avec le même rattachement automatique de la prof qui a amené la
+  structure (`demandes_studio` gagne `parrainee_par`).
 
-### 5.5 Les stats
-Remplissage par cours, par intervenante, par salle, par créneau ; taux de
-no-show par cours ; évolution du nombre d'élèves actives ; panier moyen.
-Tout est calculable depuis `presences` + `paiements`, aucune donnée nouvelle.
-On les garde pour un lot tardif : un studio achète d'abord la compta et les
-intervenantes, les stats sont ce qui le retient.
+### 6.3 Pont 2 : l'agenda de la personne
+Aujourd'hui la prof bascule de studio (rechargement complet) et chaque
+dashboard ne montre que sa structure. Proposition : **son propre IziSolo est
+sa maison**, et il montre ses séances PARTOUT.
+- Dans « Aujourd'hui » et dans l'agenda de sa structure solo, les séances
+  qu'elle donne ailleurs apparaissent comme des cartes taguées « à l'Asso X »,
+  en lecture, avec un clic qui bascule sur la structure et ouvre la séance ou
+  le pointage. Une seule requête avec son propre jeton : v101 lui donne la
+  LECTURE du studio entier là où elle est membre, et `intervenant_id` dit
+  lesquelles sont à elle.
+- Une prof en Essentiel gratuit y a droit : être intervenante ailleurs
+  n'exige aucun plan de SON côté (le plan est payé par la structure).
+- La messagerie et la cloche restent par structure au premier lot ; une
+  cloche agrégée (« 2 notifications à l'Asso X ») vient au lot 2 si le retour
+  le demande.
+
+### 6.4 Pont 3 : ce qui ne se croise JAMAIS
+Les élèves, l'argent et les réglages d'une structure ne sortent pas de la
+structure. Une prof voit les élèves de l'asso uniquement dans l'IziSolo de
+l'asso, avec `eleves_voir`. Une élève qui suit Maude à l'asso ET chez Maude a
+deux fiches et deux carnets, et on ne les fusionne pas : chaque carnet est
+l'argent de sa structure. Aucune policy RLS ne change pour ça ; c'est
+`mes_studios_staff()` qui tient la frontière, et le ratchet `studio-scope`
+qui l'empêche de bouger.
+
+### 6.5 Pont 4 : l'argent, un document et deux vues
+C'est la boucle qui rend l'écosystème utile tous les mois.
+- La structure produit le **relevé** de l'intervenante (§4.3).
+- Côté prof, dans SON IziSolo, une section **« Mes prestations »** (Revenus)
+  liste les relevés reçus de chaque structure. « Facturer » émet une
+  **facture non acquittée** dans SA séquence (`FAC-2026-00xx`), adressée à
+  la structure, PDF envoyé ; c'est la v2 des factures notée depuis v84
+  (statut `emise` → `payee`), qui règle aussi le cas du CE payeur direct.
+- Côté structure, la même prestation est une **dépense « à régler »**
+  (§5.2), rattachée à l'intervenante et à sa facture. « Réglée » (date,
+  virement) la solde.
+- Côté prof, ce règlement devient un **paiement encaissé** (mode virement,
+  date d'encaissement) dans ses Revenus, donc dans son assiette URSSAF v93.
+- Une table `prestations` (structure, membre, période, montant, statut,
+  facture de la prof, dépense de la structure) porte l'enregistrement
+  unique ; chaque côté n'en voit que sa vue, par RLS. Une intervenante sans
+  compte a son relevé en PDF sur son lien, et rien d'autre.
+
+### 6.6 Pont 5 : les portails qui se citent
+Visibilité dans les deux sens, opt-in des deux côtés :
+- sur le portail d'une prof : « Je donne aussi des cours à [Asso X] » avec le
+  lien ;
+- sur le portail d'une structure : « Nos intervenantes » avec, pour chacune
+  qui a son IziSolo et l'a accepté, le lien vers SA page.
+Ce sont des liens internes izisolo.fr ↔ izisolo.fr : ils portent aussi le
+référencement (un maillage que les pages villes n'ont pas).
+
+### 6.7 Pont 6 : l'élève, un compte, tous ses studios
+Le compte élève est déjà global (email, `auth_user_id` v83, `mes_studio_ids()`
+v91) mais l'espace est par studio. Un **hub `/mes-studios`** : ses studios, ses
+prochains cours toutes structures confondues, une entrée vers chaque espace.
+C'est le « hub multi-studios élève » du brainstorm de juillet, qui devient
+nécessaire dès qu'une prof et son asso sont toutes deux sur IziSolo.
+
+### 6.8 Le downgrade d'une structure
+Une structure qui cesse de payer retombe sur Essentiel gratuit. Ses membres
+passent en **lecture seule** (le sélecteur de studio les y mène encore,
+l'écran dit pourquoi), rien n'est révoqué, la propriétaire reçoit un message ;
+re-souscrire rend tout. C'est la règle recommandée depuis août, elle devient
+la seule possible avec le freemium (il n'y a plus de gel où tomber).
+
+### 6.9 Où ça se voit dans l'app (la « visibilité »)
+- Dashboard de la prof : une tuile « Tu donnes aussi des cours ailleurs ?
+  Fais entrer ton asso ou ton studio » (étape de checklist, fermable).
+- Paramètres → Équipe : deux volets, « Mon équipe » (existant) et
+  « Ailleurs » (mes appartenances, mes relevés, inviter une structure).
+- L'email d'invitation d'une structure : la ligne « ton IziSolo gratuit ».
+- La page d'une intervenante sans compte : « Ouvrir mon IziSolo gratuit ».
+- Les portails croisés (§6.6) et les pages `/associations`, `/studios`.
 
 ---
 
-## 6. Les transformations de l'app que ça impose
-
-Ce sont les changements structurels, à faire une fois et proprement, avant
-les features. Chacun casse quelque chose s'il est fait à moitié.
+## 7. Les transformations de l'app que ça impose
 
 1. **`profiles.type_structure`** (`solo | association | studio`, défaut
-   `solo`) choisi à l'onboarding (troisième écran, après le pays), modifiable
-   dans Paramètres → Studio & lieux. Il pilote : les libellés (« ton studio »
-   / « ton association »), la présence des rubriques (Bureau, AG, Documents,
-   Compta), le portail (« Association loi 1901 »), l'onboarding (RNA demandé),
-   et l'essai (plan d'essai = plan de la structure).
+   `solo`), choisi à l'onboarding (après le pays), modifiable dans Paramètres
+   → Studio & lieux. Pilote les libellés, la présence des rubriques (Bureau,
+   AG, Documents, Compta), le portail, le RNA à l'onboarding, le plan d'essai.
 2. **Le gating devient non linéaire.** `RANG = {solo:1, pro:2, multi:3}`
-   suppose une échelle. Association et Studio sont des frères, pas des
-   marches : `CAPACITES` accepte une liste (`equipe: ['asso','studio']`,
-   `bureau_asso: ['asso']`, `compta_studio: ['studio']`), `can()` et
-   `requireCapacite` testent l'appartenance, `PlanRequis` nomme LE plan qui
-   ouvre la capacité (jamais « passe en Complet » pour une feature Studio).
-   Verrou `plan-guard.spec.js` étendu. C'est le changement le plus sensible :
-   il touche `lib/plan-guard.js`, `lib/trial.js` (`effectivePlan`,
-   `getAccountStatus` qui liste les plans payants posés à la main), le CHECK
+   suppose une échelle ; Association et Studio sont frères. `CAPACITES`
+   accepte une liste (`equipe: ['asso','studio']`, `bureau_asso: ['asso']`,
+   `compta_studio: ['studio']`), `can()` et `requireCapacite` testent
+   l'appartenance, `PlanRequis` nomme LE plan qui ouvre la capacité. Touche
+   `plan-guard.js`, `trial.js` (`effectivePlan`, `getAccountStatus`), le CHECK
    `profiles_plan_check` (v102 → nouvelle migration), `plan_effectif()` SQL,
-   `tablePlansParPrice`, `PUBLIC_PLANS`, l'admin (statuts, MRR).
-3. **La structure n'est pas une personne.** Séparer ce qui est à la STRUCTURE
-   (nom, logo, bio, adresse, SIRET ou RNA, RIB, portail) de ce qui est à la
-   PERSONNE connectée (prénom, avatar, notifications). `useMoi()` /
-   `useStudioId()` ont déjà fait ce partage côté navigateur ; il reste les
-   écrans Paramètres → Profil (qui mélange les deux) et le portail (qui montre
-   l'avatar de la propriétaire comme « la prof »).
-4. **Une membre sans compte** (§3.1) : `studio_membres.auth_user_id` devient
-   nullable jusqu'à l'activation, plus `lien_hash`, `lien_expire_at`,
-   `fonction`, `bio`, `photo_url`, `remuneration`. Une migration.
-5. **Le transfert de propriété** (§4.1) et **la restriction de lecture du
-   profil** pour une membre (elle lit aujourd'hui la ligne `profiles` entière,
-   champs Stripe compris, reste noté depuis le lot 2) : deux dettes du
-   chantier d'août qui deviennent bloquantes avec de vrais bureaux.
-6. **Les dépenses** (§5.1) : première table de dépenses de l'app, RLS
-   `argent_voir` / `argent_gerer`, lecture par le même helper que les
-   paiements.
-7. **Stripe** : deux Prices mensuels (39, 59) + deux annuels (390, 590 à
-   confirmer), `setup-stripe-saas.mjs` étendu, Multi archivé, checkout et
-   webhook qui reconnaissent quatre plans, Customer Portal qui autorise le
-   changement entre plans de même famille seulement (une asso ne « monte »
-   pas en Studio par erreur).
-8. **Le downgrade avec des membres actifs** (question ouverte depuis août) :
-   reco inchangée, lecture seule pour les membres + message à la propriétaire,
-   jamais de révocation silencieuse. À trancher avant le lot 1.
-9. **La landing** : elle reste à deux plans pour les profs seules (décision du
-   6/09). Une section « Vous êtes une association ou un studio ? » avec deux
-   cartes → deux pages dédiées `/associations` et `/studios` (persona
-   landing, même gabarit que `/prof-yoga-*`), chacune avec son propre CTA
-   concierge (« on installe ton asso »). La promesse « mode équipe » retirée
-   le 23/07 revient sur ces deux pages, et seulement là, le jour où le lot 1
-   est livré.
-10. **Le centre d'aide** : deux nouveaux tutos (`#association`, `#studio`),
-    FAQ en fin de liste, et le « ? » sur chaque nouvel écran, dans le même
-    lot que chaque livraison (règle du 23/08).
+   `tablePlansParPrice`, `PUBLIC_PLANS`, l'admin.
+3. **Le freemium** (§3) : fin du gel de fin d'essai, gel réservé à l'impayé,
+   `compte_gele()` SQL alignée, webhook `deleted` → `solo`, plus de Price
+   solo, relances J-3/J-1 réécrites, statut admin `gratuit`.
+4. **La structure n'est pas une personne** : séparer ce qui est à la
+   STRUCTURE (nom, logo, bio, adresse, SIRET ou RNA, RIB, portail) de ce qui
+   est à la PERSONNE connectée (prénom, avatar, notifications). Reste les
+   écrans Paramètres → Profil et le portail.
+5. **La membre sans compte** : `studio_membres.auth_user_id` nullable
+   jusqu'à l'activation, plus `lien_hash`, `lien_expire_at`, `fonction`,
+   `bio`, `photo_url`, `remuneration`. Une migration.
+6. **La restriction de lecture du profil** pour une membre (elle lit
+   aujourd'hui la ligne `profiles` entière, Stripe compris) : dette d'août
+   qui devient bloquante avec de vrais bureaux.
+7. **Les dépenses** et **les prestations** : deux tables neuves, RLS
+   `argent_voir` / `argent_gerer` côté structure, et côté prof une lecture
+   de SES prestations par `auth_user_id`.
+8. **Les factures v2** (non acquittée, `emise` → `payee`) : même RPC de
+   numérotation, statut en plus, snapshot figé à l'émission.
+9. **Stripe** : Prices `asso` / `studio` mensuels et annuels,
+   `setup-stripe-saas.mjs` étendu, Multi archivé, Customer Portal borné par
+   famille.
+10. **La landing** reste à deux plans pour les profs seules (Essentiel 0 €,
+    Complet 29 €) + une section « Association ou studio ? » vers
+    `/associations` et `/studios` (gabarit persona), chacune avec son CTA
+    concierge. La promesse « mode équipe » retirée le 23/07 revient sur ces
+    deux pages seulement, le jour où le lot 1 est livré.
+11. **Le centre d'aide** : tutos `#association`, `#studio`, `#ailleurs`
+    (l'écosystème côté prof), FAQ en fin de liste, mini-aide élève pour le
+    hub, « ? » sur chaque nouvel écran, dans le lot de chaque livraison.
 
 ---
 
-## 7. Les lots, dans l'ordre où ils rendent service
+## 8. Les lots, dans l'ordre où ils rendent service
 
 Chaque lot = migration re-runnable qui dégrade proprement, preuve en vrai
-navigateur, centre d'aide, commit, push. Les durées sont en journées de
-session.
+navigateur, centre d'aide, commit, push.
 
-| Lot | Contenu | Plans | Ce qui le prouve |
-|-----|---------|-------|------------------|
-| **0. Le socle** (2 j) | `type_structure`, gating non linéaire, clés `asso` / `studio`, Multi legacy, Stripe, onboarding à trois branches, admin | tous | plan-guard spec, checkout des deux plans en test, un studio jetable par type |
-| **1. Les intervenantes** (3 j) | v103 appliquée, intervenante à la création et sur les séries, membre sans compte + lien permanent, transfert de propriété, downgrade tranché, portail : nom de la prof + filtre + page Équipe | asso + studio | proof-equipe étendu, lien sans session, RLS refusée avec le jeton de l'invitée, portail anonyme |
-| **2. Le relevé et les dépenses** (2 j) | rémunération par membre, relevé mensuel PDF, dépenses simples, export saison / exercice | asso + studio | relevé recalculé à la main sur un mois du démo, PDF rendu, CSV relu |
-| **3. La vie de l'asso** (3 j) | fonctions du bureau et préréglages, adhésion (offre + règle + reçu), documents de la structure, AG (convocation, émargement, quorum, PV) | asso | l'asso de Maude en vrai, une AG blanche |
-| **4. La gestion du studio** (3 j) | compta (marge, TVA, par salle / intervenante / cours), salles et chevauchements, contrat de prestation, relevé automatique | studio | Atout Gym ou un studio jetable, chevauchement refusé, marge recalculée |
-| **5. Les vitrines** (1 j) | `/associations`, `/studios`, section landing, tutos, FAQ, page par intervenante sur le portail | tous | proof-landing étendu, Safari, mobile 390 |
-| 6. Les stats (plus tard) | remplissage, no-show, panier moyen | studio | après un vrai mois d'usage |
+| Lot | Contenu | Ce qui le prouve |
+|-----|---------|------------------|
+| **0. Le socle** (3 j) | freemium (§3), `type_structure`, gating non linéaire, clés `asso` / `studio`, Multi legacy, Stripe (4 Prices), onboarding à trois branches avec RNA, admin, landing pricing | plan-guard spec, un studio jetable par type, fin d'essai qui ne gèle plus (écriture acceptée à J+31), checkout des deux plans en test, résiliation → Essentiel |
+| **1. Les intervenantes et les ponts 1 à 3** (4 j) | v103 appliquée, intervenante à la création et sur les séries, membre sans compte + lien permanent, invitation prof → structure avec rattachement automatique, agenda de la personne, portail : nom de la prof + filtre + page Équipe, downgrade lecture seule | proof-equipe étendu, lien sans session et RLS refusée avec le jeton de l'invitée, une prof jetable qui fait entrer une asso jetable et se retrouve intervenante dedans, ses séances vues depuis SON dashboard |
+| **2. L'argent** (3 j) | rémunération par membre, relevé mensuel PDF, dépenses simples, prestations, factures v2, « Mes prestations », export saison / exercice | un mois du démo : relevé recalculé à la main, facture émise côté prof, dépense réglée côté structure, paiement apparu côté prof dans l'assiette URSSAF |
+| **3. La vie de l'asso** (3 j) | fonctions du bureau et préréglages, adhésion (offre + règle + reçu), documents de la structure, AG | l'association de Maude en vrai, une AG blanche |
+| **4. La gestion du studio** (3 j) | compta (marge, TVA, par salle / intervenante / cours), salles et chevauchements, contrat, relevé automatique | studio jetable, chevauchement refusé, marge recalculée |
+| **5. Les vitrines et le hub** (2 j) | `/associations`, `/studios`, section landing, portails croisés, hub élève `/mes-studios`, page par intervenante, tutos, FAQ | proof-landing étendu, Safari, mobile 390, une élève jetable inscrite dans deux studios |
+| 6. Les stats (plus tard) | remplissage, no-show, panier moyen | après un vrai mois d'usage |
 
 **Le lot 1 se livre avec l'association de Maude comme première équipe réelle**
-(plan `asso` posé à la main, avant même que la caisse Stripe sache l'encaisser)
-: c'est là qu'on apprend si les rôles, le lien d'intervenante et le portail
-multi-profs tiennent devant de vraies personnes. Le lot 3 se dessine APRÈS ce
-retour, pas avant.
+(plan `asso` posé à la main avant même que la caisse sache l'encaisser) : c'est
+là qu'on apprend si les rôles, le lien d'intervenante, l'invitation sortante
+et l'agenda de la personne tiennent devant de vraies personnes. Le lot 3 se
+dessine après ce retour.
 
 ---
 
-## 8. Ce que Colin tranche
+## 9. Décisions
 
-1. **Multi disparaît** au profit d'Association 39 € et Studio 59 € (legacy
-   mappé vers Studio, Price 49 € archivé) : oui / non.
-2. **Les prix** : 39 € et 59 € mensuels confirmés ? **L'annuel** activé pour
-   ces deux plans seulement (390 € et 590 €, deux mois offerts) ? LANCEMENT50
-   sur le mensuel des deux ?
-3. **Le RNA obligatoire** pour le plan Association (le garde-fou contre le
-   studio qui se déclare asso) : oui / non.
-4. **L'essai** donne le plan de la structure choisie à l'onboarding (au lieu
-   de Complet pour tout le monde) : oui / non.
-5. **Le bureau = des fonctions** (étiquettes + préréglages) sur les rôles
+### Prises le 2026-09-13 (Colin)
+- Essentiel passe à **0 €**, sans carte, freemium.
+- **Multi disparaît** au profit d'Association 39 € et Studio 59 €.
+- **L'annuel** est activé pour Association et Studio.
+- **Le RNA** est obligatoire pour le plan Association.
+- L'app devient un **écosystème** : une prof avec son IziSolo est aussi
+  intervenante dans l'IziSolo d'une asso et d'un studio, et tout interagit.
+
+### À trancher
+1. **Une structure = son propre compte de connexion** (l'email de l'asso ou
+   du studio), les humains = des appartenances ; le découplage
+   `profiles.id ≠ auth.uid` attend un vrai blocage : ok ?
+2. **L'essai reste 30 jours de Complet** pour une prof seule, puis Essentiel
+   gratuit ; une structure essaie SON plan 30 jours : ok ?
+3. **Le gel ne reste que pour l'impayé** ; résiliation et fin d'essai
+   retombent sur Essentiel : ok ?
+4. **Les prix annuels** 390 € et 590 € (deux mois offerts) ; LANCEMENT50 sur
+   le mensuel des trois plans payants, pas sur l'annuel : ok ?
+5. **Le parrainage** = un mois de Complet offert à la prof qui fait entrer une
+   structure devenue payante, un mois offert à la structure : ok, ou autre
+   montant ?
+6. **Le bureau = des fonctions** (étiquettes + préréglages) sur les rôles
    existants, jamais un nouveau système de droits : ok ?
-6. **La membre sans compte** avec lien permanent (généralisation de v100) :
-   ok ? Et quelle durée par défaut du lien : la saison, révocable ?
-7. **Le relevé d'intervenante** ne remplace pas la facture de la prof (on
-   donne le relevé, elle facture) : ok ?
-8. **Le downgrade** avec membres actifs : lecture seule + message, jamais de
-   révocation silencieuse : ok ?
-9. **L'ordre des lots** et le principe « l'asso de Maude entre au lot 1,
-   avant les features asso » : ok ?
-10. **Le vote électronique en AG** : hors périmètre au premier tour : ok ?
+7. **La membre sans compte** avec lien permanent valable la saison,
+   révocable : ok ?
+8. **La boucle d'argent** du §6.5 (relevé → facture v2 de la prof → dépense
+   de la structure → paiement chez la prof), dans le lot 2 : ok ?
+9. **Le hub élève** `/mes-studios` au lot 5 : ok ?
+10. **L'ordre des lots** et « l'asso de Maude entre au lot 1 » : ok ?
+11. **Le vote électronique en AG** : hors périmètre au premier tour : ok ?
 
 ---
 
-## 9. Suivi
+## 10. Suivi
 
-- [ ] Décisions §8 prises (date, réponses)
-- [ ] Lot 0 · socle
-- [ ] Lot 1 · intervenantes (+ l'asso de Maude en vrai)
-- [ ] Lot 2 · relevé et dépenses
+- [ ] Décisions §9 « à trancher » prises (date, réponses)
+- [ ] Lot 0 · socle + freemium
+- [ ] Lot 1 · intervenantes + ponts 1 à 3 (+ l'asso de Maude en vrai)
+- [ ] Lot 2 · l'argent (relevé, dépenses, prestations, factures v2)
 - [ ] Lot 3 · vie de l'asso
 - [ ] Lot 4 · gestion du studio
-- [ ] Lot 5 · vitrines et centre d'aide
+- [ ] Lot 5 · vitrines, portails croisés, hub élève, centre d'aide
