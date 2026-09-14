@@ -6,6 +6,7 @@ import { isAdminEmail } from '@/lib/admin';
 import { estHoteAdmin, hotePrincipal } from '@/lib/admin-host';
 import { nbRoutinesEnRetard } from '@/lib/routines-ops';
 import { nbTodoHaute } from '@/lib/todo-ops';
+import { compteurs as compteursHlm } from '@/lib/hors-les-murs';
 import './admin.css';
 
 // PWA admin dédiée : sur les pages /admin, le manifest est celui de
@@ -91,6 +92,15 @@ export default async function AdminLayout({ children }) {
     if (!error && count) nbProspectsARediger = count;
   } catch { /* table absente (pré-v109) : badge à 0 */ }
 
+  // Pistes « Hors les murs » à relire en priorité 1 (badge nav, v118) — jamais bloquant.
+  let nbHlmARelire = 0;
+  try {
+    const { createAdminClient } = await import('@/lib/supabase-admin');
+    const { lireFiches } = await import('@/lib/hors-les-murs-service');
+    const { fiches } = await lireFiches(createAdminClient());
+    nbHlmARelire = compteursHlm(fiches).a_relire_prio1;
+  } catch { /* catalogue ou env indisponible : badge à 0 */ }
+
   // Fils support « à répondre » (badge nav messagerie, v87) — jamais bloquant.
   let nbSupportNonLus = 0;
   try {
@@ -129,16 +139,26 @@ export default async function AdminLayout({ children }) {
         </div>
 
         <nav className="admin-nav">
+          <div className="admin-nav-group">Pilotage</div>
           <Link href="/admin" className="admin-nav-item">📊 Dashboard</Link>
           <Link href="/admin/users" className="admin-nav-item">👥 Utilisateurs</Link>
           <Link href="/admin/plans" className="admin-nav-item">💳 Plans & abonnements</Link>
           <Link href="/admin/stats" className="admin-nav-item">📈 Statistiques</Link>
-          <Link href="/admin/support-tickets" className="admin-nav-item">🎫 Tickets support</Link>
+          <div className="admin-nav-group">Les profs</div>
           <Link href="/admin/messagerie" className="admin-nav-item">
             📨 Messagerie profs
             {nbSupportNonLus > 0 && (
               <span style={{ marginLeft: '6px', background: '#4a2e10', color: '#f5b878', borderRadius: '999px', padding: '1px 7px', fontSize: '0.7rem', fontWeight: 700 }}>
                 {nbSupportNonLus}
+              </span>
+            )}
+          </Link>
+          <Link href="/admin/support-tickets" className="admin-nav-item">🎫 Tickets support</Link>
+          <Link href="/admin/feedbacks" className="admin-nav-item">
+            💬 Feedbacks
+            {nbFeedbacksNew > 0 && (
+              <span style={{ marginLeft: '6px', background: '#1e3a5f', color: '#60a5fa', borderRadius: '999px', padding: '1px 7px', fontSize: '0.7rem', fontWeight: 700 }}>
+                {nbFeedbacksNew}
               </span>
             )}
           </Link>
@@ -150,6 +170,7 @@ export default async function AdminLayout({ children }) {
               </span>
             )}
           </Link>
+          <div className="admin-nav-group">Croissance</div>
           <Link href="/admin/prospection" className="admin-nav-item">
             ✉️ Prospection
             {nbProspectsARediger > 0 && (
@@ -158,15 +179,15 @@ export default async function AdminLayout({ children }) {
               </span>
             )}
           </Link>
-          <Link href="/admin/feedbacks" className="admin-nav-item">
-            💬 Feedbacks
-            {nbFeedbacksNew > 0 && (
-              <span style={{ marginLeft: '6px', background: '#1e3a5f', color: '#60a5fa', borderRadius: '999px', padding: '1px 7px', fontSize: '0.7rem', fontWeight: 700 }}>
-                {nbFeedbacksNew}
+          <Link href="/admin/hors-les-murs" className="admin-nav-item">
+            🌿 Hors les murs
+            {nbHlmARelire > 0 && (
+              <span style={{ marginLeft: '6px', background: '#1f3a2a', color: '#86efac', borderRadius: '999px', padding: '1px 7px', fontSize: '0.7rem', fontWeight: 700 }}>
+                {nbHlmARelire}
               </span>
             )}
           </Link>
-          <Link href="/admin/erreurs" className="admin-nav-item">🚨 Erreurs</Link>
+          <div className="admin-nav-group">L’équipe</div>
           <Link href="/admin/routines" className="admin-nav-item">
             📋 Travail récurrent
             {nbRoutinesEnRetard() > 0 && (
@@ -185,6 +206,8 @@ export default async function AdminLayout({ children }) {
           </Link>
           <Link href="/admin/guides" className="admin-nav-item">📖 Guides démo</Link>
           <Link href="/admin/demo" className="admin-nav-item">🎬 Démo</Link>
+          <div className="admin-nav-group">Système</div>
+          <Link href="/admin/erreurs" className="admin-nav-item">🚨 Erreurs</Link>
           <Link href="/admin/securite" className="admin-nav-item">🔐 Sécurité</Link>
         </nav>
 

@@ -23,6 +23,9 @@ body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sa
   transition: all 0.15s; font-weight: 500;
 }
 .admin-nav-item:hover { background: #2d2d3f; color: #e2e8f0; }
+/* Un intitulé par famille d'écrans : la nav se lit en cinq blocs, pas en quinze lignes (2026-09-14). */
+.admin-nav-group { padding: 12px 12px 4px; font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase; color: #5b6472; }
+.admin-nav-group:first-child { padding-top: 4px; }
 
 .admin-sidebar-footer {
   padding: 16px; border-top: 1px solid #2d2d3f; margin-top: auto;
@@ -101,6 +104,7 @@ body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sa
   .admin-layout { flex-direction: column; }
   .admin-nav { flex-direction: row; flex-wrap: wrap; padding: 4px; }
   .admin-nav-item { padding: 6px 10px; font-size: 0.8rem; }
+  .admin-nav-group { width: 100%; padding: 6px 10px 2px; }
   .admin-main { padding: 16px; }
 }
 
