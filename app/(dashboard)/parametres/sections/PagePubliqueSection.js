@@ -17,11 +17,12 @@ import { useState } from 'react';
 import { useToast } from '@/components/ui/ToastProvider';
 import {
   Eye, ExternalLink, User, Image as ImageIcon, Globe, SlidersHorizontal, BookOpen,
-  ToggleLeft, ToggleRight, Trash2, Plus,
+  ToggleLeft, ToggleRight, Trash2, Plus, Star,
 } from 'lucide-react';
 import { getTrialStatus } from '@/lib/trial';
 import { can } from '@/lib/plan-guard';
 import { resumeCarte } from '@/lib/parametres-rubriques';
+import { lireAvisGoogle, lienAvisValide } from '@/lib/avis-google';
 import PhotoUploader from '@/components/ui/PhotoUploader';
 import CoverPhotoEditor from '@/components/ui/CoverPhotoEditor';
 import HorairesStudioEditor from './HorairesStudioEditor';
@@ -47,6 +48,30 @@ export default function PagePubliqueSection({ profile, setProfile, setDirty }) {
       toast.error(err.message);
     } finally {
       setOffresEspaceBusy(false);
+    }
+  };
+  // v117 : le lien d'avis Google + l'email automatique. Route DÉDIÉE (jamais
+  // dans le payload de la carte), avec SON bouton Enregistrer : un lien
+  // refusé ou une migration manquante ne coûte que ce réglage.
+  const avisEnBase = lireAvisGoogle(profile);
+  const [avisLien, setAvisLien] = useState(avisEnBase?.lien || '');
+  const [avisAuto, setAvisAuto] = useState(avisEnBase ? avisEnBase.auto !== false : true);
+  const [avisBusy, setAvisBusy] = useState(false);
+  const avisLienOk = !avisLien.trim() || lienAvisValide(avisLien);
+  const avisModifie = (avisLien.trim() || '') !== (avisEnBase?.lien || '') || (!!avisEnBase && avisAuto !== (avisEnBase.auto !== false));
+  const enregistrerAvis = async () => {
+    if (!avisLienOk) return;
+    setAvisBusy(true);
+    try {
+      const res = await fetch('/api/profile/avis-google', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lien: avisLien.trim() || null, auto: avisAuto }) });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json.error || 'Réglage non enregistré');
+      setProfile(prev => ({ ...prev, avis_google: json.avis_google || null }));
+      toast.success(json.avis_google ? 'Ton lien d\'avis est enregistré.' : 'Lien d\'avis retiré.');
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setAvisBusy(false);
     }
   };
   const trial = getTrialStatus(profile);
@@ -264,6 +289,51 @@ export default function PagePubliqueSection({ profile, setProfile, setDirty }) {
           </div>
           <button type="button" onClick={addFaq} className="izi-btn izi-btn-secondary" style={{ marginTop: 8 }}>
             <Plus size={14} /> Ajouter une question
+          </button>
+        </div>
+      </CarteReglage>
+
+      {/* ── 4. Mes avis Google (v117) : le lien, et l'email après la 3e séance ── */}
+      <CarteReglage id="avis" titre="Mes avis Google" icone={Star} resume={resumeCarte('avis', profile)}>
+        <p className="section-desc">
+          Les avis Google sont ce qui fait sortir ton studio quand quelqu&apos;un cherche « yoga » ou « pilates » près de chez toi. Colle ici ton lien d&apos;avis : tes élèves le retrouvent dans leur espace, ton QR code gagne un modèle « Avis Google », et la messagerie te propose un gabarit.
+        </p>
+        <div className="form-group">
+          <label className="form-label">Lien pour laisser un avis</label>
+          <input
+            type="url"
+            className="izi-input"
+            data-testid="avis-lien"
+            value={avisLien}
+            onChange={e => setAvisLien(e.target.value)}
+            placeholder="https://g.page/r/…/review"
+            maxLength={500}
+          />
+          <p className="form-hint" data-testid="avis-lien-hint" style={{ color: avisLienOk ? undefined : 'var(--hot, #E8722A)' }}>
+            {avisLienOk
+              ? 'Sur ta fiche Google Business Profile : bouton « Demander des avis », puis copie le lien.'
+              : 'Ce lien ne ressemble pas à une adresse d\'avis Google (elle commence par https:// et vient de g.page ou google.com).'}
+          </p>
+          <EnSavoirPlus libelle="Où trouver ce lien ?">
+            <p>Ouvre <strong>business.google.com</strong> (ta fiche d&apos;établissement), clique <strong>« Demander des avis »</strong> : Google te donne une adresse courte du type g.page/r/…/review. C&apos;est celle-là. Si tu n&apos;as pas encore de fiche, crée-la d&apos;abord : c&apos;est gratuit, et c&apos;est le premier levier pour être trouvée près de chez toi.</p>
+          </EnSavoirPlus>
+        </div>
+        <div className="form-group toggle-row">
+          <button type="button" onClick={() => setAvisAuto(v => !v)} className="toggle-btn" aria-pressed={avisAuto} data-testid="avis-auto" disabled={!avisLien.trim()}>
+            {avisAuto ? <ToggleRight size={28} style={{ color: 'var(--brand)' }} /> : <ToggleLeft size={28} style={{ color: 'var(--text-muted)' }} />}
+            <span>Demander un avis par email après la 3e séance</span>
+          </button>
+          <p className="form-hint">
+            Une seule fois par élève, le lendemain de sa troisième séance pointée « présente ». Jamais plus de cinq emails par jour, pour que tes avis arrivent au fil des semaines : Google se méfie des rafales.
+            {profile && !can(profile, 'notifs_eleves_auto') && <> <strong>Cet email automatique demande le plan Complet</strong> ; le lien, le QR et le gabarit marchent dès maintenant.</>}
+          </p>
+          <EnSavoirPlus libelle="Ce que Google interdit, et que l'app respecte">
+            <p>Pas de contrepartie (une séance offerte contre un avis fait retirer les avis), et pas de tri : on demande à celles qui viennent, pas seulement à celles qui ont l&apos;air contentes. L&apos;email dit « écris ce que tu penses vraiment ». Réponds à chaque avis reçu, y compris les moins bons : Google et tes futures élèves le voient.</p>
+          </EnSavoirPlus>
+        </div>
+        <div>
+          <button type="button" className="izi-btn izi-btn-primary" data-testid="avis-enregistrer" onClick={enregistrerAvis} disabled={avisBusy || !avisLienOk || !avisModifie}>
+            {avisBusy ? 'Enregistrement…' : 'Enregistrer'}
           </button>
         </div>
       </CarteReglage>

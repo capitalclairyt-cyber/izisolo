@@ -14,6 +14,7 @@ import { urlPaiementSeance } from '@/lib/paiement-seance';
 import { masquerLiensSiNonBranche, lienPaiementSeance, catalogueEspaceVisible } from '@/lib/paiement-en-ligne';
 import { lireReglementConfig, referenceVirement } from '@/lib/reglement';
 import { studioCan } from '@/lib/plan-guard';
+import { chargerAvisGoogle, lienAvis } from '@/lib/avis-google';
 
 // Le template racine ajoute déjà « — IziSolo » ; l'OG studio vient du layout portail.
 export const metadata = { title: 'Mon espace', robots: { index: false, follow: false } };
@@ -423,6 +424,10 @@ async function getData(studioSlug, user) {
   // Documents d'inscription (v85) — requête séparée défensive (colonne absente → [])
   const docsInscription = await getDocsInscription(supabase, profile.id);
 
+  // Avis Google (v117) — requête séparée défensive (colonne absente → null,
+  // aucun bloc). Le lien seul part au navigateur, jamais le réglage entier.
+  const lienAvisGoogle = lienAvis(await chargerAvisGoogle(supabase, profile.id));
+
   // Cours en ligne (v86) — le verrou du lien se calcule ICI, côté serveur :
   // l'URL ne part JAMAIS vers le client pour une séance non couverte/réglée.
   // visioParPresence : presenceId → url (uniquement si visible) ou
@@ -491,7 +496,7 @@ async function getData(studioSlug, user) {
     nbStudios = Math.max(1, new Set([...(parCompte || []), ...(parEmail || [])].map(c => c.profile_id)).size);
   } catch { /* rien */ }
 
-  return { profile, client, aVenir, passes, paiements: paiements || [], offresStripe: offresStripe || [], offresCatalogue, abonnements: abonnementsAvecPrelevement, catalogueMasque, aRegler, seancesWorkshopDues, annulationsDues, unreadMessages, clientPrefs, facturationActive, facturesParPaiement, docsInscription, visioParPresence, ribStudio, refVirement, adhesions, nbStudios };
+  return { profile, client, aVenir, passes, paiements: paiements || [], offresStripe: offresStripe || [], offresCatalogue, abonnements: abonnementsAvecPrelevement, catalogueMasque, aRegler, seancesWorkshopDues, annulationsDues, unreadMessages, clientPrefs, facturationActive, facturesParPaiement, docsInscription, visioParPresence, ribStudio, refVirement, adhesions, nbStudios, lienAvisGoogle };
 }
 
 export default async function EspacePage({ params, searchParams }) {
@@ -577,6 +582,7 @@ export default async function EspacePage({ params, searchParams }) {
       visioParPresence={data.visioParPresence || {}}
       adhesions={data.adhesions || []}
       nbStudios={data.nbStudios || 1}
+      lienAvis={data.lienAvisGoogle || null}
       studioSlug={studioSlug}
       userEmail={user.email}
     />

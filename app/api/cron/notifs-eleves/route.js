@@ -6,6 +6,7 @@ import { wantsNotif } from '@/lib/notif-prefs';
 import { evaluerReglesAll } from '@/lib/regles';
 import { can } from '@/lib/plan-guard';
 import { reportError } from '@/lib/report';
+import { lireAvisGoogle, emailAutoActif, candidatesAvis, emailAvis, TYPE_NOTIF_AVIS } from '@/lib/avis-google';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -32,10 +33,34 @@ export const maxDuration = 300;
  *   - regles.actif (règles custom)
  */
 
-export const GET = withRoute({ auth: 'cron' }, async () => {
+export const GET = withRoute({ auth: 'cron' }, async ({ request }) => {
   const supabase = createAdminClient();
 
   const today = new Date().toISOString().slice(0, 10);
+  // `?profil=<uuid>` derrière l'auth cron : restreint le passage à UN studio
+  // (la preuve v117 le rejoue sur un studio jetable sans toucher aux autres).
+  const profilSeul = (() => {
+    try {
+      const p = new URL(request.url).searchParams.get('profil');
+      return /^[0-9a-f-]{36}$/i.test(p || '') ? p : null;
+    } catch { return null; }
+  })();
+
+  // ─── v117 : les studios qui ont posé un lien d'avis Google. UNE requête
+  // SÉPARÉE et défensive (pré-v117 la colonne n'existe pas : map vide, et le
+  // reste du cron tourne exactement comme avant).
+  const avisParProfil = new Map();
+  try {
+    const { data: lignes, error } = await supabase
+      .from('profiles')
+      .select('id, avis_google')
+      .not('avis_google', 'is', null);
+    if (!error) for (const l of lignes || []) {
+      const cfg = lireAvisGoogle(l);
+      if (cfg) avisParProfil.set(l.id, cfg);
+    }
+  } catch { /* pré-v117 */ }
+  let totalAvis = 0;
 
   // Charger tous les profils (avec préférences notifs + champs plan pour le
   // gate capacité — sans eux, can() lirait undefined → tout le monde gâté).
@@ -60,11 +85,84 @@ export const GET = withRoute({ auth: 'cron' }, async () => {
   let totalSent = 0, totalSkipped = 0, totalErrors = 0, totalReglesDeclenchees = 0, profilsTraites = 0, profilsGates = 0;
 
   for (const profile of (profiles || [])) {
+    if (profilSeul && profile.id !== profilSeul) continue;
     // Gate capacité (B3b — fuite connue depuis B1g) : les notifs auto élèves
     // sont une capacité Complet. Un studio Essentiel ne déclenche RIEN ici —
     // avant, la feature Pro tournait gratuitement pour tous les plans.
     if (!can(profile, 'notifs_eleves_auto')) { profilsGates++; continue; }
     profilsTraites++;
+
+    // ─────────────────────────────────────────────────────────────────
+    // PASS 0 — v117 : « Un mot sur tes séances ? », l'email d'avis Google.
+    // Le lendemain de la 3e présence pointée « présente », une seule fois
+    // par élève et par studio (dédup notifications_eleves, related_id =
+    // studio), au plus MAX_PAR_JOUR par studio et par jour (jamais une
+    // rafale d'avis sur une fiche), gaté par la pref élève `avis` (email).
+    // Jamais une élève archivée, jamais sans email, jamais une séance
+    // annulée ou à venir. Aucune contrepartie dans le texte (règle Google).
+    // ─────────────────────────────────────────────────────────────────
+    const cfgAvis = avisParProfil.get(profile.id);
+    if (cfgAvis && emailAutoActif(cfgAvis)) {
+      try {
+        // Déjà servies (envoyé ou volontairement ignoré) : un envoi ÉCHOUÉ
+        // reste candidat, sendNotifEleve re-clame la ligne 'failed' (B1g).
+        const { data: dejaRows, error: dejaErr } = await supabase
+          .from('notifications_eleves')
+          .select('client_id')
+          .eq('profile_id', profile.id)
+          .eq('type', TYPE_NOTIF_AVIS)
+          .eq('channel', 'email')
+          .neq('statut', 'failed');
+        if (dejaErr) throw dejaErr;
+        const deja = new Set((dejaRows || []).map(r => r.client_id));
+
+        // Les présences pointées « présente » sur des séances passées, non
+        // annulées. Paginé (le cap PostgREST 1000 rendrait le seuil faux).
+        const presAvis = [];
+        for (let page = 0; page < 10; page++) {
+          const { data: lot, error: pErr } = await supabase
+            .from('presences')
+            .select('client_id, statut_pointage, cours:cours_id!inner(date, est_annule)')
+            .eq('profile_id', profile.id)
+            .eq('statut_pointage', 'present')
+            .eq('cours.est_annule', false)
+            .lte('cours.date', today)
+            .order('created_at', { ascending: false })
+            .range(page * 1000, page * 1000 + 999);
+          if (pErr) throw pErr;
+          presAvis.push(...(lot || []));
+          if (!lot || lot.length < 1000) break;
+        }
+        const cands = candidatesAvis(presAvis, deja, today);
+        if (cands.length) {
+          const { data: fiches, error: fErr } = await supabase
+            .from('clients')
+            .select('id, prenom, nom, email, statut, notif_prefs')
+            .in('id', cands.map(c => c.client_id));
+          if (fErr) throw fErr;
+          for (const cand of cands) {
+            const client = (fiches || []).find(f => f.id === cand.client_id);
+            if (!client?.email || client.statut === 'archive') continue;
+            if (!wantsNotif(client.notif_prefs, 'avis', 'eleve', 'email')) continue;
+            const mail = emailAvis({ prenom: client.prenom, studioNom: profile.studio_nom || 'ton studio', lien: cfgAvis.lien });
+            const r = await sendNotifEleve(supabase, {
+              profile, client,
+              type: TYPE_NOTIF_AVIS,
+              relatedId: profile.id, // NON NULL : la dédup UNIQUE compte les NULL comme distincts (B1g)
+              contexte: {},
+              prefsOverride: { email: true, sms: false },
+              templates: { email: { sujet: mail.sujet, corps: mail.corps } },
+            });
+            totalSent += r.sent;
+            totalSkipped += r.skipped;
+            totalAvis += r.sent;
+          }
+        }
+      } catch (e) {
+        reportError('[cron notifs] avis_google err', e, { route: '/api/cron/notifs-eleves', profileId: profile.id });
+        totalErrors++;
+      }
+    }
     const seuilSeances = profile.alerte_seances_seuil || 2;
     const seuilJoursExp = profile.alerte_expiration_jours || 7;
     const dateExpMax = new Date(Date.now() + seuilJoursExp * 86400000).toISOString().slice(0, 10);
@@ -365,6 +463,7 @@ Pour assurer la continuité de tes cours, pense à le renouveler avant cette dat
     skipped: totalSkipped,
     profils_gates_plan: profilsGates,
     regles_declenchees: totalReglesDeclenchees,
+    avis_envoyes: totalAvis,
     errors: totalErrors,
     timestamp: new Date().toISOString(),
   });

@@ -27,7 +27,11 @@ const COULEURS = [
   { id: 'cuivre', dark: '#7A4A1E', label: 'Cuivre' },
 ];
 
-export default function QrPortailModal({ open, onClose, studioSlug, studioNom, essaiDispo = true }) {
+// v117 : 4e preset « Avis Google » quand la prof a posé son lien d'avis
+// (Paramètres → Ma page → Mes avis Google). Le QR mène chez Google, pas sur
+// le portail : c'est l'affichette « scanne en sortant », le canal qui
+// convertit le mieux en avis chez une prof.
+export default function QrPortailModal({ open, onClose, studioSlug, studioNom, essaiDispo = true, lienAvis = null }) {
   const [preset, setPreset] = useState('carte');
   const [couleur, setCouleur] = useState('noir');
   const [previewUrl, setPreviewUrl] = useState(null);
@@ -37,10 +41,11 @@ export default function QrPortailModal({ open, onClose, studioSlug, studioNom, e
     { id: 'carte',   label: 'Carte de visite', intention: 'Découvrir ton studio',            path: '' },
     { id: 'flyer',   label: 'Flyer',           intention: essaiDispo ? "Demander un cours d'essai" : 'Découvrir ton studio', path: essaiDispo ? '/essai' : '' },
     { id: 'affiche', label: 'Affiche studio',  intention: 'Retrouver son espace élève',      path: '/connexion' },
+    ...(lienAvis ? [{ id: 'avis', label: 'Avis Google', intention: 'Laisser un avis sur Google', externe: lienAvis }] : []),
   ];
   const actif = PRESETS.find(p => p.id === preset) || PRESETS[0];
   const dark = (COULEURS.find(c => c.id === couleur) || COULEURS[0]).dark;
-  const qrUrl = `${origin}/p/${studioSlug}${actif.path}?src=qr-${actif.id}`;
+  const qrUrl = actif.externe || `${origin}/p/${studioSlug}${actif.path}?src=qr-${actif.id}`;
 
   useEffect(() => {
     if (!open) return;
@@ -77,6 +82,7 @@ export default function QrPortailModal({ open, onClose, studioSlug, studioNom, e
 
   const ouvrirAffichette = () => {
     const params = new URLSearchParams({ slug: studioSlug, nom: studioNom || '', preset: actif.id, couleur });
+    if (actif.externe) params.set('lien', actif.externe);
     window.open(`/qr-affiche?${params}`, '_blank', 'noopener');
   };
 
@@ -109,6 +115,12 @@ export default function QrPortailModal({ open, onClose, studioSlug, studioNom, e
         </div>
         {preset === 'flyer' && !essaiDispo && (
           <p className="qrm-hint">Ton cours d'essai en ligne n'est pas actif : ce QR mènera à ton portail.</p>
+        )}
+        {preset === 'avis' && (
+          <p className="qrm-hint" data-testid="qrm-hint-avis">Ce QR mène à ta fiche Google, directement sur « Écrire un avis ». À coller près de la sortie du studio.</p>
+        )}
+        {!lienAvis && (
+          <p className="qrm-hint" data-testid="qrm-hint-sans-avis">Pose ton lien d'avis Google (Paramètres → Ma page publique → « Mes avis Google ») et un 4e modèle « Avis Google » apparaît ici.</p>
         )}
 
         <div className="qrm-preview">

@@ -22,6 +22,7 @@ import PushPrompt from '@/components/push/PushPrompt';
 import dynamic from 'next/dynamic';
 const QrPortailModal = dynamic(() => import('@/components/portail/QrPortailModal'), { ssr: false });
 import { can } from '@/lib/plan-guard';
+import { lienAvis } from '@/lib/avis-google';
 
 export default function DashboardClient({ profile, coursDuJour, nbClients, nbCoursTotal, revenusMois, alertes, coutsMois, hasSondage = false, nbCasATraiter = 0, nbInvites = 0, nbOffres = 0, nbVentes = 0, espacesEleve = [] }) {
   const moi = useMoi();
@@ -423,6 +424,7 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
             studioSlug={studioSlug}
             studioNom={profile?.studio_nom}
             essaiDispo={profile?.essai_actif === true && can(profile, 'cours_essai')}
+            lienAvis={lienAvis(profile?.avis_google)}
           />
         )}
 

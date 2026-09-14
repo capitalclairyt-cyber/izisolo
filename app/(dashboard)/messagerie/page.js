@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import MessagerieClient from './MessagerieClient';
 import { can } from '@/lib/plan-guard';
 import PlanRequis from '@/components/plan/PlanRequis';
+import { chargerAvisGoogle, lienAvis } from '@/lib/avis-google';
 
 export const metadata = { title: 'Messagerie' };
 
@@ -48,12 +49,17 @@ export default async function MessageriePage() {
     return <PlanRequis capacite="messagerie" titre="Messagerie" texte="Écris à tes élèves une par une ou à tout un cours, envoie une annonce à tout le monde, reçois leurs messages : c'est la boucle qui les fait entrer dans ton studio." />;
   }
 
+  // v117 : le lien d'avis Google, lu à part (la colonne n'entre jamais dans
+  // le select principal). Sans lien, aucun gabarit « Demander un avis ».
+  const lienAvisGoogle = lienAvis(await chargerAvisGoogle(supabase, studioId));
+
   return (
     <MessagerieClient
       profile={profile || { id: user.id, studio_nom: '' }}
       clients={clients || []}
       cours={cours || []}
       offres={offres || []}
+      lienAvis={lienAvisGoogle}
     />
   );
 }

@@ -11,18 +11,28 @@ import { Suspense, useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import QRCode from 'qrcode';
 import { Printer, ArrowLeft } from 'lucide-react';
+import { lienAvisValide } from '@/lib/avis-google';
 
 const TITRES = {
   carte:   { titre: 'Découvre mon studio',            sous: 'Planning, infos pratiques et réservation en ligne.' },
   flyer:   { titre: 'Viens essayer un cours',         sous: "Scanne pour demander ton cours d'essai, ça prend 30 secondes." },
   affiche: { titre: 'Réserve tes séances en ligne',   sous: 'Scanne pour retrouver ton espace élève : réservations, carnet, messages.' },
+  // v117 : l'affichette « scanne en sortant ». Aucune contrepartie promise
+  // (règle Google), le texte le respecte.
+  avis:    { titre: 'Un mot sur ton cours ?',         sous: 'Scanne pour laisser un avis Google. Une minute, et ça aide énormément.' },
 };
 
 function Affichette() {
   const sp = useSearchParams();
   const slug = sp.get('slug') || '';
   const nom = sp.get('nom') || 'Mon studio';
-  const preset = TITRES[sp.get('preset')] ? sp.get('preset') : 'carte';
+  // Le preset « avis » n'existe que si un lien Google VALIDE accompagne l'URL
+  // (jamais un QR vers une adresse quelconque, même sur une page de session).
+  const lienAvisParam = lienAvisValide(sp.get('lien') || '') ? sp.get('lien').trim() : null;
+  const presetDemande = sp.get('preset');
+  const preset = presetDemande === 'avis'
+    ? (lienAvisParam ? 'avis' : 'carte')
+    : (TITRES[presetDemande] ? presetDemande : 'carte');
   const couleur = sp.get('couleur') === 'cuivre' ? '#7A4A1E' : '#1a1a1a';
   const [qr, setQr] = useState(null);
   // Origin en state + useEffect : le rendu serveur ET le premier rendu client
@@ -32,8 +42,9 @@ function Affichette() {
   const [origin, setOrigin] = useState('https://www.izisolo.fr');
   useEffect(() => { setOrigin(window.location.origin); }, []);
   const path = preset === 'flyer' ? '/essai' : preset === 'affiche' ? '/connexion' : '';
-  const url = `${origin}/p/${slug}${path}?src=qr-${preset}`;
-  const urlLisible = url.replace(/^https?:\/\//, '').replace(/\?src=.*$/, '');
+  const url = preset === 'avis' ? lienAvisParam : `${origin}/p/${slug}${path}?src=qr-${preset}`;
+  // Le lien Google est long et opaque : sur l'affichette, on écrit juste où il mène.
+  const urlLisible = preset === 'avis' ? 'Avis Google' : url.replace(/^https?:\/\//, '').replace(/\?src=.*$/, '');
 
   useEffect(() => {
     if (!slug) return;

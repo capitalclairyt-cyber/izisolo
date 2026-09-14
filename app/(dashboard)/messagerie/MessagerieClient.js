@@ -9,6 +9,7 @@ import ChatRoom from '@/components/messagerie/ChatRoom';
 import AttachmentPicker from '@/components/messagerie/AttachmentPicker';
 import { useToast } from '@/components/ui/ToastProvider';
 import { matchRecherche } from '@/lib/utils';
+import { gabaritAnnonceAvis } from '@/lib/avis-google';
 
 const SCOPES = [
   { value: 'tous',        label: 'Tous mes élèves',        desc: 'Tous les élèves actifs/fidèles/prospects' },
@@ -18,7 +19,7 @@ const SCOPES = [
   { value: 'clients',     label: 'Sélection libre',         desc: 'Choisis manuellement les destinataires' },
 ];
 
-export default function MessagerieClient({ profile, clients, cours, offres }) {
+export default function MessagerieClient({ profile, clients, cours, offres, lienAvis = null }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
@@ -384,6 +385,23 @@ export default function MessagerieClient({ profile, clients, cours, offres }) {
 
           <div className="ann-section">
             <label className="ann-label">Message</label>
+            {/* v117 : le gabarit « Demander un avis Google », seulement si un
+                lien est posé (Paramètres → Ma page → Mes avis Google). Le
+                conseil tient en une ligne : une vague par cours, jamais toute
+                la base d'un coup (Google filtre les rafales d'avis). */}
+            {lienAvis && (
+              <div className="ann-gabarit">
+                <button
+                  type="button"
+                  className="izi-btn izi-btn-secondary"
+                  data-testid="ann-gabarit-avis"
+                  onClick={() => setContent(gabaritAnnonceAvis({ studioNom: profile?.studio_nom || 'le studio', lien: lienAvis }))}
+                >
+                  ⭐ Gabarit : demander un avis Google
+                </button>
+                <span className="ann-hint">Une vague par cours plutôt que toute ta base d&apos;un coup : Google se méfie des rafales d&apos;avis.</span>
+              </div>
+            )}
             <textarea
               className="izi-input"
               rows={5}
@@ -554,6 +572,8 @@ export default function MessagerieClient({ profile, clients, cours, offres }) {
         .ann-more { padding: 8px 12px; font-size: 0.7rem; color: var(--text-muted); text-align: center; }
 
         .ann-hint { font-size: 0.7rem; color: var(--text-muted); margin-top: -2px; }
+        .ann-gabarit { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-bottom: 8px; }
+        .ann-gabarit .izi-btn { font-size: 0.8rem; padding: 6px 10px; }
 
         .ann-send {
           align-self: flex-start; padding: 10px 20px;

@@ -61,6 +61,10 @@ export default function NotifsElevesSection({ profile, setProfile, setDirty }) {
           })}
         </tbody>
       </table>
+      {/* v117 : la demande d'avis Google se règle avec son lien, sur Ma page. */}
+      <p className="form-hint" style={{ marginTop: 10 }}>
+        La demande d&apos;avis Google (une fois, après la 3e séance) se règle dans <strong>Ma page publique → « Mes avis Google »</strong>, avec ton lien.
+      </p>
 
       <style jsx global>{`
         .notifs-table { width: 100%; border-collapse: collapse; margin-top: 4px; }

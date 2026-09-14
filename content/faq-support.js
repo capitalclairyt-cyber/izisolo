@@ -409,4 +409,10 @@ export const FAQ_SUPPORT = [
     a: "Sur sa fiche (onglet Paiements) ou dans Revenus → « À percevoir », clique « Encaisser » sur la ligne en attente, puis « Plusieurs moyens ou plusieurs chèques ». Tu saisis chaque chèque avec son montant, son numéro et sa date d'encaissement (ou espèces + CB, jusqu'à quatre moyens) : chaque moyen fait sa propre ligne dans ta compta et le total doit tomber juste, sinon rien n'est enregistré. La vente reste la même, rien à supprimer ni à recréer. « Encaisser un versement » sur la carte de l'abonnement sert à un règlement qui arrive EN PLUS de ce qui était prévu : si une ligne attend déjà, la modale te propose de l'encaisser à la place, pour ne pas compter l'argent deux fois.",
     lien: { href: '/aide#encaisser', label: 'Voir le pas-à-pas' },
   },
+  {
+    // Demander un avis Google (v117, 2026-09-14, demande Maude). AJOUTÉE EN FIN.
+    q: "Comment demander des avis Google à mes élèves ?",
+    a: "Paramètres → Ma page publique → carte « Mes avis Google » : colle le lien que te donne ta fiche Google Business Profile (bouton « Demander des avis », adresse du type g.page/r/…/review). Ensuite, quatre portes : tes élèves ont un bouton « Laisser un avis Google » dans leur espace ; ton QR code (tuile Portail ou Intégrer sur mon site) gagne un modèle « Avis Google » à coller près de la sortie ; Messagerie → Annoncer te propose un gabarit, à envoyer un cours à la fois plutôt qu'à toute ta base d'un coup ; et l'interrupteur « Demander un avis par email après la 3e séance » envoie l'email tout seul, une fois par élève, cinq par jour au plus (plan Complet). Deux règles de Google que l'app respecte : rien en échange d'un avis (une séance offerte fait retirer les avis), et pas de tri entre élèves contentes ou non. Réponds à chaque avis reçu.",
+    lien: { href: '/aide#page-publique', label: 'Voir le pas-à-pas' },
+  },
 ];

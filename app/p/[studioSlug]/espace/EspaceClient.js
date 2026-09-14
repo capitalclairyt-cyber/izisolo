@@ -187,7 +187,7 @@ function CoursCard({ presence, profile, studioSlug, onAnnuler, annulEnCours, vis
   );
 }
 
-export default function EspaceClient({ profile, client, aVenir, passes, paiements = [], offresStripe = [], offresCatalogue = [], catalogueMasque = false, abonnements = [], aRegler = [], seancesWorkshopDues = [], annulationsDues = [], unreadMessages = 0, clientPrefs = {}, studioSlug, userEmail, isDemo = false, facturationActive = false, facturesParPaiement = {}, docsInscription = [], visioParPresence = {}, ribStudio = null, refVirement = null, adhesions = [], nbStudios = 1 }) {
+export default function EspaceClient({ profile, client, aVenir, passes, paiements = [], offresStripe = [], offresCatalogue = [], catalogueMasque = false, abonnements = [], aRegler = [], seancesWorkshopDues = [], annulationsDues = [], unreadMessages = 0, clientPrefs = {}, studioSlug, userEmail, isDemo = false, facturationActive = false, facturesParPaiement = {}, docsInscription = [], visioParPresence = {}, ribStudio = null, refVirement = null, adhesions = [], nbStudios = 1, lienAvis = null }) {
   const router = useRouter();
   const { toast } = useToast();
   const [notifsOpen, setNotifsOpen] = useState(false);
@@ -1243,8 +1243,21 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
         </div>
       )}
 
+      {/* Avis Google (v117) — discret, permanent, jamais une contrepartie */}
+      {lienAvis && (
+        <div style={{ marginTop: 28, paddingTop: 20, borderTop: '1px solid #f0ebe8' }} data-testid="espace-avis">
+          <h2 className="espace-section-title">⭐ Un mot sur {profile.studio_nom} ?</h2>
+          <p style={{ fontSize: '0.8125rem', color: '#888', margin: '0 0 10px' }}>
+            Un avis sur Google aide énormément : c&apos;est comme ça que d&apos;autres personnes trouvent le studio. Tu écris ce que tu penses vraiment.
+          </p>
+          <a href={lienAvis} target="_blank" rel="noopener noreferrer" className="espace-doc-link" data-testid="espace-avis-lien">
+            ⭐ Laisser un avis Google
+          </a>
+        </div>
+      )}
+
       {/* Mini-aide élève (2026-08-18) — les questions récurrentes, réponses vérifiées */}
-      <AideEleve studioNom={profile.studio_nom} studioSlug={studioSlug} sansCatalogue={catalogueMasque} aDesAdhesions={adhesions.length > 0} plusieursStudios={nbStudios > 1} />
+      <AideEleve studioNom={profile.studio_nom} studioSlug={studioSlug} sansCatalogue={catalogueMasque} aDesAdhesions={adhesions.length > 0} plusieursStudios={nbStudios > 1} aUnLienAvis={!!lienAvis} />
 
       {/* Bouton rebooking */}
       <div style={{ marginTop: 28, paddingTop: 20, borderTop: '1px solid #f0ebe8', textAlign: 'center' }}>

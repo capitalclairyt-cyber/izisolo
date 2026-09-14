@@ -15,6 +15,7 @@ import { useState } from 'react';
 import dynamic from 'next/dynamic';
 import { Code2, QrCode } from 'lucide-react';
 import { can } from '@/lib/plan-guard';
+import { lienAvis } from '@/lib/avis-google';
 import { resumeCarte } from '@/lib/parametres-rubriques';
 import CarteReglage, { EnSavoirPlus } from '../CarteReglage';
 
@@ -193,6 +194,7 @@ export default function IntegrerSiteSection({ profile, setProfile }) {
           studioSlug={studioSlug}
           studioNom={profile?.studio_nom}
           essaiDispo={profile?.essai_actif === true && can(profile, 'cours_essai')}
+          lienAvis={lienAvis(profile?.avis_google)}
         />
       </CarteReglage>
 
