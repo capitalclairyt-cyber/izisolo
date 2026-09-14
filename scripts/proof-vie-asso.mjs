@@ -55,7 +55,7 @@ const AUJ = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Paris' })
 const SAISON = (() => { const [a, m] = AUJ.split('-').map(Number); const d = m >= 9 ? a : a - 1; return `${d}-${d + 1}`; })();
 const aller = async (page, url) => {
   try { await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 120000 }); }
-  catch (e) { if (!/ERR_ABORTED/.test(String(e))) throw e; await dormir(1500); await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 120000 }); }
+  catch (e) { if (!/ERR_ABORTED|interrupted by another navigation/.test(String(e))) throw e; await dormir(1500); await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 120000 }); }
 };
 const texte = async (page) => page.evaluate(() => document.body.innerText);
 const clicJusquA = async (page, sel, temoin, essais = 8) => {
@@ -362,7 +362,8 @@ try {
     await pA.fill('[data-testid="ag-presentes"]', '1');
     await pA.fill('[data-testid="ag-pouvoirs"]', '0');
     c('« AG tenue » en vrai navigateur → quorum affiché', await clicJusquA(pA, '[data-testid="ag-tenir"]', '[data-testid="ag-quorum-pct"]'));
-    const { data: agT } = await svc.from('assemblees').select('statut, presentes, pouvoirs').eq('id', ag.id).maybeSingle();
+    // On attend l'écriture (le clic part, la route répond ensuite), jamais une lecture dans la foulée.
+    const agT = await attendre(async () => { const { data } = await svc.from('assemblees').select('statut, presentes, pouvoirs').eq('id', ag.id).maybeSingle(); return data?.statut === 'tenue' ? data : null; }, 30000, 500);
     c('… EN BASE : tenue, 1 présente, 0 pouvoir ; quorum 100 %', agT?.statut === 'tenue' && agT?.presentes === 1 && agT?.pouvoirs === 0 && (await pA.textContent('[data-testid="ag-quorum-pct"]')).includes('100'));
     const pv = await api(cookieAs, '/api/association/documents', { method: 'POST', body: JSON.stringify({ type: 'pv_ag', titre: 'PV AG', url: 'https://example.com/pv.pdf', assemblee_id: ag.id }) });
     const { data: agPv } = await svc.from('assemblees').select('pv_document_id').eq('id', ag.id).maybeSingle();

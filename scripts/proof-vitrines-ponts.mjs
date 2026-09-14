@@ -46,7 +46,7 @@ const TS = Date.now().toString(36);
 const j = (n) => new Date(Date.now() + n * 864e5).toISOString().slice(0, 10);
 const aller = async (page, url) => {
   try { await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 120000 }); }
-  catch (e) { if (!/ERR_ABORTED/.test(String(e))) throw e; await dormir(1500); await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 120000 }); }
+  catch (e) { if (!/ERR_ABORTED|interrupted by another navigation/.test(String(e))) throw e; await dormir(1500); await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 120000 }); }
 };
 const texte = async (page) => page.evaluate(() => document.body.innerText);
 

@@ -51,7 +51,7 @@ const AUJ = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Paris' })
 const MOIS_PREC = (() => { const [a, m] = AUJ.slice(0, 7).split('-').map(Number); const d = new Date(Date.UTC(a, m - 2, 1)); return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`; })();
 const aller = async (page, url) => {
   try { await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 120000 }); }
-  catch (e) { if (!/ERR_ABORTED/.test(String(e))) throw e; await dormir(1500); await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 120000 }); }
+  catch (e) { if (!/ERR_ABORTED|interrupted by another navigation/.test(String(e))) throw e; await dormir(1500); await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 120000 }); }
 };
 const texte = async (page) => page.evaluate(() => document.body.innerText);
 const clicJusquA = async (page, sel, temoin, essais = 8) => {
