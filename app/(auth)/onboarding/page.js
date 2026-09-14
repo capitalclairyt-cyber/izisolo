@@ -408,7 +408,7 @@ export default function OnboardingPage() {
                 padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 12,
               }}>
                 <p style={{ margin: 0, fontSize: '0.875rem', lineHeight: 1.55, color: 'var(--text-primary)' }}>
-                  <strong>Tu crées ici TON studio de professeur·e</strong> (essai 30 jours).
+                  <strong>Tu crées ici TON studio de professeur·e</strong> (30 jours de Complet, puis Essentiel gratuit).
                   {portails.length > 0 && (
                     <> Ce n'est <strong>pas</strong> l'accès à ton espace élève chez{' '}
                     {portails.map(p => p.nom).join(', ')} : pour ça, utilise le bouton
@@ -516,10 +516,19 @@ export default function OnboardingPage() {
                     </button>
                   ))}
                 </div>
-                {typeStructure !== 'solo' && (
-                  <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '6px 0 0' }}>
-                    Tu pourras inviter tes profs et régler leurs droits dès ton espace créé
-                    (30 jours d'essai du plan {typeStructure === 'association' ? 'Association' : 'Studio'}, sans carte).
+                {/* L'essai est NOMMÉ ici, avec ce qui vient après (2026-09-14) :
+                    avant, « essai 30 jours » ne disait ni quel plan, ni que la
+                    réservation par les élèves s'éteindrait à la fin. */}
+                {typeStructure === 'solo' ? (
+                  <p className="onb-essai-note" data-testid="onb-essai-note" style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '6px 0 0', lineHeight: 1.5 }}>
+                    Tu démarres avec <strong>30 jours de Complet</strong> (tes élèves réservent, paient, reçoivent leurs rappels),
+                    puis <strong>Essentiel, gratuit pour toujours</strong>. Tu choisis à la fin, rien ne s'arrête, sans carte bancaire.
+                  </p>
+                ) : (
+                  <p className="onb-essai-note" data-testid="onb-essai-note" style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '6px 0 0', lineHeight: 1.5 }}>
+                    Tu pourras inviter tes profs et régler leurs droits dès ton espace créé :
+                    30 jours du plan <strong>{typeStructure === 'association' ? 'Association' : 'Studio'}</strong>, sans carte,
+                    puis Essentiel gratuit si tu ne prends rien. Tu choisis à la fin.
                   </p>
                 )}
               </div>

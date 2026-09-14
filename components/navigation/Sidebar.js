@@ -55,7 +55,12 @@ const NAV_SECTIONS = [
   },
 ];
 
-export default function Sidebar({ studioNom = 'Mon Studio', vocabulaire = {}, illustration = 'lotus', nbCasATraiter = 0, nbEssais = 0, peutEquipe = false, caps = {}, typeStructure = 'solo' }) {
+// `essai` = { planNom, joursRestants } pendant un essai, null sinon. Dès le
+// premier jour, la prof voit qu'elle ESSAIE un plan (« Essai Complet · J-23 »)
+// et chaque entrée qui s'éteindra à la fin porte l'étiquette du plan : avant
+// (2026-09-14), rien ne le disait pendant 25 jours, et le premier signal
+// arrivait à J-5, après que l'email J+3 l'avait poussée à inviter ses élèves.
+export default function Sidebar({ studioNom = 'Mon Studio', vocabulaire = {}, illustration = 'lotus', nbCasATraiter = 0, nbEssais = 0, peutEquipe = false, caps = {}, typeStructure = 'solo', essai = null }) {
   // Ce que CETTE personne a le droit de faire dans CE studio (lot 3). Pour une
   // prof seule, `membre` est propriétaire : `peut()` renvoie true partout et la
   // nav est exactement celle d'avant. Une porte qui ne mène nulle part est un
@@ -135,6 +140,17 @@ export default function Sidebar({ studioNom = 'Mon Studio', vocabulaire = {}, il
             garde exactement l'affichage d'avant (le composant rend null). */}
         <SelecteurStudio />
         {studios.length < 2 && <div className="sidebar-studio">{studioNom}</div>}
+        {essai && (
+          <Link
+            href="/parametres/abonnement"
+            className="sidebar-essai"
+            data-testid="sidebar-essai"
+            title={`Puis Essentiel, gratuit pour toujours. Tu choisis à la fin.`}
+            onClick={triggerPulse}
+          >
+            Essai {essai.planNom} · J-{essai.joursRestants}
+          </Link>
+        )}
       </div>
 
       {/* Navigation + Paramètres */}
@@ -168,7 +184,12 @@ export default function Sidebar({ studioNom = 'Mon Studio', vocabulaire = {}, il
                   </span>
                   <span className="sidebar-label">{label}</span>
                   {verrouille && <Lock size={13} className="sidebar-lock" aria-label="Plan Complet" data-testid="sidebar-lock" />}
-                  {isActive && !verrouille && <ChevronRight size={14} className="sidebar-chevron" />}
+                  {/* Pendant l'essai : l'entrée est ouverte, mais elle dit de
+                      quel plan elle vient, pour que la fin ne surprenne pas. */}
+                  {!verrouille && essai && !!cap && (
+                    <span className="sidebar-essai-tag" data-testid="sidebar-essai-tag" title={`Inclus dans ton essai ${essai.planNom}`}>{essai.planNom}</span>
+                  )}
+                  {isActive && !verrouille && !(essai && cap) && <ChevronRight size={14} className="sidebar-chevron" />}
                 </Link>
               );
             })}
@@ -328,6 +349,37 @@ export default function Sidebar({ studioNom = 'Mon Studio', vocabulaire = {}, il
           overflow: hidden;
           text-overflow: ellipsis;
           max-width: 190px;
+        }
+        /* Pastille d'essai : discrète, permanente, un lien vers Abonnement.
+           Globale (styled-jsx ne hashe pas un <Link>, §12). */
+        :global(.sidebar-essai) {
+          display: inline-flex;
+          align-items: center;
+          margin-top: 8px;
+          padding: 3px 10px;
+          border-radius: 99px;
+          font-size: 0.6875rem;
+          font-weight: 600;
+          letter-spacing: 0.01em;
+          color: var(--brand, #B87333);
+          background: color-mix(in oklab, var(--brand, #B87333) 12%, white);
+          border: 1px solid color-mix(in oklab, var(--brand, #B87333) 30%, white);
+          text-decoration: none;
+          white-space: nowrap;
+          transition: background 0.15s;
+        }
+        :global(.sidebar-essai:hover) {
+          background: color-mix(in oklab, var(--brand, #B87333) 20%, white);
+        }
+        .sidebar-essai-tag {
+          margin-left: auto;
+          flex-shrink: 0;
+          padding: 1px 7px;
+          border-radius: 99px;
+          font-size: 0.625rem;
+          font-weight: 600;
+          color: var(--brand, #B87333);
+          background: color-mix(in oklab, var(--brand, #B87333) 12%, white);
         }
         .sidebar-close {
           width: 28px; height: 28px;

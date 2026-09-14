@@ -2,6 +2,7 @@
 
 import { usePathname } from 'next/navigation';
 import { can } from '@/lib/plan-guard';
+import { PLANS } from '@/lib/constantes';
 import Sidebar from '@/components/navigation/Sidebar';
 import AccountStatusBanner from '@/components/trial/AccountStatusBanner';
 import LectureSeuleBanner from '@/components/equipe/LectureSeuleBanner';
@@ -34,6 +35,13 @@ export default function DashboardLayoutClient({ children, profile, trial, nbCasA
     profile?.vocabulaire
   );
 
+  // L'essai, nommé dès le premier jour dans la nav (pastille + étiquettes) :
+  // `trial.active` est faux dès qu'un abonnement vit ou qu'un plan est posé
+  // à la main (getTrialStatus), donc une abonnée n'a jamais de pastille.
+  const essai = trial?.active
+    ? { planNom: PLANS[trial.planEssai]?.nom || 'Complet', joursRestants: trial.daysLeft }
+    : null;
+
   return (
     <ToastProvider>
     <ConfirmProvider>
@@ -57,6 +65,7 @@ export default function DashboardLayoutClient({ children, profile, trial, nbCasA
           vie_asso: can(profile, 'vie_asso'),
         }}
         typeStructure={profile?.type_structure || 'solo'}
+        essai={essai}
       />
 
       <main className="dashboard-content">

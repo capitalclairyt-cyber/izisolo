@@ -69,6 +69,7 @@ ok(body.includes('0 €') && body.includes('pour toujours') && body.includes('29
 ok(body.includes('39 €') && body.includes('59 €') && body.includes('Association'), 'Tarifs : les plans Association et Studio annoncés sous la grille');
 ok(!/\[Témoignage/.test(body) && !body.includes('Manon'), 'Aucun témoignage en attente affiché');
 ok(!body.includes('14 jours') && body.includes('30 jours'), 'Essai : 30 jours, plus jamais 14');
+ok(body.includes('30 jours de Complet offerts, puis Essentiel') && body.includes('retour sur Essentiel, gratuit'), 'Tarifs : chaque carte dit ce qui se passe à la fin des 30 jours (2026-09-14)');
 ok(!body.includes('—'), 'Zéro tiret quadratin dans le texte rendu');
 ok(!body.includes('chiant'), 'Vocabulaire : « chiant » banni');
 

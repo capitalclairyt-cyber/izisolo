@@ -926,6 +926,7 @@ section.tight { padding-block: clamp(48px, 6vw, 80px); }
 .price li { display: flex; gap: 10px; font-size: 0.95rem; color: var(--c-ink); line-height: 1.5; text-align: left; }
 .price li .ck { width: 16px; height: 16px; margin-top: 3px; }
 .price .btn { margin-top: 6px; width: 100%; justify-content: center; }
+.price .price-note { margin: 0; font-size: 0.8125rem; line-height: 1.45; color: var(--c-ink-muted); text-align: center; }
 .stripe-note {
   max-width: 900px;
   margin: 22px 0 0;

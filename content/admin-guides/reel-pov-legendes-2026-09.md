@@ -1,7 +1,7 @@
 ---
 titre: "🎬 Réels POV et formats déclencheurs : légendes, réponse aux commentaires STUDIO, et les anciennes légendes à corriger"
 description: "Les légendes des cinq réels texte pur, des quatre formats déclencheurs (avant/après, réponse au DM, rentrée, une fonction par réel), le message à envoyer à qui commente STUDIO, et les corrections des sept publications déjà en ligne. Voix de Maude, bouton Copier."
-maj: "2026-09-10"
+maj: "2026-09-14"
 ---
 
 > Les cinq réels (13 s, verticaux, muets) sont dans `reseaux/reel/pov/`. Ils se
@@ -30,7 +30,7 @@ Envoyé en message 🌿 Regarde dans tes messages, ou dans « Demandes » si tu 
 ```texte
 Coucou [Prénom] 🌿 Merci pour ton commentaire !
 
-Voici le lien : izisolo.fr (30 jours gratuits, sans carte, sans engagement).
+Voici le lien : izisolo.fr (Essentiel gratuit, sans carte, pour toujours ; tu démarres avec 30 jours de Complet, puis tu choisis, rien ne se bloque).
 
 Et si tu préfères ne rien paramétrer toi-même, je le fais à ta place : tu m'envoies ton planning et tes tarifs, je te monte ton studio avec tes vrais cours, prêt en 48 h, gratuitement. Tu regardes, et tu me dis franchement si ça te sert.
 
@@ -49,7 +49,7 @@ Il est 23 h, et ton téléphone travaille encore. 🌙
 Chez moi, ces trois messages arrivaient tous les soirs. Aujourd'hui mes élèves voient les places qui restent, réservent seules et règlent comme elles veulent, et moi je réponds à autre chose.
 
 Commente STUDIO et je t'envoie le lien en message 🌿
-30 jours gratuits, sans carte.
+Gratuit, sans carte, pour toujours.
 
 #profdeyoga #profdepilates #yogafrance #pilatesfrance #yogabusiness #entrepreneuse
 ```
@@ -64,7 +64,7 @@ Aujourd'hui je pose l'échéancier une fois : chaque versement a sa date, son mo
 Le paiement en plusieurs fois, c'est un service qu'on rend à ses élèves. À condition que ce ne soit pas ta tête qui porte l'échéancier.
 
 Commente STUDIO et je t'envoie le lien en message 🌿
-30 jours gratuits, sans carte.
+Gratuit, sans carte, pour toujours.
 
 #profdeyoga #profdepilates #yogafrance #pilatesfrance #yogabusiness #entrepreneuse
 ```
@@ -79,7 +79,7 @@ Dimanche soir, le tableur des présences. 📋
 Maintenant je fais l'appel en fin de cours, en un tap par élève, et les carnets se décomptent tout seuls. Le dimanche soir, je n'ouvre plus rien.
 
 Commente STUDIO et je t'envoie le lien en message 🌿
-30 jours gratuits, sans carte.
+Gratuit, sans carte, pour toujours.
 
 #profdeyoga #profdepilates #yogafrance #pilatesfrance #yogabusiness #entrepreneuse
 ```
@@ -94,7 +94,7 @@ Malade un mardi, et ta remplaçante n'a pas la liste. 🤒
 Aujourd'hui je lui envoie un lien par SMS. Elle ouvre la liste sur son téléphone, sans compte, pointe qui est là, et je retrouve tout le soir même. Elle ne voit ni les tarifs, ni les coordonnées de mes élèves.
 
 Commente STUDIO et je t'envoie le lien en message 🌿
-30 jours gratuits, sans carte.
+Gratuit, sans carte, pour toujours.
 
 #profdeyoga #profdepilates #yogafrance #pilatesfrance #yogabusiness #entrepreneuse
 ```
@@ -111,7 +111,7 @@ Le 25 du mois, la déclaration URSSAF. 🧮
 Maintenant le montant est calculé à partir de ce que j'ai vraiment encaissé, à la date d'encaissement, avec le livre des recettes prêt à côté. Je recopie un chiffre, et c'est fini.
 
 Commente STUDIO et je t'envoie le lien en message 🌿
-30 jours gratuits, sans carte.
+Gratuit, sans carte, pour toujours.
 
 #profdeyoga #profdepilates #yogafrance #pilatesfrance #yogabusiness #entrepreneuse
 ```
@@ -211,7 +211,7 @@ Avant : trois messages à 23 h, et c'est toi qui réponds. Après : l'appli rép
 Et toi, tes soirées ressemblent à quoi ?
 
 Commente STUDIO et je t'envoie le lien en message 🌿
-30 jours gratuits, sans carte.
+Gratuit, sans carte, pour toujours.
 
 #profdeyoga #profdepilates #yogafrance #pilatesfrance #yogabusiness #entrepreneuse
 ```
@@ -224,7 +224,7 @@ Une prof m'a écrit hier : « Ok, c'est quoi les fonctions ? Tu attises ma curio
 Alors voilà, en huit écrans : réserver, planifier, créer, vendre, pointer, encaisser, déclarer, écrire. Le reste, je te le montre sur tes vrais cours.
 
 Commente STUDIO et je t'envoie le lien en message 🌿
-30 jours gratuits, sans carte.
+Gratuit, sans carte, pour toujours.
 
 #profdeyoga #profdepilates #yogafrance #pilatesfrance #yogabusiness #entrepreneuse
 ```
@@ -239,7 +239,7 @@ Six séries posées une fois, vacances et fériés sautés. L'encaissé à jour 
 Ta rentrée peut encore se ranger.
 
 Commente STUDIO et je t'envoie le lien en message 🌿
-30 jours gratuits, sans carte.
+Gratuit, sans carte, pour toujours.
 
 #profdeyoga #profdepilates #yogafrance #pilatesfrance #yogabusiness #entrepreneuse
 ```
@@ -261,7 +261,7 @@ messagerie : Un fil direct avec tes élèves, sans groupe WhatsApp.
 
 ```texte
 Commente STUDIO et je t'envoie le lien en message 🌿
-30 jours gratuits, sans carte.
+Gratuit, sans carte, pour toujours.
 
 #profdeyoga #profdepilates #yogafrance #pilatesfrance #yogabusiness #entrepreneuse
 ```

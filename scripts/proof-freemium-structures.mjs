@@ -146,11 +146,25 @@ try {
   // ═══ 1. La prof dont l'essai est fini ═══════════════════════════════════
   console.log('\n══════ 1. Essai fini = Essentiel gratuit, pas un gel ══════');
   // Essai commencé il y a 35 jours : fini depuis 5 jours (bandeau visible < 14 j).
-  const g = await creerCompte('gratuite', { plan: 'solo', trial_started_at: j(-35), stripe_subscription_status: null });
+  const g = await creerCompte('gratuite', { plan: 'solo', trial_started_at: j(-2), stripe_subscription_status: null });
   const cookieG = await enteteCookie(g.email);
   const ctxG = await browser.newContext({ viewport: { width: 1280, height: 1000 } });
   await ctxG.addCookies((await sessionCookies(g.email)).map(cc => ({ ...cc, url: BASE, sameSite: 'Lax' })));
   const pG = await ctxG.newPage();
+  // ── 0. Pendant l'essai (J-2 après le départ), l'essai est NOMMÉ dans la nav ──
+  await aller(pG, `${BASE}/dashboard`);
+  await pG.waitForSelector('[data-testid="sidebar-essai"]', { timeout: 60000 }).catch(() => {});
+  const pastille = await pG.evaluate(() => document.querySelector('[data-testid="sidebar-essai"]')?.innerText || '');
+  c('pendant l\'essai : pastille « Essai Complet · J-28 » dans la nav, dès le premier jour', /Essai Complet · J-2[789]/.test(pastille), JSON.stringify(pastille));
+  c('… qui mène à Abonnement IziSolo', await pG.evaluate(() => document.querySelector('[data-testid="sidebar-essai"]')?.getAttribute('href') === '/parametres/abonnement'));
+  c('… et Messagerie porte l\'étiquette « Complet » (ouverte, pas de cadenas)', await pG.evaluate(() => {
+    const a = document.querySelector('a[href="/messagerie"]');
+    return !!a && a.querySelector('[data-testid="sidebar-essai-tag"]')?.textContent === 'Complet' && !a.querySelector('[data-testid="sidebar-lock"]');
+  }));
+  c('… Agenda (dans Essentiel) n\'a pas d\'étiquette', await pG.evaluate(() => !document.querySelector('a[href="/agenda"] [data-testid="sidebar-essai-tag"]')));
+  c('… et pas de bandeau à J-28 (il n\'arrive qu\'à J-5)', !(await pG.$('[data-testid="bandeau-essai"]')));
+  // Puis l'essai est fini : la pastille disparaît, le cadenas prend le relais.
+  await svc.from('profiles').update({ trial_started_at: j(-35) }).eq('id', g.id);
   await aller(pG, `${BASE}/dashboard`);
   await pG.waitForSelector('[data-testid="bandeau-gratuit"], .izi-sidebar, nav', { timeout: 60000 }).catch(() => {});
   await new Promise(r => setTimeout(r, 2500));
@@ -166,6 +180,7 @@ try {
   }
   const cadenas = await pG.evaluate(() => !!document.querySelector('a[href="/messagerie"] [data-testid="sidebar-lock"]'));
   c('barre latérale : Messagerie porte un cadenas (Essentiel)', cadenas);
+  c('essai fini : plus de pastille d\'essai ni d\'étiquette', !(await pG.$('[data-testid="sidebar-essai"]')) && !(await pG.$('[data-testid="sidebar-essai-tag"]')));
   await aller(pG, `${BASE}/messagerie`);
   await pG.waitForSelector('[data-testid="plan-requis"]', { timeout: 60000 }).catch(() => {});
   const tM = await texte(pG);
@@ -240,6 +255,12 @@ try {
   await pO.waitForSelector('[data-structure="association"]', { timeout: 30000 });
   c('?structure=association pré-coche « Une association »', await pO.evaluate(() => document.querySelector('[data-structure="association"]')?.getAttribute('aria-checked') === 'true'));
   c('le titre parle d\'association et le champ RNA est là', (await texte(pO)).includes('Parle-nous de ton association') && !!(await pO.$('#onb-rna')));
+  const noteAsso = await pO.evaluate(() => document.querySelector('[data-testid="onb-essai-note"]')?.innerText || '');
+  c('onboarding : la note dit « 30 jours du plan Association … puis Essentiel gratuit »', noteAsso.includes('30 jours du plan Association') && noteAsso.includes('Essentiel gratuit'), JSON.stringify(noteAsso.slice(0, 80)));
+  await pO.click('[data-structure="solo"]');
+  const noteSolo = await pO.evaluate(() => document.querySelector('[data-testid="onb-essai-note"]')?.innerText || '');
+  c('… et pour une prof seule : « 30 jours de Complet (tes élèves réservent…) puis Essentiel, gratuit pour toujours »', noteSolo.includes('30 jours de Complet') && noteSolo.includes('réservent') && noteSolo.includes('gratuit pour toujours'), JSON.stringify(noteSolo.slice(0, 80)));
+  await pO.click('[data-structure="association"]');
   await pO.fill('#onb-studio-nom', `Asso Preuve ${TS}`);
   await pO.fill('#onb-prenom', 'Preuve');
   await pO.fill('#onb-nom', 'Onboarding');
@@ -280,8 +301,10 @@ try {
   await aller(pA, `${BASE}/equipe`);
   await new Promise(r => setTimeout(r, 2500));
   const tE = await texte(pA);
+  const pastilleA = await pA.evaluate(() => document.querySelector('[data-testid="sidebar-essai"]')?.innerText || '');
   if (V110) {
     c('/equipe s\'ouvre (le plan essayé est Association)', !(await pA.$('[data-testid="plan-requis"]')) && !tE.includes('fait partie des plans Association et Studio'), pA.url());
+    c('la pastille nomme le plan de la structure : « Essai Association · J-28 »', /Essai Association · J-2[789]/.test(pastilleA), JSON.stringify(pastilleA));
   } else {
     c('/equipe refuse en nommant « Association et Studio » (sans v110, l\'essai est Complet)', tE.includes('Association') && tE.includes('Studio'));
   }
@@ -355,6 +378,11 @@ try {
   c('Complet à 29 €, LANCEMENT50', tL.includes('29 €') && tL.includes('LANCEMENT50'));
   c('plus jamais « 15 € »', !tL.includes('15 €'));
   c('Association 39 € et Studio 59 € annoncés', tL.includes('39 €') && tL.includes('59 €') && tL.includes('Association'));
+  c('sous « Commencer gratuitement » : « 30 jours de Complet offerts, puis Essentiel »', tL.includes('30 jours de Complet offerts, puis Essentiel'));
+  c('sous « Essayer 30 jours » : le choix de la fin est écrit', tL.includes('retour sur Essentiel, gratuit'));
+  await aller(pL, `${BASE}/register`);
+  const tR = await texte(pL);
+  c('/register : « 30 jours de Complet pour démarrer · puis Essentiel, gratuit pour toujours »', tR.includes('30 jours de Complet pour démarrer') && tR.includes('puis Essentiel, gratuit pour toujours'));
   await ctxL.close();
   await ctxG.close();
 } finally {

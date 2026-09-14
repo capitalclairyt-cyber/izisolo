@@ -430,6 +430,9 @@ export function Pricing() {
       price: '0',
       periode: 'pour toujours',
       cta: 'Commencer gratuitement',
+      // L'inscription lance TOUJOURS 30 jours de Complet : le dire ici, sous le
+      // bouton, plutôt que de le laisser découvrir à J-5 (2026-09-14).
+      note: 'Tu démarres avec 30 jours de Complet offerts, puis Essentiel. Rien à faire, rien à résilier.',
       desc: 'Ton cahier, en mieux. Tout ce que tu gères toi-même, au même endroit. Gratuit, sans carte, sans limite de temps.',
       features: [
         'Élèves illimités, agenda, récurrences, lieux',
@@ -445,6 +448,7 @@ export function Pricing() {
       price: '29',
       periode: '/ mois',
       cta: 'Essayer 30 jours',
+      note: 'À la fin des 30 jours, tu choisis : Complet à 29 € ou retour sur Essentiel, gratuit.',
       desc: 'Tes élèves font le travail à ta place : elles réservent, elles paient, elles reçoivent.',
       features: [
         'Tout Essentiel',
@@ -478,6 +482,7 @@ export function Pricing() {
               <Link href="/register" className={`btn ${p.featured ? 'btn-primary' : 'btn-ghost'}`}>
                 {p.cta}
               </Link>
+              {p.note && <p className="price-note">{p.note}</p>}
             </div>
           ))}
         </div>
