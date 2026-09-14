@@ -149,6 +149,36 @@ code : le « 0 € » qui part laissait un fantôme à 0,2 % d'opacité au-dessu
 un acte qui a fini de sortir ne rend plus rien. Légendes et ordre de publication : guide
 admin `freemium-lancement-2026-09.md`.
 
+## Le réel « Avis Google » (2026-09-14)
+
+`src/Avis.jsx` + le bloc `AVIS` de `src/formats.js` (1080×1920, 29 s, composition **Avis**,
+`npm run formats avis` → `../../reseaux/reel/formats/avis.mp4`, plus `avis-fin.jpg` et
+la **couverture** `avis-couverture.jpg`, l'image 120, rendue à part pour Instagram).
+Demande Colin : « un joli réel animé qui montre la nouvelle feature d'avis Google, avec une
+belle couverture accrocheuse ». Quatre actes : (1) la couverture, **cinq étoiles or qui
+tombent une à une** avec un rebond et une onde, puis « Tes élèves t'adorent. » et, en
+terracotta, « Google ne le sait pas. », pastille « Nouveau dans IziSolo » ; (2) « Un seul
+réglage » : la carte **Mes avis Google** du démo dans le téléphone, l'anneau sur le champ
+du lien puis sur l'interrupteur, une carte de couleur par repère ; (3) « Ensuite, tout se
+fait tout seul » : trois portes de 2,8 s (le bouton **« Laisser un avis Google »** dans
+l'espace élève, l'**email** rendu comme une carte de messagerie avec le VRAI texte de
+`lib/avis-google.js`, et l'**affichette A4** « Un mot sur ton cours ? » posée de travers) ;
+(4) « Comme Google le demande » : trois cartes (une seule fois par élève, jamais plus de
+5 par jour, jamais rien en échange) ; puis la carte de fin commune, titrée « Tes avis
+Google, sans y penser. ».
+
+Captures dédiées (`avis-carte.jpg`, `avis-espace.jpg`, `avis-affiche.jpg` + repères
+`avisLien`, `avisAuto`, `avisBouton` dans `manifest.json`) :
+`node scripts/shoot-reel-visuels.mjs --seulement=avis-carte,avis-espace,avis-affiche`.
+⚠️ Prérequis : un lien d'avis posé sur le profil du démo (`profiles.avis_google`, posé le
+14/09 : `https://g.page/r/atelier-soleil/review`, le refresh préserve le profil), et l'aperçu
+« comme une élève » (`/espace?demo=1`) qui porte le bloc d'avis (commit du même jour).
+Deux pièges attrapés sur les images fixes : l'anneau visait le MILIEU du bouton (donc le
+mot « email », le libellé d'un interrupteur fait partie du bouton) → on vise l'icône ; et le
+téléphone posé à 720 comme dans Freemium laissait 250 px de vide sous un titre de deux
+lignes → 560. `SHOOT_BASE=http://localhost:3334` permet de capturer sur un serveur local
+quand la prod n'a pas encore l'écran (le badge « N Issues » du dev est masqué).
+
 ## Le réel et le clip « Changer d'outil » (2026-09-10)
 
 `src/Migration.jsx` porte DEUX compositions sur la même scène : **Migration** (1080×1920,

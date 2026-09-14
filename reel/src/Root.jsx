@@ -11,6 +11,7 @@ import { Fonction, dureeFonction } from './Fonction';
 import { SPLIT, REPONSE_DM, RENTREE } from './formats';
 import { Migration, MigrationClip, DUREE_MIGRATION, DUREE_CLIP_MIGRATION } from './Migration';
 import { Freemium, DUREE_FREEMIUM } from './Freemium';
+import { Avis, DUREE_AVIS } from './Avis';
 import { FPS, H, W } from './theme';
 
 // Trois familles : le réel complet (Instagram / Facebook), pour la landing un
@@ -30,6 +31,7 @@ export const RemotionRoot = () => (
     <Composition id="Rentree" component={Rentree} durationInFrames={RENTREE.duree} fps={FPS} width={W} height={H} />
     <Composition id="Migration" component={Migration} durationInFrames={DUREE_MIGRATION} fps={FPS} width={W} height={H} />
     <Composition id="Freemium" component={Freemium} durationInFrames={DUREE_FREEMIUM} fps={FPS} width={W} height={H} />
+    <Composition id="Avis" component={Avis} durationInFrames={DUREE_AVIS} fps={FPS} width={W} height={H} />
     <Composition id="Clip-migration" component={MigrationClip} durationInFrames={DUREE_CLIP_MIGRATION} fps={FPS} width={LARGEUR_CLIP} height={hauteurClip(1558)} />
     {SCENES.map((scene) => (
       <Composition key={`f-${scene.id}`} id={`Fonction-${scene.id}`} component={Fonction} defaultProps={{ sceneId: scene.id }}

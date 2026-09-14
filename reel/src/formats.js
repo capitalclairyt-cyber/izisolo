@@ -122,3 +122,55 @@ export const FREEMIUM = {
 };
 FREEMIUM.ecransFin = FREEMIUM.ecransDebut + FREEMIUM.parEcran * FREEMIUM.ecrans.length; // 532
 FREEMIUM.duree = FREEMIUM.fin + 100;
+
+// ── Le réel « Avis Google » (2026-09-14, v117) ──────────────────────────────
+// Captures : avis-carte (Paramètres → Ma page → « Mes avis Google » ouverte),
+// avis-espace (l'espace élève, aperçu démo, pleine page) et avis-affiche (la
+// feuille A4 « Un mot sur ton cours ? »), par
+// `node scripts/shoot-reel-visuels.mjs --seulement=avis-carte,avis-espace,avis-affiche`.
+// L'écran du téléphone montre 860 px de composition = ~1317 px de capture :
+// l'espace est DÉFILÉ pour que le bouton « Laisser un avis Google » tombe au
+// tiers bas de l'écran.
+const HAUTEUR_ECRAN_CAPTURE = Math.round(860 / (470 / 720));
+const defilementVers = (nom, y, marge = 900) => Math.max(0, Math.min(manifest[nom].h - HAUTEUR_ECRAN_CAPTURE, y - marge));
+export const AVIS = {
+  // Acte 1 : la couverture. Cinq étoiles qui tombent une à une, puis l'accroche.
+  etoiles: { de: 6, pas: 7 },
+  titre: { apparait: 46, lignes: ['Tes élèves', 't’adorent.'] },
+  contre: { apparait: 78, texte: 'Google ne le sait pas.' },
+  sous: { apparait: 108, texte: 'Nouveau dans IziSolo' },
+  acte1Fin: 170,
+  // Acte 2 : le seul réglage, le champ puis l'interrupteur, cerclés.
+  reglage: {
+    de: 170, eyebrow: 'Un seul réglage', titre: ['Colle ton lien Google.', 'Une fois.'],
+    ecran: dims('avis-carte'), defilement: 0,
+    reperes: [
+      { cible: manifest.reperes.avisLien, delai: 40, fin: 104, carteDy: 60, label: 'Le lien « Demander des avis » de ta fiche' },
+      { cible: manifest.reperes.avisAuto, delai: 110, carteDy: 50, label: 'Et l’email part tout seul' },
+    ],
+  },
+  // Acte 3 : trois portes, 84 images chacune.
+  portesDebut: 360,
+  parPorte: 84,
+  portesEyebrow: 'Ensuite, tout se fait tout seul',
+  portes: [
+    { type: 'ecran', mot: 'Dans leur espace', ecran: dims('avis-espace'), defilement: defilementVers('avis-espace', manifest.reperes.avisBouton[1]), cible: manifest.reperes.avisBouton },
+    // Le VRAI texte de lib/avis-google.js (emailAvis), pas une paraphrase.
+    { type: 'email', mot: 'Par email, après sa 3e séance', email: {
+      de: 'L’Atelier Soleil', quand: 'via IziSolo', heure: '08:12',
+      sujet: 'Un mot sur tes séances chez L’Atelier Soleil ?',
+      lignes: ['Bonjour Léa, tu es venue plusieurs fois maintenant, et ça fait vraiment plaisir.', 'Si tu as une minute, un avis sur Google aide énormément.', 'Tu écris ce que tu veux, ce que tu penses vraiment. Ce message n’est envoyé qu’une seule fois.'],
+    } },
+    { type: 'affiche', mot: 'Et à la sortie du studio', image: dims('avis-affiche') },
+  ],
+  // Acte 4 : les règles de Google, dites sans détour.
+  regles: {
+    de: 620, titre: 'Comme Google le demande.',
+    lignes: ['Une seule fois par élève.', 'Jamais plus de 5 par jour.', 'Jamais rien en échange.'],
+    sous: 'Pas de rafale, pas de cadeau, pas de tri : tes avis restent en ligne.',
+  },
+  fin: 770,
+  finTitre: ['Tes avis Google,', 'sans y penser.'],
+};
+AVIS.portesFin = AVIS.portesDebut + AVIS.parPorte * AVIS.portes.length; // 612
+AVIS.duree = AVIS.fin + 100;

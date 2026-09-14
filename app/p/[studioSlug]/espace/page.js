@@ -535,6 +535,9 @@ export default async function EspacePage({ params, searchParams }) {
   if (isOwner || isDemoRequest) {
     if (isOwner) {
       const demoData = buildDemoData(ownerProfile);
+      // v117 : l'aperçu « comme une élève » montre le bloc d'avis si la prof
+      // a posé son lien (sinon elle ne verrait jamais ce que ses élèves voient).
+      const lienAvisDemo = lienAvis(await chargerAvisGoogle(supabaseAdmin, ownerProfile.id));
       return (
         <EspaceClient
           profile={demoData.profile}
@@ -546,6 +549,7 @@ export default async function EspacePage({ params, searchParams }) {
           abonnements={demoData.abonnements}
           aRegler={demoData.aRegler}
           seancesWorkshopDues={demoData.seancesWorkshopDues || []}
+          lienAvis={lienAvisDemo}
           studioSlug={studioSlug}
           userEmail={user.email}
           isDemo={true}

@@ -18,6 +18,11 @@
  *   cours.jpg        le formulaire Nouveau cours rempli en série (jamais créé), pleine page
  *   eleves.jpg       la liste des élèves (clip « changer d'outil », 2026-09-10) + lignesEleves
  *   fiche.jpg        la fiche d'une élève avec un carnet entamé + repère carnet
+ *   avis-carte.jpg   Paramètres → Ma page → « Mes avis Google » ouverte (réel « Avis », 2026-09-14)
+ *                    + repères avisLien (le champ) et avisAuto (l'interrupteur)
+ *   avis-espace.jpg  l'espace élève (aperçu démo de la prof) pleine page + repère avisBouton
+ *   avis-affiche.jpg l'affichette A4 « Un mot sur ton cours ? » (élément .aff-feuille)
+ *                    ⚠️ prérequis : un lien d'avis posé sur le profil du démo (v117)
  *
  * --seulement=eleves,fiche : ne refait que ces captures et FUSIONNE le manifest
  * existant (les autres coordonnées du réel ne bougent pas).
@@ -74,7 +79,8 @@ try { ({ chromium } = await import('playwright')); } catch { ({ chromium } = awa
 let browser;
 try { browser = await chromium.launch(); } catch { browser = await chromium.launch({ channel: 'msedge' }); }
 
-const HIDE = `[class*="fab" i], [class*="feedback" i] { display: none !important; }`;
+// nextjs-portal = le badge « N Issues » du serveur de DEV, quand on capture en local (SHOOT_BASE).
+const HIDE = `[class*="fab" i], [class*="feedback" i], nextjs-portal { display: none !important; }`;
 const SEULEMENT = process.argv.find((a) => a.startsWith('--seulement='))?.slice('--seulement='.length).split(',').filter(Boolean) || null;
 const veut = (id) => !SEULEMENT || SEULEMENT.includes(id);
 const manifest = SEULEMENT ? JSON.parse(readFileSync(join(OUT, 'manifest.json'), 'utf8')) : {};
@@ -363,6 +369,66 @@ if (veut('fiche')) {
       console.log('   repère carnet : « ' + carnet.texte + ' »');
     }
     await page.close();
+  }
+}
+
+// 12. LES AVIS GOOGLE (réel « Avis », 2026-09-14, v117) : la carte de réglage ouverte,
+//     l'espace élève avec le bouton « Laisser un avis Google » (aperçu démo de la prof :
+//     mêmes données fictives que ce qu'elle voit, le bloc vient du lien posé sur le profil),
+//     et l'affichette A4 « scanne en sortant ». Prérequis : profiles.avis_google posé.
+if (veut('avis-carte') || veut('avis-espace') || veut('avis-affiche')) {
+  const { data: prof } = await admin.from('profiles').select('avis_google').eq('id', PROFILE_ID).single();
+  const lienAvis = prof?.avis_google?.lien;
+  if (!lienAvis) { console.log('❌ aucun lien d\'avis sur le profil du démo (Paramètres → Ma page → Mes avis Google)'); ko++; }
+  else {
+    if (veut('avis-carte')) {
+      const page = await ouvrir(mob, '/parametres/page');
+      await cacherBurger(page);
+      await page.click('[data-carte-reglage="avis"] .carte-reglage-entete');
+      await page.waitForSelector('[data-testid="avis-lien"]', { timeout: 30000 });
+      // La carte en haut de l'écran, avec un peu d'air (le titre de la rubrique reste hors champ).
+      await page.evaluate(() => { const el = document.querySelector('[data-carte-reglage="avis"]'); el.scrollIntoView({ block: 'start' }); window.scrollBy(0, -24); });
+      await page.evaluate(() => document.activeElement?.blur());
+      await page.waitForTimeout(600);
+      const lien = await rect(page, '[data-testid="avis-lien"]');
+      // L'interrupteur est un bouton qui englobe son libellé : le centre tombait
+      // sur le mot « email » (image fixe). On vise l'icône, à gauche.
+      const auto = await rect(page, '[data-testid="avis-auto"] svg');
+      await ecrire('avis-carte', await page.screenshot());
+      if (!lien || !auto) { console.log('❌ repères du champ / de l\'interrupteur introuvables'); ko++; }
+      else {
+        manifest.reperes = manifest.reperes || {};
+        manifest.reperes.avisLien = [Math.round(lien.x * 3 * ECHELLE), Math.round(lien.y * 3 * ECHELLE)];
+        manifest.reperes.avisAuto = [Math.round(auto.x * 3 * ECHELLE), Math.round(auto.y * 3 * ECHELLE)];
+      }
+      await page.close();
+    }
+    if (veut('avis-espace')) {
+      const page = await ouvrir(mob, `/p/${SLUG}/espace?demo=1`);
+      await page.waitForSelector('[data-testid="espace-avis-lien"]', { timeout: 30000 });
+      const bouton = await page.evaluate(() => {
+        const r = document.querySelector('[data-testid="espace-avis-lien"]').getBoundingClientRect();
+        // L'anneau vise l'étoile du bouton (à gauche), pas le milieu du libellé.
+        return { x: r.left + 24, y: r.top + r.height / 2 + window.scrollY };
+      });
+      await ecrire('avis-espace', await page.screenshot({ fullPage: true }));
+      manifest.reperes = manifest.reperes || {};
+      manifest.reperes.avisBouton = [Math.round(bouton.x * 3 * ECHELLE), Math.round(bouton.y * 3 * ECHELLE)];
+      await page.close();
+    }
+    if (veut('avis-affiche')) {
+      // L'affichette est une feuille A4 : un viewport large, et l'élément seul.
+      const bureau = await browser.newContext({ viewport: { width: 900, height: 1300 }, deviceScaleFactor: 2, locale: 'fr-FR' });
+      await bureau.addCookies(cookies.map(c => ({ ...c, url: BASE, sameSite: 'Lax' })));
+      const params = new URLSearchParams({ slug: SLUG, nom: "L'Atelier Soleil", preset: 'avis', lien: lienAvis, couleur: 'cuivre' });
+      const page = await bureau.newPage();
+      await page.goto(`${BASE}/qr-affiche?${params}`, { waitUntil: 'networkidle', timeout: 60000 }).catch(() => {});
+      await page.waitForSelector('.aff-qr', { timeout: 30000 });
+      await page.waitForTimeout(800);
+      await ecrire('avis-affiche', await page.locator('.aff-feuille').screenshot(), { width: 720, quality: 88 });
+      await page.close();
+      await bureau.close();
+    }
   }
 }
 

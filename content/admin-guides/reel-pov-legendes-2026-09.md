@@ -318,3 +318,25 @@ La page, avec ce qu'on reprend, ce qu'on ne reprend pas, et comment ça se passe
 ```
 
 Deux règles pour les réponses : aucun nom d'outil concurrent, même si la personne le cite ; et quand quelqu'un demande « et mes paiements ? », la réponse est celle de la page (ils restent dans l'ancien outil, on ne les recrée pas), jamais un « on verra ».
+
+## 11. « Avis Google » : le réel de la nouvelle fonction (14 septembre)
+
+Fichiers : `reseaux/reel/formats/avis.mp4` (29 s) et la couverture `avis-couverture.jpg` (à choisir comme image de couverture dans Instagram : les cinq étoiles et « Tes élèves t'adorent. Google ne le sait pas. »). Pas de musique dans le fichier, elle s'ajoute dans Instagram.
+
+**Légende Instagram**
+
+```texte
+Tes élèves t'adorent. Google ne le sait pas. ⭐
+
+Nouveau dans IziSolo : tu colles ton lien « Demander des avis » de ta fiche Google, une fois. Ensuite :
+• tes élèves ont un bouton « Laisser un avis Google » dans leur espace
+• le lendemain de sa 3e séance, chaque élève reçoit UN email (une seule fois, jamais plus de cinq par jour)
+• et tu imprimes l'affichette « Un mot sur ton cours ? » pour la sortie du studio
+
+Rien en échange d'un avis, pas de tri entre élèves, pas de rafale : c'est ce que Google demande, et c'est ce qui garde tes avis en ligne.
+
+Commente STUDIO et je t'envoie le lien en message.
+Gratuit, sans carte, pour toujours.
+```
+
+En réponse au commentaire STUDIO, le message habituel (bloc 1). Si une prof demande « et si l'avis est mauvais ? », la réponse honnête : on ne trie pas, on répond à chaque avis, et un studio qui répond bien à un avis moyen inspire plus confiance qu'une fiche à cinq étoiles muette. Jamais « on peut le faire retirer ».
