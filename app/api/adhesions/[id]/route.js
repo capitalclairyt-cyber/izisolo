@@ -15,7 +15,12 @@ export const DELETE = withRoute({ auth: 'active', plan: 'vie_asso', perm: 'argen
   if (a.paiement_id) {
     await supabase.from('paiements').delete().eq('id', a.paiement_id).eq('profile_id', studioId).eq('statut', 'pending');
   }
-  const { error } = await supabase.from('adhesions').delete().eq('id', a.id).eq('profile_id', studioId);
+  // On relit les lignes supprimées : sous RLS, un DELETE sans policy ne lève
+  // aucune erreur et touche zéro ligne (v113 n'en avait pas, v116 l'ajoute).
+  const { data: supprimees, error } = await supabase.from('adhesions').delete().eq('id', a.id).eq('profile_id', studioId).select('id');
   if (error) return Response.json({ error: 'Annulation impossible.', code: 'DELETE_FAILED' }, { status: 500 });
+  if (!supprimees || supprimees.length === 0) {
+    return Response.json({ error: 'Cette mise à jour n\'est pas encore appliquée : l\'adhésion reste en place, rien n\'a été modifié.', code: 'MIGRATION_V116_REQUISE' }, { status: 503 });
+  }
   return Response.json({ ok: true });
 });

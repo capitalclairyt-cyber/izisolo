@@ -344,9 +344,11 @@ try {
     c('« Convoquer » en vrai navigateur', await clicJusquA(pA, '[data-testid="ag-convoquer"]', '[data-testid="ag-convoquee"]'));
     const agDb = await attendre(async () => { const { data } = await svc.from('assemblees').select('*').eq('id', ag.id).maybeSingle(); return data?.convocation_envoyee_at ? data : null; }, 30000, 500);
     c('la convocation est EN BASE : envoyée, 1 convoquée (Maya, pas Nora)', !!agDb && agDb.convoques === 1);
-    const { data: msgs } = await svc.from('messages').select('content, conversation_id').eq('profile_id', as.id).ilike('content', '%Convocation%');
-    const { data: convs } = await svc.from('conversations').select('id, client_id').eq('profile_id', as.id).in('id', (msgs || []).map(m => m.conversation_id));
-    c('… un message de convocation dans la messagerie de Maya (date, lieu, ordre du jour, pouvoir), aucun pour Nora', (msgs || []).length === 1 && convs?.[0]?.client_id === maya.id && msgs[0].content.includes('Salle des fêtes') && msgs[0].content.includes('Rapport moral') && msgs[0].content.includes('pouvoir'), `${(msgs || []).length} message(s)`);
+    // `messages` n'a pas de profile_id (v24) : on part des conversations de l'asso.
+    const { data: convsAsso, error: eConvs } = await svc.from('conversations').select('id, client_id').eq('profile_id', as.id);
+    const { data: msgs, error: eMsgs } = await svc.from('messages').select('content, conversation_id').in('conversation_id', (convsAsso || []).map(cv => cv.id)).ilike('content', '%Convocation%');
+    const convDeMaya = (convsAsso || []).find(cv => cv.id === msgs?.[0]?.conversation_id);
+    c('… un message de convocation dans la messagerie de Maya (date, lieu, ordre du jour, pouvoir), aucun pour Nora', !eConvs && !eMsgs && (msgs || []).length === 1 && convDeMaya?.client_id === maya.id && msgs[0].content.includes('Salle des fêtes') && msgs[0].content.includes('Rapport moral') && msgs[0].content.includes('pouvoir'), `${(msgs || []).length} message(s) ${eConvs?.message || eMsgs?.message || ''}`);
     const rejeuAg = await api(cookieAs, `/api/association/assemblees/${ag.id}`, { method: 'DELETE' });
     c('une AG convoquée ne se supprime pas (409)', rejeuAg.status === 409 && rejeuAg.body?.code === 'CONVOQUEE');
     await aller(pA, `${BASE}/association/ag/${ag.id}/emargement`);
@@ -371,8 +373,10 @@ try {
     await pA.waitForSelector('[data-testid="bureau-membre"]', { timeout: 90000 });
     c('l\'onglet Bureau affiche Théa « Trésorière »', (await pA.$$eval('[data-testid="bureau-fonction"]', els => els.map(e => e.textContent))).includes('Trésorière'));
     await aller(pA, `${BASE}/equipe`);
-    await pA.waitForSelector('[data-testid="eq-badge-fonction"], [data-testid="eq-fonction"]', { timeout: 90000 }).catch(() => {});
-    c('/equipe : le sélecteur de fonction est proposé à l\'invitation, le badge sur la ligne', !!(await pA.$('[data-testid="eq-fonction"]')) && !!(await pA.$('[data-testid="eq-badge-fonction"]')));
+    await pA.waitForSelector('[data-testid="eq-badge-fonction"]', { timeout: 90000 }).catch(() => {});
+    // Le formulaire d'invitation est replié : on l'ouvre comme la prof.
+    const formOuvert = await clicJusquA(pA, '[data-testid="eq-inviter"]', '[data-testid="eq-fonction"]');
+    c('/equipe : le sélecteur de fonction est proposé à l\'invitation, le badge sur la ligne', formOuvert && !!(await pA.$('[data-testid="eq-badge-fonction"]')), `formulaire ouvert : ${formOuvert}`);
     await aller(pS, `${BASE}/equipe`);
     await pS.waitForSelector('h1', { timeout: 90000 }).catch(() => {});
     await dormir(1000);
@@ -384,7 +388,12 @@ try {
     // L'annulation d'une adhésion.
     const annul = await api(cookieAs, `/api/adhesions/${adhDb.id}`, { method: 'DELETE' });
     const { data: paieApres } = await svc.from('paiements').select('id').eq('id', adhDb.paiement_id).maybeSingle();
-    c('annuler l\'adhésion retire la ligne, garde le paiement ENCAISSÉ (l\'argent reçu est reçu)', annul.status === 200 && !!paieApres && (await svc.from('adhesions').select('id').eq('id', adhDb.id)).data.length === 0);
+    const adhRestantes = (await svc.from('adhesions').select('id').eq('id', adhDb.id)).data?.length;
+    if (annul.status === 503 && annul.body?.code === 'MIGRATION_V116_REQUISE') {
+      c('sans v116 (policy DELETE), annuler répond 503 honnête et l\'adhésion RESTE en place (rien ne ment)', adhRestantes === 1 && !!paieApres, `${annul.status} ${annul.body?.code}, ${adhRestantes} ligne(s)`);
+    } else {
+      c('annuler l\'adhésion retire la ligne, garde le paiement ENCAISSÉ (l\'argent reçu est reçu)', annul.status === 200 && !!paieApres && adhRestantes === 0, `${annul.status} ${annul.body?.code || ''}, ${adhRestantes} ligne(s) restante(s)`);
+    }
   }
 
   // Centre d'aide, dans le même lot.

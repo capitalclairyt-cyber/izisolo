@@ -81,17 +81,19 @@ export const GET = withRoute({ auth: 'user', plan: 'analyse_compta', perm: 'arge
   // Les séances passées de l'exercice, avec leurs présences (v103 pour
   // l'intervenante : sans la colonne, on relit sans elle).
   let seances = [];
-  const colonnes = 'id, nom, date, heure, duree_minutes, type_cours, lieu_id, est_annule, presences(id, statut_pointage, pointee, annulation_tardive, abonnement_id)';
+  // Deux listes écrites en toutes lettres (jamais composées par template : le
+  // vérificateur de selects les rejoue contre la prod, cf. piège v105).
+  const COLONNES_SANS = 'id, nom, date, heure, duree_minutes, type_cours, lieu_id, est_annule, presences(id, statut_pointage, pointee, annulation_tardive, abonnement_id)';
   for (let page = 0; page < 10; page++) {
     let { data: lot, error } = await supabase
       .from('cours')
-      .select(`${colonnes}, intervenant_id`)
+      .select('id, nom, date, heure, duree_minutes, type_cours, lieu_id, est_annule, intervenant_id, presences(id, statut_pointage, pointee, annulation_tardive, abonnement_id)')
       .eq('profile_id', studioId)
       .gte('date', exercice.from).lte('date', fin)
       .order('date', { ascending: true })
       .range(page * 1000, page * 1000 + 999);
     if (error && ABSENT.includes(error.code)) {
-      ({ data: lot, error } = await supabase.from('cours').select(colonnes).eq('profile_id', studioId).gte('date', exercice.from).lte('date', fin).order('date', { ascending: true }).range(page * 1000, page * 1000 + 999));
+      ({ data: lot, error } = await supabase.from('cours').select(COLONNES_SANS).eq('profile_id', studioId).gte('date', exercice.from).lte('date', fin).order('date', { ascending: true }).range(page * 1000, page * 1000 + 999));
     }
     if (error) { reportError('[compta/analyse] cours', error, { route: '/api/compta/analyse' }); return Response.json({ error: 'Analyse impossible' }, { status: 500 }); }
     seances.push(...(lot || []).filter(c => !c.est_annule));

@@ -51,6 +51,15 @@ const aller = async (page, url) => {
   catch (e) { if (!/ERR_ABORTED/.test(String(e))) throw e; await dormir(1500); await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 120000 }); }
 };
 const texte = async (page) => page.evaluate(() => document.body.innerText);
+// Un bouton rendu côté serveur n'a pas encore son handler au premier clic
+// (piège v100) : on re-clique jusqu'à ce que le témoin d'ouverture soit là.
+const clicJusquA = async (page, sel, temoin, essais = 8) => {
+  for (let i = 0; i < essais; i++) {
+    await page.click(sel).catch(() => {});
+    if (await page.waitForSelector(temoin, { timeout: 2500 }).then(() => true).catch(() => false)) return true;
+  }
+  return false;
+};
 
 // ── Sondes : une vraie lecture, jamais un head/count ────────────────────────
 const V112 = !(await svc.from('depenses').select('id').limit(1)).error && !(await svc.from('studio_membres').select('id, remuneration').limit(1)).error;
@@ -279,8 +288,7 @@ try {
     c('la structure voit « Facturée » et le numéro', !!(await pS.$('[data-testid="prestation-ligne"][data-statut="facturee"]')) && (await texte(pS)).includes(factDb?.numero_affiche || '§'));
 
     console.log('\n══════ B3. La structure règle : l\'argent arrive chez Léa ══════');
-    await pS.click('[data-testid="prestation-regler"]');
-    await pS.waitForSelector('[data-testid="prestation-confirmer-reglement"]', { timeout: 15000 });
+    c('« Réglée » ouvre la confirmation en vrai navigateur', await clicJusquA(pS, '[data-testid="prestation-regler"]', '[data-testid="prestation-confirmer-reglement"]'));
     await pS.click('[data-testid="prestation-confirmer-reglement"]');
     const prestR = await attendre(async () => { const { data } = await svc.from('prestations').select('statut, paiement_id, reglee_at').eq('id', prestDb.id).maybeSingle(); return data?.statut === 'reglee' ? data : null; }, 30000, 500);
     c('la prestation est « reglee » EN BASE avec son paiement', !!prestR && !!prestR.paiement_id);

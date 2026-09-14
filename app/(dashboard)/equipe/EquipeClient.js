@@ -146,7 +146,7 @@ export default function EquipeClient({ membresInit, planOk, indisponible, studio
             <span className="eq-compte">
               {actifs.length} personne{actifs.length > 1 ? 's' : ''}
             </span>
-            <button type="button" className="izi-btn btn-sm izi-btn-primary" onClick={() => setOuvert(o => !o)}>
+            <button type="button" className="izi-btn btn-sm izi-btn-primary" onClick={() => setOuvert(o => !o)} data-testid="eq-inviter">
               <UserPlus size={16} /> Inviter une prof
             </button>
           </div>
