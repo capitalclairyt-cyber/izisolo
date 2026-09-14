@@ -25,9 +25,11 @@ maj: "2026-09-14"
 ## 0. L'ordre de publication
 
 1. **LinkedIn** (bloc 1 + son premier commentaire, bloc 2), un mardi ou un jeudi matin.
-2. **Instagram** le lendemain : le réel POV « tableur » qui existe déjà
-   (`reseaux/reel/pov/tableur.mp4`) avec la légende du bloc 3. Le réel montre
-   exactement le cahier et le tableur, il n'y a rien à retourner.
+2. **Instagram** le lendemain : le réel **Freemium** (`reseaux/reel/formats/freemium.mp4`,
+   26 s : le cahier et l'Excel du dimanche soir, « 0 € pour toujours », six vrais écrans
+   de ce qui est gratuit, la frontière dite sans détour, « Commente STUDIO ») avec la
+   légende du bloc 3. Rien à tourner, tout vient du démo. Le réel POV « tableur » reste
+   une seconde publication possible la semaine suivante, même légende raccourcie.
 3. **Story** en trois écrans (bloc 4) le jour même, avec le sticker lien vers
    `izisolo.fr`. La story est le seul endroit où le lien peut être cliqué en un geste.
 4. **Groupes Facebook** (bloc 5) le surlendemain, un groupe par jour, jamais le même

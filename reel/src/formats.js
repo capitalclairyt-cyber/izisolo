@@ -78,3 +78,47 @@ export const RENTREE = {
   fin: 430,
   duree: 530,
 };
+
+// ── Le freemium (2026-09-14, demande Colin : « une jolie vidéo pour attirer pour
+// le freemium ») : le cahier et le tableur du dimanche soir, puis « 0 €, pour
+// toujours », puis six écrans RÉELS de ce qui est gratuit (un mot chacun, avec
+// la pastille « 0 € » qui ne quitte pas le téléphone), puis la frontière dite
+// sans détour (« le seul truc payant, c'est quand tes élèves réservent et paient
+// elles-mêmes »), puis la carte de fin commune. Même écriture que les POV :
+// tutoiement, prénoms d'exemple, aucun chiffre non mesuré, aucun concurrent, et
+// rien que le produit ne fasse pas (chaque écran est une capture du démo).
+export const FREEMIUM = {
+  pov: 'POV : c’est dimanche soir',
+  titre: ['Ton cahier.', 'Ton Excel.'],
+  notes: [
+    { texte: 'Julie, il lui reste 3 ou 4 séances ?', apparait: 50 },
+    { texte: 'Marc a payé en espèces ?', apparait: 82 },
+  ],
+  pivot: { texte: 'Ils peuvent prendre leur retraite.', apparait: 116 },
+  // Le « 0 € » : tout s'efface, le chiffre arrive, puis les deux lignes.
+  zero: { de: 170, chiffre: 184, lignes: 204, sous: 232, fin: 268 },
+  zeroLignes: ['IziSolo est gratuit.', 'Pour toujours.'],
+  zeroSous: 'Sans carte. Sans date de fin. Sans limite d’élèves.',
+  // Six écrans, un mot chacun (1,4 s), la pastille « 0 € » accrochée au téléphone.
+  ecransDebut: 280,
+  parEcran: 42,
+  ecrans: [
+    { mot: 'Tes élèves', ...dims('eleves'), defilement: 0, cible: [360, 964] },
+    { mot: 'Ton agenda', ...dims('agenda'), defilement: 0, cible: [300, 678] },
+    { mot: 'Le pointage', ...dims('pointage'), defilement: 0, cible: [371, 788] },
+    { mot: 'Les carnets', ...dims('fiche'), defilement: manifest.fiche.h - 1558, cible: manifest.reperes.carnet },
+    { mot: 'Les encaissements', ...dims('vente-moyens'), defilement: 250, cible: [560, 1156] },
+    { mot: 'L’URSSAF', ...dims('revenus'), defilement: 0, cible: [330, 903] },
+  ],
+  // La frontière : ce qui est payant, dit avec l'écran qui le montre (la
+  // réservation par l'élève sur le portail public).
+  frontiere: {
+    de: 540, titre: 'Le seul truc payant ?', texte: 'Quand tes élèves réservent et paient elles-mêmes en ligne.',
+    sous: ['30 jours de Complet pour voir,', 'puis tu choisis. Rien ne se bloque.'],
+    ecran: { ...dims('portail'), defilement: 3000, cible: [488, 3440] },
+  },
+  fin: 690,
+  finTitre: ['Gratuit, sans carte,', 'pour toujours.'],
+};
+FREEMIUM.ecransFin = FREEMIUM.ecransDebut + FREEMIUM.parEcran * FREEMIUM.ecrans.length; // 532
+FREEMIUM.duree = FREEMIUM.fin + 100;

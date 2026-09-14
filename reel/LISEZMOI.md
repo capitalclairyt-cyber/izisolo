@@ -127,6 +127,28 @@ des revenus) : la première position d'un anneau se vérifie toujours sur une im
 dans le code.
 
 
+## Le réel « Freemium » (2026-09-14)
+
+`src/Freemium.jsx` + le bloc `FREEMIUM` de `src/formats.js` (1080×1920, 26,3 s,
+composition **Freemium**, `npm run formats freemium` → `../../reseaux/reel/formats/freemium.mp4`).
+Demande Colin : « une jolie vidéo pour attirer pour le freemium ». Quatre actes, dans
+l'écriture des POV : (1) « POV : c'est dimanche soir. Ton cahier. Ton Excel. », deux notes
+griffonnées (Julie, Marc, prénoms d'exemple), puis « Ils peuvent prendre leur retraite. » ;
+(2) tout s'efface, un **« 0 € »** sauge plein écran, « IziSolo est gratuit. Pour toujours. »,
+« Sans carte. Sans date de fin. Sans limite d'élèves. » ; le chiffre file vers le haut et
+devient la pastille accrochée au téléphone ; (3) **six écrans RÉELS** du démo, un mot chacun
+(élèves, agenda, pointage, carnets, encaissements, URSSAF), 1,4 s chacun, l'anneau sur le
+point visé, la pastille « 0 € » qui ne quitte pas le téléphone ; (4) la frontière dite sans
+détour, « Le seul truc payant ? Quand tes élèves réservent et paient elles-mêmes en ligne.
+30 jours de Complet pour voir, puis tu choisis. Rien ne se bloque. », avec le portail public
+et ses « Places disponibles » ; puis la carte de fin commune, titrée « Gratuit, sans carte,
+pour toujours. ». La deuxième ligne de la carte de fin (et des POV) passe de « 30 jours
+gratuits, sans carte » à « Gratuit, sans carte, pour toujours » : l'ancienne sous-vendait,
+et refabriquait la surprise de la fin d'essai. ⚠️ Attrapé sur les images fixes, pas dans le
+code : le « 0 € » qui part laissait un fantôme à 0,2 % d'opacité au-dessus du téléphone ;
+un acte qui a fini de sortir ne rend plus rien. Légendes et ordre de publication : guide
+admin `freemium-lancement-2026-09.md`.
+
 ## Le réel et le clip « Changer d'outil » (2026-09-10)
 
 `src/Migration.jsx` porte DEUX compositions sur la même scène : **Migration** (1080×1920,

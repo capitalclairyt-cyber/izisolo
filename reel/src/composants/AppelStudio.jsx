@@ -46,7 +46,9 @@ export const AppelStudio = ({ depuis = 0, titre = ['Tu veux voir', 'sur tes vrai
           </div>
           <div style={{ ...monte(36), marginTop: 30, fontFamily: FONT_BODY, fontWeight: 400, fontSize: 32, lineHeight: 1.4, color: P.inkSoft }}>
             <div>et je t’envoie le lien en message.</div>
-            <div>30 jours gratuits, sans carte.</div>
+            {/* Freemium (2026-09-13) : « 30 jours gratuits » sous-vendait, et
+                refabriquait la surprise de la fin de l'essai. */}
+            <div>Gratuit, sans carte, pour toujours.</div>
           </div>
           <div style={{ marginTop: 6 }}><FlecheBas progression={fleche} /></div>
         </div>

@@ -75,7 +75,7 @@ export const VARIANTES = [
 
 export const CTA = {
   pill: 'Commente STUDIO',
-  sous: ['et je t’envoie le lien en message.', '30 jours gratuits, sans carte.'],
+  sous: ['et je t’envoie le lien en message.', 'Gratuit, sans carte, pour toujours.'],
 };
 
 // Chronologie commune (images à 30 i/s) : le POV, la situation, les trois

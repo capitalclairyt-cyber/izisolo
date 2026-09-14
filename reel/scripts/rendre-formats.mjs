@@ -16,7 +16,7 @@ const OUT = join(ROOT, '..', '..', 'reseaux', 'reel', 'formats');
 mkdirSync(OUT, { recursive: true });
 
 const SCENES = ['navigation', 'cours', 'offre', 'portail', 'pointage', 'vente', 'revenus', 'messagerie'];
-const COMPOSITIONS = { split: 'Split', 'reponse-dm': 'ReponseDM', rentree: 'Rentree', migration: 'Migration', ...Object.fromEntries(SCENES.map((s) => [`fonction-${s}`, `Fonction-${s}`])) };
+const COMPOSITIONS = { split: 'Split', 'reponse-dm': 'ReponseDM', rentree: 'Rentree', migration: 'Migration', freemium: 'Freemium', ...Object.fromEntries(SCENES.map((s) => [`fonction-${s}`, `Fonction-${s}`])) };
 
 const ids = process.argv.slice(2).length ? process.argv.slice(2) : Object.keys(COMPOSITIONS);
 const inconnus = ids.filter((id) => !COMPOSITIONS[id]);
