@@ -401,4 +401,12 @@ export const FAQ_SUPPORT = [
     a: "Non, un seul : la même adresse email ouvre l'espace de chaque studio. Dès qu'elle est inscrite dans deux studios, son espace lui propose « Mes studios » (izisolo.fr/mes-studios) : tous ses studios, ses prochaines séances toutes structures confondues, une entrée vers chaque espace. Ses carnets, ses paiements et ses messages restent propres à chaque studio : tu ne vois jamais ce qu'elle fait ailleurs.",
     lien: { href: '/aide#eleves', label: 'Voir le pas-à-pas' },
   },
+  {
+    // Encaisser après coup en plusieurs moyens (2026-09-14, retour Maude :
+    // l'abonnement de Marie-Pierre vendu « à régler plus tard », réglé en
+    // deux chèques le mois suivant). AJOUTÉE EN FIN.
+    q: "J'ai vendu un abonnement « à régler plus tard » et l'élève me règle en deux chèques : comment je l'enregistre ?",
+    a: "Sur sa fiche (onglet Paiements) ou dans Revenus → « À percevoir », clique « Encaisser » sur la ligne en attente, puis « Plusieurs moyens ou plusieurs chèques ». Tu saisis chaque chèque avec son montant, son numéro et sa date d'encaissement (ou espèces + CB, jusqu'à quatre moyens) : chaque moyen fait sa propre ligne dans ta compta et le total doit tomber juste, sinon rien n'est enregistré. La vente reste la même, rien à supprimer ni à recréer. « Encaisser un versement » sur la carte de l'abonnement sert à un règlement qui arrive EN PLUS de ce qui était prévu : si une ligne attend déjà, la modale te propose de l'encaisser à la place, pour ne pas compter l'argent deux fois.",
+    lien: { href: '/aide#encaisser', label: 'Voir le pas-à-pas' },
+  },
 ];

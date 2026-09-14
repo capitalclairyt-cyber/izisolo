@@ -256,18 +256,22 @@ try {
   const premierPending = pend[0];
   await page.reload({ waitUntil: 'domcontentloaded', timeout: 120000 });
   await page.waitForSelector('button.tab-btn:has-text("Paiements")', { timeout: 90000 });
-  await page.locator('button.tab-btn:has-text("Paiements")').click();
-  await page.waitForSelector('.paiement-fiche-item:has-text("versement mensuel")', { timeout: 30000 });
+  // Le clic sur l'onglet peut partir avant l'hydratation (piège v100) : on
+  // re-clique jusqu'à ce que la liste soit là.
+  const ongletOk = await clicJusquA(page.locator('button.tab-btn:has-text("Paiements")'), async () => (await page.locator('.paiement-fiche-item:has-text("versement mensuel")').count()) > 0, 60000);
+  if (!ongletOk) throw new Error('onglet Paiements sans liste: ' + derniereErreurClic);
   // Les lignes sont triées par date décroissante : parmi les versements
   // encaissables, celui de CE mois est le dernier.
   const ligne = page.locator('.paiement-fiche-item').filter({ hasText: 'versement mensuel' }).filter({ has: page.locator('button.encaisser-btn-fiche') }).last();
   const btnEnc = ligne.locator('button.encaisser-btn-fiche');
-  const modaleEnc = await clicJusquA(btnEnc, async () => (await page.locator('.modal-sheet .mode-btn').count()) > 0);
+  // Depuis le 2026-09-14 la modale « Encaisser » est le formulaire partagé
+  // components/paiements/EncaisserForm (classes ef-*), sans mode présélectionné.
+  const modaleEnc = await clicJusquA(btnEnc, async () => (await page.locator('.modal-sheet .ef-mode').count()) > 0);
   if (!modaleEnc) throw new Error('modale Encaisser fermée: ' + derniereErreurClic);
-  await page.locator('.modal-sheet .mode-btn', { hasText: 'Espèces' }).click();
+  await page.locator('.modal-sheet .ef-mode', { hasText: 'Espèces' }).click();
   const [repEnc] = await Promise.all([
-    page.waitForResponse(r => /\/api\/paiements\/[^/]+\/encaisser/.test(r.url()), { timeout: 45000 }),
-    page.locator('.modal-sheet button.confirm-btn', { hasText: 'Encaisser' }).click(),
+    page.waitForResponse(r => r.request().method() === 'POST' && /\/api\/paiements\/[^/]+\/encaisser/.test(r.url()), { timeout: 45000 }),
+    page.locator('.modal-sheet button.ef-confirm').click(),
   ]);
   c('la route encaisser répond 200', repEnc.status() === 200, `status ${repEnc.status()}`);
   const idEncaisse = repEnc.url().match(/paiements\/([^/]+)\/encaisser/)?.[1];

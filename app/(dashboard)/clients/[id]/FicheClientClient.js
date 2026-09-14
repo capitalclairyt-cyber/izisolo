@@ -28,6 +28,7 @@ import { createClient } from '@/lib/supabase';
 import { calcProRata as calcProRataLib } from '@/lib/prorata';
 import { useToast } from '@/components/ui/ToastProvider';
 import PaiementStep from '@/components/paiements/PaiementStep';
+import EncaisserForm from '@/components/paiements/EncaisserForm';
 import AdhesionFiche from '@/components/association/AdhesionFiche';
 import { AdresseDisplay } from '@/components/forms/AdresseInput';
 import { useStudioId } from '@/components/studio/StudioProvider';
@@ -409,11 +410,9 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
   // (téléchargement) ou une annulation, router.refresh() recharge la map.
   const factures = facturesParPaiement;
   const refreshFactures = () => setTimeout(() => router.refresh(), 1800);
+  // Modale « Encaisser » : le corps vit dans components/paiements/EncaisserForm
+  // (partagé avec Revenus) — un seul moyen, ou plusieurs (2026-09-14).
   const [encaisserModal, setEncaisserModal] = useState(null);
-  const [encaisserMode, setEncaisserMode] = useState('especes');
-  const [encaisserNotes, setEncaisserNotes] = useState('');
-  const [encaisserCheque, setEncaisserCheque] = useState('');
-  const [encaisserLoading, setEncaisserLoading] = useState(false);
 
   const [editPayModal, setEditPayModal] = useState(null);
   const [editPayForm, setEditPayForm] = useState({});
@@ -599,36 +598,24 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
   // facturés (pour 1 seul, le bouton de la ligne fait le même document).
   const moisChips = facturationActive ? moisFacturables(paiements, factures) : [];
 
-  const openEncaisser = (paiement) => {
-    setEncaisserModal(paiement);
-    setEncaisserMode(paiement.mode || 'especes');
-    setEncaisserNotes('');
-  };
+  const openEncaisser = (paiement) => setEncaisserModal(paiement);
 
-  const submitEncaisser = async () => {
-    if (!encaisserModal) return;
-    setEncaisserLoading(true);
-    try {
-      const res = await fetch(`/api/paiements/${encaisserModal.id}/encaisser`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mode: encaisserMode, ...(encaisserNotes.trim() ? { notes: encaisserNotes.trim() } : {}), ...(encaisserCheque.trim() ? { numero_cheque: encaisserCheque.trim() } : {}) }),
+  // Les lignes rendues par la route : la ligne d'origine (même id) devient la
+  // part n°1, les sœurs sont neuves. On remplace l'une et on ajoute les autres.
+  const onEncaisse = (lignes) => {
+    setPaiements(prev => {
+      const ids = new Set(prev.map(p => p.id));
+      const origine = prev.find(p => p.id === encaisserModal?.id);
+      const remplacees = prev.map(p => {
+        const l = lignes.find(x => x.id === p.id);
+        return l ? { ...p, ...l } : p;
       });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Erreur');
-      const today = new Date().toISOString().slice(0, 10);
-      setPaiements(prev => prev.map(p =>
-        p.id === encaisserModal.id ? { ...p, statut: 'paid', mode: encaisserMode, date_encaissement: today } : p
-      ));
-      toast.success('Paiement encaissé !');
-      setEncaisserModal(null);
-      if (clientStatut === 'prospect') {
-        changeStatut('actif');
-      }
-    } catch (e) {
-      toast.error(e.message);
-    } finally {
-      setEncaisserLoading(false);
+      const neuves = lignes.filter(l => !ids.has(l.id)).map(l => ({ ...l, abonnement: origine?.abonnement }));
+      return [...neuves, ...remplacees];
+    });
+    setEncaisserModal(null);
+    if (clientStatut === 'prospect') {
+      changeStatut('actif');
     }
   };
 
@@ -785,9 +772,15 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
     }
   };
 
+  // Un versement sur un abo (2026-09-14, cas Marie-Pierre) : « déjà reçu »
+  // écrit une ligne RÉGLÉE (mode déclaré, date d'encaissement), « à venir »
+  // une ligne en attente (l'ancien comportement). Avant, le bouton s'appelait
+  // « Encaisser un versement » et n'encaissait rien : la ligne naissait en
+  // attente, et la prof se retrouvait avec 480 € + 240 € à percevoir.
   const [versementModal, setVersementModal] = useState(null);
+  const [versementRecu, setVersementRecu] = useState(true);
   const [versementMontant, setVersementMontant] = useState('');
-  const [versementMode, setVersementMode] = useState('especes');
+  const [versementMode, setVersementMode] = useState('');
   const [versementCheque, setVersementCheque] = useState('');
   const [versementDate, setVersementDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [versementSubmitting, setVersementSubmitting] = useState(false);
@@ -935,13 +928,29 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
     }
   };
 
+  const ouvrirVersement = (abo, recu) => {
+    setAboDetail(null);
+    setVersementModal(abo);
+    setVersementRecu(recu);
+    setVersementMontant('');
+    setVersementMode('');
+    setVersementCheque('');
+    setVersementDate(new Date().toISOString().split('T')[0]);
+  };
+
+  // Les lignes encore dues sur cet abo : si la prof encaisse un versement
+  // alors que 480 € attendent déjà, c'est presque toujours CETTE ligne qu'il
+  // faut encaisser (en un ou plusieurs moyens), sinon l'argent compte deux fois.
+  const enAttenteSurAbo = (abo) => (abo ? paiements.filter(p => p.abonnement_id === abo.id && (p.statut === 'pending' || p.statut === 'overdue')) : []);
+
   const ajouterVersement = async () => {
     if (!versementModal || !versementMontant) return;
+    if (versementRecu && !versementMode) { toast.error('Déclare comment l\'argent est arrivé : espèces, chèque, virement ou CB.'); return; }
     setVersementSubmitting(true);
     try {
       const supabase = createClient();
       const existingEch = paiements.find(p => p.abonnement_id === versementModal.id && p.echeancier_id);
-      const { error: payErr } = await supabase.from('paiements').insert({
+      const { data: cree, error: payErr } = await supabase.from('paiements').insert({
         profile_id: studioId,
         client_id: client.id,
         offre_id: versementModal.offre_id || null,
@@ -950,12 +959,18 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
         intitule: `${versementModal.offre_nom} (versement)`,
         type: versementModal.type,
         montant: parseFloat(versementMontant),
-        statut: 'pending',
-        mode: versementMode,
+        statut: versementRecu ? 'paid' : 'pending',
+        mode: versementRecu ? versementMode : (versementMode || null),
         date: versementDate,
-        ...(versementCheque.trim() ? { numero_cheque: versementCheque.trim() } : {}),
-      });
+        date_encaissement: versementRecu ? versementDate : null,
+        ...(versementMode === 'cheque' && versementCheque.trim() ? { numero_cheque: versementCheque.trim() } : {}),
+      }).select('id').single();
       if (payErr) throw payErr;
+      // Un versement reçu = un encaissement : la facture automatique (v106)
+      // suit, comme pour « Encaisser ». Fire-and-forget, jamais bloquant.
+      if (versementRecu && cree?.id) {
+        fetch('/api/factures/auto', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ paiementIds: [cree.id] }) }).catch(() => {});
+      }
       const { data: pays } = await supabase
         .from('paiements')
         .select('*')
@@ -963,7 +978,8 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
         .order('date', { ascending: false });
       setPaiements(pays || []);
       setVersementModal(null);
-      toast.success('Versement ajouté');
+      toast.success(versementRecu ? 'Versement encaissé' : 'Versement à venir ajouté');
+      if (versementRecu && clientStatut === 'prospect') changeStatut('actif');
     } catch (e) {
       toast.error(e.message);
     } finally {
@@ -1394,15 +1410,10 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
                   {abo.statut === 'actif' && !fullyPaid && (
                     <button
                       className="abo-add-versement"
-                      onClick={() => {
-                        setVersementModal(abo);
-                        setVersementMontant('');
-                        setVersementMode('especes');
-                        setVersementDate(new Date().toISOString().split('T')[0]);
-                      }}
+                      onClick={() => ouvrirVersement(abo, true)}
                       type="button"
                     >
-                      <PlusCircle size={14} /> Ajouter un versement
+                      <PlusCircle size={14} /> Encaisser un versement
                     </button>
                   )}
                 </div>
@@ -1724,12 +1735,15 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
       )}
 
       {/* Modal ajouter versement */}
-      {versementModal && (
+      {versementModal && (() => {
+        const dues = enAttenteSurAbo(versementModal);
+        const totalDu = dues.reduce((t, p) => t + (parseFloat(p.montant) || 0), 0);
+        return (
         <div className="modal-backdrop" onClick={e => { if (e.target === e.currentTarget) setVersementModal(null); }}>
           <div className="modal-sheet versement-sheet animate-slide-up" role="dialog" aria-modal="true">
             <div className="modal-header">
               <div style={{ width: 36 }} />
-              <span className="modal-title">Ajouter un versement</span>
+              <span className="modal-title">{versementRecu ? 'Encaisser un versement' : 'Ajouter un versement à venir'}</span>
               <button className="modal-close" onClick={() => setVersementModal(null)} type="button" aria-label="Fermer"><X size={20} /></button>
             </div>
             <div className="modal-body">
@@ -1738,20 +1752,41 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
                 <span className="paiement-recap-client">pour {displayName}</span>
               </div>
 
-              <div className="paiement-section-label">Mode de règlement</div>
+              <div className="versement-switch" role="tablist" aria-label="Ce versement">
+                <button type="button" role="tab" aria-selected={versementRecu} className={`versement-switch-btn ${versementRecu ? 'active' : ''}`} onClick={() => setVersementRecu(true)}>Déjà reçu</button>
+                <button type="button" role="tab" aria-selected={!versementRecu} className={`versement-switch-btn ${!versementRecu ? 'active' : ''}`} onClick={() => setVersementRecu(false)}>À régler plus tard</button>
+              </div>
+
+              {versementRecu && dues.length > 0 && (
+                <div className="versement-du" role="note">
+                  <strong>{formatMontant(totalDu)} attendent déjà sur cet abonnement</strong> ({dues.length === 1 ? 'une ligne « à encaisser »' : `${dues.length} lignes « à encaisser »`}).
+                  Si ce versement en fait partie, encaisse plutôt cette ligne, en un seul moyen ou en plusieurs (deux chèques, espèces + CB) : sinon l&apos;argent serait compté deux fois.
+                  <div className="versement-du-actions">
+                    {dues.slice(0, 3).map(p => (
+                      <button key={p.id} type="button" className="izi-btn izi-btn-secondary" onClick={() => { setVersementModal(null); openEncaisser(p); }}>
+                        <CheckCircle2 size={14} /> Encaisser {formatMontant(p.montant)}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="paiement-section-label">Mode de règlement{!versementRecu && <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}> (si tu le sais déjà)</span>}</div>
               <div className="mode-grid">
                 {MODES_PAIEMENT.map(({ value, label, Icon }) => (
                   <button
                     key={value}
                     type="button"
                     className={`mode-btn ${versementMode === value ? 'active' : ''}`}
-                    onClick={() => setVersementMode(value)}
+                    onClick={() => setVersementMode(v => (v === value && !versementRecu ? '' : value))}
+                    aria-pressed={versementMode === value}
                   >
                     <Icon size={18} />
                     <span>{label}</span>
                   </button>
                 ))}
               </div>
+              {versementRecu && !versementMode && <p className="versement-hint">Choisis comment l&apos;argent est arrivé : IziSolo ne le devine jamais.</p>}
 
               {versementMode === 'cheque' && (
                 <>
@@ -1773,7 +1808,7 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
                 <span className="montant-currency">€</span>
               </div>
 
-              <div className="paiement-section-label">Date d'échéance</div>
+              <div className="paiement-section-label">{versementRecu ? "Date d'encaissement" : "Date d'échéance"}</div>
               <input
                 className="izi-input"
                 type="date"
@@ -1785,14 +1820,15 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
                 type="button"
                 className="izi-btn izi-btn-primary confirm-btn"
                 onClick={ajouterVersement}
-                disabled={versementSubmitting || !versementMontant}
+                disabled={versementSubmitting || !versementMontant || (versementRecu && !versementMode)}
               >
-                {versementSubmitting ? <><Loader2 size={16} className="spin" /> Enregistrement...</> : <>✓ Ajouter le versement</>}
+                {versementSubmitting ? <><Loader2 size={16} className="spin" /> Enregistrement...</> : (versementRecu ? <>✓ Encaisser ce versement</> : <>✓ Ajouter le versement à venir</>)}
               </button>
             </div>
           </div>
         </div>
-      )}
+        );
+      })()}
 
       {/* Modal « Programmer un versement chaque mois » (2026-09-07) */}
       {mensuelModal && (() => {
@@ -1951,7 +1987,7 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
                       solde à zéro, un abo au mois vendu en un paiement ne pouvait
                       plus JAMAIS recevoir le versement du mois suivant. */}
                   {abo.statut === 'actif' && !estAboPreleve(abo) && (
-                    <button type="button" className="izi-btn izi-btn-secondary" onClick={() => { setAboDetail(null); setVersementModal(abo); setVersementMontant(''); setVersementMode('especes'); setVersementDate(new Date().toISOString().split('T')[0]); }}>
+                    <button type="button" className="izi-btn izi-btn-secondary" onClick={() => ouvrirVersement(abo, true)}>
                       <Banknote size={15} /> Encaisser un versement
                     </button>
                   )}
@@ -2165,7 +2201,7 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
         </div>
       )}
 
-      {/* Modal encaisser un paiement */}
+      {/* Modal encaisser un paiement — un seul moyen ou plusieurs (2026-09-14) */}
       {encaisserModal && (
         <div className="modal-backdrop" onClick={e => { if (e.target === e.currentTarget) setEncaisserModal(null); }}>
           <div className="modal-sheet versement-sheet animate-slide-up" role="dialog" aria-modal="true">
@@ -2175,50 +2211,7 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
               <button className="modal-close" onClick={() => setEncaisserModal(null)} type="button" aria-label="Fermer"><X size={20} /></button>
             </div>
             <div className="modal-body">
-              <div className="paiement-recap">
-                <span className="paiement-recap-nom">{encaisserModal.intitule || 'Paiement'}</span>
-                <span className="paiement-recap-client">{formatMontant(encaisserModal.montant)} · pour {displayName}</span>
-              </div>
-
-              <div className="paiement-section-label">Mode de règlement</div>
-              <div className="mode-grid">
-                {MODES_PAIEMENT.map(({ value, label, Icon }) => (
-                  <button
-                    key={value}
-                    type="button"
-                    className={`mode-btn ${encaisserMode === value ? 'active' : ''}`}
-                    onClick={() => setEncaisserMode(value)}
-                  >
-                    <Icon size={18} />
-                    <span>{label}</span>
-                  </button>
-                ))}
-              </div>
-
-              {encaisserMode === 'cheque' && (
-                <>
-                  <div className="paiement-section-label">N° de chèque</div>
-                  <input className="izi-input" type="text" value={encaisserCheque} onChange={e => setEncaisserCheque(e.target.value)} placeholder="Ex : 0012345" />
-                </>
-              )}
-
-              <div className="paiement-section-label">Notes (optionnel)</div>
-              <input
-                className="izi-input"
-                type="text"
-                value={encaisserNotes}
-                onChange={e => setEncaisserNotes(e.target.value)}
-                placeholder="Référence virement, remarque..."
-              />
-
-              <button
-                type="button"
-                className="izi-btn izi-btn-primary confirm-btn"
-                onClick={submitEncaisser}
-                disabled={encaisserLoading}
-              >
-                {encaisserLoading ? <><Loader2 size={16} className="spin" /> Enregistrement...</> : <><CheckCircle2 size={16} /> Encaisser</>}
-              </button>
+              <EncaisserForm paiement={encaisserModal} pourQui={displayName} onDone={onEncaisse} />
             </div>
           </div>
         </div>
@@ -2378,6 +2371,12 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
           display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0;
         }
         .paiement-fiche-montant { font-weight: 700; font-size: 1rem; }
+        .versement-switch { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; background: var(--bg-warm, #f8f5f0); padding: 4px; border-radius: 10px; margin: 12px 0 4px; }
+        .versement-switch-btn { border: 0; background: transparent; border-radius: 8px; padding: 8px 10px; font: inherit; font-size: 0.8125rem; font-weight: 500; color: var(--text-muted, #6b6560); cursor: pointer; }
+        .versement-switch-btn.active { background: #fff; color: var(--text, #2a2420); box-shadow: 0 1px 2px rgba(0,0,0,0.08); font-weight: 600; }
+        .versement-du { margin: 12px 0 4px; padding: 10px 12px; border-radius: 10px; background: #fef3c7; color: #78350f; font-size: 0.8125rem; line-height: 1.45; }
+        .versement-du-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+        .versement-hint { font-size: 0.8125rem; color: var(--text-muted, #6b6560); margin: 8px 0 0; }
         .encaisser-btn-fiche {
           display: inline-flex; align-items: center; gap: 4px;
           padding: 4px 10px; border-radius: var(--radius-full);

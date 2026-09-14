@@ -15,6 +15,7 @@ import Pagination, { usePagination } from '@/components/ui/Pagination';
 import EmptyState from '@/components/ui/EmptyState';
 import DeclarationUrssaf from '@/components/revenus/DeclarationUrssaf';
 import MesPrestations from '@/components/revenus/MesPrestations';
+import EncaisserForm from '@/components/paiements/EncaisserForm';
 import { aDeclarationAutomatisable } from '@/lib/pays';
 import { periodesDeclarables, aujourdhuiParis } from '@/lib/urssaf';
 import { normaliserMode, labelMode } from '@/lib/modes-paiement';
@@ -119,10 +120,6 @@ export default function RevenusClient({ paiements: initialPaiements, seancesDues
   const [seanceSubmitting, setSeanceSubmitting] = useState(false);
   const [seancesEncaissees, setSeancesEncaissees] = useState(() => new Set());
   const [showAllPercevoir, setShowAllPercevoir] = useState(false);
-  const [encaisserMode, setEncaisserMode] = useState('especes');
-  const [encaisserDate, setEncaisserDate] = useState(() => new Date().toISOString().slice(0, 10));
-  const [encaisserNotes, setEncaisserNotes] = useState('');
-  const [encaisserSubmitting, setEncaisserSubmitting] = useState(false);
 
   // Édition paiement
   const [editModal, setEditModal] = useState(null);
@@ -275,36 +272,21 @@ export default function RevenusClient({ paiements: initialPaiements, seancesDues
     }
   };
 
-  const openEncaisser = (paiement) => {
-    setEncaisserModal(paiement);
-    setEncaisserMode(normaliserMode(paiement.mode));
-    setEncaisserDate(new Date().toISOString().slice(0, 10));
-    setEncaisserNotes('');
-  };
-
-  const submitEncaisser = async () => {
-    if (!encaisserModal) return;
-    setEncaisserSubmitting(true);
-    try {
-      const res = await fetch(`/api/paiements/${encaisserModal.id}/encaisser`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mode: encaisserMode, date_encaissement: encaisserDate, ...(encaisserNotes.trim() ? { notes: encaisserNotes.trim() } : {}) }),
+  // Modale « Encaisser » : le corps vit dans components/paiements/EncaisserForm
+  // (partagé avec la fiche élève) — un seul moyen, ou plusieurs (2026-09-14).
+  const openEncaisser = (paiement) => setEncaisserModal(paiement);
+  const onEncaisse = (lignes) => {
+    setPaiements(prev => {
+      const ids = new Set(prev.map(p => p.id));
+      const origine = prev.find(p => p.id === encaisserModal?.id);
+      const remplacees = prev.map(p => {
+        const l = lignes.find(x => x.id === p.id);
+        return l ? { ...p, ...l } : p;
       });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Erreur');
-      setPaiements(prev => prev.map(p =>
-        p.id === encaisserModal.id
-          ? { ...p, statut: 'paid', mode: encaisserMode, date_encaissement: encaisserDate }
-          : p
-      ));
-      toast.success('Paiement encaissé !');
-      setEncaisserModal(null);
-    } catch (e) {
-      toast.error(e.message);
-    } finally {
-      setEncaisserSubmitting(false);
-    }
+      const neuves = lignes.filter(l => !ids.has(l.id)).map(l => ({ ...l, clients: origine?.clients, abonnement: origine?.abonnement }));
+      return [...neuves, ...remplacees];
+    });
+    setEncaisserModal(null);
   };
 
   // ── Export personnalisable (demande Patricia 2026-08-18) ──
@@ -776,62 +758,18 @@ export default function RevenusClient({ paiements: initialPaiements, seancesDues
       )}
 
       {encaisserModal && (
-        <div className="enc-overlay" onClick={() => !encaisserSubmitting && setEncaisserModal(null)}>
+        <div className="enc-overlay" onClick={() => setEncaisserModal(null)}>
           <div className="enc-modal" onClick={e => e.stopPropagation()}>
             <button className="enc-close" onClick={() => setEncaisserModal(null)} aria-label="Fermer">
               <X size={16} />
             </button>
             <h3 className="enc-title">Encaisser ce paiement</h3>
-            <div className="enc-recap">
-              <strong>{encaisserModal.intitule || 'Paiement'}</strong> · {formatMontant(encaisserModal.montant)}
-              {encaisserModal.clients && (
-                <div style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', marginTop: 2 }}>
-                  {clientName(encaisserModal.clients)}
-                </div>
-              )}
-            </div>
-            <div className="enc-field">
-              <label>Mode de règlement</label>
-              <div className="enc-modes">
-                {MODES.map(({ value, label, Icon }) => (
-                  <button
-                    key={value}
-                    onClick={() => setEncaisserMode(value)}
-                    className={`enc-mode-btn ${encaisserMode === value ? 'active' : ''}`}
-                  >
-                    <Icon size={16} /> {label}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="enc-field">
-              <label>Date d'encaissement</label>
-              <input
-                type="date"
-                value={encaisserDate}
-                onChange={e => setEncaisserDate(e.target.value)}
-                className="izi-input"
-              />
-            </div>
-            <div className="enc-field">
-              <label>Notes (optionnel)</label>
-              <input
-                type="text"
-                value={encaisserNotes}
-                onChange={e => setEncaisserNotes(e.target.value)}
-                className="izi-input"
-                placeholder="N° chèque, référence virement..."
-              />
-            </div>
-            <div className="enc-actions">
-              <button onClick={() => setEncaisserModal(null)} className="izi-btn izi-btn-ghost" disabled={encaisserSubmitting}>
-                Annuler
-              </button>
-              <button onClick={submitEncaisser} className="izi-btn izi-btn-primary" disabled={encaisserSubmitting}>
-                {encaisserSubmitting ? <Loader2 size={14} className="spin" /> : <CheckCircle2 size={14} />}
-                Confirmer
-              </button>
-            </div>
+            <EncaisserForm
+              paiement={encaisserModal}
+              pourQui={encaisserModal.clients ? clientName(encaisserModal.clients) : undefined}
+              onDone={onEncaisse}
+              confirmLabel="Confirmer"
+            />
           </div>
         </div>
       )}
