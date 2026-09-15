@@ -1807,7 +1807,7 @@ export const LIEUX = [
     "contact": "contact@bievre-isere.com · 04 76 93 51 46 · Sport Santé 06 33 31 14 32",
     "deja": "Service Sport Santé sur prescription médicale (adultes, seniors, ALD, éducateurs diplômés), accueils de loisirs, médiathèques, piscine Aqualib'",
     "format": "Deux portes : (1) atelier QVT pour les agents (pro.maude-yoga.com) ; (2) yoga adapté dans le programme Sport Santé, payé par la collectivité",
-    "prix": "Séance 120 à 160 € ; demi-journée 300 €",
+    "prix": "Séance découverte 180 € ; Sport Santé sur devis",
     "saison": "Toute l'année",
     "src": "https://www.bievre-isere.com/les-services/sport-loisirs/sport-sante/",
     "destinataire": {
@@ -1820,14 +1820,14 @@ export const LIEUX = [
       "concept": "Deux portes chez la collectivité : un cycle de yoga adapté (sur chaise, mobilité réduite) proposé au service Sport Santé sur prescription, en complément du travail de ses éducateurs, et un atelier « dos et souffle » pour les agents. Pourquoi eux : ils accompagnent déjà adultes, seniors et personnes en ALD, et ils emploient 250 à 499 agents.",
       "format": "Séances de 45 min à 1 h, 12 personnes au plus, dans une salle de la communauté ou de la piscine Aqualib'. Sport Santé : cycle de 8 à 10 séances hebdomadaires. Agents : atelier sur la pause déjeuner ou en fin de journée, en cycle de 6 ou ponctuel. Toute l'année.",
       "deroule": "Accueil et respiration assise (10 min) · mobilisation douce des épaules, du dos et des hanches (20 min) · équilibre assis ou debout en appui (10 min) · temps calme allongé ou assis (10 min)",
-      "prix": "Prestation payée par la collectivité : 120 à 160 € la séance selon la durée, 300 € la demi-journée. Un cycle de 8 séances Sport Santé revient à 960 à 1 280 €.",
+      "prix": "Séance découverte 180 € (grille de pro.maude-yoga.com), programme de 4 séances sur 2 mois de 1 400 à 1 600 € ; en Sport Santé, prestation à la collectivité sur devis.",
       "gain_lieu": "Une offre de yoga adapté dans un programme Sport Santé qui n'en a pas, avec une intervenante certifiée pour ce public, et un geste de qualité de vie au travail pour les agents sans rien à organiser.",
       "demande": "Dix minutes au téléphone avec le service Sport Santé (06 33 31 14 32) pour savoir si le yoga adapté peut entrer dans le programme et à qui adresser l'atelier agents.",
       "attention": "Le service Sport Santé fonctionne sur prescription médicale avec des éducateurs diplômés : Maude se présente en complément, à leur main, sans se substituer. Cadre administratif d'une collectivité de 50 communes (devis, bon de commande, délais)."
     },
     "email": {
       "objet": "Yoga adapté et atelier dos pour vos agents",
-      "corps": "Bonjour,\n\nJe suis Maude Pontet, professeure de yoga à Gillonnay depuis trois saisons. Votre service Sport Santé sur prescription médicale, avec ses éducateurs diplômés, m'a donné envie de vous écrire : je suis certifiée en yoga adapté, sur chaise et pour la mobilité réduite, et c'est exactement le public que vous accompagnez.\n\nJe vous propose deux choses, à votre main. Un cycle de yoga adapté dans le programme Sport Santé, en complément du travail de vos éducateurs : séances de 45 minutes à une heure, douze personnes au plus, chacun sur sa chaise ou son tapis. Et un atelier « dos et souffle » de 45 minutes pour vos agents, sur la pause déjeuner ou en fin de journée, dans une salle de la communauté.\n\nDans les deux cas, la collectivité paie la prestation : 120 à 160 € la séance selon la durée, 300 € la demi-journée. Je suis assurée en responsabilité civile professionnelle et j'apporte le matériel de sol.\n\nEst-ce que dix minutes au téléphone avec le service Sport Santé vous conviendraient ? Je suis joignable les matins de semaine.\n\nMaude Pontet\nMaude Yoga, Gillonnay\n06 42 63 52 38 · pro.maude-yoga.com"
+      "corps": "Bonjour,\n\nJe suis Maude Pontet, professeure de yoga à Gillonnay depuis trois saisons. Votre service Sport Santé sur prescription médicale, avec ses éducateurs diplômés, m'a donné envie de vous écrire : je suis certifiée en yoga adapté, sur chaise et pour la mobilité réduite, et c'est exactement le public que vous accompagnez.\n\nJe vous propose deux choses, à votre main. Un cycle de yoga adapté dans le programme Sport Santé, en complément du travail de vos éducateurs : séances de 45 minutes à une heure, douze personnes au plus, chacun sur sa chaise ou son tapis. Et un atelier « dos et souffle » de 45 minutes pour vos agents, sur la pause déjeuner ou en fin de journée, dans une salle de la communauté.\n\nDans les deux cas, la collectivité paie la prestation : 180 € la séance découverte. Je suis assurée en responsabilité civile professionnelle et j'apporte le matériel de sol.\n\nEst-ce que dix minutes au téléphone avec le service Sport Santé vous conviendraient ? Je suis joignable les matins de semaine.\n\nMaude Pontet\nMaude Yoga, Gillonnay\n06 42 63 52 38 · pro.maude-yoga.com"
     }
   },
   {
@@ -2045,27 +2045,27 @@ export const LIEUX = [
     "contact": "04 76 93 43 43 · formulaire elydan.eu",
     "deja": "Site industriel de l'Air Parc (50 entreprises, 800 emplois sur la zone)",
     "format": "Atelier « dos et souffle » de 45 min sur la pause déjeuner, en cycle de 6 ; premier employeur privé à 10 km",
-    "prix": "120 à 160 € la séance",
+    "prix": "Séance découverte 180 € ; programme 4 séances 1 400 à 1 600 €",
     "saison": "Toute l'année",
     "src": "https://elydan.eu/",
     "destinataire": {
-      "nom": "Elydan (Grenoble Air Parc)",
+      "nom": "Elydan, service RH",
       "email": null,
-      "canal": "formulaire elydan.eu, ou téléphone 04 76 93 43 43"
+      "canal": "formulaire https://elydan.eu/formulaire-de-contact (téléphone 04 76 93 43 43)"
     },
     "projet": {
       "titre": "Dos et souffle à la pause",
       "concept": "Un atelier « dos et souffle » de 45 min sur la pause déjeuner, en cycle de six, pour les salariés d'Elydan. Pourquoi eux : un site de plasturgie de 100 à 199 salariés sur l'Air Parc, le premier employeur privé à 10 km de Gillonnay, dans une zone de 50 entreprises.",
       "format": "45 min, 10 à 15 salariés, dans une salle de réunion, sur la pause déjeuner. Cycle de 6 séances, une par semaine ; séance ponctuelle possible pour tester. Chacun en tenue souple, bâches de sol et couvertures fournies. Toute l'année.",
       "deroule": "Respiration pour redescendre (8 min) · étirements du dos et des épaules (20 min) · gestes à refaire au poste (7 min) · temps calme (10 min)",
-      "prix": "120 à 160 € la séance selon la durée, facturée à l'entreprise sur devis, soit 720 à 960 € le cycle de 6.",
+      "prix": "Séance découverte 180 € facturée à l'entreprise (grille de pro.maude-yoga.com) ; programme de 4 séances sur 2 mois de 1 400 à 1 600 € ; interventions de 2 h à une journée de 350 à 2 200 €.",
       "gain_lieu": "Un geste de qualité de vie au travail concret et court, sur un sujet qui touche tout le monde, le dos, sans rien à organiser ; une intervenante locale, à dix minutes du site.",
       "demande": "Dix minutes au téléphone pour savoir à qui adresser la proposition (ressources humaines ou CSE) et fixer une séance test.",
       "attention": "Pas d'adresse email publique : passer par le formulaire du site ou l'accueil téléphonique, la proposition peut se perdre. Horaires de production à respecter, la pause déjeuner est courte."
     },
     "email": {
-      "objet": "Atelier dos et souffle sur la pause déjeuner",
-      "corps": "Bonjour,\n\nJe suis Maude Pontet, professeure de yoga à Gillonnay, à dix minutes de l'Air Parc. J'interviens en entreprise sur la santé du dos et le stress, et je vous écris parce que vous êtes l'un des grands employeurs du parc : c'est chez vous que j'aimerais commencer.\n\nJe propose un atelier « dos et souffle » de 45 minutes sur la pause déjeuner, dans une salle de réunion, pour dix à quinze salariés. Étirements du dos et des épaules, respiration pour redescendre, quelques gestes à refaire au poste. Chacun vient en tenue souple, j'apporte bâches de sol et couvertures. Un cycle de six séances, une par semaine, donne de vrais résultats ; une séance ponctuelle est aussi possible pour tester.\n\nLa séance est facturée 120 à 160 € selon la durée, soit 720 à 960 € le cycle de six, sur devis clair et sans engagement au-delà. Je suis assurée en responsabilité civile professionnelle.\n\nAuriez-vous dix minutes au téléphone pour me dire à qui adresser cela, ressources humaines ou CSE ? Je suis joignable les matins de semaine.\n\nMaude Pontet\nMaude Yoga, Gillonnay\n06 42 63 52 38 · pro.maude-yoga.com"
+      "objet": "Yoga sur site à dix kilomètres de chez vous",
+      "corps": "Bonjour,\n\nProfesseure de yoga à Gillonnay, à dix kilomètres de l'Air Parc, j'interviens sur le lieu de travail avec du yoga et de la respiration. Je vous écris parce qu'Elydan fait tourner des lignes d'extrusion en équipes, avec des bureaux à côté.\n\nJe propose une séance découverte sur site, de 45 minutes à 1 heure, en fin de poste ou à la pause déjeuner, pour 6 à 20 personnes, à 180 euros, adaptée aux deux publics : dos et récupération pour les lignes, écrans et pression pour les bureaux. Si l'équipe accroche, un programme de 4 séances sur 2 mois prend le relais. Un réfectoire suffit, j'apporte le matériel.\n\nVos salariés repartent avec des gestes simples à refaire à leur poste.\n\nSi ce n'est pas vous, merci de transmettre à la personne en charge de la QVT ou du CSE. Quinze minutes au téléphone, en semaine après 13 h, suffisent pour caler une date.\n\nMaude Pontet\nMaude Yoga, Gillonnay\n06 42 63 52 38 · pro.maude-yoga.com"
     }
   },
   {
@@ -2079,11 +2079,11 @@ export const LIEUX = [
     "contact": "contact@allimand.com · 04 76 91 25 00",
     "deja": "Industrie",
     "format": "Atelier gestion du stress pour les équipes, via le CSE",
-    "prix": "120 à 160 € la séance",
+    "prix": "Séance découverte 180 € ; programme 4 séances 1 400 à 1 600 €",
     "saison": "Toute l'année",
     "src": "https://www.allimand.com/",
     "destinataire": {
-      "nom": "Allimand, à l'attention du CSE",
+      "nom": "Allimand, service RH ou direction",
       "email": "contact@allimand.com",
       "canal": "email"
     },
@@ -2092,14 +2092,14 @@ export const LIEUX = [
       "concept": "Un atelier de gestion du stress pour les équipes, porté par le CSE. Pourquoi eux : un fabricant de machines à papier fondé en 1850 à Rives, 100 à 199 salariés, des postes exigeants où le dos et la pression comptent.",
       "format": "45 min à 1 h, 10 à 15 personnes, salle de réunion, sur la pause déjeuner ou en fin de journée. Cycle de 6 séances ou rendez-vous ponctuel, au choix du CSE. Tenue souple, bâches de sol et couvertures fournies. Toute l'année.",
       "deroule": "Respiration lente (10 min) · étirements du dos et de la nuque (20 min) · outils courts à réutiliser au poste (10 min) · temps calme (10 min)",
-      "prix": "120 à 160 € la séance selon la durée, facturée au CSE ou à l'entreprise sur devis ; un cycle de 6 revient à 720 à 960 €.",
+      "prix": "Séance découverte 180 € facturée à l'entreprise (grille de pro.maude-yoga.com) ; programme de 4 séances sur 2 mois de 1 400 à 1 600 € ; interventions de 2 h à une journée de 350 à 2 200 €.",
       "gain_lieu": "Une action de prévention simple pour le CSE, locale, sans matériel, sur un sujet que les salariés demandent : le stress et le dos.",
       "demande": "Que le message soit transmis au CSE, puis dix minutes au téléphone avec la personne qui y porte les actions bien-être.",
       "attention": "L'adresse est générique : le message doit franchir l'accueil pour atteindre le CSE. Horaires d'atelier industriel à respecter ; Rives est à 18 km."
     },
     "email": {
-      "objet": "Atelier gestion du stress pour vos équipes",
-      "corps": "Bonjour,\n\nJe suis Maude Pontet, professeure de yoga à Gillonnay, à vingt minutes de Rives. Vous fabriquez des machines à papier depuis 1850, avec des équipes qui tiennent des postes exigeants, et le stress comme le dos sont les deux sujets que je traite en atelier d'entreprise.\n\nJe propose à votre CSE un atelier « gestion du stress » de 45 minutes à une heure, sur la pause déjeuner ou en fin de journée, pour dix à quinze personnes dans une salle de réunion. Respiration, étirements simples du dos et de la nuque, un temps de calme, des outils courts à réutiliser au poste. En cycle de six séances ou en rendez-vous ponctuel, à la main du CSE.\n\nLa séance est facturée 120 à 160 € selon la durée, sur devis clair, sans engagement au-delà du cycle choisi. Je suis assurée en responsabilité civile professionnelle et j'apporte bâches de sol et couvertures.\n\nPourriez-vous transmettre ce message au CSE, ou me dire qui contacter pour un échange de dix minutes ? Je suis joignable en semaine, le matin.\n\nMaude Pontet\nMaude Yoga, Gillonnay\n06 42 63 52 38 · pro.maude-yoga.com"
+      "objet": "Yoga sur site pour les équipes d'Allimand",
+      "corps": "Bonjour,\n\nProfesseure de yoga à Gillonnay, à moins de trente minutes de Rives, j'interviens sur le lieu de travail avec du yoga et de la respiration. Je vous écris parce qu'Allimand réunit des ateliers de montage et des bureaux d'études sous le même toit.\n\nJe propose une séance découverte sur site, de 45 minutes à 1 heure, à la pause déjeuner ou en fin de poste, pour 6 à 20 personnes, à 180 euros, adaptée aux deux publics : dos et récupération pour le montage, écrans et pression pour les bureaux d'études. Si l'équipe accroche, un programme de 4 séances sur 2 mois prend le relais.\n\nVos salariés repartent avec des gestes simples à refaire à leur poste.\n\nSi ce n'est pas vous, merci de transmettre à la personne en charge de la QVT ou du CSE. Quinze minutes au téléphone, en semaine après 13 h, suffisent pour caler une date.\n\nMaude Pontet\nMaude Yoga, Gillonnay\n06 42 63 52 38 · pro.maude-yoga.com"
     }
   },
   {
@@ -2113,11 +2113,11 @@ export const LIEUX = [
     "contact": "04 76 91 42 44 · alr.fr",
     "deja": "Industrie",
     "format": "Atelier « souffle et récupération » pour les équipes postées",
-    "prix": "120 à 160 € la séance",
+    "prix": "Séance découverte 180 € ; programme 4 séances 1 400 à 1 600 €",
     "saison": "Toute l'année",
     "src": "https://industrie.usinenouvelle.com/fiche/etablissement/acieries-et-laminoirs-de-rives-46033984",
     "destinataire": {
-      "nom": "Aciéries et Laminoirs de Rives",
+      "nom": "Aciéries et Laminoirs de Rives, direction de site ou CSE",
       "email": null,
       "canal": "telephone 04 76 91 42 44"
     },
@@ -2126,14 +2126,14 @@ export const LIEUX = [
       "concept": "Un atelier « souffle et récupération » pour les équipes postées, calé sur une fin de poste. Pourquoi eux : une aciérie de 100 à 199 salariés du groupe Experton-Revollier, où le corps est sollicité et où les horaires décalés compliquent la récupération.",
       "format": "45 min, 10 à 15 personnes, salle de réunion, en fin de poste ou sur une pause, aux heures des équipes. Cycle de 6 ou séance ponctuelle. Tenue de travail souple, bâches de sol et couvertures fournies. Toute l'année.",
       "deroule": "Respiration lente pour redescendre (10 min) · étirements du dos, des épaules et des jambes (20 min) · temps allongé de récupération (15 min)",
-      "prix": "120 à 160 € la séance selon la durée, facturée à l'entreprise sur devis ; un cycle de 6 revient à 720 à 960 €.",
+      "prix": "Séance découverte 180 € facturée à l'entreprise (grille de pro.maude-yoga.com) ; programme de 4 séances sur 2 mois de 1 400 à 1 600 € ; interventions de 2 h à une journée de 350 à 2 200 €.",
       "gain_lieu": "Une action de prévention ciblée sur la récupération des équipes postées, courte, sans matériel, par une intervenante à vingt minutes du site.",
       "demande": "Dix minutes au téléphone pour savoir qui, des ressources humaines ou du CSE, porte ce sujet, et sur quel créneau de poste caler une séance test.",
       "attention": "Pas d'email public : premier contact par téléphone, l'email suit. Le créneau doit coller au roulement des postes (matin, après-midi, nuit) ; environnement industriel, la salle doit être au calme."
     },
     "email": {
-      "objet": "Souffle et récupération pour vos équipes postées",
-      "corps": "Bonjour,\n\nJe suis Maude Pontet, professeure de yoga à Gillonnay, à vingt minutes de Rives. J'interviens en entreprise sur la santé du dos et le stress, et je pense à vos équipes postées : la sidérurgie sollicite le corps, et les horaires décalés compliquent la récupération.\n\nJe propose un atelier « souffle et récupération » de 45 minutes, calé sur une fin de poste ou une pause, pour dix à quinze personnes dans une salle de réunion. Respiration lente pour redescendre, étirements du dos, des épaules et des jambes, un temps allongé pour finir. Aucune souplesse requise, chacun vient en tenue de travail souple, j'apporte bâches de sol et couvertures. En cycle de six ou en séance ponctuelle.\n\nLa séance est facturée 120 à 160 € selon la durée, sur devis clair. Je suis assurée en responsabilité civile professionnelle, y compris hors salle.\n\nAuriez-vous dix minutes au téléphone pour me dire qui, entre les ressources humaines et le CSE, porte ce genre de sujet chez vous ? Je suis joignable les matins de semaine.\n\nMaude Pontet\nMaude Yoga, Gillonnay\n06 42 63 52 38 · pro.maude-yoga.com"
+      "objet": "Yoga de récupération pour vos équipes postées",
+      "corps": "Bonjour,\n\nProfesseure de yoga à Gillonnay, j'interviens sur le lieu de travail avec du yoga et de la respiration, notamment auprès d'une PME industrielle de la région grenobloise. Je vous écris parce qu'un laminoir, c'est la chaleur, le bruit et des équipes postées : la récupération et le souffle y comptent plus qu'ailleurs.\n\nJe propose une séance découverte sur site, de 45 minutes à 1 heure, en fin de poste ou à la pause déjeuner, pour 6 à 20 personnes, à 180 euros, centrée sur le dos, la récupération et une respiration qui aide à redescendre après le poste. Si l'équipe accroche, un programme de 4 séances sur 2 mois prend le relais.\n\nVos opérateurs repartent avec quelques gestes simples, à refaire au poste ou chez eux.\n\nQuinze minutes au téléphone, avec la direction ou le CSE, en semaine après 13 h, suffisent pour caler une date.\n\nMaude Pontet\nMaude Yoga, Gillonnay\n06 42 63 52 38 · pro.maude-yoga.com"
     }
   },
   {
@@ -2147,27 +2147,27 @@ export const LIEUX = [
     "contact": "04 76 65 48 48 · grenoble.aeroport.fr/fr/corporate",
     "deja": "Espaces modulables de 15 à 1 200 m² proposés aux entreprises",
     "format": "Un nouveau gestionnaire cherche à s'ancrer localement : atelier bien-être pour le personnel de l'hiver (saison charter), et une salle possible pour un atelier ouvert",
-    "prix": "120 à 160 € la séance",
+    "prix": "Séance découverte 180 € ; programme 4 séances 1 400 à 1 600 €",
     "saison": "Hiver",
     "src": "https://grenoble.aeroport.fr/fr/corporate",
     "destinataire": {
-      "nom": "Aéroport Grenoble Alpes Isère (Édeis), direction du site",
+      "nom": "Aéroport Grenoble Alpes Isère, direction Édeis de l'aéroport",
       "email": null,
-      "canal": "telephone 04 76 65 48 48"
+      "canal": "telephone 04 76 65 48 48 (grenoble.aeroport.fr/fr/corporate)"
     },
     "projet": {
       "titre": "Dos et souffle pour la saison d'hiver",
       "concept": "Un atelier « dos et souffle » pour le personnel de l'aéroport pendant la saison charter d'hiver, et, si une salle s'y prête, un atelier ouvert aux habitants et aux entreprises de la zone. Pourquoi eux : Édeis gère le site depuis le 1er juillet 2026 et a intérêt à s'ancrer localement ; des espaces modulables de 15 à 1 200 m² existent déjà.",
       "format": "Personnel : 45 min, 10 à 15 personnes, dans un espace modulable, cycle de 6 sur la saison d'hiver ou séance ponctuelle. Atelier ouvert : 1 h, 15 personnes, places vendues par Maude, le lieu accueille. Saison : hiver.",
       "deroule": "Respiration pour redescendre (8 min) · étirements du dos et des épaules (20 min) · gestes à refaire au poste (7 min) · temps calme (10 min)",
-      "prix": "120 à 160 € la séance selon la durée, facturée à l'aéroport sur devis ; un cycle de 6 sur l'hiver revient à 720 à 960 €. Atelier ouvert : places vendues par Maude, forfait de mise à disposition à discuter.",
+      "prix": "Séance découverte 180 € facturée à l'entreprise (grille de pro.maude-yoga.com) ; programme de 4 séances sur 2 mois de 1 400 à 1 600 € ; interventions de 2 h à une journée de 350 à 2 200 €.",
       "gain_lieu": "Un geste de qualité de vie au travail pour les équipes au moment où la charge est la plus forte, et une façon simple pour le nouveau gestionnaire de s'inscrire dans la vie locale.",
       "demande": "Dix minutes au téléphone avant le début de la saison d'hiver, pour savoir qui porte la qualité de vie au travail chez Édeis et si un espace peut accueillir un atelier ouvert.",
       "attention": "Reprise récente du site : l'organigramme peut bouger, le bon interlocuteur n'est pas connu. Contraintes d'accès et de sûreté d'une zone aéroportuaire pour un atelier ouvert au public. Saison courte."
     },
     "email": {
-      "objet": "Atelier dos et souffle pour vos équipes cet hiver",
-      "corps": "Bonjour,\n\nJe suis Maude Pontet, professeure de yoga à Gillonnay, à dix minutes de l'aéroport. Édeis vient de reprendre la gestion du site, et un gestionnaire qui s'installe gagne à s'ancrer localement : c'est pour cela que je vous écris.\n\nJe propose un atelier « dos et souffle » de 45 minutes pour votre personnel pendant la saison d'hiver : respiration, étirements du dos et des épaules, un temps de calme, dans l'un de vos espaces modulables. Dix à quinze personnes, chacun en tenue souple. En cycle de six, ou en séance ponctuelle.\n\nLa séance est facturée 120 à 160 € selon la durée, sur devis clair. Si une salle s'y prête, un atelier ouvert aux habitants et aux entreprises de la zone est aussi possible : je vends alors les places et vous êtes le lieu qui accueille. Je suis assurée en responsabilité civile professionnelle.\n\nAuriez-vous dix minutes au téléphone avant le début de la saison, pour me dire qui porte la qualité de vie au travail chez Édeis ? Je suis joignable en semaine, le matin.\n\nMaude Pontet\nMaude Yoga, Gillonnay\n06 42 63 52 38 · pro.maude-yoga.com"
+      "objet": "Yoga sur site pour l'équipe de l'aéroport",
+      "corps": "Bonjour,\n\nProfesseure de yoga à Gillonnay, à dix kilomètres de l'aéroport, j'interviens sur le lieu de travail avec du yoga et de la respiration. Je m'adresse à la nouvelle direction Édeis, en place depuis le 1er juillet, parce que la saison d'hiver et ses charters vont demander beaucoup à votre personnel.\n\nJe propose une séance découverte sur site, de 45 minutes à 1 heure, à la pause déjeuner ou en fin de service, pour 6 à 20 personnes, à 180 euros, dans l'un de vos espaces modulables : une respiration qui fait redescendre la pression en pleine journée, et le dos après des heures debout ou sur écran. Si l'équipe accroche, un programme de 4 séances sur 2 mois prend le relais.\n\nVotre personnel aborde l'hiver avec quelques gestes simples, à refaire entre deux vols.\n\nQuinze minutes au téléphone, en semaine après 13 h, suffisent pour caler une date.\n\nMaude Pontet\nMaude Yoga, Gillonnay\n06 42 63 52 38 · pro.maude-yoga.com"
     }
   },
   {
@@ -3167,27 +3167,27 @@ export const LIEUX = [
     "contact": "04 76 07 20 46 · 1225 rue Alphonse Gourju (pas d'email affiché)",
     "deja": "Site industriel, le plus gros employeur privé du parc Bièvre Dauphine",
     "format": "Atelier « dos et souffle » de 45 min sur la pause déjeuner, en cycle de 6, pour des équipes d'atelier et de bureau",
-    "prix": "120 à 160 € la séance",
+    "prix": "Séance découverte 180 € ; programme 4 séances 1 400 à 1 600 €",
     "saison": "Toute l'année",
     "src": "https://www.chapel-hydraulique.com/",
     "destinataire": {
-      "nom": "Chapel Hydraulique (direction ou ressources humaines)",
+      "nom": "Chapel Hydraulique, service RH",
       "email": null,
-      "canal": "telephone 04 76 07 20 46"
+      "canal": "telephone 04 76 07 20 46 (pas d'email affiché)"
     },
     "projet": {
       "titre": "Dos et souffle à l'atelier",
       "concept": "Un atelier de yoga « dos et souffle » sur la pause déjeuner pour les salariés de Chapel Hydraulique, équipes d'atelier et de bureau. Le plus gros employeur privé du parc Bièvre Dauphine, à quatorze kilomètres de Gillonnay : des postes physiques d'un côté, des postes assis de l'autre, et le même dos qui fatigue.",
       "format": "45 minutes sur la pause déjeuner, groupe de 8 à 15 personnes, dans une salle de réunion ou un espace dégagé du site. Cycle de 6 séances, toute l'année. Bâches de sol apportées, chacun vient comme il est, sans se changer.",
       "deroule": "Accueil et prise de posture assise, 5 min · Mobilisation douce du dos et des épaules, 20 min · Respiration guidée, 10 min · Retour au calme, 7 min · Mot de fin et reprise, 3 min",
-      "prix": "Séance facturée à l'entreprise entre 120 et 160 € selon la taille du groupe, sur devis. Un cycle de 6 séances revient à 720 à 960 € pour une quinzaine de salariés.",
+      "prix": "Séance découverte 180 € facturée à l'entreprise (grille de pro.maude-yoga.com) ; programme de 4 séances sur 2 mois de 1 400 à 1 600 € ; interventions de 2 h à une journée de 350 à 2 200 €.",
       "gain_lieu": "Une action de qualité de vie au travail visible et simple à mettre en place, un geste pour les dos des équipes d'atelier et des bureaux, sans déplacement ni matériel.",
       "demande": "Un appel de dix minutes pour identifier l'interlocuteur (direction, ressources humaines ou CSE), puis un midi de repérage sur site avant fin octobre.",
       "attention": "Pas d'adresse email affichée : le premier contact passe par le standard, il faut trouver la bonne personne. Les horaires de pause d'un site industriel sont fixes, le créneau doit coller au planning des équipes."
     },
     "email": {
-      "objet": "Atelier dos et souffle pour vos équipes à Apprieu",
-      "corps": "Bonjour,\n\nJe suis Maude Pontet, professeure de yoga à Gillonnay, à quatorze kilomètres de votre site d'Apprieu. Chapel Hydraulique est le plus gros employeur privé du parc Bièvre Dauphine, avec des équipes d'atelier et des équipes de bureau : deux façons différentes de fatiguer un dos.\n\nJe propose un atelier « dos et souffle » de 45 minutes sur la pause déjeuner, en cycle de 6 séances, dans une salle de réunion ou un espace dégagé. Mobilisation douce du dos et des épaules, respiration, un temps de retour au calme. Personne ne se change, chacun vient comme il est, j'apporte le matériel de sol.\n\nLa séance est facturée entre 120 et 160 € selon la taille du groupe, sur devis, sans engagement au-delà du cycle. Je suis assurée en responsabilité civile professionnelle.\n\nAuriez-vous dix minutes au téléphone pour voir si un midi se dégage ? Je suis joignable en fin de matinée du lundi au jeudi.\n\nMaude Pontet\nMaude Yoga, Gillonnay\n06 42 63 52 38 · pro.maude-yoga.com"
+      "objet": "Yoga sur site pour Chapel Hydraulique",
+      "corps": "Bonjour,\n\nProfesseure de yoga à Gillonnay, à quatorze kilomètres d'Apprieu, j'interviens sur le lieu de travail avec du yoga et de la respiration. Je vous écris parce que Chapel Hydraulique réunit usinage, montage et bureaux d'études sur le parc Bièvre Dauphine.\n\nJe propose une séance découverte sur site, de 45 minutes à 1 heure, à la pause déjeuner ou en fin de poste, pour 6 à 20 personnes, à 180 euros, adaptée aux deux publics : dos et récupération pour l'atelier, écrans et pression pour les bureaux d'études. Si l'équipe accroche, un programme de 4 séances sur 2 mois prend le relais.\n\nVos salariés repartent avec des gestes simples à refaire à leur poste.\n\nSi ce n'est pas vous, merci de transmettre à la personne en charge de la QVT ou du CSE. Quinze minutes au téléphone, en semaine après 13 h, suffisent pour caler une date.\n\nMaude Pontet\nMaude Yoga, Gillonnay\n06 42 63 52 38 · pro.maude-yoga.com"
     }
   },
   {
@@ -3201,12 +3201,12 @@ export const LIEUX = [
     "contact": "audrey.savignon@association-centralp.com · marion.soriteau@association-centralp.com · 06 18 20 76 73",
     "deja": "Activités culturelles et sportives proposées aux salariés de la zone, annuaire des entreprises, événements",
     "format": "Un cycle « yoga du midi » ouvert aux salariés de la zone (une salle prêtée par l'association ou une entreprise), 45 min hebdomadaires, 12 à 15 personnes ; la porte d'entrée vers cinq entreprises de 250 à 499 salariés",
-    "prix": "90 € la séance, ou 8 € par salarié via l'association",
+    "prix": "Séance découverte 180 € ; programme 4 séances 1 400 à 1 600 €",
     "saison": "Septembre à juin",
     "src": "https://associationcentralp.fr/contactez-nous/",
     "destinataire": {
-      "nom": "Audrey Savignon, directrice (copie à Marion Soriteau, communication et événements)",
-      "email": "audrey.savignon@association-centralp.com",
+      "nom": "Association des entreprises de Centr'Alp, Marion Soriteau, communication et événements ; Audrey Savignon, directrice",
+      "email": "marion.soriteau@association-centralp.com",
       "canal": "email"
     },
     "projet": {
@@ -3214,14 +3214,14 @@ export const LIEUX = [
       "concept": "Un cycle hebdomadaire de yoga sur la pause déjeuner, ouvert aux salariés de toutes les entreprises adhérentes de l'association. L'association propose déjà des activités culturelles et sportives aux salariés de la zone : le yoga du midi s'y ajoute sans que chaque entreprise ait à l'organiser seule.",
       "format": "45 minutes une fois par semaine, 12 à 15 personnes, dans une salle prêtée par l'association ou par l'une des entreprises de la zone. De septembre à juin, par trimestres de dix séances. Chacun apporte son tapis, bâches de sol fournies, sans tenue particulière.",
       "deroule": "Accueil et installation, 5 min · Mobilisation du dos et des épaules, 15 min · Postures debout et équilibre, 10 min · Respiration, 10 min · Retour au calme, 5 min",
-      "prix": "90 € la séance facturée à l'association, ou 8 € par salarié inscrit via l'association. À 12 participants, la formule par salarié fait 96 € la séance ; un trimestre de dix séances à 90 € revient à 900 €.",
+      "prix": "Séance découverte 180 € facturée à l'entreprise (grille de pro.maude-yoga.com) ; programme de 4 séances sur 2 mois de 1 400 à 1 600 € ; interventions de 2 h à une journée de 350 à 2 200 €.",
       "gain_lieu": "Une activité de plus au catalogue proposé aux salariés, mutualisée entre les entreprises adhérentes, et une porte d'entrée pour des ateliers en entreprise chez les plus grosses structures de la zone.",
       "demande": "Un appel de dix minutes avec la directrice ou la chargée d'événements, puis un repérage de la salle, pour ouvrir un premier trimestre avant la Toussaint.",
       "attention": "Il faut une salle disponible chaque semaine au même créneau, prêtée par l'association ou une entreprise. Le mode de facturation (association ou par salarié) doit être fixé avant l'ouverture des inscriptions."
     },
     "email": {
-      "objet": "Un yoga du midi pour les salariés de Centr'Alp",
-      "corps": "Bonjour,\n\nJe suis Maude Pontet, professeure de yoga à Gillonnay. Votre association propose déjà des activités culturelles et sportives aux salariés de la zone, et un yoga du midi y a naturellement sa place, ouvert à toutes les entreprises adhérentes plutôt qu'à une seule.\n\nJe propose un cycle hebdomadaire « yoga du midi » de 45 minutes, de septembre à juin, dans une salle prêtée par l'association ou par l'une des entreprises, pour un groupe de 12 à 15 personnes. Dos, épaules, respiration, retour au calme : une pratique accessible à tous les corps, sans tenue particulière. Chacun apporte son tapis, j'apporte le reste.\n\nDeux façons de l'organiser, à votre main : la séance facturée 90 € à l'association, ou 8 € par salarié inscrit via l'association. Je suis assurée en responsabilité civile professionnelle. Un premier trimestre de dix séances suffit pour voir si le créneau tient.\n\nPourrions-nous en parler dix minutes au téléphone ? Je suis joignable en fin de matinée du lundi au jeudi, et je peux venir voir la salle avant de fixer une date.\n\nMaude Pontet\nMaude Yoga, Gillonnay\n06 42 63 52 38 · pro.maude-yoga.com"
+      "objet": "Un cycle de yoga du midi pour Centr'Alp",
+      "corps": "Bonjour,\n\nProfesseure de yoga à Gillonnay, j'interviens sur le lieu de travail avec du yoga et de la respiration. Je vous écris parce que vous portez la communication et les événements de l'association, qui propose déjà des activités culturelles et sportives aux salariés de Centr'Alp : un cycle de yoga du midi ouvert à plusieurs entreprises adhérentes y entre naturellement.\n\nJe propose une séance découverte de 45 minutes à 1 heure, à la pause déjeuner, dans une salle de l'association ou d'une entreprise adhérente, pour 6 à 20 personnes, à 180 euros : respiration et dos après des heures sur écran ou en atelier. Ensuite, un cycle de 4 séances sur 2 mois, ouvert à plusieurs entreprises à la fois.\n\nVos adhérents y gagnent une activité de plus pour leurs salariés, sans rien organiser.\n\nQuinze minutes au téléphone, en semaine après 13 h, suffisent pour caler une date.\n\nMaude Pontet\nMaude Yoga, Gillonnay\n06 42 63 52 38 · pro.maude-yoga.com"
     }
   },
   {
@@ -3235,27 +3235,27 @@ export const LIEUX = [
     "contact": "04 76 07 01 47 · smoc-industries.fr",
     "deja": "Industrie de précision (aéronautique, automobile, énergie)",
     "format": "Atelier « dos et souffle » de 45 min, cycle de 6",
-    "prix": "120 à 160 € la séance",
+    "prix": "Séance découverte 180 € ; programme 4 séances 1 400 à 1 600 €",
     "saison": "Toute l'année",
     "src": "https://www.lindustrie-recrute.fr/entreprise/5108/",
     "destinataire": {
-      "nom": "SMOC Industries (direction ou ressources humaines)",
+      "nom": "SMOC Industries, direction",
       "email": null,
-      "canal": "telephone 04 76 07 01 47"
+      "canal": "telephone 04 76 07 01 47 (smoc-industries.fr)"
     },
     "projet": {
       "titre": "Dos et souffle chez SMOC",
       "concept": "Un atelier de yoga « dos et souffle » pour les collaborateurs de SMOC Industries, industrie de précision pour l'aéronautique, l'automobile et l'énergie. Un travail d'attention et de postures tenues, qui pèse sur le dos et les épaules : l'atelier vise exactement ça.",
       "format": "45 minutes sur la pause déjeuner ou en fin de poste, groupe de 8 à 15 volontaires, dans une salle de réunion ou un espace dégagé du site. Cycle de 6 séances, toute l'année. Bâches de sol apportées, sans se changer.",
       "deroule": "Accueil et prise de posture, 5 min · Mobilisation douce du dos et des épaules, 20 min · Respiration guidée, 10 min · Retour au calme, 7 min · Mot de fin, 3 min",
-      "prix": "Séance facturée à l'entreprise entre 120 et 160 € selon la taille du groupe, sur devis. Un cycle de 6 séances revient à 720 à 960 € pour une douzaine de collaborateurs.",
+      "prix": "Séance découverte 180 € facturée à l'entreprise (grille de pro.maude-yoga.com) ; programme de 4 séances sur 2 mois de 1 400 à 1 600 € ; interventions de 2 h à une journée de 350 à 2 200 €.",
       "gain_lieu": "Une action concrète pour la santé du dos dans une entreprise d'une petite centaine de personnes, simple à annoncer en interne, sans déplacement ni matériel à prévoir.",
       "demande": "Un appel de dix minutes pour identifier l'interlocuteur, puis un repérage sur site et une première date avant fin novembre.",
       "attention": "Pas d'adresse email affichée, le premier contact passe par le standard. Les horaires de pause d'un site de production laissent peu de marge : le créneau doit être calé sur le planning des équipes."
     },
     "email": {
-      "objet": "Atelier dos et souffle pour vos équipes de Tullins",
-      "corps": "Bonjour,\n\nJe suis Maude Pontet, professeure de yoga à Gillonnay, à vingt-cinq kilomètres de Tullins. SMOC Industries fabrique des broches et de l'outillage de précision pour l'aéronautique, l'automobile et l'énergie : un travail d'attention et de postures tenues, qui pèse sur le dos et les épaules au fil des journées.\n\nJe propose un atelier « dos et souffle » de 45 minutes, en cycle de 6 séances, sur la pause déjeuner ou en fin de poste, dans une salle de réunion ou un espace dégagé. Mobilisation douce, respiration, un temps de retour au calme. Personne ne se change, chacun vient comme il est, j'apporte le matériel de sol.\n\nLa séance est facturée entre 120 et 160 € selon la taille du groupe, sur devis. Pour une équipe d'environ 92 collaborateurs, un premier cycle peut démarrer avec un groupe volontaire d'une douzaine de personnes. Je suis assurée en responsabilité civile professionnelle.\n\nAuriez-vous dix minutes au téléphone pour voir si un créneau se dégage ? Je suis joignable en fin de matinée du lundi au jeudi.\n\nMaude Pontet\nMaude Yoga, Gillonnay\n06 42 63 52 38 · pro.maude-yoga.com"
+      "objet": "Yoga du dos pour vos ateliers de précision",
+      "corps": "Bonjour,\n\nProfesseure de yoga à Gillonnay, j'interviens sur le lieu de travail avec du yoga et de la respiration, notamment auprès d'une PME industrielle de la région grenobloise. Je vous écris parce que la mécanique de précision, ce sont des journées debout où la concentration ne doit pas lâcher, et que Tullins est à moins de trente minutes de chez moi.\n\nJe propose une séance découverte sur site, de 45 minutes à 1 heure, en fin de poste ou à la pause déjeuner, pour 6 à 20 personnes, à 180 euros : dos, épaules et récupération, et une respiration qui aide à retrouver l'attention. Si l'équipe accroche, un programme de 4 séances sur 2 mois prend le relais.\n\nVos collaborateurs repartent avec quelques gestes simples, à refaire au poste ou chez eux.\n\nQuinze minutes au téléphone, en semaine après 13 h, suffisent pour caler une date.\n\nMaude Pontet\nMaude Yoga, Gillonnay\n06 42 63 52 38 · pro.maude-yoga.com"
     }
   },
   {
@@ -3269,27 +3269,27 @@ export const LIEUX = [
     "contact": "04 76 28 70 00 · formulaire poma.net",
     "deja": "Siège social, bureaux d'études",
     "format": "Atelier QVT « bureaux et écrans » de 45 min, cycle de 6, via le CSE",
-    "prix": "120 à 160 € la séance",
+    "prix": "Séance découverte 180 € ; programme 4 séances 1 400 à 1 600 €",
     "saison": "Toute l'année",
     "src": "https://www.poma.net/contact/",
     "destinataire": {
-      "nom": "POMA, siège de Voreppe (CSE ou ressources humaines)",
+      "nom": "POMA, siège, service RH ou CSE",
       "email": null,
-      "canal": "formulaire poma.net (ou standard 04 76 28 70 00)"
+      "canal": "formulaire poma.net (téléphone 04 76 28 70 00)"
     },
     "projet": {
       "titre": "Bureaux et écrans au siège POMA",
       "concept": "Un atelier de yoga « bureaux et écrans » pour les salariés du siège de POMA à Voreppe, bureaux d'études et fonctions support. Plusieurs centaines de personnes assises devant un écran toute la journée : nuque, épaules et dos sont les premiers à le sentir.",
       "format": "45 minutes sur la pause déjeuner, groupe de 10 à 15 personnes, dans une salle de réunion du siège. Cycle de 6 séances, toute l'année, porté par le CSE au titre de la qualité de vie au travail. Bâches de sol apportées, sans se changer.",
       "deroule": "Accueil et posture assise, 5 min · Nuque et épaules, 12 min · Dos et hanches, 13 min · Respiration, 10 min · Retour au calme, 5 min",
-      "prix": "Séance facturée entre 120 et 160 € selon la taille du groupe, sur devis, à l'entreprise ou au CSE. Un cycle de 6 séances revient à 720 à 960 € pour une quinzaine de salariés.",
+      "prix": "Séance découverte 180 € facturée à l'entreprise (grille de pro.maude-yoga.com) ; programme de 4 séances sur 2 mois de 1 400 à 1 600 € ; interventions de 2 h à une journée de 350 à 2 200 €.",
       "gain_lieu": "Une action QVT prête à annoncer aux salariés du siège, sans logistique de leur côté, et un cycle court qui se renouvelle si le groupe suit.",
       "demande": "Que le message soit transmis à la personne qui suit la qualité de vie au travail (CSE ou ressources humaines), puis un appel de dix minutes et un repérage de la salle.",
       "attention": "Le contact passe par un formulaire générique : le message doit trouver le CSE ou les RH, sinon il se perd. Un siège de cette taille peut avoir un prestataire bien-être déjà en place, à vérifier au premier appel."
     },
     "email": {
-      "objet": "Atelier bureaux et écrans pour le siège de Voreppe",
-      "corps": "Bonjour,\n\nJe suis Maude Pontet, professeure de yoga à Gillonnay, en Isère. Le siège de POMA à Voreppe réunit des bureaux d'études et plusieurs centaines de salariés qui passent leurs journées devant un écran : c'est le public pour lequel j'ai construit un atelier « bureaux et écrans ».\n\nIl dure 45 minutes, en cycle de 6 séances, sur la pause déjeuner, dans une salle de réunion. Nuque, épaules, dos, respiration, un temps de retour au calme, sans tenue particulière : chacun vient comme il est, j'apporte le matériel de sol.\n\nCe type d'atelier passe le plus souvent par le CSE ou par les ressources humaines, au titre de la qualité de vie au travail. La séance est facturée entre 120 et 160 € selon la taille du groupe, sur devis, sans engagement au-delà du cycle. Je suis assurée en responsabilité civile professionnelle.\n\nPourriez-vous transmettre ce message à la personne qui suit ces sujets, ou m'indiquer à qui l'adresser ? Je suis joignable en fin de matinée du lundi au jeudi pour un appel de dix minutes.\n\nMaude Pontet\nMaude Yoga, Gillonnay\n06 42 63 52 38 · pro.maude-yoga.com"
+      "objet": "Yoga du midi pour le siège de POMA",
+      "corps": "Bonjour,\n\nProfesseure de yoga à Gillonnay, j'interviens sur le lieu de travail avec du yoga et de la respiration, notamment auprès d'une scale-up tech grenobloise. Je vous écris parce que le siège de POMA réunit à Voreppe plusieurs centaines de personnes sur écran, avec un CSE.\n\nJe propose une séance découverte sur site, de 45 minutes à 1 heure, à la pause déjeuner ou en fin de journée, pour 6 à 20 personnes, à 180 euros, pensée pour les journées sur écran : nuque, épaules, dos, et une respiration qui fait redescendre la pression. Si l'équipe accroche, un programme de 4 séances sur 2 mois prend le relais.\n\nVos collaborateurs repartent avec des gestes simples à refaire à leur poste.\n\nSi ce n'est pas vous, merci de transmettre à la personne en charge de la QVT ou du CSE. Quinze minutes au téléphone, en semaine après 13 h, suffisent pour caler une date.\n\nMaude Pontet\nMaude Yoga, Gillonnay\n06 42 63 52 38 · pro.maude-yoga.com"
     }
   },
   {
@@ -3902,6 +3902,1366 @@ export const LIEUX = [
     "email": {
       "objet": "Un week-end de yoga dans votre gîte de groupe",
       "corps": "Bonjour,\n\nJe suis Maude Pontet, professeure de yoga à Gillonnay, troisième saison à l'Espace Montgontier. Votre gîte de groupe reçoit déjà des week-ends et des séminaires, avec un salon fermé de 25 m². Je vous écris pour un week-end de retraite de yoga.\n\nCe que je propose : un week-end du vendredi soir au dimanche après-midi pour dix à quatorze personnes. Quatre temps de pratique douce, dehors par beau temps, et dans le salon pour la respiration, la méditation et les temps assis. Des repas préparés ensemble. Chacun apporte son tapis, je viens avec le matériel de sol. Je suis assurée en responsabilité civile professionnelle, y compris hors salle.\n\nJe vends les places en ligne, payées d'avance, entre 300 et 345 € par personne selon votre tarif, et je vous règle la location. Je publie le week-end sur les agendas de l'Isère et je vous remets les photos du groupe.\n\nPourriez-vous m'indiquer vos disponibilités d'avril à octobre hors vacances scolaires, votre tarif pour quatorze personnes sur deux nuits, et l'espace extérieur où nous pourrions pratiquer ? Je peux venir repérer les lieux un matin.\n\nMaude Pontet\nMaude Yoga, Gillonnay\n06 42 63 52 38 · maude-yoga.com"
+    }
+  },
+  {
+    "id": "fresenius",
+    "cat": "pro",
+    "nom": "Fresenius Vial (Fresenius Kabi)",
+    "lieu": "Brézins",
+    "km": 6,
+    "prio": 2,
+    "gest": "Dispositifs médicaux : R&D et production de pompes à perfusion et de nutrition · plus de 450 collaborateurs (site)",
+    "contact": "telephone 04 76 67 10 10 (pas d'email générique publié ; candidatures par le portail carrières)",
+    "deja": "ISO 45001, enquête « Voice of Employee », ateliers compétences, index égalité 89/100, bornes véhicules électriques et covoiturage : une démarche QVT visible. Production et R&D, donc postes debout et postes sur écran.",
+    "format": "Séance découverte de 45 min à 1 h sur site, puis programme de 4 séances sur 2 mois",
+    "prix": "Séance découverte 180 € ; programme 4 séances 1 400 à 1 600 €",
+    "saison": "Toute l'année",
+    "src": "https://www.fresenius-kabi.com/fr/nos-sites-en-france/brezins",
+    "destinataire": {
+      "nom": "Fresenius Vial (Fresenius Kabi), Natacha Goszka, responsable RH ; Guillaume Thomas, directeur de site",
+      "email": null,
+      "canal": "telephone 04 76 67 10 10 (pas d'email générique publié ; candidatures par le portail carrières)"
+    },
+    "projet": {
+      "titre": "Séance découverte sur site",
+      "concept": "Une démarche QVT visible (ISO 45001, enquête Voice of Employee, ateliers compétences) sur un site qui mêle production debout et R&D sur écran, à 6 km de Gillonnay. Une séance découverte de 45 min à 1 h sur le lieu de travail, adaptée au métier, puis un programme de 4 séances sur 2 mois si l'équipe y trouve son compte.",
+      "format": "45 min à 1 h sur site, 6 à 20 personnes, à la pause déjeuner ou en fin de poste ; salle de réunion ou réfectoire, matériel apporté par Maude. Interlocuteur : Natacha Goszka, responsable RH ; Guillaume Thomas, directeur de site.",
+      "deroule": "Accueil et consignes, 5 min · respiration, 10 min · postures debout ou sur chaise adaptées au poste, 25 min · récupération et retour au calme, 10 min",
+      "prix": "Séance découverte 180 € facturée à l'entreprise (grille de pro.maude-yoga.com) ; programme de 4 séances sur 2 mois de 1 400 à 1 600 € ; interventions de 2 h à une journée de 350 à 2 200 €.",
+      "gain_lieu": "Une action QVT concrète et peu coûteuse, à 30 minutes de route au plus, portée par une intervenante du territoire ; des équipes qui repartent avec des gestes réutilisables au poste.",
+      "demande": "Quinze minutes de téléphone, ou une date pour la séance découverte ; disponibilité en semaine après 13 h.",
+      "attention": "Pas d'adresse email publique : telephone 04 76 67 10 10 (pas d'email générique publié ; candidatures par le portail carrières). Le texte se colle dans le formulaire ou sert de trame au téléphone. Source vérifiée : https://www.fresenius-kabi.com/fr/nos-sites-en-france/brezins"
+    },
+    "email": {
+      "objet": "Séance découverte yoga sur site à Brézins",
+      "corps": "Bonjour,\n\nJe suis Maude Pontet, professeure de yoga à Gillonnay, à 6 km de votre site de Brézins. Votre démarche, ISO 45001, enquête Voice of Employee, ateliers compétences, montre que la qualité de vie au travail compte chez vous, et j'aimerais y contribuer sur le terrain.\n\nJe vous propose une séance découverte de 45 minutes à une heure, sur site, à la pause déjeuner ou en fin de poste, pour 6 à 20 personnes, à 180 euros, adaptée au métier : dos, posture debout et récupération pour la production, écrans et respiration pour la R&D. Ensuite, si l'équipe y trouve son compte, un programme de 4 séances sur 2 mois.\n\nVos collaborateurs repartent avec des gestes simples, réutilisables au poste, et un moment partagé entre services.\n\nAuriez-vous quinze minutes au téléphone, ou une date pour la découverte ? Je suis joignable en semaine après 13 h.\n\nMaude Pontet\nMaude Yoga, Gillonnay\n06 42 63 52 38 · pro.maude-yoga.com"
+    }
+  },
+  {
+    "id": "auteuil-jmv",
+    "cat": "pro",
+    "nom": "Apprentis d'Auteuil, lycée professionnel Jean-Marie Vianney",
+    "lieu": "La Côte-Saint-André",
+    "km": 3,
+    "prio": 1,
+    "gest": "Enseignement professionnel privé (mécanique moto, bâtiment, restauration) et école de production · 100 à 199",
+    "contact": "accueil-sitejmv@apprentis-auteuil.org · email",
+    "deja": "La fondation a signé un accord QVCT le 15 septembre 2025 pour quatre ans. Des éducateurs et des enseignants face à des jeunes en difficulté, à 3 km de chez Maude.",
+    "format": "Séance découverte de 45 min à 1 h sur site, puis programme de 4 séances sur 2 mois",
+    "prix": "Séance découverte 180 € ; programme 4 séances 1 400 à 1 600 €",
+    "saison": "Toute l'année",
+    "src": "https://jeanmarievianney.apprentis-auteuil.org/infos-pratiques/contact-1",
+    "destinataire": {
+      "nom": "Apprentis d'Auteuil, lycée professionnel Jean-Marie Vianney, service RH ou direction",
+      "email": "accueil-sitejmv@apprentis-auteuil.org",
+      "canal": "email"
+    },
+    "projet": {
+      "titre": "Séance découverte sur site",
+      "concept": "La fondation a signé un accord QVCT le 15 septembre 2025 pour quatre ans, et des éducateurs et enseignants travaillent avec des jeunes en difficulté à 3 km de Gillonnay. Une séance découverte de 45 min à 1 h sur le lieu de travail, adaptée au métier, puis un programme de 4 séances sur 2 mois si l'équipe y trouve son compte.",
+      "format": "45 min à 1 h sur site, 6 à 20 personnes, à la pause déjeuner ou en fin de poste ; salle de réunion ou réfectoire, matériel apporté par Maude. Interlocuteur : service RH ou direction.",
+      "deroule": "Accueil et consignes, 5 min · respiration, 10 min · postures debout ou sur chaise adaptées au poste, 25 min · récupération et retour au calme, 10 min",
+      "prix": "Séance découverte 180 € facturée à l'entreprise (grille de pro.maude-yoga.com) ; programme de 4 séances sur 2 mois de 1 400 à 1 600 € ; interventions de 2 h à une journée de 350 à 2 200 €.",
+      "gain_lieu": "Une action QVT concrète et peu coûteuse, à 30 minutes de route au plus, portée par une intervenante du territoire ; des équipes qui repartent avec des gestes réutilisables au poste.",
+      "demande": "Quinze minutes de téléphone, ou une date pour la séance découverte ; disponibilité en semaine après 13 h.",
+      "attention": "Adresse générique : demander la transmission à la QVT, au CSE ou aux RH. Source vérifiée : https://jeanmarievianney.apprentis-auteuil.org/infos-pratiques/contact-1"
+    },
+    "email": {
+      "objet": "Respiration et stress, équipe éducative",
+      "corps": "Bonjour,\n\nJe suis Maude Pontet, professeure de yoga à Gillonnay, à 3 km de votre lycée, et j'interviens déjà en collège et en lycée sur la gestion du stress. L'accord QVCT signé par la fondation en septembre 2025 me fait vous écrire : vos éducateurs et vos enseignants tiennent face à des jeunes qui demandent beaucoup.\n\nJe vous propose une séance découverte de 45 minutes à une heure, sur place, à la pause déjeuner ou en fin de journée, pour 6 à 20 personnes, à 180 euros : respiration, retour au calme après une situation tendue, posture pour tenir en classe ou à l'atelier. Ensuite, si l'équipe y trouve son compte, un programme de 4 séances sur 2 mois.\n\nVous y gagnez des adultes plus posés devant les jeunes.\n\nPourriez-vous transmettre à la personne qui suit la QVT ou les RH ? Quinze minutes au téléphone suffisent, en semaine après 13 h.\n\nMaude Pontet\nMaude Yoga, Gillonnay\n06 42 63 52 38 · pro.maude-yoga.com"
+    }
+  },
+  {
+    "id": "eurobeton",
+    "cat": "pro",
+    "nom": "Eurobéton France (groupe PBM)",
+    "lieu": "Saint-Siméon-de-Bressieux",
+    "km": 12,
+    "prio": 1,
+    "gest": "Fabrication d'éléments en béton pour la construction · 100 à 199",
+    "contact": "contact@eurobeton.fr · email",
+    "deja": "Index égalité publié, engagement diversité et handicap. Un site de production où l'on porte et l'on manutentionne : le dos.",
+    "format": "Séance découverte de 45 min à 1 h sur site, puis programme de 4 séances sur 2 mois",
+    "prix": "Séance découverte 180 € ; programme 4 séances 1 400 à 1 600 €",
+    "saison": "Toute l'année",
+    "src": "https://www.eurobeton.fr/contact/",
+    "destinataire": {
+      "nom": "Eurobéton France (groupe PBM), Christelle Mouchon, DRH du groupe PBM (Saint-Priest)",
+      "email": "contact@eurobeton.fr",
+      "canal": "email"
+    },
+    "projet": {
+      "titre": "Séance découverte sur site",
+      "concept": "Un site de production où l'on porte et manutentionne des éléments en béton, avec un index égalité publié et un engagement diversité et handicap affiché. Une séance découverte de 45 min à 1 h sur le lieu de travail, adaptée au métier, puis un programme de 4 séances sur 2 mois si l'équipe y trouve son compte.",
+      "format": "45 min à 1 h sur site, 6 à 20 personnes, à la pause déjeuner ou en fin de poste ; salle de réunion ou réfectoire, matériel apporté par Maude. Interlocuteur : Christelle Mouchon, DRH du groupe PBM (Saint-Priest).",
+      "deroule": "Accueil et consignes, 5 min · respiration, 10 min · postures debout ou sur chaise adaptées au poste, 25 min · récupération et retour au calme, 10 min",
+      "prix": "Séance découverte 180 € facturée à l'entreprise (grille de pro.maude-yoga.com) ; programme de 4 séances sur 2 mois de 1 400 à 1 600 € ; interventions de 2 h à une journée de 350 à 2 200 €.",
+      "gain_lieu": "Une action QVT concrète et peu coûteuse, à 30 minutes de route au plus, portée par une intervenante du territoire ; des équipes qui repartent avec des gestes réutilisables au poste.",
+      "demande": "Quinze minutes de téléphone, ou une date pour la séance découverte ; disponibilité en semaine après 13 h.",
+      "attention": "Adresse générique : demander la transmission à la QVT, au CSE ou aux RH. Source vérifiée : https://www.eurobeton.fr/contact/"
+    },
+    "email": {
+      "objet": "Le dos de vos équipes de production",
+      "corps": "Bonjour,\n\nJe suis Maude Pontet, professeure de yoga à Gillonnay, à 12 km de Saint-Siméon-de-Bressieux, et j'anime des ateliers de posture et de récupération en entreprise. Fabriquer des éléments en béton, c'est porter et manutentionner toute la journée, et votre engagement affiché sur l'égalité, la diversité et le handicap me laisse penser que la santé des équipes vous parle.\n\nJe vous propose une séance découverte de 45 minutes à une heure, sur site, à la pause déjeuner ou en fin de poste, pour 6 à 20 personnes, à 180 euros : le dos, les épaules et la récupération. Ensuite, si l'équipe y trouve son compte, un programme de 4 séances sur 2 mois.\n\nVos équipes repartent avec quelques réflexes pour se protéger le dos au poste.\n\nPourriez-vous transmettre à la personne qui suit la QVT, le CSE ou les RH ? Quinze minutes au téléphone suffisent, en semaine après 13 h.\n\nMaude Pontet\nMaude Yoga, Gillonnay\n06 42 63 52 38 · pro.maude-yoga.com"
+    }
+  },
+  {
+    "id": "schneider-sea",
+    "cat": "pro",
+    "nom": "Schneider Electric France, site SEA",
+    "lieu": "Saint-Étienne-de-Saint-Geoirs",
+    "km": 10,
+    "prio": 2,
+    "gest": "Moulage époxy pour appareillage moyenne tension · 50 à 99",
+    "contact": "telephone 04 76 37 06 49 (aucun email local publié)",
+    "deja": "CSE actif, investissements presses et moules annoncés en avril 2024. Ateliers de moulage : postes physiques, équipes en horaires.",
+    "format": "Séance découverte de 45 min à 1 h sur site, puis programme de 4 séances sur 2 mois",
+    "prix": "Séance découverte 180 € ; programme 4 séances 1 400 à 1 600 €",
+    "saison": "Toute l'année",
+    "src": "https://industrie.usinenouvelle.com/fiche/etablissement/schneider-electric-france-55180664",
+    "destinataire": {
+      "nom": "Schneider Electric France, site SEA, direction de site ou CSE",
+      "email": null,
+      "canal": "telephone 04 76 37 06 49 (aucun email local publié)"
+    },
+    "projet": {
+      "titre": "Séance découverte sur site",
+      "concept": "Des ateliers de moulage aux postes physiques et en horaires, un CSE actif et des investissements presses et moules annoncés en avril 2024. Une séance découverte de 45 min à 1 h sur le lieu de travail, adaptée au métier, puis un programme de 4 séances sur 2 mois si l'équipe y trouve son compte.",
+      "format": "45 min à 1 h sur site, 6 à 20 personnes, à la pause déjeuner ou en fin de poste ; salle de réunion ou réfectoire, matériel apporté par Maude. Interlocuteur : direction de site ou CSE.",
+      "deroule": "Accueil et consignes, 5 min · respiration, 10 min · postures debout ou sur chaise adaptées au poste, 25 min · récupération et retour au calme, 10 min",
+      "prix": "Séance découverte 180 € facturée à l'entreprise (grille de pro.maude-yoga.com) ; programme de 4 séances sur 2 mois de 1 400 à 1 600 € ; interventions de 2 h à une journée de 350 à 2 200 €.",
+      "gain_lieu": "Une action QVT concrète et peu coûteuse, à 30 minutes de route au plus, portée par une intervenante du territoire ; des équipes qui repartent avec des gestes réutilisables au poste.",
+      "demande": "Quinze minutes de téléphone, ou une date pour la séance découverte ; disponibilité en semaine après 13 h.",
+      "attention": "Pas d'adresse email publique : telephone 04 76 37 06 49 (aucun email local publié). Le texte se colle dans le formulaire ou sert de trame au téléphone. Source vérifiée : https://industrie.usinenouvelle.com/fiche/etablissement/schneider-electric-france-55180664"
+    },
+    "email": {
+      "objet": "Dos et récupération, atelier de moulage",
+      "corps": "Bonjour,\n\nJe suis Maude Pontet, professeure de yoga à Gillonnay, à 10 km de votre site de Saint-Étienne-de-Saint-Geoirs, et j'interviens déjà auprès d'une PME industrielle de la région grenobloise. Le moulage époxy, ce sont des postes physiques et des équipes en horaires, et votre CSE m'a semblé le bon endroit pour en parler.\n\nJe vous propose une séance découverte de 45 minutes à une heure, sur site, à la pause déjeuner ou en fin de poste, pour 6 à 20 personnes, à 180 euros : le dos, les épaules et la récupération après le poste, avec des gestes qui tiennent dans un réfectoire. Ensuite, si l'équipe y trouve son compte, un programme de 4 séances sur 2 mois.\n\nVos opérateurs repartent avec des réflexes simples pour se ménager au poste.\n\nAuriez-vous quinze minutes au téléphone, ou une date pour la découverte ? Je suis joignable en semaine après 13 h.\n\nMaude Pontet\nMaude Yoga, Gillonnay\n06 42 63 52 38 · pro.maude-yoga.com"
+    }
+  },
+  {
+    "id": "mairie-csa",
+    "cat": "pro",
+    "nom": "Commune de La Côte-Saint-André",
+    "lieu": "La Côte-Saint-André",
+    "km": 3,
+    "prio": 1,
+    "gest": "Collectivité territoriale (services techniques, périscolaire, administration) · 50 à 99 agents",
+    "contact": "contact@lacotesaintandre.fr · email",
+    "deja": "La commune de Maude au quotidien (le festival Berlioz, la Halle), des agents techniques et administratifs.",
+    "format": "Séance découverte de 45 min à 1 h sur site, puis programme de 4 séances sur 2 mois",
+    "prix": "Séance découverte 180 € ; programme 4 séances 1 400 à 1 600 €",
+    "saison": "Toute l'année",
+    "src": "https://www.lacotesaintandre.fr/contact/",
+    "destinataire": {
+      "nom": "Commune de La Côte-Saint-André, direction générale des services ou service RH",
+      "email": "contact@lacotesaintandre.fr",
+      "canal": "email"
+    },
+    "projet": {
+      "titre": "Séance découverte sur site",
+      "concept": "La commune de Maude au quotidien, avec des agents techniques, périscolaires et administratifs à 3 km de chez elle. Une séance découverte de 45 min à 1 h sur le lieu de travail, adaptée au métier, puis un programme de 4 séances sur 2 mois si l'équipe y trouve son compte.",
+      "format": "45 min à 1 h sur site, 6 à 20 personnes, à la pause déjeuner ou en fin de poste ; salle de réunion ou réfectoire, matériel apporté par Maude. Interlocuteur : direction générale des services ou service RH.",
+      "deroule": "Accueil et consignes, 5 min · respiration, 10 min · postures debout ou sur chaise adaptées au poste, 25 min · récupération et retour au calme, 10 min",
+      "prix": "Séance découverte 180 € facturée à l'entreprise (grille de pro.maude-yoga.com) ; programme de 4 séances sur 2 mois de 1 400 à 1 600 € ; interventions de 2 h à une journée de 350 à 2 200 €.",
+      "gain_lieu": "Une action QVT concrète et peu coûteuse, à 30 minutes de route au plus, portée par une intervenante du territoire ; des équipes qui repartent avec des gestes réutilisables au poste.",
+      "demande": "Quinze minutes de téléphone, ou une date pour la séance découverte ; disponibilité en semaine après 13 h.",
+      "attention": "Adresse générique : demander la transmission à la QVT, au CSE ou aux RH. Source vérifiée : https://www.lacotesaintandre.fr/contact/"
+    },
+    "email": {
+      "objet": "Séance découverte pour les agents",
+      "corps": "Bonjour,\n\nJe suis Maude Pontet, professeure de yoga à Gillonnay, et La Côte-Saint-André est la commune de mon quotidien, à 3 km de chez moi. Vos agents des services techniques, du périscolaire et de l'administration n'ont pas les mêmes journées, mais tous tiennent un rythme soutenu au service des habitants.\n\nJe vous propose une séance découverte de 45 minutes à une heure, sur place, à la pause déjeuner ou en fin de service, pour 6 à 20 agents, à 180 euros : dos et récupération pour les équipes techniques, respiration et relâchement des tensions pour les bureaux et le périscolaire. Ensuite, si l'équipe y trouve son compte, un programme de 4 séances sur 2 mois.\n\nVos agents repartent avec des gestes simples à refaire seuls, et un moment partagé entre services.\n\nPourriez-vous transmettre à la direction générale des services ou aux RH ? Quinze minutes au téléphone suffisent, en semaine après 13 h.\n\nMaude Pontet\nMaude Yoga, Gillonnay\n06 42 63 52 38 · pro.maude-yoga.com"
+    }
+  },
+  {
+    "id": "lycee-agricole",
+    "cat": "pro",
+    "nom": "Lycée agricole de La Côte-Saint-André (EPLEFPA, École de la nature et du vivant)",
+    "lieu": "La Côte-Saint-André",
+    "km": 3,
+    "prio": 1,
+    "gest": "Lycée agricole public, CFA, CFPPA, exploitation · 50 à 99",
+    "contact": "epl.cote-st-andre@educagri.fr · email",
+    "deja": "Enseignants, formateurs et personnels d'exploitation ; un internat, des journées longues.",
+    "format": "Séance découverte de 45 min à 1 h sur site, puis programme de 4 séances sur 2 mois",
+    "prix": "Séance découverte 180 € ; programme 4 séances 1 400 à 1 600 €",
+    "saison": "Toute l'année",
+    "src": "https://www.formagri38.fr/contact/",
+    "destinataire": {
+      "nom": "Lycée agricole de La Côte-Saint-André (EPLEFPA, École de la nature et du vivant), direction ou secrétariat général",
+      "email": "epl.cote-st-andre@educagri.fr",
+      "canal": "email"
+    },
+    "projet": {
+      "titre": "Séance découverte sur site",
+      "concept": "Des enseignants, des formateurs et des personnels d'exploitation, un internat et des journées longues, à 3 km de Gillonnay. Une séance découverte de 45 min à 1 h sur le lieu de travail, adaptée au métier, puis un programme de 4 séances sur 2 mois si l'équipe y trouve son compte.",
+      "format": "45 min à 1 h sur site, 6 à 20 personnes, à la pause déjeuner ou en fin de poste ; salle de réunion ou réfectoire, matériel apporté par Maude. Interlocuteur : direction ou secrétariat général.",
+      "deroule": "Accueil et consignes, 5 min · respiration, 10 min · postures debout ou sur chaise adaptées au poste, 25 min · récupération et retour au calme, 10 min",
+      "prix": "Séance découverte 180 € facturée à l'entreprise (grille de pro.maude-yoga.com) ; programme de 4 séances sur 2 mois de 1 400 à 1 600 € ; interventions de 2 h à une journée de 350 à 2 200 €.",
+      "gain_lieu": "Une action QVT concrète et peu coûteuse, à 30 minutes de route au plus, portée par une intervenante du territoire ; des équipes qui repartent avec des gestes réutilisables au poste.",
+      "demande": "Quinze minutes de téléphone, ou une date pour la séance découverte ; disponibilité en semaine après 13 h.",
+      "attention": "Adresse générique : demander la transmission à la QVT, au CSE ou aux RH. Source vérifiée : https://www.formagri38.fr/contact/"
+    },
+    "email": {
+      "objet": "Gestion du stress pour l'équipe du lycée",
+      "corps": "Bonjour,\n\nJe suis Maude Pontet, professeure de yoga à Gillonnay, à 3 km de votre établissement, et j'interviens déjà en collège et en lycée sur la gestion du stress. Chez vous, les journées sont longues : des enseignants et des formateurs devant des classes, un internat, et des personnels d'exploitation dont le métier est physique.\n\nJe vous propose une séance découverte de 45 minutes à une heure, sur place, à la pause déjeuner ou en fin de journée, pour 6 à 20 personnes, à 180 euros : respiration et retour au calme pour les équipes pédagogiques, dos et récupération pour l'exploitation. Ensuite, si l'équipe y trouve son compte, un programme de 4 séances sur 2 mois.\n\nVous y gagnez des adultes plus posés devant les élèves, avec des outils qu'ils gardent.\n\nPourriez-vous transmettre à la direction ou au secrétariat général ? Quinze minutes au téléphone suffisent, en semaine après 13 h.\n\nMaude Pontet\nMaude Yoga, Gillonnay\n06 42 63 52 38 · pro.maude-yoga.com"
+    }
+  },
+  {
+    "id": "france-alu-color",
+    "cat": "pro",
+    "nom": "France Alu Color",
+    "lieu": "Marcilloles",
+    "km": 12,
+    "prio": 1,
+    "gest": "Thermolaquage de profilés aluminium · 50 à 99",
+    "contact": "contact@france-alu-color.com · email",
+    "deja": "Page « Nos engagements RSE », certifications qualité affichées. Atelier de thermolaquage : gestes répétés, manutention.",
+    "format": "Séance découverte de 45 min à 1 h sur site, puis programme de 4 séances sur 2 mois",
+    "prix": "Séance découverte 180 € ; programme 4 séances 1 400 à 1 600 €",
+    "saison": "Toute l'année",
+    "src": "https://www.france-alu-color.com/notre-entreprise/",
+    "destinataire": {
+      "nom": "France Alu Color, direction ou service RH",
+      "email": "contact@france-alu-color.com",
+      "canal": "email"
+    },
+    "projet": {
+      "titre": "Séance découverte sur site",
+      "concept": "Un atelier de thermolaquage aux gestes répétés et à la manutention, avec une page « Nos engagements RSE » et des certifications qualité affichées. Une séance découverte de 45 min à 1 h sur le lieu de travail, adaptée au métier, puis un programme de 4 séances sur 2 mois si l'équipe y trouve son compte.",
+      "format": "45 min à 1 h sur site, 6 à 20 personnes, à la pause déjeuner ou en fin de poste ; salle de réunion ou réfectoire, matériel apporté par Maude. Interlocuteur : direction ou service RH.",
+      "deroule": "Accueil et consignes, 5 min · respiration, 10 min · postures debout ou sur chaise adaptées au poste, 25 min · récupération et retour au calme, 10 min",
+      "prix": "Séance découverte 180 € facturée à l'entreprise (grille de pro.maude-yoga.com) ; programme de 4 séances sur 2 mois de 1 400 à 1 600 € ; interventions de 2 h à une journée de 350 à 2 200 €.",
+      "gain_lieu": "Une action QVT concrète et peu coûteuse, à 30 minutes de route au plus, portée par une intervenante du territoire ; des équipes qui repartent avec des gestes réutilisables au poste.",
+      "demande": "Quinze minutes de téléphone, ou une date pour la séance découverte ; disponibilité en semaine après 13 h.",
+      "attention": "Adresse générique : demander la transmission à la QVT, au CSE ou aux RH. Source vérifiée : https://www.france-alu-color.com/notre-entreprise/"
+    },
+    "email": {
+      "objet": "Le dos de vos équipes de thermolaquage",
+      "corps": "Bonjour,\n\nJe suis Maude Pontet, professeure de yoga à Gillonnay, à 12 km de Marcilloles, et j'interviens déjà auprès d'une PME industrielle de la région grenobloise. Le thermolaquage de profilés, ce sont des gestes répétés et de la manutention toute la journée, et vos engagements RSE affichés me laissent penser que la santé des équipes vous parle.\n\nJe vous propose une séance découverte de 45 minutes à une heure, sur site, à la pause déjeuner ou en fin de poste, pour 6 à 20 personnes, à 180 euros : le dos, les épaules et la récupération, avec des gestes qui tiennent dans un réfectoire. Ensuite, si l'équipe y trouve son compte, un programme de 4 séances sur 2 mois.\n\nVos opérateurs repartent avec des réflexes simples pour se ménager au poste.\n\nPourriez-vous transmettre à la personne qui suit la QVT, le CSE ou les RH ? Quinze minutes au téléphone suffisent, en semaine après 13 h.\n\nMaude Pontet\nMaude Yoga, Gillonnay\n06 42 63 52 38 · pro.maude-yoga.com"
+    }
+  },
+  {
+    "id": "alutec",
+    "cat": "pro",
+    "nom": "Alutec (groupe Aluthea)",
+    "lieu": "Porte-des-Bonnevaux (Semons)",
+    "km": 10,
+    "prio": 2,
+    "gest": "Fonderie aluminium, pièces techniques · 50 à 99 (groupe de plus de 300)",
+    "contact": "formulaire https://www.aluthea.com/contact/ (téléphone 04 74 54 41 65)",
+    "deja": "Fonderie : chaleur, postes physiques, équipes postées.",
+    "format": "Séance découverte de 45 min à 1 h sur site, puis programme de 4 séances sur 2 mois",
+    "prix": "Séance découverte 180 € ; programme 4 séances 1 400 à 1 600 €",
+    "saison": "Toute l'année",
+    "src": "https://www.aluthea.com/",
+    "destinataire": {
+      "nom": "Alutec (groupe Aluthea), direction de site",
+      "email": null,
+      "canal": "formulaire https://www.aluthea.com/contact/ (téléphone 04 74 54 41 65)"
+    },
+    "projet": {
+      "titre": "Séance découverte sur site",
+      "concept": "Une fonderie aluminium : chaleur, postes physiques et équipes postées, à 10 km de Gillonnay. Une séance découverte de 45 min à 1 h sur le lieu de travail, adaptée au métier, puis un programme de 4 séances sur 2 mois si l'équipe y trouve son compte.",
+      "format": "45 min à 1 h sur site, 6 à 20 personnes, à la pause déjeuner ou en fin de poste ; salle de réunion ou réfectoire, matériel apporté par Maude. Interlocuteur : direction de site.",
+      "deroule": "Accueil et consignes, 5 min · respiration, 10 min · postures debout ou sur chaise adaptées au poste, 25 min · récupération et retour au calme, 10 min",
+      "prix": "Séance découverte 180 € facturée à l'entreprise (grille de pro.maude-yoga.com) ; programme de 4 séances sur 2 mois de 1 400 à 1 600 € ; interventions de 2 h à une journée de 350 à 2 200 €.",
+      "gain_lieu": "Une action QVT concrète et peu coûteuse, à 30 minutes de route au plus, portée par une intervenante du territoire ; des équipes qui repartent avec des gestes réutilisables au poste.",
+      "demande": "Quinze minutes de téléphone, ou une date pour la séance découverte ; disponibilité en semaine après 13 h.",
+      "attention": "Pas d'adresse email publique : formulaire https://www.aluthea.com/contact/ (téléphone 04 74 54 41 65). Le texte se colle dans le formulaire ou sert de trame au téléphone. Source vérifiée : https://www.aluthea.com/"
+    },
+    "email": {
+      "objet": "Récupération pour vos équipes de fonderie",
+      "corps": "Bonjour,\n\nJe suis Maude Pontet, professeure de yoga à Gillonnay, à 10 km de votre fonderie de Semons, et j'interviens déjà auprès d'une PME industrielle de la région grenobloise. Une fonderie, c'est la chaleur, des postes physiques et des équipes postées : un métier qui use le corps si on ne lui laisse pas le temps de récupérer.\n\nJe vous propose une séance découverte de 45 minutes à une heure, sur site, à la pause déjeuner ou en fin de poste, pour 6 à 20 personnes, à 180 euros : le dos, les épaules, la récupération après le poste et la respiration pour redescendre après la chaleur. Ensuite, si l'équipe y trouve son compte, un programme de 4 séances sur 2 mois.\n\nVos opérateurs repartent avec des réflexes simples pour se ménager au poste.\n\nAuriez-vous quinze minutes au téléphone, ou une date pour la découverte ? Je suis joignable en semaine après 13 h.\n\nMaude Pontet\nMaude Yoga, Gillonnay\n06 42 63 52 38 · pro.maude-yoga.com"
+    }
+  },
+  {
+    "id": "oxance-grand-chene",
+    "cat": "pro",
+    "nom": "Oxance, foyer de vie Le Grand Chêne",
+    "lieu": "Izeaux",
+    "km": 10,
+    "prio": 2,
+    "gest": "Accueil d'adultes en situation de handicap moteur (hébergement et accueil de jour) · 50 à 99",
+    "contact": "formulaire https://oxance.fr/contactez-oxance/ (téléphone 04 76 93 89 89)",
+    "deja": "Des équipes d'accompagnement qui portent, soulèvent, veillent. Maude est certifiée yoga adapté : une séance pour le personnel et une piste pour les résidents.",
+    "format": "Séance découverte de 45 min à 1 h sur site, puis programme de 4 séances sur 2 mois",
+    "prix": "Séance découverte 180 € ; programme 4 séances 1 400 à 1 600 €",
+    "saison": "Toute l'année",
+    "src": "https://oxance.fr/centres/foyer-de-vie-%C2%96-le-grand-chene/",
+    "destinataire": {
+      "nom": "Oxance, foyer de vie Le Grand Chêne, direction du foyer",
+      "email": null,
+      "canal": "formulaire https://oxance.fr/contactez-oxance/ (téléphone 04 76 93 89 89)"
+    },
+    "projet": {
+      "titre": "Séance découverte sur site",
+      "concept": "Des équipes qui portent, soulèvent et veillent auprès d'adultes en situation de handicap moteur ; Maude est certifiée yoga adapté, sur chaise. Une séance découverte de 45 min à 1 h sur le lieu de travail, adaptée au métier, puis un programme de 4 séances sur 2 mois si l'équipe y trouve son compte.",
+      "format": "45 min à 1 h sur site, 6 à 20 personnes, à la pause déjeuner ou en fin de poste ; salle de réunion ou réfectoire, matériel apporté par Maude. Interlocuteur : direction du foyer.",
+      "deroule": "Accueil et consignes, 5 min · respiration, 10 min · postures debout ou sur chaise adaptées au poste, 25 min · récupération et retour au calme, 10 min",
+      "prix": "Séance découverte 180 € facturée à l'entreprise (grille de pro.maude-yoga.com) ; programme de 4 séances sur 2 mois de 1 400 à 1 600 € ; interventions de 2 h à une journée de 350 à 2 200 €.",
+      "gain_lieu": "Une action QVT concrète et peu coûteuse, à 30 minutes de route au plus, portée par une intervenante du territoire ; des équipes qui repartent avec des gestes réutilisables au poste.",
+      "demande": "Quinze minutes de téléphone, ou une date pour la séance découverte ; disponibilité en semaine après 13 h.",
+      "attention": "Pas d'adresse email publique : formulaire https://oxance.fr/contactez-oxance/ (téléphone 04 76 93 89 89). Le texte se colle dans le formulaire ou sert de trame au téléphone. Source vérifiée : https://oxance.fr/centres/foyer-de-vie-%C2%96-le-grand-chene/"
+    },
+    "email": {
+      "objet": "Yoga sur chaise pour l'équipe du Grand Chêne",
+      "corps": "Bonjour,\n\nJe suis Maude Pontet, professeure de yoga à Gillonnay, à 10 km d'Izeaux, certifiée yoga adapté, celui qui se pratique sur une chaise. Vos équipes portent, soulèvent et veillent auprès d'adultes en situation de handicap moteur : le dos et la fatigue nerveuse sont au premier plan.\n\nJe vous propose une séance découverte de 45 minutes à une heure, sur place, à la pause déjeuner ou en fin de service, pour 6 à 20 personnes, à 180 euros, pensée d'abord pour le personnel : le dos, les épaules, la respiration pour souffler entre deux transferts. Ensuite, si l'équipe y trouve son compte, un programme de 4 séances sur 2 mois, et le yoga sur chaise ouvre une piste pour les résidents.\n\nVos professionnels repartent avec des gestes simples pour se protéger.\n\nAuriez-vous quinze minutes au téléphone, ou une date pour la découverte ? Je suis joignable en semaine après 13 h.\n\nMaude Pontet\nMaude Yoga, Gillonnay\n06 42 63 52 38 · pro.maude-yoga.com"
+    }
+  },
+  {
+    "id": "arc-en-ciel",
+    "cat": "pro",
+    "nom": "Arc en Ciel Recyclage",
+    "lieu": "Izeaux",
+    "km": 10,
+    "prio": 1,
+    "gest": "Recyclage et valorisation de déchets, entreprise familiale depuis 1936 · 50 à 99",
+    "contact": "contact@arcencielrecyclage.fr · email",
+    "deja": "Tri, manutention, conduite d'engins : le dos et les épaules.",
+    "format": "Séance découverte de 45 min à 1 h sur site, puis programme de 4 séances sur 2 mois",
+    "prix": "Séance découverte 180 € ; programme 4 séances 1 400 à 1 600 €",
+    "saison": "Toute l'année",
+    "src": "https://arcencielrecyclage.fr/contact/",
+    "destinataire": {
+      "nom": "Arc en Ciel Recyclage, service RH (l'adresse contact sert aussi aux RH)",
+      "email": "contact@arcencielrecyclage.fr",
+      "canal": "email"
+    },
+    "projet": {
+      "titre": "Séance découverte sur site",
+      "concept": "Tri, manutention et conduite d'engins dans une entreprise familiale depuis 1936 : le dos et les épaules, à 10 km de Gillonnay. Une séance découverte de 45 min à 1 h sur le lieu de travail, adaptée au métier, puis un programme de 4 séances sur 2 mois si l'équipe y trouve son compte.",
+      "format": "45 min à 1 h sur site, 6 à 20 personnes, à la pause déjeuner ou en fin de poste ; salle de réunion ou réfectoire, matériel apporté par Maude. Interlocuteur : service RH (l'adresse contact sert aussi aux RH).",
+      "deroule": "Accueil et consignes, 5 min · respiration, 10 min · postures debout ou sur chaise adaptées au poste, 25 min · récupération et retour au calme, 10 min",
+      "prix": "Séance découverte 180 € facturée à l'entreprise (grille de pro.maude-yoga.com) ; programme de 4 séances sur 2 mois de 1 400 à 1 600 € ; interventions de 2 h à une journée de 350 à 2 200 €.",
+      "gain_lieu": "Une action QVT concrète et peu coûteuse, à 30 minutes de route au plus, portée par une intervenante du territoire ; des équipes qui repartent avec des gestes réutilisables au poste.",
+      "demande": "Quinze minutes de téléphone, ou une date pour la séance découverte ; disponibilité en semaine après 13 h.",
+      "attention": "Adresse générique : demander la transmission à la QVT, au CSE ou aux RH. Source vérifiée : https://arcencielrecyclage.fr/contact/"
+    },
+    "email": {
+      "objet": "Le dos et les épaules de vos équipes de tri",
+      "corps": "Bonjour,\n\nJe suis Maude Pontet, professeure de yoga à Gillonnay, à 10 km d'Izeaux, et j'interviens déjà auprès d'une PME industrielle de la région grenobloise. Dans une entreprise familiale de recyclage comme la vôtre, le tri, la manutention et la conduite d'engins sollicitent le dos et les épaules toute la journée.\n\nJe vous propose une séance découverte de 45 minutes à une heure, sur site, à la pause déjeuner ou en fin de poste, pour 6 à 20 personnes, à 180 euros : le dos, les épaules, la récupération après le poste et des gestes de compensation pour les heures en cabine. Ensuite, si l'équipe y trouve son compte, un programme de 4 séances sur 2 mois.\n\nVos salariés repartent avec des réflexes simples pour se ménager au poste.\n\nAuriez-vous quinze minutes au téléphone, ou une date pour la découverte ? Je suis joignable en semaine après 13 h.\n\nMaude Pontet\nMaude Yoga, Gillonnay\n06 42 63 52 38 · pro.maude-yoga.com"
+    }
+  },
+  {
+    "id": "saint-francois",
+    "cat": "pro",
+    "nom": "Institution Saint-François Sainte-Cécile (OGEC)",
+    "lieu": "La Côte-Saint-André",
+    "km": 3,
+    "prio": 1,
+    "gest": "Ensemble scolaire privé, de la maternelle au lycée · 40 salariés de l'OGEC",
+    "contact": "contact@institution-saint-francois.fr · email",
+    "deja": "Enseignants et personnels d'un ensemble scolaire, à 3 km de chez Maude, qui intervient déjà en milieu scolaire.",
+    "format": "Séance découverte de 45 min à 1 h sur site, puis programme de 4 séances sur 2 mois",
+    "prix": "Séance découverte 180 € ; programme 4 séances 1 400 à 1 600 €",
+    "saison": "Toute l'année",
+    "src": "https://www.institution-saint-francois.fr/index.php/institution/l-ogec",
+    "destinataire": {
+      "nom": "Institution Saint-François Sainte-Cécile (OGEC), Patrick Gilibert, président de l'OGEC ; direction",
+      "email": "contact@institution-saint-francois.fr",
+      "canal": "email"
+    },
+    "projet": {
+      "titre": "Séance découverte sur site",
+      "concept": "Un ensemble scolaire de la maternelle au lycée à 3 km de Gillonnay, où Maude intervient déjà en milieu scolaire sur la gestion du stress. Une séance découverte de 45 min à 1 h sur le lieu de travail, adaptée au métier, puis un programme de 4 séances sur 2 mois si l'équipe y trouve son compte.",
+      "format": "45 min à 1 h sur site, 6 à 20 personnes, à la pause déjeuner ou en fin de poste ; salle de réunion ou réfectoire, matériel apporté par Maude. Interlocuteur : Patrick Gilibert, président de l'OGEC ; direction.",
+      "deroule": "Accueil et consignes, 5 min · respiration, 10 min · postures debout ou sur chaise adaptées au poste, 25 min · récupération et retour au calme, 10 min",
+      "prix": "Séance découverte 180 € facturée à l'entreprise (grille de pro.maude-yoga.com) ; programme de 4 séances sur 2 mois de 1 400 à 1 600 € ; interventions de 2 h à une journée de 350 à 2 200 €.",
+      "gain_lieu": "Une action QVT concrète et peu coûteuse, à 30 minutes de route au plus, portée par une intervenante du territoire ; des équipes qui repartent avec des gestes réutilisables au poste.",
+      "demande": "Quinze minutes de téléphone, ou une date pour la séance découverte ; disponibilité en semaine après 13 h.",
+      "attention": "Adresse générique : demander la transmission à la QVT, au CSE ou aux RH. Source vérifiée : https://www.institution-saint-francois.fr/index.php/institution/l-ogec"
+    },
+    "email": {
+      "objet": "Gestion du stress, équipe de Saint-François",
+      "corps": "Bonjour,\n\nJe suis Maude Pontet, professeure de yoga à Gillonnay, à 3 km de votre institution, et j'interviens déjà en collège et en lycée sur la gestion du stress. De la maternelle au lycée, vos enseignants et vos personnels tiennent devant des enfants et des adolescents du matin au soir, et cela demande une réserve de calme à entretenir.\n\nJe vous propose une séance découverte de 45 minutes à une heure, sur place, à la pause déjeuner ou en fin de journée, pour 6 à 20 personnes, à 180 euros : respiration, retour au calme après une situation tendue, posture pour tenir debout ou en classe. Ensuite, si l'équipe y trouve son compte, un programme de 4 séances sur 2 mois.\n\nVous y gagnez des adultes plus posés devant les élèves.\n\nPourriez-vous transmettre à la direction ou à l'OGEC ? Quinze minutes au téléphone suffisent, en semaine après 13 h.\n\nMaude Pontet\nMaude Yoga, Gillonnay\n06 42 63 52 38 · pro.maude-yoga.com"
+    }
+  },
+  {
+    "id": "mecelec",
+    "cat": "pro",
+    "nom": "Mecelec Composites, site de Saint-Étienne-de-Saint-Geoirs",
+    "lieu": "Saint-Étienne-de-Saint-Geoirs (Air Parc)",
+    "km": 10,
+    "prio": 1,
+    "gest": "Transformation de matériaux composites · 20 à 49 sur site, 100 à 199 dans l'entreprise",
+    "contact": "contact@mecelec.fr · email",
+    "deja": "Classée parmi les meilleures PME françaises par Gaïa Rating (RSE), plusieurs recrutements en cours.",
+    "format": "Séance découverte de 45 min à 1 h sur site, puis programme de 4 séances sur 2 mois",
+    "prix": "Séance découverte 180 € ; programme 4 séances 1 400 à 1 600 €",
+    "saison": "Toute l'année",
+    "src": "https://www.mecelec.fr/contact/",
+    "destinataire": {
+      "nom": "Mecelec Composites, site de Saint-Étienne-de-Saint-Geoirs, direction de site",
+      "email": "contact@mecelec.fr",
+      "canal": "email"
+    },
+    "projet": {
+      "titre": "Séance découverte sur site",
+      "concept": "Une PME classée parmi les meilleures françaises par Gaïa Rating sur la RSE, avec plusieurs recrutements en cours sur le site de l'Air Parc. Une séance découverte de 45 min à 1 h sur le lieu de travail, adaptée au métier, puis un programme de 4 séances sur 2 mois si l'équipe y trouve son compte.",
+      "format": "45 min à 1 h sur site, 6 à 20 personnes, à la pause déjeuner ou en fin de poste ; salle de réunion ou réfectoire, matériel apporté par Maude. Interlocuteur : direction de site.",
+      "deroule": "Accueil et consignes, 5 min · respiration, 10 min · postures debout ou sur chaise adaptées au poste, 25 min · récupération et retour au calme, 10 min",
+      "prix": "Séance découverte 180 € facturée à l'entreprise (grille de pro.maude-yoga.com) ; programme de 4 séances sur 2 mois de 1 400 à 1 600 € ; interventions de 2 h à une journée de 350 à 2 200 €.",
+      "gain_lieu": "Une action QVT concrète et peu coûteuse, à 30 minutes de route au plus, portée par une intervenante du territoire ; des équipes qui repartent avec des gestes réutilisables au poste.",
+      "demande": "Quinze minutes de téléphone, ou une date pour la séance découverte ; disponibilité en semaine après 13 h.",
+      "attention": "Adresse générique : demander la transmission à la QVT, au CSE ou aux RH. Source vérifiée : https://www.mecelec.fr/contact/"
+    },
+    "email": {
+      "objet": "Séance découverte pour le site de l'Air Parc",
+      "corps": "Bonjour,\n\nJe suis Maude Pontet, professeure de yoga à Gillonnay, à 10 km de votre site de l'Air Parc, et j'interviens déjà auprès d'une PME industrielle de la région grenobloise. Votre classement par Gaïa Rating parmi les meilleures PME françaises sur la RSE, et vos recrutements en cours, me font vous proposer quelque chose de concret.\n\nJe vous propose une séance découverte de 45 minutes à une heure, sur site, à la pause déjeuner ou en fin de poste, pour 6 à 20 personnes, à 180 euros : le dos, les épaules et la récupération après le poste. Ensuite, si l'équipe y trouve son compte, un programme de 4 séances sur 2 mois.\n\nVos équipes repartent avec des réflexes simples pour se ménager au poste.\n\nPourriez-vous transmettre à la personne qui suit la QVT, le CSE ou les RH ? Quinze minutes au téléphone suffisent, en semaine après 13 h.\n\nMaude Pontet\nMaude Yoga, Gillonnay\n06 42 63 52 38 · pro.maude-yoga.com"
+    }
+  },
+  {
+    "id": "quarante-trente",
+    "cat": "pro",
+    "nom": "40-30, site de Saint-Étienne-de-Saint-Geoirs",
+    "lieu": "Saint-Étienne-de-Saint-Geoirs (Air Parc)",
+    "km": 10,
+    "prio": 1,
+    "gest": "Maintenance d'équipements industriels et scientifiques (vide, froid) · 20 à 49 sur site, 100 à 199 dans l'entreprise",
+    "contact": "40-30@40-30.fr · email",
+    "deja": "Techniciens de maintenance, déplacements et interventions.",
+    "format": "Séance découverte de 45 min à 1 h sur site, puis programme de 4 séances sur 2 mois",
+    "prix": "Séance découverte 180 € ; programme 4 séances 1 400 à 1 600 €",
+    "saison": "Toute l'année",
+    "src": "https://www.40-30.com/fr/contact/",
+    "destinataire": {
+      "nom": "40-30, site de Saint-Étienne-de-Saint-Geoirs, direction de site",
+      "email": "40-30@40-30.fr",
+      "canal": "email"
+    },
+    "projet": {
+      "titre": "Séance découverte sur site",
+      "concept": "Des techniciens de maintenance en déplacement et en intervention, sur un site de l'Air Parc à 10 km de Gillonnay. Une séance découverte de 45 min à 1 h sur le lieu de travail, adaptée au métier, puis un programme de 4 séances sur 2 mois si l'équipe y trouve son compte.",
+      "format": "45 min à 1 h sur site, 6 à 20 personnes, à la pause déjeuner ou en fin de poste ; salle de réunion ou réfectoire, matériel apporté par Maude. Interlocuteur : direction de site.",
+      "deroule": "Accueil et consignes, 5 min · respiration, 10 min · postures debout ou sur chaise adaptées au poste, 25 min · récupération et retour au calme, 10 min",
+      "prix": "Séance découverte 180 € facturée à l'entreprise (grille de pro.maude-yoga.com) ; programme de 4 séances sur 2 mois de 1 400 à 1 600 € ; interventions de 2 h à une journée de 350 à 2 200 €.",
+      "gain_lieu": "Une action QVT concrète et peu coûteuse, à 30 minutes de route au plus, portée par une intervenante du territoire ; des équipes qui repartent avec des gestes réutilisables au poste.",
+      "demande": "Quinze minutes de téléphone, ou une date pour la séance découverte ; disponibilité en semaine après 13 h.",
+      "attention": "Adresse générique : demander la transmission à la QVT, au CSE ou aux RH. Source vérifiée : https://www.40-30.com/fr/contact/"
+    },
+    "email": {
+      "objet": "Récupération pour vos techniciens",
+      "corps": "Bonjour,\n\nJe suis Maude Pontet, professeure de yoga à Gillonnay, à 10 km de votre site de l'Air Parc, et j'interviens déjà auprès d'une PME industrielle de la région grenobloise. La maintenance d'équipements de vide et de froid, ce sont des techniciens qui se déplacent, interviennent dans des positions inconfortables et enchaînent les journées.\n\nJe vous propose une séance découverte de 45 minutes à une heure, sur site, à la pause déjeuner ou en fin de journée, pour 6 à 20 personnes, à 180 euros : le dos, les épaules, la récupération après l'intervention et une respiration qui s'emporte en déplacement. Ensuite, si l'équipe y trouve son compte, un programme de 4 séances sur 2 mois.\n\nVos techniciens repartent avec des gestes simples qu'ils refont seuls, entre deux chantiers.\n\nPourriez-vous transmettre à la personne qui suit la QVT, le CSE ou les RH ? Quinze minutes au téléphone suffisent, en semaine après 13 h.\n\nMaude Pontet\nMaude Yoga, Gillonnay\n06 42 63 52 38 · pro.maude-yoga.com"
+    }
+  },
+  {
+    "id": "cerfrance",
+    "cat": "pro",
+    "nom": "Cerfrance Dauphiné Provence, agence de l'Air Parc",
+    "lieu": "Saint-Étienne-de-Saint-Geoirs",
+    "km": 10,
+    "prio": 1,
+    "gest": "Expertise comptable et conseil · non publié (agence)",
+    "contact": "contact@dp.cerfrance.fr · email",
+    "deja": "Des comptables sur écran toute la journée, avec des périodes de clôture chargées.",
+    "format": "Séance découverte de 45 min à 1 h sur site, puis programme de 4 séances sur 2 mois",
+    "prix": "Séance découverte 180 € ; programme 4 séances 1 400 à 1 600 €",
+    "saison": "Toute l'année",
+    "src": "https://dp.cerfrance.fr/nos-agences/agence-saint-etienne-de-saint-geoirs",
+    "destinataire": {
+      "nom": "Cerfrance Dauphiné Provence, agence de l'Air Parc, Tiffanie Rocheton, responsable d'agence",
+      "email": "contact@dp.cerfrance.fr",
+      "canal": "email"
+    },
+    "projet": {
+      "titre": "Séance découverte sur site",
+      "concept": "Des comptables sur écran toute la journée, avec des périodes de clôture chargées, dans une agence à 10 km de Gillonnay. Une séance découverte de 45 min à 1 h sur le lieu de travail, adaptée au métier, puis un programme de 4 séances sur 2 mois si l'équipe y trouve son compte.",
+      "format": "45 min à 1 h sur site, 6 à 20 personnes, à la pause déjeuner ou en fin de poste ; salle de réunion ou réfectoire, matériel apporté par Maude. Interlocuteur : Tiffanie Rocheton, responsable d'agence.",
+      "deroule": "Accueil et consignes, 5 min · respiration, 10 min · postures debout ou sur chaise adaptées au poste, 25 min · récupération et retour au calme, 10 min",
+      "prix": "Séance découverte 180 € facturée à l'entreprise (grille de pro.maude-yoga.com) ; programme de 4 séances sur 2 mois de 1 400 à 1 600 € ; interventions de 2 h à une journée de 350 à 2 200 €.",
+      "gain_lieu": "Une action QVT concrète et peu coûteuse, à 30 minutes de route au plus, portée par une intervenante du territoire ; des équipes qui repartent avec des gestes réutilisables au poste.",
+      "demande": "Quinze minutes de téléphone, ou une date pour la séance découverte ; disponibilité en semaine après 13 h.",
+      "attention": "Adresse générique : demander la transmission à la QVT, au CSE ou aux RH. Source vérifiée : https://dp.cerfrance.fr/nos-agences/agence-saint-etienne-de-saint-geoirs"
+    },
+    "email": {
+      "objet": "Écrans et clôtures : une pause pour l'agence",
+      "corps": "Bonjour,\n\nJe suis Maude Pontet, professeure de yoga à Gillonnay, à 10 km de votre agence de l'Air Parc, et j'interviens déjà auprès d'un cabinet de conseil lyonnais. L'expertise comptable, ce sont des journées entières sur écran et des périodes de clôture où tout s'accumule : la nuque, les épaules et le souffle court en font les frais.\n\nJe vous propose une séance découverte de 45 minutes à une heure, dans vos locaux, à la pause déjeuner ou en fin de journée, pour 6 à 20 personnes, à 180 euros : relâchement de la nuque et des épaules, posture devant l'écran, respiration à refaire en trois minutes entre deux dossiers. Ensuite, si l'équipe y trouve son compte, un programme de 4 séances sur 2 mois.\n\nVos collaborateurs repartent avec des gestes courts, refaisables au bureau.\n\nPourriez-vous transmettre à la responsable d'agence ou aux RH ? Quinze minutes au téléphone suffisent, en semaine après 13 h.\n\nMaude Pontet\nMaude Yoga, Gillonnay\n06 42 63 52 38 · pro.maude-yoga.com"
+    }
+  },
+  {
+    "id": "siegl",
+    "cat": "pro",
+    "nom": "SIEGL, Société d'Impression sur Étoffes du Grand-Lemps (groupe Hermès)",
+    "lieu": "Le Grand-Lemps",
+    "km": 10,
+    "prio": 1,
+    "gest": "Impression textile haut de gamme pour la filière Hermès · 100 à 199",
+    "contact": "commercial@siegl.com · email (adresse commerciale, demander de transmettre)",
+    "deja": "Ateliers d'impression : gestes de précision, stations debout.",
+    "format": "Séance découverte de 45 min à 1 h sur site, puis programme de 4 séances sur 2 mois",
+    "prix": "Séance découverte 180 € ; programme 4 séances 1 400 à 1 600 €",
+    "saison": "Toute l'année",
+    "src": "https://www.holding-textile-hermes.com/fr/notre-filiere-textile/siegl",
+    "destinataire": {
+      "nom": "SIEGL, Société d'Impression sur Étoffes du Grand-Lemps (groupe Hermès), Ségolène Bruno (contact commercial affiché) ; service RH",
+      "email": "commercial@siegl.com",
+      "canal": "email"
+    },
+    "projet": {
+      "titre": "Séance découverte sur site",
+      "concept": "Des ateliers d'impression textile aux gestes de précision et aux stations debout, à 10 km de Gillonnay. Une séance découverte de 45 min à 1 h sur le lieu de travail, adaptée au métier, puis un programme de 4 séances sur 2 mois si l'équipe y trouve son compte.",
+      "format": "45 min à 1 h sur site, 6 à 20 personnes, à la pause déjeuner ou en fin de poste ; salle de réunion ou réfectoire, matériel apporté par Maude. Interlocuteur : Ségolène Bruno (contact commercial affiché) ; service RH.",
+      "deroule": "Accueil et consignes, 5 min · respiration, 10 min · postures debout ou sur chaise adaptées au poste, 25 min · récupération et retour au calme, 10 min",
+      "prix": "Séance découverte 180 € facturée à l'entreprise (grille de pro.maude-yoga.com) ; programme de 4 séances sur 2 mois de 1 400 à 1 600 € ; interventions de 2 h à une journée de 350 à 2 200 €.",
+      "gain_lieu": "Une action QVT concrète et peu coûteuse, à 30 minutes de route au plus, portée par une intervenante du territoire ; des équipes qui repartent avec des gestes réutilisables au poste.",
+      "demande": "Quinze minutes de téléphone, ou une date pour la séance découverte ; disponibilité en semaine après 13 h.",
+      "attention": "Adresse commerciale ou d'accueil : demander la transmission à la QVT, au CSE ou aux RH. Source vérifiée : https://www.holding-textile-hermes.com/fr/notre-filiere-textile/siegl"
+    },
+    "email": {
+      "objet": "Posture et récupération pour vos ateliers",
+      "corps": "Bonjour,\n\nJe suis Maude Pontet, professeure de yoga à Gillonnay, à 10 km du Grand-Lemps, et j'interviens déjà auprès d'une PME industrielle de la région grenobloise. L'impression textile de précision, ce sont des stations debout prolongées et des gestes fins répétés, et le corps le rend le soir.\n\nJe vous propose une séance découverte de 45 minutes à une heure, sur site, à la pause déjeuner ou en fin de poste, pour 6 à 20 personnes, à 180 euros : le dos, les épaules, le relâchement des mains et des avant-bras, la récupération après le poste. Ensuite, si l'équipe y trouve son compte, un programme de 4 séances sur 2 mois.\n\nVos équipes repartent avec des réflexes simples pour se ménager au poste.\n\nJ'écris à l'adresse commerciale faute d'une autre : pourriez-vous transmettre à la personne qui suit la QVT, le CSE ou les RH ? Quinze minutes au téléphone suffisent, en semaine après 13 h.\n\nMaude Pontet\nMaude Yoga, Gillonnay\n06 42 63 52 38 · pro.maude-yoga.com"
+    }
+  },
+  {
+    "id": "socamel",
+    "cat": "pro",
+    "nom": "Socamel Technologies (groupe Guillin)",
+    "lieu": "Renage",
+    "km": 15,
+    "prio": 2,
+    "gest": "Chariots et matériel de distribution de repas en collectivités · 150 collaborateurs",
+    "contact": "formulaire https://www.socamel.fr/contact/ (téléphone 04 76 91 21 21)",
+    "deja": "La page Carrières parle d'un « management bienveillant » et du « bien-être de nos collaborateurs ». Ateliers de montage et bureaux.",
+    "format": "Séance découverte de 45 min à 1 h sur site, puis programme de 4 séances sur 2 mois",
+    "prix": "Séance découverte 180 € ; programme 4 séances 1 400 à 1 600 €",
+    "saison": "Toute l'année",
+    "src": "https://www.socamel.fr/carrieres/",
+    "destinataire": {
+      "nom": "Socamel Technologies (groupe Guillin), Carine Latil, responsable RH",
+      "email": null,
+      "canal": "formulaire https://www.socamel.fr/contact/ (téléphone 04 76 91 21 21)"
+    },
+    "projet": {
+      "titre": "Séance découverte sur site",
+      "concept": "Une page Carrières qui parle de « management bienveillant » et du « bien-être de nos collaborateurs », pour 150 personnes entre ateliers de montage et bureaux. Une séance découverte de 45 min à 1 h sur le lieu de travail, adaptée au métier, puis un programme de 4 séances sur 2 mois si l'équipe y trouve son compte.",
+      "format": "45 min à 1 h sur site, 6 à 20 personnes, à la pause déjeuner ou en fin de poste ; salle de réunion ou réfectoire, matériel apporté par Maude. Interlocuteur : Carine Latil, responsable RH.",
+      "deroule": "Accueil et consignes, 5 min · respiration, 10 min · postures debout ou sur chaise adaptées au poste, 25 min · récupération et retour au calme, 10 min",
+      "prix": "Séance découverte 180 € facturée à l'entreprise (grille de pro.maude-yoga.com) ; programme de 4 séances sur 2 mois de 1 400 à 1 600 € ; interventions de 2 h à une journée de 350 à 2 200 €.",
+      "gain_lieu": "Une action QVT concrète et peu coûteuse, à 30 minutes de route au plus, portée par une intervenante du territoire ; des équipes qui repartent avec des gestes réutilisables au poste.",
+      "demande": "Quinze minutes de téléphone, ou une date pour la séance découverte ; disponibilité en semaine après 13 h.",
+      "attention": "Pas d'adresse email publique : formulaire https://www.socamel.fr/contact/ (téléphone 04 76 91 21 21). Le texte se colle dans le formulaire ou sert de trame au téléphone. Source vérifiée : https://www.socamel.fr/carrieres/"
+    },
+    "email": {
+      "objet": "Séance découverte pour vos collaborateurs",
+      "corps": "Bonjour,\n\nJe suis Maude Pontet, professeure de yoga à Gillonnay, à 15 km de Renage, et j'interviens déjà auprès d'une PME industrielle de la région grenobloise. Votre page Carrières parle de management bienveillant et du bien-être de vos collaborateurs ; je vous propose d'en faire un moment concret, pour vos ateliers de montage comme pour vos bureaux.\n\nLa séance découverte dure 45 minutes à une heure, sur site, à la pause déjeuner ou en fin de poste, pour 6 à 20 personnes, à 180 euros : dos, épaules et récupération pour le montage, nuque, posture devant l'écran et respiration pour les bureaux. Ensuite, si l'équipe y trouve son compte, un programme de 4 séances sur 2 mois.\n\nVos collaborateurs repartent avec des gestes simples à refaire au poste, et un moment partagé entre l'atelier et les bureaux.\n\nAuriez-vous quinze minutes au téléphone, ou une date pour la découverte ? Je suis joignable en semaine après 13 h.\n\nMaude Pontet\nMaude Yoga, Gillonnay\n06 42 63 52 38 · pro.maude-yoga.com"
+    }
+  },
+  {
+    "id": "bievre-est",
+    "cat": "pro",
+    "nom": "Communauté de communes Bièvre Est",
+    "lieu": "Colombe",
+    "km": 12,
+    "prio": 1,
+    "gest": "Collectivité (petite enfance, jeunesse, déchets, eau et assainissement, 14 communes) · 125 agents",
+    "contact": "correspondances@cc-bievre-est.fr · email",
+    "deja": "Des agents de terrain (déchets, eau, petite enfance) et des bureaux, répartis sur plusieurs sites.",
+    "format": "Séance découverte de 45 min à 1 h sur site, puis programme de 4 séances sur 2 mois",
+    "prix": "Séance découverte 180 € ; programme 4 séances 1 400 à 1 600 €",
+    "saison": "Toute l'année",
+    "src": "https://www.bievre-est.fr/la-collectivite/travailler-a-bievre-est/",
+    "destinataire": {
+      "nom": "Communauté de communes Bièvre Est, direction générale ou service RH (page « Travailler à Bièvre Est »)",
+      "email": "correspondances@cc-bievre-est.fr",
+      "canal": "email"
+    },
+    "projet": {
+      "titre": "Séance découverte sur site",
+      "concept": "125 agents répartis sur plusieurs sites, entre terrain (déchets, eau, petite enfance) et bureaux, avec une page « Travailler à Bièvre Est ». Une séance découverte de 45 min à 1 h sur le lieu de travail, adaptée au métier, puis un programme de 4 séances sur 2 mois si l'équipe y trouve son compte.",
+      "format": "45 min à 1 h sur site, 6 à 20 personnes, à la pause déjeuner ou en fin de poste ; salle de réunion ou réfectoire, matériel apporté par Maude. Interlocuteur : direction générale ou service RH (page « Travailler à Bièvre Est »).",
+      "deroule": "Accueil et consignes, 5 min · respiration, 10 min · postures debout ou sur chaise adaptées au poste, 25 min · récupération et retour au calme, 10 min",
+      "prix": "Séance découverte 180 € facturée à l'entreprise (grille de pro.maude-yoga.com) ; programme de 4 séances sur 2 mois de 1 400 à 1 600 € ; interventions de 2 h à une journée de 350 à 2 200 €.",
+      "gain_lieu": "Une action QVT concrète et peu coûteuse, à 30 minutes de route au plus, portée par une intervenante du territoire ; des équipes qui repartent avec des gestes réutilisables au poste.",
+      "demande": "Quinze minutes de téléphone, ou une date pour la séance découverte ; disponibilité en semaine après 13 h.",
+      "attention": "Adresse générique : demander la transmission à la QVT, au CSE ou aux RH. Source vérifiée : https://www.bievre-est.fr/la-collectivite/travailler-a-bievre-est/"
+    },
+    "email": {
+      "objet": "Séance découverte pour les agents",
+      "corps": "Bonjour,\n\nJe suis Maude Pontet, professeure de yoga à Gillonnay, à 12 km de Colombe. Vos 125 agents ne vivent pas la même journée selon qu'ils collectent les déchets, entretiennent les réseaux d'eau, accueillent les tout-petits ou travaillent au siège, mais tous tiennent un rythme au service des 14 communes.\n\nJe vous propose une séance découverte de 45 minutes à une heure, sur l'un de vos sites, à la pause déjeuner ou en fin de service, pour 6 à 20 agents, à 180 euros : dos et récupération pour les équipes de terrain, respiration et relâchement des tensions pour la petite enfance et les bureaux. Ensuite, si l'équipe y trouve son compte, un programme de 4 séances sur 2 mois.\n\nVos agents repartent avec des gestes simples à refaire seuls, et un moment partagé entre services.\n\nPourriez-vous transmettre à la direction générale ou aux RH ? Quinze minutes au téléphone suffisent, en semaine après 13 h.\n\nMaude Pontet\nMaude Yoga, Gillonnay\n06 42 63 52 38 · pro.maude-yoga.com"
+    }
+  },
+  {
+    "id": "alpes-frais",
+    "cat": "pro",
+    "nom": "Alpes Frais Production (groupe VT)",
+    "lieu": "Rives",
+    "km": 15,
+    "prio": 2,
+    "gest": "Plats préparés, pizzas, quiches et tartes pour la restauration collective (unité neuve de 2020) · 50 à 99",
+    "contact": "formulaire https://www.groupe-vt.com/contact.html",
+    "deja": "Ligne de production agroalimentaire : froid, gestes répétés, cadences.",
+    "format": "Séance découverte de 45 min à 1 h sur site, puis programme de 4 séances sur 2 mois",
+    "prix": "Séance découverte 180 € ; programme 4 séances 1 400 à 1 600 €",
+    "saison": "Toute l'année",
+    "src": "https://www.groupe-vt.com/contact.html",
+    "destinataire": {
+      "nom": "Alpes Frais Production (groupe VT), direction de site",
+      "email": null,
+      "canal": "formulaire https://www.groupe-vt.com/contact.html"
+    },
+    "projet": {
+      "titre": "Séance découverte sur site",
+      "concept": "Une ligne de production agroalimentaire dans une unité neuve de 2020 : froid, gestes répétés et cadences, à 15 km de Gillonnay. Une séance découverte de 45 min à 1 h sur le lieu de travail, adaptée au métier, puis un programme de 4 séances sur 2 mois si l'équipe y trouve son compte.",
+      "format": "45 min à 1 h sur site, 6 à 20 personnes, à la pause déjeuner ou en fin de poste ; salle de réunion ou réfectoire, matériel apporté par Maude. Interlocuteur : direction de site.",
+      "deroule": "Accueil et consignes, 5 min · respiration, 10 min · postures debout ou sur chaise adaptées au poste, 25 min · récupération et retour au calme, 10 min",
+      "prix": "Séance découverte 180 € facturée à l'entreprise (grille de pro.maude-yoga.com) ; programme de 4 séances sur 2 mois de 1 400 à 1 600 € ; interventions de 2 h à une journée de 350 à 2 200 €.",
+      "gain_lieu": "Une action QVT concrète et peu coûteuse, à 30 minutes de route au plus, portée par une intervenante du territoire ; des équipes qui repartent avec des gestes réutilisables au poste.",
+      "demande": "Quinze minutes de téléphone, ou une date pour la séance découverte ; disponibilité en semaine après 13 h.",
+      "attention": "Pas d'adresse email publique : formulaire https://www.groupe-vt.com/contact.html. Le texte se colle dans le formulaire ou sert de trame au téléphone. Source vérifiée : https://www.groupe-vt.com/contact.html"
+    },
+    "email": {
+      "objet": "Le dos de vos équipes de production",
+      "corps": "Bonjour,\n\nJe suis Maude Pontet, professeure de yoga à Gillonnay, à 15 km de Rives, et j'interviens déjà auprès d'une PME industrielle de la région grenobloise. Une ligne de plats préparés, c'est le froid, des gestes répétés et une cadence à tenir : les épaules, les mains et le bas du dos le rendent en fin de poste.\n\nJe vous propose une séance découverte de 45 minutes à une heure, sur site, à la pause déjeuner ou en fin de poste, pour 6 à 20 personnes, à 180 euros : le dos, les épaules, le relâchement des mains et la récupération après le froid. Ensuite, si l'équipe y trouve son compte, un programme de 4 séances sur 2 mois.\n\nVos opérateurs repartent avec des réflexes simples pour se ménager au poste.\n\nAuriez-vous quinze minutes au téléphone, ou une date pour la découverte ? Je suis joignable en semaine après 13 h.\n\nMaude Pontet\nMaude Yoga, Gillonnay\n06 42 63 52 38 · pro.maude-yoga.com"
+    }
+  },
+  {
+    "id": "tissages-perrin",
+    "cat": "pro",
+    "nom": "Les Tissages Perrin et Alpasoie",
+    "lieu": "Le Grand-Lemps et Apprieu",
+    "km": 10,
+    "prio": 1,
+    "gest": "Tissage de soie et confection d'accessoires textiles haut de gamme (deux sites) · 50 à 99 sur chaque site",
+    "contact": "commercial@tissages-perrin.com · email (adresse commerciale, demander de transmettre)",
+    "deja": "Deux ateliers à 5 km l'un de l'autre, des gestes de précision sur métiers et en confection.",
+    "format": "Séance découverte de 45 min à 1 h sur site, puis programme de 4 séances sur 2 mois",
+    "prix": "Séance découverte 180 € ; programme 4 séances 1 400 à 1 600 €",
+    "saison": "Toute l'année",
+    "src": "https://www.tissages-perrin.com/fr/contact.html",
+    "destinataire": {
+      "nom": "Les Tissages Perrin et Alpasoie, direction ; service RH",
+      "email": "commercial@tissages-perrin.com",
+      "canal": "email"
+    },
+    "projet": {
+      "titre": "Séance découverte sur site",
+      "concept": "Deux ateliers à 5 km l'un de l'autre, des gestes de précision sur métiers à tisser et en confection, à 10 km de Gillonnay. Une séance découverte de 45 min à 1 h sur le lieu de travail, adaptée au métier, puis un programme de 4 séances sur 2 mois si l'équipe y trouve son compte.",
+      "format": "45 min à 1 h sur site, 6 à 20 personnes, à la pause déjeuner ou en fin de poste ; salle de réunion ou réfectoire, matériel apporté par Maude. Interlocuteur : direction ; service RH.",
+      "deroule": "Accueil et consignes, 5 min · respiration, 10 min · postures debout ou sur chaise adaptées au poste, 25 min · récupération et retour au calme, 10 min",
+      "prix": "Séance découverte 180 € facturée à l'entreprise (grille de pro.maude-yoga.com) ; programme de 4 séances sur 2 mois de 1 400 à 1 600 € ; interventions de 2 h à une journée de 350 à 2 200 €.",
+      "gain_lieu": "Une action QVT concrète et peu coûteuse, à 30 minutes de route au plus, portée par une intervenante du territoire ; des équipes qui repartent avec des gestes réutilisables au poste.",
+      "demande": "Quinze minutes de téléphone, ou une date pour la séance découverte ; disponibilité en semaine après 13 h.",
+      "attention": "Adresse commerciale ou d'accueil : demander la transmission à la QVT, au CSE ou aux RH. Source vérifiée : https://www.tissages-perrin.com/fr/contact.html"
+    },
+    "email": {
+      "objet": "Posture et récupération, vos deux ateliers",
+      "corps": "Bonjour,\n\nJe suis Maude Pontet, professeure de yoga à Gillonnay, à 10 km du Grand-Lemps et d'Apprieu, et j'interviens déjà auprès d'une PME industrielle de la région grenobloise. Le tissage de soie et la confection, ce sont des gestes de précision répétés et une posture tenue des heures durant.\n\nJe vous propose une séance découverte de 45 minutes à une heure, sur l'un de vos deux sites, à la pause déjeuner ou en fin de poste, pour 6 à 20 personnes, à 180 euros : le dos, les épaules, les mains et les avant-bras, la récupération. Ensuite, si l'équipe y trouve son compte, un programme de 4 séances sur 2 mois.\n\nVos équipes repartent avec des réflexes simples pour se ménager au poste.\n\nJ'écris à l'adresse commerciale faute d'une autre : pourriez-vous transmettre à la personne qui suit la QVT, le CSE ou les RH ? Quinze minutes au téléphone suffisent, en semaine après 13 h.\n\nMaude Pontet\nMaude Yoga, Gillonnay\n06 42 63 52 38 · pro.maude-yoga.com"
+    }
+  },
+  {
+    "id": "rescaset",
+    "cat": "pro",
+    "nom": "Rescaset Concept (groupe Guillin)",
+    "lieu": "Colombe",
+    "km": 12,
+    "prio": 1,
+    "gest": "Emballages alimentaires et machines de scellage pour la restauration collective · 50 à 99",
+    "contact": "info@rescaset.com · email",
+    "deja": "Même groupe que Socamel à Renage : un atelier et des bureaux sur le parc Bièvre Dauphine.",
+    "format": "Séance découverte de 45 min à 1 h sur site, puis programme de 4 séances sur 2 mois",
+    "prix": "Séance découverte 180 € ; programme 4 séances 1 400 à 1 600 €",
+    "saison": "Toute l'année",
+    "src": "https://rescaset.com/en/contact/",
+    "destinataire": {
+      "nom": "Rescaset Concept (groupe Guillin), direction de site",
+      "email": "info@rescaset.com",
+      "canal": "email"
+    },
+    "projet": {
+      "titre": "Séance découverte sur site",
+      "concept": "Un atelier et des bureaux sur le parc Bièvre Dauphine, dans le même groupe que Socamel à Renage, à 12 km de Gillonnay. Une séance découverte de 45 min à 1 h sur le lieu de travail, adaptée au métier, puis un programme de 4 séances sur 2 mois si l'équipe y trouve son compte.",
+      "format": "45 min à 1 h sur site, 6 à 20 personnes, à la pause déjeuner ou en fin de poste ; salle de réunion ou réfectoire, matériel apporté par Maude. Interlocuteur : direction de site.",
+      "deroule": "Accueil et consignes, 5 min · respiration, 10 min · postures debout ou sur chaise adaptées au poste, 25 min · récupération et retour au calme, 10 min",
+      "prix": "Séance découverte 180 € facturée à l'entreprise (grille de pro.maude-yoga.com) ; programme de 4 séances sur 2 mois de 1 400 à 1 600 € ; interventions de 2 h à une journée de 350 à 2 200 €.",
+      "gain_lieu": "Une action QVT concrète et peu coûteuse, à 30 minutes de route au plus, portée par une intervenante du territoire ; des équipes qui repartent avec des gestes réutilisables au poste.",
+      "demande": "Quinze minutes de téléphone, ou une date pour la séance découverte ; disponibilité en semaine après 13 h.",
+      "attention": "Adresse générique : demander la transmission à la QVT, au CSE ou aux RH. Source vérifiée : https://rescaset.com/en/contact/"
+    },
+    "email": {
+      "objet": "Une pause pour l'atelier et les bureaux",
+      "corps": "Bonjour,\n\nJe suis Maude Pontet, professeure de yoga à Gillonnay, à 12 km de votre site du parc Bièvre Dauphine, et j'interviens déjà auprès d'une PME industrielle de la région grenobloise. Chez vous, un atelier et des bureaux cohabitent sur le même site.\n\nJe vous propose une séance découverte de 45 minutes à une heure, sur site, à la pause déjeuner ou en fin de poste, pour 6 à 20 personnes, à 180 euros : dos, épaules et récupération pour l'atelier, nuque, posture devant l'écran et respiration pour les bureaux. Ensuite, si l'équipe y trouve son compte, un programme de 4 séances sur 2 mois.\n\nVos collaborateurs repartent avec des gestes simples à refaire au poste, et un moment partagé entre l'atelier et les bureaux.\n\nPourriez-vous transmettre à la personne qui suit la QVT, le CSE ou les RH ? Quinze minutes au téléphone suffisent, en semaine après 13 h.\n\nMaude Pontet\nMaude Yoga, Gillonnay\n06 42 63 52 38 · pro.maude-yoga.com"
+    }
+  },
+  {
+    "id": "sda",
+    "cat": "pro",
+    "nom": "SDA, Service Distribution Automatique",
+    "lieu": "Apprieu",
+    "km": 12,
+    "prio": 1,
+    "gest": "Distribution automatique (boissons, snacking) en entreprises et collectivités · 50 à 99",
+    "contact": "contact@sda-france.fr · email",
+    "deja": "Des tournées et de la manutention pour les techniciens, des bureaux à Apprieu ; leurs clients sont les entreprises de la zone.",
+    "format": "Séance découverte de 45 min à 1 h sur site, puis programme de 4 séances sur 2 mois",
+    "prix": "Séance découverte 180 € ; programme 4 séances 1 400 à 1 600 €",
+    "saison": "Toute l'année",
+    "src": "https://sda-france.fr/contact/",
+    "destinataire": {
+      "nom": "SDA, Service Distribution Automatique, Francis Sarra, gérant",
+      "email": "contact@sda-france.fr",
+      "canal": "email"
+    },
+    "projet": {
+      "titre": "Séance découverte sur site",
+      "concept": "Des techniciens en tournée avec de la manutention, et des bureaux à Apprieu, à 12 km de Gillonnay. Une séance découverte de 45 min à 1 h sur le lieu de travail, adaptée au métier, puis un programme de 4 séances sur 2 mois si l'équipe y trouve son compte.",
+      "format": "45 min à 1 h sur site, 6 à 20 personnes, à la pause déjeuner ou en fin de poste ; salle de réunion ou réfectoire, matériel apporté par Maude. Interlocuteur : Francis Sarra, gérant.",
+      "deroule": "Accueil et consignes, 5 min · respiration, 10 min · postures debout ou sur chaise adaptées au poste, 25 min · récupération et retour au calme, 10 min",
+      "prix": "Séance découverte 180 € facturée à l'entreprise (grille de pro.maude-yoga.com) ; programme de 4 séances sur 2 mois de 1 400 à 1 600 € ; interventions de 2 h à une journée de 350 à 2 200 €.",
+      "gain_lieu": "Une action QVT concrète et peu coûteuse, à 30 minutes de route au plus, portée par une intervenante du territoire ; des équipes qui repartent avec des gestes réutilisables au poste.",
+      "demande": "Quinze minutes de téléphone, ou une date pour la séance découverte ; disponibilité en semaine après 13 h.",
+      "attention": "Adresse générique : demander la transmission à la QVT, au CSE ou aux RH. Source vérifiée : https://sda-france.fr/contact/"
+    },
+    "email": {
+      "objet": "Récupération pour vos techniciens en tournée",
+      "corps": "Bonjour,\n\nJe suis Maude Pontet, professeure de yoga à Gillonnay, à 12 km d'Apprieu, et j'anime des ateliers de posture, de respiration et de récupération en entreprise. La distribution automatique, ce sont des techniciens en tournée qui chargent, déchargent et remplissent des machines toute la journée, et des équipes de bureau derrière un écran.\n\nJe vous propose une séance découverte de 45 minutes à une heure, dans vos locaux, à la pause déjeuner ou au retour de tournée, pour 6 à 20 personnes, à 180 euros : dos, épaules et récupération pour les techniciens, nuque, posture devant l'écran et respiration pour les bureaux. Ensuite, si l'équipe y trouve son compte, un programme de 4 séances sur 2 mois.\n\nVos salariés repartent avec des gestes simples qu'ils refont seuls, dans le camion comme au bureau.\n\nAuriez-vous quinze minutes au téléphone, ou une date pour la découverte ? Je suis joignable en semaine après 13 h.\n\nMaude Pontet\nMaude Yoga, Gillonnay\n06 42 63 52 38 · pro.maude-yoga.com"
+    }
+  },
+  {
+    "id": "biotem",
+    "cat": "pro",
+    "nom": "Biotem",
+    "lieu": "Apprieu et Colombe",
+    "km": 12,
+    "prio": 1,
+    "gest": "Biotechnologies : anticorps et immunoessais, laboratoires et production · 50 à 99",
+    "contact": "recrutement@biotem.fr · email",
+    "deja": "Du travail de paillasse et de bureau, deux sites à 5 km.",
+    "format": "Séance découverte de 45 min à 1 h sur site, puis programme de 4 séances sur 2 mois",
+    "prix": "Séance découverte 180 € ; programme 4 séances 1 400 à 1 600 €",
+    "saison": "Toute l'année",
+    "src": "https://www.biotem.fr/contact/",
+    "destinataire": {
+      "nom": "Biotem, service RH",
+      "email": "recrutement@biotem.fr",
+      "canal": "email"
+    },
+    "projet": {
+      "titre": "Séance découverte sur site",
+      "concept": "Du travail de paillasse et de bureau sur deux sites à 5 km l'un de l'autre, à 12 km de Gillonnay. Une séance découverte de 45 min à 1 h sur le lieu de travail, adaptée au métier, puis un programme de 4 séances sur 2 mois si l'équipe y trouve son compte.",
+      "format": "45 min à 1 h sur site, 6 à 20 personnes, à la pause déjeuner ou en fin de poste ; salle de réunion ou réfectoire, matériel apporté par Maude. Interlocuteur : service RH.",
+      "deroule": "Accueil et consignes, 5 min · respiration, 10 min · postures debout ou sur chaise adaptées au poste, 25 min · récupération et retour au calme, 10 min",
+      "prix": "Séance découverte 180 € facturée à l'entreprise (grille de pro.maude-yoga.com) ; programme de 4 séances sur 2 mois de 1 400 à 1 600 € ; interventions de 2 h à une journée de 350 à 2 200 €.",
+      "gain_lieu": "Une action QVT concrète et peu coûteuse, à 30 minutes de route au plus, portée par une intervenante du territoire ; des équipes qui repartent avec des gestes réutilisables au poste.",
+      "demande": "Quinze minutes de téléphone, ou une date pour la séance découverte ; disponibilité en semaine après 13 h.",
+      "attention": "Adresse générique : demander la transmission à la QVT, au CSE ou aux RH. Source vérifiée : https://www.biotem.fr/contact/"
+    },
+    "email": {
+      "objet": "Paillasse et écran, une pause pour l'équipe",
+      "corps": "Bonjour,\n\nJe suis Maude Pontet, professeure de yoga à Gillonnay, à 12 km d'Apprieu et de Colombe, et j'interviens déjà auprès d'une scale-up tech grenobloise. En biotechnologies, la journée se partage entre la paillasse, penchée et précise, et le bureau, sur écran : la nuque et les épaules le savent.\n\nJe vous propose une séance découverte de 45 minutes à une heure, sur l'un de vos deux sites, à la pause déjeuner ou en fin de journée, pour 6 à 20 personnes, à 180 euros : relâchement de la nuque et des épaules, posture au poste, respiration à refaire en trois minutes entre deux manipulations. Ensuite, si l'équipe y trouve son compte, un programme de 4 séances sur 2 mois.\n\nVos collaborateurs repartent avec des gestes courts, refaisables au labo comme au bureau.\n\nAuriez-vous quinze minutes au téléphone, ou une date pour la découverte ? Je suis joignable en semaine après 13 h.\n\nMaude Pontet\nMaude Yoga, Gillonnay\n06 42 63 52 38 · pro.maude-yoga.com"
+    }
+  },
+  {
+    "id": "college-liers-lemps",
+    "cat": "pro",
+    "nom": "Collège Liers et Lemps",
+    "lieu": "Le Grand-Lemps",
+    "km": 10,
+    "prio": 1,
+    "gest": "Collège public · 50 à 99",
+    "contact": "ce.0380026X@ac-grenoble.fr · email",
+    "deja": "Une équipe enseignante et de vie scolaire ; Maude intervient déjà en collège et en lycée sur la gestion du stress.",
+    "format": "Séance découverte de 45 min à 1 h sur site, puis programme de 4 séances sur 2 mois",
+    "prix": "Séance découverte 180 € ; programme 4 séances 1 400 à 1 600 €",
+    "saison": "Toute l'année",
+    "src": "https://bv.ac-grenoble.fr/carteforpub/uai/0380026X",
+    "destinataire": {
+      "nom": "Collège Liers et Lemps, Mme Christine Guttin, principale",
+      "email": "ce.0380026X@ac-grenoble.fr",
+      "canal": "email"
+    },
+    "projet": {
+      "titre": "Séance découverte sur site",
+      "concept": "Une équipe enseignante et de vie scolaire à 10 km de Gillonnay ; Maude intervient déjà en collège et en lycée sur la gestion du stress. Une séance découverte de 45 min à 1 h sur le lieu de travail, adaptée au métier, puis un programme de 4 séances sur 2 mois si l'équipe y trouve son compte.",
+      "format": "45 min à 1 h sur site, 6 à 20 personnes, à la pause déjeuner ou en fin de poste ; salle de réunion ou réfectoire, matériel apporté par Maude. Interlocuteur : Mme Christine Guttin, principale.",
+      "deroule": "Accueil et consignes, 5 min · respiration, 10 min · postures debout ou sur chaise adaptées au poste, 25 min · récupération et retour au calme, 10 min",
+      "prix": "Séance découverte 180 € facturée à l'entreprise (grille de pro.maude-yoga.com) ; programme de 4 séances sur 2 mois de 1 400 à 1 600 € ; interventions de 2 h à une journée de 350 à 2 200 €.",
+      "gain_lieu": "Une action QVT concrète et peu coûteuse, à 30 minutes de route au plus, portée par une intervenante du territoire ; des équipes qui repartent avec des gestes réutilisables au poste.",
+      "demande": "Quinze minutes de téléphone, ou une date pour la séance découverte ; disponibilité en semaine après 13 h.",
+      "attention": "Adresse générique : demander la transmission à la QVT, au CSE ou aux RH. Source vérifiée : https://bv.ac-grenoble.fr/carteforpub/uai/0380026X"
+    },
+    "email": {
+      "objet": "Gestion du stress pour l'équipe du collège",
+      "corps": "Bonjour Madame Guttin,\n\nJe suis Maude Pontet, professeure de yoga à Gillonnay, à 10 km du Grand-Lemps, et j'interviens déjà en collège et en lycée sur la gestion du stress. Une équipe enseignante et de vie scolaire tient toute la journée devant des adolescents, et cela demande une réserve de calme qu'il faut pouvoir reconstituer.\n\nJe vous propose une séance découverte de 45 minutes à une heure, dans l'établissement, à la pause méridienne ou en fin de journée, pour 6 à 20 personnes, à 180 euros : respiration, retour au calme après une situation tendue, posture pour tenir debout ou en classe. Ensuite, si l'équipe y trouve son compte, un programme de 4 séances sur 2 mois.\n\nVous y gagnez des adultes plus posés devant les élèves, avec des outils qu'ils gardent.\n\nAuriez-vous quinze minutes au téléphone, ou une date pour la découverte ? Je suis joignable en semaine après 13 h.\n\nMaude Pontet\nMaude Yoga, Gillonnay\n06 42 63 52 38 · pro.maude-yoga.com"
+    }
+  },
+  {
+    "id": "college-desnos",
+    "cat": "pro",
+    "nom": "Collège Robert Desnos",
+    "lieu": "Rives",
+    "km": 15,
+    "prio": 1,
+    "gest": "Collège public avec SEGPA · 50 à 99",
+    "contact": "ce.0382266G@ac-grenoble.fr · email",
+    "deja": "Une équipe enseignante et de vie scolaire, avec une SEGPA ; Maude intervient déjà en collège et en lycée sur la gestion du stress.",
+    "format": "Séance découverte de 45 min à 1 h sur site, puis programme de 4 séances sur 2 mois",
+    "prix": "Séance découverte 180 € ; programme 4 séances 1 400 à 1 600 €",
+    "saison": "Toute l'année",
+    "src": "https://bv.ac-grenoble.fr/carteforpub/uai/0382266G",
+    "destinataire": {
+      "nom": "Collège Robert Desnos, M. Alain Dufour, principal",
+      "email": "ce.0382266G@ac-grenoble.fr",
+      "canal": "email"
+    },
+    "projet": {
+      "titre": "Séance découverte sur site",
+      "concept": "Une équipe enseignante et de vie scolaire avec une SEGPA, à 15 km de Gillonnay ; Maude intervient déjà en collège et en lycée sur la gestion du stress. Une séance découverte de 45 min à 1 h sur le lieu de travail, adaptée au métier, puis un programme de 4 séances sur 2 mois si l'équipe y trouve son compte.",
+      "format": "45 min à 1 h sur site, 6 à 20 personnes, à la pause déjeuner ou en fin de poste ; salle de réunion ou réfectoire, matériel apporté par Maude. Interlocuteur : M. Alain Dufour, principal.",
+      "deroule": "Accueil et consignes, 5 min · respiration, 10 min · postures debout ou sur chaise adaptées au poste, 25 min · récupération et retour au calme, 10 min",
+      "prix": "Séance découverte 180 € facturée à l'entreprise (grille de pro.maude-yoga.com) ; programme de 4 séances sur 2 mois de 1 400 à 1 600 € ; interventions de 2 h à une journée de 350 à 2 200 €.",
+      "gain_lieu": "Une action QVT concrète et peu coûteuse, à 30 minutes de route au plus, portée par une intervenante du territoire ; des équipes qui repartent avec des gestes réutilisables au poste.",
+      "demande": "Quinze minutes de téléphone, ou une date pour la séance découverte ; disponibilité en semaine après 13 h.",
+      "attention": "Adresse générique : demander la transmission à la QVT, au CSE ou aux RH. Source vérifiée : https://bv.ac-grenoble.fr/carteforpub/uai/0382266G"
+    },
+    "email": {
+      "objet": "Gestion du stress pour l'équipe du collège",
+      "corps": "Bonjour Monsieur Dufour,\n\nJe suis Maude Pontet, professeure de yoga à Gillonnay, à 15 km de Rives, et j'interviens déjà en collège et en lycée sur la gestion du stress. Une équipe enseignante et de vie scolaire, avec une SEGPA, tient toute la journée devant des adolescents qui demandent beaucoup, et cela suppose une réserve de calme à reconstituer.\n\nJe vous propose une séance découverte de 45 minutes à une heure, dans l'établissement, à la pause méridienne ou en fin de journée, pour 6 à 20 personnes, à 180 euros : respiration, retour au calme après une situation tendue, posture pour tenir debout ou en classe. Ensuite, si l'équipe y trouve son compte, un programme de 4 séances sur 2 mois.\n\nVous y gagnez des adultes plus posés devant les élèves, avec des outils qu'ils gardent.\n\nAuriez-vous quinze minutes au téléphone, ou une date pour la découverte ? Je suis joignable en semaine après 13 h.\n\nMaude Pontet\nMaude Yoga, Gillonnay\n06 42 63 52 38 · pro.maude-yoga.com"
+    }
+  },
+  {
+    "id": "mairie-renage",
+    "cat": "pro",
+    "nom": "Commune de Renage",
+    "lieu": "Renage",
+    "km": 15,
+    "prio": 1,
+    "gest": "Collectivité territoriale · 50 à 99 agents",
+    "contact": "contact@ville-renage.fr · email",
+    "deja": "Agents techniques, périscolaire et administration.",
+    "format": "Séance découverte de 45 min à 1 h sur site, puis programme de 4 séances sur 2 mois",
+    "prix": "Séance découverte 180 € ; programme 4 séances 1 400 à 1 600 €",
+    "saison": "Toute l'année",
+    "src": "https://www.maires-isere.fr/communes/renage/",
+    "destinataire": {
+      "nom": "Commune de Renage, direction générale des services",
+      "email": "contact@ville-renage.fr",
+      "canal": "email"
+    },
+    "projet": {
+      "titre": "Séance découverte sur site",
+      "concept": "Des agents techniques, périscolaires et administratifs, à 15 km de Gillonnay. Une séance découverte de 45 min à 1 h sur le lieu de travail, adaptée au métier, puis un programme de 4 séances sur 2 mois si l'équipe y trouve son compte.",
+      "format": "45 min à 1 h sur site, 6 à 20 personnes, à la pause déjeuner ou en fin de poste ; salle de réunion ou réfectoire, matériel apporté par Maude. Interlocuteur : direction générale des services.",
+      "deroule": "Accueil et consignes, 5 min · respiration, 10 min · postures debout ou sur chaise adaptées au poste, 25 min · récupération et retour au calme, 10 min",
+      "prix": "Séance découverte 180 € facturée à l'entreprise (grille de pro.maude-yoga.com) ; programme de 4 séances sur 2 mois de 1 400 à 1 600 € ; interventions de 2 h à une journée de 350 à 2 200 €.",
+      "gain_lieu": "Une action QVT concrète et peu coûteuse, à 30 minutes de route au plus, portée par une intervenante du territoire ; des équipes qui repartent avec des gestes réutilisables au poste.",
+      "demande": "Quinze minutes de téléphone, ou une date pour la séance découverte ; disponibilité en semaine après 13 h.",
+      "attention": "Adresse générique : demander la transmission à la QVT, au CSE ou aux RH. Source vérifiée : https://www.maires-isere.fr/communes/renage/"
+    },
+    "email": {
+      "objet": "Séance découverte pour les agents de Renage",
+      "corps": "Bonjour,\n\nJe suis Maude Pontet, professeure de yoga à Gillonnay, à 15 km de Renage, et j'anime des ateliers de respiration, de posture et de récupération en entreprise et en collectivité. Vos agents des services techniques, du périscolaire et de l'administration n'ont pas les mêmes journées, mais tous tiennent un rythme soutenu au service des habitants.\n\nJe vous propose une séance découverte de 45 minutes à une heure, sur place, à la pause déjeuner ou en fin de service, pour 6 à 20 agents, à 180 euros : dos et récupération pour les équipes techniques, respiration et relâchement des tensions pour le périscolaire et les bureaux. Ensuite, si l'équipe y trouve son compte, un programme de 4 séances sur 2 mois.\n\nVos agents repartent avec des gestes simples à refaire seuls.\n\nPourriez-vous transmettre à la direction générale des services ou aux RH ? Quinze minutes au téléphone suffisent, en semaine après 13 h.\n\nMaude Pontet\nMaude Yoga, Gillonnay\n06 42 63 52 38 · pro.maude-yoga.com"
+    }
+  },
+  {
+    "id": "mairie-apprieu",
+    "cat": "pro",
+    "nom": "Commune d'Apprieu",
+    "lieu": "Apprieu",
+    "km": 12,
+    "prio": 1,
+    "gest": "Collectivité territoriale · 50 à 99 agents",
+    "contact": "accueil@apprieu.fr · email",
+    "deja": "Agents techniques, périscolaire et administration, au bout de la plaine.",
+    "format": "Séance découverte de 45 min à 1 h sur site, puis programme de 4 séances sur 2 mois",
+    "prix": "Séance découverte 180 € ; programme 4 séances 1 400 à 1 600 €",
+    "saison": "Toute l'année",
+    "src": "https://www.apprieu.fr/",
+    "destinataire": {
+      "nom": "Commune d'Apprieu, direction générale des services",
+      "email": "accueil@apprieu.fr",
+      "canal": "email"
+    },
+    "projet": {
+      "titre": "Séance découverte sur site",
+      "concept": "Des agents techniques, périscolaires et administratifs, au bout de la plaine, à 12 km de Gillonnay. Une séance découverte de 45 min à 1 h sur le lieu de travail, adaptée au métier, puis un programme de 4 séances sur 2 mois si l'équipe y trouve son compte.",
+      "format": "45 min à 1 h sur site, 6 à 20 personnes, à la pause déjeuner ou en fin de poste ; salle de réunion ou réfectoire, matériel apporté par Maude. Interlocuteur : direction générale des services.",
+      "deroule": "Accueil et consignes, 5 min · respiration, 10 min · postures debout ou sur chaise adaptées au poste, 25 min · récupération et retour au calme, 10 min",
+      "prix": "Séance découverte 180 € facturée à l'entreprise (grille de pro.maude-yoga.com) ; programme de 4 séances sur 2 mois de 1 400 à 1 600 € ; interventions de 2 h à une journée de 350 à 2 200 €.",
+      "gain_lieu": "Une action QVT concrète et peu coûteuse, à 30 minutes de route au plus, portée par une intervenante du territoire ; des équipes qui repartent avec des gestes réutilisables au poste.",
+      "demande": "Quinze minutes de téléphone, ou une date pour la séance découverte ; disponibilité en semaine après 13 h.",
+      "attention": "Adresse générique : demander la transmission à la QVT, au CSE ou aux RH. Source vérifiée : https://www.apprieu.fr/"
+    },
+    "email": {
+      "objet": "Séance découverte pour les agents d'Apprieu",
+      "corps": "Bonjour,\n\nJe suis Maude Pontet, professeure de yoga à Gillonnay, à 12 km d'Apprieu, à l'autre bout de la plaine, et j'anime des ateliers de respiration, de posture et de récupération en collectivité. Vos agents des services techniques, du périscolaire et de l'administration n'ont pas les mêmes journées, mais tous tiennent un rythme au service des habitants.\n\nJe vous propose une séance découverte de 45 minutes à une heure, sur place, à la pause déjeuner ou en fin de service, pour 6 à 20 agents, à 180 euros : dos et récupération pour les équipes techniques, respiration et relâchement des tensions pour le périscolaire et les bureaux. Ensuite, si l'équipe y trouve son compte, un programme de 4 séances sur 2 mois.\n\nVos agents repartent avec des gestes simples à refaire seuls.\n\nPourriez-vous transmettre à la direction générale des services ou aux RH ? Quinze minutes au téléphone suffisent, en semaine après 13 h.\n\nMaude Pontet\nMaude Yoga, Gillonnay\n06 42 63 52 38 · pro.maude-yoga.com"
+    }
+  },
+  {
+    "id": "constellium-ctec",
+    "cat": "pro",
+    "nom": "C-TEC, Constellium Technology Center",
+    "lieu": "Voreppe (Centr'Alp)",
+    "km": 35,
+    "prio": 2,
+    "gest": "Centre de recherche et développement aluminium · environ 250 à Voreppe",
+    "contact": "formulaire https://www.constellium.com/contact-us (téléphone 04 76 57 80 00)",
+    "deja": "Chercheurs et techniciens, laboratoires et bureaux ; index d'égalité professionnelle publié.",
+    "format": "Séance découverte de 45 min à 1 h sur site, puis programme de 4 séances sur 2 mois",
+    "prix": "Séance découverte 180 € ; programme 4 séances 1 400 à 1 600 €",
+    "saison": "Toute l'année",
+    "src": "https://www.constellium.com/fr/sites-de-production/c-tec",
+    "destinataire": {
+      "nom": "C-TEC, Constellium Technology Center, direction du site ou service RH",
+      "email": null,
+      "canal": "formulaire https://www.constellium.com/contact-us (téléphone 04 76 57 80 00)"
+    },
+    "projet": {
+      "titre": "Séance découverte sur site",
+      "concept": "Environ 250 chercheurs et techniciens entre laboratoires et bureaux à Voreppe, à moins de trente minutes de Gillonnay. Une séance découverte de 45 min à 1 h sur le lieu de travail, adaptée au métier, puis un programme de 4 séances sur 2 mois si l'équipe y trouve son compte.",
+      "format": "45 min à 1 h sur site, 6 à 20 personnes, à la pause déjeuner ou en fin de poste ; salle de réunion ou réfectoire, matériel apporté par Maude. Interlocuteur : direction du site ou service RH.",
+      "deroule": "Accueil et consignes, 5 min · respiration, 10 min · postures debout ou sur chaise adaptées au poste, 25 min · récupération et retour au calme, 10 min",
+      "prix": "Séance découverte 180 € facturée à l'entreprise (grille de pro.maude-yoga.com) ; programme de 4 séances sur 2 mois de 1 400 à 1 600 € ; interventions de 2 h à une journée de 350 à 2 200 €.",
+      "gain_lieu": "Une action QVT concrète et peu coûteuse, à 30 minutes de route au plus, portée par une intervenante du territoire ; des équipes qui repartent avec des gestes réutilisables au poste.",
+      "demande": "Quinze minutes de téléphone, ou une date pour la séance découverte ; disponibilité en semaine après 13 h.",
+      "attention": "Pas d'adresse email publique : formulaire https://www.constellium.com/contact-us (téléphone 04 76 57 80 00). Le texte se colle dans le formulaire ou sert de trame au téléphone. Source vérifiée : https://www.constellium.com/fr/sites-de-production/c-tec"
+    },
+    "email": {
+      "objet": "Yoga et respiration sur site pour C-TEC",
+      "corps": "Bonjour,\n\nProfesseure de yoga à Gillonnay, j'interviens sur le lieu de travail avec du yoga et de la respiration. Je vous écris parce que C-TEC réunit à Voreppe environ 250 chercheurs et techniciens, entre laboratoires et bureaux, tout près de chez moi.\n\nJe propose une séance découverte sur site, de 45 minutes à 1 heure, à la pause déjeuner ou en fin de journée, pour 6 à 20 personnes, à 180 euros, pensée pour les journées sur écran ou sur paillasse : nuque, épaules, dos, et une respiration qui fait redescendre la pression. Si l'équipe accroche, un programme de 4 séances sur 2 mois prend le relais.\n\nVos collaborateurs repartent avec quelques gestes simples, réutilisables à leur poste.\n\nSi ce n'est pas vous, merci de transmettre à la personne en charge de la QVT ou du CSE. Quinze minutes au téléphone, en semaine après 13 h, suffisent pour caler une date.\n\nMaude Pontet\nMaude Yoga, Gillonnay\n06 42 63 52 38 · pro.maude-yoga.com"
+    }
+  },
+  {
+    "id": "telenco",
+    "cat": "pro",
+    "nom": "Telenco",
+    "lieu": "Moirans",
+    "km": 30,
+    "prio": 1,
+    "gest": "Équipements télécoms fibre, siège et unité de production · 100 à 199 à Moirans, plus de 650 dans le groupe",
+    "contact": "contact@telenco.com · email",
+    "deja": "Partenariat « Passe Décisive » avec Sport dans la Ville, note CDP B 2025 : une entreprise qui affiche le sport et l'engagement. Production et bureaux sur le même site.",
+    "format": "Séance découverte de 45 min à 1 h sur site, puis programme de 4 séances sur 2 mois",
+    "prix": "Séance découverte 180 € ; programme 4 séances 1 400 à 1 600 €",
+    "saison": "Toute l'année",
+    "src": "https://www.telenco.com/",
+    "destinataire": {
+      "nom": "Telenco, service RH",
+      "email": "contact@telenco.com",
+      "canal": "email"
+    },
+    "projet": {
+      "titre": "Séance découverte sur site",
+      "concept": "Une entreprise qui affiche le sport (Passe Décisive avec Sport dans la Ville) et réunit production et bureaux sur le même site. Une séance découverte de 45 min à 1 h sur le lieu de travail, adaptée au métier, puis un programme de 4 séances sur 2 mois si l'équipe y trouve son compte.",
+      "format": "45 min à 1 h sur site, 6 à 20 personnes, à la pause déjeuner ou en fin de poste ; salle de réunion ou réfectoire, matériel apporté par Maude. Interlocuteur : service RH.",
+      "deroule": "Accueil et consignes, 5 min · respiration, 10 min · postures debout ou sur chaise adaptées au poste, 25 min · récupération et retour au calme, 10 min",
+      "prix": "Séance découverte 180 € facturée à l'entreprise (grille de pro.maude-yoga.com) ; programme de 4 séances sur 2 mois de 1 400 à 1 600 € ; interventions de 2 h à une journée de 350 à 2 200 €.",
+      "gain_lieu": "Une action QVT concrète et peu coûteuse, à 30 minutes de route au plus, portée par une intervenante du territoire ; des équipes qui repartent avec des gestes réutilisables au poste.",
+      "demande": "Quinze minutes de téléphone, ou une date pour la séance découverte ; disponibilité en semaine après 13 h.",
+      "attention": "Adresse générique : demander la transmission à la QVT, au CSE ou aux RH. Source vérifiée : https://www.telenco.com/"
+    },
+    "email": {
+      "objet": "Une séance de yoga sur votre site de Moirans",
+      "corps": "Bonjour,\n\nProfesseure de yoga à Gillonnay, j'interviens sur le lieu de travail avec du yoga et de la respiration. Telenco m'a donné envie d'écrire : une entreprise qui soutient Sport dans la Ville avec Passe Décisive, et qui réunit production et bureaux sur son site de Moirans.\n\nJe propose une séance découverte sur site, de 45 minutes à 1 heure, à la pause déjeuner ou en fin de poste, pour 6 à 20 personnes, à 180 euros, adaptée aux deux publics : dos et récupération pour l'atelier, écrans et pression pour les bureaux. Si l'équipe accroche, un programme de 4 séances sur 2 mois prend le relais.\n\nVos salariés repartent avec des gestes simples à refaire à leur poste.\n\nSi ce n'est pas vous, merci de transmettre à la personne en charge de la QVT ou du CSE. Quinze minutes au téléphone, en semaine après 13 h, suffisent pour caler une date.\n\nMaude Pontet\nMaude Yoga, Gillonnay\n06 42 63 52 38 · pro.maude-yoga.com"
+    }
+  },
+  {
+    "id": "hutchinson-moirans",
+    "cat": "pro",
+    "nom": "Hutchinson, site de Moirans (Building Sealing)",
+    "lieu": "Moirans",
+    "km": 30,
+    "prio": 2,
+    "gest": "Profilés d'étanchéité caoutchouc et thermoplastique · 100 à 199",
+    "contact": "formulaire https://buildingsealing.hutchinson.com/demande-de-devis (téléphone 04 76 35 79 00)",
+    "deja": "Extrusion et ateliers en équipes : postes physiques.",
+    "format": "Séance découverte de 45 min à 1 h sur site, puis programme de 4 séances sur 2 mois",
+    "prix": "Séance découverte 180 € ; programme 4 séances 1 400 à 1 600 €",
+    "saison": "Toute l'année",
+    "src": "https://buildingsealing.hutchinson.com/contact",
+    "destinataire": {
+      "nom": "Hutchinson, site de Moirans (Building Sealing), direction de site",
+      "email": null,
+      "canal": "formulaire https://buildingsealing.hutchinson.com/demande-de-devis (téléphone 04 76 35 79 00)"
+    },
+    "projet": {
+      "titre": "Séance découverte sur site",
+      "concept": "Extrusion et ateliers en équipes : des postes physiques, le dos et la récupération en fin de poste. Une séance découverte de 45 min à 1 h sur le lieu de travail, adaptée au métier, puis un programme de 4 séances sur 2 mois si l'équipe y trouve son compte.",
+      "format": "45 min à 1 h sur site, 6 à 20 personnes, à la pause déjeuner ou en fin de poste ; salle de réunion ou réfectoire, matériel apporté par Maude. Interlocuteur : direction de site.",
+      "deroule": "Accueil et consignes, 5 min · respiration, 10 min · postures debout ou sur chaise adaptées au poste, 25 min · récupération et retour au calme, 10 min",
+      "prix": "Séance découverte 180 € facturée à l'entreprise (grille de pro.maude-yoga.com) ; programme de 4 séances sur 2 mois de 1 400 à 1 600 € ; interventions de 2 h à une journée de 350 à 2 200 €.",
+      "gain_lieu": "Une action QVT concrète et peu coûteuse, à 30 minutes de route au plus, portée par une intervenante du territoire ; des équipes qui repartent avec des gestes réutilisables au poste.",
+      "demande": "Quinze minutes de téléphone, ou une date pour la séance découverte ; disponibilité en semaine après 13 h.",
+      "attention": "Pas d'adresse email publique : formulaire https://buildingsealing.hutchinson.com/demande-de-devis (téléphone 04 76 35 79 00). Le texte se colle dans le formulaire ou sert de trame au téléphone. Source vérifiée : https://buildingsealing.hutchinson.com/contact"
+    },
+    "email": {
+      "objet": "Yoga du dos pour vos équipes de Moirans",
+      "corps": "Bonjour,\n\nProfesseure de yoga à Gillonnay, j'interviens sur le lieu de travail avec du yoga et de la respiration, notamment auprès d'une PME industrielle de la région grenobloise. Je vous écris parce que votre site de Moirans fait tourner des lignes d'extrusion en équipes, avec des postes physiques.\n\nJe propose une séance découverte sur site, de 45 minutes à 1 heure, en fin de poste ou à la pause déjeuner, pour 6 à 20 personnes, à 180 euros, centrée sur le dos, les épaules et la récupération après une journée debout. Si l'équipe accroche, un programme de 4 séances sur 2 mois prend le relais. Un réfectoire suffit, j'apporte le matériel.\n\nVos opérateurs repartent avec quelques gestes simples pour soulager le dos, à refaire au poste ou chez eux.\n\nQuinze minutes au téléphone suffisent pour voir si cela vous parle et caler une date ; je suis joignable en semaine après 13 h.\n\nMaude Pontet\nMaude Yoga, Gillonnay\n06 42 63 52 38 · pro.maude-yoga.com"
+    }
+  },
+  {
+    "id": "automatique-industrie",
+    "cat": "pro",
+    "nom": "Automatique & Industrie (AI)",
+    "lieu": "Saint-Jean-de-Moirans (Centr'Alp)",
+    "km": 30,
+    "prio": 2,
+    "gest": "Ingénierie en automatisme et informatique industrielle · 100 à 199",
+    "contact": "formulaire https://automatique-industrie.com/contact/",
+    "deja": "Page carrière très fournie : CSE, télétravail deux jours par semaine, médaille d'or RSE Ecovadis 2021 et 2023, prix des leaders du capital humain 2019, « l'ambiance et l'esprit d'équipe ». Ingénieurs sur écran et en déplacement chez les clients.",
+    "format": "Séance découverte de 45 min à 1 h sur site, puis programme de 4 séances sur 2 mois",
+    "prix": "Séance découverte 180 € ; programme 4 séances 1 400 à 1 600 €",
+    "saison": "Toute l'année",
+    "src": "https://automatique-industrie.com/carriere/",
+    "destinataire": {
+      "nom": "Automatique & Industrie (AI), service RH",
+      "email": null,
+      "canal": "formulaire https://automatique-industrie.com/contact/"
+    },
+    "projet": {
+      "titre": "Séance découverte sur site",
+      "concept": "Page carrière très fournie (Ecovadis or, prix du capital humain, CSE, télétravail) : des ingénieurs sur écran et en déplacement, dans une entreprise qui soigne son esprit d'équipe. Une séance découverte de 45 min à 1 h sur le lieu de travail, adaptée au métier, puis un programme de 4 séances sur 2 mois si l'équipe y trouve son compte.",
+      "format": "45 min à 1 h sur site, 6 à 20 personnes, à la pause déjeuner ou en fin de poste ; salle de réunion ou réfectoire, matériel apporté par Maude. Interlocuteur : service RH.",
+      "deroule": "Accueil et consignes, 5 min · respiration, 10 min · postures debout ou sur chaise adaptées au poste, 25 min · récupération et retour au calme, 10 min",
+      "prix": "Séance découverte 180 € facturée à l'entreprise (grille de pro.maude-yoga.com) ; programme de 4 séances sur 2 mois de 1 400 à 1 600 € ; interventions de 2 h à une journée de 350 à 2 200 €.",
+      "gain_lieu": "Une action QVT concrète et peu coûteuse, à 30 minutes de route au plus, portée par une intervenante du territoire ; des équipes qui repartent avec des gestes réutilisables au poste.",
+      "demande": "Quinze minutes de téléphone, ou une date pour la séance découverte ; disponibilité en semaine après 13 h.",
+      "attention": "Pas d'adresse email publique : formulaire https://automatique-industrie.com/contact/. Le texte se colle dans le formulaire ou sert de trame au téléphone. Source vérifiée : https://automatique-industrie.com/carriere/"
+    },
+    "email": {
+      "objet": "Yoga du midi pour vos ingénieurs à Centr'Alp",
+      "corps": "Bonjour,\n\nProfesseure de yoga à Gillonnay, j'interviens sur le lieu de travail avec du yoga et de la respiration. Votre page carrière m'a donné envie d'écrire : deux médailles d'or Ecovadis, un prix du capital humain, et l'esprit d'équipe mis en avant.\n\nJe propose une séance découverte sur site, de 45 minutes à 1 heure, à la pause déjeuner ou en fin de journée, pour 6 à 20 personnes, à 180 euros, pensée pour des ingénieurs sur écran et en déplacement : nuque, épaules, et une respiration qui fait redescendre la pression. Si l'équipe accroche, un programme de 4 séances sur 2 mois prend le relais.\n\nVos ingénieurs repartent avec des gestes simples, à refaire au bureau comme en télétravail.\n\nSi ce n'est pas vous, merci de transmettre à la personne en charge de la QVT ou du CSE. Quinze minutes au téléphone, en semaine après 13 h, suffisent pour caler une date.\n\nMaude Pontet\nMaude Yoga, Gillonnay\n06 42 63 52 38 · pro.maude-yoga.com"
+    }
+  },
+  {
+    "id": "cetup",
+    "cat": "pro",
+    "nom": "CETUP",
+    "lieu": "Saint-Jean-de-Moirans (Centr'Alp)",
+    "km": 30,
+    "prio": 1,
+    "gest": "Transport léger dédié, coursiers ; siège et centre opérationnel · plus de 200 salariés, tous en CDI",
+    "contact": "communication@cetup.com · email",
+    "deja": "« Le bien-être au travail favorise l'excellence » sur leur page recrutement, signataire de la Charte de la Diversité. Des chauffeurs assis toute la journée et un centre opérationnel.",
+    "format": "Séance découverte de 45 min à 1 h sur site, puis programme de 4 séances sur 2 mois",
+    "prix": "Séance découverte 180 € ; programme 4 séances 1 400 à 1 600 €",
+    "saison": "Toute l'année",
+    "src": "https://www.cetup.com/nous-rejoindre/",
+    "destinataire": {
+      "nom": "CETUP, service communication ou RH",
+      "email": "communication@cetup.com",
+      "canal": "email"
+    },
+    "projet": {
+      "titre": "Séance découverte sur site",
+      "concept": "Des chauffeurs assis toute la journée et une page recrutement qui dit que le bien-être au travail favorise l'excellence. Une séance découverte de 45 min à 1 h sur le lieu de travail, adaptée au métier, puis un programme de 4 séances sur 2 mois si l'équipe y trouve son compte.",
+      "format": "45 min à 1 h sur site, 6 à 20 personnes, à la pause déjeuner ou en fin de poste ; salle de réunion ou réfectoire, matériel apporté par Maude. Interlocuteur : service communication ou RH.",
+      "deroule": "Accueil et consignes, 5 min · respiration, 10 min · postures debout ou sur chaise adaptées au poste, 25 min · récupération et retour au calme, 10 min",
+      "prix": "Séance découverte 180 € facturée à l'entreprise (grille de pro.maude-yoga.com) ; programme de 4 séances sur 2 mois de 1 400 à 1 600 € ; interventions de 2 h à une journée de 350 à 2 200 €.",
+      "gain_lieu": "Une action QVT concrète et peu coûteuse, à 30 minutes de route au plus, portée par une intervenante du territoire ; des équipes qui repartent avec des gestes réutilisables au poste.",
+      "demande": "Quinze minutes de téléphone, ou une date pour la séance découverte ; disponibilité en semaine après 13 h.",
+      "attention": "Adresse générique : demander la transmission à la QVT, au CSE ou aux RH. Source vérifiée : https://www.cetup.com/nous-rejoindre/"
+    },
+    "email": {
+      "objet": "Respiration au volant pour vos chauffeurs",
+      "corps": "Bonjour,\n\nProfesseure de yoga à Gillonnay, j'interviens sur le lieu de travail avec du yoga et de la respiration. Votre page recrutement dit que le bien-être au travail favorise l'excellence, et vos chauffeurs passent leurs journées assis au volant, là où la respiration compte le plus.\n\nJe propose une séance découverte sur site, de 45 minutes à 1 heure, à la pause déjeuner ou en fin de tournée, pour 6 à 20 personnes, à 180 euros : respiration pour rester disponible au volant, dos et hanches après des heures assis. Si l'équipe accroche, un programme de 4 séances sur 2 mois prend le relais.\n\nVos chauffeurs repartent avec des gestes qui tiennent dans une cabine, à refaire entre deux courses.\n\nSi ce n'est pas vous, merci de transmettre à la personne en charge de la QVT ou du CSE. Quinze minutes au téléphone, en semaine après 13 h, suffisent pour caler une date.\n\nMaude Pontet\nMaude Yoga, Gillonnay\n06 42 63 52 38 · pro.maude-yoga.com"
+    }
+  },
+  {
+    "id": "chambre-agriculture",
+    "cat": "pro",
+    "nom": "Chambre d'agriculture de l'Isère",
+    "lieu": "Moirans (Centr'Alp)",
+    "km": 30,
+    "prio": 1,
+    "gest": "Établissement public consulaire agricole, siège · 100 à 199",
+    "contact": "accueil@isere.chambagri.fr · email",
+    "deja": "Conseillers et administratifs, beaucoup de route et de bureau ; Maude est prof de yoga en zone rurale, et le monde agricole est le sien au quotidien.",
+    "format": "Séance découverte de 45 min à 1 h sur site, puis programme de 4 séances sur 2 mois",
+    "prix": "Séance découverte 180 € ; programme 4 séances 1 400 à 1 600 €",
+    "saison": "Toute l'année",
+    "src": "https://isere.chambres-agriculture.fr/contact",
+    "destinataire": {
+      "nom": "Chambre d'agriculture de l'Isère, service ressources humaines (rubrique « Notre politique RH »)",
+      "email": "accueil@isere.chambagri.fr",
+      "canal": "email"
+    },
+    "projet": {
+      "titre": "Séance découverte sur site",
+      "concept": "Conseillers et administratifs entre la route et le bureau ; Maude enseigne en zone rurale, au contact du monde agricole. Une séance découverte de 45 min à 1 h sur le lieu de travail, adaptée au métier, puis un programme de 4 séances sur 2 mois si l'équipe y trouve son compte.",
+      "format": "45 min à 1 h sur site, 6 à 20 personnes, à la pause déjeuner ou en fin de poste ; salle de réunion ou réfectoire, matériel apporté par Maude. Interlocuteur : service ressources humaines (rubrique « Notre politique RH »).",
+      "deroule": "Accueil et consignes, 5 min · respiration, 10 min · postures debout ou sur chaise adaptées au poste, 25 min · récupération et retour au calme, 10 min",
+      "prix": "Séance découverte 180 € facturée à l'entreprise (grille de pro.maude-yoga.com) ; programme de 4 séances sur 2 mois de 1 400 à 1 600 € ; interventions de 2 h à une journée de 350 à 2 200 €.",
+      "gain_lieu": "Une action QVT concrète et peu coûteuse, à 30 minutes de route au plus, portée par une intervenante du territoire ; des équipes qui repartent avec des gestes réutilisables au poste.",
+      "demande": "Quinze minutes de téléphone, ou une date pour la séance découverte ; disponibilité en semaine après 13 h.",
+      "attention": "Adresse générique : demander la transmission à la QVT, au CSE ou aux RH. Source vérifiée : https://isere.chambres-agriculture.fr/contact"
+    },
+    "email": {
+      "objet": "Yoga sur site pour vos conseillers et agents",
+      "corps": "Bonjour,\n\nProfesseure de yoga à Gillonnay, je vis et j'enseigne en zone rurale, au contact du monde agricole. J'interviens aussi en entreprise, avec du yoga et de la respiration, et je vous écris parce que vos conseillers et vos administratifs partagent leurs journées entre la route et le bureau.\n\nJe propose une séance découverte sur site, de 45 minutes à 1 heure, à la pause déjeuner ou en fin de journée, pour 6 à 20 personnes, à 180 euros : dos après la voiture, nuque et épaules après l'écran, et une respiration qui fait redescendre la pression. Si l'équipe accroche, un programme de 4 séances sur 2 mois prend le relais.\n\nVos agents repartent avec quelques gestes simples, à refaire au bureau ou en voiture.\n\nSi ce n'est pas vous, merci de transmettre au service ressources humaines. Quinze minutes au téléphone, en semaine après 13 h, suffisent pour caler une date.\n\nMaude Pontet\nMaude Yoga, Gillonnay\n06 42 63 52 38 · pro.maude-yoga.com"
+    }
+  },
+  {
+    "id": "rector-voreppe",
+    "cat": "pro",
+    "nom": "Rector, usine de Voreppe",
+    "lieu": "Voreppe",
+    "km": 35,
+    "prio": 2,
+    "gest": "Préfabrication béton (planchers, poutrelles) · 100 à 199 sur le site",
+    "contact": "formulaire https://www.rector.fr/contact",
+    "deja": "Préfabrication béton : postes physiques, manutention.",
+    "format": "Séance découverte de 45 min à 1 h sur site, puis programme de 4 séances sur 2 mois",
+    "prix": "Séance découverte 180 € ; programme 4 séances 1 400 à 1 600 €",
+    "saison": "Toute l'année",
+    "src": "https://www.rector.fr/contact",
+    "destinataire": {
+      "nom": "Rector, usine de Voreppe, direction de site ou RH",
+      "email": null,
+      "canal": "formulaire https://www.rector.fr/contact"
+    },
+    "projet": {
+      "titre": "Séance découverte sur site",
+      "concept": "Préfabrication béton : manutention et postes physiques toute la journée. Une séance découverte de 45 min à 1 h sur le lieu de travail, adaptée au métier, puis un programme de 4 séances sur 2 mois si l'équipe y trouve son compte.",
+      "format": "45 min à 1 h sur site, 6 à 20 personnes, à la pause déjeuner ou en fin de poste ; salle de réunion ou réfectoire, matériel apporté par Maude. Interlocuteur : direction de site ou RH.",
+      "deroule": "Accueil et consignes, 5 min · respiration, 10 min · postures debout ou sur chaise adaptées au poste, 25 min · récupération et retour au calme, 10 min",
+      "prix": "Séance découverte 180 € facturée à l'entreprise (grille de pro.maude-yoga.com) ; programme de 4 séances sur 2 mois de 1 400 à 1 600 € ; interventions de 2 h à une journée de 350 à 2 200 €.",
+      "gain_lieu": "Une action QVT concrète et peu coûteuse, à 30 minutes de route au plus, portée par une intervenante du territoire ; des équipes qui repartent avec des gestes réutilisables au poste.",
+      "demande": "Quinze minutes de téléphone, ou une date pour la séance découverte ; disponibilité en semaine après 13 h.",
+      "attention": "Pas d'adresse email publique : formulaire https://www.rector.fr/contact. Le texte se colle dans le formulaire ou sert de trame au téléphone. Source vérifiée : https://www.rector.fr/contact"
+    },
+    "email": {
+      "objet": "Yoga du dos pour votre usine de Voreppe",
+      "corps": "Bonjour,\n\nProfesseure de yoga à Gillonnay, j'interviens sur le lieu de travail avec du yoga et de la respiration, notamment auprès d'une PME industrielle de la région grenobloise. Je vous écris parce que la préfabrication béton, c'est de la manutention et des postes physiques toute la journée.\n\nJe propose une séance découverte sur site, de 45 minutes à 1 heure, en fin de poste ou à la pause déjeuner, pour 6 à 20 personnes, à 180 euros, centrée sur le dos, les épaules et la récupération. Si l'équipe accroche, un programme de 4 séances sur 2 mois prend le relais.\n\nVos opérateurs repartent avec quelques gestes simples pour soulager le dos, à refaire au poste ou chez eux.\n\nSi ce n'est pas vous, merci de transmettre à la personne en charge de la QVT ou du CSE. Quinze minutes au téléphone, en semaine après 13 h, suffisent pour caler une date.\n\nMaude Pontet\nMaude Yoga, Gillonnay\n06 42 63 52 38 · pro.maude-yoga.com"
+    }
+  },
+  {
+    "id": "mairie-tullins",
+    "cat": "pro",
+    "nom": "Commune de Tullins",
+    "lieu": "Tullins",
+    "km": 25,
+    "prio": 1,
+    "gest": "Collectivité territoriale · 100 à 199 agents",
+    "contact": "contact@ville-tullins.fr · email",
+    "deja": "Une centaine d'agents, techniques, périscolaires et administratifs.",
+    "format": "Séance découverte de 45 min à 1 h sur site, puis programme de 4 séances sur 2 mois",
+    "prix": "Séance découverte 180 € ; programme 4 séances 1 400 à 1 600 €",
+    "saison": "Toute l'année",
+    "src": "https://www.ville-tullins.fr/nous-contacter",
+    "destinataire": {
+      "nom": "Commune de Tullins, direction générale des services",
+      "email": "contact@ville-tullins.fr",
+      "canal": "email"
+    },
+    "projet": {
+      "titre": "Séance découverte sur site",
+      "concept": "Une centaine d'agents aux métiers très différents, techniques, périscolaires et administratifs, à 25 km de Gillonnay. Une séance découverte de 45 min à 1 h sur le lieu de travail, adaptée au métier, puis un programme de 4 séances sur 2 mois si l'équipe y trouve son compte.",
+      "format": "45 min à 1 h sur site, 6 à 20 personnes, à la pause déjeuner ou en fin de poste ; salle de réunion ou réfectoire, matériel apporté par Maude. Interlocuteur : direction générale des services.",
+      "deroule": "Accueil et consignes, 5 min · respiration, 10 min · postures debout ou sur chaise adaptées au poste, 25 min · récupération et retour au calme, 10 min",
+      "prix": "Séance découverte 180 € facturée à l'entreprise (grille de pro.maude-yoga.com) ; programme de 4 séances sur 2 mois de 1 400 à 1 600 € ; interventions de 2 h à une journée de 350 à 2 200 €.",
+      "gain_lieu": "Une action QVT concrète et peu coûteuse, à 30 minutes de route au plus, portée par une intervenante du territoire ; des équipes qui repartent avec des gestes réutilisables au poste.",
+      "demande": "Quinze minutes de téléphone, ou une date pour la séance découverte ; disponibilité en semaine après 13 h.",
+      "attention": "Adresse générique : demander la transmission à la QVT, au CSE ou aux RH. Source vérifiée : https://www.ville-tullins.fr/nous-contacter"
+    },
+    "email": {
+      "objet": "Yoga sur site pour les agents de Tullins",
+      "corps": "Bonjour,\n\nProfesseure de yoga à Gillonnay, à vingt-cinq kilomètres de Tullins, j'interviens sur le lieu de travail avec du yoga et de la respiration. Je vous écris parce que vos agents ont des métiers très différents, techniques, périscolaires et administratifs, et que chacun y trouve son usage.\n\nJe propose une séance découverte sur site, de 45 minutes à 1 heure, à la pause déjeuner ou en fin de journée, pour 6 à 20 agents, à 180 euros : dos et récupération pour les services techniques, écrans et pression pour les bureaux, respiration pour le périscolaire. Si l'équipe accroche, un programme de 4 séances sur 2 mois prend le relais.\n\nVos agents repartent avec des gestes simples à refaire à leur poste.\n\nSi ce n'est pas vous, merci de transmettre à la personne en charge de la QVT ou du CSE. Quinze minutes au téléphone, en semaine après 13 h, suffisent pour caler une date.\n\nMaude Pontet\nMaude Yoga, Gillonnay\n06 42 63 52 38 · pro.maude-yoga.com"
+    }
+  },
+  {
+    "id": "mairie-moirans",
+    "cat": "pro",
+    "nom": "Commune de Moirans",
+    "lieu": "Moirans",
+    "km": 30,
+    "prio": 2,
+    "gest": "Collectivité territoriale · 100 à 199 agents",
+    "contact": "formulaire https://www.ville-moirans.fr/nous-contacter-3/ (téléphone 04 76 35 44 55)",
+    "deja": "Une centaine d'agents ; la ville gère aussi la résidence autonomie Georges Brassens, déjà dans nos pistes.",
+    "format": "Séance découverte de 45 min à 1 h sur site, puis programme de 4 séances sur 2 mois",
+    "prix": "Séance découverte 180 € ; programme 4 séances 1 400 à 1 600 €",
+    "saison": "Toute l'année",
+    "src": "https://www.ville-moirans.fr/nous-contacter-3/",
+    "destinataire": {
+      "nom": "Commune de Moirans, direction générale des services",
+      "email": null,
+      "canal": "formulaire https://www.ville-moirans.fr/nous-contacter-3/ (téléphone 04 76 35 44 55)"
+    },
+    "projet": {
+      "titre": "Séance découverte sur site",
+      "concept": "Une centaine d'agents aux métiers variés, jusqu'au personnel de la résidence autonomie Georges Brassens que la ville gère. Une séance découverte de 45 min à 1 h sur le lieu de travail, adaptée au métier, puis un programme de 4 séances sur 2 mois si l'équipe y trouve son compte.",
+      "format": "45 min à 1 h sur site, 6 à 20 personnes, à la pause déjeuner ou en fin de poste ; salle de réunion ou réfectoire, matériel apporté par Maude. Interlocuteur : direction générale des services.",
+      "deroule": "Accueil et consignes, 5 min · respiration, 10 min · postures debout ou sur chaise adaptées au poste, 25 min · récupération et retour au calme, 10 min",
+      "prix": "Séance découverte 180 € facturée à l'entreprise (grille de pro.maude-yoga.com) ; programme de 4 séances sur 2 mois de 1 400 à 1 600 € ; interventions de 2 h à une journée de 350 à 2 200 €.",
+      "gain_lieu": "Une action QVT concrète et peu coûteuse, à 30 minutes de route au plus, portée par une intervenante du territoire ; des équipes qui repartent avec des gestes réutilisables au poste.",
+      "demande": "Quinze minutes de téléphone, ou une date pour la séance découverte ; disponibilité en semaine après 13 h.",
+      "attention": "Pas d'adresse email publique : formulaire https://www.ville-moirans.fr/nous-contacter-3/ (téléphone 04 76 35 44 55). Le texte se colle dans le formulaire ou sert de trame au téléphone. Source vérifiée : https://www.ville-moirans.fr/nous-contacter-3/"
+    },
+    "email": {
+      "objet": "Yoga sur site pour les agents de Moirans",
+      "corps": "Bonjour,\n\nProfesseure de yoga à Gillonnay, j'interviens sur le lieu de travail avec du yoga et de la respiration. Je vous écris parce que la commune de Moirans emploie une centaine d'agents, jusqu'à la résidence autonomie Georges Brassens qu'elle gère.\n\nJe propose une séance découverte sur site, de 45 minutes à 1 heure, à la pause déjeuner ou en fin de journée, pour 6 à 20 agents, à 180 euros : dos et récupération pour les équipes de terrain, écrans et pression pour les bureaux, yoga sur chaise pour le personnel de la résidence. Si l'équipe accroche, un programme de 4 séances sur 2 mois prend le relais.\n\nVos agents repartent avec des gestes simples à refaire à leur poste.\n\nSi ce n'est pas vous, merci de transmettre à la personne en charge de la QVT ou du CSE. Quinze minutes au téléphone, en semaine après 13 h, suffisent pour caler une date.\n\nMaude Pontet\nMaude Yoga, Gillonnay\n06 42 63 52 38 · pro.maude-yoga.com"
+    }
+  },
+  {
+    "id": "mgf-grimaldi",
+    "cat": "pro",
+    "nom": "MGF Grimaldi",
+    "lieu": "Saint-Jean-de-Moirans (Centr'Alp 2)",
+    "km": 30,
+    "prio": 1,
+    "gest": "Mécanique de précision, usinage, machines spéciales · une centaine de personnes",
+    "contact": "emploi@mgf-grimaldi.com · email (adresse recrutement, demander de transmettre)",
+    "deja": "Usinage et montage : postes debout, précision, bruit.",
+    "format": "Séance découverte de 45 min à 1 h sur site, puis programme de 4 séances sur 2 mois",
+    "prix": "Séance découverte 180 € ; programme 4 séances 1 400 à 1 600 €",
+    "saison": "Toute l'année",
+    "src": "https://www.mgf-grimaldi.com/recrutement-emploi-stage-usinage-tournage.php",
+    "destinataire": {
+      "nom": "MGF Grimaldi, service RH",
+      "email": "emploi@mgf-grimaldi.com",
+      "canal": "email"
+    },
+    "projet": {
+      "titre": "Séance découverte sur site",
+      "concept": "Usinage et montage : postes debout, bruit, précision qui demande de la concentration. Une séance découverte de 45 min à 1 h sur le lieu de travail, adaptée au métier, puis un programme de 4 séances sur 2 mois si l'équipe y trouve son compte.",
+      "format": "45 min à 1 h sur site, 6 à 20 personnes, à la pause déjeuner ou en fin de poste ; salle de réunion ou réfectoire, matériel apporté par Maude. Interlocuteur : service RH.",
+      "deroule": "Accueil et consignes, 5 min · respiration, 10 min · postures debout ou sur chaise adaptées au poste, 25 min · récupération et retour au calme, 10 min",
+      "prix": "Séance découverte 180 € facturée à l'entreprise (grille de pro.maude-yoga.com) ; programme de 4 séances sur 2 mois de 1 400 à 1 600 € ; interventions de 2 h à une journée de 350 à 2 200 €.",
+      "gain_lieu": "Une action QVT concrète et peu coûteuse, à 30 minutes de route au plus, portée par une intervenante du territoire ; des équipes qui repartent avec des gestes réutilisables au poste.",
+      "demande": "Quinze minutes de téléphone, ou une date pour la séance découverte ; disponibilité en semaine après 13 h.",
+      "attention": "Adresse commerciale ou d'accueil : demander la transmission à la QVT, au CSE ou aux RH. Source vérifiée : https://www.mgf-grimaldi.com/recrutement-emploi-stage-usinage-tournage.php"
+    },
+    "email": {
+      "objet": "Yoga du dos pour vos ateliers d'usinage",
+      "corps": "Bonjour,\n\nProfesseure de yoga à Gillonnay, j'interviens sur le lieu de travail avec du yoga et de la respiration. Je vous écris parce que l'usinage et le montage, c'est une journée debout, dans le bruit, avec une précision qui demande de la concentration.\n\nJe propose une séance découverte sur site, de 45 minutes à 1 heure, en fin de poste ou à la pause déjeuner, pour 6 à 20 personnes, à 180 euros : dos, épaules et récupération, et une respiration qui aide à retrouver l'attention. Si l'équipe accroche, un programme de 4 séances sur 2 mois prend le relais.\n\nVos opérateurs repartent avec quelques gestes simples, à refaire au poste ou chez eux.\n\nVotre adresse est celle du recrutement : merci de transmettre à la personne en charge de la QVT, du CSE ou des RH. Quinze minutes au téléphone, en semaine après 13 h, suffisent pour caler une date.\n\nMaude Pontet\nMaude Yoga, Gillonnay\n06 42 63 52 38 · pro.maude-yoga.com"
+    }
+  },
+  {
+    "id": "pyxalis",
+    "cat": "pro",
+    "nom": "Pyxalis",
+    "lieu": "Moirans (Centr'Alp)",
+    "km": 30,
+    "prio": 1,
+    "gest": "Conception de capteurs d'image CMOS · 50 à 99",
+    "contact": "contact@pyxalis.com · email",
+    "deja": "Ils publient « Pyxalis or the well-being on a human scale », une fête de fin d'année avec les familles, Octobre rose : le bien-être à taille humaine est déjà leur mot. Ingénieurs sur écran.",
+    "format": "Séance découverte de 45 min à 1 h sur site, puis programme de 4 séances sur 2 mois",
+    "prix": "Séance découverte 180 € ; programme 4 séances 1 400 à 1 600 €",
+    "saison": "Toute l'année",
+    "src": "https://www.pyxalis.com/",
+    "destinataire": {
+      "nom": "Pyxalis, service RH ou direction",
+      "email": "contact@pyxalis.com",
+      "canal": "email"
+    },
+    "projet": {
+      "titre": "Séance découverte sur site",
+      "concept": "Le bien-être à taille humaine est déjà leur mot (fête avec les familles, Octobre rose) ; des ingénieurs sur écran. Une séance découverte de 45 min à 1 h sur le lieu de travail, adaptée au métier, puis un programme de 4 séances sur 2 mois si l'équipe y trouve son compte.",
+      "format": "45 min à 1 h sur site, 6 à 20 personnes, à la pause déjeuner ou en fin de poste ; salle de réunion ou réfectoire, matériel apporté par Maude. Interlocuteur : service RH ou direction.",
+      "deroule": "Accueil et consignes, 5 min · respiration, 10 min · postures debout ou sur chaise adaptées au poste, 25 min · récupération et retour au calme, 10 min",
+      "prix": "Séance découverte 180 € facturée à l'entreprise (grille de pro.maude-yoga.com) ; programme de 4 séances sur 2 mois de 1 400 à 1 600 € ; interventions de 2 h à une journée de 350 à 2 200 €.",
+      "gain_lieu": "Une action QVT concrète et peu coûteuse, à 30 minutes de route au plus, portée par une intervenante du territoire ; des équipes qui repartent avec des gestes réutilisables au poste.",
+      "demande": "Quinze minutes de téléphone, ou une date pour la séance découverte ; disponibilité en semaine après 13 h.",
+      "attention": "Adresse générique : demander la transmission à la QVT, au CSE ou aux RH. Source vérifiée : https://www.pyxalis.com/"
+    },
+    "email": {
+      "objet": "Yoga du midi à taille humaine chez Pyxalis",
+      "corps": "Bonjour,\n\nProfesseure de yoga à Gillonnay, j'interviens sur le lieu de travail avec du yoga et de la respiration. Votre site parle de bien-être à taille humaine, d'une fête avec les familles, d'Octobre rose : des mots rares chez une entreprise de capteurs d'image.\n\nJe propose une séance découverte sur site, de 45 minutes à 1 heure, à la pause déjeuner ou en fin de journée, pour 6 à 20 personnes, à 180 euros, pensée pour des ingénieurs sur écran : nuque, épaules, dos, et une respiration qui fait redescendre la pression. Si l'équipe accroche, un programme de 4 séances sur 2 mois prend le relais.\n\nVos ingénieurs repartent avec des gestes simples, à refaire à leur poste.\n\nSi ce n'est pas vous, merci de transmettre à la personne en charge de la QVT ou du CSE. Quinze minutes au téléphone, en semaine après 13 h, suffisent pour caler une date.\n\nMaude Pontet\nMaude Yoga, Gillonnay\n06 42 63 52 38 · pro.maude-yoga.com"
+    }
+  },
+  {
+    "id": "ap-technology",
+    "cat": "pro",
+    "nom": "AP Technology (Rio Tinto Aluminium Pechiney)",
+    "lieu": "Voreppe (Centr'Alp)",
+    "km": 35,
+    "prio": 1,
+    "gest": "R&D et ingénierie pour la production d'aluminium · 50 à 99",
+    "contact": "riotinto-aluminiumpechiney@riotinto.com · email",
+    "deja": "Ingénieurs et techniciens, bureaux d'études et laboratoires.",
+    "format": "Séance découverte de 45 min à 1 h sur site, puis programme de 4 séances sur 2 mois",
+    "prix": "Séance découverte 180 € ; programme 4 séances 1 400 à 1 600 €",
+    "saison": "Toute l'année",
+    "src": "https://www.ap-technology.com/smelter-technology-ap-technology/",
+    "destinataire": {
+      "nom": "AP Technology (Rio Tinto Aluminium Pechiney), service RH ou direction",
+      "email": "riotinto-aluminiumpechiney@riotinto.com",
+      "canal": "email"
+    },
+    "projet": {
+      "titre": "Séance découverte sur site",
+      "concept": "Ingénieurs et techniciens entre bureaux d'études et laboratoires à Voreppe. Une séance découverte de 45 min à 1 h sur le lieu de travail, adaptée au métier, puis un programme de 4 séances sur 2 mois si l'équipe y trouve son compte.",
+      "format": "45 min à 1 h sur site, 6 à 20 personnes, à la pause déjeuner ou en fin de poste ; salle de réunion ou réfectoire, matériel apporté par Maude. Interlocuteur : service RH ou direction.",
+      "deroule": "Accueil et consignes, 5 min · respiration, 10 min · postures debout ou sur chaise adaptées au poste, 25 min · récupération et retour au calme, 10 min",
+      "prix": "Séance découverte 180 € facturée à l'entreprise (grille de pro.maude-yoga.com) ; programme de 4 séances sur 2 mois de 1 400 à 1 600 € ; interventions de 2 h à une journée de 350 à 2 200 €.",
+      "gain_lieu": "Une action QVT concrète et peu coûteuse, à 30 minutes de route au plus, portée par une intervenante du territoire ; des équipes qui repartent avec des gestes réutilisables au poste.",
+      "demande": "Quinze minutes de téléphone, ou une date pour la séance découverte ; disponibilité en semaine après 13 h.",
+      "attention": "Adresse générique : demander la transmission à la QVT, au CSE ou aux RH. Source vérifiée : https://www.ap-technology.com/smelter-technology-ap-technology/"
+    },
+    "email": {
+      "objet": "Yoga sur site pour AP Technology à Voreppe",
+      "corps": "Bonjour,\n\nProfesseure de yoga à Gillonnay, j'interviens sur le lieu de travail avec du yoga et de la respiration, notamment auprès d'une scale-up tech grenobloise. Je vous écris parce qu'AP Technology réunit à Voreppe des ingénieurs et des techniciens entre bureaux d'études et laboratoires.\n\nJe propose une séance découverte sur site, de 45 minutes à 1 heure, à la pause déjeuner ou en fin de journée, pour 6 à 20 personnes, à 180 euros, pensée pour des journées sur écran et en laboratoire : nuque, épaules, dos, et une respiration qui fait redescendre la pression. Si l'équipe accroche, un programme de 4 séances sur 2 mois prend le relais.\n\nVos équipes repartent avec des gestes simples, à refaire à leur poste.\n\nSi ce n'est pas vous, merci de transmettre à la personne en charge de la QVT ou du CSE. Quinze minutes au téléphone, en semaine après 13 h, suffisent pour caler une date.\n\nMaude Pontet\nMaude Yoga, Gillonnay\n06 42 63 52 38 · pro.maude-yoga.com"
+    }
+  },
+  {
+    "id": "apf-chevalon",
+    "cat": "pro",
+    "nom": "APF France handicap, IEM Le Chevalon",
+    "lieu": "Voreppe",
+    "km": 35,
+    "prio": 1,
+    "gest": "Institut d'éducation motrice (médico-social) · 200 à 249",
+    "contact": "iem.voreppe@apf.asso.fr · email",
+    "deja": "Des équipes éducatives et soignantes qui portent et accompagnent des jeunes en situation de handicap moteur. Maude est certifiée yoga adapté : personnel et jeunes.",
+    "format": "Séance découverte de 45 min à 1 h sur site, puis programme de 4 séances sur 2 mois",
+    "prix": "Séance découverte 180 € ; programme 4 séances 1 400 à 1 600 €",
+    "saison": "Toute l'année",
+    "src": "https://taxe-apprentissage.apf-francehandicap.org/structure/iem-fp-chevalon-voreppe/",
+    "destinataire": {
+      "nom": "APF France handicap, IEM Le Chevalon, direction de l'établissement",
+      "email": "iem.voreppe@apf.asso.fr",
+      "canal": "email"
+    },
+    "projet": {
+      "titre": "Séance découverte sur site",
+      "concept": "Des équipes éducatives et soignantes qui portent et accompagnent des jeunes en situation de handicap moteur ; Maude est certifiée yoga adapté, sur chaise. Une séance découverte de 45 min à 1 h sur le lieu de travail, adaptée au métier, puis un programme de 4 séances sur 2 mois si l'équipe y trouve son compte.",
+      "format": "45 min à 1 h sur site, 6 à 20 personnes, à la pause déjeuner ou en fin de poste ; salle de réunion ou réfectoire, matériel apporté par Maude. Interlocuteur : direction de l'établissement.",
+      "deroule": "Accueil et consignes, 5 min · respiration, 10 min · postures debout ou sur chaise adaptées au poste, 25 min · récupération et retour au calme, 10 min",
+      "prix": "Séance découverte 180 € facturée à l'entreprise (grille de pro.maude-yoga.com) ; programme de 4 séances sur 2 mois de 1 400 à 1 600 € ; interventions de 2 h à une journée de 350 à 2 200 €.",
+      "gain_lieu": "Une action QVT concrète et peu coûteuse, à 30 minutes de route au plus, portée par une intervenante du territoire ; des équipes qui repartent avec des gestes réutilisables au poste.",
+      "demande": "Quinze minutes de téléphone, ou une date pour la séance découverte ; disponibilité en semaine après 13 h.",
+      "attention": "Adresse générique : demander la transmission à la QVT, au CSE ou aux RH. Source vérifiée : https://taxe-apprentissage.apf-francehandicap.org/structure/iem-fp-chevalon-voreppe/"
+    },
+    "email": {
+      "objet": "Yoga sur chaise pour les équipes du Chevalon",
+      "corps": "Bonjour,\n\nProfesseure de yoga à Gillonnay, certifiée en yoga adapté, j'interviens sur le lieu de travail avec du yoga et de la respiration. Je vous écris parce que vos équipes éducatives et soignantes portent et accompagnent des jeunes en situation de handicap moteur, et que leur dos et leur souffle comptent.\n\nJe propose d'abord au personnel une séance découverte sur site, de 45 minutes à 1 heure, à la pause déjeuner ou en fin de journée, pour 6 à 20 personnes, à 180 euros : du yoga sur chaise, centré sur le dos, les épaules et la récupération. Si l'équipe accroche, un programme de 4 séances sur 2 mois prend le relais, et nous pourrons ensuite parler d'une piste pour les jeunes.\n\nVos professionnels repartent avec des gestes simples, à refaire entre deux transferts.\n\nQuinze minutes au téléphone, en semaine après 13 h, suffisent pour caler une date.\n\nMaude Pontet\nMaude Yoga, Gillonnay\n06 42 63 52 38 · pro.maude-yoga.com"
+    }
+  },
+  {
+    "id": "lycee-beghin",
+    "cat": "pro",
+    "nom": "Lycée Pierre Béghin",
+    "lieu": "Moirans",
+    "km": 30,
+    "prio": 1,
+    "gest": "Lycée public · 50 à 99",
+    "contact": "ce.0383119j@ac-grenoble.fr · email",
+    "deja": "Une équipe enseignante et de vie scolaire ; Maude intervient déjà en collège et en lycée sur la gestion du stress.",
+    "format": "Séance découverte de 45 min à 1 h sur site, puis programme de 4 séances sur 2 mois",
+    "prix": "Séance découverte 180 € ; programme 4 séances 1 400 à 1 600 €",
+    "saison": "Toute l'année",
+    "src": "https://pierre-beghin.ent.auvergnerhonealpes.fr/contacts-12.htm",
+    "destinataire": {
+      "nom": "Lycée Pierre Béghin, proviseur",
+      "email": "ce.0383119j@ac-grenoble.fr",
+      "canal": "email"
+    },
+    "projet": {
+      "titre": "Séance découverte sur site",
+      "concept": "Une équipe enseignante et de vie scolaire ; Maude intervient déjà en collège et en lycée sur la gestion du stress. Une séance découverte de 45 min à 1 h sur le lieu de travail, adaptée au métier, puis un programme de 4 séances sur 2 mois si l'équipe y trouve son compte.",
+      "format": "45 min à 1 h sur site, 6 à 20 personnes, à la pause déjeuner ou en fin de poste ; salle de réunion ou réfectoire, matériel apporté par Maude. Interlocuteur : proviseur.",
+      "deroule": "Accueil et consignes, 5 min · respiration, 10 min · postures debout ou sur chaise adaptées au poste, 25 min · récupération et retour au calme, 10 min",
+      "prix": "Séance découverte 180 € facturée à l'entreprise (grille de pro.maude-yoga.com) ; programme de 4 séances sur 2 mois de 1 400 à 1 600 € ; interventions de 2 h à une journée de 350 à 2 200 €.",
+      "gain_lieu": "Une action QVT concrète et peu coûteuse, à 30 minutes de route au plus, portée par une intervenante du territoire ; des équipes qui repartent avec des gestes réutilisables au poste.",
+      "demande": "Quinze minutes de téléphone, ou une date pour la séance découverte ; disponibilité en semaine après 13 h.",
+      "attention": "Adresse générique : demander la transmission à la QVT, au CSE ou aux RH. Source vérifiée : https://pierre-beghin.ent.auvergnerhonealpes.fr/contacts-12.htm"
+    },
+    "email": {
+      "objet": "Gestion du stress pour l'équipe du lycée",
+      "corps": "Bonjour,\n\nProfesseure de yoga à Gillonnay, j'interviens déjà en collège et en lycée sur la gestion du stress, et en entreprise avec du yoga et de la respiration. Je vous écris pour votre équipe enseignante et de vie scolaire, qui tient une année face aux classes.\n\nJe propose une séance découverte au lycée, de 45 minutes à 1 heure, à la pause déjeuner ou en fin de journée, pour 6 à 20 personnes, à 180 euros, centrée sur la gestion du stress : une respiration qui fait redescendre la pression avant un cours, et le dos après des heures debout. Si l'équipe accroche, un programme de 4 séances sur 2 mois prend le relais.\n\nVos enseignants repartent avec des gestes simples, à refaire juste avant d'entrer en classe.\n\nSi besoin, merci de transmettre à l'équipe de direction. Quinze minutes au téléphone, en semaine après 13 h, suffisent pour caler une date.\n\nMaude Pontet\nMaude Yoga, Gillonnay\n06 42 63 52 38 · pro.maude-yoga.com"
     }
   }
 ];
