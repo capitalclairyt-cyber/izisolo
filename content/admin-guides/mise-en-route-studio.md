@@ -2,6 +2,8 @@
 titre: "🚀 Mise en route d'un nouveau studio"
 description: "Le programme détaillé pour installer une nouvelle prof, de la création du compte aux premiers gestes du quotidien."
 maj: 2026-08-21
+groupe: "Démo & installation"
+ordre: 2
 ---
 
 > Le but : qu'elle ressorte avec un studio qui TOURNE, pas un compte vide.

@@ -2,6 +2,8 @@
 titre: "🎓 Entraînement : 5 studios, de la création au quotidien"
 description: "Cinq fausses clientes avec toutes leurs infos, à créer ET à faire vivre 4 semaines. Pas à pas guidé, pièges annoncés, corrigés inclus."
 maj: 2026-08-21
+groupe: "Démo & installation"
+ordre: 3
 ---
 
 > **Pourquoi cet entraînement existe.** Créer un studio, ce n'est pas le plus

@@ -2,6 +2,8 @@
 titre: "🎬 Programme de démonstration (45 min)"
 description: "Le déroulé minuté de la démo, la check-list d'avant, les objections sourcées et l'email de suivi."
 maj: 2026-08-21
+groupe: "Démo & installation"
+ordre: 1
 ---
 
 > Le créneau public s'appelle **« Démo + prise en main · 45 min »**.

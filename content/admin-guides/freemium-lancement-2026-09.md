@@ -1,7 +1,9 @@
 ---
-titre: "🆓 Le freemium : ce qu'on dit, où, et dans quel ordre (Excel + cahier)"
+titre: "🆓 Légendes · Freemium (« ton cahier et ton Excel prennent leur retraite »)"
 description: "Les textes prêts à publier pour annoncer qu'IziSolo est gratuit pour toujours : post LinkedIn, premier commentaire, légende Instagram, story en trois écrans, post pour les groupes Facebook (avec la divulgation), réponse au commentaire STUDIO, et les réponses aux questions qui vont arriver. Voix de Maude, bouton Copier."
 maj: "2026-09-14"
+groupe: "Légendes à coller"
+ordre: 1
 ---
 
 > Depuis le 13 septembre, **Essentiel est à 0 €, sans carte, pour toujours** : élèves
@@ -80,14 +82,14 @@ Le lien : izisolo.fr (Essentiel gratuit, sans carte, pour toujours ; tu démarre
 Et si tu n'as pas envie de tout saisir toi-même : on monte ton studio à ta place, gratuitement aussi, en 48 h : izisolo.fr/creer-mon-studio
 ```
 
-## 3. Légende Instagram (réel POV « tableur »)
+## 3. Légende Instagram (le réel Freemium, `freemium.mp4`)
 
 ```texte
-Il est 23 h et tu cherches la ligne de Julie dans ton tableur. 📒
+Dimanche soir. Ton cahier, ton Excel. 📒
 
-Je l'ai fait pendant deux ans. Le pointage refait de mémoire, les carnets recomptés, les chèques au fond du sac.
+« Julie, il lui reste 3 ou 4 séances ? » « Marc a payé en espèces ? » Je l'ai fait pendant deux ans : le pointage refait de mémoire, les carnets recomptés, les chèques au fond du sac.
 
-Depuis cette semaine, tout ça est gratuit dans IziSolo. Pas un essai : gratuit, sans carte, pour toujours, tant que tu gères seule. Élèves, agenda, pointage, carnets, encaissements, factures, URSSAF.
+Depuis cette semaine, tout ça est gratuit dans IziSolo. Pas un essai : gratuit, sans carte, pour toujours, tant que tu gères seule. Tes élèves, ton agenda, le pointage, les carnets, les encaissements, l'URSSAF.
 
 Le seul truc payant, c'est quand tes élèves réservent et paient elles-mêmes en ligne. Tu l'as 30 jours pour voir. Après, tu choisis, rien ne se bloque.
 
@@ -96,6 +98,12 @@ Gratuit, sans carte, pour toujours.
 
 #profdeyoga #profdepilates #yogafrance #pilatesfrance #yogabusiness #entrepreneuse
 ```
+
+**Avant de publier**
+
+- Couverture : l'image du « 0 € » plein écran (vers 7 s), pas le titre du début : c'est elle qui arrête le pouce dans la grille du compte.
+- Musique : une piste calme du catalogue, volume bas.
+- Le lien de la bio pointe sur `izisolo.fr`.
 
 ## 4. Story en trois écrans (texte sur fond sable, police du compte)
 

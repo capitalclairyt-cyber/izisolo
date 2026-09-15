@@ -2,6 +2,8 @@
 titre: "💬 Questions & réponses (pour ne jamais être prise au dépourvu)"
 description: "Les objections terrain sourcées, les questions concurrents avec les chiffres relevés, et les questions pièges avec la réponse honnête."
 maj: 2026-08-21
+groupe: "Démo & installation"
+ordre: 4
 ---
 
 > Trois règles de conduite, avant tout : **aucun chiffre inventé** (ceux

@@ -1,4 +1,10 @@
-# Prospection par email, à la main
+---
+titre: "✉️ Prospection par email, à la main"
+description: "Le mode d'emploi de la page ✉️ Prospection : tirer cinq profs, écrire pour chacune, programmer l'envoi, relancer une fois, et compter les réponses."
+maj: "2026-09-12"
+groupe: "Backoffice"
+ordre: 1
+---
 
 *Guide de la page ✉️ Prospection de l'admin (depuis le 12 septembre 2026).*
 

@@ -2,6 +2,8 @@
 titre: Hors les murs, le yoga de Maude dans des lieux qui ont déjà leur public
 description: Le mode d'emploi de la page 🌿 Hors les murs, pour relire, valider ou envoyer chaque proposition depuis ta boîte, et noter ce que le lieu répond.
 maj: 2026-09-14
+groupe: "Backoffice"
+ordre: 2
 ---
 
 # Hors les murs
