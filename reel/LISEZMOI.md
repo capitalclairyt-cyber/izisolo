@@ -179,6 +179,41 @@ téléphone posé à 720 comme dans Freemium laissait 250 px de vide sous un tit
 lignes → 560. `SHOOT_BASE=http://localhost:3334` permet de capturer sur un serveur local
 quand la prod n'a pas encore l'écran (le badge « N Issues » du dev est masqué).
 
+## Le carrousel Instagram « Avis Google » (2026-09-15)
+
+`src/CarrouselAvis.jsx` + `src/carrousel-palettes.js` (dimensions, palettes, en .js PUR
+parce que le script de rendu Node les lit aussi), composition **CarrouselAvis** (1080×1350,
+une image, `--props={ slide, palette }`), `npm run carrousel [-- --palette=bleu|rose|vert]`
+→ `../../reseaux/reel/carrousels/avis-<palette>/01..08.jpg` (hors repo). Demande Colin :
+« un joli carrousel Instagram pour les avis Google, on sort de la couleur sable », puis
+« pas vert, il y en a déjà sur le feed » : **bleu nuit par défaut**, rose en second choix,
+le vert reste rendable mais écarté. Les cartes gardent le crème du sable et les étoiles sont
+or, pour que la marque reste reconnaissable sur un fond qui tranche.
+
+Huit pages, dans l'ordre du réel : (1) couverture, cinq étoiles or, « Tes élèves
+t'adorent. » puis « Google ne le sait pas. » en or, pastille « Nouveau dans IziSolo »,
+« Fais défiler → » ; (2) le constat en trois lignes ; (3) « Un seul réglage » : la carte
+Mes avis Google du démo (`avis-carte.jpg`) dans un téléphone, un **cadre or** autour du champ
+du lien ; (4) le bouton « Laisser un avis Google » dans l'espace élève (`avis-espace.jpg`,
+défilée jusqu'au repère `avisBouton`), cadre or autour du bouton ; (5) l'email avec le VRAI
+texte de `lib/avis-google.js` (via `AVIS.portes` de `formats.js`) rendu comme une carte
+de messagerie ; (6) l'affichette A4 (`avis-affiche.jpg`) posée de travers, entière ;
+(7) les trois règles de Google (`AVIS.regles`) en lignes cochées ; (8) la carte de fin,
+« Tes avis Google, sans y penser. », pastille « Commente STUDIO », et la frontière dite
+en une phrase (la demande d'avis est dans Complet, le reste est gratuit pour toujours).
+Pied de chaque page : la goutte IziSolo et « n / 8 ».
+
+Trois défauts attrapés sur les JPEG, pas dans le code : l'anneau du réel, posé sur une image
+fixe, **cachait le texte** qu'il désignait (le champ du lien, le libellé du bouton) → un
+`cadre` rectangulaire (`[x1, y1, x2, y2]` en pixels de capture, tracé en or autour de
+l'élément, jamais dessus) ; le téléphone à 720 px de haut mordait sur le pied → 640 ;
+l'affichette recadrée par `objectFit` coupait « Avis Google » et « propulsé par
+izisolo.fr » → image entière à 520 de large. ⚠️ Deux pièges de script : Node ne peut pas
+importer un `.jsx` (`ERR_UNKNOWN_FILE_EXTENSION`), donc tout ce que le script partage avec le
+composant vit dans un `.js` pur ; et un `export { X } from` ne LIE pas `X` dans le module qui
+le réexporte (`LARGEUR_CARROUSEL is not defined` sur la page 6), il faut aussi l'importer.
+Légende et ordre de publication : guide admin `legendes-avis-google.md`, bloc 2.
+
 ## Le réel et le clip « Changer d'outil » (2026-09-10)
 
 `src/Migration.jsx` porte DEUX compositions sur la même scène : **Migration** (1080×1920,

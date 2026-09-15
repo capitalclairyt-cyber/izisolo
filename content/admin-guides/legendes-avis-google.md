@@ -15,20 +15,23 @@ ordre: 2
 > que Google demande, et c'est ce qui garde les avis en ligne. **Ne jamais promettre
 > plus que ça dans une légende ou un commentaire.**
 >
-> Fichiers : `reseaux/reel/formats/avis.mp4` (29 s, muet) et la couverture
-> `avis-couverture.jpg` (les cinq étoiles). Chaque bloc a un bouton **Copier**.
+> Fichiers : `reseaux/reel/formats/avis.mp4` (29 s, muet), la couverture
+> `avis-couverture.jpg` (les cinq étoiles) et le carrousel
+> `reseaux/reel/carrousels/avis-bleu/01..08.jpg`. Chaque bloc a un bouton **Copier**.
 
 ## 0. L'ordre de publication
 
 1. **Instagram** : le réel avec la légende du bloc 1, la couverture `avis-couverture.jpg`
    choisie comme image de couverture (menu « Modifier la couverture », importer depuis
    la galerie), une musique calme du catalogue.
-2. **Story** le même soir (bloc 2), avec le sticker lien vers `izisolo.fr`.
-3. **LinkedIn** deux jours plus tard (bloc 3 + premier commentaire, bloc 4), un mardi
+2. **Story** le même soir (bloc 3), avec le sticker lien vers `izisolo.fr`.
+3. **LinkedIn** deux jours plus tard (bloc 4 + premier commentaire, bloc 5), un mardi
    ou un jeudi matin, vidéo en natif.
-4. **Page Facebook IziSolo** le lendemain (bloc 5). Pas dans les groupes : cette
+4. **Page Facebook IziSolo** le lendemain (bloc 6). Pas dans les groupes : cette
    fonction parle aux profs qui ont déjà des élèves, pas à celles qui cherchent.
-5. Chaque commentaire **STUDIO** reçoit le message habituel (guide « Répondre à un
+5. **Le carrousel** sur Instagram une semaine après le réel (bloc 2), un autre jour
+   de la semaine : il s'enregistre et se relit, là où le réel passe.
+6. Chaque commentaire **STUDIO** reçoit le message habituel (guide « Répondre à un
    commentaire STUDIO »).
 
 ## 1. Instagram : la légende du réel
@@ -59,7 +62,45 @@ Gratuit, sans carte, pour toujours.
 - Musique : une piste calme, volume bas.
 - Le lien de la bio pointe sur `izisolo.fr`.
 
-## 2. Story en trois écrans (texte sur fond sable)
+## 2. Instagram : le carrousel (huit pages, une semaine après le réel)
+
+Huit images 1080×1350 dans `reseaux/reel/carrousels/avis-bleu/` (01 à 08, à publier
+dans cet ordre). La page 1 est la couverture (les cinq étoiles), la page 8 dit
+« Commente STUDIO ». Bleu nuit pour trancher avec le sable du feed ; une version rose
+existe (`avis-rose/`) si le feed a besoin d'autre chose.
+
+```texte
+Tes élèves t'adorent. Google ne le sait pas. ⭐
+
+Fais défiler, ça tient en huit pages :
+
+1️⃣ Des élèves fidèles, une fiche Google qui n'en dit rien
+2️⃣ Pourquoi (demander, c'est gênant, et on oublie)
+3️⃣ Le seul réglage : tu colles ton lien « Demander des avis », une fois
+4️⃣ Le bouton dans leur espace, quand elles veulent
+5️⃣ L'email, le lendemain de la 3e séance, une seule fois
+6️⃣ L'affichette avec le QR, à la sortie du studio
+7️⃣ Les règles de Google, et pourquoi on les respecte : jamais plus de cinq par jour, jamais rien en échange
+8️⃣ Et toi, tu n'y penses plus
+
+C'est ce que Google demande, et c'est ce qui garde tes avis en ligne.
+
+Enregistre le post si tu veux le retrouver au moment de créer ta fiche.
+
+Commente STUDIO et je t'envoie le lien en message 🌿
+Gratuit, sans carte, pour toujours.
+
+#profdeyoga #profdepilates #yogafrance #pilatesfrance #yogabusiness #entrepreneuse #avisgoogle #ficheGoogle
+```
+
+**Avant de publier**
+
+- Les huit images dans l'ordre des fichiers, format « Publication », pas « Réel ».
+- Pas de musique, pas de texte par-dessus les images : tout est déjà écrit dedans.
+- Publier une semaine après le réel, un autre jour de la semaine : le réel touche celles
+  qui passent, le carrousel celles qui cherchent (il s'enregistre, il se relit).
+
+## 3. Story en trois écrans (texte sur fond sable)
 
 Écran 1 :
 
@@ -85,7 +126,7 @@ Tes avis restent en ligne.
 Le lien est juste là 👇
 ```
 
-## 3. LinkedIn : le post de Maude
+## 4. LinkedIn : le post de Maude
 
 ```texte
 Vingt avis en deux jours sur une fiche qui en avait quatre. Google n'en publie aucun.
@@ -112,7 +153,7 @@ Et vous, votre fiche Google, vous l'avez regardée récemment ?
 #profdeyoga #profdepilates #yogafrance #pilatesfrance #yogabusiness #entrepreneuse #avisgoogle
 ```
 
-## 4. LinkedIn : le premier commentaire
+## 5. LinkedIn : le premier commentaire
 
 ```texte
 Le lien : izisolo.fr (Essentiel gratuit, sans carte, pour toujours ; la demande d'avis fait partie de Complet, que tu essaies 30 jours).
@@ -120,7 +161,7 @@ Le lien : izisolo.fr (Essentiel gratuit, sans carte, pour toujours ; la demande 
 Et si tu préfères qu'on installe tout à ta place, gratuitement : izisolo.fr/creer-mon-studio
 ```
 
-## 5. Page Facebook IziSolo
+## 6. Page Facebook IziSolo
 
 ```texte
 Tes élèves t'adorent. Google ne le sait pas. ⭐
@@ -138,7 +179,7 @@ Premier commentaire, depuis la page :
 izisolo.fr (Essentiel gratuit, sans carte, pour toujours ; la demande d'avis est dans Complet, 30 jours pour voir)
 ```
 
-## 6. Les questions qui vont arriver, et ce qu'on répond
+## 7. Les questions qui vont arriver, et ce qu'on répond
 
 **« Et si l'avis est mauvais ? »**
 
@@ -170,7 +211,7 @@ Une élève reçoit cet email une seule fois dans sa vie chez toi, le lendemain 
 Sur business.google.com, ta fiche, bouton « Demander des avis » : Google te donne un lien court. Tu le colles dans Paramètres → Ma page publique → Mes avis Google, et c'est tout.
 ```
 
-## 7. Ce qu'on ne dit PAS
+## 8. Ce qu'on ne dit PAS
 
 - Jamais « booste ta note » ni « obtiens plus d'avis 5 étoiles » : on demande un mot, on ne commande pas une note.
 - Jamais un chiffre de résultat (« +30 avis en un mois ») tant qu'une prof ne l'a pas vécu et accepté qu'on le cite.

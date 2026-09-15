@@ -11,6 +11,7 @@ import { Fonction, dureeFonction } from './Fonction';
 import { SPLIT, REPONSE_DM, RENTREE } from './formats';
 import { Migration, MigrationClip, DUREE_MIGRATION, DUREE_CLIP_MIGRATION } from './Migration';
 import { Freemium, DUREE_FREEMIUM } from './Freemium';
+import { CarrouselAvis, LARGEUR_CARROUSEL, HAUTEUR_CARROUSEL } from './CarrouselAvis';
 import { Avis, DUREE_AVIS } from './Avis';
 import { FPS, H, W } from './theme';
 
@@ -31,6 +32,10 @@ export const RemotionRoot = () => (
     <Composition id="Rentree" component={Rentree} durationInFrames={RENTREE.duree} fps={FPS} width={W} height={H} />
     <Composition id="Migration" component={Migration} durationInFrames={DUREE_MIGRATION} fps={FPS} width={W} height={H} />
     <Composition id="Freemium" component={Freemium} durationInFrames={DUREE_FREEMIUM} fps={FPS} width={W} height={H} />
+    {/* Le carrousel Instagram Avis Google : une image fixe par page (`--props`
+        { slide, palette }), rendu par scripts/rendre-carrousel.mjs. */}
+    <Composition id="CarrouselAvis" component={CarrouselAvis} defaultProps={{ slide: 1, palette: 'bleu' }}
+      durationInFrames={1} fps={FPS} width={LARGEUR_CARROUSEL} height={HAUTEUR_CARROUSEL} />
     <Composition id="Avis" component={Avis} durationInFrames={DUREE_AVIS} fps={FPS} width={W} height={H} />
     <Composition id="Clip-migration" component={MigrationClip} durationInFrames={DUREE_CLIP_MIGRATION} fps={FPS} width={LARGEUR_CLIP} height={hauteurClip(1558)} />
     {SCENES.map((scene) => (
