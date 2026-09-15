@@ -139,7 +139,12 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
   // ── Bloc "Aujourd'hui" : répond à « que dois-je faire maintenant ? ».
   // Prochain cours = 1er cours du jour dont l'heure n'est pas passée.
   const nowHM = today.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', hour12: false });
+  // Une séance ANNULÉE n'est pas une séance du jour (retour Maude 2026-09-15 :
+  // « ça m'affiche 4 cours alors que j'en ai deux, ça compte ceux que j'ai
+  // annulés ») : la tuile, la liste et le bloc comptent la MÊME liste. Les
+  // annulées sont nommées à part, jamais comptées, jamais « à pointer ».
   const coursJour = (coursDuJour || []).filter(c => !c.est_annule);
+  const coursAnnulesJour = (coursDuJour || []).filter(c => c.est_annule);
   const coursJourTries = [...coursJour].sort((a, b) => (a.heure || '').localeCompare(b.heure || ''));
   const prochainCours = coursJourTries.find(c => (c.heure || '').slice(0, 5) >= nowHM) || null;
   const elevesAttendus = coursJour.reduce((s, c) => s + compterPlacesOccupees(c.presences), 0);
@@ -345,8 +350,8 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
         <Link href="/agenda?vue=jour" className="bento-cell bento-cell--agenda">
           <div className="bento-icon"><CalendarDays size={20} /></div>
           <div>
-            <div className="bento-value">{coursDuJour.length}</div>
-            <div className="bento-label">Séance{coursDuJour.length > 1 ? 's' : ''} aujourd'hui</div>
+            <div className="bento-value" data-testid="dash-seances-jour">{coursJour.length}</div>
+            <div className="bento-label">Séance{coursJour.length > 1 ? 's' : ''} aujourd'hui</div>
           </div>
         </Link>
 
@@ -503,10 +508,10 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
           </Link>
         </div>
 
-        {coursDuJour.length === 0 ? (
+        {coursJour.length === 0 ? (
           <div className="empty-state izi-card">
             <div className="empty-emoji">&#x1f9d8;</div>
-            <p className="empty-title">Pas de cours prévu aujourd'hui</p>
+            <p className="empty-title">{coursAnnulesJour.length > 0 ? "Aucune séance maintenue aujourd'hui" : "Pas de cours prévu aujourd'hui"}</p>
             <p className="empty-desc">Profite de ta journée ou ajoute une séance</p>
             <Link href="/cours/nouveau" className="izi-btn izi-btn-secondary">
               <Plus size={18} /> Créer un cours
@@ -514,7 +519,7 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
           </div>
         ) : (
           <div className="cours-list">
-            {coursDuJour.map(cours => {
+            {coursJourTries.map(cours => {
               const tone = toneForCours(cours.type_cours);
               const inscrits = compterPlacesOccupees(cours.presences);
               const aPointer = resteAPointer(cours);
@@ -551,6 +556,15 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
               );
             })}
           </div>
+        )}
+
+        {coursAnnulesJour.length > 0 && (
+          <p className="cours-annules-note" data-testid="dash-seances-annulees">
+            {coursAnnulesJour.length === 1
+              ? <>1 séance annulée aujourd&apos;hui ({coursAnnulesJour[0].nom}, {formatHeure(coursAnnulesJour[0].heure)}), pas comptée.</>
+              : <>{coursAnnulesJour.length} séances annulées aujourd&apos;hui, pas comptées.</>}
+            {' '}<Link href="/agenda?vue=jour">Voir dans l&apos;agenda</Link>
+          </p>
         )}
       </div>
 
@@ -886,6 +900,15 @@ export default function DashboardClient({ profile, coursDuJour, nbClients, nbCou
           color: var(--text-muted);
           margin-bottom: 8px;
         }
+
+        /* Séances annulées du jour : nommées, jamais comptées (ce bloc est
+           global, donc la règle atteint le <Link>). */
+        .cours-annules-note {
+          margin: 10px 4px 0;
+          font-size: 0.8125rem;
+          color: var(--text-muted);
+        }
+        .cours-annules-note a { color: var(--brand); text-decoration: underline; }
 
         /* Cours list — fond plein toné + radius + padding généreux */
         .cours-list {

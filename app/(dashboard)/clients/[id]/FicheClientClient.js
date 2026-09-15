@@ -23,6 +23,7 @@ import { resumeDemande, solderDemandesApresVente } from '@/lib/demande-offre';
 import { lireReglementConfig, preselectionEmail } from '@/lib/reglement';
 import { moisFacturables } from '@/lib/factures';
 import { genererVersementsMensuels, moisCouverts, premierMoisLibre, resumeVersements, dateDuMois, nbMoisOffre, MAX_VERSEMENTS } from '@/lib/versements-mensuels';
+import { texteImputation } from '@/lib/encaissement-parts';
 import { estAboPreleve, libellePreleve } from '@/lib/prelevement';
 import { createClient } from '@/lib/supabase';
 import { calcProRata as calcProRataLib } from '@/lib/prorata';
@@ -374,9 +375,8 @@ function AssignerOffreModal({ client, onClose, onSuccess, offreInitialeId = null
 // Composant principal
 // ═══════════════════════════════════════════════════════════════════════════
 export default function FicheClientClient({ client, profile, abonnements: abosInit, presences, paiements: paiementsInit = [], lieux, statutCompte = null, facturationActive = false, facturesParPaiement = {}, demandesOffre = [], adhesions = null }) {
-  // Le studio affiché (v101) : `user.id` ne suffit plus, une prof peut être
-  // invitée dans le studio d'une autre. Résolu une seule fois par le layout.
-  const studioId = useStudioId();
+  // Le studio affiché (v101) n'est plus lu ici : chaque écriture de la fiche
+  // passe par une route, qui le résout elle-même.
   const router = useRouter();
   const { toast } = useToast();
   const vocab = getVocabulaire(profile?.metier || 'yoga', profile?.vocabulaire);
@@ -943,34 +943,30 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
   // faut encaisser (en un ou plusieurs moyens), sinon l'argent compte deux fois.
   const enAttenteSurAbo = (abo) => (abo ? paiements.filter(p => p.abonnement_id === abo.id && (p.statut === 'pending' || p.statut === 'overdue')) : []);
 
+  // Un versement reçu pendant qu'une ligne ATTEND déjà s'y impute (2026-09-15,
+  // Marie-Pierre bis : 245 € « déjà reçus » par-dessus 480 € en attente
+  // donnaient « reçu 245 € · 480 € restant »). La règle est pure dans
+  // lib/encaissement-parts (planImputation) et c'est la route qui l'exécute :
+  // le client ne fabrique plus une ligne par-dessus.
   const ajouterVersement = async () => {
     if (!versementModal || !versementMontant) return;
-    if (versementRecu && !versementMode) { toast.error('Déclare comment l\'argent est arrivé : espèces, chèque, virement ou CB.'); return; }
+    if (versementRecu && !versementMode) { toast.error("Déclare comment l'argent est arrivé : espèces, chèque, virement ou CB."); return; }
     setVersementSubmitting(true);
     try {
+      const res = await fetch(`/api/abonnements/${versementModal.id}/versement`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          recu: versementRecu,
+          montant: parseFloat(versementMontant),
+          mode: versementMode || null,
+          numero_cheque: versementMode === 'cheque' && versementCheque.trim() ? versementCheque.trim() : null,
+          date: versementDate,
+        }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json.error || "Le versement n'a pas pu être enregistré.");
       const supabase = createClient();
-      const existingEch = paiements.find(p => p.abonnement_id === versementModal.id && p.echeancier_id);
-      const { data: cree, error: payErr } = await supabase.from('paiements').insert({
-        profile_id: studioId,
-        client_id: client.id,
-        offre_id: versementModal.offre_id || null,
-        abonnement_id: versementModal.id,
-        echeancier_id: existingEch?.echeancier_id || null,
-        intitule: `${versementModal.offre_nom} (versement)`,
-        type: versementModal.type,
-        montant: parseFloat(versementMontant),
-        statut: versementRecu ? 'paid' : 'pending',
-        mode: versementRecu ? versementMode : (versementMode || null),
-        date: versementDate,
-        date_encaissement: versementRecu ? versementDate : null,
-        ...(versementMode === 'cheque' && versementCheque.trim() ? { numero_cheque: versementCheque.trim() } : {}),
-      }).select('id').single();
-      if (payErr) throw payErr;
-      // Un versement reçu = un encaissement : la facture automatique (v106)
-      // suit, comme pour « Encaisser ». Fire-and-forget, jamais bloquant.
-      if (versementRecu && cree?.id) {
-        fetch('/api/factures/auto', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ paiementIds: [cree.id] }) }).catch(() => {});
-      }
       const { data: pays } = await supabase
         .from('paiements')
         .select('*')
@@ -978,7 +974,10 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
         .order('date', { ascending: false });
       setPaiements(pays || []);
       setVersementModal(null);
-      toast.success(versementRecu ? 'Versement encaissé' : 'Versement à venir ajouté');
+      const imputes = Array.isArray(json.imputation) ? json.imputation.length : 0;
+      toast.success(versementRecu
+        ? (imputes > 0 ? 'Versement encaissé et déduit de ce qui était attendu' : 'Versement encaissé')
+        : 'Versement à venir ajouté');
       if (versementRecu && clientStatut === 'prospect') changeStatut('actif');
     } catch (e) {
       toast.error(e.message);
@@ -1758,10 +1757,11 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
               </div>
 
               {versementRecu && dues.length > 0 && (
-                <div className="versement-du" role="note">
-                  <strong>{formatMontant(totalDu)} attendent déjà sur cet abonnement</strong> ({dues.length === 1 ? 'une ligne « à encaisser »' : `${dues.length} lignes « à encaisser »`}).
-                  Si ce versement en fait partie, encaisse plutôt cette ligne, en un seul moyen ou en plusieurs (deux chèques, espèces + CB) : sinon l&apos;argent serait compté deux fois.
+                <div className="versement-du" role="note" data-testid="versement-imputation">
+                  <strong>{formatMontant(totalDu)} attendent déjà sur cet abonnement</strong> ({dues.length === 1 ? 'une ligne « à encaisser »' : `${dues.length} lignes « à encaisser »`}).{' '}
+                  {texteImputation(dues, versementMontant)} Rien n&apos;est compté deux fois.
                   <div className="versement-du-actions">
+                    <span className="versement-du-ou">Tout arrive d&apos;un coup ?</span>
                     {dues.slice(0, 3).map(p => (
                       <button key={p.id} type="button" className="izi-btn izi-btn-secondary" onClick={() => { setVersementModal(null); openEncaisser(p); }}>
                         <CheckCircle2 size={14} /> Encaisser {formatMontant(p.montant)}
@@ -2375,7 +2375,8 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
         .versement-switch-btn { border: 0; background: transparent; border-radius: 8px; padding: 8px 10px; font: inherit; font-size: 0.8125rem; font-weight: 500; color: var(--text-muted, #6b6560); cursor: pointer; }
         .versement-switch-btn.active { background: #fff; color: var(--text, #2a2420); box-shadow: 0 1px 2px rgba(0,0,0,0.08); font-weight: 600; }
         .versement-du { margin: 12px 0 4px; padding: 10px 12px; border-radius: 10px; background: #fef3c7; color: #78350f; font-size: 0.8125rem; line-height: 1.45; }
-        .versement-du-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+        .versement-du-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px; }
+        .versement-du-ou { font-weight: 600; margin-right: 2px; }
         .versement-hint { font-size: 0.8125rem; color: var(--text-muted, #6b6560); margin: 8px 0 0; }
         .encaisser-btn-fiche {
           display: inline-flex; align-items: center; gap: 4px;

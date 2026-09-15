@@ -174,3 +174,78 @@ test('texteParts dit chaque moyen en français', () => {
   expect(texteParts([{ montant: 240, mode: 'cheque' }, { montant: 240, mode: 'cheque' }])).toBe('240 € par chèque + 240 € par chèque');
   expect(texteParts([{ montant: 80, mode: 'especes' }, { montant: 43.5, mode: 'CB' }])).toBe('80 € en espèces + 43,50 € par cb');
 });
+
+// ── Un versement reçu s'impute sur ce qui attend (2026-09-15, Marie-Pierre bis) ──
+import { planImputation, texteImputation } from '../../lib/encaissement-parts.js';
+
+test.describe("planImputation : un versement reçu s'impute sur les lignes en attente", () => {
+  const l480 = [{ id: 'a', montant: 480, date: '2026-08-25', statut: 'pending' }];
+
+  test('245 € sur 480 attendus : la ligne est scindée, 245 réglés, 235 restants', () => {
+    const p = planImputation(l480, 245);
+    expect(p.ok).toBe(true);
+    expect(p.actions).toEqual([{ id: 'a', action: 'scinder', paye: 245, reste: 235 }]);
+    expect(p.surplus).toBe(0);
+  });
+
+  test('le montant exact règle la ligne entière', () => {
+    expect(planImputation(l480, 480).actions).toEqual([{ id: 'a', action: 'regler' }]);
+  });
+
+  test('deux échéances : la plus ancienne est réglée d abord, la suivante scindée', () => {
+    const lignes = [
+      { id: 'b', montant: 100, date: '2026-10-01', statut: 'pending' },
+      { id: 'a', montant: 100, date: '2026-09-01', statut: 'overdue' },
+    ];
+    expect(planImputation(lignes, 150).actions).toEqual([
+      { id: 'a', action: 'regler' },
+      { id: 'b', action: 'scinder', paye: 50, reste: 50 },
+    ]);
+  });
+
+  test('un versement qui dépasse le total attendu est refusé, avec les deux montants', () => {
+    const p = planImputation(l480, 500);
+    expect(p.ok).toBe(false);
+    expect(p.erreur).toMatch(/500 €/);
+    expect(p.erreur).toMatch(/480 €/);
+    expect(p.actions).toEqual([]);
+    expect(p.surplus).toBe(20);
+  });
+
+  test('les lignes déjà réglées ne comptent pas : sans attente, aucune action et tout le montant en surplus', () => {
+    const p = planImputation([{ id: 'x', montant: 480, statut: 'paid' }], 100);
+    expect(p.ok).toBe(true);
+    expect(p.actions).toEqual([]);
+    expect(p.surplus).toBe(100);
+  });
+
+  test('un montant nul ou absurde est refusé', () => {
+    expect(planImputation(l480, 0).ok).toBe(false);
+    expect(planImputation(l480, 'abc').ok).toBe(false);
+  });
+
+  test('les centimes : 0,01 € de tolérance, jamais un reste négatif', () => {
+    const p = planImputation([{ id: 'a', montant: 33.33, statut: 'pending' }], 33.34);
+    expect(p.actions).toEqual([{ id: 'a', action: 'regler' }]);
+  });
+});
+
+test.describe('texteImputation : la phrase de la modale', () => {
+  const l480 = [{ id: 'a', montant: 480, date: '2026-08-25', statut: 'pending' }];
+  test('rien sans ligne en attente', () => {
+    expect(texteImputation([], 100)).toBeNull();
+    expect(texteImputation([{ id: 'x', montant: 10, statut: 'paid' }], 100)).toBeNull();
+  });
+  test('avant la saisie : annonce que le versement se déduira', () => {
+    expect(texteImputation(l480, '')).toBe("480 € attendent sur cet abonnement : ce versement s'en déduira.");
+  });
+  test('pendant la saisie : dit ce qui restera', () => {
+    expect(texteImputation(l480, 245)).toBe('Ces 245 € se déduisent des 480 € attendus : il restera 235 € à encaisser.');
+  });
+  test('le montant exact : tout est soldé', () => {
+    expect(texteImputation(l480, 480)).toBe('Ces 480 € soldent les 480 € attendus : plus rien à encaisser sur cet abonnement.');
+  });
+  test('au-delà : la raison du refus', () => {
+    expect(texteImputation(l480, 500)).toMatch(/dépasse/);
+  });
+});
