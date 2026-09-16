@@ -8,6 +8,7 @@ import { checkRateLimitIP } from '@/lib/antibot';
 import { sendPushToUser } from '@/lib/push-server';
 import { wantsNotif } from '@/lib/notif-prefs';
 import { reportError } from '@/lib/report';
+import { poserSourcePresence } from '@/lib/bilan-essai-service';
 import { canSeeCours, resolveClientInfo } from '@/lib/visibilite';
 import { coursDejaCommence } from '@/lib/dates';
 import { getRegle } from '@/lib/regles-metier';
@@ -240,6 +241,8 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
     }
 
     booked.push({ coursId: c.id, date: c.date, heure: c.heure });
+    // Chaque séance réservée porte son origine (v119, UPDATE séparé).
+    await poserSourcePresence(supabaseAdmin, resa.presence_id, 'portail');
     if (aboCap > 0) {
       const sem = lundiDe(c.date);
       parSemaine[sem] = (parSemaine[sem] || 0) + 1; // la résa qu'on vient de poser compte

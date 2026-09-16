@@ -415,4 +415,10 @@ export const FAQ_SUPPORT = [
     a: "Paramètres → Ma page publique → carte « Mes avis Google » : colle le lien que te donne ta fiche Google Business Profile (bouton « Demander des avis », adresse du type g.page/r/…/review). Ensuite, quatre portes : tes élèves ont un bouton « Laisser un avis Google » dans leur espace ; ton QR code (tuile Portail ou Intégrer sur mon site) gagne un modèle « Avis Google » à coller près de la sortie ; Messagerie → Annoncer te propose un gabarit, à envoyer un cours à la fois plutôt qu'à toute ta base d'un coup ; et l'interrupteur « Demander un avis par email après la 3e séance » envoie l'email tout seul, une fois par élève, cinq par jour au plus (plan Complet). Deux règles de Google que l'app respecte : rien en échange d'un avis (une séance offerte fait retirer les avis), et pas de tri entre élèves contentes ou non. Réponds à chaque avis reçu.",
     lien: { href: '/aide#page-publique', label: 'Voir le pas-à-pas' },
   },
+  {
+    // Le compteur de vues du portail (v119, 2026-09-16). AJOUTÉE EN FIN.
+    q: "Sur mon tableau de bord : « ta page publique a été ouverte N fois cette semaine », c'est quoi ?",
+    a: "C'est le nombre de fois où ta page publique a été ouverte ces sept derniers jours. Sur Essentiel, ces visiteuses peuvent lire ton planning mais pas réserver leur place : la réservation en ligne, l'espace élève et le paiement par carte sont dans Complet. On compte des OUVERTURES de page, jamais des personnes : on ne sait pas qui vient, on n'enregistre ni nom, ni adresse IP, ni page visitée, et tes propres visites ne sont pas comptées (les robots des moteurs de recherche non plus). En dessous de trois ouvertures dans la semaine, on ne dit rien du tout. La carte se masque d'un clic et ne revient pas avant une semaine.",
+    lien: { href: '/aide#abonnement', label: 'Voir le pas-à-pas' },
+  },
 ];

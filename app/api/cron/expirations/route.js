@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { withRoute } from '@/lib/api-route';
 import { getTrialStatus } from '@/lib/trial';
+import { compterBilan } from '@/lib/bilan-essai-service';
+import { bilanEssai } from '@/lib/bilan-essai';
 import { PLANS } from '@/lib/constantes';
 import { sendEmail } from '@/lib/email';
 import { reportError } from '@/lib/report';
@@ -18,10 +20,162 @@ import { labelIntervenante, prenomIntervenante } from '@/lib/intervenante';
 // Durée max explicite (fluid compute : 300 s = plafond Hobby)
 export const maxDuration = 300;
 
-// Cron quotidien : marquer les abonnements expirés
+// La relance de fin d'essai (J-3 / J-1), sortie du corps du cron pour qu'une
+// preuve puisse la rejouer SEULE, sur UN studio (`?profil=`), sans envoyer
+// d'email aux vraies profs ni toucher aux abonnements et aux purges.
+async function relanceEssais(idSeul = null) {
+  // ── Relance de fin d'essai SaaS (J-3 / J-1) ───────────────────────────────
+  // Email transactionnel au prof dont l'essai 30 j se termine bientôt (conversion
+  // vers un plan payant). Flags trial_reminder_sent_j3/j1 (v33) = anti-doublon.
+  // FREEMIUM (2026-09-13) : la fin d'essai ne gèle plus rien, elle ramène sur
+  // Essentiel gratuit. L'email n'annonce donc plus une coupure, mais ce que la
+  // prof PERD (la boucle élève) et ce qu'elle garde.
+  // Pas de push (cron à 3h ≈ 5h Paris) : le canal email + la bannière in-app
+  // suffisent. ⚠️ Sûr depuis v57 (plus d'élèves fantômes en faux trial).
+  let trialJ3 = 0, trialJ1 = 0;
+  try {
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.izisolo.fr';
+    // `type_structure` (v110) décide du nom du plan essayé dans l'email. Si la
+    // colonne manque encore, on relit sans elle : une colonne inconnue ferait
+    // échouer TOUTE la requête et plus aucune prof ne serait relancée.
+    // (Listes écrites en toutes lettres : verifier-selects ne lit pas un template, §12.)
+    let { data: trialProfiles, error: eEssai } = await supabaseAdmin
+      .from('profiles')
+      .select('id, prenom, email_contact, plan, trial_started_at, stripe_subscription_status, trial_reminder_sent_j3, trial_reminder_sent_j1, type_structure')
+      .not('trial_started_at', 'is', null)
+      .neq('plan', 'free');
+    if (idSeul && !eEssai) trialProfiles = (trialProfiles || []).filter((x) => x.id === idSeul);
+    if (eEssai && (eEssai.code === '42703' || eEssai.code === 'PGRST204')) {
+      ({ data: trialProfiles, error: eEssai } = await supabaseAdmin
+        .from('profiles')
+        .select('id, prenom, email_contact, plan, trial_started_at, stripe_subscription_status, trial_reminder_sent_j3, trial_reminder_sent_j1')
+        .not('trial_started_at', 'is', null)
+        .neq('plan', 'free'));
+      if (idSeul) trialProfiles = (trialProfiles || []).filter((x) => x.id === idSeul);
+    }
+    if (eEssai) reportError('[cron/expirations] lecture des essais:', eEssai, { route: '/api/cron/expirations' });
+
+    for (const prof of (trialProfiles || [])) {
+      const st = getTrialStatus(prof);
+      if (!st.active) continue;
+      // email_contact = champ « contact PUBLIC » modifiable/vidable dans les
+      // paramètres : fallback sur l'email de connexion (B1d — sinon la prof
+      // qui a mis l'email du studio, ou l'a vidé, n'était JAMAIS relancée).
+      let to = prof.email_contact;
+      if (!to) {
+        try {
+          const { data: { user: authUser } } = await supabaseAdmin.auth.admin.getUserById(prof.id);
+          to = authUser?.email || null;
+        } catch { /* compte auth introuvable : on skip proprement */ }
+      }
+      if (!to) continue;
+
+      const isJ1 = st.daysLeft <= 1 && !prof.trial_reminder_sent_j1;
+      const isJ3 = !isJ1 && st.daysLeft <= 3 && !prof.trial_reminder_sent_j3;
+      if (!isJ1 && !isJ3) continue;
+
+      const jours = st.daysLeft;
+      // « demain » mentait : daysLeft=1 (ceil) peut signifier « expire dans
+      // 4 h » (cron à 3 h) — on donne la date réelle (B1d).
+      const finLe = st.endsAt
+        ? new Date(st.endsAt).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Europe/Paris' })
+        : null;
+      const nomEssai = PLANS[st.planEssai]?.nom || 'Complet';
+      const prixEssai = PLANS[st.planEssai]?.prix || 29;
+      // Le bilan CHIFFRÉ (v119) : ce que SES élèves ont fait ces trente jours,
+      // pas une liste de fonctions. Une ligne à zéro ne s'affiche pas, et si tout
+      // est à zéro l'email change de branche : on ne facture pas un service dont
+      // personne ne s'est servi, on propose le geste qui manque.
+      const debutEssai = prof.trial_started_at ? new Date(prof.trial_started_at).toISOString().slice(0, 10) : null;
+      const comptes = debutEssai ? await compterBilan(supabaseAdmin, prof.id, debutEssai, new Date().toISOString().slice(0, 10)) : {};
+      const bilan = bilanEssai({ comptes, jours, nomPlan: nomEssai, prix: prixEssai });
+      const sujet = jours <= 1
+        ? `Ton essai ${nomEssai} se termine ${finLe ? `le ${finLe}` : 'très bientôt'}`
+        : `Ton essai ${nomEssai} se termine dans ${jours} jours`;
+      try {
+        const r = await sendEmail({
+          categorie: 'transactionnel',
+          to,
+          subject: sujet,
+          html: `
+            <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:560px;margin:0 auto;padding:24px;">
+              <h2 style="color:#b87333;margin:0 0 6px;">Ton essai ${nomEssai} touche à sa fin</h2>
+              <p style="color:#555;margin:0 0 14px;">Bonjour ${prof.prenom || ''},</p>
+              <p style="color:#555;margin:0 0 14px;">
+                Ton essai ${nomEssai} se termine ${jours <= 1 ? (finLe ? `le ${finLe}` : 'très bientôt') : `dans ${jours} jours`}.
+                Ensuite, rien ne s'arrête : tu passes sur <strong>Essentiel, gratuit, pour toujours</strong>
+                (tes élèves, ton agenda, tes carnets, tes encaissements, tes factures).
+              </p>
+              ${bilan.vide ? `
+              <p style="color:#555;margin:0 0 14px;">
+                Ce que tu perds, c'est ce que tes élèves font en ligne : réserver, annuler, payer, recevoir
+                leurs rappels, te parler dans la messagerie. ${bilan.conclusion}
+              </p>` : `
+              <div style="background:#f3eff9;border:1px solid #ded3f0;border-radius:14px;padding:16px 18px;margin:0 0 14px;">
+                <div style="font-weight:700;color:#3f2d5c;margin:0 0 8px;">${bilan.titre}</div>
+                <ul style="margin:0;padding-left:18px;color:#4a3a68;line-height:1.7;">
+                  ${bilan.lignes.map((l) => `<li>${l.texte}</li>`).join('')}
+                </ul>
+              </div>
+              <p style="color:#555;margin:0 0 14px;">${bilan.conclusion}</p>`}
+              <div style="text-align:center;margin:24px 0;">
+                <a href="${appUrl}/parametres/abonnement" style="display:inline-block;padding:14px 28px;background:#b87333;color:white;text-decoration:none;border-radius:99px;font-weight:700;">
+                  Garder ${nomEssai}
+                </a>
+              </div>
+              <p style="color:#999;margin:16px 0 0;font-size:0.8125rem;">
+                Une question ? Réponds simplement à cet email.
+              </p>
+            </div>
+          `,
+        });
+        // Échec d'envoi = PAS de flag (B1g) : le flag posé sur un envoi raté
+        // signifiait « la prof ne sera JAMAIS relancée », conversion perdue
+        // en silence. Et l'update du flag est lui aussi vérifié.
+        if (!r.ok) {
+          reportError('[cron/expirations] trial reminder envoi échoué:', String(r.error || r.skipped || 'send failed'), { route: '/api/cron/expirations' });
+          continue;
+        }
+        const { error: flagErr } = await supabaseAdmin
+          .from('profiles')
+          .update(isJ1 ? { trial_reminder_sent_j1: true } : { trial_reminder_sent_j3: true })
+          .eq('id', prof.id);
+        if (flagErr) {
+          reportError('[cron/expirations] flag trial err:', flagErr, { route: '/api/cron/expirations' });
+          continue;
+        }
+        if (isJ1) trialJ1++; else trialJ3++;
+      } catch (e) {
+        reportError('[cron/expirations] trial reminder err', prof.id, e?.message);
+      }
+    }
+  } catch (e) {
+    reportError('[cron/expirations] trial reminders section:', e?.message);
+  }
+  return { trialJ3, trialJ1 };
+}
+
+// Cron quotidien : abonnements expirés, purges, relances, rappels.
 export const GET = withRoute({ auth: 'cron' }, async ({ request }) => {
   const jourForce = (() => { try { const j = new URL(request.url).searchParams.get('jour'); return /^\d{4}-\d{2}-\d{2}$/.test(j || '') ? j : null; } catch { return null; } })();
+  // `?profil=<uuid>` derrière l'auth cron (v119, même patron que notifs-eleves) :
+  // la relance de fin d'essai ne tourne QUE pour ce studio, et rien d'autre du
+  // cron ne tourne. C'est ce qui permet à une preuve de rejouer l'email J-3 sur
+  // un studio jetable sans envoyer quoi que ce soit aux vraies profs, ni
+  // toucher aux abonnements, aux purges ou aux rappels URSSAF.
+  const profilSeul = (() => {
+    try {
+      const p = new URL(request.url).searchParams.get('profil');
+      return /^[0-9a-f-]{36}$/i.test(p || '') ? p : null;
+    } catch { return null; }
+  })();
   const today = new Date().toISOString().split('T')[0];
+
+  // Mode preuve : une seule section, un seul studio, rien d'autre ne tourne.
+  if (profilSeul) {
+    const r = await relanceEssais(profilSeul);
+    return NextResponse.json({ mode: 'profil', profil: profilSeul, ...r, timestamp: new Date().toISOString() });
+  }
 
   // Marquer comme expiré les abonnements dont la date_fin est dépassée
   const { data, error } = await supabaseAdmin
@@ -97,6 +251,17 @@ export const GET = withRoute({ auth: 'cron' }, async ({ request }) => {
     await supabaseAdmin.from('erreurs_app').delete().lt('created_at', il30jours);
   } catch (e) {
     console.error('[cron/expirations] purge erreurs_app:', e?.message);
+  }
+
+  // ── Purge des vues du portail (v119) ────────────────────────────────────
+  // On ne garde que six mois : la carte du tableau de bord lit sept jours, et
+  // un compteur qu'on n'affiche plus n'a aucune raison de dormir en base.
+  // Table absente avant v119 : on se tait (même raison que ci-dessus).
+  try {
+    const il6mois = new Date(Date.now() - 180 * 86400000).toISOString().slice(0, 10);
+    await supabaseAdmin.from('vues_portail').delete().lt('jour', il6mois);
+  } catch (e) {
+    console.error('[cron/expirations] purge vues_portail:', e?.message);
   }
 
   // ── Purge des liens de pointage morts (v100) ─────────────────────────────
@@ -194,117 +359,7 @@ export const GET = withRoute({ auth: 'cron' }, async ({ request }) => {
   // automatiquement vers 'archive'. Fiches archivées à tort : réparation SQL
   // one-shot dans fix-desarchivage-fantome.sql.
 
-  // ── Relance de fin d'essai SaaS (J-3 / J-1) ───────────────────────────────
-  // Email transactionnel au prof dont l'essai 30 j se termine bientôt (conversion
-  // vers un plan payant). Flags trial_reminder_sent_j3/j1 (v33) = anti-doublon.
-  // FREEMIUM (2026-09-13) : la fin d'essai ne gèle plus rien, elle ramène sur
-  // Essentiel gratuit. L'email n'annonce donc plus une coupure, mais ce que la
-  // prof PERD (la boucle élève) et ce qu'elle garde.
-  // Pas de push (cron à 3h ≈ 5h Paris) : le canal email + la bannière in-app
-  // suffisent. ⚠️ Sûr depuis v57 (plus d'élèves fantômes en faux trial).
-  let trialJ3 = 0, trialJ1 = 0;
-  try {
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.izisolo.fr';
-    // `type_structure` (v110) décide du nom du plan essayé dans l'email. Si la
-    // colonne manque encore, on relit sans elle : une colonne inconnue ferait
-    // échouer TOUTE la requête et plus aucune prof ne serait relancée.
-    // (Listes écrites en toutes lettres : verifier-selects ne lit pas un template, §12.)
-    let { data: trialProfiles, error: eEssai } = await supabaseAdmin
-      .from('profiles')
-      .select('id, prenom, email_contact, plan, trial_started_at, stripe_subscription_status, trial_reminder_sent_j3, trial_reminder_sent_j1, type_structure')
-      .not('trial_started_at', 'is', null)
-      .neq('plan', 'free');
-    if (eEssai && (eEssai.code === '42703' || eEssai.code === 'PGRST204')) {
-      ({ data: trialProfiles, error: eEssai } = await supabaseAdmin
-        .from('profiles')
-        .select('id, prenom, email_contact, plan, trial_started_at, stripe_subscription_status, trial_reminder_sent_j3, trial_reminder_sent_j1')
-        .not('trial_started_at', 'is', null)
-        .neq('plan', 'free'));
-    }
-    if (eEssai) reportError('[cron/expirations] lecture des essais:', eEssai, { route: '/api/cron/expirations' });
-
-    for (const prof of (trialProfiles || [])) {
-      const st = getTrialStatus(prof);
-      if (!st.active) continue;
-      // email_contact = champ « contact PUBLIC » modifiable/vidable dans les
-      // paramètres : fallback sur l'email de connexion (B1d — sinon la prof
-      // qui a mis l'email du studio, ou l'a vidé, n'était JAMAIS relancée).
-      let to = prof.email_contact;
-      if (!to) {
-        try {
-          const { data: { user: authUser } } = await supabaseAdmin.auth.admin.getUserById(prof.id);
-          to = authUser?.email || null;
-        } catch { /* compte auth introuvable : on skip proprement */ }
-      }
-      if (!to) continue;
-
-      const isJ1 = st.daysLeft <= 1 && !prof.trial_reminder_sent_j1;
-      const isJ3 = !isJ1 && st.daysLeft <= 3 && !prof.trial_reminder_sent_j3;
-      if (!isJ1 && !isJ3) continue;
-
-      const jours = st.daysLeft;
-      // « demain » mentait : daysLeft=1 (ceil) peut signifier « expire dans
-      // 4 h » (cron à 3 h) — on donne la date réelle (B1d).
-      const finLe = st.endsAt
-        ? new Date(st.endsAt).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Europe/Paris' })
-        : null;
-      const nomEssai = PLANS[st.planEssai]?.nom || 'Complet';
-      const prixEssai = PLANS[st.planEssai]?.prix || 29;
-      const sujet = jours <= 1
-        ? `Ton essai ${nomEssai} se termine ${finLe ? `le ${finLe}` : 'très bientôt'}`
-        : `Ton essai ${nomEssai} se termine dans ${jours} jours`;
-      try {
-        const r = await sendEmail({
-          categorie: 'transactionnel',
-          to,
-          subject: sujet,
-          html: `
-            <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:560px;margin:0 auto;padding:24px;">
-              <h2 style="color:#b87333;margin:0 0 6px;">Ton essai ${nomEssai} touche à sa fin</h2>
-              <p style="color:#555;margin:0 0 14px;">Bonjour ${prof.prenom || ''},</p>
-              <p style="color:#555;margin:0 0 14px;">
-                Ton essai ${nomEssai} se termine ${jours <= 1 ? (finLe ? `le ${finLe}` : 'très bientôt') : `dans ${jours} jours`}.
-                Ensuite, rien ne s'arrête : tu passes sur <strong>Essentiel, gratuit, pour toujours</strong>
-                (tes élèves, ton agenda, tes carnets, tes encaissements, tes factures).
-              </p>
-              <p style="color:#555;margin:0 0 14px;">
-                Ce que tu perds, c'est ce que tes élèves font en ligne : réserver, annuler, payer, recevoir
-                leurs rappels, te parler dans la messagerie. Pour le garder, c'est ${nomEssai} à ${prixEssai} € par mois, sans engagement.
-              </p>
-              <div style="text-align:center;margin:24px 0;">
-                <a href="${appUrl}/parametres/abonnement" style="display:inline-block;padding:14px 28px;background:#b87333;color:white;text-decoration:none;border-radius:99px;font-weight:700;">
-                  Garder ${nomEssai}
-                </a>
-              </div>
-              <p style="color:#999;margin:16px 0 0;font-size:0.8125rem;">
-                Une question ? Réponds simplement à cet email.
-              </p>
-            </div>
-          `,
-        });
-        // Échec d'envoi = PAS de flag (B1g) : le flag posé sur un envoi raté
-        // signifiait « la prof ne sera JAMAIS relancée », conversion perdue
-        // en silence. Et l'update du flag est lui aussi vérifié.
-        if (!r.ok) {
-          reportError('[cron/expirations] trial reminder envoi échoué:', String(r.error || r.skipped || 'send failed'), { route: '/api/cron/expirations' });
-          continue;
-        }
-        const { error: flagErr } = await supabaseAdmin
-          .from('profiles')
-          .update(isJ1 ? { trial_reminder_sent_j1: true } : { trial_reminder_sent_j3: true })
-          .eq('id', prof.id);
-        if (flagErr) {
-          reportError('[cron/expirations] flag trial err:', flagErr, { route: '/api/cron/expirations' });
-          continue;
-        }
-        if (isJ1) trialJ1++; else trialJ3++;
-      } catch (e) {
-        reportError('[cron/expirations] trial reminder err', prof.id, e?.message);
-      }
-    }
-  } catch (e) {
-    reportError('[cron/expirations] trial reminders section:', e?.message);
-  }
+  const { trialJ3, trialJ1 } = await relanceEssais();
 
   // ── Emails d'onboarding J+1 / J+3 / J+7 (2026-08-01 + 2026-08-18) ──
   // J+1 « premier cours récurrent » (skip si des cours existent), J+3 « invite

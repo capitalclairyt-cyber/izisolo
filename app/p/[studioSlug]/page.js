@@ -14,6 +14,9 @@ import { lireIntervenantes, chargerIntervenantes, equipePourPortail, prenomInter
 import { structuresCitees, pageDeLIntervenante } from '@/lib/ponts';
 import { masquerLiensSiNonBranche } from '@/lib/paiement-en-ligne';
 import { urlPortail } from '@/lib/studio-host';
+import { after } from 'next/server';
+import { headers } from 'next/headers';
+import { compterVue } from '@/lib/vues-portail-service';
 
 export async function generateMetadata({ params }) {
   const { studioSlug } = await params;
@@ -224,6 +227,10 @@ async function getStudioData(studioSlug) {
   const sansLien = (o) => ({ ...o, stripe_payment_link: null });
 
   return {
+    // Le compteur de vues (v119) ne compte JAMAIS la prof qui regarde son
+    // propre portail : sans ça, trois allers-retours dans ses réglages
+    // deviendraient « trois visiteuses » et la carte mentirait.
+    estProprietaire: user?.id === profile.id,
     profile: enrichi ? profile : { ...profile, bio: null, philosophie: null, formations: null, annees_experience: null, faq_publique: [] },
     canDemander,
     cours: greffePhotos(coursFutur.map(c => ({
@@ -254,6 +261,12 @@ export default async function PortailPage({ params, searchParams }) {
   const sp = await searchParams;
   const data = await getStudioData(studioSlug);
   if (!data) notFound();
+
+  // Compteur de vues (v119) : hors rendu, hors chemin critique, et muet quand
+  // la table n'existe pas encore. Il sert à dire à une prof Essentiel « ta page
+  // a été ouverte N fois cette semaine, et personne n'a pu réserver ».
+  const ua = (await headers()).get('user-agent');
+  after(() => compterVue(supabaseAdmin, { profileId: data.profile.id, userAgent: ua, estLaProf: data.estProprietaire }));
 
   // Mode preview : si ?preview=1 ET le visiteur est le pro propriétaire du studio,
   // on applique le brouillon (page_publique_draft) sur les champs publics pour

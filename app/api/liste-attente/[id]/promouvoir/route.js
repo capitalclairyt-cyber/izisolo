@@ -8,6 +8,7 @@ import { infosPratiquesBlock } from '@/lib/email-helpers';
 import { escapeIlike } from '@/lib/utils';
 import { coursDejaCommence } from '@/lib/dates';
 import { reportError } from '@/lib/report';
+import { poserSourcePresence } from '@/lib/bilan-essai-service';
 
 /**
  * POST /api/liste-attente/[id]/promouvoir
@@ -117,6 +118,9 @@ export const POST = withRoute({ auth: 'active', perm: 'eleves_gerer' }, async ({
     return NextResponse.json({ error: 'Erreur lors de la création de la place' }, { status: 500 });
   }
   const newPresence = { id: resa.presence_id };
+  // D'où vient cette inscription (v119) : une place libérée, reprise depuis
+  // la liste d'attente.
+  await poserSourcePresence(supabaseAdmin, resa.presence_id, 'liste_attente');
 
   // Marquer la ligne comme notifiée
   await supabaseAdmin

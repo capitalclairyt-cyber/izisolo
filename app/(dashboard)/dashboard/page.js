@@ -6,6 +6,15 @@ import DashboardClient from './DashboardClient';
 import SeancesAilleurs from '@/components/equipe/SeancesAilleurs';
 import { chargerSeancesAilleurs } from '@/lib/seances-ailleurs';
 import { SMS_PRIX_UNITAIRE } from '@/lib/notifs-eleves';
+import PousserComplet from '@/components/plan/PousserComplet';
+import { can } from '@/lib/plan-guard';
+import { getTrialStatus, essaiFiniDepuisMoinsDe } from '@/lib/trial';
+import { planEssai } from '@/lib/structure';
+import { PLANS } from '@/lib/constantes';
+import { lireVues } from '@/lib/vues-portail-service';
+import { messageVues, totalVues } from '@/lib/vues-portail';
+import { compterBilan } from '@/lib/bilan-essai-service';
+import { bilanEssai } from '@/lib/bilan-essai';
 
 export default async function DashboardPage() {
   const supabase = await createServerClient();
@@ -155,8 +164,32 @@ export default async function DashboardPage() {
     }
   }
 
+  // ── Pousser vers Complet (v119) : on montre ce qui MANQUE, jamais un
+  // cadenas de plus. Deux messages, jamais les deux (le bilan prime : il est
+  // daté). Les deux lectures sont bornées : le bilan ne tourne que dans la
+  // fenêtre de fin d'essai, les vues seulement quand la résa en ligne manque.
+  let vues = null;
+  let bilan = null;
+  try {
+    const essai = getTrialStatus(profile);
+    const nomPlan = PLANS[planEssai(profile)]?.nom || 'Complet';
+    const prix = PLANS[planEssai(profile)]?.prix || 29;
+    const finit = essai.active && essai.daysLeft <= 5;
+    const vientDeFinir = essaiFiniDepuisMoinsDe(profile, 14);
+    if (finit || vientDeFinir) {
+      const debut = profile?.trial_started_at ? new Date(profile.trial_started_at) : null;
+      if (debut) {
+        const comptes = await compterBilan(supabase, studioId, debut.toISOString().slice(0, 10), today);
+        bilan = bilanEssai({ comptes, jours: finit ? essai.daysLeft : 0, nomPlan, prix });
+      }
+    } else if (!can(profile, 'reservation_en_ligne')) {
+      vues = messageVues({ vues: totalVues(await lireVues(supabase, studioId)), peutReserver: false });
+    }
+  } catch { /* la carte est un confort : jamais elle ne casse le tableau de bord */ }
+
   return (
     <>
+    <PousserComplet vues={vues} bilan={bilan} />
     <SeancesAilleurs seances={seancesAilleurs} />
     <DashboardClient
       profile={profile}

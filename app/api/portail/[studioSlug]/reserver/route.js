@@ -13,6 +13,7 @@ import { adherentesAJourLe } from '@/lib/vie-asso-service';
 import { infosPratiquesBlock } from '@/lib/email-helpers';
 import { sendEmail } from '@/lib/email';
 import { reportError } from '@/lib/report';
+import { poserSourcePresence } from '@/lib/bilan-essai-service';
 import { canSeeCours, resolveClientInfo } from '@/lib/visibilite';
 import { coursDejaCommence } from '@/lib/dates';
 import { urlPaiementSeance } from '@/lib/paiement-seance';
@@ -482,6 +483,9 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
     return Response.json({ error: 'Cours introuvable' }, { status: 404 });
   }
   const newPresence = { id: resa.presence_id };
+  // D'où vient cette inscription (v119) : c'est l'élève qui a réservé, pas
+  // la prof qui l'a ajoutée. Le bilan de fin d'essai compte cette ligne-là.
+  await poserSourcePresence(supabaseAdmin, resa.presence_id, 'portail');
 
   // Paiement en ligne PAR SÉANCE : la place est réservée, on peut proposer le
   // règlement CB — jamais l'inverse (P0). '' si lien invalide → flux à régler.
