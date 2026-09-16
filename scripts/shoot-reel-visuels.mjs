@@ -155,7 +155,13 @@ const ECHELLE = LARGEUR / 1170; // px de capture → px de l'image écrite
   const agenda = await rect(page, null);
   await ecrire('menu', await page.screenshot());
   if (!burger || !agenda) { console.log('❌ repères burger/Agenda introuvables'); ko++; }
+  // ⚠️ On FUSIONNE, jamais on ne remplace : ce bloc tourne à chaque tir, même
+  // partiel, et un `manifest.reperes = { … }` effaçait les repères posés par
+  // les sections non demandées. C'est ce qui est arrivé le 2026-09-14 (tir
+  // `--seulement=avis-*`) : `reperes.carnet` a disparu et le réel « Freemium »
+  // ne se rendait plus du tout (TypeError sur l'écran « Les carnets »).
   else manifest.reperes = {
+    ...(manifest.reperes || {}),
     burger: [Math.round(burger.x * 3 * ECHELLE), Math.round(burger.y * 3 * ECHELLE)],
     agenda: [Math.round(agenda.x * 3 * ECHELLE), Math.round(agenda.y * 3 * ECHELLE)],
   };

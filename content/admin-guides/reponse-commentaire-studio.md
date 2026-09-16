@@ -3,7 +3,7 @@ titre: "💬 Répondre à un commentaire STUDIO (le geste qui déclenche l'essai
 description: "Les trois gestes à faire dans l'heure quand une prof commente STUDIO sous un réel : la réponse publique, le message privé, la note dans la liste. Un seul texte pour tout le compte."
 maj: "2026-09-15"
 groupe: "Légendes à coller"
-ordre: 6
+ordre: 7
 ---
 
 > Tous les réels du compte se terminent par « Commente STUDIO ». Ce n'est pas un détail :

@@ -10,7 +10,8 @@
     "clips": "node scripts/rendre-clips.mjs",
     "pov": "node scripts/rendre-pov.mjs",
     "formats": "node scripts/rendre-formats.mjs",
-    "carrousel": "node scripts/rendre-carrousel.mjs"
+    "carrousel": "node scripts/rendre-carrousel.mjs",
+    "gratuit": "node scripts/rendre-gratuit.mjs"
   },
   "dependencies": {
     "@remotion/cli": "4.0.522",

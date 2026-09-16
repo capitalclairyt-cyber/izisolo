@@ -2,13 +2,13 @@
 
 import { useEffect } from 'react';
 import {
-  Nav, Hero, TrustStrip, Features, ForWhom, Concierge, Founder,
+  Nav, Hero, TrustStrip, Gratuit, Features, ForWhom, Concierge, Founder,
   Pricing, FAQ, FinalCta, Footer,
 } from './Sections';
 import ScrollReveal from './ScrollReveal';
 
 // Landing v3 « claire » (2026-09-06) — ordre des sections :
-// Hero (un visuel) → bande de confiance → 4 fonctionnalités → Pour qui
+// Hero (un visuel) → bande de confiance → le plan à 0 € → 5 fonctionnalités → Pour qui
 // (une ligne) → On monte ton studio → Fondatrice → Tarifs → FAQ → CTA final.
 // Plus de « Pourquoi », de « petites choses » ni de cartes personas : les
 // quatre rangées portent tout, avec des visuels réels du démo.
@@ -27,6 +27,10 @@ export default function Landing() {
       <main>
         <Hero />
         <TrustStrip />
+        {/* Le plan à 0 € juste sous le hero (2026-09-16) : la question du prix
+            se pose avant les fonctionnalités, la grille tarifaire arrivait
+            trop bas pour y répondre. */}
+        <Gratuit />
         <Features />
         <ForWhom />
         <Concierge />

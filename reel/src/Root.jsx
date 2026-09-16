@@ -11,6 +11,8 @@ import { Fonction, dureeFonction } from './Fonction';
 import { SPLIT, REPONSE_DM, RENTREE } from './formats';
 import { Migration, MigrationClip, DUREE_MIGRATION, DUREE_CLIP_MIGRATION } from './Migration';
 import { Freemium, DUREE_FREEMIUM } from './Freemium';
+import { Gratuit, DUREE_GRATUIT } from './Gratuit';
+import { PROFILS as PROFILS_GRATUIT } from './gratuit-scenes';
 import { CarrouselAvis, LARGEUR_CARROUSEL, HAUTEUR_CARROUSEL } from './CarrouselAvis';
 import { Avis, DUREE_AVIS } from './Avis';
 import { FPS, H, W } from './theme';
@@ -32,6 +34,13 @@ export const RemotionRoot = () => (
     <Composition id="Rentree" component={Rentree} durationInFrames={RENTREE.duree} fps={FPS} width={W} height={H} />
     <Composition id="Migration" component={Migration} durationInFrames={DUREE_MIGRATION} fps={FPS} width={W} height={H} />
     <Composition id="Freemium" component={Freemium} durationInFrames={DUREE_FREEMIUM} fps={FPS} width={W} height={H} />
+    {/* Le reel « 0 € » (2026-09-16) : deux formats, la MEME composition, le
+        profil choisit la mise en page (9:16 pour les reels, 4:5 pour le fil
+        LinkedIn). Rendus par scripts/rendre-gratuit.mjs. */}
+    <Composition id="Gratuit" component={Gratuit} defaultProps={{ profil: 'reel' }}
+      durationInFrames={DUREE_GRATUIT} fps={FPS} width={PROFILS_GRATUIT.reel.W} height={PROFILS_GRATUIT.reel.H} />
+    <Composition id="Gratuit-Feed" component={Gratuit} defaultProps={{ profil: 'feed' }}
+      durationInFrames={DUREE_GRATUIT} fps={FPS} width={PROFILS_GRATUIT.feed.W} height={PROFILS_GRATUIT.feed.H} />
     {/* Le carrousel Instagram Avis Google : une image fixe par page (`--props`
         { slide, palette }), rendu par scripts/rendre-carrousel.mjs. */}
     <Composition id="CarrouselAvis" component={CarrouselAvis} defaultProps={{ slide: 1, palette: 'bleu' }}

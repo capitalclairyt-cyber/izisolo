@@ -3,7 +3,7 @@ titre: "🔄 Légendes · « Changer d'outil » (réel, Instagram, LinkedIn)"
 description: "La réponse à « je suis déjà équipée » : la légende du réel migration.mp4, le post LinkedIn de Maude et son premier commentaire, et les deux règles pour répondre aux commentaires."
 maj: "2026-09-15"
 groupe: "Légendes à coller"
-ordre: 4
+ordre: 5
 ---
 
 ## Le réel et la page

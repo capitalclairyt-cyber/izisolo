@@ -21,7 +21,7 @@
  *   · prefers-reduced-motion : AUCUNE vidéo ne démarre seule, le bouton ▶
  *     est là, et les flèches sont dessinées d'emblée sans animation ;
  *   · les invariants v3 : hiérarchie des CTA, opacité sans scroll, zéro .zen,
- *     tarifs 0/29 (freemium), FAQ 6/13, zéro « 14 jours », zéro tiret quadratin,
+ *     tarifs 0/29 (freemium), FAQ 6/14, zéro « 14 jours », zéro tiret quadratin,
  *     mobile 390 sans débordement (cartes de callout comprises).
  * Usage : node scripts/proof-landing-v4.mjs [dossier-captures]
  */
@@ -69,6 +69,8 @@ ok(body.includes('0 €') && body.includes('pour toujours') && body.includes('29
 ok(body.includes('39 €') && body.includes('59 €') && body.includes('Association'), 'Tarifs : les plans Association et Studio annoncés sous la grille');
 ok(!/\[Témoignage/.test(body) && !body.includes('Manon'), 'Aucun témoignage en attente affiché');
 ok(!body.includes('14 jours') && body.includes('30 jours'), 'Essai : 30 jours, plus jamais 14');
+ok(body.includes('le plan Essentiel est à 0 €, pour toujours'), 'Hero : le prix est dit au-dessus de la ligne de flottaison (2026-09-16)');
+ok(body.includes('Gratuite pour toujours, sans carte'), 'Bande de confiance : le freemium, plus « 30 jours d\'essai »');
 ok(body.includes('30 jours de Complet offerts, puis Essentiel') && body.includes('retour sur Essentiel, gratuit'), 'Tarifs : chaque carte dit ce qui se passe à la fin des 30 jours (2026-09-14)');
 ok(!body.includes('—'), 'Zéro tiret quadratin dans le texte rendu');
 ok(!body.includes('chiant'), 'Vocabulaire : « chiant » banni');
@@ -138,9 +140,53 @@ ok(structure.clips === 4, `Quatre clips dans un téléphone, hero compris (${str
 ok(structure.callouts === 2 && structure.cartes === 4 && structure.fleches === 4, `Callouts : 2 blocs, 4 cartes, 4 flèches (${structure.callouts}/${structure.cartes}/${structure.fleches})`);
 ok(structure.bordsColles === 0, `Aucune section collée au bord gauche (${structure.bordsColles})`);
 ok(structure.pucesTarifs.length === 2 && structure.pucesTarifs.every(n => n === 5), `Cinq puces par tarif (${structure.pucesTarifs.join('/')})`);
-ok(structure.faqVisibles === 6 && structure.faqDom === 13, `FAQ : 6 visibles, 13 dans le DOM (la 13e, « déjà équipée », est arrivée le 10/09) (${structure.faqVisibles}/${structure.faqDom})`);
+ok(structure.faqVisibles === 6 && structure.faqDom === 14, `FAQ : 6 visibles, 14 dans le DOM (la 14e, « où est le piège », est arrivée le 16/09) (${structure.faqVisibles}/${structure.faqDom})`);
 ok(structure.personas === 8, `Pour qui : six liens métier + Associations + Studios (${structure.personas})`);
 ok(/Fraunces/i.test(structure.fonts), 'H1 en Fraunces');
+
+// ── Le plan à 0 €, juste sous le hero (2026-09-16) ─────────────────────────
+// Le bloc qui répond à la première question d'une visiteuse (« combien ça
+// coûte ? ») avant les fonctionnalités, dans les trois couleurs du réel
+// « 0 € » : lavande le prix, sauge ce qui est gratuit, rose ce qui est payant.
+// La frontière compte autant que la gratuité : une preuve qui ne vérifierait
+// que le « 0 € » laisserait passer une page qui ment par omission.
+console.log('\nC bis. Le plan à 0 €');
+// On centre sur les CARTES, pas sur la section : elle fait 800 px de haut, et
+// centrer la section laisserait le bouton sous la barre de navigation collante.
+await page.evaluate(() => document.querySelector('.gratuit-cartes').scrollIntoView({ block: 'center' }));
+await page.waitForTimeout(1600);
+const gratuit = await page.evaluate(() => {
+  const s = document.querySelector('.gratuit');
+  const cartes = [...s.querySelectorAll('.gz')];
+  const zero = s.querySelector('.gz-zero');
+  const cta = s.querySelector('.gz-prix a.btn');
+  const r = cta.getBoundingClientRect();
+  const sous = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+  // window.Node : `Node` tout court n'existe pas pour ESLint, qui lit ce
+  // fichier comme du Node.js alors que ce bloc tourne dans le navigateur.
+  const suit = (a, b) => !!(a.compareDocumentPosition(b) & window.Node.DOCUMENT_POSITION_FOLLOWING);
+  return {
+    cartes: cartes.length,
+    opacites: cartes.map(c => Number(getComputedStyle(c).opacity)),
+    tailleZero: Math.round(parseFloat(getComputedStyle(zero).fontSize)),
+    texteZero: zero.textContent.trim(),
+    cta: cta.getAttribute('href'),
+    ctaCliquable: !!sous && (sous === cta || cta.contains(sous)),
+    puces: s.querySelectorAll('.gz-inclus li').length,
+    texte: s.innerText,
+    apresConfiance: suit(document.querySelector('.trust'), s),
+    avantFonctionnalites: suit(s, document.querySelector('#fonctionnalites')),
+  };
+});
+ok(gratuit.apresConfiance && gratuit.avantFonctionnalites, 'Placé entre la bande de confiance et les fonctionnalités');
+ok(gratuit.cartes === 3 && gratuit.opacites.every(o => o >= 0.99), `Trois cartes opaques une fois à l'écran (${gratuit.opacites.join('/')})`);
+ok(gratuit.texteZero === '0 €' && gratuit.tailleZero >= 56, `Le prix se lit de loin (« ${gratuit.texteZero} », ${gratuit.tailleZero} px)`);
+ok(gratuit.puces === 6, `Six choses gratuites nommées (${gratuit.puces})`);
+ok(gratuit.cta === '/register' && gratuit.ctaCliquable, `Un seul bouton, vers l'inscription, cliquable (${gratuit.cta})`);
+ok(/sans carte bancaire/.test(gratuit.texte) && /sans limite d'élèves/.test(gratuit.texte) && /sans date de fin/.test(gratuit.texte),
+  'Les trois « sans » sont écrits');
+ok(/29 € par mois/.test(gratuit.texte) && /30 jours, sans carte/.test(gratuit.texte) && /Rien ne se bloque/.test(gratuit.texte),
+  'La frontière est dans le bloc, pas en note de bas de page');
 
 // ── Ce qui bouge au scroll : flèches qui se tracent, clips qui démarrent ───
 console.log('\nD. Au scroll : les flèches se tracent, les clips jouent');
@@ -211,7 +257,7 @@ ok(fin.ctas === 2, `Deux CTA sur la photo (${fin.ctas})`);
 await page.locator('.faq-more').click();
 await page.waitForTimeout(300);
 const faqApres = await page.evaluate(() => [...document.querySelectorAll('.faq-item')].filter(b => !b.hidden).length);
-ok(faqApres === 13, `FAQ : « voir les autres » révèle les 13 (${faqApres})`);
+ok(faqApres === 14, `FAQ : « voir les autres » révèle les 14 (${faqApres})`);
 
 await page.evaluate(() => window.scrollTo(0, 0));
 await page.waitForTimeout(500);

@@ -156,10 +156,14 @@ export function Hero() {
           </p>
           <div className="hero-v2-ctas hero-v3-ctas">
             <Link href="/creer-mon-studio" className="btn btn-primary btn-lg">On monte ton studio pour toi</Link>
-            <Link href="/register" className="btn btn-ghost btn-lg">Essayer 30 jours, sans CB</Link>
+            <Link href="/register" className="btn btn-ghost btn-lg">Commencer gratuitement</Link>
           </div>
+          {/* Le freemium se dit AU-DESSUS de la ligne de flottaison depuis le
+              2026-09-16 : « sans carte bancaire » ne disait pas le prix, et le
+              prix est la première question. */}
           <p className="hero-concierge">
-            Gratuit, sous 48 h, c&apos;est Maude qui s&apos;en occupe. Ou tu pars seule, sans carte bancaire.
+            Gratuit, sous 48 h, c&apos;est Maude qui s&apos;en occupe. Ou tu ouvres ton studio toi-même :
+            le plan Essentiel est à <strong>0 €, pour toujours</strong>.
           </p>
         </div>
         <div className="hero-v3-visuel">
@@ -188,11 +192,73 @@ export function TrustStrip() {
         </div>
         <div className="trust-item">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2" /><path d="M3 10h18" /></svg>
-          <span>30 jours d&apos;essai, sans carte bancaire</span>
+          <span>Gratuite pour toujours, sans carte</span>
         </div>
         <div className="trust-item">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5" /></svg>
           <span>Sans engagement, résiliable en un clic</span>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ---- LE PLAN À 0 € (2026-09-16) -------------------------------- */
+// La question du prix se pose dans les dix premières secondes, et c'est elle
+// qui a décidé du freemium (« le prix rebute des visiteuses », Colin le
+// 2026-09-13). La grille tarifaire y répondait, mais tout en bas de la page.
+// Ce bloc y répond juste sous le hero, dans les couleurs du réel « 0 € »
+// (lavande, sauge, rose) : ce qui coûte zéro, ce qui est payant, un bouton.
+// La frontière est écrite aussi gros que la gratuité, jamais en note de bas
+// de page : c'est la règle du guide freemium, pas une précaution d'avocat.
+export function Gratuit() {
+  const inclus = [
+    'Tes élèves, en nombre illimité',
+    'Ton agenda, tes séries, tes lieux',
+    'Le pointage, les carnets et les abonnements',
+    'Tes encaissements et tes vraies factures numérotées',
+    'Ta déclaration URSSAF, prête à recopier',
+    'Ta page publique, ton QR code, ton planning à intégrer',
+  ];
+  return (
+    <section id="gratuit" className="gratuit">
+      <div className="container">
+        <div className="gratuit-head reveal">
+          <span className="eyebrow">Le plan Essentiel</span>
+          <h2 className="serif">Gratuit. <span className="accent">Et ça ne changera pas.</span></h2>
+          <p>
+            Pas un essai qui se referme, pas une promo de rentrée : le plan Essentiel est à 0 €,
+            sans carte bancaire, sans limite d&apos;élèves et sans date de fin. Tu ouvres ton studio
+            ce soir, il est encore là l&apos;année prochaine.
+          </p>
+        </div>
+        <div className="gratuit-cartes reveal r-stagger">
+          <article className="gz gz-prix">
+            <div className="gz-zero serif">0 €</div>
+            <div className="gz-periode">par mois, pour toujours</div>
+            <Link href="/register" className="btn btn-primary">Commencer gratuitement</Link>
+            <span className="gz-note">Cinq minutes, sans carte bancaire.</span>
+          </article>
+          <article className="gz gz-inclus">
+            <h3 className="serif">Tout ça, sans payer</h3>
+            <ul>
+              {inclus.map(i => (
+                <li key={i}><span className="ck"><CheckIcon /></span> {i}</li>
+              ))}
+            </ul>
+          </article>
+          <article className="gz gz-payant">
+            <h3 className="serif">Ce qui est payant</h3>
+            <p>
+              Quand tes élèves réservent et paient elles-mêmes en ligne, c&apos;est le plan Complet,
+              à 29 € par mois.
+            </p>
+            <p>
+              Tu l&apos;essaies 30 jours, sans carte. À la fin, tu choisis : tu le gardes, ou tu
+              reviens sur Essentiel. Rien ne se bloque, rien ne s&apos;efface.
+            </p>
+            <a href="#tarifs" className="gz-lien">Voir le détail des deux plans</a>
+          </article>
         </div>
       </div>
     </section>

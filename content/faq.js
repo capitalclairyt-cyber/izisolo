@@ -65,4 +65,11 @@ export const FAQ_ITEMS = [
     q: 'Je suis déjà équipée d\'une autre appli : je perds tout en changeant ?',
     a: "Non. On reprend tes élèves depuis l'export de ton outil (CSV ou Excel, accents compris, doublons fusionnés), tes carnets en cours avec les séances qui restent, et ton planning recréé en séries. C'est Maude qui s'en charge, en 48 h, gratuitement. Ce qu'on ne reprend pas, on te le dit : l'historique de tes paiements et de tes présences reste dans ton ancien outil, exporte-le avant de le fermer. Et tu gardes cet outil ouvert le temps de comparer, rien ne t'oblige à couper le premier jour. Tout est expliqué sur izisolo.fr/changer-d-outil.",
   },
+  {
+    // Le freemium (2026-09-16, avec le bloc « le plan à 0 € ») : la première
+    // question que pose une gratuité est « où est le piège ». On y répond, et
+    // on dit la frontière dans la même réponse. AJOUTÉE EN FIN de liste.
+    q: 'C\'est vraiment gratuit ? Où est le piège ?',
+    a: "Il n'y en a pas. Le plan Essentiel est à 0 €, sans carte bancaire, sans limite d'élèves et sans date de fin : tes élèves, ton agenda, le pointage, les carnets et les abonnements, tes encaissements, tes vraies factures numérotées, ta déclaration URSSAF et ta page publique. Ce qui est payant, c'est le plan Complet à 29 € par mois, celui où tes élèves réservent et paient elles-mêmes en ligne. Tu démarres avec 30 jours de Complet offerts pour voir la différence, puis tu bascules sur Essentiel sans rien faire et sans rien perdre.",
+  },
 ];

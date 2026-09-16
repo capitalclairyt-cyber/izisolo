@@ -26,12 +26,14 @@ export const Ecran = ({ src, screenW, imgW, imgH, defilement = 0, style }) => {
   );
 };
 
-export const Telephone = ({ x, y, screenW, imgW, imgH, hauteurEcran, children }) => {
+// `bezelCouleur` : le cadre suit la palette de la composition (lavande nuit
+// pour le reel « 0 € »), sinon il reste le brun-noir de la charte sable.
+export const Telephone = ({ x, y, screenW, imgW, imgH, hauteurEcran, children, bezelCouleur = P.bezel, ombre }) => {
   const g = geometrieTelephone({ x, y, screenW, imgW, imgH, hauteurEcran });
   return (
     <div style={{ position: 'absolute', left: x, top: y, width: g.largeur, height: g.hauteur, borderRadius: 60,
-      background: P.bezel, padding: BEZEL, boxSizing: 'border-box',
-      boxShadow: '0 40px 90px rgba(44,33,24,0.28), 0 6px 18px rgba(44,33,24,0.12)' }}>
+      background: bezelCouleur, padding: BEZEL, boxSizing: 'border-box',
+      boxShadow: ombre || '0 40px 90px rgba(44,33,24,0.28), 0 6px 18px rgba(44,33,24,0.12)' }}>
       <div style={{ position: 'relative', width: screenW, height: g.hEcran, borderRadius: 60 - BEZEL, overflow: 'hidden', background: '#fff' }}>
         {children}
       </div>

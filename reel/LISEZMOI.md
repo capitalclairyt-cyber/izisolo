@@ -235,3 +235,63 @@ des trois premières lignes) et `public/fiche.jpg` (fiche pleine page, `manifest
 
 ⚠️ Le cache blanc d'une pastille tient jusqu'à 85 % du ressort (`Rentree.jsx` aussi) : avant,
 il s'effaçait pendant que la copie grandissait encore et la séance se voyait en double.
+
+## Le réel « 0 € » (2026-09-16)
+
+Demande Colin : « un réel pour promouvoir le plan à 0 €, des belles couleurs (lavande,
+sauge, rose), avec les mockups, pour ramener le plus d'utilisatrices possibles, à partager
+sur Instagram, Facebook et LinkedIn ». C'est le deuxième réel freemium (après `Freemium`,
+14/09) et il ne raconte pas la même chose : celui-là partait du cahier et du tableur du
+dimanche soir, celui-ci part du **geste qu'on a fait** (on a enlevé le prix) et le dit dans
+les couleurs de la palette lavande, hors du sable dont le feed est plein.
+
+Cinq actes, 830 images (27,7 s, sous la barre des 30 s où Instagram relance le réel) :
+
+1. **L'onglet refermé** (0 → 5,6 s) : « Tu as cherché un outil pour ton studio. / Tu as vu
+   le prix. / Tu as refermé l'onglet. », puis le pivot en rose « Alors on a enlevé le prix. »
+   C'est le constat qui a décidé du freemium, raconté de son point de vue à elle, sans jamais
+   nommer ni viser un concurrent.
+2. **Le chiffre** (5,6 → 10 s) : « LE PLAN ESSENTIEL », « 0 € » plein écran en sauge, puis
+   « IziSolo est gratuit. Pour toujours. » et les trois « sans ». Le plan est NOMMÉ au-dessus
+   du chiffre : une couverture se regarde sans le son et sans la suite.
+3. **Six écrans réels** (10 → 19 s) : élèves, agenda, pointage, carnets, encaissements,
+   URSSAF, 1,5 s chacun, un mot et un anneau par écran, et la pastille « 0 € » qui reste
+   accrochée au téléphone (c'est le chiffre de l'acte 2 qui a volé jusque-là).
+4. **La frontière** (19,3 → 24 s) : « Et le payant, alors ? / Quand tes élèves réservent et
+   paient elles-mêmes, en ligne. », avec le portail à l'écran. Jamais « gratuit » sans dire
+   où le gratuit s'arrête.
+5. **L'appel** (24 → 27,7 s) : « Ouvre ton studio. C'est gratuit. », l'adresse `izisolo.fr`
+   dans une pastille crème, et « ou commente STUDIO, je t'envoie le lien » : deux portes,
+   parce que le réel part sur trois réseaux et que LinkedIn clique, quand Instagram commente.
+
+- **Deux formats, une seule composition** : `Gratuit` (1080×1920) et `Gratuit-Feed`
+  (1080×1350, le fil LinkedIn et Facebook sur ordinateur). Le `profil` passé en
+  `defaultProps` choisit la mise en page ; les deux profils écrivent leurs positions **en
+  toutes lettres** dans `src/gratuit-formats.js`, jamais un facteur d'échelle deviné.
+- **Rendu** : `npm run gratuit [reel|feed]` → `reseaux/reel/gratuit/gratuit.mp4` (4,3 Mo),
+  `gratuit-feed.mp4` (3,6 Mo), `gratuit-couverture.jpg` (l'image 268, à choisir comme
+  couverture dans Instagram) et `gratuit-fin.jpg`. Hors dépôt, comme tous les fichiers
+  marketing. Légendes prêtes à coller : guide admin `legendes-plan-gratuit.md`.
+- **La palette** vit dans `src/gratuit-formats.js` (lavande nuit `#3b2a5c` → `#5b4184`, crème
+  `#f7f2ea`, sauge `#8fd7ae`, rose `#f6a8bf`). Fond sombre parce qu'un écran d'appli est
+  clair : les mockups s'y détachent au lieu de s'y fondre.
+- **L'anneau** (`composants/Repere.jsx`) accepte désormais un rayon `r` : il ENTOURE le badge
+  visé (le « 32 » des élèves, le « 4/10 séances » d'un carnet) au lieu de s'asseoir dessus.
+  Le défaut 15 donne exactement l'animation d'avant, les autres réels ne bougent pas.
+
+⚠️ **Trois pièges consignés.** (1) `ZERO.sous` portait l'image d'arrivée ET le texte : la
+seconde clé écrasait la première en silence et `spring({ frame: NaN })` sortait « Frame NaN
+is not finite ». Un objet de réglages ne porte jamais deux fois le même nom (`sousTexte`).
+(2) Le script de rendu ne peut PAS importer `gratuit-scenes.js` : il lit
+`public/manifest.json`, et un import de JSON exige une attribute en Node pur
+(`ERR_IMPORT_ATTRIBUTE_MISSING`) alors que webpack l'accepte. D'où `gratuit-formats.js`,
+pur, que les deux lisent (même découpage que `carrousel-palettes.js`). (3) En 4:5, le
+téléphone passait SOUS les puces de progression et les avalait : le profil `feed` arrête le
+téléphone au-dessus d'elles, mesuré sur la planche de contact, pas deviné.
+
+⚠️ **Trouvé en écrivant ce réel** : `reperes.carnet` avait disparu de
+`public/manifest.json` le 14/09, effacé par le tir partiel des captures « avis »
+(`--seulement=avis-*` rejoue la section 1, qui REMPLAÇAIT `manifest.reperes` au lieu de le
+fusionner). Conséquence : le réel **Freemium ne se rendait plus du tout** depuis ce jour-là
+(`TypeError: undefined is not iterable` sur l'écran « Les carnets »). Le repère est restauré
+et le script fusionne désormais.
