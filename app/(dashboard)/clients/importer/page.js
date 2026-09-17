@@ -3,43 +3,23 @@
 import { useState, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Upload, ArrowLeft, Check, Loader2, FileText, AlertCircle, PartyPopper, Send } from 'lucide-react';
-import { parseCSV, decodeCSVBuffer } from '@/lib/csv-import';
-
-// ─── Cibles d'import + synonymes pour l'auto-mapping ────────────────────────
-const TARGETS = [
-  { key: 'prenom',         label: 'Prénom',            syn: ['prenom', 'prénom', 'first name', 'firstname', 'first'] },
-  { key: 'nom',            label: 'Nom',               syn: ['nom', 'last name', 'lastname', 'last', 'name', 'nom complet', 'nom et prenom'] },
-  { key: 'email',          label: 'Email',             syn: ['email', 'e-mail', 'mail', 'courriel', 'adresse email', 'adresse mail'] },
-  { key: 'telephone',      label: 'Téléphone',         syn: ['telephone', 'téléphone', 'tel', 'tél', 'phone', 'mobile', 'portable', 'gsm', 'numero', 'numéro'] },
-  { key: 'date_naissance', label: 'Date de naissance', syn: ['date de naissance', 'naissance', 'birth', 'birthday', 'dob', 'anniversaire', 'ne le', 'née le'] },
-  { key: 'ville',          label: 'Ville',             syn: ['ville', 'city', 'commune'] },
-  { key: 'notes',          label: 'Notes',             syn: ['notes', 'note', 'remarque', 'remarques', 'commentaire', 'comment'] },
-];
-
-const norm = (h) => (h || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
-
-function autoMap(headers) {
-  const map = {};
-  const used = new Set();
-  for (const t of TARGETS) {
-    let found = -1;
-    for (let i = 0; i < headers.length; i++) {
-      if (used.has(i)) continue;
-      const h = norm(headers[i]);
-      if (t.syn.some(s => h === s) || t.syn.some(s => h.includes(s))) { found = i; break; }
-    }
-    map[t.key] = found;
-    if (found >= 0) used.add(found);
-  }
-  return map;
-}
+import { Upload, ArrowLeft, Check, Loader2, FileText, AlertCircle, PartyPopper, Send, Camera } from 'lucide-react';
+// TARGETS et autoMap vivent dans la lib depuis le 2026-09-17 : la lecture
+// d'une photo de liste fabrique des en-têtes qui doivent être reconnus ici,
+// et ce contrat est verrouillé par `import-photo.spec.js`.
+import { parseCSV, decodeCSVBuffer, TARGETS, autoMap } from '@/lib/csv-import';
+import { resumeLecture } from '@/lib/import-photo';
 
 export default function ImporterClientsPage() {
   const router = useRouter();
   const fileRef = useRef(null);
+  const photoRef = useRef(null);
   const [step, setStep] = useState('upload'); // upload | map | done
   const [fileName, setFileName] = useState('');
+  // Lecture d'une photo de liste (2026-09-17) : le résumé de ce qui a été lu,
+  // affiché sur la carte de l'étape 2. Null quand on vient d'un CSV.
+  const [lecture, setLecture] = useState(null);
+  const [lisantPhoto, setLisantPhoto] = useState(false);
   const [rows, setRows] = useState([]);        // toutes les lignes du CSV
   const [headerRow, setHeaderRow] = useState(true);
   const [mapping, setMapping] = useState({});
@@ -63,12 +43,71 @@ export default function ImporterClientsPage() {
       if (parsed.length < 1) { setError("Ce fichier semble vide ou illisible."); return; }
       setRows(parsed);
       setFileName(file.name);
+      setLecture(null);
       setMapping(autoMap(parsed[0] || []));
       setHeaderRow(true);
       setStep('map');
     };
     reader.onerror = () => setError("Impossible de lire le fichier.");
     reader.readAsArrayBuffer(file);
+  };
+
+  // ── Lire une photo de LISTE (2026-09-17) ──────────────────────────────────
+  // Même compression que l'import d'une fiche par photo (clients/nouveau) :
+  // une photo de téléphone dépasse la limite de body de Vercel.
+  const compresserImage = (file) => new Promise((resolve, reject) => {
+    const MAX_DIM = 1568; // au-delà, le modèle redimensionne de toute façon
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      let { width, height } = img;
+      if (!width || !height) { URL.revokeObjectURL(url); reject(new Error('Image illisible')); return; }
+      if (Math.max(width, height) > MAX_DIM) {
+        const ratio = MAX_DIM / Math.max(width, height);
+        width = Math.round(width * ratio);
+        height = Math.round(height * ratio);
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+      URL.revokeObjectURL(url);
+      resolve({ media_type: 'image/jpeg', data: dataUrl.split(',')[1] });
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Image illisible')); };
+    img.src = url;
+  });
+
+  const onPhoto = async (file) => {
+    if (!file || lisantPhoto) return;
+    setError('');
+    setLisantPhoto(true);
+    try {
+      const { media_type, data } = await compresserImage(file);
+      const res = await fetch('/api/clients/extract-photo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ media_type, data, mode: 'liste' }),
+      });
+      const out = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(out.error || "La lecture de la photo n'a pas abouti.");
+      const lignes = out.rows || [];
+      if (lignes.length < 2) throw new Error("Aucune personne lue sur cette photo.");
+      // Les lignes arrivent au format de parseCSV : la suite de l'écran
+      // (correspondance, aperçu, import) ne change pas d'un iota.
+      setRows(lignes);
+      setFileName(file.name || 'Photo de liste');
+      setLecture(resumeLecture({ lignes: out.lignes || [], ignorees: out.ignorees || 0, tronque: !!out.tronque }));
+      setMapping(autoMap(lignes[0] || []));
+      setHeaderRow(true);
+      setStep('map');
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLisantPhoto(false);
+      if (photoRef.current) photoRef.current.value = '';
+    }
   };
 
   const buildClients = () => {
@@ -132,7 +171,10 @@ export default function ImporterClientsPage() {
   };
 
   // ── Aperçu : 6 premières lignes mappées ──
-  const preview = dataRows.slice(0, 6).map((r) => {
+  // Sauf pour une PHOTO : là, chaque valeur peut avoir été mal lue, et l'écran
+  // demande justement de relire. Six lignes sur quarante feraient de cette
+  // consigne un mensonge → on les montre TOUTES (le tableau défile).
+  const preview = (lecture ? dataRows : dataRows.slice(0, 6)).map((r) => {
     const o = {};
     for (const t of TARGETS) {
       const idx = mapping[t.key];
@@ -168,14 +210,44 @@ export default function ImporterClientsPage() {
         </div>
       )}
 
+      {/* ÉTAPE 1 bis — Photo d'une liste papier. Elle retombe sur le MÊME
+          écran de correspondance que le CSV : rien n'est enregistré sans
+          que tu aies relu. */}
+      {step === 'upload' && (
+        <div className="imp-photo" data-testid="imp-photo-bloc">
+          <div className="imp-photo-txt">
+            <div className="imp-photo-title"><Camera size={17} /> Tu n&apos;as que du papier&nbsp;?</div>
+            <p>Photographie ta liste d&apos;élèves, une page à la fois. Je la lis et je te la présente ligne par ligne, pour que tu vérifies avant d&apos;enregistrer.</p>
+          </div>
+          <button
+            type="button"
+            className="imp-photo-btn"
+            data-testid="imp-photo-btn"
+            disabled={lisantPhoto}
+            onClick={() => photoRef.current?.click()}
+          >
+            {lisantPhoto ? <><Loader2 size={15} className="imp-spin" /> Lecture en cours…</> : <><Camera size={15} /> Lire une photo de liste</>}
+          </button>
+          <input ref={photoRef} type="file" accept="image/*" capture="environment" hidden
+            onChange={(e) => onPhoto(e.target.files?.[0])} />
+          {lisantPhoto && <p className="imp-photo-patience" data-testid="imp-photo-patience">Une liste longue demande une vingtaine de secondes. Ne ferme pas cette page.</p>}
+        </div>
+      )}
+
       {/* ÉTAPE 2 — Mapping + aperçu */}
       {step === 'map' && (
         <>
           <div className="imp-filecard">
-            <FileText size={18} />
+            {lecture ? <Camera size={18} /> : <FileText size={18} />}
             <span><b>{fileName}</b> · {dataRows.length} ligne{dataRows.length > 1 ? 's' : ''} · {mappedCount} colonne{mappedCount > 1 ? 's' : ''} reconnue{mappedCount > 1 ? 's' : ''}</span>
-            <button className="imp-link" onClick={() => { setStep('upload'); setRows([]); }}>Changer de fichier</button>
+            <button className="imp-link" onClick={() => { setStep('upload'); setRows([]); setLecture(null); }}>Changer de fichier</button>
           </div>
+          {lecture && (
+            <div className="imp-lecture" data-testid="imp-lecture">
+              <AlertCircle size={15} />
+              <span><b>{lecture}</b>. Relis chaque ligne&nbsp;: une photo se lit bien, elle ne se devine pas. Corrige ce qui manque après l&apos;import, sur la fiche de l&apos;élève.</span>
+            </div>
+          )}
 
           <label className="imp-check">
             <input type="checkbox" checked={headerRow} onChange={(e) => setHeaderRow(e.target.checked)} />
@@ -299,6 +371,28 @@ export default function ImporterClientsPage() {
         .imp-drop-title{font-weight:700;font-size:1.05rem;color:var(--text-primary,#3A2E26)}
         .imp-drop-sub{color:var(--text-secondary,#9A8C7E);font-size:.9rem;margin-top:3px}
         .imp-tip{margin:18px auto 0;max-width:440px;font-size:.82rem;color:var(--text-secondary,#9A8C7E);line-height:1.5}
+
+        /* Photo d'une liste papier (2026-09-17) */
+        .imp-photo{margin-top:16px;border:1px solid var(--line,#E7DCCD);border-radius:16px;padding:18px 20px;
+          background:#FCF8F2;display:flex;flex-wrap:wrap;align-items:center;gap:14px}
+        .imp-photo-txt{flex:1 1 260px;min-width:0}
+        .imp-photo-title{display:flex;align-items:center;gap:7px;font-weight:700;font-size:.95rem;
+          color:var(--text-primary,#3A2E26)}
+        .imp-photo-txt p{margin:5px 0 0;font-size:.84rem;line-height:1.5;color:var(--text-secondary,#6B5D52)}
+        .imp-photo-btn{display:inline-flex;align-items:center;gap:7px;padding:10px 16px;border-radius:11px;
+          border:1px solid var(--brand,#B87333);background:var(--brand,#B87333);color:#fff;font-weight:600;
+          font-size:.88rem;cursor:pointer;white-space:nowrap}
+        .imp-photo-btn:disabled{opacity:.65;cursor:default}
+        .imp-photo-patience{flex:1 1 100%;margin:0;font-size:.8rem;color:var(--text-secondary,#9A8C7E)}
+        .imp-spin{animation:imp-rot 1s linear infinite}
+        @keyframes imp-rot{to{transform:rotate(360deg)}}
+        .imp-lecture{display:flex;align-items:flex-start;gap:9px;margin:-4px 0 14px;padding:11px 14px;
+          border-radius:12px;background:#FFF8E8;border:1px solid #F0DCA8;font-size:.84rem;line-height:1.5;
+          color:var(--text-primary,#3A2E26)}
+        .imp-lecture svg{flex:none;margin-top:2px;color:#B8860B}
+        /* Une photo montre TOUTES ses lignes : le tableau défile plutôt que
+           de s'étirer sur trois écrans. */
+        .imp-preview-wrap{max-height:52vh;overflow-y:auto}
         .imp-filecard{display:flex;align-items:center;gap:10px;background:var(--bg-card,#fff);
           border:1px solid var(--line,#E7DCCD);border-radius:12px;padding:12px 16px;color:var(--text-primary,#3A2E26);font-size:.9rem}
         .imp-filecard b{font-weight:700}
