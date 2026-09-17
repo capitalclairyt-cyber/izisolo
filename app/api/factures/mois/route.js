@@ -14,7 +14,7 @@ export const runtime = 'nodejs';
  * un paiement n'est jamais porté par deux factures).
  */
 export const GET = withRoute({ auth: 'active' }, async ({ request, auth }) => {
-  const { studioId, user, profile } = auth;
+  const { studioId, profile } = auth;
   const admin = createAdminClient();
 
   const url = new URL(request.url);
@@ -24,7 +24,7 @@ export const GET = withRoute({ auth: 'active' }, async ({ request, auth }) => {
     return new Response('Paramètres invalides (client + mois AAAA-MM attendus).', { status: 400 });
   }
 
-  const { active, facturation } = await chargerFacturation(admin, user.id);
+  const { active, facturation } = await chargerFacturation(admin, studioId);
   if (!active) {
     return new Response('Renseigne d\'abord ton SIRET (Paramètres → Argent → Facturation) pour émettre des factures.', { status: 409 });
   }
@@ -58,7 +58,7 @@ export const GET = withRoute({ auth: 'active' }, async ({ request, auth }) => {
     }
 
     const res = await emettreFacture(admin, {
-      profileId: user.id,
+      profileId: studioId,
       clientId: client.id,
       profile,
       facturation,

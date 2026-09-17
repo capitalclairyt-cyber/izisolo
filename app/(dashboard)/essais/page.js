@@ -49,7 +49,7 @@ export default async function EssaisPage() {
   }));
 
   // Tarif d'essai par type (v92, lecture défensive — null pré-migration)
-  const surchargesEssai = await getEssaiPrixParType(supabase, user.id);
+  const surchargesEssai = await getEssaiPrixParType(supabase, studioId);
 
   return (
     <EssaisClient profile={profile} demandes={demandes} surchargesEssai={surchargesEssai} />

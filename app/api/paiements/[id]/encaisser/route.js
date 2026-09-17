@@ -44,7 +44,7 @@ const encaisserSchema = z.object({
 }).refine(b => b.parts || b.mode, { message: 'Déclare comment l\'argent est arrivé (mode ou parts).' });
 
 export const POST = withRoute({ auth: 'active', schema: encaisserSchema, perm: 'argent_gerer' }, async ({ params, auth, body }) => {
-  const { studioId, user, supabase, profile } = auth;
+  const { studioId, supabase, profile } = auth;
   const { id } = params;
 
   const today = aujourdhuiParis();
@@ -149,7 +149,7 @@ export const POST = withRoute({ auth: 'active', schema: encaisserSchema, perm: '
         body: `Ton règlement a bien été pris en compte par ton studio.`,
         url: prof?.studio_slug ? `/p/${prof.studio_slug}/espace` : '/',
         tag: `paiement-${id}`,
-      }, { type: 'paiement', profileId: user.id });
+      }, { type: 'paiement', profileId: studioId });
     })().catch(() => {});
   }
 

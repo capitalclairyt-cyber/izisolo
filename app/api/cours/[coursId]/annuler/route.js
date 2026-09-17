@@ -19,7 +19,7 @@ export const runtime = 'nodejs';
  */
 
 export const POST = withRoute({ auth: 'active', perm: 'cours_gerer' }, async ({ request, params, auth }) => {
-  const { studioId, user } = auth;
+  const { studioId } = auth;
   const { coursId } = params;
   let body = {};
   try { body = await request.json(); } catch { /* body optionnel : annulation sans motif */ }
@@ -182,7 +182,7 @@ Désolé·e pour le désagrément, à très vite.`,
         body: `${cours.nom} — ${dateStr}${heureStr ? ` à ${heureStr}` : ''} est annulé.`,
         url: profile?.studio_slug ? `/p/${profile.studio_slug}/espace` : '/',
         tag: `annul-cours-${coursId}`,
-      }, { type: 'cours_annule', profileId: user.id }).catch(() => {});
+      }, { type: 'cours_annule', profileId: studioId }).catch(() => {});
     }
   }
 

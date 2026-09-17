@@ -764,7 +764,7 @@ body:has(.izi-bg-decor) {
 }
 
 /* --- Sous-onglets (légèrement plus discrets) --- */
-/* Pastille « état de compte élève » (v67) — liste + fiche */
+/* Pastille « état de compte élève » (v67, quatre états depuis v120) — liste + fiche */
 .compte-pastille {
   display: inline-flex; align-items: center; gap: 5px;
   padding: 2px 8px; border-radius: 99px;
@@ -773,6 +773,9 @@ body:has(.izi-bg-decor) {
 .compte-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
 .compte-actif  { background: #e8f5e9; color: #2e7d32; }
 .compte-invite { background: #e3f2fd; color: #1565c0; }
+/* v120 : a un compte IziSolo, mais n'a jamais ouvert CE studio. Ambre et non
+   vert : c'est une invitation à envoyer, pas une case déjà cochée. */
+.compte-ailleurs { background: #fff4e5; color: #a35a00; }
 .compte-aucun  { background: var(--cream-dark, #f0ebe3); color: var(--text-muted, #8a7f72); }
 
 .subtabs-bar {

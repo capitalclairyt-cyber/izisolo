@@ -26,7 +26,7 @@ import { historique, ecartDepuisDeclaration } from '@/lib/declaration-archive';
 // ============================================================================
 
 export const GET = withRoute({ auth: 'user' }, async ({ request, auth }) => {
-  const { studioId, user, supabase } = auth;
+  const { studioId, supabase } = auth;
   const url = new URL(request.url);
   const today = aujourdhuiParis();
 
@@ -74,7 +74,7 @@ export const GET = withRoute({ auth: 'user' }, async ({ request, auth }) => {
 
   // v95 : ce que la prof a sorti de sa déclaration (« je déclare à part »).
   // Lecture séparée et défensive : sans la colonne, rien n'est exclu.
-  const exclusions = await lireExclusions(supabase, user.id, periode);
+  const exclusions = await lireExclusions(supabase, studioId, periode);
   const totaux = totauxPaiements(retirerExclus(paiements, exclusions), 'encaissement');
   const estimation = config ? estimationCotisations(totaux.brut, config) : null;
 

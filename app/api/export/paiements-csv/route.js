@@ -85,7 +85,7 @@ const fmtJour = (d) => (d ? String(d).slice(0, 10).split('-').reverse().join('/'
 
 // plan 'export_compta' : feature Pro (gate serveur — l'UI seule était contournable)
 export const GET = withRoute({ auth: 'user', plan: 'export_compta' }, async ({ request, auth }) => {
-  const { studioId, user, supabase } = auth;
+  const { studioId, supabase } = auth;
 
   const url = new URL(request.url);
   const periode = url.searchParams.get('periode') || 'mois';
@@ -212,7 +212,7 @@ export const GET = withRoute({ auth: 'user', plan: 'export_compta' }, async ({ r
   // BASE DÉCLARÉE qui les ignore, et le récap dit lesquels. Intersection en
   // JS plutôt qu'un second filtre daté : exact quelle que soit la base
   // choisie (encaissement ou vente).
-  const exclusions = await lireExclusions(supabase, user.id);
+  const exclusions = await lireExclusions(supabase, studioId);
   const retenus = retirerExclus(paiements, exclusions);
   const exclusIci = paiements.length - retenus.length;
   const totaux = totauxPaiements(paiements, base);

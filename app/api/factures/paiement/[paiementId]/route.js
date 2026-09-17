@@ -15,7 +15,7 @@ export const runtime = 'nodejs';
  * justificatif d'une cliente qui le demande de vive voix.
  */
 export const GET = withRoute({ auth: 'active' }, async ({ params, auth }) => {
-  const { studioId, user, profile } = auth;
+  const { studioId, profile } = auth;
   const { paiementId } = params;
   const admin = createAdminClient();
 
@@ -43,10 +43,10 @@ export const GET = withRoute({ auth: 'active' }, async ({ params, auth }) => {
   if (cliErr || !client) return new Response('Fiche élève introuvable', { status: 404 });
 
   try {
-    const { active, facturation } = await chargerFacturation(admin, user.id);
+    const { active, facturation } = await chargerFacturation(admin, studioId);
     if (active) {
       const res = await obtenirOuEmettreFacture(admin, {
-        profileId: user.id,
+        profileId: studioId,
         clientId: client.id,
         profile,
         facturation,

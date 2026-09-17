@@ -20,7 +20,7 @@ import { reponsePdf } from '@/lib/facture-pdf';
 // ============================================================================
 
 export const GET = withRoute({ auth: 'user' }, async ({ request, auth }) => {
-  const { studioId, user, supabase } = auth;
+  const { studioId, supabase } = auth;
   const url = new URL(request.url);
   const today = aujourdhuiParis();
 
@@ -51,7 +51,7 @@ export const GET = withRoute({ auth: 'user' }, async ({ request, auth }) => {
 
   // v95 : les encaissements que la prof déclare à part sortent du registre,
   // et le registre le dit en toutes lettres (cf. construireLivreRecettes).
-  const exclusions = await lireExclusions(supabase, user.id, periode);
+  const exclusions = await lireExclusions(supabase, studioId, periode);
   const retenus = retirerExclus(paiements, exclusions);
 
   // Références de pièce : le numéro de facture v84 quand il existe. Défensif —

@@ -421,4 +421,18 @@ export const FAQ_SUPPORT = [
     a: "C'est le nombre de fois où ta page publique a été ouverte ces sept derniers jours. Sur Essentiel, ces visiteuses peuvent lire ton planning mais pas réserver leur place : la réservation en ligne, l'espace élève et le paiement par carte sont dans Complet. On compte des OUVERTURES de page, jamais des personnes : on ne sait pas qui vient, on n'enregistre ni nom, ni adresse IP, ni page visitée, et tes propres visites ne sont pas comptées (les robots des moteurs de recherche non plus). En dessous de trois ouvertures dans la semaine, on ne dit rien du tout. La carte se masque d'un clic et ne revient pas avant une semaine.",
     lien: { href: '/aide#abonnement', label: 'Voir le pas-à-pas' },
   },
+  {
+    // Les quatre pastilles d'état de compte (v120, 2026-09-17). AJOUTÉE EN FIN.
+    q: "Sur ma liste d'élèves : « Connecté·e », « Invité·e », « Jamais connecté·e ici », « Pas de compte », quelle différence ?",
+    a: "Ces pastilles disent où chaque élève en est de TON espace, jamais de ce qu'elle fait ailleurs. « Connecté·e » : elle a déjà ouvert ton espace, la date indique sa dernière visite chez toi. « Invité·e » : son lien est parti, elle ne s'en est pas encore servie. « Jamais connecté·e ici » : elle a déjà un compte IziSolo, par exemple parce qu'elle prend aussi des cours dans un autre studio, mais elle n'est jamais venue sur le tien. Invite-la comme les autres : son compte existant lui évitera simplement de créer un mot de passe, elle entrera en un clic. « Pas de compte » : personne n'a encore ouvert de compte à cette adresse. Un compte élève est commun à tout IziSolo (une adresse email, un compte), c'est pourquoi une nouvelle adhérente peut arriver chez toi en ayant déjà le sien.",
+    lien: { href: '/aide#eleves', label: 'Voir le pas-à-pas' },
+  },
+  {
+    // Lire une photo de LISTE (2026-09-17, montage d'Atout Gym : Maude avait
+    // le listing papier de l'association et l'import par photo ne lisait
+    // qu'une fiche à la fois). AJOUTÉE EN FIN.
+    q: "Je n'ai que ma liste d'élèves sur papier : je peux la photographier au lieu de tout retaper ?",
+    a: "Oui. Page Élèves → « Importer » → « Lire une photo de liste » : photographie ta liste bien à plat, une page à la fois. Chaque personne devient une ligne, et tu arrives sur le même écran de vérification que pour un fichier : toutes les lignes s'affichent, tu corriges les colonnes si besoin, et rien n'est enregistré avant que tu valides. Relis vraiment : une photo se lit bien, elle ne se devine pas, et une adresse email mal lue ne recevra jamais son lien d'accès. Ce qui est illisible reste vide plutôt que d'être inventé, tu complètes ensuite sur la fiche de l'élève. Une liste par photo compte dans ton quota de lecture (10 par jour, 20 par mois), largement de quoi passer un listing de plusieurs pages. Pour un fichier venu d'un tableur ou d'un autre logiciel, garde le CSV : c'est plus fidèle qu'une photo.",
+    lien: { href: '/aide#eleves', label: 'Voir le pas-à-pas' },
+  },
 ];

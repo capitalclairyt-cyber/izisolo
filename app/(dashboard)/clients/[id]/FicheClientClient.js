@@ -17,7 +17,7 @@ import MergeClientsModal from '@/components/clients/MergeClientsModal';
 import { formatDate, formatMontant } from '@/lib/utils';
 import { getVocabulaire } from '@/lib/vocabulaire';
 import { STATUTS_CLIENT, STATUTS_ABONNEMENT, STATUTS_PAIEMENT } from '@/lib/constantes';
-import { statutCompteEleve, formatDateRelative } from '@/lib/eleve-statut';
+import { statutCompteEleve, formatDateRelative, STATUT_COMPTE_LABEL, STATUT_COMPTE_AIDE } from '@/lib/eleve-statut';
 import { bornesVente } from '@/lib/offres-periode';
 import { resumeDemande, solderDemandesApresVente } from '@/lib/demande-offre';
 import { lireReglementConfig, preselectionEmail } from '@/lib/reglement';
@@ -1113,26 +1113,25 @@ export default function FicheClientClient({ client, profile, abonnements: abosIn
           )}
         </div>
 
-        {/* État de compte (v67) — la prof voit si l'élève a un compte, s'il/elle
-            a été invité·e, et sa dernière connexion. */}
+        {/* État de compte (v67, quatre états depuis v120) — tout ce qui est
+            écrit ici parle de TON espace. La dernière connexion du compte,
+            elle, est globale à IziSolo : l'afficher revenait à raconter à un
+            studio ce que la personne fait chez un autre. */}
         {!isPro && (() => {
           const base = statutCompteEleve(client, statutCompte);
           const etat = base.etat === 'aucun' && invited ? 'invite' : base.etat;
-          if (etat === 'actif') return (
-            <div className="compte-pastille compte-actif" style={{ marginTop: 10 }}>
-              <span className="compte-dot" /> Compte actif · dernière connexion {formatDateRelative(base.lastSignIn)}
+          const ligne = (classe, texte) => (
+            <div className={`compte-pastille ${classe}`} data-testid="compte-etat" data-etat={etat} style={{ marginTop: 10 }}>
+              <span className="compte-dot" /> {texte}
             </div>
           );
-          if (etat === 'invite') return (
-            <div className="compte-pastille compte-invite" style={{ marginTop: 10 }}>
-              <span className="compte-dot" /> {base.invite ? `Invité·e ${formatDateRelative(base.invite)}` : 'Invitation envoyée'} · pas encore connecté·e
-            </div>
-          );
-          return (
-            <div className="compte-pastille compte-aucun" style={{ marginTop: 10 }}>
-              <span className="compte-dot" /> Pas de compte{client.email ? " · pense à l'inviter" : ' · ajoute un email pour inviter'}
-            </div>
-          );
+          if (etat === 'venue') return ligne('compte-actif',
+            `Déjà venu·e sur ton espace élève${base.visite ? ` · dernière visite ${formatDateRelative(base.visite)}` : ''}`);
+          if (etat === 'invite') return ligne('compte-invite',
+            `${base.invite ? `Invité·e ${formatDateRelative(base.invite)}` : 'Invitation envoyée'} · pas encore venu·e sur ton espace`);
+          if (etat === 'compte') return ligne('compte-ailleurs', STATUT_COMPTE_AIDE.compte);
+          return ligne('compte-aucun',
+            `${STATUT_COMPTE_LABEL.aucun}${client.email ? " · pense à l'inviter" : ' · ajoute un email pour inviter'}`);
         })()}
 
         {isPro && (

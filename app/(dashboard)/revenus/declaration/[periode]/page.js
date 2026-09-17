@@ -135,7 +135,7 @@ export default async function DeclarationPage({ params }) {
   // v95 : les encaissements « je déclare à part » sortent de l'assiette,
   // mais la page annonce combien et pour quel montant — un chiffre à
   // recopier ne doit jamais cacher ce qu'il a écarté.
-  const exclusions = await lireExclusions(supabase, user.id, periode);
+  const exclusions = await lireExclusions(supabase, studioId, periode);
   const totaux = totauxPaiements(retirerExclus(paiements, exclusions), 'encaissement');
   const estimation = config ? estimationCotisations(totaux.brut, config) : null;
 

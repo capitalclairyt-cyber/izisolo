@@ -153,7 +153,10 @@ try {
   console.log('\n— A. Fiche : la ligne de 480 € encaissée en deux chèques —');
   await aller(page, `${BASE}/clients/${fiche.id}`);
   await page.waitForSelector('button.tab-btn:has-text("Paiements")', { timeout: 90000 });
-  await page.locator('button.tab-btn:has-text("Paiements")').click();
+  // Sur un serveur FROID, ce bouton est rendu par le serveur avant que React
+  // n'ait attaché son handler : un `.click()` nu part dans le vide et la ligne
+  // n'apparaît jamais (piège v100, attrapé de nouveau le 17/09).
+  await clicJusquA(page, 'button.tab-btn:has-text("Paiements")', '.paiement-fiche-item');
   const ligneA = page.locator('.paiement-fiche-item').filter({ hasText: 'deux chèques' });
   await ligneA.waitFor({ timeout: 30000 });
   c('la ligne de 480 € est « à encaisser » sur la fiche', /480/.test(await ligneA.innerText()));

@@ -706,7 +706,6 @@ export default function PointageClient({ cours, presences: initialPresences, tou
   const inscrireSurLaSerie = async (clientIds) => {
     if (!serieProposable || ciblesSerie.length === 0 || clientIds.length === 0) return;
     const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
     const coursIds = ciblesSerie.map(c => c.id);
     const { data: deja, error: eDeja } = await supabase
       .from('presences')
@@ -719,7 +718,7 @@ export default function PointageClient({ cours, presences: initialPresences, tou
     }
     const { lignes, ignorees } = lignesInscription({
       cibles: ciblesSerie, clientIds, dejaInscrits: deja || [],
-      profileId: user.id, typePresence: addTypePresence,
+      profileId: studioId, typePresence: addTypePresence,
     });
     if (lignes.length === 0) {
       toast.info('Ces élèves étaient déjà inscrites sur les séances à venir.');

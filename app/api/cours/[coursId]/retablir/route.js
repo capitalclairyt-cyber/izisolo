@@ -24,7 +24,7 @@ export const runtime = 'nodejs';
  * POST /api/cours/[coursId]/retablir
  */
 export const POST = withRoute({ auth: 'active', perm: 'cours_gerer' }, async ({ params, auth }) => {
-  const { studioId, user } = auth;
+  const { studioId } = auth;
   const { coursId } = params;
   const supabaseAdmin = createAdminClient();
 
@@ -95,7 +95,7 @@ export const POST = withRoute({ auth: 'active', perm: 'cours_gerer' }, async ({ 
         body: `${cours.nom} — ${dateStr || ''}${heureStr ? ` à ${heureStr}` : ''} a finalement lieu.`,
         url: profile?.studio_slug ? `/p/${profile.studio_slug}/espace` : '/',
         tag: `retabli-cours-${coursId}`,
-      }, { type: 'cours_annule', profileId: user.id }).catch(() => {});
+      }, { type: 'cours_annule', profileId: studioId }).catch(() => {});
     }
   }
 

@@ -35,7 +35,7 @@ export default async function ClientsPage() {
     { data: segments, error: segmentsError },
   ] = await Promise.all([
     supabase.from('profiles').select('metier, vocabulaire, niveaux, sources, studio_slug, studio_nom, prenom, type_structure').eq('id', studioId).single(),
-    fetchTousLesClients(supabase, user.id),
+    fetchTousLesClients(supabase, studioId),
     // Statut de compte (RPC v67) — dégrade proprement si la migration n'est pas
     // appliquée (rpc renvoie une erreur → statuts null → aucun badge « actif »).
     supabase.rpc('eleves_statut_compte'),

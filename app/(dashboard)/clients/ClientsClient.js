@@ -9,7 +9,7 @@ import { createClient } from '@/lib/supabase';
 import { getVocabulaire } from '@/lib/vocabulaire';
 import { STATUTS_CLIENT } from '@/lib/constantes';
 import { toneForClient } from '@/lib/tones';
-import { statutCompteEleve, formatDateRelative } from '@/lib/eleve-statut';
+import { statutCompteEleve, formatDateRelative, STATUT_COMPTE_LABEL, STATUT_COMPTE_AIDE } from '@/lib/eleve-statut';
 import { trouverDoublons } from '@/lib/doublons';
 import InviteModal from './InviteModal';
 import MergeClientsModal from '@/components/clients/MergeClientsModal';
@@ -557,26 +557,22 @@ export default function ClientsClient({ clients: clientsInit, profile, statutMap
                           ☄️ {presenceInfo[client.id]?.dernier?.nom || 'Ponctuel·le'}
                         </span>
                       )}
-                      {/* État de compte (v67) — actif / invité·e / pas de compte */}
+                      {/* État de compte (v67, quatre états depuis v120) — la
+                          pastille parle de TON espace, jamais de l'activité de
+                          cette personne dans un autre studio. */}
                       {(() => {
                         const st = statutCompteEleve(client, statutMap[client.id]);
-                        if (st.etat === 'actif') return (
-                          <span className="compte-pastille compte-actif" title={`Dernière connexion ${formatDateRelative(st.lastSignIn)}`}>
-                            <span className="compte-dot" /> Actif · {formatDateRelative(st.lastSignIn)}
+                        const pastille = (classe, texte) => (
+                          <span className={`compte-pastille ${classe}`} data-testid="compte-pastille" data-fiche={client.id} data-etat={st.etat} title={STATUT_COMPTE_AIDE[st.etat]}>
+                            <span className="compte-dot" /> {texte}
                           </span>
                         );
-                        if (st.etat === 'invite') return (
-                          <span className="compte-pastille compte-invite" title={`Invité·e ${formatDateRelative(st.invite)}`}>
-                            <span className="compte-dot" /> Invité·e
-                          </span>
-                        );
-                        // Pas de compte : seulement si invitable (a un email)
-                        if (client.email) return (
-                          <span className="compte-pastille compte-aucun" title="Pas de compte, pense à l'inviter">
-                            <span className="compte-dot" /> Pas de compte
-                          </span>
-                        );
-                        return null;
+                        if (st.etat === 'venue') return pastille('compte-actif', `Connecté·e${st.visite ? ` · ${formatDateRelative(st.visite)}` : ''}`);
+                        if (st.etat === 'invite') return pastille('compte-invite', `Invité·e${st.invite ? ` · ${formatDateRelative(st.invite)}` : ''}`);
+                        // Les deux états froids ne s'affichent que si on peut agir (un email).
+                        if (!client.email) return null;
+                        if (st.etat === 'compte') return pastille('compte-ailleurs', STATUT_COMPTE_LABEL.compte);
+                        return pastille('compte-aucun', STATUT_COMPTE_LABEL.aucun);
                       })()}
                     </div>
                   </div>

@@ -82,6 +82,40 @@ test.describe('Ratchet — le studio actif, jamais l\'utilisateur', () => {
     expect(coupables, `Charge le profil du studio : .eq('id', studioId).\nFichiers : ${coupables.join(', ')}`).toEqual([]);
   });
 
+  // ── Les formes INDIRECTES (v120, 17/09/2026) ────────────────────────────
+  // Les deux tests ci-dessus cherchent `profile_id` écrit en toutes lettres à
+  // côté de `user.id`. Le sweep de v101 a donc laissé passer 14 sites où
+  // `user.id` VOYAGE : soit sous un autre nom (`profileId:`, camelCase), soit
+  // en argument d'une fonction qui fait le `.eq('profile_id', …)` plus loin
+  // (`fetchTousLesClients(supabase, user.id)`, `lireExclusions`,
+  // `chargerFacturation`). Trouvés en diagnostiquant Atout Gym, la première
+  // équipe réelle : la liste des élèves du studio en faisait partie.
+
+  test('aucun `profileId: user.id` (le studio ne change pas de nature en camelCase)', () => {
+    // Même exception permanente que l'onboarding, côté équipe : la création
+    // concierge vient de créer le compte, et ce compte EST le studio.
+    const ALLOWLIST = ['app/api/admin/studios/creer/route.js'];
+    expect(ALLOWLIST.length, 'l\'allowlist ne peut que rétrécir').toBeLessThanOrEqual(1);
+    const motif = /\bprofileId\s*:\s*(user\.id|userId)\b/;
+    const coupables = TOUS.filter(f => motif.test(f.src)).map(f => f.rel).filter(rel => !ALLOWLIST.includes(rel));
+    expect(coupables, `\`profileId\` désigne le STUDIO partout dans l'app : passe studioId (auth.studioId côté route, useStudioId() côté navigateur).\nFichiers : ${coupables.join(', ')}`).toEqual([]);
+  });
+
+  test('`user.id` n\'est pas passé en 2e argument à une fonction qui attend un studio', () => {
+    // Les SEULES fonctions qui attendent légitimement l'identifiant de la
+    // PERSONNE en 2e argument. Toute autre reçoit un studio : si une nouvelle
+    // entre ici, c'est qu'on a décidé que son sujet est l'humain, pas le studio.
+    const FONCTIONS_PERSONNE = ['chargerPrestationsIntervenante'];
+    const motif = /(\w+)\s*\(\s*\w+\s*,\s*user\.id\b/g;
+    const coupables = [];
+    for (const f of TOUS) {
+      for (const m of f.src.matchAll(motif)) {
+        if (!FONCTIONS_PERSONNE.includes(m[1])) coupables.push(`${f.rel} → ${m[1]}(…, user.id)`);
+      }
+    }
+    expect(coupables, `Ces appels reçoivent l'utilisateur là où la fonction filtre sur profile_id. Passe studioId.\n${coupables.join('\n')}`).toEqual([]);
+  });
+
   test('l\'allowlist ne peut que rétrécir', () => {
     expect(ALLOWLIST_PROFILE_ID.length).toBeLessThanOrEqual(2);
     expect(ALLOWLIST_PROFIL_PAR_USER.length).toBeLessThanOrEqual(2);
