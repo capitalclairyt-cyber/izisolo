@@ -3,7 +3,7 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Search, Plus, User, Building2, Phone, Mail, ChevronRight, Filter, Send, SlidersHorizontal, Upload, Download, GitMerge, Settings2 } from 'lucide-react';
+import { Search, Plus, Building2, ChevronRight, Send, SlidersHorizontal, Upload, Download, GitMerge, Settings2 } from 'lucide-react';
 import AideContextuelle from '@/components/AideContextuelle';
 import { createClient } from '@/lib/supabase';
 import { getVocabulaire } from '@/lib/vocabulaire';
