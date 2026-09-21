@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { withRoute } from '@/lib/api-route';
 import { wantsNotif } from '@/lib/notif-prefs';
+import { rappelPaiement, refRappel, expirationRappel, refsObsoletes } from '@/lib/rappel-paiement';
 
 export const POST = withRoute({ auth: 'user' }, async ({ auth }) => {
   const { studioId, supabase } = auth;
@@ -61,26 +62,60 @@ export const POST = withRoute({ auth: 'user' }, async ({ auth }) => {
 
   const { data: retards } = await supabase
     .from('paiements')
-    .select('id, intitule, montant, date, client_id, clients(prenom, nom)')
+    .select('id, intitule, montant, date, client_id, echeancier_id, clients(prenom, nom)')
     .eq('profile_id', studioId)
     .neq('statut', 'paid')
     .lte('date', seuilAgo.toISOString().split('T')[0]);
 
+  // Ce qui a DÉJÀ été reçu sur la même vente (2026-09-21, retour Maude) : les
+  // lignes réglées sœurs par l'échéancier (imputation du 15/09, « Plusieurs
+  // moyens »). Sans elles, le rappel du reste de Marie-Pierre disait « 235 €
+  // en attente depuis 26 jours » six jours après son chèque de 245 €.
+  const echeanciers = [...new Set((retards || []).map(p => p.echeancier_id).filter(Boolean))];
+  let soeurs = [];
+  if (echeanciers.length > 0) {
+    const { data } = await supabase
+      .from('paiements')
+      .select('id, montant, statut, mode, date, date_encaissement, echeancier_id')
+      .eq('profile_id', studioId)
+      .eq('statut', 'paid')
+      .in('echeancier_id', echeanciers);
+    soeurs = data || [];
+  }
+
   for (const p of retards || []) {
-    const jours = Math.floor((today - new Date(p.date)) / 86400000);
+    const r = rappelPaiement(p, soeurs, today);
     toUpsert.push({
       profile_id: studioId,
       type:       'paiement_retard',
-      titre:      `💶 Paiement en attente — ${p.clients?.prenom} ${p.clients?.nom}`,
-      corps:      `${p.intitule} · ${p.montant} € · en attente depuis ${jours} jour(s)`,
-      data:       { paiement_id: p.id, client_id: p.client_id, montant: p.montant, jours },
+      titre:      r.titre,
+      corps:      r.corps,
+      data:       r.data,
       // ref_key STABLE (audit 2026-07-25) : l'ancien ref journalier créait une
       // notif non-lue DE PLUS chaque jour pour le même impayé (badges « 9+ »
-      // permanents). Stable + expiration 48 h = 1 seule notif, ré-armée en
-      // douceur tant que l'impayé persiste (la purge ci-dessous fait le ménage).
-      ref_key:    `paiement_retard_${p.id}`,
-      expires_at: new Date(Date.now() + 48 * 3600 * 1000).toISOString(),
+      // permanents). Stable + expiration = 1 seule notif, ré-armée tant que
+      // l'impayé persiste. Depuis le 2026-09-21 elle vit SEPT jours (48 h avant :
+      // un reste connu de la prof revenait sonner tous les deux jours).
+      ref_key:    refRappel(p.id),
+      expires_at: expirationRappel(),
     });
+  }
+
+  // Les rappels dont la ligne n'attend PLUS rien (encaissée depuis) sont purgés
+  // tout de suite, au lieu de sonner jusqu'à leur expiration.
+  const { data: rappelsExistants } = await supabase
+    .from('notifications')
+    .select('ref_key')
+    .eq('profile_id', studioId)
+    .eq('type', 'paiement_retard');
+  const obsoletes = refsObsoletes((rappelsExistants || []).map(n => n.ref_key), retards || []);
+  if (obsoletes.length > 0) {
+    await supabase
+      .from('notifications')
+      .delete()
+      .eq('profile_id', studioId)
+      .eq('type', 'paiement_retard')
+      .in('ref_key', obsoletes);
   }
   } // fin notif_paiement_retard
 
@@ -206,20 +241,21 @@ export const POST = withRoute({ auth: 'user' }, async ({ auth }) => {
     }
   }
 
-  // ── Upsert (ignoreDuplicates = ne pas écraser lu=true) ────────────────────
-  if (toUpsert.length > 0) {
-    await supabase
-      .from('notifications')
-      .upsert(toUpsert, { onConflict: 'profile_id,ref_key', ignoreDuplicates: true });
-  }
-
-  // ── Purge des notifs expirées ─────────────────────────────────────────────
+  // ── Purge des notifs expirées (AVANT l'upsert : un rappel expiré est recréé
+  //    au même check, pas au suivant) ────────────────────────────────────────
   await supabase
     .from('notifications')
     .delete()
     .eq('profile_id', studioId)
     .not('expires_at', 'is', null)
     .lt('expires_at', new Date().toISOString());
+
+  // ── Upsert (ignoreDuplicates = ne pas écraser lu=true) ────────────────────
+  if (toUpsert.length > 0) {
+    await supabase
+      .from('notifications')
+      .upsert(toUpsert, { onConflict: 'profile_id,ref_key', ignoreDuplicates: true });
+  }
 
   // ── Retourner toutes les non-lues ─────────────────────────────────────────
   const { data: unread } = await supabase

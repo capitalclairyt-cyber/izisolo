@@ -43,7 +43,7 @@ export default function SeuilsCartes() {
       {/* Seuil de l'alerte « paiement en attente » (cloche prof uniquement). */}
       <CarteReglage id="seuils_prof" titre="Paiement en attente" icone={Wallet} resume={resumeCarte('seuils_prof', profile)}>
         <p className="section-desc">
-          Quand un chèque, un virement ou des espèces restent « en attente » trop longtemps, ta cloche te le rappelle. Rien n&apos;est envoyé à l&apos;élève.
+          Quand un chèque, un virement ou des espèces restent « en attente » trop longtemps, ta cloche te le rappelle. Rien n&apos;est envoyé à l&apos;élève. Un rappel lu ne revient pas avant une semaine, il disparaît dès que tu encaisses, et si un acompte est déjà arrivé il dit ce qui reste et ce que tu as déjà reçu.
         </p>
         <div className="form-group">
           <label className="form-label">Me prévenir après</label>

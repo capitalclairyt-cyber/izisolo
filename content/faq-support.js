@@ -435,4 +435,12 @@ export const FAQ_SUPPORT = [
     a: "Oui. Page Élèves → « Importer » → « Lire une photo de liste » : photographie ta liste bien à plat, une page à la fois. Chaque personne devient une ligne, et tu arrives sur le même écran de vérification que pour un fichier : toutes les lignes s'affichent, tu corriges les colonnes si besoin, et rien n'est enregistré avant que tu valides. Relis vraiment : une photo se lit bien, elle ne se devine pas, et une adresse email mal lue ne recevra jamais son lien d'accès. Ce qui est illisible reste vide plutôt que d'être inventé, tu complètes ensuite sur la fiche de l'élève. Une liste par photo compte dans ton quota de lecture (10 par jour, 20 par mois), largement de quoi passer un listing de plusieurs pages. Pour un fichier venu d'un tableur ou d'un autre logiciel, garde le CSV : c'est plus fidèle qu'une photo.",
     lien: { href: '/aide#eleves', label: 'Voir le pas-à-pas' },
   },
+  {
+    // Le rappel « Paiement en attente » après un acompte (2026-09-21, retour
+    // Maude : la cloche rappelait le reste de Marie-Pierre tous les deux jours,
+    // sans dire que son premier chèque était saisi). AJOUTÉE EN FIN.
+    q: "Ma cloche me rappelle un paiement que j'ai déjà enregistré ?",
+    a: "Le rappel « Paiement en attente » ne parle que des lignes qui attendent encore un règlement dans IziSolo, depuis plus de 14 jours (le seuil se règle dans Paramètres → Élèves & cours → Seuils d'alerte). Deux cas font croire le contraire. Si tu as saisi un premier chèque sur un abonnement vendu « à régler plus tard », le reste attend toujours, et c'est ce reste que la cloche rappelle : le rappel dit maintenant « reste 235 € (245 € déjà reçus, dernier par chèque le 08/09) » et compte les jours depuis ce chèque. Si le rappel parle d'une élève qui t'a réellement payée, son règlement n'est pas encore dans IziSolo : ouvre sa fiche → Paiements, la ligne est « à encaisser », clique « Encaisser » (ou « Plusieurs moyens » pour deux chèques) et le rappel disparaît aussitôt. Un rappel que tu as lu ne revient pas avant une semaine. Rien n'est jamais envoyé à l'élève.",
+    lien: { href: '/aide#encaisser', label: 'Voir le pas-à-pas' },
+  },
 ];
