@@ -13,9 +13,16 @@ import { resoudreCarnetApplicable } from '@/lib/carnet-resolution';
 import { resoudreFicheEleve } from '@/lib/fiche-eleve';
 import { promouvoirListeAttente } from '@/lib/promotion-liste-attente';
 import { reportError } from '@/lib/report';
+import { langueDepuisRequete, cookieLangueDeRequete, poserLangueFiche } from '@/lib/i18n-portail-serveur';
+import { traducteur } from '@/lib/i18n-portail';
 
 export const POST = withRoute({ auth: 'public' }, async ({ request, params }) => {
   const { studioSlug } = params;
+  // La langue de l'élève (2026-09-22) : cookie de la visiteuse > réglage du
+  // studio > français. Elle sert aux messages renvoyés à l'écran et à l'email
+  // d'annulation tardive. Les notifications de la PROF restent en français.
+  const langue = await langueDepuisRequete(request, studioSlug);
+  const t = traducteur(langue);
 
   // Rate-limit IP : route publique d'écriture destructrice (delete presences)
   // — on borne les annulations automatisées (10/h/IP).
@@ -31,7 +38,7 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
-    return Response.json({ error: 'Non authentifié' }, { status: 401 });
+    return Response.json({ error: t('Non authentifié') }, { status: 401 });
   }
 
   const supabaseAdmin = createAdminClient();
@@ -54,14 +61,14 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
   } catch { /* replyTo de confort : sans lui l'email part quand même */ }
 
   if (!profile) {
-    return Response.json({ error: 'Studio introuvable' }, { status: 404 });
+    return Response.json({ error: t('Studio introuvable') }, { status: 404 });
   }
 
   // Gate plan (Sprint 3) : l'annulation en ligne par l'élève est une feature
   // Pro du STUDIO. En Solo, l'élève contacte directement sa prof.
   if (!studioCan(profile, 'reservation_en_ligne')) {
     return Response.json({
-      error: 'L\'annulation en ligne n\'est pas activée pour ce studio. Contacte directement ton studio pour annuler.',
+      error: t("L'annulation en ligne n'est pas activée pour ce studio. Contacte directement ton studio pour annuler."),
     }, { status: 403 });
   }
 
@@ -71,7 +78,14 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
   const client = await resoudreFicheEleve(supabaseAdmin, profile.id, user, 'id, prenom, nom, email, telephone');
 
   if (!client) {
-    return Response.json({ error: 'Client introuvable' }, { status: 404 });
+    return Response.json({ error: t('Client introuvable') }, { status: 404 });
+  }
+
+  // v122 : elle annule avec un cookie de langue explicite → mémorisé sur sa
+  // fiche, pour que les emails sans cookie partent dans SA langue.
+  {
+    const cookieL = cookieLangueDeRequete(request);
+    if (cookieL) await poserLangueFiche(supabaseAdmin, client.id, cookieL);
   }
 
   // Vérifier que la présence appartient bien à ce client dans ce studio
@@ -84,7 +98,7 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
     .single();
 
   if (!presence) {
-    return Response.json({ error: 'Réservation introuvable' }, { status: 404 });
+    return Response.json({ error: t('Réservation introuvable') }, { status: 404 });
   }
 
   // Anti-rejeu (audit 2026-07-25) : la branche « décompter » conservait la
@@ -92,22 +106,22 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
   // une séance et renvoyait l'email. Et annuler un cours déjà annulé par la
   // prof n'a pas de sens (aucune sanction ne doit s'appliquer).
   if (presence.annulation_tardive) {
-    return Response.json({ error: 'Cette réservation est déjà annulée.' }, { status: 409 });
+    return Response.json({ error: t('Cette réservation est déjà annulée.') }, { status: 409 });
   }
   // Une présence résolue « annulée »/« déclinée » (cas traité par la prof)
   // n'est plus une inscription active : sans ce garde, la route SANCTIONNAIT
   // une résa déjà annulée (< 24 h : est_due + décompte carnet) — B1b, rouge.
   if (['annule', 'declinee'].includes(presence.statut_pointage)) {
-    return Response.json({ error: 'Cette réservation a déjà été annulée côté studio — rien à faire de ton côté.' }, { status: 409 });
+    return Response.json({ error: t('Cette réservation a déjà été annulée côté studio — rien à faire de ton côté.') }, { status: 409 });
   }
   if (presence.cours?.est_annule) {
-    return Response.json({ error: 'Ce cours a été annulé par ton studio — rien à faire de ton côté.' }, { status: 409 });
+    return Response.json({ error: t('Ce cours a été annulé par ton studio — rien à faire de ton côté.') }, { status: 409 });
   }
 
   // Vérifier que le cours n'est pas déjà passé
   const today = new Date().toISOString().slice(0, 10);
   if (presence.cours && presence.cours.date < today) {
-    return Response.json({ error: 'Ce cours est déjà passé' }, { status: 400 });
+    return Response.json({ error: t('Ce cours est déjà passé') }, { status: 400 });
   }
 
   // Évaluer la règle d'annulation (délai libre vs tardif)
@@ -181,7 +195,7 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
 
     if (deleteErr) {
       reportError('annulation libre — delete error:', deleteErr);
-      return Response.json({ error: 'Erreur lors de l\'annulation' }, { status: 500 });
+      return Response.json({ error: t("Erreur lors de l'annulation") }, { status: 500 });
     }
 
     // Promotion auto : s'il y a quelqu'un en liste d'attente sur ce cours,
@@ -218,7 +232,7 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
       .eq('id', presenceId);
     if (deleteErr) {
       reportError('annulation tardive (excusee) — delete error:', deleteErr);
-      return Response.json({ error: 'Erreur lors de l\'annulation' }, { status: 500 });
+      return Response.json({ error: t("Erreur lors de l'annulation") }, { status: 500 });
     }
     // Promotion liste d'attente comme pour annulation libre
     try {
@@ -240,7 +254,7 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
       .eq('id', presenceId);
     if (updErr) {
       reportError('annulation tardive (manuel) — update error:', updErr);
-      return Response.json({ error: 'Erreur lors de l\'annulation' }, { status: 500 });
+      return Response.json({ error: t("Erreur lors de l'annulation") }, { status: 500 });
     }
     try {
       await supabaseAdmin.from('cas_a_traiter').insert({
@@ -279,7 +293,7 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
 
   if (updateErr) {
     reportError('annulation tardive — update error:', updateErr);
-    return Response.json({ error: 'Erreur lors de l\'annulation' }, { status: 500 });
+    return Response.json({ error: t("Erreur lors de l'annulation") }, { status: 500 });
   }
 
   // ── Décompte réel de la séance ────────────────────────────────────────────
@@ -355,36 +369,48 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
   //   • pas de carnet applicable → « la séance reste due » (dette ou séance à
   //     régler avec le studio), sans jamais prétendre un décompte fictif.
   try {
+    // Dans la langue de l'élève : « mardi 3 octobre à 18h30 · 12,00 € » ou
+    // « Tuesday 3 October at 18:30 · €12.00 ».
     const dateStr = presence.cours?.date
-      ? new Date(presence.cours.date + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })
+      ? new Date(presence.cours.date + 'T12:00:00').toLocaleDateString(t.locale, { weekday: 'long', day: 'numeric', month: 'long' })
       : '';
-    const heureStr = presence.cours?.heure ? presence.cours.heure.slice(0, 5).replace(':', 'h') : '';
+    const heureStr = presence.cours?.heure
+      ? (t.langue === 'en' ? presence.cours.heure.slice(0, 5) : presence.cours.heure.slice(0, 5).replace(':', 'h'))
+      : '';
+    const quand = heureStr ? t('{date} à {heure}', { date: dateStr, heure: heureStr }) : dateStr;
     const tarifStr = Number(presence.cours?.tarif_unitaire) > 0
-      ? ` (${Number(presence.cours.tarif_unitaire).toFixed(2).replace('.', ',')} €)`
+      ? ` (${t.langue === 'en'
+          ? `€${Number(presence.cours.tarif_unitaire).toFixed(2)}`
+          : `${Number(presence.cours.tarif_unitaire).toFixed(2).replace('.', ',')} €`})`
       : '';
+    const h = evaluation.delaiHeures;
+    const prenom = client.prenom || '';
     const emailTpl = seanceDecomptee
       ? {
-          sujet: `À noter : ta séance du ${dateStr} a été comptée`,
-          corps:
-`Bonjour {{prenom}},
-
-Pour rappel, l'annulation de ta séance prévue le ${dateStr}${heureStr ? ` à ${heureStr}` : ''} est intervenue moins de ${evaluation.delaiHeures}h avant le cours. Conformément à la politique d'annulation du studio, la séance a été décomptée de ton carnet.
-
-Tu peux retrouver le détail dans ton espace personnel.
-
-À très vite,`,
+          sujet: t('À noter : ta séance du {date} a été comptée', { date: dateStr }),
+          corps: [
+            `${t('Bonjour {prenom}', { prenom })},`,
+            '',
+            t("Pour rappel, l'annulation de ta séance prévue le {quand} est intervenue moins de {h}h avant le cours. Conformément à la politique d'annulation du studio, la séance a été décomptée de ton carnet.", { quand, h }),
+            '',
+            t('Tu peux retrouver le détail dans ton espace personnel.'),
+            '',
+            `${t('À très vite')},`,
+          ].join('\n'),
         }
       : {
-          sujet: `À noter : ta séance du ${dateStr} reste due`,
-          corps:
-`Bonjour {{prenom}},
-
-Ton annulation pour la séance du ${dateStr}${heureStr ? ` à ${heureStr}` : ''} est intervenue moins de ${evaluation.delaiHeures}h avant le cours. Conformément à la politique d'annulation du studio, la séance reste due${tarifStr} — le règlement se fera directement avec ton studio.
-
-Tu peux retrouver le détail dans ton espace personnel.
-
-À très vite,`,
+          sujet: t('À noter : ta séance du {date} reste due', { date: dateStr }),
+          corps: [
+            `${t('Bonjour {prenom}', { prenom })},`,
+            '',
+            t("Ton annulation pour la séance du {quand} est intervenue moins de {h}h avant le cours. Conformément à la politique d'annulation du studio, la séance reste due{tarif} — le règlement se fera directement avec ton studio.", { quand, h, tarif: tarifStr }),
+            '',
+            t('Tu peux retrouver le détail dans ton espace personnel.'),
+            '',
+            `${t('À très vite')},`,
+          ].join('\n'),
         };
+    const quandSms = `${dateStr}${heureStr ? ` ${heureStr}` : ''}`;
     await sendNotifEleve(supabaseAdmin, {
       profile,
       client,
@@ -396,8 +422,8 @@ Tu peux retrouver le détail dans ton espace personnel.
         email: emailTpl,
         sms: {
           corps: seanceDecomptee
-            ? `Annulation tardive (<${evaluation.delaiHeures}h) — la seance du ${dateStr}${heureStr ? ` ${heureStr}` : ''} a ete decomptee de ton carnet. — {{studio}}`
-            : `Annulation tardive (<${evaluation.delaiHeures}h) — la seance du ${dateStr}${heureStr ? ` ${heureStr}` : ''} reste due, a regler avec ton studio. — {{studio}}`,
+            ? `${t('Annulation tardive (<{h}h) — la seance du {quand} a ete decomptee de ton carnet.', { h, quand: quandSms })} — {{studio}}`
+            : `${t('Annulation tardive (<{h}h) — la seance du {quand} reste due, a regler avec ton studio.', { h, quand: quandSms })} — {{studio}}`,
         },
       },
     });

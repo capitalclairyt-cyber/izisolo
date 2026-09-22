@@ -6,6 +6,8 @@ import { sendPushToEmail } from '@/lib/push-server';
 import { wantsNotif } from '@/lib/notif-prefs';
 import { getRegle } from '@/lib/regles-metier';
 import { reportError } from '@/lib/report';
+import { chargerLanguesFiches, chargerLanguesStudios } from '@/lib/i18n-portail-serveur';
+import { traducteur, langueEleve } from '@/lib/i18n-portail';
 
 export const runtime = 'nodejs';
 
@@ -68,12 +70,28 @@ export const POST = withRoute({ auth: 'active', perm: 'cours_gerer' }, async ({ 
     .eq('cours_id', coursId)
     .eq('profile_id', studioId);
 
-  const dateStr = cours.date
-    ? new Date(cours.date + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })
-    : 'la date prévue';
-  const heureStr = cours.heure ? cours.heure.slice(0, 5).replace(':', 'h') : '';
-
-  const sujet = `Séance annulée — ${cours.nom}`;
+  // La langue de chaque élève (v122) : sa fiche > le réglage du studio > fr.
+  // Chargées UNE fois pour tout le lot, par des requêtes séparées et
+  // défensives : la colonne n'entre jamais dans le select des présences.
+  // Les notifications de la PROF, plus bas, restent en français.
+  const languesFiches = await chargerLanguesFiches(supabaseAdmin, (presences || []).map(r => r.client?.id));
+  const languesStudios = await chargerLanguesStudios(supabaseAdmin, [studioId]);
+  const traducteurPour = (clientId) => traducteur(langueEleve({
+    client: clientId ? { langue: languesFiches.get(clientId) } : null,
+    studio: { langue_portail: languesStudios.get(studioId) },
+  }));
+  // Date, heure et « quand » dans la langue de l'élève :
+  // « mardi 3 octobre à 18h30 » ou « Tuesday 3 October at 18:30 ».
+  const quandPour = (t) => {
+    const dateStr = cours.date
+      ? new Date(cours.date + 'T12:00:00').toLocaleDateString(t.locale, { weekday: 'long', day: 'numeric', month: 'long' })
+      : t('la date prévue');
+    const heureStr = cours.heure
+      ? (t.langue === 'en' ? cours.heure.slice(0, 5) : cours.heure.slice(0, 5).replace(':', 'h'))
+      : '';
+    const quand = heureStr ? t('{date} à {heure}', { date: dateStr, heure: heureStr }) : dateStr;
+    return { dateStr, heureStr, quand };
+  };
 
   // Application de la règle cours_annule_prof :
   //   • mode='auto' + choix='rendre_seances' → recréditer les abos (decrémenter
@@ -114,25 +132,29 @@ export const POST = withRoute({ auth: 'active', perm: 'cours_gerer' }, async ({ 
     // n'était restitué) et pour les élèves sans carnet. La promesse suit ce
     // qui s'est RÉELLEMENT passé pour CETTE personne.
     const creditRestitue = isAutoRendre && row.abonnement_id && reellementDecomptee;
+    const t = traducteurPour(client.id);
+    const { dateStr, heureStr, quand } = quandPour(t);
+    const sujet = t('Séance annulée — {cours}', { cours: cours.nom });
     const ligneCredit = creditRestitue
-      ? 'Ta séance est bien re-créditée sur ton carnet automatiquement (rien à faire).'
+      ? t('Ta séance est bien re-créditée sur ton carnet automatiquement (rien à faire).')
       : (regleAnnul.mode === 'manuel' || regleAnnul.choix === 'eleve_choisit')
-        ? `${profile?.studio_nom || 'Ton studio'} revient vers toi pour la suite (report ou crédit).`
-        : 'Si tu avais réglé cette séance, rapproche-toi de ton studio pour la suite.';
+        ? t('{studio} revient vers toi pour la suite (report ou crédit).', { studio: profile?.studio_nom || t('Ton studio') })
+        : t('Si tu avais réglé cette séance, rapproche-toi de ton studio pour la suite.');
     const templates = {
       email: {
         sujet,
-        corps:
-`Bonjour {{prenom}},
-
-La séance « ${cours.nom} » du ${dateStr}${heureStr ? ` à ${heureStr}` : ''} est annulée.${raison ? `\n\nMotif : ${raison}` : ''}
-
-${ligneCredit}
-
-Désolé·e pour le désagrément, à très vite.`,
+        corps: [
+          `${t('Bonjour {prenom}', { prenom: client.prenom || '' })},`,
+          '',
+          `${t('La séance « {cours} » du {quand} est annulée.', { cours: cours.nom, quand })}${raison ? `\n\n${t('Motif : {raison}', { raison })}` : ''}`,
+          '',
+          ligneCredit,
+          '',
+          t('Désolé·e pour le désagrément, à très vite.'),
+        ].join('\n'),
       },
       sms: {
-        corps: `Seance annulee : « ${cours.nom} » du ${dateStr}${heureStr ? ` ${heureStr}` : ''}. ${raison ? raison + ' ' : ''}${creditRestitue ? 'Ton credit est restitue.' : ''} — ${profile?.studio_nom || 'Studio'}`,
+        corps: `${t('Seance annulee : « {cours} » du {quand}.', { cours: cours.nom, quand: `${dateStr}${heureStr ? ` ${heureStr}` : ''}` })} ${raison ? raison + ' ' : ''}${creditRestitue ? t('Ton credit est restitue.') : ''} — ${profile?.studio_nom || t('Studio')}`,
       },
     };
 
@@ -178,8 +200,8 @@ Désolé·e pour le désagrément, à très vite.`,
     // Push élève « cours annulé » (gaté sur pref cours_annule push ; no-op sans abo)
     if (client.email) {
       sendPushToEmail(client.email, {
-        title: `Cours annulé`,
-        body: `${cours.nom} — ${dateStr}${heureStr ? ` à ${heureStr}` : ''} est annulé.`,
+        title: t('Cours annulé'),
+        body: t('{cours} — {quand} est annulé.', { cours: cours.nom, quand }),
         url: profile?.studio_slug ? `/p/${profile.studio_slug}/espace` : '/',
         tag: `annul-cours-${coursId}`,
       }, { type: 'cours_annule', profileId: studioId }).catch(() => {});
@@ -194,24 +216,31 @@ Désolé·e pour le désagrément, à très vite.`,
   try {
     const { data: enAttente } = await supabaseAdmin
       .from('liste_attente')
-      .select('id, email, nom')
+      .select('id, email, nom, client_id')
       .eq('cours_id', coursId)
       .eq('profile_id', studioId);
+    // Une entrée de liste d'attente porte parfois une fiche (client_id) : sa
+    // langue vient de là, sinon du studio (v122).
+    const languesAttente = await chargerLanguesFiches(supabaseAdmin, (enAttente || []).map(e => e.client_id));
     for (const entry of enAttente || []) {
       if (entry.email && process.env.RESEND_API_KEY) {
         try {
+          const t = traducteur(langueEleve({
+            client: entry.client_id ? { langue: languesAttente.get(entry.client_id) } : null,
+            studio: { langue_portail: languesStudios.get(studioId) },
+          }));
+          const { quand } = quandPour(t);
           await sendEmail({
             categorie: 'notification',
             to: entry.email,
-            subject: sujet,
+            subject: t('Séance annulée — {cours}', { cours: cours.nom }),
             html: `
               <div style="font-family:-apple-system,BlinkMacSystemFont,sans-serif;max-width:560px;margin:0 auto;padding:24px;">
-                <p style="color:#555;margin:0 0 12px;">Bonjour ${(entry.nom || '').split(' ')[0] || ''},</p>
+                <p style="color:#555;margin:0 0 12px;">${t('Bonjour {prenom}', { prenom: (entry.nom || '').split(' ')[0] || '' })},</p>
                 <p style="color:#555;margin:0 0 12px;">
-                  Tu étais en liste d'attente pour « <strong>${cours.nom}</strong> » du ${dateStr}${heureStr ? ` à ${heureStr}` : ''} —
-                  cette séance est finalement <strong>annulée</strong>.${raison ? `<br/><em style="color:#888;">${raison}</em>` : ''}
+                  ${t("Tu étais en liste d'attente pour « {cours} » du {quand} — cette séance est finalement {annulee}.", { cours: `<strong>${cours.nom}</strong>`, quand, annulee: `<strong>${t('annulée')}</strong>` })}${raison ? `<br/><em style="color:#888;">${raison}</em>` : ''}
                 </p>
-                <p style="color:#555;margin:0 0 12px;">Ta place en liste d'attente est retirée, rien à faire de ton côté.</p>
+                <p style="color:#555;margin:0 0 12px;">${t("Ta place en liste d'attente est retirée, rien à faire de ton côté.")}</p>
               </div>
             `,
           });

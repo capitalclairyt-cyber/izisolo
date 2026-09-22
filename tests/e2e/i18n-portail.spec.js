@@ -22,9 +22,12 @@ import EN_COURS from '../../lib/i18n/en-cours.js';
 import EN_ESPACE from '../../lib/i18n/en-espace.js';
 import EN_CONNEXION from '../../lib/i18n/en-connexion.js';
 import EN_EMAILS from '../../lib/i18n/en-emails.js';
+import EN_CRONS from '../../lib/i18n/en-crons.js';
+import EN_ROUTES from '../../lib/i18n/en-routes.js';
+import EN_SERVICES from '../../lib/i18n/en-services.js';
 import {
   DICTIONNAIRES, LANGUES_PORTAIL, COOKIE_LANGUE, cookieLangue, interpoler, localeDe,
-  normaliserLangue, resoudreLangue, traduire, traducteur, langueStudio,
+  normaliserLangue, resoudreLangue, traduire, traducteur, langueStudio, langueEleve,
 } from '../../lib/i18n-portail.js';
 
 const racine = process.cwd();
@@ -59,7 +62,7 @@ test.describe('i18n portail : le code', () => {
     // Les dictionnaires sont fusionnés par spread : une clé courte (« à »,
     // « le », « Inscrit·e ») déclarée deux fois avec deux valeurs, c'est la
     // dernière qui gagne, en silence. On refuse la divergence.
-    const groupes = { commun: EN_COMMUN, home: EN_HOME, cours: EN_COURS, espace: EN_ESPACE, connexion: EN_CONNEXION, emails: EN_EMAILS };
+    const groupes = { commun: EN_COMMUN, home: EN_HOME, cours: EN_COURS, espace: EN_ESPACE, connexion: EN_CONNEXION, emails: EN_EMAILS, crons: EN_CRONS, routes: EN_ROUTES, services: EN_SERVICES };
     const vus = new Map();
     const conflits = [];
     for (const [g, dico] of Object.entries(groupes)) {
@@ -112,6 +115,16 @@ test.describe('i18n portail : la résolution', () => {
     expect(normaliserLangue('klingon')).toBeNull();
     expect(langueStudio({ langue_portail: 'en' })).toBe('en');
     expect(langueStudio(null)).toBe('fr');
+  });
+
+  test('un email à une élève : sa fiche > le studio > français (v122)', () => {
+    expect(langueEleve({ client: { langue: 'en' }, studio: { langue_portail: 'fr' } })).toBe('en');
+    expect(langueEleve({ client: { langue: 'fr' }, studio: { langue_portail: 'en' } })).toBe('fr');
+    expect(langueEleve({ client: { langue: null }, studio: { langue_portail: 'en' } })).toBe('en');
+    expect(langueEleve({ client: null, studio: { langue_portail: 'en' } })).toBe('en');
+    expect(langueEleve({ client: {}, studio: {} })).toBe('fr');
+    expect(langueEleve()).toBe('fr');
+    expect(langueEleve({ client: { langue: 'klingon' }, studio: { langue_portail: 'de' } })).toBe('fr');
   });
 
   test('le locale suit la langue', () => {

@@ -2,6 +2,8 @@ import { z } from 'zod';
 import { withRoute } from '@/lib/api-route';
 import { sendEmail } from '@/lib/email';
 import { reportError } from '@/lib/report';
+import { createAdminClient } from '@/lib/supabase-admin';
+import { traducteurEleve } from '@/lib/i18n-portail-serveur';
 import { lireReglementConfig, referenceVirement, emailReglement } from '@/lib/reglement';
 
 /**
@@ -15,6 +17,9 @@ import { lireReglementConfig, referenceVirement, emailReglement } from '@/lib/re
  * L'email est TRANSACTIONNEL (il confirme une vente qui concerne directement
  * la destinataire), replyTo la prof. Un envoi « skipped » (domaine de test,
  * blacklist) répond ok : la vente, elle, est déjà enregistrée.
+ *
+ * v122 : il part dans la langue de l'élève (sa fiche > le réglage du studio >
+ * français), lue par traducteurEleve, jamais dans le select de la fiche.
  */
 const schema = z.object({
   clientId: z.string().uuid(),
@@ -62,9 +67,10 @@ export const POST = withRoute({ auth: 'active', schema, perm: 'argent_gerer' }, 
     }, { status: 400 });
   }
 
+  const t = await traducteurEleve(createAdminClient(), { clientId: client.id, profileId: studioId });
   const message = emailReglement({
     variante: body.variante,
-    studioNom: prof?.studio_nom || 'Ton studio',
+    studioNom: prof?.studio_nom || t('Ton studio'),
     prenom: client.prenom || '',
     intitule: body.intitule || '',
     montant: body.montant,
@@ -73,6 +79,7 @@ export const POST = withRoute({ auth: 'active', schema, perm: 'argent_gerer' }, 
     versements: body.versements || [],
     studioSlug: prof?.studio_slug || null,
     baseUrl: process.env.NEXT_PUBLIC_APP_URL || 'https://www.izisolo.fr',
+    t,
   });
   if (!message) return Response.json({ error: 'Email impossible à composer.' }, { status: 400 });
 

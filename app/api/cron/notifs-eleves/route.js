@@ -7,6 +7,8 @@ import { evaluerReglesAll } from '@/lib/regles';
 import { can } from '@/lib/plan-guard';
 import { reportError } from '@/lib/report';
 import { lireAvisGoogle, emailAutoActif, candidatesAvis, emailAvis, TYPE_NOTIF_AVIS } from '@/lib/avis-google';
+import { traducteur, langueEleve, localeDe } from '@/lib/i18n-portail';
+import { chargerLanguesFiches, chargerLanguesStudios } from '@/lib/i18n-portail-serveur';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -84,6 +86,16 @@ export const GET = withRoute({ auth: 'cron' }, async ({ request }) => {
 
   let totalSent = 0, totalSkipped = 0, totalErrors = 0, totalReglesDeclenchees = 0, profilsTraites = 0, profilsGates = 0;
 
+  // v122 : la langue par défaut de chaque studio, UNE requête séparée et
+  // défensive pour tout le lot (le select nommé ci-dessus ne porte jamais
+  // `langue_portail`). La langue des fiches se charge par studio, par lot,
+  // plus bas : jamais une requête par élève.
+  const languesStudios = await chargerLanguesStudios(supabase, (profiles || []).map(p => p.id));
+  const traducteurPour = (languesFiches, clientId, profileId) => traducteur(langueEleve({
+    client: { langue: languesFiches.get(clientId) },
+    studio: { langue_portail: languesStudios.get(profileId) },
+  }));
+
   for (const profile of (profiles || [])) {
     if (profilSeul && profile.id !== profilSeul) continue;
     // Gate capacité (B3b — fuite connue depuis B1g) : les notifs auto élèves
@@ -140,13 +152,15 @@ export const GET = withRoute({ auth: 'cron' }, async ({ request }) => {
             .select('id, prenom, nom, email, statut, notif_prefs')
             .in('id', cands.map(c => c.client_id));
           if (fErr) throw fErr;
+          const languesAvis = await chargerLanguesFiches(supabase, cands.map(c => c.client_id));
           for (const cand of cands) {
             const client = (fiches || []).find(f => f.id === cand.client_id);
             if (!client?.email || client.statut === 'archive') continue;
             if (!wantsNotif(client.notif_prefs, 'avis', 'eleve', 'email')) continue;
-            const mail = emailAvis({ prenom: client.prenom, studioNom: profile.studio_nom || 'ton studio', lien: cfgAvis.lien });
+            const t = traducteurPour(languesAvis, client.id, profile.id);
+            const mail = emailAvis({ prenom: client.prenom, studioNom: profile.studio_nom || t('ton studio'), lien: cfgAvis.lien, t });
             const r = await sendNotifEleve(supabase, {
-              profile, client,
+              profile, client, t,
               type: TYPE_NOTIF_AVIS,
               relatedId: profile.id, // NON NULL : la dédup UNIQUE compte les NULL comme distincts (B1g)
               contexte: {},
@@ -189,12 +203,18 @@ export const GET = withRoute({ auth: 'cron' }, async ({ request }) => {
       .eq('profile_id', profile.id)
       .eq('statut', 'actif');
 
+    // v122 : les langues des fiches de ce studio, un seul lot (les clients
+    // arrivent par la jointure nommée ci-dessus, qui ne porte pas `langue`).
+    const languesFiches = await chargerLanguesFiches(supabase, (abos || []).map(a => a.clients?.id));
+
     // ─────────────────────────────────────────────────────────────────
     // PASS 1 — Notifs système (crédits faibles + expiration)
     // ─────────────────────────────────────────────────────────────────
     for (const abo of (abos || []).filter(a => a.statut === 'actif')) {
       const client = abo.clients;
       if (!client?.id || !client?.email) continue;
+      const t = traducteurPour(languesFiches, client.id, profile.id);
+      const prenom = client.prenom || '';
 
       // ─── Crédits faibles (carnets uniquement)
       if (abo.seances_total != null) {
@@ -203,26 +223,33 @@ export const GET = withRoute({ auth: 'cron' }, async ({ request }) => {
           try {
             const wantEmail = wantsNotif(client.notif_prefs, 'carnet', 'eleve', 'email');
             const wantPush = wantsNotif(client.notif_prefs, 'carnet', 'eleve', 'push');
+            const offre = abo.offre_nom || t('carnet');
             if (wantEmail) {
               const r = await sendNotifEleve(supabase, {
-                profile, client,
+                profile, client, t,
                 type: 'credits_faibles',
                 relatedId: abo.id,
-                contexte: { cours_nom: abo.offre_nom || 'ton carnet', seances_restantes: reste },
+                contexte: { cours_nom: abo.offre_nom || t('ton carnet'), seances_restantes: reste },
                 templates: {
                   email: {
-                    sujet: `Plus que ${reste} séance${reste > 1 ? 's' : ''} sur ton carnet`,
+                    sujet: reste > 1
+                      ? t('Plus que {n} séances sur ton carnet', { n: reste })
+                      : t('Plus que {n} séance sur ton carnet', { n: reste }),
                     corps:
-`Bonjour {{prenom}},
+`${t('Bonjour {prenom}', { prenom })},
 
-Petit rappel amical : il te reste seulement ${reste} séance${reste > 1 ? 's' : ''} sur ton carnet « ${abo.offre_nom || 'carnet'} » chez ${profile.studio_nom}.
+${reste > 1
+  ? t('Petit rappel amical : il te reste seulement {n} séances sur ton carnet « {offre} » chez {studio}.', { n: reste, offre, studio: profile.studio_nom })
+  : t('Petit rappel amical : il te reste seulement {n} séance sur ton carnet « {offre} » chez {studio}.', { n: reste, offre, studio: profile.studio_nom })}
 
-Pour ne pas être pris·e de court, n'hésite pas à renouveler dès que possible — on aura toujours plaisir à te revoir.
+${t("Pour ne pas être pris·e de court, n'hésite pas à renouveler dès que possible : on aura toujours plaisir à te revoir.")}
 
-À très vite,`,
+${t('À très vite')},`,
                   },
                   sms: {
-                    corps: `Hello {{prenom}}, plus que ${reste} seance${reste > 1 ? 's' : ''} sur ton carnet ${abo.offre_nom || ''} chez ${profile.studio_nom}. Pense a renouveler !`,
+                    corps: reste > 1
+                      ? t('Hello {prenom}, plus que {n} seances sur ton carnet {offre} chez {studio}. Pense a renouveler !', { prenom, n: reste, offre: abo.offre_nom || '', studio: profile.studio_nom })
+                      : t('Hello {prenom}, plus que {n} seance sur ton carnet {offre} chez {studio}. Pense a renouveler !', { prenom, n: reste, offre: abo.offre_nom || '', studio: profile.studio_nom }),
                   },
                 },
               });
@@ -234,8 +261,8 @@ Pour ne pas être pris·e de court, n'hésite pas à renouveler dès que possibl
               const fresh = await claimCronPush({ profileId: profile.id, clientId: client.id, type: 'credits_faibles', relatedId: abo.id });
               if (fresh) {
                 sendPushToEmail(client.email, {
-                  title: `Plus que ${reste} séance${reste > 1 ? 's' : ''} 📋`,
-                  body: `Ton carnet « ${abo.offre_nom || 'carnet'} » chez ${profile.studio_nom} — pense à renouveler.`,
+                  title: reste > 1 ? t('Plus que {n} séances 📋', { n: reste }) : t('Plus que {n} séance 📋', { n: reste }),
+                  body: t('Ton carnet « {offre} » chez {studio} : pense à renouveler.', { offre, studio: profile.studio_nom }),
                   url: profile.studio_slug ? `/p/${profile.studio_slug}/espace` : '/',
                   tag: `carnet-${abo.id}`,
                 }, { type: 'carnet', profileId: profile.id }).catch(() => {});
@@ -254,30 +281,38 @@ Pour ne pas être pris·e de court, n'hésite pas à renouveler dès que possibl
         try {
           const wantEmail = wantsNotif(client.notif_prefs, 'carnet', 'eleve', 'email');
           const wantPush = wantsNotif(client.notif_prefs, 'carnet', 'eleve', 'push');
+          const offre = abo.offre_nom || t('abonnement');
+          // « 3 octobre » ou « 3 October » ; « 3 oct. » ou « 3 Oct » pour le SMS.
+          const dateFinLongue = new Date(abo.date_fin).toLocaleDateString(localeDe(t.langue), { day: 'numeric', month: 'long' });
+          const dateFinCourte = new Date(abo.date_fin).toLocaleDateString(localeDe(t.langue), { day: 'numeric', month: 'short' });
           if (wantEmail) {
             const r = await sendNotifEleve(supabase, {
-              profile, client,
+              profile, client, t,
               type: 'expiration_abo',
               relatedId: abo.id,
               contexte: {
-                cours_nom: abo.offre_nom || 'ton abonnement',
+                cours_nom: abo.offre_nom || t('ton abonnement'),
                 jours_restants: joursRestants,
-                date_fin: new Date(abo.date_fin).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' }),
+                date_fin: dateFinLongue,
               },
               templates: {
                 email: {
-                  sujet: `Ton abonnement expire dans ${joursRestants} jour${joursRestants > 1 ? 's' : ''}`,
+                  sujet: joursRestants > 1
+                    ? t('Ton abonnement expire dans {n} jours', { n: joursRestants })
+                    : t('Ton abonnement expire dans {n} jour', { n: joursRestants }),
                   corps:
-`Bonjour {{prenom}},
+`${t('Bonjour {prenom}', { prenom })},
 
-Ton abonnement « ${abo.offre_nom || 'abonnement'} » chez ${profile.studio_nom} arrive à échéance le ${new Date(abo.date_fin).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })} (dans ${joursRestants} jour${joursRestants > 1 ? 's' : ''}).
+${joursRestants > 1
+  ? t('Ton abonnement « {offre} » chez {studio} arrive à échéance le {date} (dans {n} jours).', { offre, studio: profile.studio_nom, date: dateFinLongue, n: joursRestants })
+  : t('Ton abonnement « {offre} » chez {studio} arrive à échéance le {date} (dans {n} jour).', { offre, studio: profile.studio_nom, date: dateFinLongue, n: joursRestants })}
 
-Pour assurer la continuité de tes cours, pense à le renouveler avant cette date.
+${t('Pour assurer la continuité de tes cours, pense à le renouveler avant cette date.')}
 
-À très vite,`,
+${t('À très vite')},`,
                 },
                 sms: {
-                  corps: `Hello {{prenom}}, ton abonnement ${abo.offre_nom || ''} chez ${profile.studio_nom} expire dans ${joursRestants}j (${new Date(abo.date_fin).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}). Pense a renouveler !`,
+                  corps: t('Hello {prenom}, ton abonnement {offre} chez {studio} expire dans {n}j ({date}). Pense a renouveler !', { prenom, offre: abo.offre_nom || '', studio: profile.studio_nom, n: joursRestants, date: dateFinCourte }),
                 },
               },
             });
@@ -288,8 +323,8 @@ Pour assurer la continuité de tes cours, pense à le renouveler avant cette dat
             const fresh = await claimCronPush({ profileId: profile.id, clientId: client.id, type: 'expiration_abo', relatedId: abo.id });
             if (fresh) {
               sendPushToEmail(client.email, {
-                title: `Ton abonnement expire bientôt ⏳`,
-                body: `« ${abo.offre_nom || 'abonnement'} » chez ${profile.studio_nom} — dans ${joursRestants} j.`,
+                title: t('Ton abonnement expire bientôt ⏳'),
+                body: t('« {offre} » chez {studio}, dans {n} j.', { offre, studio: profile.studio_nom, n: joursRestants }),
                 url: profile.studio_slug ? `/p/${profile.studio_slug}/espace` : '/',
                 tag: `exp-${abo.id}`,
               }, { type: 'carnet', profileId: profile.id }).catch(() => {});
@@ -330,6 +365,11 @@ Pour assurer la continuité de tes cours, pense à le renouveler avant cette dat
     for (const c of (clientsSeuls || [])) {
       if (!clientsMap.has(c.id)) clientsMap.set(c.id, { client: c, abos: [] });
     }
+    // v122 : les fiches sans abo n'étaient pas dans le lot du PASS 1, un
+    // seul complément pour elles (les textes par défaut d'une règle partent
+    // dans la langue de l'élève ; ce que la prof a écrit reste tel quel).
+    const languesSeules = await chargerLanguesFiches(supabase, (clientsSeuls || []).map(c => c.id).filter(id => !languesFiches.has(id)));
+    for (const [id, l] of languesSeules) languesFiches.set(id, l);
 
     // Contexte présences pour "derniere_visite_jours" / "nb_reservations_30j" :
     // UNE fenêtre bornée à 365 j, jointure !inner, paginée avec erreurs lues.
@@ -383,6 +423,8 @@ Pour assurer la continuité de tes cours, pense à le renouveler avant cette dat
       };
 
       const reglesQuiMatchent = evaluerReglesAll(client, clAbos, reglesActions, contexte);
+      const t = traducteurPour(languesFiches, client.id, profile.id);
+      const prenom = client.prenom || '';
       for (const regle of reglesQuiMatchent) {
         const params = regle.action_params || {};
         const typeNotif = `regle:${regle.id}`;
@@ -390,7 +432,7 @@ Pour assurer la continuité de tes cours, pense à le renouveler avant cette dat
         try {
           if (regle.action_type === 'envoyer_email' && client.email) {
             const r = await sendNotifEleve(supabase, {
-              profile, client,
+              profile, client, t,
               type: typeNotif,
               // relatedId NON NULL obligatoire (B1g, rouge) : l'index UNIQUE
               // (client, type, related_id, channel) considère les NULL comme
@@ -401,8 +443,8 @@ Pour assurer la continuité de tes cours, pense à le renouveler avant cette dat
               prefsOverride: { email: true, sms: false },
               templates: {
                 email: {
-                  sujet: params.sujet || 'Un mot pour toi',
-                  corps: params.corps || 'Bonjour {{prenom}},\n\nÀ très vite.',
+                  sujet: params.sujet || t('Un mot pour toi'),
+                  corps: params.corps || `${t('Bonjour {prenom}', { prenom })},\n\n${t('À très vite')}.`,
                 },
               },
             });
@@ -413,14 +455,14 @@ Pour assurer la continuité de tes cours, pense à le renouveler avant cette dat
 
           if (regle.action_type === 'envoyer_sms' && client.telephone) {
             const r = await sendNotifEleve(supabase, {
-              profile, client,
+              profile, client, t,
               type: typeNotif,
               relatedId: regle.id, // même dédup NON NULL que l'email (B1g)
               contexte: {},
               prefsOverride: { email: false, sms: true },
               templates: {
                 sms: {
-                  corps: params.corps || 'Hello {{prenom}}, à très vite — {{studio}}',
+                  corps: params.corps || t('Hello {prenom}, à très vite. {studio}', { prenom, studio: profile.studio_nom || '' }),
                 },
               },
             });

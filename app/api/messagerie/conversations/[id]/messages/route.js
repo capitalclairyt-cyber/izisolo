@@ -5,6 +5,8 @@ import { envoyerEmailsMessageInstant, notifierSupportNouveauMessage } from '@/li
 import { clientIdsNotifiables } from '@/lib/messagerie-support';
 import { sendPushToUser, sendPushToEmail } from '@/lib/push-server';
 import { reportError } from '@/lib/report';
+import { traducteur, langueEleve } from '@/lib/i18n-portail';
+import { traducteurEleve, chargerLanguesFiches, chargerLanguesStudios } from '@/lib/i18n-portail-serveur';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -98,13 +100,15 @@ export const POST = withRoute({ auth: 'user' }, async ({ request, params, auth }
         sharedRefId: body.shared_ref_id || null,
       });
       // Push à l'élève (1-à-1) — no-op sans abonnement push
+      // v122 : dans SA langue (fiche > studio > français), lecture défensive.
       if (conv.type === 'client' && conv.client_id) {
         (async () => {
           const { data: c } = await supabase.from('clients').select('email').eq('id', conv.client_id).maybeSingle();
           if (c?.email) {
+            const t = await traducteurEleve(supabase, { clientId: conv.client_id, profileId: profile.id });
             await sendPushToEmail(c.email, {
-              title: `${profile.studio_nom || 'Ton studio'} t'a écrit`,
-              body: (body.content || '').slice(0, 120) || 'Nouveau message',
+              title: t("{studio} t'a écrit", { studio: profile.studio_nom || t('Ton studio') }),
+              body: (body.content || '').slice(0, 120) || t('Nouveau message'),
               url: profile.studio_slug ? `/p/${profile.studio_slug}/espace/messages` : '/',
               tag: `msg-${conversationId}`,
             }, { type: 'message', profileId: profile.id });
@@ -123,15 +127,20 @@ export const POST = withRoute({ auth: 'user' }, async ({ request, params, auth }
             .not('client_id', 'is', null);
           const ids = [...new Set((membres || []).map(m => m.client_id).filter(Boolean))];
           if (!ids.length) return;
-          const { data: cls } = await supabase.from('clients').select('email').in('id', ids);
-          await Promise.all((cls || []).filter(c => c.email).map(c =>
-            sendPushToEmail(c.email, {
-              title: `${profile.studio_nom || 'Ton studio'} — message au groupe`,
-              body: (body.content || '').slice(0, 120) || 'Nouveau message',
+          const { data: cls } = await supabase.from('clients').select('id, email').in('id', ids);
+          // v122 : la langue de chaque membre, en un lot (fiches + studio).
+          const languesFiches = await chargerLanguesFiches(supabase, ids);
+          const languesStudios = await chargerLanguesStudios(supabase, [profile.id]);
+          const studioLangue = { langue_portail: languesStudios.get(profile.id) };
+          await Promise.all((cls || []).filter(c => c.email).map(c => {
+            const t = traducteur(langueEleve({ client: { langue: languesFiches.get(c.id) }, studio: studioLangue }));
+            return sendPushToEmail(c.email, {
+              title: t('{studio} — message au groupe', { studio: profile.studio_nom || t('Ton studio') }),
+              body: (body.content || '').slice(0, 120) || t('Nouveau message'),
               url: profile.studio_slug ? `/p/${profile.studio_slug}/espace/messages` : '/',
               tag: `msg-${conversationId}`,
-            }, { type: 'message', profileId: profile.id })
-          ));
+            }, { type: 'message', profileId: profile.id });
+          }));
         })().catch(() => {});
       }
 

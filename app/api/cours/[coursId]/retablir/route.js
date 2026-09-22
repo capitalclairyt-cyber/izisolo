@@ -4,7 +4,9 @@ import { sendNotifEleve } from '@/lib/notifs-eleves';
 import { sendPushToEmail } from '@/lib/push-server';
 import { wantsNotif } from '@/lib/notif-prefs';
 import { reportError } from '@/lib/report';
-import { retablissable, planRetablissement, emailRetablissement } from '@/lib/retablir-seance';
+import { retablissable, planRetablissement } from '@/lib/retablir-seance';
+import { chargerLanguesFiches, chargerLanguesStudios } from '@/lib/i18n-portail-serveur';
+import { traducteur, langueEleve } from '@/lib/i18n-portail';
 
 export const runtime = 'nodejs';
 
@@ -65,16 +67,51 @@ export const POST = withRoute({ auth: 'active', perm: 'cours_gerer' }, async ({ 
     .eq('profile_id', studioId);
 
   const plan = planRetablissement({ presences: presences || [] });
-  const dateStr = cours.date
-    ? new Date(cours.date + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })
-    : null;
-  const heureStr = cours.heure ? cours.heure.slice(0, 5).replace(':', 'h') : '';
-  const message = emailRetablissement({ coursNom: cours.nom, dateStr, heureStr, lieu: cours.lieu, studio: profile?.studio_nom });
+
+  // La langue de chaque élève (v122) : sa fiche > le réglage du studio > fr,
+  // chargées une fois pour le lot par des requêtes séparées et défensives.
+  // Le message est celui d'emailRetablissement (lib/retablir-seance), phrase
+  // pour phrase, écrit ici dans la langue de chacune.
+  const languesFiches = await chargerLanguesFiches(supabaseAdmin, plan.aPrevenir.map(r => r.client?.id));
+  const languesStudios = await chargerLanguesStudios(supabaseAdmin, [studioId]);
+  const traducteurPour = (clientId) => traducteur(langueEleve({
+    client: clientId ? { langue: languesFiches.get(clientId) } : null,
+    studio: { langue_portail: languesStudios.get(studioId) },
+  }));
+  const messagePour = (t, prenom) => {
+    const dateStr = cours.date
+      ? new Date(cours.date + 'T12:00:00').toLocaleDateString(t.locale, { weekday: 'long', day: 'numeric', month: 'long' })
+      : t('la date prévue');
+    const heureStr = cours.heure
+      ? (t.langue === 'en' ? cours.heure.slice(0, 5) : cours.heure.slice(0, 5).replace(':', 'h'))
+      : '';
+    const quand = heureStr ? t('{date} à {heure}', { date: dateStr, heure: heureStr }) : dateStr;
+    return {
+      dateStr,
+      heureStr,
+      sujet: t('Séance maintenue — {cours}', { cours: cours.nom }),
+      corps: [
+        `${t('Bonjour {prenom}', { prenom })},`,
+        '',
+        `${t('Bonne nouvelle : la séance « {cours} » du {quand} a finalement lieu.', { cours: cours.nom, quand })}${cours.lieu ? `\n${t('Lieu : {lieu}.', { lieu: cours.lieu })}` : ''}`,
+        '',
+        t('Ta réservation est toujours valable, rien à faire de ton côté. Si tu ne peux plus venir, annule depuis ton espace.'),
+        '',
+        `${t('À très vite')},`,
+        profile?.studio_nom || t('Ton studio'),
+      ].join('\n'),
+      sms: `${t('Seance maintenue : « {cours} » du {quand} a finalement lieu. Ta reservation est valable.', { cours: cours.nom, quand })} — ${profile?.studio_nom || t('Studio')}`,
+      push: t('{cours} — {quand} a finalement lieu.', { cours: cours.nom, quand }),
+    };
+  };
 
   let envoyees = 0, ignorees = 0;
   for (const row of plan.aPrevenir) {
     const client = row.client;
     if (!client?.id) continue;
+    const t = traducteurPour(client.id);
+    const message = messagePour(t, client.prenom || '');
+    const { dateStr, heureStr } = message;
     if (wantsNotif(client.notif_prefs, 'cours_annule', 'eleve', 'email')) {
       // prefsOverride : la prof n'a pas de toggle « séance rétablie » à
       // part, la pref élève « séance annulée » a déjà tranché. Idempotence
@@ -91,8 +128,8 @@ export const POST = withRoute({ auth: 'active', perm: 'cours_gerer' }, async ({ 
     }
     if (client.email) {
       sendPushToEmail(client.email, {
-        title: 'Séance maintenue',
-        body: `${cours.nom} — ${dateStr || ''}${heureStr ? ` à ${heureStr}` : ''} a finalement lieu.`,
+        title: t('Séance maintenue'),
+        body: message.push,
         url: profile?.studio_slug ? `/p/${profile.studio_slug}/espace` : '/',
         tag: `retabli-cours-${coursId}`,
       }, { type: 'cours_annule', profileId: studioId }).catch(() => {});

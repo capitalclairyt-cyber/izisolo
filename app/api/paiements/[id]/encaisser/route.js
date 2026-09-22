@@ -8,6 +8,7 @@ import { createAdminClient } from '@/lib/supabase-admin';
 import { envoyerFactureAuto } from '@/lib/facture-auto';
 import { aujourdhuiParis } from '@/lib/urssaf';
 import { validerParts, lignesEncaissement, MIN_PARTS, MAX_PARTS } from '@/lib/encaissement-parts';
+import { traducteurEleve } from '@/lib/i18n-portail-serveur';
 
 const MODES = ['especes', 'cheque', 'virement', 'CB'];
 const DATE = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Format YYYY-MM-DD attendu');
@@ -139,14 +140,16 @@ export const POST = withRoute({ auth: 'active', schema: encaisserSchema, perm: '
   });
 
   // Push élève « paiement enregistré » (gaté sur pref paiement ; no-op sans abo)
+  // v122 : dans SA langue (fiche > studio > français), lecture défensive.
   if (paiement.client_id) {
     (async () => {
       const { data: cl } = await supabase.from('clients').select('email').eq('id', paiement.client_id).maybeSingle();
       if (!cl?.email) return;
       const { data: prof } = await supabase.from('profiles').select('studio_slug').eq('id', studioId).maybeSingle();
+      const t = await traducteurEleve(createAdminClient(), { clientId: paiement.client_id, profileId: studioId });
       await sendPushToEmail(cl.email, {
-        title: `Paiement enregistré ✓`,
-        body: `Ton règlement a bien été pris en compte par ton studio.`,
+        title: t('Paiement enregistré ✓'),
+        body: t('Ton règlement a bien été pris en compte par ton studio.'),
         url: prof?.studio_slug ? `/p/${prof.studio_slug}/espace` : '/',
         tag: `paiement-${id}`,
       }, { type: 'paiement', profileId: studioId });

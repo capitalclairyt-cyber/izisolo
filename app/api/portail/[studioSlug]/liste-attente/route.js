@@ -10,12 +10,19 @@ import { escapeIlike } from '@/lib/utils';
 import { reportError } from '@/lib/report';
 import { canSeeCours, resolveClientInfo } from '@/lib/visibilite';
 import { coursDejaCommence } from '@/lib/dates';
+import { langueDepuisRequete, cookieLangueDeRequete, poserLangueFiche } from '@/lib/i18n-portail-serveur';
+import { traducteur } from '@/lib/i18n-portail';
 
 export const POST = withRoute({ auth: 'public' }, async ({ request, params }) => {
   const { studioSlug } = params;
+  // La langue de l'élève (2026-09-22) : cookie de la visiteuse > réglage du
+  // studio > français. Elle sert aux messages renvoyés à l'écran et à l'email
+  // de confirmation. Les notifications de la PROF restent en français.
+  const langue = await langueDepuisRequete(request, studioSlug);
+  const t = traducteur(langue);
   // Body brut lu une seule fois : website/turnstileToken sont hors schéma zod.
   const rawBody = await request.json().catch(() => null);
-  if (!rawBody) return Response.json({ error: 'Body JSON invalide' }, { status: 400 });
+  if (!rawBody) return Response.json({ error: t('Body JSON invalide') }, { status: 400 });
 
   // Anti-bot : honeypot + rate limit + Turnstile — même pipeline que /reserver.
   // Route publique qui insère nom/email/tel arbitraires → borne anti-spam.
@@ -31,7 +38,7 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
   }
 
   const parsed = listeAttenteSchema.safeParse(rawBody);
-  if (!parsed.success) return Response.json({ error: 'Données invalides' }, { status: 400 });
+  if (!parsed.success) return Response.json({ error: t('Données invalides') }, { status: 400 });
   const { coursId, nom, email, tel } = parsed.data;
 
   const supabaseAdmin = createAdminClient();
@@ -42,12 +49,12 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
     .select('id, studio_nom, plan, trial_started_at, stripe_subscription_status, type_structure, notif_prefs')
     .eq('studio_slug', studioSlug)
     .single();
-  if (!profile) return Response.json({ error: 'Studio introuvable' }, { status: 404 });
+  if (!profile) return Response.json({ error: t('Studio introuvable') }, { status: 404 });
 
   // Gate plan (Sprint 3) : la liste d'attente est une feature Pro du STUDIO
   if (!studioCan(profile, 'liste_attente')) {
     return Response.json({
-      error: 'La liste d\'attente n\'est pas disponible pour ce studio.',
+      error: t("La liste d'attente n'est pas disponible pour ce studio."),
     }, { status: 403 });
   }
 
@@ -57,27 +64,27 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
     .eq('id', coursId)
     .eq('profile_id', profile.id)
     .single();
-  if (!cours) return Response.json({ error: 'Cours introuvable' }, { status: 404 });
-  if (cours.est_annule) return Response.json({ error: 'Ce cours est annulé' }, { status: 400 });
+  if (!cours) return Response.json({ error: t('Cours introuvable') }, { status: 404 });
+  if (cours.est_annule) return Response.json({ error: t('Ce cours est annulé') }, { status: 400 });
 
   // ── Visibilité (v73) : pas de liste d'attente sur un cours qu'on ne peut
   // pas voir/réserver (privé = géré main dans la main par la prof).
   if (cours.visibilite && cours.visibilite !== 'public') {
     if (cours.visibilite === 'prive') {
-      return Response.json({ error: 'Ce cours est sur invitation.' }, { status: 403 });
+      return Response.json({ error: t('Ce cours est sur invitation.') }, { status: 403 });
     }
     const clientInfo = await resolveClientInfo(supabaseAdmin, profile.id, email);
     if (!canSeeCours(cours.visibilite, clientInfo)) {
-      return Response.json({ error: 'Ce cours est réservé à certain·es élèves du studio.' }, { status: 403 });
+      return Response.json({ error: t('Ce cours est réservé à certain·es élèves du studio.') }, { status: 403 });
     }
   }
 
   // Horloge Paris à la minute (avant : jour UTC — incohérent avec reserver).
-  if (coursDejaCommence(cours)) return Response.json({ error: 'Ce cours a déjà commencé' }, { status: 400 });
+  if (coursDejaCommence(cours)) return Response.json({ error: t('Ce cours a déjà commencé') }, { status: 400 });
 
   // Vérifier que le cours est BIEN complet (sécurité : pas la peine d'inscrire en LA si une place est libre)
   if (!cours.capacite_max) {
-    return Response.json({ error: 'Ce cours n\'a pas de capacité limitée' }, { status: 400 });
+    return Response.json({ error: t("Ce cours n'a pas de capacité limitée") }, { status: 400 });
   }
   const { count: nbInscrits } = await supabaseAdmin
     .from('presences')
@@ -86,7 +93,7 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
     .not('annulation_tardive', 'is', true)
     .not('statut_pointage', 'in', '(annule,declinee)'); // v74 : sièges fantômes exclus
   if ((nbInscrits || 0) < cours.capacite_max) {
-    return Response.json({ error: 'Ce cours a encore des places — réserve directement.' }, { status: 400 });
+    return Response.json({ error: t('Ce cours a encore des places — réserve directement.') }, { status: 400 });
   }
 
   // Lier au client si email connu dans ce studio
@@ -97,6 +104,14 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
     .ilike('email', escapeIlike(email))
     .maybeSingle();
 
+  // v122 : elle s'inscrit avec un cookie de langue explicite et une fiche
+  // existe → mémorisé dessus, pour que « une place s'est libérée » parte
+  // dans SA langue. Sans fiche, le studio décidera.
+  if (existingClient?.id) {
+    const cookieL = cookieLangueDeRequete(request);
+    if (cookieL) await poserLangueFiche(supabaseAdmin, existingClient.id, cookieL);
+  }
+
   // Bloquer si l'élève est déjà inscrit (presence) à ce cours
   if (existingClient?.id) {
     const { data: dejaInscrit } = await supabaseAdmin
@@ -106,7 +121,7 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
       .eq('client_id', existingClient.id)
       .maybeSingle();
     if (dejaInscrit) {
-      return Response.json({ error: 'Tu es déjà inscrit·e à ce cours — pas besoin de la liste d\'attente.' }, { status: 409 });
+      return Response.json({ error: t("Tu es déjà inscrit·e à ce cours — pas besoin de la liste d'attente.") }, { status: 409 });
     }
   }
 
@@ -163,7 +178,7 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
       return Response.json({ ok: true, position, deja: true });
     }
     reportError('liste-attente insert error:', insertErr);
-    return Response.json({ error: 'Erreur lors de l\'inscription' }, { status: 500 });
+    return Response.json({ error: t("Erreur lors de l'inscription") }, { status: 500 });
   }
 
   // Email de PROF pour reply-to (l'élève peut répondre pour se retirer)
@@ -173,10 +188,19 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
     proEmail = proUser?.email || null;
   } catch { /* replyTo de confort : sans lui l'email part quand même */ }
 
+  // La date et l'heure dans la langue de l'élève : la cloche et le push de la
+  // PROF, plus bas, gardent le français.
   const dateStr = cours.date
     ? new Date(cours.date + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })
     : 'la date prévue';
   const heureStr = cours.heure ? ` à ${cours.heure.slice(0, 5).replace(':', 'h')}` : '';
+  const dateEleve = cours.date
+    ? new Date(cours.date + 'T12:00:00').toLocaleDateString(t.locale, { weekday: 'long', day: 'numeric', month: 'long' })
+    : t('la date prévue');
+  const heureEleve = cours.heure
+    ? (t.langue === 'en' ? cours.heure.slice(0, 5) : cours.heure.slice(0, 5).replace(':', 'h'))
+    : '';
+  const quandEleve = heureEleve ? t('{date} à {heure}', { date: dateEleve, heure: heureEleve }) : dateEleve;
   const finalPosition = row?.position || position;
   const prenom = (nom || '').split(' ')[0] || '';
 
@@ -186,22 +210,20 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
       categorie: 'notification',
       replyTo: proEmail,
       to: email,
-      subject: `Tu es sur la liste d'attente — ${cours.nom || 'ton cours'}`,
+      subject: t("Tu es sur la liste d'attente — {cours}", { cours: cours.nom || t('ton cours') }),
       html: `
         <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:560px;margin:0 auto;padding:24px;">
-          <h2 style="color:#b87333;margin:0 0 6px;">C'est noté !</h2>
-          <p style="color:#555;margin:0 0 14px;">${prenom ? `Bonjour ${prenom},` : 'Bonjour,'}</p>
+          <h2 style="color:#b87333;margin:0 0 6px;">${t("C'est noté !")}</h2>
+          <p style="color:#555;margin:0 0 14px;">${prenom ? t('Bonjour {prenom}', { prenom }) : t('Bonjour')},</p>
           <p style="color:#555;margin:0 0 14px;">
-            Le cours <strong>${cours.nom || ''}</strong> (${dateStr}${heureStr}) est complet.
-            Tu es inscrit·e sur la liste d'attente en <strong>position ${finalPosition}</strong>.
+            ${t('Le cours {cours} ({quand}) est complet.', { cours: `<strong>${cours.nom || ''}</strong>`, quand: quandEleve })}
+            ${t("Tu es inscrit·e sur la liste d'attente en {position}.", { position: `<strong>${t('position {n}', { n: finalPosition })}</strong>` })}
           </p>
           <p style="color:#555;margin:0 0 14px;">
-            Si une place se libère, tu recevras automatiquement un email — ta place
-            sera alors réservée, tu n'auras rien à faire.
+            ${t("Si une place se libère, tu recevras automatiquement un email — ta place sera alors réservée, tu n'auras rien à faire.")}
           </p>
           <p style="color:#999;margin:16px 0 0;font-size:0.8125rem;">
-            Tu ne veux plus attendre ce cours ? Réponds simplement à cet email et
-            ${profile.studio_nom || 'ton studio'} te retirera de la liste.
+            ${t('Tu ne veux plus attendre ce cours ? Réponds simplement à cet email et {studio} te retirera de la liste.', { studio: profile.studio_nom || t('ton studio') })}
           </p>
         </div>
       `,

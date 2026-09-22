@@ -17,7 +17,7 @@ import { urlPortail } from '@/lib/studio-host';
 import { after } from 'next/server';
 import { headers } from 'next/headers';
 import { compterVue } from '@/lib/vues-portail-service';
-import { traducteurPortail } from '@/lib/i18n-portail-serveur';
+import { traducteurPortail, cookieLangueVisiteuse, poserLangueFiche } from '@/lib/i18n-portail-serveur';
 
 export async function generateMetadata({ params }) {
   const { studioSlug } = await params;
@@ -130,6 +130,13 @@ async function getStudioData(studioSlug) {
   const { data: { user } } = await ssrClient.auth.getUser();
   const clientInfo = user ? await resolveClientInfo(supabase, profile.id, user) : null; // v83 : FK d'abord
   const cours = filterCoursVisibles(coursRaw || [], clientInfo);
+  // v122 : le bouton FR / EN de l'en-tête pose un cookie puis rafraîchit
+  // cette page ; si l'élève est connue ici, son choix est mémorisé sur sa
+  // fiche pour ses emails et ses push (UPDATE séparé, muet sans la colonne).
+  if (clientInfo?.client_id) {
+    const cookieL = await cookieLangueVisiteuse();
+    if (cookieL) await poserLangueFiche(supabase, clientInfo.client_id, cookieL);
+  }
 
   // ── Réservation 1 clic : si le visiteur est un client reconnu de ce studio,
   // on charge son identité (nom/email pour l'appel /reserver) + la liste des

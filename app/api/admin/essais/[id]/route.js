@@ -10,6 +10,8 @@ import { sendPushToEmail } from '@/lib/push-server';
 import { sendEmail } from '@/lib/email';
 import { coursDejaCommence } from '@/lib/dates';
 import { reportError } from '@/lib/report';
+import { escapeIlike } from '@/lib/utils';
+import { traducteurEleve } from '@/lib/i18n-portail-serveur';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -89,6 +91,11 @@ export const POST = withRoute({ auth: 'active' }, async ({ request, params, auth
         return Response.json({ ok: true, client_id, presence_id, apresCoup: true });
       }
 
+      // La langue de l'élève (v122) : c'est la prof qui valide, l'élève n'a
+      // pas de cookie ici. Sa fiche (celle que finaliserDemande vient de
+      // trouver ou de créer) > le réglage du studio > français.
+      const t = await traducteurEleve(supabaseAdmin, { clientId: client_id, profileId: profile.id });
+
       // Email confirmation au visiteur
       const { data: cours } = await supabaseAdmin
         .from('cours')
@@ -98,8 +105,9 @@ export const POST = withRoute({ auth: 'active' }, async ({ request, params, auth
       // Tarif d'essai par type (v92, lecture défensive — null pré-migration)
       const surchargesEssai = await getEssaiPrixParType(supabaseAdmin, profile.id);
       // Accès direct à l'espace pour l'invité validé (comme la réservation).
-      const magicLink = await buildPortailMagicLink({ email: demande.email, studioSlug: profile.studio_slug });
+      const magicLink = await buildPortailMagicLink({ email: demande.email, studioSlug: profile.studio_slug, langue: t.langue });
       emailConfirmationVisiteur({
+        langue: t.langue,
         profileNom: profile.studio_nom,
         studioSlug: profile.studio_slug,
         prenom: demande.prenom,
@@ -113,8 +121,8 @@ export const POST = withRoute({ auth: 'active' }, async ({ request, params, auth
 
       // Push (no-op si l'invité n'a pas d'abonnement)
       sendPushToEmail(demande.email, {
-        title: `Cours d'essai confirmé 🎉`,
-        body: `${profile.studio_nom} a validé ta demande — ${cours?.nom || 'ton cours'}.`,
+        title: t("Cours d'essai confirmé 🎉"),
+        body: t('{studio} a validé ta demande — {cours}.', { studio: profile.studio_nom, cours: cours?.nom || t('ton cours') }),
         url: `/p/${profile.studio_slug}/espace`,
         tag: `essai-${id}`,
       }, { type: 'essai', profileId: profile.id }).catch(() => {});
@@ -147,6 +155,18 @@ export const POST = withRoute({ auth: 'active' }, async ({ request, params, auth
     return Response.json({ error: 'Erreur lors du refus' }, { status: 500 });
   }
 
+  // La langue de l'élève (v122) : un refus ne crée pas de fiche, on cherche
+  // celle que l'email de la demande a peut-être déjà chez cette prof ;
+  // sinon le réglage du studio, sinon le français. Le motif écrit par la
+  // prof part tel quel.
+  const { data: ficheDemande } = await supabaseAdmin
+    .from('clients')
+    .select('id')
+    .eq('profile_id', profile.id)
+    .ilike('email', escapeIlike(demande.email))
+    .maybeSingle();
+  const t = await traducteurEleve(supabaseAdmin, { clientId: ficheDemande?.id || null, profileId: profile.id });
+
   // Email refus au visiteur
   if (process.env.RESEND_API_KEY) {
     try {
@@ -155,19 +175,19 @@ export const POST = withRoute({ auth: 'active' }, async ({ request, params, auth
         categorie: 'transactionnel',
         replyTo: user?.email || null,
         to: demande.email,
-        subject: `Demande de cours d'essai chez ${profile.studio_nom}`,
+        subject: t("Demande de cours d'essai chez {studio}", { studio: profile.studio_nom }),
         html: `
           <div style="font-family:-apple-system,BlinkMacSystemFont,sans-serif;max-width:560px;margin:0 auto;padding:24px;">
-            <p style="color:#555;margin:0 0 12px;">Bonjour ${demande.prenom},</p>
+            <p style="color:#555;margin:0 0 12px;">${t('Bonjour {prenom}', { prenom: demande.prenom })},</p>
             <p style="color:#555;margin:0 0 12px;">
-              Merci pour ta demande de cours d'essai chez <strong>${profile.studio_nom}</strong>.
+              ${t("Merci pour ta demande de cours d'essai chez {studio}.", { studio: `<strong>${profile.studio_nom}</strong>` })}
             </p>
             <p style="color:#555;margin:0 0 16px;">
-              Malheureusement, ${profile.studio_nom} n'a pas pu donner suite à ta demande pour le moment.
+              ${t("Malheureusement, {studio} n'a pas pu donner suite à ta demande pour le moment.", { studio: profile.studio_nom })}
               ${body.motif ? `<br/><br/><em style="color:#888;">"${body.motif}"</em>` : ''}
             </p>
             <p style="color:#555;margin:0 0 16px;">
-              N'hésite pas à proposer une autre date depuis le portail public si l'envie te reprend.
+              ${t("N'hésite pas à proposer une autre date depuis le portail public si l'envie te reprend.")}
             </p>
           </div>
         `,
@@ -179,8 +199,8 @@ export const POST = withRoute({ auth: 'active' }, async ({ request, params, auth
 
   // Push refus (no-op si pas d'abonnement)
   sendPushToEmail(demande.email, {
-    title: `Réponse à ta demande d'essai`,
-    body: `${profile.studio_nom} n'a pas pu donner suite pour le moment.`,
+    title: t("Réponse à ta demande d'essai"),
+    body: t("{studio} n'a pas pu donner suite pour le moment.", { studio: profile.studio_nom }),
     url: `/p/${profile.studio_slug}`,
     tag: `essai-${id}`,
   }, { type: 'essai', profileId: profile.id }).catch(() => {});

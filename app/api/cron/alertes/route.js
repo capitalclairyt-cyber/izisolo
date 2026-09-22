@@ -7,6 +7,8 @@ import { wantsNotif } from '@/lib/notif-prefs';
 import { can } from '@/lib/plan-guard';
 import { reportError } from '@/lib/report';
 import { getVisioCoursMap, lienVisioVisible } from '@/lib/visio';
+import { traducteur, langueEleve, localeDe } from '@/lib/i18n-portail';
+import { chargerLanguesFiches, chargerLanguesStudios } from '@/lib/i18n-portail-serveur';
 
 // Durée max explicite (fluid compute : 300 s = plafond Hobby)
 export const maxDuration = 300;
@@ -118,7 +120,27 @@ export const GET = withRoute({ auth: 'cron' }, async () => {
   }
   const profileById = Object.fromEntries(profiles.map(p => [p.id, p]));
 
-  const dateStr = new Date(demain + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+  // v122 : la langue de chaque élève (sa fiche, sinon le réglage du studio,
+  // sinon le français), chargée UNE fois pour tout le lot par des requêtes
+  // séparées et défensives : les selects nommés ci-dessus ne portent jamais
+  // `langue` ni `langue_portail` (pré-migration, ils casseraient tout le cron).
+  const languesFiches = await chargerLanguesFiches(supabaseAdmin, clientIds);
+  const languesStudios = await chargerLanguesStudios(supabaseAdmin, profileIds);
+  const traducteurPour = (client, profile) => traducteur(langueEleve({
+    client: { langue: languesFiches.get(client.id) },
+    studio: { langue_portail: languesStudios.get(profile.id) },
+  }));
+
+  // « mardi 23 septembre » ou « Tuesday 23 September », une fois par langue.
+  const dateParLangue = new Map();
+  const dateDemain = (langue) => {
+    if (!dateParLangue.has(langue)) {
+      dateParLangue.set(langue, new Date(demain + 'T12:00:00').toLocaleDateString(localeDe(langue), { weekday: 'long', day: 'numeric', month: 'long' }));
+    }
+    return dateParLangue.get(langue);
+  };
+  // « 18h30 » en français, « 18:30 » en anglais.
+  const heureDe = (heure, langue) => (heure ? (langue === 'en' ? heure.slice(0, 5) : heure.slice(0, 5).replace(':', 'h')) : '');
 
   // Cours en ligne (v86) : le lien de visio entre dans le rappel J-1 selon LA
   // règle unique (lib/visio.lienVisioVisible) — jamais envoyé à une inscrite
@@ -155,24 +177,28 @@ export const GET = withRoute({ auth: 'cron' }, async () => {
     const wantPush = wantsNotif(prefs, 'rappel_cours', 'eleve', 'push');
     if (!wantEmail && !wantPush) { prefOff++; return; }
 
-    const heureStr = cours.heure ? cours.heure.slice(0, 5).replace(':', 'h') : '';
+    const t = traducteurPour(client, profile);
+    const dateStr = dateDemain(t.langue);
+    const heureStr = heureDe(cours.heure, t.langue);
     const enLigne = cours.format === 'visio' || cours.format === 'hybride';
     const visio = enLigne ? (visioMap[p.cours_id] || null) : null;
     const lienOk = visio && lienVisioVisible(visio, p, paidPres.has(p.id) ? [{ statut: 'paid' }] : []);
-    const lieuStr = enLigne ? ' — en ligne 🖥' : (cours.lieu ? ` — ${cours.lieu}` : '');
+    const lieuStr = enLigne ? ` (${t('en ligne')} 🖥)` : (cours.lieu ? ` (${cours.lieu})` : '');
+    // « mardi 23 septembre à 18h30 (Studio Centre) »
+    const quandStr = heureStr ? t('{date} à {heure}', { date: dateStr, heure: heureStr }) : dateStr;
     const ligneVisio = lienOk
       ? `
 
-🎥 Le lien pour rejoindre la séance : ${visio.lien_visio}`
+🎥 ${t('Le lien pour rejoindre la séance :')} ${visio.lien_visio}`
       : (visio ? `
 
-Le lien de la séance apparaîtra dans ton espace une fois ta séance réglée.` : '');
+${t("Le lien de la séance apparaîtra dans ton espace une fois ta séance réglée.")}` : '');
 
     try {
       // Email (canal indépendant, dédupé par sendNotifEleve)
       if (wantEmail) {
         const r = await sendNotifEleve(supabaseAdmin, {
-          profile, client,
+          profile, client, t,
           type: 'rappel_cours',
           relatedId: p.id,
           // replyTo = la PROF : une élève qui répond « je ne pourrai pas
@@ -183,13 +209,13 @@ Le lien de la séance apparaîtra dans ton espace une fois ta séance réglée.`
           contexte: { cours_nom: cours.nom, date: dateStr, heure: heureStr },
           templates: {
             email: {
-              sujet: `Rappel : ${cours.nom} demain`,
+              sujet: t('Rappel : {cours} demain', { cours: cours.nom }),
               corps:
-`Bonjour {{prenom}},
+`${t('Bonjour {prenom}', { prenom: client.prenom || '' })},
 
-Petit rappel : tu es inscrit·e à la séance ${cours.nom} demain ${dateStr}${heureStr ? ` à ${heureStr}` : ''}${lieuStr} chez ${profile.studio_nom}.${ligneVisio}
+${t('Petit rappel : tu es inscrit·e à la séance {cours} demain {quand}{lieu} chez {studio}.', { cours: cours.nom, quand: quandStr, lieu: lieuStr, studio: profile.studio_nom })}${ligneVisio}
 
-À demain !`,
+${t('À demain !')}`,
             },
           },
         });
@@ -202,8 +228,8 @@ Petit rappel : tu es inscrit·e à la séance ${cours.nom} demain ${dateStr}${he
         const fresh = await claimCronPush({ profileId: profile.id, clientId: client.id, type: 'rappel_cours', relatedId: p.id });
         if (fresh) {
           sendPushToEmail(client.email, {
-            title: `Demain : ${cours.nom} ⏰`,
-            body: `${dateStr}${heureStr ? ` à ${heureStr}` : ''}${lieuStr}`,
+            title: t('Demain : {cours} ⏰', { cours: cours.nom }),
+            body: `${quandStr}${lieuStr}`,
             url: profile.studio_slug ? `/p/${profile.studio_slug}/espace` : '/',
             tag: `rappel-${p.id}`,
           }, { type: 'rappel_cours', profileId: profile.id }).catch(() => {});

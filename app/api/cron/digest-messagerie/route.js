@@ -3,6 +3,8 @@ import { createAdminClient } from '@/lib/supabase-admin';
 import { sendEmail } from '@/lib/email';
 import { wantsNotif } from '@/lib/notif-prefs';
 import { reportError } from '@/lib/report';
+import { traducteur, langueEleve } from '@/lib/i18n-portail';
+import { chargerLanguesFiches, chargerLanguesStudios } from '@/lib/i18n-portail-serveur';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -162,11 +164,21 @@ export const GET = withRoute({ auth: 'cron' }, async () => {
     for (const c of lot || []) clientDigestById.set(c.id, c);
   }
 
+  // v122 : la langue de chaque destinataire (sa fiche, sinon le réglage du
+  // studio, sinon le français), UNE fois pour le lot, par des requêtes
+  // séparées et défensives (le select nommé ci-dessus ne porte pas `langue`).
+  const languesFiches = await chargerLanguesFiches(supabase, destIds);
+  const languesStudios = await chargerLanguesStudios(supabase, [...clientDigestById.values()].map(c => c.profile_id));
+
   // Pour chaque client : envoyer digest si pref != 'off'
   for (const [clientId, { count, pieces }] of eleveCount.entries()) {
     const client = clientDigestById.get(clientId);
     if (!client || !client.email) continue;
     if (!wantsNotif(client.notif_prefs, 'message', 'eleve', 'email')) { totalSkipped++; continue; }
+    const t = traducteur(langueEleve({
+      client: { langue: languesFiches.get(client.id) },
+      studio: { langue_portail: languesStudios.get(client.profile_id) },
+    }));
 
     // FILET (2026-08-01) : déjà notifié·e en instantané pour ce studio dans
     // les 24 h → pas de re-nag. Fail-open : si la lecture échoue, on envoie
@@ -181,7 +193,7 @@ export const GET = withRoute({ auth: 'cron' }, async () => {
       .limit(1);
     if (!instErr && (instant || []).length > 0) { totalSkipped++; continue; }
 
-    const studioNom = client.profiles?.studio_nom || 'Ton studio';
+    const studioNom = client.profiles?.studio_nom || t('Ton studio');
     const studioSlug = client.profiles?.studio_slug || '';
     const url = `${process.env.NEXT_PUBLIC_APP_URL || 'https://www.izisolo.fr'}/p/${studioSlug}/espace/messages`;
 
@@ -195,12 +207,13 @@ export const GET = withRoute({ auth: 'cron' }, async () => {
 
     const success = await envoyerDigest({
       to: client.email,
-      prenom: client.prenom || 'là',
+      prenom: client.prenom || t('là'),
       nbRecus: count,
       nbPieces: pieces,
       url,
       contexte: 'eleve',
       studioNom,
+      t,
     });
     if (success) totalSent++;
     else {
@@ -249,7 +262,9 @@ async function releaseEnvoi(supabase, destinataire, refDate) {
   } catch { /* release raté : le claim 'failed' sera re-clamé au prochain run (B1g) */ }
 }
 
-async function envoyerDigest({ to, prenom, nbRecus, nbPieces = 0, url, contexte, studioNom }) {
+// `t` (v122) : le traducteur de l'élève destinataire ; la branche PRO n'en
+// passe pas et garde ses textes français tels quels.
+async function envoyerDigest({ to, prenom, nbRecus, nbPieces = 0, url, contexte, studioNom, t = traducteur('fr') }) {
   if (!process.env.RESEND_API_KEY) {
     console.warn('[cron digest] RESEND_API_KEY manquante');
     return false;
@@ -257,18 +272,24 @@ async function envoyerDigest({ to, prenom, nbRecus, nbPieces = 0, url, contexte,
   try {
     const sujet = contexte === 'pro'
       ? `${nbRecus} nouveau${nbRecus > 1 ? 'x' : ''} message${nbRecus > 1 ? 's' : ''} de tes élèves`
-      : `${studioNom} t'a écrit`;
+      : t("{studio} t'a écrit", { studio: studioNom });
 
     // Mention des pièces jointes (2026-07-31) : un message photos-seules
     // semblait vide dans l'email, et « 1 message » cachait les 12 photos
     // de la pleine lune.
     const mentionPieces = nbPieces > 0
-      ? `, avec ${nbPieces} photo${nbPieces > 1 ? 's' : ''} ou fichier${nbPieces > 1 ? 's' : ''} joint${nbPieces > 1 ? 's' : ''}`
+      ? (contexte === 'pro'
+        ? `, avec ${nbPieces} photo${nbPieces > 1 ? 's' : ''} ou fichier${nbPieces > 1 ? 's' : ''} joint${nbPieces > 1 ? 's' : ''}`
+        : (nbPieces > 1
+          ? t(', avec {n} photos ou fichiers joints', { n: nbPieces })
+          : t(', avec {n} photo ou fichier joint', { n: nbPieces })))
       : '';
 
     const corps = contexte === 'pro'
       ? `Bonjour ${prenom},\n\nTu as ${nbRecus} message${nbRecus > 1 ? 's' : ''} non lu${nbRecus > 1 ? 's' : ''}${mentionPieces} dans ta messagerie IziSolo.\n\nJette un œil quand tu as un moment :`
-      : `Bonjour ${prenom},\n\n${studioNom} t'a envoyé ${nbRecus} message${nbRecus > 1 ? 's' : ''}${mentionPieces}. Voici le lien pour le${nbRecus > 1 ? 's' : ''} consulter :`;
+      : `${t('Bonjour {prenom}', { prenom })},\n\n${nbRecus > 1
+        ? t("{studio} t'a envoyé {n} messages{pieces}. Voici le lien pour les consulter :", { studio: studioNom, n: nbRecus, pieces: mentionPieces })
+        : t("{studio} t'a envoyé {n} message{pieces}. Voici le lien pour le consulter :", { studio: studioNom, n: nbRecus, pieces: mentionPieces })}`;
 
     // Pipeline central (Sprint 5) : blacklist respectée + List-Unsubscribe
     const r = await sendEmail({
@@ -280,12 +301,12 @@ async function envoyerDigest({ to, prenom, nbRecus, nbPieces = 0, url, contexte,
           <p>${corps.replace(/\n/g, '<br/>')}</p>
           <p style="text-align: center; margin: 24px 0;">
             <a href="${url}" style="display: inline-block; padding: 10px 20px; background: #d4a0a0; color: white; text-decoration: none; border-radius: 99px; font-weight: 600;">
-              Ouvrir ma messagerie
+              ${t('Ouvrir ma messagerie')}
             </a>
           </p>
           <p style="color: #aaa; font-size: 0.8rem; margin: 32px 0 0; border-top: 1px solid #eee; padding-top: 16px; text-align: center;">
-            Tu reçois ce récap au maximum une fois par jour. Tu peux le désactiver dans tes réglages de notifications (section « Messages »).
-            <br/>Propulsé par <a href="https://www.izisolo.fr" style="color: #d4a0a0;">IziSolo</a>
+            ${t('Tu reçois ce récap au maximum une fois par jour. Tu peux le désactiver dans tes réglages de notifications (section « Messages »).')}
+            <br/>${t('Propulsé par')} <a href="https://www.izisolo.fr" style="color: #d4a0a0;">IziSolo</a>
           </p>
         </div>
       `,

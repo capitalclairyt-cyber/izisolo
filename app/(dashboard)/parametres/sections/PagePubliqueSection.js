@@ -286,7 +286,7 @@ export default function PagePubliqueSection({ profile, setProfile, setDirty }) {
           </div>
           <p className="form-hint">Enregistré tout de suite. Tes élèves gardent un bouton FR / EN en haut de ta page pour choisir la leur.</p>
           <EnSavoirPlus>
-            <p>En anglais : la page publique, la réservation, la connexion, l&apos;espace élève et les emails de confirmation et de connexion. Tes textes à toi (bio, noms de cours, FAQ) restent tels que tu les as écrits. Les emails de rappel et d&apos;annulation restent en français pour l&apos;instant.</p>
+            <p>En anglais : la page publique, la réservation, la connexion, l&apos;espace élève, et tous les emails et notifications qu&apos;une élève reçoit (confirmation, connexion, rappel de séance, annulation, liste d&apos;attente, essai, facture, tes messages). Une élève qui a choisi sa langue sur ta page la garde pour ses emails, même quand c&apos;est toi qui les déclenches. Tes textes à toi (bio, noms de cours, FAQ, messages) restent tels que tu les as écrits.</p>
           </EnSavoirPlus>
         </div>
       </CarteReglage>

@@ -11,6 +11,8 @@ import { reportError } from '@/lib/report';
 import { canSeeCours, resolveClientInfo } from '@/lib/visibilite';
 import { coursDejaCommence } from '@/lib/dates';
 import { prixEssai, getEssaiPrixParType } from '@/lib/essai-tarif';
+import { langueDepuisRequete, cookieLangueDeRequete, poserLangueFiche } from '@/lib/i18n-portail-serveur';
+import { traducteur } from '@/lib/i18n-portail';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -43,18 +45,23 @@ export const dynamic = 'force-dynamic';
  */
 export const POST = withRoute({ auth: 'public' }, async ({ request, params }) => {
   const { studioSlug } = params;
+  // La langue de l'élève (2026-09-22) : cookie de la visiteuse > réglage du
+  // studio > français. Elle sert aux messages renvoyés à l'écran et aux
+  // emails qui lui sont adressés. Les notifications de la PROF restent en français.
+  const langue = await langueDepuisRequete(request, studioSlug);
+  const t = traducteur(langue);
 
   let body;
-  try { body = await request.json(); } catch { return Response.json({ error: 'JSON invalide' }, { status: 400 }); }
+  try { body = await request.json(); } catch { return Response.json({ error: t('JSON invalide') }, { status: 400 }); }
 
   const { coursId, prenom, nom, email, telephone, message, website, turnstileToken } = body;
   if (!coursId || !prenom || !email) {
-    return Response.json({ error: 'coursId, prenom et email sont requis' }, { status: 400 });
+    return Response.json({ error: t('coursId, prenom et email sont requis') }, { status: 400 });
   }
   // Validation zod : coursId UUID + prenom/email (passthrough conserve les
   // autres champs). On ne renvoie pas le détail brut zod.
   if (!essaiSchema.safeParse(body).success) {
-    return Response.json({ error: 'Données invalides' }, { status: 400 });
+    return Response.json({ error: t('Données invalides') }, { status: 400 });
   }
 
   // ── Anti-bot : honeypot + rate limit + Turnstile ──
@@ -75,13 +82,13 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
     .eq('studio_slug', studioSlug)
     .single();
 
-  if (!profile) return Response.json({ error: 'Studio introuvable' }, { status: 404 });
-  if (!profile.essai_actif) return Response.json({ error: 'Les cours d\'essai ne sont pas activés sur ce studio' }, { status: 403 });
+  if (!profile) return Response.json({ error: t('Studio introuvable') }, { status: 404 });
+  if (!profile.essai_actif) return Response.json({ error: t("Les cours d'essai ne sont pas activés sur ce studio") }, { status: 403 });
 
   // Gate plan (Sprint 3) : le cours d'essai est une feature Pro du STUDIO
   // (essai_actif peut rester true après un downgrade — le plan prime).
   if (!studioCan(profile, 'cours_essai')) {
-    return Response.json({ error: 'Les cours d\'essai ne sont pas activés sur ce studio' }, { status: 403 });
+    return Response.json({ error: t("Les cours d'essai ne sont pas activés sur ce studio") }, { status: 403 });
   }
 
   // ── Anti-doublon : un même email ne peut pas demander 2 essais sur le même studio ──
@@ -105,7 +112,7 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
   // bien-être = donnée sensible ; sondable email par email sinon).
   if (demandeMemeStudio || clientExistant) {
     return Response.json({
-      error: `Cet email est déjà associé à ${profile.studio_nom || 'ce studio'}. Vérifie ta boîte mail (lien de connexion ou de confirmation), ou contacte directement le studio.`,
+      error: t('Cet email est déjà associé à {studio}. Vérifie ta boîte mail (lien de connexion ou de confirmation), ou contacte directement le studio.', { studio: profile.studio_nom || t('ce studio') }),
       code: 'ALREADY_KNOWN',
     }, { status: 409 });
   }
@@ -118,24 +125,24 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
     .eq('profile_id', profile.id)
     .single();
 
-  if (!cours) return Response.json({ error: 'Cours introuvable' }, { status: 404 });
-  if (cours.est_annule) return Response.json({ error: 'Ce cours est annulé' }, { status: 400 });
+  if (!cours) return Response.json({ error: t('Cours introuvable') }, { status: 404 });
+  if (cours.est_annule) return Response.json({ error: t('Ce cours est annulé') }, { status: 400 });
 
   // ── Visibilité (v73) : le formulaire d'essai filtre déjà la liste, l'API
   // doit refuser pareil (un cours privé/restreint n'accueille pas d'essai
   // libre — la prof ajoute elle-même ses invité·es).
   if (cours.visibilite && cours.visibilite !== 'public') {
     if (cours.visibilite === 'prive') {
-      return Response.json({ error: 'Ce cours est sur invitation.' }, { status: 403 });
+      return Response.json({ error: t('Ce cours est sur invitation.') }, { status: 403 });
     }
     const clientInfo = await resolveClientInfo(supabaseAdmin, profile.id, email);
     if (!canSeeCours(cours.visibilite, clientInfo)) {
-      return Response.json({ error: 'Ce cours est réservé à certain·es élèves du studio.' }, { status: 403 });
+      return Response.json({ error: t('Ce cours est réservé à certain·es élèves du studio.') }, { status: 403 });
     }
   }
   // Vérif date+heure — à la minute, heure de Paris (avant : jour UTC → un
   // cours du soir restait demandable jusqu'au lendemain).
-  if (coursDejaCommence(cours)) return Response.json({ error: 'Ce cours a déjà commencé' }, { status: 400 });
+  if (coursDejaCommence(cours)) return Response.json({ error: t('Ce cours a déjà commencé') }, { status: 400 });
 
   // 3. Insérer la demande
   const initialStatut = profile.essai_mode === 'manuel' ? 'en_attente' : 'acceptee';
@@ -156,7 +163,7 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
 
   if (demandeErr) {
     reportError('[essai] insert demande err:', demandeErr);
-    return Response.json({ error: 'Erreur lors de la création de la demande' }, { status: 500 });
+    return Response.json({ error: t('Erreur lors de la création de la demande') }, { status: 500 });
   }
 
   // 4. Selon le mode
@@ -165,13 +172,20 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
   if (!isManuel) {
     // auto OU semi : finaliser immédiatement
     try {
-      await finaliserDemande(supabaseAdmin, demande);
+      // `langue` : les refus métier qui remontent ici (annulé, introuvable)
+      // sont rendus à l'élève dans sa langue.
+      const { client_id } = await finaliserDemande(supabaseAdmin, demande, { langue });
+      // v122 : elle demande son essai avec un cookie de langue explicite →
+      // mémorisé sur la fiche que la finalisation vient de trouver ou créer,
+      // pour que la suite (rappel, annulation) parte dans SA langue.
+      const cookieL = cookieLangueDeRequete(request);
+      if (cookieL && client_id) await poserLangueFiche(supabaseAdmin, client_id, cookieL);
     } catch (err) {
       // Refus métier de la RPC (complet sous verrou, annulé) → message propre
       // au visiteur, la demande reste réutilisable. Complet → on suggère la
       // liste d'attente (la porte prévue pour ça).
       if (err?.code === 'complet') {
-        return Response.json({ error: 'Ce cours vient de se remplir — tu peux t\'inscrire en liste d\'attente depuis la page du cours.' }, { status: 409 });
+        return Response.json({ error: t("Ce cours vient de se remplir — tu peux t'inscrire en liste d'attente depuis la page du cours.") }, { status: 409 });
       }
       if (['annule', 'introuvable'].includes(err?.code)) {
         return Response.json({ error: err.message }, { status: 409 });
@@ -180,11 +194,11 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
         // Message côté visiteur (celui de lib/essai parle à la prof) : une
         // fiche à ce nom existe déjà avec une autre adresse email.
         return Response.json({
-          error: 'Une fiche à ton nom existe déjà chez ce studio, avec une autre adresse email. Refais ta demande avec l\'adresse utilisée la première fois — ou contacte directement le studio.',
+          error: t("Une fiche à ton nom existe déjà chez ce studio, avec une autre adresse email. Refais ta demande avec l'adresse utilisée la première fois — ou contacte directement le studio."),
         }, { status: 409 });
       }
       reportError('[essai] finaliserDemande err:', err);
-      return Response.json({ error: 'Erreur lors de la finalisation : ' + err.message }, { status: 500 });
+      return Response.json({ error: t('Erreur lors de la finalisation : {message}', { message: err.message }) }, { status: 500 });
     }
   }
 
@@ -221,12 +235,13 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
   const prixEssaiCours = prixEssai(profile, cours.type_cours, surchargesEssai);
   const proWantsEmail = wantsNotif(profile.notif_prefs, 'essai_demande', 'prof', 'email');
   if (isManuel) {
-    emailEnAttenteVisiteur({ profileNom: profile.studio_nom, prenom, email, cours });
+    emailEnAttenteVisiteur({ profileNom: profile.studio_nom, prenom, email, cours, langue });
     if (proWantsEmail) emailNotifPro({ proEmail: profile.email_contact, proNom: profile.prenom, modeManuel: true, demande, cours });
   } else {
     // Accès direct à l'espace pour l'invité inscrit (auto/semi).
-    const magicLink = await buildPortailMagicLink({ email, studioSlug });
+    const magicLink = await buildPortailMagicLink({ email, studioSlug, langue });
     emailConfirmationVisiteur({
+      langue,
       profileNom: profile.studio_nom,
       studioSlug,
       prenom,

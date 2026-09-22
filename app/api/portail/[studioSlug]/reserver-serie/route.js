@@ -14,6 +14,8 @@ import { coursDejaCommence } from '@/lib/dates';
 import { getRegle } from '@/lib/regles-metier';
 import { sendEmail } from '@/lib/email';
 import { buildPortailMagicLink } from '@/lib/portail-magic-link';
+import { langueDepuisRequete, cookieLangueDeRequete, poserLangueFiche } from '@/lib/i18n-portail-serveur';
+import { traducteur } from '@/lib/i18n-portail';
 
 /**
  * POST /api/portail/[studioSlug]/reserver-serie
@@ -29,6 +31,11 @@ import { buildPortailMagicLink } from '@/lib/portail-magic-link';
  */
 export const POST = withRoute({ auth: 'public' }, async ({ request, params }) => {
   const { studioSlug } = params;
+  // La langue de l'élève (2026-09-22) : cookie de la visiteuse > réglage du
+  // studio > français. Elle sert aux messages renvoyés à l'écran et à l'email
+  // récapitulatif. Les notifications de la PROF restent en français.
+  const langue = await langueDepuisRequete(request, studioSlug);
+  const t = traducteur(langue);
 
   // Rate-limit IP : route d'écriture qui boucle sur N occurrences — on borne
   // le volume par IP (10/h), compteur isolé du reste via le scope.
@@ -36,21 +43,21 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
   if (!rl.ok) return Response.json({ error: rl.reason }, { status: 429 });
 
   let body;
-  try { body = await request.json(); } catch { return Response.json({ error: 'JSON invalide' }, { status: 400 }); }
+  try { body = await request.json(); } catch { return Response.json({ error: t('JSON invalide') }, { status: 400 }); }
   const { coursId, jusquAu } = body || {};
   if (!coursId || !jusquAu) {
-    return Response.json({ error: 'coursId et jusquAu requis' }, { status: 400 });
+    return Response.json({ error: t('coursId et jusquAu requis') }, { status: 400 });
   }
   // Validation zod : coursId UUID + jusquAu date YYYY-MM-DD.
   // On ne renvoie pas le détail brut zod.
   if (!reserverSerieSchema.safeParse(body).success) {
-    return Response.json({ error: 'Données invalides' }, { status: 400 });
+    return Response.json({ error: t('Données invalides') }, { status: 400 });
   }
 
   // Auth requise (l'élève doit être connecté pour s'inscrire en série)
   const supabase = await createServerClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return Response.json({ error: 'Tu dois être connecté·e' }, { status: 401 });
+  if (!user) return Response.json({ error: t('Tu dois être connecté·e') }, { status: 401 });
 
   const supabaseAdmin = createAdminClient();
 
@@ -64,19 +71,26 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
   // à tort pour un studio Pro (piège colonne fantôme, bible §12).
   const { data: profile } = await supabaseAdmin
     .from('profiles').select('id, studio_nom, notif_prefs, regles_metier, plan, trial_started_at, stripe_subscription_status, type_structure').eq('studio_slug', studioSlug).single();
-  if (!profile) return Response.json({ error: 'Studio introuvable' }, { status: 404 });
+  if (!profile) return Response.json({ error: t('Studio introuvable') }, { status: 404 });
 
   // Matrice B3a : même gate que la résa unitaire (capacité Complet).
   if (!studioCan(profile, 'reservation_en_ligne')) {
     return Response.json(
-      { error: 'La réservation en ligne n\'est pas activée pour ce studio — contacte-le directement.' },
+      { error: t("La réservation en ligne n'est pas activée pour ce studio — contacte-le directement.") },
       { status: 403 }
     );
   }
 
   // Client lié à ce compte dans ce studio — v83 : FK douce d'abord.
   const client = await resoudreFicheEleve(supabaseAdmin, profile.id, user, 'id, prenom');
-  if (!client) return Response.json({ error: 'Client introuvable' }, { status: 404 });
+  if (!client) return Response.json({ error: t('Client introuvable') }, { status: 404 });
+
+  // v122 : elle réserve avec un cookie de langue explicite → mémorisé sur sa
+  // fiche, pour que les emails sans cookie (rappel, annulation) partent dans SA langue.
+  {
+    const cookieL = cookieLangueDeRequete(request);
+    if (cookieL) await poserLangueFiche(supabaseAdmin, client.id, cookieL);
+  }
 
   // Cours de référence
   const { data: baseCours } = await supabaseAdmin
@@ -85,9 +99,9 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
     .eq('id', coursId)
     .eq('profile_id', profile.id)
     .single();
-  if (!baseCours) return Response.json({ error: 'Cours introuvable' }, { status: 404 });
+  if (!baseCours) return Response.json({ error: t('Cours introuvable') }, { status: 404 });
   if (!baseCours.recurrence_parent_id) {
-    return Response.json({ error: 'Ce cours n\'est pas récurrent' }, { status: 400 });
+    return Response.json({ error: t("Ce cours n'est pas récurrent") }, { status: 400 });
   }
 
   // ── Visibilité (v73) : mêmes règles que l'UI, appliquées à la série ──────
@@ -95,16 +109,16 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
   // référence). Un cours privé ne se réserve jamais côté élève.
   if (baseCours.visibilite && baseCours.visibilite !== 'public') {
     if (baseCours.visibilite === 'prive') {
-      return Response.json({ error: 'Ce cours est sur invitation.' }, { status: 403 });
+      return Response.json({ error: t('Ce cours est sur invitation.') }, { status: 403 });
     }
     const clientInfo = await resolveClientInfo(supabaseAdmin, profile.id, user); // v83 : FK d'abord
     if (!canSeeCours(baseCours.visibilite, clientInfo)) {
-      return Response.json({ error: 'Ce cours est réservé à certain·es élèves du studio.' }, { status: 403 });
+      return Response.json({ error: t('Ce cours est réservé à certain·es élèves du studio.') }, { status: 403 });
     }
   }
 
   if (jusquAu < baseCours.date) {
-    return Response.json({ error: 'La date limite doit être après le cours initial' }, { status: 400 });
+    return Response.json({ error: t('La date limite doit être après le cours initial') }, { status: 400 });
   }
 
   // Toutes les occurrences futures (même recurrence_parent_id, date entre base et jusquAu, non annulées)
@@ -138,7 +152,7 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
   if ((abosActifs || []).length === 0 && !(Number(baseCours.tarif_unitaire) > 0)) {
     if (regleSansCarnet.mode === 'auto' && regleSansCarnet.choix === 'bloquer') {
       return Response.json({
-        error: 'Tu dois avoir un carnet ou un abonnement actif pour réserver. Contacte ton studio pour acheter un carnet.',
+        error: t('Tu dois avoir un carnet ou un abonnement actif pour réserver. Contacte ton studio pour acheter un carnet.'),
         code: 'NO_PACKAGE',
       }, { status: 403 });
     }
@@ -197,19 +211,20 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
   const booked = [];
   const skipped = [];
 
+  // Les raisons de saut sont rendues à l'écran de l'élève : dans sa langue.
   for (const c of futureCourses || []) {
     if (c.est_annule) {
-      skipped.push({ coursId: c.id, date: c.date, reason: 'Cours annulé' });
+      skipped.push({ coursId: c.id, date: c.date, reason: t('Cours annulé') });
       continue;
     }
     if (coursDejaCommence(c)) {
-      skipped.push({ coursId: c.id, date: c.date, reason: 'Séance passée' });
+      skipped.push({ coursId: c.id, date: c.date, reason: t('Séance passée') });
       continue;
     }
     if (aboCap > 0) {
       const sem = lundiDe(c.date);
       if ((parSemaine[sem] || 0) >= aboCap) {
-        skipped.push({ coursId: c.id, date: c.date, reason: `Limite ${aboCap}×/semaine atteinte` });
+        skipped.push({ coursId: c.id, date: c.date, reason: t('Limite {n}×/semaine atteinte', { n: aboCap }) });
         continue;
       }
     }
@@ -225,17 +240,17 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
 
     if (pErr) {
       reportError('[reserver-serie] rpc err:', pErr);
-      skipped.push({ coursId: c.id, date: c.date, reason: 'Erreur' });
+      skipped.push({ coursId: c.id, date: c.date, reason: t('Erreur') });
       continue;
     }
     if (!resa?.ok) {
       skipped.push({
         coursId: c.id,
         date: c.date,
-        reason: resa?.reason === 'doublon' ? 'Déjà inscrit·e'
-          : resa?.reason === 'complet' ? 'Complet'
-          : resa?.reason === 'annule' ? 'Cours annulé'
-          : 'Erreur',
+        reason: resa?.reason === 'doublon' ? t('Déjà inscrit·e')
+          : resa?.reason === 'complet' ? t('Complet')
+          : resa?.reason === 'annule' ? t('Cours annulé')
+          : t('Erreur'),
       });
       continue;
     }
@@ -283,31 +298,40 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
     // (confirmation de SES réservations) + accès direct à son espace.
     try {
       if (process.env.RESEND_API_KEY) {
-        const magicLink = await buildPortailMagicLink({ email: user.email, studioSlug });
+        const magicLink = await buildPortailMagicLink({ email: user.email, studioSlug, langue });
         const lignes = booked.slice(0, 8).map(b => {
-          const d = new Date(b.date + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
-          return `<li style="margin:2px 0;">${d}${b.heure ? ` à ${String(b.heure).slice(0, 5).replace(':', 'h')}` : ''}</li>`;
+          const d = new Date(b.date + 'T12:00:00').toLocaleDateString(t.locale, { weekday: 'long', day: 'numeric', month: 'long' });
+          const h = b.heure
+            ? (t.langue === 'en' ? String(b.heure).slice(0, 5) : String(b.heure).slice(0, 5).replace(':', 'h'))
+            : '';
+          return `<li style="margin:2px 0;">${h ? t('{date} à {heure}', { date: d, heure: h }) : d}</li>`;
         }).join('');
         const reste = booked.length - Math.min(8, booked.length);
+        const n = booked.length;
+        // Le pluriel se joue dans chaque langue : deux clés par nombre.
+        const nbSeances = n > 1 ? t('{n} séances', { n }) : t('{n} séance', { n });
         await sendEmail({
           categorie: 'transactionnel',
           to: user.email,
-          subject: `Tes ${booked.length} séances « ${baseCours.nom} » sont réservées ✓`,
+          subject: n > 1
+            ? t('Tes {n} séances « {cours} » sont réservées ✓', { n, cours: baseCours.nom })
+            : t('Ta séance « {cours} » est réservée ✓', { cours: baseCours.nom }),
           html: `
             <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:560px;margin:0 auto;padding:24px;">
-              <h2 style="color:#b87333;margin:0 0 6px;">C'est noté ${client.prenom || ''} !</h2>
+              <h2 style="color:#b87333;margin:0 0 6px;">${t("C'est noté {prenom} !", { prenom: client.prenom || '' })}</h2>
               <p style="color:#555;margin:0 0 12px;">
-                Tu es inscrit·e à <strong>${booked.length} séance${booked.length > 1 ? 's' : ''}</strong> de
-                « <strong>${baseCours.nom}</strong> » :
+                ${t('Tu es inscrit·e à {seances} de « {cours} » :', { seances: `<strong>${nbSeances}</strong>`, cours: `<strong>${baseCours.nom}</strong>` })}
               </p>
               <ul style="color:#555;margin:0 0 12px;padding-left:20px;">${lignes}</ul>
-              ${reste > 0 ? `<p style="color:#888;margin:0 0 12px;">… et ${reste} autre${reste > 1 ? 's' : ''}.</p>` : ''}
-              ${skipped.length > 0 ? `<p style="color:#888;font-size:0.85rem;margin:0 0 12px;">${skipped.length} date${skipped.length > 1 ? 's' : ''} n'a/ont pas pu être réservée${skipped.length > 1 ? 's' : ''} (complet, passé…) — le détail est dans ton espace.</p>` : ''}
+              ${reste > 0 ? `<p style="color:#888;margin:0 0 12px;">${reste > 1 ? t('… et {n} autres.', { n: reste }) : t('… et {n} autre.', { n: reste })}</p>` : ''}
+              ${skipped.length > 0 ? `<p style="color:#888;font-size:0.85rem;margin:0 0 12px;">${skipped.length > 1
+                ? t("{n} dates n'ont pas pu être réservées (complet, passé…) — le détail est dans ton espace.", { n: skipped.length })
+                : t("{n} date n'a pas pu être réservée (complet, passé…) — le détail est dans ton espace.", { n: skipped.length })}</p>` : ''}
               ${magicLink ? `
               <div style="text-align:center;margin:20px 0;">
-                <a href="${magicLink}" style="display:inline-block;padding:12px 26px;background:#b87333;color:white;text-decoration:none;border-radius:99px;font-weight:700;">Gérer mes séances</a>
+                <a href="${magicLink}" style="display:inline-block;padding:12px 26px;background:#b87333;color:white;text-decoration:none;border-radius:99px;font-weight:700;">${t('Gérer mes séances')}</a>
               </div>` : ''}
-              <p style="color:#999;font-size:0.8125rem;margin:16px 0 0;">Un empêchement ? Tu peux annuler chaque séance depuis ton espace, selon les règles du studio.</p>
+              <p style="color:#999;font-size:0.8125rem;margin:16px 0 0;">${t('Un empêchement ? Tu peux annuler chaque séance depuis ton espace, selon les règles du studio.')}</p>
             </div>
           `,
         });

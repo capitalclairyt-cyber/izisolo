@@ -9,6 +9,7 @@ import { escapeIlike } from '@/lib/utils';
 import { coursDejaCommence } from '@/lib/dates';
 import { reportError } from '@/lib/report';
 import { poserSourcePresence } from '@/lib/bilan-essai-service';
+import { traducteurEleve } from '@/lib/i18n-portail-serveur';
 
 /**
  * POST /api/liste-attente/[id]/promouvoir
@@ -128,6 +129,10 @@ export const POST = withRoute({ auth: 'active', perm: 'eleves_gerer' }, async ({
     .update({ notified_at: new Date().toISOString() })
     .eq('id', id);
 
+  // La langue de l'élève (v122) : c'est la prof qui promeut, l'élève n'a pas
+  // de cookie ici. Sa fiche > le réglage du studio > français.
+  const t = await traducteurEleve(supabaseAdmin, { clientId, profileId: profile.id });
+
   // Email de notification (best effort), gaté sur la pref élève place_liberee.
   let promuWantsEmail = true;
   try {
@@ -137,35 +142,38 @@ export const POST = withRoute({ auth: 'active', perm: 'eleves_gerer' }, async ({
   try {
     if (process.env.RESEND_API_KEY && promuWantsEmail) {
       const dateStr = cours.date
-        ? new Date(cours.date + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })
-        : 'la date prévue';
-      const heureStr = cours.heure ? cours.heure.slice(0, 5).replace(':', 'h') : '';
+        ? new Date(cours.date + 'T12:00:00').toLocaleDateString(t.locale, { weekday: 'long', day: 'numeric', month: 'long' })
+        : t('la date prévue');
+      const heureStr = cours.heure
+        ? (t.langue === 'en' ? cours.heure.slice(0, 5) : cours.heure.slice(0, 5).replace(':', 'h'))
+        : '';
       const { data: studio } = await supabase
         .from('profiles')
         .select('studio_nom, studio_slug, adresse, code_postal, ville, telephone, email_contact')
         .eq('id', profile.id)
         .single();
+      // Le bloc « infos pratiques » (lib/email-helpers) reste en français.
       const infosBlock = infosPratiquesBlock({ adresse: studio?.adresse, codePostal: studio?.code_postal, ville: studio?.ville, telephone: studio?.telephone, email: studio?.email_contact, studioSlug: studio?.studio_slug, profileNom: studio?.studio_nom });
       // Pipeline central (Sprint 5) : blacklist respectée + List-Unsubscribe
       await sendEmail({
         categorie: 'notification',
         replyTo: user?.email || null,
         to: entry.email,
-        subject: `🎉 Une place s'est libérée pour ${cours.nom} !`,
+        subject: t("🎉 Une place s'est libérée pour {cours} !", { cours: cours.nom }),
         html: `
           <div style="font-family:-apple-system,BlinkMacSystemFont,sans-serif;max-width:560px;margin:0 auto;padding:24px;">
-            <h2 style="color:#b87333;margin:0 0 6px;">Bonne nouvelle !</h2>
-            <p style="color:#555;margin:0 0 14px;">Bonjour ${(entry.nom || '').split(' ')[0] || ''},</p>
-            <p style="color:#555;margin:0 0 14px;">Une place s'est libérée pour le cours auquel tu étais sur liste d'attente :</p>
+            <h2 style="color:#b87333;margin:0 0 6px;">${t('Bonne nouvelle !')}</h2>
+            <p style="color:#555;margin:0 0 14px;">${t('Bonjour {prenom}', { prenom: (entry.nom || '').split(' ')[0] || '' })},</p>
+            <p style="color:#555;margin:0 0 14px;">${t("Une place s'est libérée pour le cours auquel tu étais sur liste d'attente :")}</p>
             <div style="background:#faf8f5;border-radius:12px;padding:16px 20px;margin:0 0 20px;">
               <strong style="font-size:1.1rem;color:#1a1a2e;">${cours.nom}</strong><br/>
               <span style="color:#888;">📅 ${dateStr}${heureStr ? ' · 🕐 ' + heureStr : ''}</span>
               ${cours.lieu ? `<br/><span style="color:#888;">📍 ${cours.lieu}</span>` : ''}
             </div>
-            <p style="color:#555;margin:0 0 20px;">Ta réservation est <strong>déjà enregistrée</strong>. Tu n'as rien à faire — à très bientôt !</p>
+            <p style="color:#555;margin:0 0 20px;">${t("Ta réservation est {deja}. Tu n'as rien à faire — à très bientôt !", { deja: `<strong>${t('déjà enregistrée')}</strong>` })}</p>
             ${infosBlock}
             <p style="color:#aaa;font-size:0.8rem;margin:32px 0 0;border-top:1px solid #eee;padding-top:16px;text-align:center;">
-              Propulsé par <a href="https://www.izisolo.fr" style="color:#b87333;">IziSolo</a>
+              ${t('Propulsé par')} <a href="https://www.izisolo.fr" style="color:#b87333;">IziSolo</a>
             </p>
           </div>
         `,
@@ -177,8 +185,8 @@ export const POST = withRoute({ auth: 'active', perm: 'eleves_gerer' }, async ({
 
   // Push « place libérée » (no-op si pas d'abonnement)
   sendPushToEmail(entry.email, {
-    title: `Une place s'est libérée 🎉`,
-    body: `Ta place est réservée pour ${cours.nom || 'ton cours'}.`,
+    title: t("Une place s'est libérée 🎉"),
+    body: t('Ta place est réservée pour {cours}.', { cours: cours.nom || t('ton cours') }),
     url: profile.studio_slug ? `/p/${profile.studio_slug}/espace` : '/',
     tag: `la-${cours.id}`,
   }, { type: 'place_liberee', profileId: profile.id }).catch(() => {});
