@@ -10,8 +10,9 @@ import { compterPlacesOccupees } from '@/lib/presences';
 import { resoudreCarnetApplicable } from '@/lib/carnet-resolution';
 import { ogPortail } from '@/lib/portail-metadata';
 import { chargerVignettesConfig, vignetteCours } from '@/lib/vignette-cours';
+import { traducteurPortail } from '@/lib/i18n-portail-serveur';
 
-async function getData(studioSlug, coursId) {
+async function getData(studioSlug, coursId, t) {
   // Contenu PUBLIC du portail (studio, cours) + données élève filtrées par
   // client_id/email : on lit via admin (hors RLS), car les RLS bloquent un
   // élève connecté (authenticated ≠ prof) → sans ça, "Cours introuvable".
@@ -103,7 +104,7 @@ async function getData(studioSlug, coursId) {
           // offre_nom = le snapshot dénormalisé posé à la vente — LA source
           // (la jointure offres(nom) rendait « ton carnet » générique pour
           // tout abo sans offre_id, attrapé par le walkthrough B2f).
-          nom: carnetPrevu.offre_nom || 'ton carnet',
+          nom: carnetPrevu.offre_nom || t('ton carnet'),
           // reste APRÈS cette séance (null = illimité)
           resteApres: carnetPrevu.seances_total != null
             ? Math.max(0, carnetPrevu.seances_total - (carnetPrevu.seances_utilisees || 0) - 1)
@@ -159,17 +160,18 @@ async function getData(studioSlug, coursId) {
 
 export async function generateMetadata({ params }) {
   const { studioSlug, coursId } = await params;
-  const data = await getData(studioSlug, coursId);
-  if (!data) return { title: 'Cours introuvable' };
+  const t = await traducteurPortail(studioSlug);
+  const data = await getData(studioSlug, coursId, t);
+  if (!data) return { title: t('Cours introuvable') };
   const { cours, profile } = data;
   // Lien de séance partagé tel quel par la prof (« le yoga de pleine lune de
   // mercredi ») : l'aperçu doit dire la séance + le studio, pas IziSolo.
   let quand = '';
   try {
-    const jour = new Date(`${cours.date}T12:00:00`).toLocaleDateString('fr-FR', {
+    const jour = new Date(`${cours.date}T12:00:00`).toLocaleDateString(t.locale, {
       weekday: 'long', day: 'numeric', month: 'long',
     });
-    quand = ` ${jour}${cours.heure ? ` à ${String(cours.heure).slice(0, 5)}` : ''}`;
+    quand = ` ${jour}${cours.heure ? ` ${t('à')} ${String(cours.heure).slice(0, 5)}` : ''}`;
   } catch { /* date imparsable → description sans la date, jamais de crash */ }
   const titre = `${cours.nom} · ${profile.studio_nom}`;
   return {
@@ -177,14 +179,15 @@ export async function generateMetadata({ params }) {
     ...ogPortail({
       studio: profile,
       titre,
-      description: `Réserve ta place${quand} chez ${profile.studio_nom}.`,
+      description: t('Réserve ta place{quand} chez {studio}.', { quand, studio: profile.studio_nom }),
     }),
   };
 }
 
 export default async function CoursDetailPortailPage({ params }) {
   const { studioSlug, coursId } = await params;
-  const data = await getData(studioSlug, coursId);
+  const t = await traducteurPortail(studioSlug);
+  const data = await getData(studioSlug, coursId, t);
   if (!data) notFound();
 
   return (

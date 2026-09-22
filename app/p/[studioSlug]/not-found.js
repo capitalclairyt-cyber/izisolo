@@ -1,5 +1,6 @@
 'use client';
 import Link from 'next/link';
+import { useLangue } from '@/components/portail/LangueProvider';
 
 // 404 segmenté pour le portail public élève.
 // Sans ce fichier, un slug studio inexistant (ou un cours supprimé) remonterait
@@ -7,23 +8,24 @@ import Link from 'next/link';
 // — des pages du PROF, montrées à une élève déconnectée. Ici : ton chaleureux,
 // pas de jargon, et un seul lien neutre (accueil) qui ne casse jamais.
 // Note : un not-found segmenté ne reçoit pas le studioSlug, on reste donc générique.
+// La langue vient du provider du layout quand il est rendu, du français sinon.
 export default function NotFound() {
+  const { t } = useLangue();
   return (
     <div className="pnf-page">
       <div className="pnf-card">
         <div className="pnf-emoji">🌿</div>
-        <h1 className="pnf-title">Oups, page introuvable</h1>
+        <h1 className="pnf-title">{t('Oups, page introuvable')}</h1>
         <p className="pnf-desc">
-          Cette page n'existe pas, ou ce studio est introuvable.
-          Le lien que tu as suivi est peut-être incomplet ou a expiré.
+          {t('Cette page n\'existe pas, ou ce studio est introuvable.')}{' '}
+          {t('Le lien que tu as suivi est peut-être incomplet ou a expiré.')}
         </p>
         <p className="pnf-hint">
-          Si tu cherches à réserver un cours, demande à ton professeur le bon lien
-          vers son studio.
+          {t('Si tu cherches à réserver un cours, demande à ton professeur le bon lien vers son studio.')}
         </p>
         <div className="pnf-actions">
           <Link href="/" className="pnf-btn-ghost">
-            Aller à l'accueil
+            {t('Aller à l\'accueil')}
           </Link>
         </div>
       </div>

@@ -2,27 +2,34 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Calendar, Clock, MapPin, CheckCircle, AlertCircle, Loader, Sparkles, ExternalLink } from 'lucide-react';
+import { ArrowLeft, Calendar, Clock, MapPin, CheckCircle, Loader, Sparkles, ExternalLink } from 'lucide-react';
 import { useToast } from '@/components/ui/ToastProvider';
 import { toneForCours } from '@/lib/tones';
 import { prixEssai, essaiVarieParType, minPrixEssai } from '@/lib/essai-tarif';
+import { useLangue } from '@/components/portail/LangueProvider';
 
 const JOURS = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
 const MOIS = ['jan', 'fév', 'mar', 'avr', 'mai', 'jun', 'jul', 'aoû', 'sep', 'oct', 'nov', 'déc'];
 
-function formatDate(dateStr) {
+// Les tableaux faits main servent le français ; en anglais, la date se formate
+// avec le locale de la visiteuse (langue et locale viennent de useLangue()).
+function formatDate(dateStr, langue, locale) {
   const [y, m, d] = dateStr.split('-').map(Number);
   const date = new Date(y, m - 1, d);
+  if (langue === 'en') return date.toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'short' });
   return `${JOURS[date.getDay()]} ${d} ${MOIS[m - 1]}`;
 }
-function formatHeure(h) {
+// « 18h30 » en français, « 18:30 » en anglais.
+function formatHeure(h, langue) {
   if (!h) return '';
   const [hh, mm] = h.split(':');
+  if (langue === 'en') return `${String(hh).padStart(2, '0')}:${mm}`;
   return mm === '00' ? `${parseInt(hh)}h` : `${parseInt(hh)}h${mm}`;
 }
 
 export default function EssaiClient({ profile, cours, docs = [], studioSlug, preselectedCoursId, surchargesEssai = null }) {
   const { toast } = useToast();
+  const { t, langue, locale } = useLangue();
   const [coursId, setCoursId] = useState(preselectedCoursId || '');
   const [prenom, setPrenom] = useState('');
   const [nom, setNom] = useState('');
@@ -38,7 +45,7 @@ export default function EssaiClient({ profile, cours, docs = [], studioSlug, pre
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!coursId || !prenom.trim() || !email.trim()) {
-      toast.error('Choisis un cours, ton prénom et ton email');
+      toast.error(t('Choisis un cours, ton prénom et ton email'));
       return;
     }
     setSubmitting(true);
@@ -60,10 +67,10 @@ export default function EssaiClient({ profile, cours, docs = [], studioSlug, pre
         }),
       });
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Erreur');
+      if (!res.ok) throw new Error(json.error || t('Erreur'));
       setDone(json);
     } catch (err) {
-      toast.error('Erreur : ' + err.message);
+      toast.error(t('Erreur : {message}', { message: err.message }));
     } finally {
       setSubmitting(false);
     }
@@ -78,18 +85,18 @@ export default function EssaiClient({ profile, cours, docs = [], studioSlug, pre
           </div>
           {done.status === 'en_attente' ? (
             <>
-              <h1 className="essai-confirm-title">Demande reçue !</h1>
+              <h1 className="essai-confirm-title">{t('Demande reçue !')}</h1>
               <p className="essai-confirm-desc">
-                Merci {prenom} ! Ta demande a été envoyée à {profile.studio_nom}.
-                Tu recevras un email dès qu'elle sera validée.
+                {t('Merci {prenom} ! Ta demande a été envoyée à {studio}.', { prenom, studio: profile.studio_nom })}
+                {' '}{t("Tu recevras un email dès qu'elle sera validée.")}
               </p>
             </>
           ) : (
             <>
-              <h1 className="essai-confirm-title">C'est confirmé !</h1>
+              <h1 className="essai-confirm-title">{t("C'est confirmé !")}</h1>
               <p className="essai-confirm-desc">
-                Ta place est réservée pour le cours d'essai chez {profile.studio_nom}.
-                Un email de confirmation t'attend dans <strong>{email}</strong>.
+                {t("Ta place est réservée pour le cours d'essai chez {studio}.", { studio: profile.studio_nom })}
+                {' '}{t("Un email de confirmation t'attend dans")} <strong>{email}</strong>.
               </p>
             </>
           )}
@@ -103,29 +110,30 @@ export default function EssaiClient({ profile, cours, docs = [], studioSlug, pre
               rel="noopener noreferrer"
               className="essai-stripe-cta"
             >
-              <ExternalLink size={16} /> Régler {done.prix}€ pour confirmer
+              <ExternalLink size={16} /> {t('Régler {prix}€ pour confirmer', { prix: done.prix })}
             </a>
           )}
           {done.status !== 'en_attente' && done.paiement === 'sur_place' && done.prix > 0 && (
             <div className="essai-paiement-info">
-              💰 <strong>{done.prix}€</strong> à régler sur place le jour du cours
+              💰 <strong>{done.prix}€</strong> {t('à régler sur place le jour du cours')}
             </div>
           )}
           {done.status === 'en_attente' && done.prix > 0 && (
             <div className="essai-paiement-info">
               {done.paiement === 'stripe'
-                ? `Le règlement de ${done.prix}€ te sera demandé une fois ta demande validée.`
-                : `Prévois ${done.prix}€ à régler sur place, une fois ta demande validée.`}
+                ? t('Le règlement de {prix}€ te sera demandé une fois ta demande validée.', { prix: done.prix })
+                : t('Prévois {prix}€ à régler sur place, une fois ta demande validée.', { prix: done.prix })}
             </div>
           )}
 
           {/* Documents d'inscription (v85) : rappel sur l'écran de confirmation */}
           {docs.length > 0 && (
             <div className="essai-docs">
-              <div className="essai-docs-title">📄 À préparer pour ton premier cours</div>
+              <div className="essai-docs-title">{t('📄 À préparer pour ton premier cours')}</div>
               <p className="essai-docs-desc">
-                Imprime {docs.length > 1 ? 'ces documents' : 'ce document'}, remplis-{docs.length > 1 ? 'les' : 'le'} et
-                rapporte-{docs.length > 1 ? 'les' : 'le'} signé{docs.length > 1 ? 's' : ''} :
+                {docs.length > 1
+                  ? t('Imprime ces documents, remplis-les et rapporte-les signés :')
+                  : t('Imprime ce document, remplis-le et rapporte-le signé :')}
               </p>
               {docs.map(d => (
                 <a key={d.url} href={d.url} target="_blank" rel="noopener noreferrer" className="essai-doc-link">
@@ -136,7 +144,7 @@ export default function EssaiClient({ profile, cours, docs = [], studioSlug, pre
           )}
 
           <Link href={`/p/${studioSlug}`} className="essai-back-link">
-            ← Retour au studio
+            {t('← Retour au studio')}
           </Link>
         </div>
 
@@ -203,36 +211,36 @@ export default function EssaiClient({ profile, cours, docs = [], studioSlug, pre
   return (
     <div>
       <Link href={`/p/${studioSlug}`} className="essai-back-link">
-        <ArrowLeft size={15} /> Retour au studio
+        <ArrowLeft size={15} /> {t('Retour au studio')}
       </Link>
 
       <div className="essai-header">
         <div className="essai-header-icon">
           <Sparkles size={22} />
         </div>
-        <h1 className="essai-title">Cours d'essai</h1>
+        <h1 className="essai-title">{t("Cours d'essai")}</h1>
         {profile.essai_message && (
           <p className="essai-intro">{profile.essai_message}</p>
         )}
         <div className="essai-paiement-tag">
           {/* Tarif par type (v92) : le prix suit la séance choisie ; avant le
               choix, « dès X € » si le tarif varie selon le type. */}
-          {profile.essai_paiement === 'gratuit'   && '🎁 Cours d\'essai offert'}
+          {profile.essai_paiement === 'gratuit'   && t("🎁 Cours d'essai offert")}
           {profile.essai_paiement === 'sur_place' && (selectedCours
-            ? `💰 ${prixEssai(profile, selectedCours.type_cours, surchargesEssai)}€ à régler sur place`
+            ? t('💰 {prix}€ à régler sur place', { prix: prixEssai(profile, selectedCours.type_cours, surchargesEssai) })
             : essaiVarieParType(profile, surchargesEssai)
-              ? `💰 dès ${minPrixEssai(profile, surchargesEssai)}€ à régler sur place (selon le cours)`
-              : `💰 ${profile.essai_prix}€ à régler sur place`)}
-          {profile.essai_paiement === 'stripe'    && `💳 ${profile.essai_prix}€, paiement en ligne sécurisé`}
+              ? t('💰 dès {prix}€ à régler sur place (selon le cours)', { prix: minPrixEssai(profile, surchargesEssai) })
+              : t('💰 {prix}€ à régler sur place', { prix: profile.essai_prix }))}
+          {profile.essai_paiement === 'stripe'    && t('💳 {prix}€, paiement en ligne sécurisé', { prix: profile.essai_prix })}
         </div>
       </div>
 
       <form onSubmit={handleSubmit} className="essai-form">
         <div className="essai-section">
-          <label className="essai-label">Choisis ton créneau</label>
+          <label className="essai-label">{t('Choisis ton créneau')}</label>
           {cours.length === 0 ? (
             <div className="essai-empty">
-              Aucun cours disponible dans les 30 prochains jours.
+              {t('Aucun cours disponible dans les 30 prochains jours.')}
             </div>
           ) : (
             <div className="essai-cours-list">
@@ -249,8 +257,8 @@ export default function EssaiClient({ profile, cours, docs = [], studioSlug, pre
                     <div className="essai-cours-info">
                       <div className="essai-cours-nom">{c.nom}</div>
                       <div className="essai-cours-meta">
-                        <span><Calendar size={12} /> {formatDate(c.date)}</span>
-                        <span><Clock size={12} /> {formatHeure(c.heure)}</span>
+                        <span><Calendar size={12} /> {formatDate(c.date, langue, locale)}</span>
+                        <span><Clock size={12} /> {formatHeure(c.heure, langue)}</span>
                         {c.lieu && <span><MapPin size={12} /> {c.lieu}</span>}
                       </div>
                     </div>
@@ -263,12 +271,12 @@ export default function EssaiClient({ profile, cours, docs = [], studioSlug, pre
         </div>
 
         <div className="essai-section">
-          <label className="essai-label">Tes coordonnées</label>
+          <label className="essai-label">{t('Tes coordonnées')}</label>
           <div className="essai-fields">
             <input
               type="text"
               className="essai-input"
-              placeholder="Prénom *"
+              placeholder={t('Prénom *')}
               value={prenom}
               onChange={e => setPrenom(e.target.value)}
               required
@@ -277,7 +285,7 @@ export default function EssaiClient({ profile, cours, docs = [], studioSlug, pre
             <input
               type="text"
               className="essai-input"
-              placeholder="Nom (optionnel)"
+              placeholder={t('Nom (optionnel)')}
               value={nom}
               onChange={e => setNom(e.target.value)}
               autoComplete="family-name"
@@ -285,7 +293,7 @@ export default function EssaiClient({ profile, cours, docs = [], studioSlug, pre
             <input
               type="email"
               className="essai-input"
-              placeholder="Email *"
+              placeholder={t('Email *')}
               value={email}
               onChange={e => setEmail(e.target.value)}
               required
@@ -294,7 +302,7 @@ export default function EssaiClient({ profile, cours, docs = [], studioSlug, pre
             <input
               type="tel"
               className="essai-input"
-              placeholder="Téléphone (optionnel)"
+              placeholder={t('Téléphone (optionnel)')}
               value={telephone}
               onChange={e => setTelephone(e.target.value)}
               autoComplete="tel"
@@ -303,12 +311,12 @@ export default function EssaiClient({ profile, cours, docs = [], studioSlug, pre
         </div>
 
         <div className="essai-section">
-          <label className="essai-label">Un mot pour le studio (optionnel)</label>
+          <label className="essai-label">{t('Un mot pour le studio (optionnel)')}</label>
           <textarea
             className="essai-input"
             rows={3}
             maxLength={500}
-            placeholder="Comment tu nous as connu, ce qui t'amène, tes attentes..."
+            placeholder={t("Comment tu nous as connu, ce qui t'amène, tes attentes...")}
             value={message}
             onChange={e => setMessage(e.target.value)}
           />
@@ -347,19 +355,20 @@ export default function EssaiClient({ profile, cours, docs = [], studioSlug, pre
           className="essai-submit"
         >
           {submitting ? <Loader size={16} className="spin" /> : <Sparkles size={16} />}
-          {submitting ? 'Envoi…' : 'Demander mon cours d\'essai'}
+          {submitting ? t('Envoi…') : t("Demander mon cours d'essai")}
         </button>
         <p className="essai-cgu">
-          En envoyant, tu acceptes les <a href="/legal/cgu" target="_blank" rel="noopener">CGU</a> d'IziSolo.
+          {t('En envoyant, tu acceptes les')} <a href="/legal/cgu" target="_blank" rel="noopener">{t('CGU')}</a> {t("d'IziSolo.")}
         </p>
 
         {/* Documents d'inscription (v85) : annoncés dès le formulaire */}
         {docs.length > 0 && (
           <div className="essai-docs">
-            <div className="essai-docs-title">📄 Documents d'inscription</div>
+            <div className="essai-docs-title">{t("📄 Documents d'inscription")}</div>
             <p className="essai-docs-desc">
-              {profile.studio_nom} te demandera {docs.length > 1 ? 'ces documents imprimés et signés' : 'ce document imprimé et signé'} à
-              ton premier cours :
+              {docs.length > 1
+                ? t('{studio} te demandera ces documents imprimés et signés à ton premier cours :', { studio: profile.studio_nom })
+                : t('{studio} te demandera ce document imprimé et signé à ton premier cours :', { studio: profile.studio_nom })}
             </p>
             {docs.map(d => (
               <a key={d.url} href={d.url} target="_blank" rel="noopener noreferrer" className="essai-doc-link">

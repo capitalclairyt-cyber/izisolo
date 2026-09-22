@@ -4,8 +4,10 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { CheckCircle2, Sparkles, Lock, ArrowLeft } from 'lucide-react';
 import CalendarBuilder from '@/components/sondage/CalendarBuilder';
+import { useLangue } from '@/components/portail/LangueProvider';
 
-export default function SondageReponseClient({ profile, sondage, creneaux, isClosed, connectedClient, isLoggedIn }) {
+export default function SondageReponseClient({ profile, sondage, creneaux, isClosed, connectedClient }) {
+  const { t } = useLangue();
   const [reponses, setReponses] = useState({}); // { creneauId: 'oui'|'peut_etre'|'non' }
   const [email, setEmail] = useState(connectedClient?.email || '');
   const [prenom, setPrenom] = useState(connectedClient?.prenom || '');
@@ -37,16 +39,16 @@ export default function SondageReponseClient({ profile, sondage, creneaux, isClo
       <div className="sr-page">
         <header className="sr-studio">
           <Link href={`/p/${profile.studio_slug}`} className="sr-back">
-            <ArrowLeft size={16} /> Retour au studio
+            <ArrowLeft size={16} /> {t('Retour au studio')}
           </Link>
           <div className="sr-studio-nom">{profile.studio_nom}</div>
         </header>
         <div className="izi-card sr-locked">
           <Lock size={28} style={{ color: 'var(--brand)' }} />
-          <h2>Sondage réservé aux élèves inscrits</h2>
-          <p>Connecte-toi à ton espace élève pour répondre.</p>
+          <h2>{t('Sondage réservé aux élèves inscrits')}</h2>
+          <p>{t('Connecte-toi à ton espace élève pour répondre.')}</p>
           <Link href={`/p/${profile.studio_slug}/connexion?next=/p/${profile.studio_slug}/sondage/${sondage.slug}`} className="izi-btn izi-btn-primary">
-            Me connecter
+            {t('Me connecter')}
           </Link>
         </div>
         {styleBlock}
@@ -59,15 +61,15 @@ export default function SondageReponseClient({ profile, sondage, creneaux, isClo
       <div className="sr-page">
         <header className="sr-studio">
           <Link href={`/p/${profile.studio_slug}`} className="sr-back">
-            <ArrowLeft size={16} /> Retour au studio
+            <ArrowLeft size={16} /> {t('Retour au studio')}
           </Link>
           <div className="sr-studio-nom">{profile.studio_nom}</div>
         </header>
         <div className="izi-card sr-locked">
-          <h2>Ce sondage est clos</h2>
-          <p>Merci à toutes celles et ceux qui ont répondu !</p>
+          <h2>{t('Ce sondage est clos')}</h2>
+          <p>{t('Merci à toutes celles et ceux qui ont répondu !')}</p>
           <Link href={`/p/${profile.studio_slug}`} className="izi-btn izi-btn-secondary">
-            Voir les cours
+            {t('Voir les cours')}
           </Link>
         </div>
         {styleBlock}
@@ -78,11 +80,11 @@ export default function SondageReponseClient({ profile, sondage, creneaux, isClo
   const submit = async () => {
     setError(null);
     if (Object.keys(reponses).length === 0) {
-      setError('Choisis au moins une réponse en cliquant sur les créneaux.');
+      setError(t('Choisis au moins une réponse en cliquant sur les créneaux.'));
       return;
     }
     if (needsEmail && !email.trim()) {
-      setError('Indique ton email pour répondre.');
+      setError(t('Indique ton email pour répondre.'));
       return;
     }
 
@@ -100,7 +102,7 @@ export default function SondageReponseClient({ profile, sondage, creneaux, isClo
         }),
       });
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Erreur');
+      if (!res.ok) throw new Error(json.error || t('Erreur'));
       setDone(true);
     } catch (err) {
       setError(err.message);
@@ -114,10 +116,10 @@ export default function SondageReponseClient({ profile, sondage, creneaux, isClo
       <div className="sr-page">
         <div className="izi-card sr-done">
           <CheckCircle2 size={48} style={{ color: '#16a34a' }} />
-          <h2>Merci pour ta réponse !</h2>
-          <p>{profile.studio_nom} en tient compte pour construire le planning à venir.</p>
+          <h2>{t('Merci pour ta réponse !')}</h2>
+          <p>{t('{studio} en tient compte pour construire le planning à venir.', { studio: profile.studio_nom })}</p>
           <Link href={`/p/${profile.studio_slug}`} className="izi-btn izi-btn-primary">
-            Voir les cours du studio
+            {t('Voir les cours du studio')}
           </Link>
         </div>
         {styleBlock}
@@ -129,7 +131,7 @@ export default function SondageReponseClient({ profile, sondage, creneaux, isClo
     <div className="sr-page">
       <header className="sr-studio">
         <Link href={`/p/${profile.studio_slug}`} className="sr-back">
-          <ArrowLeft size={16} /> Retour au studio
+          <ArrowLeft size={16} /> {t('Retour au studio')}
         </Link>
         <div className="sr-studio-nom">{profile.studio_nom}</div>
       </header>
@@ -155,28 +157,28 @@ export default function SondageReponseClient({ profile, sondage, creneaux, isClo
       {/* Identification (anonyme) */}
       {needsEmail && (
         <div className="izi-card sr-form">
-          <h3>Quelques infos pour qu'on sache qui tu es</h3>
+          <h3>{t("Quelques infos pour qu'on sache qui tu es")}</h3>
           <div className="sr-form-row">
             <div className="sr-form-group">
-              <label>Prénom</label>
+              <label>{t('Prénom')}</label>
               <input
                 className="izi-input"
                 type="text"
                 value={prenom}
                 onChange={(e) => setPrenom(e.target.value)}
                 maxLength={80}
-                placeholder="Sophie"
+                placeholder={t('Sophie')}
               />
             </div>
             <div className="sr-form-group">
-              <label>Email <span style={{ color: 'var(--brand)' }}>*</span></label>
+              <label>{t('Email')} <span style={{ color: 'var(--brand)' }}>*</span></label>
               <input
                 className="izi-input"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                placeholder="sophie@exemple.fr"
+                placeholder={t('sophie@exemple.fr')}
               />
             </div>
           </div>
@@ -195,14 +197,14 @@ export default function SondageReponseClient({ profile, sondage, creneaux, isClo
 
       {/* Commentaire optionnel */}
       <div className="izi-card sr-form">
-        <label className="sr-comment-label">Un mot pour {profile.studio_nom} (optionnel)</label>
+        <label className="sr-comment-label">{t('Un mot pour {studio} (optionnel)', { studio: profile.studio_nom })}</label>
         <textarea
           className="izi-input"
           value={commentaire}
           onChange={(e) => setCommentaire(e.target.value)}
           rows={2}
           maxLength={500}
-          placeholder="Ex : Idéalement plutôt en fin de journée car je travaille…"
+          placeholder={t('Ex : Idéalement plutôt en fin de journée car je travaille…')}
         />
       </div>
 
@@ -211,9 +213,9 @@ export default function SondageReponseClient({ profile, sondage, creneaux, isClo
       {/* Submit */}
       <div className="sr-submit-bar">
         <div className="sr-summary">
-          {ouiCount > 0      && <span className="sr-pill pill-oui">{ouiCount} oui</span>}
-          {peutEtreCount > 0 && <span className="sr-pill pill-peut">{peutEtreCount} peut-être</span>}
-          {nonCount > 0      && <span className="sr-pill pill-non">{nonCount} non</span>}
+          {ouiCount > 0      && <span className="sr-pill pill-oui">{t('{n} oui', { n: ouiCount })}</span>}
+          {peutEtreCount > 0 && <span className="sr-pill pill-peut">{t('{n} peut-être', { n: peutEtreCount })}</span>}
+          {nonCount > 0      && <span className="sr-pill pill-non">{t('{n} non', { n: nonCount })}</span>}
         </div>
         <button
           type="button"
@@ -221,7 +223,7 @@ export default function SondageReponseClient({ profile, sondage, creneaux, isClo
           onClick={submit}
           disabled={submitting || Object.keys(reponses).length === 0}
         >
-          {submitting ? 'Envoi…' : 'Envoyer mes réponses'}
+          {submitting ? t('Envoi…') : t('Envoyer mes réponses')}
         </button>
       </div>
 

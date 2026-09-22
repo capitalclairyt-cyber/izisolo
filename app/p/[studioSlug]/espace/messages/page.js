@@ -3,11 +3,18 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { redirect, notFound } from 'next/navigation';
 import EspaceMessagesClient from './EspaceMessagesClient';
 import { resoudreFicheEleve } from '@/lib/fiche-eleve';
+import { traducteurPortail } from '@/lib/i18n-portail-serveur';
 
-export const metadata = { title: 'Mes messages', robots: { index: false, follow: false } };
+// Le titre suit la langue du portail (cookie de la visiteuse > réglage du studio).
+export async function generateMetadata({ params }) {
+  const { studioSlug } = await params;
+  const t = await traducteurPortail(studioSlug);
+  return { title: t('Mes messages'), robots: { index: false, follow: false } };
+}
 
 export default async function EspaceMessagesPage({ params }) {
   const { studioSlug } = await params;
+  const t = await traducteurPortail(studioSlug);
 
   // Studio (public) + vérif client (filtrée par profile_id + email) via admin :
   // les RLS bloquent un élève connecté (authenticated ≠ prof) → sans ça,
@@ -32,8 +39,8 @@ export default async function EspaceMessagesPage({ params }) {
   if (!client) {
     return (
       <div style={{ maxWidth: 600, margin: '40px auto', padding: 20, textAlign: 'center' }}>
-        <h1>Espace réservé aux élèves</h1>
-        <p>Tu n'es pas reconnu·e comme élève de ce studio.</p>
+        <h1>{t('Espace réservé aux élèves')}</h1>
+        <p>{t("Tu n'es pas reconnu·e comme élève de ce studio.")}</p>
       </div>
     );
   }

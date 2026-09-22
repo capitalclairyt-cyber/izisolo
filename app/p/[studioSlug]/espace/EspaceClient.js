@@ -3,42 +3,52 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Calendar, Clock, MapPin, ArrowLeft, LogOut, CheckCircle, XCircle, Loader, AlertCircle, User, Lock, CreditCard, Ticket, CalendarCheck, Zap, Download, Receipt, MessageCircle, Send, X, Phone, Home, Pencil, Save, Wallet, Bell, FileText, BadgeCheck } from 'lucide-react';
+import { Calendar, Clock, MapPin, ArrowLeft, LogOut, CheckCircle, XCircle, Loader, AlertCircle, User, Lock, CreditCard, Ticket, CalendarCheck, Zap, Download, Receipt, MessageCircle, Phone, Home, Pencil, Save, Wallet, Bell, FileText, BadgeCheck } from 'lucide-react';
 import PushToggle from '@/components/push/PushToggle';
 import PushPrompt from '@/components/push/PushPrompt';
 import NotifPrefsPanel from '@/components/push/NotifPrefsPanel';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/components/ui/ToastProvider';
-import { evaluerAnnulation, formatDateLimite } from '@/lib/regles-metier';
+import { evaluerAnnulation } from '@/lib/regles-metier';
 import { moisFacturables } from '@/lib/factures';
 import { toneForCours, toneForPaiement } from '@/lib/tones';
 import { libelleSeances } from '@/lib/offres-seances';
 import { confirmationEleve } from '@/lib/demande-offre';
 import { epcQrPayload, formatIban } from '@/lib/reglement';
 import AideEleve from '@/components/portail/AideEleve';
+import { useLangue } from '@/components/portail/LangueProvider';
+import { localeDe } from '@/lib/i18n-portail';
 
 const STRIPE_TYPE_ICONS = { carnet: Ticket, abonnement: CalendarCheck, cours_unique: Zap, adhesion: BadgeCheck };
 
 const MOIS  = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
 const JOURS = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
 
-function formatDate(dateStr) {
+// Les tableaux faits main servent le français ; en anglais on laisse le
+// navigateur écrire la date dans le locale de la langue (2026-09-22).
+function formatDate(dateStr, langue = 'fr') {
   const [y, m, d] = dateStr.split('-').map(Number);
   const date = new Date(y, m - 1, d);
+  if (langue !== 'fr') {
+    return date.toLocaleDateString(localeDe(langue), { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  }
   return `${JOURS[date.getDay()]} ${d} ${MOIS[m - 1]} ${y}`;
 }
-function formatHeure(h) {
+// « 18h30 » en français, « 18:30 » en anglais.
+function formatHeure(h, langue = 'fr') {
   if (!h) return '';
   const [hh, mm] = h.split(':');
+  if (langue !== 'fr') return `${hh}:${mm}`;
   return mm === '00' ? `${parseInt(hh)}h` : `${parseInt(hh)}h${mm}`;
 }
 
-function modeLabel(mode) {
-  const map = { especes: 'Espèces', cheque: 'Chèque', virement: 'Virement', CB: 'CB' };
+function modeLabel(mode, t) {
+  const map = { especes: t('Espèces'), cheque: t('Chèque'), virement: t('Virement'), CB: t('CB') };
   return map[mode] || mode;
 }
 
-function CoursCard({ presence, profile, studioSlug, onAnnuler, annulEnCours, visio = null }) {
+function CoursCard({ presence, profile, onAnnuler, annulEnCours, visio = null }) {
+  const { t, langue } = useLangue();
   const c = presence.cours;
   const enLigne = c.format === 'visio' || c.format === 'hybride';
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -63,10 +73,10 @@ function CoursCard({ presence, profile, studioSlug, onAnnuler, annulEnCours, vis
         <div className="espace-cours-nom">{c.nom}</div>
         {c.type_cours && <span className={`portail-tag portail-tag-${tone}`} style={{ marginBottom: 6, display: 'inline-block' }}>{c.type_cours}</span>}
         <div className="espace-cours-details">
-          <span><Calendar size={13} /> {formatDate(c.date)}</span>
-          {c.heure && <span><Clock size={13} /> {formatHeure(c.heure)}{c.duree_minutes ? ` · ${c.duree_minutes} min` : ''}</span>}
+          <span><Calendar size={13} /> {formatDate(c.date, langue)}</span>
+          {c.heure && <span><Clock size={13} /> {formatHeure(c.heure, langue)}{c.duree_minutes ? ` · ${c.duree_minutes} ${t('min')}` : ''}</span>}
           {enLigne
-            ? <span style={{ color: '#4f6d8f', fontWeight: 600 }}>🖥 En ligne</span>
+            ? <span style={{ color: '#4f6d8f', fontWeight: 600 }}>🖥 {t('En ligne')}</span>
             : (c.lieu && <span><MapPin size={13} /> {c.lieu}</span>)}
         </div>
         {/* Lien de visio (v86) — le verrou est calculé côté SERVEUR : ici on ne
@@ -77,12 +87,12 @@ function CoursCard({ presence, profile, studioSlug, onAnnuler, annulEnCours, vis
             padding: '7px 12px', background: '#eef4fb', border: '1px solid #b9d2ec',
             borderRadius: 9, color: '#2c5f92', fontWeight: 700, fontSize: '0.8125rem', textDecoration: 'none',
           }}>
-            🎥 Rejoindre la séance
+            🎥 {t('Rejoindre la séance')}
           </a>
         )}
         {enLigne && visio?.verrouille && (
           <div style={{ marginTop: 8, fontSize: '0.78rem', color: '#8a6d3b', background: '#fdf6e3', border: '1px solid #f0e0b8', borderRadius: 9, padding: '7px 12px', display: 'inline-block' }}>
-            🔒 Le lien de la séance apparaîtra ici une fois ta séance réglée.
+            🔒 {t('Le lien de la séance apparaîtra ici une fois ta séance réglée.')}
           </div>
         )}
       </div>
@@ -92,27 +102,27 @@ function CoursCard({ presence, profile, studioSlug, onAnnuler, annulEnCours, vis
           // décomptée (carnet lié) ou due. Pas de bouton Annuler (déjà annulée).
           <span className="portail-tag" style={{ background: '#fef3e2', color: '#b45309' }}>
             {presence.abonnement_id
-              ? 'Annulée tardivement · séance décomptée'
+              ? t('Annulée tardivement · séance décomptée')
               : presence.est_due
-                ? 'Annulée tardivement · séance due'
-                : 'Annulée tardivement'}
+                ? t('Annulée tardivement · séance due')
+                : t('Annulée tardivement')}
           </span>
         ) : c.est_annule ? (
-          <span className="portail-tag portail-tag-amber">Annulé</span>
+          <span className="portail-tag portail-tag-amber">{t('Annulé')}</span>
         ) : ['annule', 'declinee'].includes(presence.statut_pointage) ? (
           // Résa résolue « annulée »/« déclinée » côté studio : plus une
           // inscription (B1b, rouge : elle s'affichait « Inscrit·e » avec un
           // bouton Annuler actif qui SANCTIONNAIT l'élève < 24 h).
-          <span className="portail-tag" style={{ background: '#f5f5f5', color: '#999' }}>Annulée</span>
+          <span className="portail-tag" style={{ background: '#f5f5f5', color: '#999' }}>{t('Annulée')}</span>
         ) : aVenir ? (
           // Cours à venir : toujours « Inscrit·e » (rien n'est encore pointé).
-          <span className="portail-tag portail-tag-blue">Inscrit·e</span>
+          <span className="portail-tag portail-tag-blue">{t('Inscrit·e')}</span>
         ) : presence.statut_pointage === 'present' ? (
-          <span className="portail-tag portail-tag-green">✓ Présent·e</span>
+          <span className="portail-tag portail-tag-green">✓ {t('Présent·e')}</span>
         ) : presence.statut_pointage === 'absent' ? (
-          <span className="portail-tag" style={{ background: '#f5f5f5', color: '#999' }}>Absent·e</span>
+          <span className="portail-tag" style={{ background: '#f5f5f5', color: '#999' }}>{t('Absent·e')}</span>
         ) : presence.statut_pointage === 'excuse' ? (
-          <span className="portail-tag" style={{ background: '#fef3e2', color: '#b45309' }}>Excusé·e</span>
+          <span className="portail-tag" style={{ background: '#fef3e2', color: '#b45309' }}>{t('Excusé·e')}</span>
         ) : (
           // Cours passé non pointé par la prof → aucun statut affirmé
           // (avant : lisait presence.present, champ inexistant → « Absent·e » à tort).
@@ -125,9 +135,9 @@ function CoursCard({ presence, profile, studioSlug, onAnnuler, annulEnCours, vis
             confirmOpen ? (
               <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 6, maxWidth: 220 }}>
                 <p style={{ fontSize: '0.75rem', color: '#7c4a03', margin: '0 0 4px', fontWeight: 600, lineHeight: 1.4 }}>
-                  ⚠ Annulation tardive : {Number(c.tarif_unitaire) > 0
-                    ? 'la séance restera due.'
-                    : 'la séance sera due (décomptée de ton carnet si tu en utilises un).'} Confirmer ?
+                  ⚠ {t('Annulation tardive :')} {Number(c.tarif_unitaire) > 0
+                    ? t('la séance restera due.')
+                    : t('la séance sera due (décomptée de ton carnet si tu en utilises un).')} {t('Confirmer ?')}
                 </p>
                 <div style={{ display: 'flex', gap: 6 }}>
                   <button
@@ -135,13 +145,13 @@ function CoursCard({ presence, profile, studioSlug, onAnnuler, annulEnCours, vis
                     disabled={annulEnCours}
                     style={{ flex: 1, padding: '6px 10px', borderRadius: 8, border: 'none', background: '#c62828', color: 'white', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}
                   >
-                    {annulEnCours ? <Loader size={12} className="spin" /> : 'Oui'}
+                    {annulEnCours ? <Loader size={12} className="spin" /> : t('Oui')}
                   </button>
                   <button
                     onClick={() => setConfirmOpen(false)}
                     style={{ flex: 1, padding: '6px 10px', borderRadius: 8, border: '1px solid #e5e5e5', background: 'white', fontSize: '0.75rem', cursor: 'pointer', color: '#666' }}
                   >
-                    Non
+                    {t('Non')}
                   </button>
                 </div>
               </div>
@@ -149,27 +159,27 @@ function CoursCard({ presence, profile, studioSlug, onAnnuler, annulEnCours, vis
               <button
                 onClick={() => setConfirmOpen(true)}
                 className="espace-annul-btn espace-annul-btn--tardive"
-                title={`Annulation possible mais la séance sera comptée (délai libre : ${evaluation.delaiHeures}h avant)`}
+                title={t('Annulation possible mais la séance sera comptée (délai libre : {h}h avant)', { h: evaluation.delaiHeures })}
               >
-                <Lock size={11} /> Annuler (séance due)
+                <Lock size={11} /> {t('Annuler (séance due)')}
               </button>
             )
           ) : confirmOpen ? (
             <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
-              <p style={{ fontSize: '0.8rem', color: '#c62828', margin: '0 0 4px', fontWeight: 600 }}>Confirmer l'annulation ?</p>
+              <p style={{ fontSize: '0.8rem', color: '#c62828', margin: '0 0 4px', fontWeight: 600 }}>{t("Confirmer l'annulation ?")}</p>
               <div style={{ display: 'flex', gap: 6 }}>
                 <button
                   onClick={() => { onAnnuler(presence.id, false); setConfirmOpen(false); }}
                   disabled={annulEnCours}
                   style={{ flex: 1, padding: '6px 10px', borderRadius: 8, border: 'none', background: '#c62828', color: 'white', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}
                 >
-                  {annulEnCours ? <Loader size={12} className="spin" /> : 'Oui, annuler'}
+                  {annulEnCours ? <Loader size={12} className="spin" /> : t('Oui, annuler')}
                 </button>
                 <button
                   onClick={() => setConfirmOpen(false)}
                   style={{ flex: 1, padding: '6px 10px', borderRadius: 8, border: '1px solid #e5e5e5', background: 'white', fontSize: '0.8rem', cursor: 'pointer', color: '#666' }}
                 >
-                  Non
+                  {t('Non')}
                 </button>
               </div>
             </div>
@@ -178,7 +188,7 @@ function CoursCard({ presence, profile, studioSlug, onAnnuler, annulEnCours, vis
               onClick={() => setConfirmOpen(true)}
               className="espace-annul-btn"
             >
-              <XCircle size={13} /> Annuler
+              <XCircle size={13} /> {t('Annuler')}
             </button>
           )
         )}
@@ -187,7 +197,8 @@ function CoursCard({ presence, profile, studioSlug, onAnnuler, annulEnCours, vis
   );
 }
 
-export default function EspaceClient({ profile, client, aVenir, passes, paiements = [], offresStripe = [], offresCatalogue = [], catalogueMasque = false, abonnements = [], aRegler = [], seancesWorkshopDues = [], annulationsDues = [], unreadMessages = 0, clientPrefs = {}, studioSlug, userEmail, isDemo = false, facturationActive = false, facturesParPaiement = {}, docsInscription = [], visioParPresence = {}, ribStudio = null, refVirement = null, adhesions = [], nbStudios = 1, lienAvis = null }) {
+export default function EspaceClient({ profile, client, aVenir, passes, paiements = [], offresStripe = [], offresCatalogue = [], catalogueMasque = false, abonnements = [], aRegler = [], seancesWorkshopDues = [], annulationsDues = [], unreadMessages = 0, clientPrefs = {}, studioSlug, userEmail, isDemo = false, facturationActive = false, facturesParPaiement = {}, docsInscription = [], visioParPresence = {}, ribStudio = null, refVirement = null, adhesions = [], nbStudios = 1, lienAvis = null, seancesOuvertes = [] }) {
+  const { t, locale, langue } = useLangue();
   const router = useRouter();
   const { toast } = useToast();
   const [notifsOpen, setNotifsOpen] = useState(false);
@@ -215,7 +226,7 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
         body: JSON.stringify({ offreId: offre.id }),
       });
       const json = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(json.error || 'Demande impossible pour le moment.');
+      if (!res.ok) throw new Error(json.error || t('Demande impossible pour le moment.'));
       setDemandesFaites(prev => ({
         ...prev,
         [offre.id]: json.message || confirmationEleve({ offreNom: offre.nom, studioNom: profile?.studio_nom }),
@@ -267,28 +278,32 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
     notifsEleve.push({
       id: 'msg',
       icon: '💬',
-      text: `${unreadMessages} nouveau${unreadMessages > 1 ? 'x' : ''} message${unreadMessages > 1 ? 's' : ''} de ton studio`,
+      text: unreadMessages > 1
+        ? t('{n} nouveaux messages de ton studio', { n: unreadMessages })
+        : t('{n} nouveau message de ton studio', { n: unreadMessages }),
       href: `/p/${studioSlug}/espace/messages`,
     });
   }
   for (const abo of (abonnements || [])) {
     if (abo.statut !== 'actif') continue;
-    const nom = abo.offre_nom || 'ton carnet';
+    const nom = abo.offre_nom || t('ton carnet');
     if (abo.seances_total != null) {
       const reste = Math.max(0, abo.seances_total - (abo.seances_utilisees || 0));
-      if (reste === 0) notifsEleve.push({ id: `abo-epuise-${abo.id}`, icon: '📋', text: `Ton carnet « ${nom} » est épuisé` });
-      else if (reste <= 2) notifsEleve.push({ id: `abo-bas-${abo.id}`, icon: '📋', text: `Plus que ${reste} séance${reste > 1 ? 's' : ''} sur « ${nom} »` });
+      if (reste === 0) notifsEleve.push({ id: `abo-epuise-${abo.id}`, icon: '📋', text: t('Ton carnet « {nom} » est épuisé', { nom }) });
+      else if (reste <= 2) notifsEleve.push({ id: `abo-bas-${abo.id}`, icon: '📋', text: reste > 1 ? t('Plus que {n} séances sur « {nom} »', { n: reste, nom }) : t('Plus que {n} séance sur « {nom} »', { n: reste, nom }) });
     }
     if (abo.date_fin) {
       const j = Math.ceil((new Date(abo.date_fin) - new Date(todayIso)) / 86400000);
-      if (j >= 0 && j <= 7) notifsEleve.push({ id: `abo-exp-${abo.id}`, icon: '⏳', text: `Ton carnet « ${nom} » expire ${j === 0 ? "aujourd'hui" : `dans ${j} j`}` });
+      if (j >= 0 && j <= 7) notifsEleve.push({ id: `abo-exp-${abo.id}`, icon: '⏳', text: j === 0 ? t("Ton carnet « {nom} » expire aujourd'hui", { nom }) : t('Ton carnet « {nom} » expire dans {j} j', { nom, j }) });
     }
   }
   if (nbARegler > 0) {
     notifsEleve.push({
       id: 'regler',
       icon: '💰',
-      text: totalDu > 0 ? `Tu as ${totalDu.toFixed(2).replace('.', ',')} € à régler` : `Tu as ${nbARegler} paiement${nbARegler > 1 ? 's' : ''} à régler`,
+      text: totalDu > 0
+        ? t('Tu as {montant} € à régler', { montant: totalDu.toFixed(2).replace('.', ',') })
+        : (nbARegler > 1 ? t('Tu as {n} paiements à régler', { n: nbARegler }) : t('Tu as {n} paiement à régler', { n: nbARegler })),
     });
   }
 
@@ -302,8 +317,8 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
         body: JSON.stringify(coords),
       });
       const json = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(json.error || 'Erreur');
-      toast.success('Coordonnées mises à jour 🌿');
+      if (!res.ok) throw new Error(json.error || t('Erreur'));
+      toast.success(t('Coordonnées mises à jour 🌿'));
       setEditCoords(false);
     } catch (e) {
       toast.error(e.message);
@@ -327,8 +342,8 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
         body: JSON.stringify({ password: mdp1 }),
       });
       const json = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(json.error || 'Erreur');
-      toast.success('Mot de passe enregistré ✓. Tu peux maintenant te connecter avec, depuis la page Connexion.');
+      if (!res.ok) throw new Error(json.error || t('Erreur'));
+      toast.success(t('Mot de passe enregistré ✓. Tu peux maintenant te connecter avec, depuis la page Connexion.'));
       setMdpOpen(false); setMdp1(''); setMdp2('');
     } catch (e) {
       toast.error(e.message);
@@ -337,7 +352,7 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
     }
   };
 
-  const handleAnnuler = async (presenceId, tardiveAttendue = false) => {
+  const handleAnnuler = async (presenceId) => {
     setAnnulEnCours(presenceId);
     setErrMsg('');
     try {
@@ -347,19 +362,19 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
         body: JSON.stringify({ presenceId }),
       });
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Erreur');
+      if (!res.ok) throw new Error(json.error || t('Erreur'));
       setAnnuleIds(prev => [...prev, presenceId]);
       // Le message reflète ce qui s'est RÉELLEMENT passé (audit 2026-07-25 :
       // « la séance a été comptée » s'affichait même quand la règle du studio
       // excusait tout ou laissait la prof décider).
       if (json.tardive && json.action === 'excusee') {
-        toast.success('Annulation enregistrée : ton studio ne compte pas cette séance. 🌿');
+        toast.success(t('Annulation enregistrée : ton studio ne compte pas cette séance. 🌿'));
       } else if (json.tardive && json.action === 'manuel') {
-        toast.warning('Annulation tardive enregistrée : ton studio revient vers toi pour la suite.');
+        toast.warning(t('Annulation tardive enregistrée : ton studio revient vers toi pour la suite.'));
       } else if (json.tardive) {
-        toast.warning('Annulation enregistrée : la séance a été comptée (annulation tardive).');
+        toast.warning(t('Annulation enregistrée : la séance a été comptée (annulation tardive).'));
       } else {
-        toast.success('Réservation annulée. On t\'attend la prochaine fois 🌿');
+        toast.success(t("Réservation annulée. On t'attend la prochaine fois 🌿"));
       }
     } catch (e) {
       setErrMsg(e.message);
@@ -382,32 +397,64 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
     return (
       <div>
         <Link href={`/p/${studioSlug}`} className="portail-back-link">
-          <ArrowLeft size={15} /> Retour aux cours
+          <ArrowLeft size={15} /> {t('Retour aux cours')}
         </Link>
         <div className="portail-card" style={{ textAlign: 'center', padding: '40px 24px' }}>
           <div style={{ fontSize: '2.5rem', marginBottom: 12 }}>👋</div>
           <h2 style={{ fontSize: '1.125rem', fontWeight: 800, margin: '0 0 10px', color: '#1a1a2e' }}>
-            Bienvenue sur {profile.studio_nom} !
+            {t('Bienvenue sur {studio} !', { studio: profile.studio_nom })}
           </h2>
-          <p style={{ color: '#888', fontSize: '0.9rem', margin: '0 0 24px', lineHeight: 1.6 }}>
-            Tu es connecté·e avec <strong>{userEmail}</strong>, mais tu n'as pas encore de réservation dans ce studio.
+          <p style={{ color: '#888', fontSize: '0.9rem', margin: '0 0 8px', lineHeight: 1.6 }}>
+            {t('Tu es connecté·e avec')} <strong>{userEmail}</strong>. {t("Il te reste une étape : choisis une séance et réserve ta place.")}
           </p>
-          <Link href={`/p/${studioSlug}`} className="portail-btn-primary" style={{ maxWidth: 260, margin: '0 auto 12px' }}>
-            Voir les cours disponibles
-          </Link>
+          {seancesOuvertes.length > 0 ? (
+            <div className="accueil-seances" data-testid="accueil-seances">
+              {seancesOuvertes.map((c) => {
+                const [y, m, d] = String(c.date).split('-').map(Number);
+                const jour = new Date(y, m - 1, d).toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long' });
+                return (
+                  <div key={c.id} className="accueil-seance">
+                    <div className="accueil-seance-info">
+                      <div className="accueil-seance-nom">{c.nom}</div>
+                      <div className="accueil-seance-quand">
+                        {jour} · {String(c.heure || '').slice(0, 5)}
+                        {c.duree_minutes ? ` · ${c.duree_minutes} min` : ''}
+                        {(c.format === 'visio' || c.format === 'hybride') ? ` · ${t('En ligne')}` : (c.lieu ? ` · ${c.lieu}` : '')}
+                      </div>
+                    </div>
+                    <Link href={`/p/${studioSlug}/cours/${c.id}`} className="portail-btn-primary accueil-seance-btn" data-testid="accueil-reserver">
+                      {t('Réserver')}
+                    </Link>
+                  </div>
+                );
+              })}
+              <Link href={`/p/${studioSlug}`} className="portail-btn-ghost" style={{ maxWidth: 260, margin: '16px auto 12px' }}>
+                {t('Voir toutes les séances')}
+              </Link>
+            </div>
+          ) : (
+            <Link href={`/p/${studioSlug}`} className="portail-btn-primary" style={{ maxWidth: 260, margin: '16px auto 12px' }}>
+              {t('Voir les cours disponibles')}
+            </Link>
+          )}
           <button onClick={handleDeconnexion} className="portail-btn-ghost" style={{ maxWidth: 260, margin: '0 auto' }}>
-            <LogOut size={15} /> Se déconnecter
+            <LogOut size={15} /> {t('Se déconnecter')}
           </button>
         </div>
         <style jsx global>{`
           .portail-back-link { display: inline-flex; align-items: center; gap: 6px; color: #888; font-size: 0.875rem; text-decoration: none; margin-bottom: 20px; }
           .portail-back-link:hover { color: #d4a0a0; }
+          .accueil-seances { text-align: left; margin-top: 18px; }
+          .accueil-seance { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 0; border-top: 1px solid #f0ebe8; }
+          .accueil-seance:last-of-type { border-bottom: 1px solid #f0ebe8; }
+          .accueil-seance-nom { font-weight: 700; color: #1a1a2e; font-size: 0.9375rem; }
+          .accueil-seance-quand { color: #888; font-size: 0.8125rem; margin-top: 2px; }
+          .accueil-seance-btn { width: auto; padding: 9px 16px; font-size: 0.875rem; flex-shrink: 0; }
         `}</style>
       </div>
     );
   }
 
-  const prenom = client.prenom || client.email;
 
   return (
     <div>
@@ -423,14 +470,14 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
         }}>
           <span style={{ fontSize: '1.25rem' }}>👁️</span>
           <div style={{ flex: 1 }}>
-            <strong>Mode démo</strong> : tu vois ton espace élève avec des données fictives.
-            <span style={{ fontWeight: 400, opacity: 0.85 }}> Camille, une élève imaginaire, a un carnet 10 séances et 2 cours réservés.</span>
+            <strong>{t('Mode démo')}</strong> {t(': tu vois ton espace élève avec des données fictives.')}
+            <span style={{ fontWeight: 400, opacity: 0.85 }}> {t('Camille, une élève imaginaire, a un carnet 10 séances et 2 cours réservés.')}</span>
           </div>
         </div>
       )}
 
       <Link href={`/p/${studioSlug}${isDemo ? '?demo=1' : ''}`} className="portail-back-link">
-        <ArrowLeft size={15} /> Retour aux cours
+        <ArrowLeft size={15} /> {t('Retour aux cours')}
       </Link>
 
       {!isDemo && <PushPrompt audience="eleve" />}
@@ -454,8 +501,8 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
             <div style={{ position: 'relative' }}>
               <button
                 onClick={() => setNotifsOpen(o => !o)}
-                title="Notifications"
-                aria-label={`Notifications${notifsEleve.length ? ` (${notifsEleve.length})` : ''}`}
+                title={t('Notifications')}
+                aria-label={notifsEleve.length ? t('Notifications ({n})', { n: notifsEleve.length }) : t('Notifications')}
                 style={{ background: 'none', border: 'none', cursor: 'pointer', color: notifsEleve.length ? '#d4a0a0' : '#bbb', padding: 8, position: 'relative', display: 'flex' }}
               >
                 <Bell size={18} />
@@ -470,11 +517,11 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
                   <div onClick={() => setNotifsOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 40 }} />
                   <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: 6, width: 280, maxWidth: '80vw', background: 'white', border: '1px solid #f0ebe8', borderRadius: 12, boxShadow: '0 8px 24px rgba(0,0,0,0.12)', zIndex: 41, overflow: 'hidden' }}>
                     <div style={{ padding: '10px 14px', borderBottom: '1px solid #f5f0ed', fontWeight: 700, fontSize: '0.8125rem', color: '#1a1a2e' }}>
-                      Notifications
+                      {t('Notifications')}
                     </div>
                     {notifsEleve.length === 0 ? (
                       <div style={{ padding: '16px 14px', textAlign: 'center', color: '#aaa', fontSize: '0.8125rem' }}>
-                        Rien de neuf pour l'instant 🌿
+                        {t("Rien de neuf pour l'instant 🌿")}
                       </div>
                     ) : (
                       notifsEleve.map(n => {
@@ -508,7 +555,7 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
             <button
               onClick={handleDeconnexion}
               disabled={loggingOut}
-              title="Se déconnecter"
+              title={t('Se déconnecter')}
               style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#bbb', padding: 8, display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.8125rem' }}
             >
               {loggingOut ? <Loader size={15} className="spin" /> : <LogOut size={15} />}
@@ -516,7 +563,7 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
           </div>
         </div>
         <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid #f5f0ee', fontSize: '0.8125rem', color: '#888' }}>
-          Studio : <strong style={{ color: '#555' }}>{profile.studio_nom}</strong>
+          {t('Studio :')} <strong style={{ color: '#555' }}>{profile.studio_nom}</strong>
         </div>
 
         {/* Quick actions : Messages */}
@@ -530,7 +577,7 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
               background: 'white',
             }}
           >
-            <MessageCircle size={15} /> Mes messages
+            <MessageCircle size={15} /> {t('Mes messages')}
             {unreadMessages > 0 && (
               <span style={{
                 minWidth: 18, height: 18, padding: '0 5px', borderRadius: 9,
@@ -548,7 +595,7 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
       {!isDemo && (
         <div className="portail-card" style={{ marginBottom: 20 }}>
           <h2 className="espace-section-title" style={{ margin: '0 0 12px' }}>
-            <Bell size={16} style={{ color: '#d4a0a0' }} /> Notifications
+            <Bell size={16} style={{ color: '#d4a0a0' }} /> {t('Notifications')}
           </h2>
           <div style={{ marginBottom: 14 }}>
             <PushToggle />
@@ -575,7 +622,7 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
           <div className="portail-card" style={{ marginBottom: 20 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
               <h2 className="espace-section-title" style={{ margin: 0 }}>
-                <User size={16} style={{ color: '#d4a0a0' }} /> Mes coordonnées
+                <User size={16} style={{ color: '#d4a0a0' }} /> {t('Mes coordonnées')}
               </h2>
               {!editCoords && !isDemo && (
                 <button
@@ -583,7 +630,7 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
                   onClick={() => { setCoordsBackup(coords); setEditCoords(true); }}
                   className="espace-coord-edit"
                 >
-                  <Pencil size={13} /> {hasCoords ? 'Modifier' : 'Compléter'}
+                  <Pencil size={13} /> {hasCoords ? t('Modifier') : t('Compléter')}
                 </button>
               )}
             </div>
@@ -591,23 +638,23 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
             {editCoords ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 14 }}>
                 <label className="espace-coord-field">
-                  <span><Phone size={13} /> Téléphone</span>
+                  <span><Phone size={13} /> {t('Téléphone')}</span>
                   <input value={coords.telephone} onChange={e => setCoords({ ...coords, telephone: e.target.value })} placeholder="06 12 34 56 78" autoComplete="tel" inputMode="tel" />
                 </label>
                 <label className="espace-coord-field">
-                  <span><Home size={13} /> Adresse</span>
-                  <input value={coords.adresse_postale} onChange={e => setCoords({ ...coords, adresse_postale: e.target.value })} placeholder="12 rue des Lilas" autoComplete="street-address" />
+                  <span><Home size={13} /> {t('Adresse')}</span>
+                  <input value={coords.adresse_postale} onChange={e => setCoords({ ...coords, adresse_postale: e.target.value })} placeholder={t('12 rue des Lilas')} autoComplete="street-address" />
                 </label>
                 <label className="espace-coord-field">
-                  <span><MapPin size={13} /> Ville</span>
+                  <span><MapPin size={13} /> {t('Ville')}</span>
                   <input value={coords.ville} onChange={e => setCoords({ ...coords, ville: e.target.value })} placeholder="Gillonnay" autoComplete="address-level2" />
                 </label>
                 <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
                   <button type="button" onClick={handleSaveCoords} disabled={savingCoords} className="portail-btn-primary" style={{ flex: 1 }}>
-                    {savingCoords ? <Loader size={15} className="spin" /> : <><Save size={15} /> Enregistrer</>}
+                    {savingCoords ? <Loader size={15} className="spin" /> : <><Save size={15} /> {t('Enregistrer')}</>}
                   </button>
                   <button type="button" onClick={() => { if (coordsBackup) setCoords(coordsBackup); setEditCoords(false); }} className="portail-btn-ghost" style={{ flex: 1 }}>
-                    Annuler
+                    {t('Annuler')}
                   </button>
                 </div>
               </div>
@@ -620,7 +667,7 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
               </div>
             ) : (
               <p style={{ color: '#aaa', fontSize: '0.875rem', margin: '10px 0 0', lineHeight: 1.5 }}>
-                Ajoute ton téléphone et ton adresse pour que ton studio puisse te joindre facilement.
+                {t('Ajoute ton téléphone et ton adresse pour que ton studio puisse te joindre facilement.')}
               </p>
             )}
           </div>
@@ -634,40 +681,39 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
         <div className="portail-card" style={{ marginBottom: 20 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
             <h2 className="espace-section-title" style={{ margin: 0 }}>
-              🔒 Mon mot de passe
+              🔒 {t('Mon mot de passe')}
             </h2>
             {!mdpOpen && (
               <button type="button" onClick={() => setMdpOpen(true)} className="espace-coord-edit">
-                <Pencil size={13} /> Définir / changer
+                <Pencil size={13} /> {t('Définir / changer')}
               </button>
             )}
           </div>
           {mdpOpen ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 14 }}>
               <label className="espace-coord-field">
-                <span>Nouveau mot de passe (8 caractères min.)</span>
+                <span>{t('Nouveau mot de passe (8 caractères min.)')}</span>
                 <input type="password" value={mdp1} onChange={e => setMdp1(e.target.value)} autoComplete="new-password" />
               </label>
               <label className="espace-coord-field">
-                <span>Confirme-le</span>
+                <span>{t('Confirme-le')}</span>
                 <input type="password" value={mdp2} onChange={e => setMdp2(e.target.value)} autoComplete="new-password" />
               </label>
               <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
                 <button type="button" onClick={handleSaveMdp} disabled={savingMdp || mdp1.length < 8 || mdp1 !== mdp2} className="portail-btn-primary" style={{ flex: 1 }}>
-                  {savingMdp ? <Loader size={15} className="spin" /> : <><Save size={15} /> Enregistrer</>}
+                  {savingMdp ? <Loader size={15} className="spin" /> : <><Save size={15} /> {t('Enregistrer')}</>}
                 </button>
                 <button type="button" onClick={() => { setMdpOpen(false); setMdp1(''); setMdp2(''); }} className="portail-btn-ghost" style={{ flex: 1 }}>
-                  Annuler
+                  {t('Annuler')}
                 </button>
               </div>
               {mdp1 && mdp2 && mdp1 !== mdp2 && (
-                <p style={{ color: '#c62828', fontSize: '0.8125rem', margin: 0 }}>Les deux mots de passe ne correspondent pas.</p>
+                <p style={{ color: '#c62828', fontSize: '0.8125rem', margin: 0 }}>{t('Les deux mots de passe ne correspondent pas.')}</p>
               )}
             </div>
           ) : (
             <p style={{ color: '#aaa', fontSize: '0.875rem', margin: '10px 0 0', lineHeight: 1.5 }}>
-              Optionnel : pour te connecter directement, sans attendre un lien par
-              email. Le lien reste dispo si tu l'oublies.
+              {t("Optionnel : pour te connecter directement, sans attendre un lien par email. Le lien reste dispo si tu l'oublies.")}
             </p>
           )}
         </div>
@@ -683,15 +729,15 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
       <div style={{ marginBottom: 24 }}>
         <h2 className="espace-section-title">
           <CheckCircle size={16} style={{ color: '#d4a0a0' }} />
-          Cours à venir
+          {t('Cours à venir')}
           {aVenirFiltered.length > 0 && <span className="espace-count">{aVenirFiltered.length}</span>}
         </h2>
         {aVenirFiltered.length === 0 ? (
           <div className="portail-card" style={{ textAlign: 'center', padding: '28px 20px' }}>
             <div style={{ fontSize: '1.75rem', marginBottom: 8 }}>📅</div>
-            <p style={{ color: '#888', margin: 0, fontSize: '0.9rem' }}>Aucun cours à venir.</p>
+            <p style={{ color: '#888', margin: 0, fontSize: '0.9rem' }}>{t('Aucun cours à venir.')}</p>
             <Link href={`/p/${studioSlug}`} style={{ display: 'inline-block', marginTop: 12, fontSize: '0.875rem', color: '#d4a0a0', fontWeight: 600, textDecoration: 'none' }}>
-              Réserver un cours →
+              {t('Réserver un cours →')}
             </Link>
           </div>
         ) : (
@@ -713,7 +759,7 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
       {passes.length > 0 && (
         <div>
           <h2 className="espace-section-title" style={{ color: '#aaa' }}>
-            Historique
+            {t('Historique')}
             <span className="espace-count" style={{ background: '#f5f5f5', color: '#bbb' }}>{passes.length}</span>
           </h2>
           {passes.map(p => (
@@ -732,7 +778,7 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
       {/* Pont 6 (lot 5) : une élève inscrite dans plusieurs studios a un hub. */}
       {nbStudios > 1 && (
         <div style={{ marginTop: 16, padding: '10px 14px', borderRadius: 12, background: '#fdfbf7', border: '1px solid #eee5d8', fontSize: '.86rem' }} data-testid="espace-mes-studios">
-          Tu es inscrite dans {nbStudios} studios sur IziSolo. <Link href="/mes-studios" style={{ color: '#8a5a44', fontWeight: 600 }}>Voir tous mes studios et mes prochaines séances →</Link>
+          {t('Tu es inscrite dans {n} studios sur IziSolo.', { n: nbStudios })} <Link href="/mes-studios" style={{ color: '#8a5a44', fontWeight: 600 }}>{t('Voir tous mes studios et mes prochaines séances →')}</Link>
         </div>
       )}
 
@@ -741,16 +787,16 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
         <div style={{ marginTop: 28, paddingTop: 20, borderTop: '1px solid #f0ebe8' }} data-testid="espace-adhesion">
           <h2 className="espace-section-title">
             <BadgeCheck size={16} style={{ color: '#b87333' }} />
-            Mon adhésion
+            {t('Mon adhésion')}
           </h2>
           {adhesions.map(a => {
             const today = new Date().toISOString().slice(0, 10);
             const aJour = a.date_debut <= today && today <= a.date_fin;
             return (
               <div key={a.id} style={{ padding: '12px 16px', borderRadius: 12, background: aJour ? '#ecfdf5' : '#fafaf9', border: `1px solid ${aJour ? '#a7f3d0' : 'rgba(0,0,0,.07)'}`, marginBottom: 8 }}>
-                <div style={{ fontWeight: 600 }}>{a.offre_nom} · saison {a.saison}</div>
+                <div style={{ fontWeight: 600 }}>{a.offre_nom} · {t('saison {saison}', { saison: a.saison })}</div>
                 <div style={{ fontSize: '.85rem', color: '#7a6f6a', marginTop: 2 }}>
-                  {aJour ? 'À jour' : (a.date_debut > today ? `Commence le ${formatDate(a.date_debut)}` : `Terminée le ${formatDate(a.date_fin)}`)}{a.montant > 0 ? ` · ${a.montant} €` : ' · offerte'}
+                  {aJour ? t('À jour') : (a.date_debut > today ? t('Commence le {date}', { date: formatDate(a.date_debut, langue) }) : t('Terminée le {date}', { date: formatDate(a.date_fin, langue) }))}{a.montant > 0 ? ` · ${a.montant} €` : ` · ${t('offerte')}`}
                 </div>
               </div>
             );
@@ -763,7 +809,7 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
         <div style={{ marginTop: 28, paddingTop: 20, borderTop: '1px solid #f0ebe8' }}>
           <h2 className="espace-section-title">
             <Ticket size={16} style={{ color: '#b87333' }} />
-            Mes carnets &amp; abonnements
+            {t('Mes carnets & abonnements')}
           </h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {abonnements.map(abo => {
@@ -804,37 +850,37 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontWeight: 700, fontSize: '0.9375rem', color: '#1a1a2e', marginBottom: 2 }}>
-                        {abo.offre_nom || 'Abonnement'}
+                        {abo.offre_nom || t('Abonnement')}
                       </div>
                       {reste !== null ? (
                         <div style={{ fontSize: '0.8125rem', color: inactif ? '#888' : '#7c4a03', fontWeight: 600 }}>
                           {epuise
-                            ? 'Carnet épuisé'
-                            : `${reste} séance${reste > 1 ? 's' : ''} restante${reste > 1 ? 's' : ''}`}
+                            ? t('Carnet épuisé')
+                            : (reste > 1 ? t('{n} séances restantes', { n: reste }) : t('{n} séance restante', { n: reste }))}
                           {abo.seances_total != null && <span style={{ fontWeight: 400, color: '#999' }}> / {abo.seances_total}</span>}
                         </div>
                       ) : abo.type === 'abonnement' ? (
                         <div style={{ fontSize: '0.8125rem', color: inactif ? '#888' : '#7c4a03', fontWeight: 600 }}>
-                          Séances illimitées
+                          {t('Séances illimitées')}
                         </div>
                       ) : null}
                       {abo.stripe_subscription_id && !inactif && (
                         <div style={{ fontSize: '0.75rem', color: '#7c4a03', marginTop: 3, fontWeight: 600 }}>
-                          💳 Prélèvement automatique par carte{abo.date_fin ? <> · prochain autour du {new Date(abo.date_fin).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}</> : null}
+                          💳 {t('Prélèvement automatique par carte')}{abo.date_fin ? <> · {t('prochain autour du {date}', { date: new Date(abo.date_fin).toLocaleDateString(locale, { day: 'numeric', month: 'long' }) })}</> : null}
                         </div>
                       )}
                       {enPause && abo.date_pause_fin && (
                         <div style={{ fontSize: '0.75rem', color: '#7c4a03', marginTop: 3, fontWeight: 600 }}>
-                          ⏸ En pause jusqu'au {new Date(abo.date_pause_fin).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                          ⏸ {t("En pause jusqu'au {date}", { date: new Date(abo.date_pause_fin).toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric' }) })}
                         </div>
                       )}
                       {!enPause && abo.date_fin && (
                         <div style={{ fontSize: '0.75rem', color: '#888', marginTop: 3 }}>
                           {expire
-                            ? <>Expiré le {new Date(abo.date_fin).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</>
-                            : <>Valable jusqu'au {new Date(abo.date_fin).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                            ? <>{t('Expiré le {date}', { date: new Date(abo.date_fin).toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric' }) })}</>
+                            : <>{t("Valable jusqu'au {date}", { date: new Date(abo.date_fin).toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric' }) })}
                               {joursRestants != null && joursRestants <= 30 && joursRestants > 0 && (
-                                <span style={{ color: '#d97706', fontWeight: 600 }}> · plus que {joursRestants} jour{joursRestants > 1 ? 's' : ''}</span>
+                                <span style={{ color: '#d97706', fontWeight: 600 }}> · {joursRestants > 1 ? t('plus que {n} jours', { n: joursRestants }) : t('plus que {n} jour', { n: joursRestants })}</span>
                               )}
                             </>
                           }
@@ -866,21 +912,21 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
         <div style={{ marginTop: 28, paddingTop: 20, borderTop: '1px solid #f0ebe8' }}>
           <h2 className="espace-section-title">
             <Wallet size={16} style={{ color: '#d97706' }} />
-            À régler
+            {t('À régler')}
             <span className="espace-count" style={{ background: '#fff0d6', color: '#b45309' }}>{nbARegler}</span>
           </h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {/* Paiements/versements en attente attribués par le studio */}
             {paiementsDus.map(p => {
               const dateStr = p.date
-                ? new Date(p.date + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })
+                ? new Date(p.date + 'T12:00:00').toLocaleDateString(locale, { day: 'numeric', month: 'long' })
                 : null;
               return (
                 <div key={`pay-${p.id}`} className="espace-aregler-row">
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: 600, fontSize: '0.875rem', color: '#1a1a2e' }}>{p.intitule || 'Paiement'}</div>
+                    <div style={{ fontWeight: 600, fontSize: '0.875rem', color: '#1a1a2e' }}>{p.intitule || t('Paiement')}</div>
                     <div style={{ fontSize: '0.7rem', color: '#b45309', marginTop: 2 }}>
-                      En attente de règlement{dateStr ? ` · échéance ${dateStr}` : ''}
+                      {t('En attente de règlement')}{dateStr ? ` · ${t('échéance {date}', { date: dateStr })}` : ''}
                     </div>
                   </div>
                   <div style={{ fontWeight: 700, fontSize: '0.9375rem', color: '#b45309', flexShrink: 0 }}>
@@ -893,14 +939,14 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
                 dérivées des présences + paiements liés (montant exact du cours) */}
             {seancesWorkshopDues.map(w => {
               const dateStr = w.cours_date
-                ? new Date(w.cours_date + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })
+                ? new Date(w.cours_date + 'T12:00:00').toLocaleDateString(locale, { day: 'numeric', month: 'long' })
                 : null;
               return (
                 <div key={`ws-${w.id}`} className="espace-aregler-row">
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: 600, fontSize: '0.875rem', color: '#1a1a2e' }}>{w.cours_nom}</div>
                     <div style={{ fontSize: '0.7rem', color: '#b45309', marginTop: 2 }}>
-                      {w.annulationTardive ? 'Annulation tardive : séance due' : 'Séance à régler'}{dateStr ? ` · ${dateStr}` : ''}
+                      {w.annulationTardive ? t('Annulation tardive : séance due') : t('Séance à régler')}{dateStr ? ` · ${dateStr}` : ''}
                     </div>
                     {/* Paiement par séance (v2 de v86) : la ligne disparaît
                         seule dès que le webhook rattache le paiement. */}
@@ -915,7 +961,7 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
                           padding: '7px 14px', borderRadius: 99, fontWeight: 700, fontSize: '0.78rem',
                         }}
                       >
-                        💳 Payer par CB
+                        💳 {t('Payer par CB')}
                       </a>
                     )}
                   </div>
@@ -929,29 +975,29 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
                 avec le studio) — miroir de l'email « la séance reste due » */}
             {annulationsDues.map(a => {
               const dateStr = a.cours_date
-                ? new Date(a.cours_date + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })
+                ? new Date(a.cours_date + 'T12:00:00').toLocaleDateString(locale, { day: 'numeric', month: 'long' })
                 : null;
               return (
                 <div key={`ad-${a.id}`} className="espace-aregler-row">
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: 600, fontSize: '0.875rem', color: '#1a1a2e' }}>{a.cours_nom}</div>
                     <div style={{ fontSize: '0.7rem', color: '#b45309', marginTop: 2 }}>
-                      Annulation tardive : séance due{dateStr ? ` · ${dateStr}` : ''}
+                      {t('Annulation tardive : séance due')}{dateStr ? ` · ${dateStr}` : ''}
                     </div>
                   </div>
                   <div style={{ fontWeight: 700, fontSize: '0.9375rem', color: '#b45309', flexShrink: 0 }}>
-                    à régler
+                    {t('à régler')}
                   </div>
                 </div>
               );
             })}
             {aRegler.map(c => {
               const montant = c.context?.montant ?? c.context?.tarif_unitaire ?? null;
-              const coursNom = c.cours?.nom || c.context?.cours_nom || 'Séance';
+              const coursNom = c.cours?.nom || c.context?.cours_nom || t('Séance');
               const dateStr = c.cours?.date
-                ? new Date(c.cours.date + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })
-                : (c.context?.cours_date ? new Date(c.context.cours_date + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' }) : null);
-              const reason = c.case_type === 'annulation_hors_delai' ? 'Annulation tardive' : 'Séance sans carnet';
+                ? new Date(c.cours.date + 'T12:00:00').toLocaleDateString(locale, { day: 'numeric', month: 'long' })
+                : (c.context?.cours_date ? new Date(c.context.cours_date + 'T12:00:00').toLocaleDateString(locale, { day: 'numeric', month: 'long' }) : null);
+              const reason = c.case_type === 'annulation_hors_delai' ? t('Annulation tardive') : t('Séance sans carnet');
               return (
                 <div key={c.id} className="espace-aregler-row">
                   <div style={{ flex: 1, minWidth: 0 }}>
@@ -961,7 +1007,7 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
                     </div>
                   </div>
                   <div style={{ fontWeight: 700, fontSize: '0.9375rem', color: '#b45309', flexShrink: 0 }}>
-                    {montant != null ? `${Number(montant).toFixed(2).replace('.', ',')} €` : 'à régler'}
+                    {montant != null ? `${Number(montant).toFixed(2).replace('.', ',')} €` : t('à régler')}
                   </div>
                 </div>
               );
@@ -969,9 +1015,9 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
           </div>
           <p style={{ fontSize: '0.72rem', color: '#a16207', margin: '10px 2px 0', lineHeight: 1.5 }}>
             {totalDu > 0 && (
-              <>Total à régler : <strong>{totalDu.toFixed(2).replace('.', ',')} €</strong>. </>
+              <>{t('Total à régler :')} <strong>{totalDu.toFixed(2).replace('.', ',')} €</strong>. </>
             )}
-            À régler directement avec ton studio (sur place ou selon ses modalités habituelles).
+            {t('À régler directement avec ton studio (sur place ou selon ses modalités habituelles).')}
           </p>
           {/* « Comment régler ? » (v98) : le RIB du studio, la référence de
               virement et un QR SEPA à scanner avec l'application bancaire.
@@ -1000,7 +1046,7 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
               fontWeight: 700, fontSize: '0.8125rem', cursor: 'pointer', fontFamily: 'inherit',
             }}
           >
-            💡 Comment régler ?
+            💡 {t('Comment régler ?')}
           </button>
 
           {reglerOpen && (
@@ -1009,18 +1055,18 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
               onClick={e => { if (e.target === e.currentTarget) setReglerOpen(false); }}
             >
               <div style={{ background: 'white', borderRadius: 16, maxWidth: 420, width: '100%', padding: '20px 18px', maxHeight: '85vh', overflowY: 'auto' }}>
-                <h3 style={{ margin: '0 0 4px', fontSize: '1.05rem', color: '#1a1a2e' }}>Comment régler ?</h3>
+                <h3 style={{ margin: '0 0 4px', fontSize: '1.05rem', color: '#1a1a2e' }}>{t('Comment régler ?')}</h3>
                 {totalDu > 0 && (
                   <p style={{ margin: '0 0 12px', fontSize: '0.875rem', color: '#666' }}>
-                    Total à régler : <strong style={{ color: '#b45309' }}>{totalDu.toFixed(2).replace('.', ',')} €</strong>
+                    {t('Total à régler :')} <strong style={{ color: '#b45309' }}>{totalDu.toFixed(2).replace('.', ',')} €</strong>
                   </p>
                 )}
                 {ribStudio ? (
                   <div style={{ background: '#faf8f5', border: '1px solid #eee5d8', borderRadius: 12, padding: '12px 14px', marginBottom: 12 }}>
-                    <div style={{ fontWeight: 700, fontSize: '0.8125rem', color: '#1a1a2e', marginBottom: 6 }}>🏦 Par virement</div>
+                    <div style={{ fontWeight: 700, fontSize: '0.8125rem', color: '#1a1a2e', marginBottom: 6 }}>🏦 {t('Par virement')}</div>
                     <div style={{ fontSize: '0.8125rem', color: '#555', lineHeight: 1.6 }}>
-                      Titulaire : <strong>{ribStudio.titulaire}</strong><br />
-                      IBAN : <strong style={{ fontFamily: 'monospace', fontSize: '0.78rem' }}>{formatIban(ribStudio.iban)}</strong>{' '}
+                      {t('Titulaire :')} <strong>{ribStudio.titulaire}</strong><br />
+                      {t('IBAN :')} <strong style={{ fontFamily: 'monospace', fontSize: '0.78rem' }}>{formatIban(ribStudio.iban)}</strong>{' '}
                       <button
                         type="button"
                         onClick={async () => {
@@ -1032,32 +1078,30 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
                         }}
                         style={{ background: 'none', border: '1px solid #e8d5b5', borderRadius: 99, padding: '2px 10px', fontSize: '0.7rem', fontWeight: 700, color: '#b45309', cursor: 'pointer', fontFamily: 'inherit' }}
                       >
-                        {ibanCopie ? '✓ Copié' : 'Copier'}
+                        {ibanCopie ? t('✓ Copié') : t('Copier')}
                       </button>
-                      {ribStudio.bic && <><br />BIC : <strong style={{ fontFamily: 'monospace', fontSize: '0.78rem' }}>{ribStudio.bic}</strong></>}
+                      {ribStudio.bic && <><br />{t('BIC :')} <strong style={{ fontFamily: 'monospace', fontSize: '0.78rem' }}>{ribStudio.bic}</strong></>}
                     </div>
                     {refVirement && (
                       <p style={{ margin: '10px 0 0', fontSize: '0.78rem', color: '#b45309', lineHeight: 1.5 }}>
-                        Indique la référence <strong>{refVirement}</strong> dans le libellé du virement :
-                        c&apos;est elle qui permet à {profile?.studio_nom || 'ton studio'} de reconnaître ton règlement.
+                        {t('Indique la référence')} <strong>{refVirement}</strong> {t("dans le libellé du virement : c'est elle qui permet à {studio} de reconnaître ton règlement.", { studio: profile?.studio_nom || t('ton studio') })}
                       </p>
                     )}
                     {qrUrl && (
                       <div style={{ textAlign: 'center', marginTop: 12 }}>
                         {/* data URL générée localement : next/image n'apporte rien ici */}
-                        <img src={qrUrl} alt="QR code de virement SEPA" width={180} height={180} style={{ borderRadius: 8 }} />
+                        <img src={qrUrl} alt={t('QR code de virement SEPA')} width={180} height={180} style={{ borderRadius: 8 }} />
                         <p style={{ margin: '6px 0 0', fontSize: '0.72rem', color: '#999' }}>
-                          Scanne avec ton application bancaire : le virement se préremplit
-                          (si ta banque le propose).
+                          {t('Scanne avec ton application bancaire : le virement se préremplit (si ta banque le propose).')}
                         </p>
                       </div>
                     )}
                   </div>
                 ) : null}
                 <div style={{ background: '#faf8f5', border: '1px solid #eee5d8', borderRadius: 12, padding: '12px 14px' }}>
-                  <div style={{ fontWeight: 700, fontSize: '0.8125rem', color: '#1a1a2e', marginBottom: 4 }}>💶 Sur place</div>
+                  <div style={{ fontWeight: 700, fontSize: '0.8125rem', color: '#1a1a2e', marginBottom: 4 }}>💶 {t('Sur place')}</div>
                   <p style={{ margin: 0, fontSize: '0.8125rem', color: '#555', lineHeight: 1.5 }}>
-                    En espèces ou par chèque, directement auprès de {profile?.studio_nom || 'ton studio'} (au prochain cours, par exemple).
+                    {t('En espèces ou par chèque, directement auprès de {studio} (au prochain cours, par exemple).', { studio: profile?.studio_nom || t('ton studio') })}
                   </p>
                 </div>
                 <button
@@ -1065,7 +1109,7 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
                   onClick={() => setReglerOpen(false)}
                   style={{ marginTop: 14, width: '100%', background: '#1a1a2e', color: 'white', border: 'none', borderRadius: 99, padding: '10px 0', fontWeight: 700, fontSize: '0.875rem', cursor: 'pointer', fontFamily: 'inherit' }}
                 >
-                  Fermer
+                  {t('Fermer')}
                 </button>
               </div>
             </div>
@@ -1078,7 +1122,7 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
         <div style={{ marginTop: 28, paddingTop: 20, borderTop: '1px solid #f0ebe8' }}>
           <h2 className="espace-section-title">
             <Receipt size={16} style={{ color: '#d4a0a0' }} />
-            Mes paiements
+            {t('Mes paiements')}
             <span className="espace-count">{paiementsRegles.length}</span>
           </h2>
           {/* « Facture du mois » : un seul document pour tous les paiements du
@@ -1099,7 +1143,7 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
                     textDecoration: 'none',
                   }}
                 >
-                  <FileText size={12} /> Facture {m.label} · {m.count} paiements
+                  <FileText size={12} /> {t('Facture {mois} · {n} paiements', { mois: m.label, n: m.count })}
                 </a>
               ))}
             </div>
@@ -1111,11 +1155,11 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
               <div key={p.id} className={`paiement-row paiement-row--${tone}`}>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontWeight: 600, fontSize: '0.875rem', color: '#1a1a2e' }}>
-                    {p.intitule || 'Paiement'}
+                    {p.intitule || t('Paiement')}
                   </div>
                   <div style={{ fontSize: '0.7rem', color: '#888', marginTop: 2 }}>
-                    {new Date(p.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
-                    {p.mode && <> · {modeLabel(p.mode)}</>}
+                    {new Date(p.date).toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' })}
+                    {p.mode && <> · {modeLabel(p.mode, t)}</>}
                   </div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
@@ -1129,9 +1173,9 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
                       rel="noopener noreferrer"
                       title={facturationActive
                         ? (facturesParPaiement[p.id]
-                            ? `Télécharger la facture ${facturesParPaiement[p.id]}`
-                            : 'Télécharger la facture PDF')
-                        : 'Télécharger le reçu PDF'}
+                            ? t('Télécharger la facture {numero}', { numero: facturesParPaiement[p.id] })
+                            : t('Télécharger la facture PDF'))
+                        : t('Télécharger le reçu PDF')}
                       className="paiement-pdf-btn"
                     >
                       <Download size={13} />
@@ -1144,16 +1188,18 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
           </div>
           {paiements.length > 10 && (
             <p style={{ fontSize: '0.75rem', color: '#888', textAlign: 'center', marginTop: 12 }}>
-              {paiements.length - 10} paiement{paiements.length - 10 > 1 ? 's' : ''} plus ancien{paiements.length - 10 > 1 ? 's' : ''} non affichés
+              {paiements.length - 10 > 1
+                ? t('{n} paiements plus anciens non affichés', { n: paiements.length - 10 })
+                : t('{n} paiement plus ancien non affiché', { n: paiements.length - 10 })}
             </p>
           )}
           <p style={{ fontSize: '0.72rem', color: '#999', margin: '10px 2px 0', lineHeight: 1.5 }}>
             {facturationActive
-              ? 'Chaque paiement réglé a sa facture (⬇). '
+              ? t('Chaque paiement réglé a sa facture (⬇). ')
               : ''}
-            Il te manque un justificatif ?{' '}
+            {t('Il te manque un justificatif ?')}{' '}
             <Link href={`/p/${studioSlug}/espace/messages`} style={{ color: '#8a5a44', fontWeight: 600 }}>
-              Écris à ton studio
+              {t('Écris à ton studio')}
             </Link>.
           </p>
         </div>
@@ -1167,10 +1213,10 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
       {(offresCatalogue.length > 0 || offresStripe.length > 0) && (
         <div style={{ marginTop: 28, paddingTop: 20, borderTop: '1px solid #f0ebe8' }}>
           <h2 className="espace-section-title">
-            <CreditCard size={16} style={{ color: '#635bff' }} /> Les offres du studio
+            <CreditCard size={16} style={{ color: '#635bff' }} /> {t('Les offres du studio')}
           </h2>
           <p style={{ fontSize: '0.8125rem', color: '#888', margin: '0 0 12px' }}>
-            Recharge ton carnet ou souscris à un abonnement.
+            {t('Recharge ton carnet ou souscris à un abonnement.')}
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {(offresCatalogue.length > 0 ? offresCatalogue : offresStripe).map(o => {
@@ -1180,7 +1226,7 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
                 : o.stripe_payment_link;
               const detail = o.type === 'abonnement'
                 ? libelleSeances(o)
-                : (o.seances ? `${o.seances} séance${o.seances > 1 ? 's' : ''}` : null);
+                : (o.seances ? (o.seances > 1 ? t('{n} séances', { n: o.seances }) : t('{n} séance', { n: o.seances })) : null);
               const demandee = demandesFaites[o.id];
 
               if (url) {
@@ -1211,7 +1257,7 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
                       onClick={() => demanderOffre(o)}
                       disabled={demandeEnCours === o.id}
                     >
-                      {demandeEnCours === o.id ? '…' : 'Demander'}
+                      {demandeEnCours === o.id ? '…' : t('Demander')}
                     </button>
                   )}
                 </div>
@@ -1220,7 +1266,7 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
           </div>
           {offresStripe.length > 0 && (
             <p style={{ fontSize: '0.7rem', color: '#aaa', textAlign: 'center', margin: '12px 0 0' }}>
-              🔒 Paiement sécurisé via Stripe
+              🔒 {t('Paiement sécurisé via Stripe')}
             </p>
           )}
         </div>
@@ -1229,9 +1275,11 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
       {/* Documents du studio (v85) — questionnaire santé, CGV… à rapporter signés */}
       {docsInscription.length > 0 && (
         <div style={{ marginTop: 28, paddingTop: 20, borderTop: '1px solid #f0ebe8' }}>
-          <h2 className="espace-section-title">📄 Documents du studio</h2>
+          <h2 className="espace-section-title">📄 {t('Documents du studio')}</h2>
           <p style={{ fontSize: '0.8125rem', color: '#888', margin: '0 0 10px' }}>
-            À imprimer, remplir et rapporter signé{docsInscription.length > 1 ? 's' : ''} à {profile.studio_nom}.
+            {docsInscription.length > 1
+              ? t('À imprimer, remplir et rapporter signés à {studio}.', { studio: profile.studio_nom })
+              : t('À imprimer, remplir et rapporter signé à {studio}.', { studio: profile.studio_nom })}
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             {docsInscription.map(d => (
@@ -1246,12 +1294,12 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
       {/* Avis Google (v117) — discret, permanent, jamais une contrepartie */}
       {lienAvis && (
         <div style={{ marginTop: 28, paddingTop: 20, borderTop: '1px solid #f0ebe8' }} data-testid="espace-avis">
-          <h2 className="espace-section-title">⭐ Un mot sur {profile.studio_nom} ?</h2>
+          <h2 className="espace-section-title">⭐ {t('Un mot sur {studio} ?', { studio: profile.studio_nom })}</h2>
           <p style={{ fontSize: '0.8125rem', color: '#888', margin: '0 0 10px' }}>
-            Un avis sur Google aide énormément : c&apos;est comme ça que d&apos;autres personnes trouvent le studio. Tu écris ce que tu penses vraiment.
+            {t("Un avis sur Google aide énormément : c'est comme ça que d'autres personnes trouvent le studio. Tu écris ce que tu penses vraiment.")}
           </p>
           <a href={lienAvis} target="_blank" rel="noopener noreferrer" className="espace-doc-link" data-testid="espace-avis-lien">
-            ⭐ Laisser un avis Google
+            ⭐ {t('Laisser un avis Google')}
           </a>
         </div>
       )}
@@ -1262,7 +1310,7 @@ export default function EspaceClient({ profile, client, aVenir, passes, paiement
       {/* Bouton rebooking */}
       <div style={{ marginTop: 28, paddingTop: 20, borderTop: '1px solid #f0ebe8', textAlign: 'center' }}>
         <Link href={`/p/${studioSlug}`} className="portail-btn-primary" style={{ maxWidth: 280, margin: '0 auto' }}>
-          📅 Voir les prochains cours
+          📅 {t('Voir les prochains cours')}
         </Link>
       </div>
 

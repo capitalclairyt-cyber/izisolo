@@ -6,8 +6,12 @@ import { ArrowLeft, MessageSquare, Plus, Loader } from 'lucide-react';
 import ConversationList from '@/components/messagerie/ConversationList';
 import ChatRoom from '@/components/messagerie/ChatRoom';
 import { useToast } from '@/components/ui/ToastProvider';
+import { useLangue } from '@/components/portail/LangueProvider';
 
-export default function EspaceMessagesClient({ profile, studioSlug, client }) {
+export default function EspaceMessagesClient({ profile, studioSlug }) {
+  // La langue du portail (2026-09-22) : ConversationList et ChatRoom sont
+  // partagés avec le côté prof et restent hors périmètre.
+  const { t } = useLangue();
   const [selectedConvId, setSelectedConvId] = useState(null);
   const [starting, setStarting] = useState(false);
   const { toast } = useToast();
@@ -21,10 +25,10 @@ export default function EspaceMessagesClient({ profile, studioSlug, client }) {
         body: JSON.stringify({ from: 'eleve', studio_slug: studioSlug }),
       });
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Erreur');
+      if (!res.ok) throw new Error(json.error || t('Erreur'));
       setSelectedConvId(json.conversation.id);
     } catch (err) {
-      toast.error('Erreur : ' + err.message);
+      toast.error(t('Erreur : {message}', { message: err.message }));
     } finally {
       setStarting(false);
     }
@@ -33,15 +37,15 @@ export default function EspaceMessagesClient({ profile, studioSlug, client }) {
   return (
     <div className="esp-msg-page">
       <header className="esp-header">
-        <Link href={`/p/${studioSlug}/espace`} className="esp-back" aria-label="Retour à mon espace">
-          <ArrowLeft size={16} /> Mon espace
+        <Link href={`/p/${studioSlug}/espace`} className="esp-back" aria-label={t('Retour à mon espace')}>
+          <ArrowLeft size={16} /> {t('Mon espace')}
         </Link>
         <div className="esp-studio">{profile.studio_nom}</div>
       </header>
 
       <div className="esp-title-row">
         <h1 className="esp-title">
-          <MessageSquare size={20} /> Mes messages
+          <MessageSquare size={20} /> {t('Mes messages')}
         </h1>
         {!selectedConvId && (
           <button
@@ -51,7 +55,7 @@ export default function EspaceMessagesClient({ profile, studioSlug, client }) {
             className="esp-new-conv-btn"
           >
             {starting ? <Loader size={14} className="spin" /> : <Plus size={14} />}
-            Nouveau message
+            {t('Nouveau message')}
           </button>
         )}
       </div>
@@ -59,7 +63,7 @@ export default function EspaceMessagesClient({ profile, studioSlug, client }) {
       {selectedConvId ? (
         <div className="esp-chat-wrap">
           <button onClick={() => setSelectedConvId(null)} className="esp-chat-back">
-            <ArrowLeft size={14} /> Retour aux messages
+            <ArrowLeft size={14} /> {t('Retour aux messages')}
           </button>
           <div className="esp-chat-container">
             <ChatRoom

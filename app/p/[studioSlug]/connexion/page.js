@@ -5,11 +5,15 @@ import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Mail, ArrowLeft, CheckCircle, Loader, KeyRound } from 'lucide-react';
 import { createClient } from '@/lib/supabase';
+import { useLangue } from '@/components/portail/LangueProvider';
 
 export default function ConnexionPortailPage() {
   const { studioSlug } = useParams();
   const searchParams = useSearchParams();
   const router = useRouter();
+  // Le portail parle la langue de la visiteuse (2026-09-22) : t() rend le
+  // français par défaut, l'anglais si elle l'a choisi ou si le studio l'a réglé.
+  const { t } = useLangue();
   const prefillEmail = searchParams.get('email') || '';
   const erreurParam = searchParams.get('erreur');
   const [email, setEmail]   = useState(prefillEmail);
@@ -33,7 +37,7 @@ export default function ConnexionPortailPage() {
         password,
       });
       if (err) {
-        setError('Email ou mot de passe incorrect. Tu peux aussi recevoir un lien de connexion.');
+        setError(t('Email ou mot de passe incorrect. Tu peux aussi recevoir un lien de connexion.'));
         return;
       }
       try { localStorage.setItem(`izi_portail_email_${studioSlug}`, email.trim().toLowerCase()); } catch { /* stockage indispo */ }
@@ -63,6 +67,7 @@ export default function ConnexionPortailPage() {
       // que supabase.auth.signInWithOtp() : ça évite le template email + le flux
       // signup PROF de Supabase ("active ton compte et gère ton studio") qui
       // partait par erreur aux élèves et les renvoyait vers /onboarding.
+      // La route lit le cookie de langue : l'email part dans la langue de l'écran.
       const res = await fetch('/api/portail-login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -75,7 +80,7 @@ export default function ConnexionPortailPage() {
       }
       setSent(true);
     } catch {
-      setError('Une erreur est survenue. Réessaie dans quelques instants.');
+      setError(t('Une erreur est survenue. Réessaie dans quelques instants.'));
     } finally {
       setLoading(false);
     }
@@ -90,27 +95,27 @@ export default function ConnexionPortailPage() {
     return (
       <div>
         <Link href={`/p/${studioSlug}`} className="portail-back-link">
-          <ArrowLeft size={15} /> Retour aux cours
+          <ArrowLeft size={15} /> {t('Retour aux cours')}
         </Link>
         <div className="portail-card" style={{ textAlign: 'center', padding: '40px 24px' }}>
           <div style={{ width: 56, height: 56, borderRadius: '50%', background: '#f0faf0', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
             <CheckCircle size={30} style={{ color: '#4caf50' }} />
           </div>
-          <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: '0 0 10px', color: '#1a1a2e' }}>Vérifie ta boîte mail !</h2>
+          <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: '0 0 10px', color: '#1a1a2e' }}>{t('Vérifie ta boîte mail !')}</h2>
           <p style={{ color: '#666', margin: '0 0 20px', lineHeight: 1.6, fontSize: '0.9375rem' }}>
-            On a envoyé un lien de connexion à<br />
+            {t('On a envoyé un lien de connexion à')}<br />
             <strong style={{ color: '#1a1a2e' }}>{email}</strong>
           </p>
           <p style={{ color: '#aaa', fontSize: '0.8125rem', margin: '0 0 28px', lineHeight: 1.5 }}>
-            Clique sur le lien dans l'email pour accéder à ton espace.<br />
-            Le lien expire dans 1 heure. Vérifie tes spams si besoin.
+            {t("Clique sur le lien dans l'email pour accéder à ton espace.")}<br />
+            {t('Le lien expire dans 1 heure. Vérifie tes spams si besoin.')}
           </p>
           <button
             onClick={() => { setSent(false); setEmail(''); }}
             className="portail-btn-ghost"
             style={{ maxWidth: 240, margin: '0 auto' }}
           >
-            Changer d'adresse email
+            {t("Changer d'adresse email")}
           </button>
         </div>
         <style jsx global>{`
@@ -124,21 +129,21 @@ export default function ConnexionPortailPage() {
   return (
     <div>
       <Link href={`/p/${studioSlug}`} className="portail-back-link">
-        <ArrowLeft size={15} /> Retour aux cours
+        <ArrowLeft size={15} /> {t('Retour aux cours')}
       </Link>
 
       <div className="portail-card">
         <div style={{ textAlign: 'center', marginBottom: '24px' }}>
           <div style={{ fontSize: '2rem', marginBottom: '8px' }}>🔑</div>
-          <h1 style={{ fontSize: '1.25rem', fontWeight: 800, margin: '0 0 6px', color: '#1a1a2e' }}>Mon espace élève</h1>
+          <h1 style={{ fontSize: '1.25rem', fontWeight: 800, margin: '0 0 6px', color: '#1a1a2e' }}>{t('Mon espace élève')}</h1>
           <p style={{ color: '#888', fontSize: '0.875rem', margin: 0, lineHeight: 1.5 }}>
-            Connecte-toi pour voir tes réservations<br />et gérer tes inscriptions.
+            {t('Connecte-toi pour voir tes réservations')}<br />{t('et gérer tes inscriptions.')}
           </p>
         </div>
 
         {erreurParam === 'expire' && (
           <div style={{ background: '#fffaf0', border: '1px solid #ffe0b2', borderRadius: 8, padding: '10px 14px', color: '#7c4a03', fontSize: '0.875rem', marginBottom: 16, lineHeight: 1.5 }}>
-            Ton lien de connexion a expiré ou a déjà été utilisé.
+            {t('Ton lien de connexion a expiré ou a déjà été utilisé.')}
             {email.trim() ? (
               <button
                 type="button"
@@ -147,23 +152,23 @@ export default function ConnexionPortailPage() {
                 className="portail-btn-primary"
                 style={{ width: '100%', marginTop: 10 }}
               >
-                {loading ? <Loader size={15} className="spin" /> : <>Recevoir un nouveau lien pour {email.trim()}</>}
+                {loading ? <Loader size={15} className="spin" /> : <>{t('Recevoir un nouveau lien pour {email}', { email: email.trim() })}</>}
               </button>
             ) : (
-              <><br />Entre ton email pour en recevoir un nouveau.</>
+              <><br />{t('Entre ton email pour en recevoir un nouveau.')}</>
             )}
           </div>
         )}
 
         <form onSubmit={modeMdp ? connexionMdp : handleSubmit}>
           <div className="portail-field">
-            <label className="portail-label">Ton adresse email</label>
+            <label className="portail-label">{t('Ton adresse email')}</label>
             <input
               type="email"
               className="portail-input"
               value={email}
               onChange={e => setEmail(e.target.value)}
-              placeholder="marie@exemple.fr"
+              placeholder={t('marie@exemple.fr')}
               required
               autoComplete="email"
               autoFocus
@@ -172,7 +177,7 @@ export default function ConnexionPortailPage() {
 
           {modeMdp && (
             <div className="portail-field">
-              <label className="portail-label">Ton mot de passe</label>
+              <label className="portail-label">{t('Ton mot de passe')}</label>
               <input
                 type="password"
                 className="portail-input"
@@ -195,7 +200,7 @@ export default function ConnexionPortailPage() {
             className="portail-btn-primary"
           >
             {loading ? <Loader size={16} className="spin" /> : modeMdp ? <KeyRound size={16} /> : <Mail size={16} />}
-            {loading ? (modeMdp ? 'Connexion…' : 'Envoi en cours…') : modeMdp ? 'Me connecter' : 'Recevoir mon lien de connexion'}
+            {loading ? (modeMdp ? t('Connexion…') : t('Envoi en cours…')) : modeMdp ? t('Me connecter') : t('Recevoir mon lien de connexion')}
           </button>
 
           <button
@@ -203,13 +208,13 @@ export default function ConnexionPortailPage() {
             onClick={() => { setModeMdp(m => !m); setError(''); }}
             style={{ display: 'block', margin: '14px auto 0', background: 'none', border: 'none', color: '#b58962', fontSize: '0.8125rem', cursor: 'pointer', textDecoration: 'underline' }}
           >
-            {modeMdp ? 'Recevoir un lien par email à la place' : 'J\'ai un mot de passe, me connecter avec'}
+            {modeMdp ? t('Recevoir un lien par email à la place') : t("J'ai un mot de passe, me connecter avec")}
           </button>
 
           <p style={{ textAlign: 'center', fontSize: '0.8125rem', color: '#aaa', margin: '10px 0 0', lineHeight: 1.5 }}>
             {modeMdp
-              ? 'Le mot de passe se définit dans ton espace (section « Mon mot de passe »).'
-              : <>Un lien magique sera envoyé à ton adresse.<br />Pas besoin de mot de passe.</>}
+              ? t('Le mot de passe se définit dans ton espace (section « Mon mot de passe »).')
+              : <>{t('Un lien magique sera envoyé à ton adresse.')}<br />{t('Pas besoin de mot de passe.')}</>}
           </p>
         </form>
       </div>

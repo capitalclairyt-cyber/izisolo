@@ -7,23 +7,41 @@ import { altVignette } from '@/lib/vignette-cours';
 import { Clock, MapPin, Calendar, Users, ArrowLeft, CheckCircle, AlertCircle, Loader, Mail, Shield } from 'lucide-react';
 import { useToast } from '@/components/ui/ToastProvider';
 import { getDelaiPourCours, evaluerAnnulation, formatDateLimite } from '@/lib/regles-metier';
+import { useLangue } from '@/components/portail/LangueProvider';
 
 const MOIS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
 const JOURS = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
 
-function formatDate(dateStr) {
+// Les tableaux faits main servent le français ; en anglais, la date se formate
+// avec le locale de la visiteuse (langue et locale viennent de useLangue()).
+function formatDate(dateStr, langue, locale) {
   const [y, m, d] = dateStr.split('-').map(Number);
   const date = new Date(y, m - 1, d);
+  if (langue === 'en') {
+    return date.toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  }
   return `${JOURS[date.getDay()]} ${d} ${MOIS[m - 1]} ${y}`;
 }
-function formatHeure(h) {
+// « 18h30 » en français, « 18:30 » en anglais.
+function formatHeure(h, langue) {
   if (!h) return '';
   const [hh, mm] = h.split(':');
+  if (langue === 'en') return `${String(hh).padStart(2, '0')}:${mm}`;
   return mm === '00' ? `${parseInt(hh)}h` : `${parseInt(hh)}h${mm}`;
+}
+// La date limite d'annulation : formatDateLimite (lib/regles-metier) parle
+// français ; en anglais on formate la même Date avec le locale.
+function formatLimite(dateLimite, langue, locale) {
+  if (langue !== 'en') return formatDateLimite(dateLimite);
+  if (!dateLimite || isNaN(dateLimite.getTime())) return '';
+  const j = dateLimite.toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long' });
+  const h = dateLimite.toTimeString().slice(0, 5);
+  return `${j} at ${h}`;
 }
 
 function CompletAvecListeAttente({ cours, studioSlug, currentUser }) {
   const { toast } = useToast();
+  const { t } = useLangue();
   const [nom, setNom]     = useState(currentUser?.nom || '');
   const [email, setEmail] = useState(currentUser?.email || '');
   const [tel, setTel]     = useState(currentUser?.tel || '');
@@ -54,10 +72,10 @@ function CompletAvecListeAttente({ cours, studioSlug, currentUser }) {
         }),
       });
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Erreur');
+      if (!res.ok) throw new Error(json.error || t('Erreur'));
       setPosition(json.position);
       setDone(true);
-      toast.success('Tu es sur la liste d\'attente : on te prévient si une place se libère.');
+      toast.success(t("Tu es sur la liste d'attente : on te prévient si une place se libère."));
     } catch (e) {
       setError(e.message);
       toast.error(e.message);
@@ -71,14 +89,14 @@ function CompletAvecListeAttente({ cours, studioSlug, currentUser }) {
       <div className="portail-card" style={{ textAlign: 'center', padding: '32px 24px' }}>
         <CheckCircle size={40} style={{ color: '#4caf50', margin: '0 auto 12px', display: 'block' }} />
         <h2 style={{ fontSize: '1.125rem', fontWeight: 700, margin: '0 0 8px', color: '#1a1a2e' }}>
-          C'est noté !
+          {t("C'est noté !")}
         </h2>
         <p style={{ color: '#666', margin: '0 0 12px', fontSize: '0.9375rem', lineHeight: 1.6 }}>
-          Tu es <strong>n°{position}</strong> sur la liste d'attente.<br />
-          Si une place se libère, on t'envoie un email à <strong>{email}</strong>.
+          {t('Tu es')} <strong>{t('n°{n}', { n: position })}</strong> {t("sur la liste d'attente.")}<br />
+          {t("Si une place se libère, on t'envoie un email à")} <strong>{email}</strong>.
         </p>
         <Link href={`/p/${studioSlug}`} className="portail-btn-ghost" style={{ maxWidth: 280, margin: '12px auto 0', width: '100%' }}>
-          Voir d'autres cours
+          {t("Voir d'autres cours")}
         </Link>
       </div>
     );
@@ -89,23 +107,23 @@ function CompletAvecListeAttente({ cours, studioSlug, currentUser }) {
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '12px 14px', background: '#fffaf0', border: '1px solid #ffe0b2', borderRadius: 12, marginBottom: 16 }}>
         <AlertCircle size={18} style={{ color: '#d97706', flexShrink: 0, marginTop: 1 }} />
         <div style={{ fontSize: '0.875rem', color: '#7c4a03', lineHeight: 1.5 }}>
-          <strong>Cette séance est complète.</strong><br />
-          Inscris-toi sur la liste d'attente : on te prévient en priorité si une place se libère.
+          <strong>{t('Cette séance est complète.')}</strong><br />
+          {t("Inscris-toi sur la liste d'attente : on te prévient en priorité si une place se libère.")}
         </div>
       </div>
 
       <form onSubmit={handleSubmit}>
         <div className="portail-field">
-          <label className="portail-label" htmlFor="la-nom">Prénom et nom *</label>
-          <input id="la-nom" type="text" className="portail-input" value={nom} onChange={e => setNom(e.target.value)} placeholder="Marie Dupont" required minLength={2} autoComplete="name" />
+          <label className="portail-label" htmlFor="la-nom">{t('Prénom et nom *')}</label>
+          <input id="la-nom" type="text" className="portail-input" value={nom} onChange={e => setNom(e.target.value)} placeholder={t('Marie Dupont')} required minLength={2} autoComplete="name" />
         </div>
         <div className="portail-field">
-          <label className="portail-label" htmlFor="la-email">Email *</label>
-          <input id="la-email" type="email" className="portail-input" value={email} onChange={e => setEmail(e.target.value)} placeholder="marie@exemple.fr" required autoComplete="email" />
+          <label className="portail-label" htmlFor="la-email">{t('Email *')}</label>
+          <input id="la-email" type="email" className="portail-input" value={email} onChange={e => setEmail(e.target.value)} placeholder={t('marie@exemple.fr')} required autoComplete="email" />
         </div>
         <div className="portail-field">
-          <label className="portail-label" htmlFor="la-tel">Téléphone <span style={{ color: '#aaa', fontWeight: 400 }}>(optionnel, SMS si place libérée)</span></label>
-          <input id="la-tel" type="tel" className="portail-input" value={tel} onChange={e => setTel(e.target.value)} placeholder="06 12 34 56 78" autoComplete="tel" />
+          <label className="portail-label" htmlFor="la-tel">{t('Téléphone')} <span style={{ color: '#aaa', fontWeight: 400 }}>{t('(optionnel, SMS si place libérée)')}</span></label>
+          <input id="la-tel" type="tel" className="portail-input" value={tel} onChange={e => setTel(e.target.value)} placeholder={t('06 12 34 56 78')} autoComplete="tel" />
         </div>
 
         {/* Honeypot anti-bot — caché aux humains */}
@@ -141,11 +159,11 @@ function CompletAvecListeAttente({ cours, studioSlug, currentUser }) {
         )}
 
         <button type="submit" disabled={submitting || !nom.trim() || !email.trim()} className="portail-btn-primary">
-          {submitting ? <><Loader size={16} className="spin" /> Inscription…</> : <>M'inscrire à la liste d'attente</>}
+          {submitting ? <><Loader size={16} className="spin" /> {t('Inscription…')}</> : <>{t("M'inscrire à la liste d'attente")}</>}
         </button>
 
         <Link href={`/p/${studioSlug}`} style={{ display: 'block', textAlign: 'center', fontSize: '0.8125rem', color: '#888', textDecoration: 'none', marginTop: 14 }}>
-          ou voir d'autres cours →
+          {t("ou voir d'autres cours →")}
         </Link>
       </form>
     </div>
@@ -154,6 +172,7 @@ function CompletAvecListeAttente({ cours, studioSlug, currentUser }) {
 
 export default function CoursReservationClient({ cours, profile, nbInscrits, studioSlug, currentUser, alreadyRegistered = false, prevision = null, canCancel = false, canReserve = true, canWaitlist = false, prixEssaiCours = null, vignette = null }) {
   const { toast } = useToast();
+  const { t, langue, locale } = useLangue();
   const [nom, setNom]       = useState(currentUser?.nom || '');
   const [email, setEmail]   = useState(currentUser?.email || '');
   const [tel, setTel]       = useState(currentUser?.tel || '');
@@ -218,7 +237,7 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
         }),
       });
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Erreur lors de la réservation');
+      if (!res.ok) throw new Error(json.error || t('Erreur lors de la réservation'));
       setMagicLinkSent(!!json.magicLinkSent);
       if (json.paiement_url) setPaiementInfo({ url: json.paiement_url, montant: json.paiement_montant });
 
@@ -233,18 +252,18 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
           const jsonSerie = await resSerie.json();
           if (resSerie.ok) {
             setSerieResult(jsonSerie);
-            toast.success(`${jsonSerie.totalBooked} cours réservés sur la série`);
+            toast.success(t('{n} cours réservés sur la série', { n: jsonSerie.totalBooked }));
           } else {
-            toast.warning('On n\'a pas pu réserver les séances suivantes, réessaie depuis ton espace.');
+            toast.warning(t("On n'a pas pu réserver les séances suivantes, réessaie depuis ton espace."));
           }
         } catch (serieErr) {
           console.warn('[serie] non-blocking error:', serieErr);
-          toast.warning('On n\'a pas pu réserver les séances suivantes, réessaie depuis ton espace.');
+          toast.warning(t("On n'a pas pu réserver les séances suivantes, réessaie depuis ton espace."));
         }
       }
 
       setDone(true);
-      toast.success('Réservation confirmée !');
+      toast.success(t('Réservation confirmée !'));
     } catch (e) {
       setError(e.message);
       toast.error(e.message);
@@ -257,21 +276,21 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
     return (
       <div>
         <Link href={`/p/${studioSlug}`} className="portail-back-link">
-          <ArrowLeft size={15} /> Retour aux cours
+          <ArrowLeft size={15} /> {t('Retour aux cours')}
         </Link>
         <div className="portail-card" style={{ textAlign: 'center', padding: '40px 24px' }}>
           <CheckCircle size={48} style={{ color: '#4caf50', margin: '0 auto 16px', display: 'block' }} />
-          <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: '0 0 8px' }}>C'est réservé !</h2>
+          <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: '0 0 8px' }}>{t("C'est réservé !")}</h2>
           <p style={{ color: '#666', margin: '0 0 16px', lineHeight: 1.6 }}>
-            Tu es inscrit·e pour <strong>{cours.nom}</strong><br />
-            le <strong>{formatDate(cours.date)}</strong> à <strong>{formatHeure(cours.heure)}</strong>.
+            {t('Tu es inscrit·e pour')} <strong>{cours.nom}</strong><br />
+            {t('le')} <strong>{formatDate(cours.date, langue, locale)}</strong> {t('à')} <strong>{formatHeure(cours.heure, langue)}</strong>.
           </p>
 
           {paiementInfo && (
             <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: '10px', padding: '14px 16px', marginBottom: '16px', textAlign: 'left' }}>
               <div style={{ fontSize: '0.875rem', color: '#9a3412', marginBottom: 10 }}>
-                <strong>Ta place est réservée.</strong> Tu peux régler ta séance
-                {paiementInfo.montant ? <> (<strong>{Number(paiementInfo.montant).toFixed(2).replace('.', ',')} €</strong>)</> : null} en ligne dès maintenant :
+                <strong>{t('Ta place est réservée.')}</strong> {t('Tu peux régler ta séance')}
+                {paiementInfo.montant ? <> (<strong>{Number(paiementInfo.montant).toFixed(2).replace('.', ',')} €</strong>)</> : null} {t('en ligne dès maintenant :')}
               </div>
               <a
                 href={paiementInfo.url}
@@ -279,10 +298,10 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
                 rel="noopener noreferrer"
                 style={{ display: 'inline-block', background: '#9a3412', color: 'white', textDecoration: 'none', padding: '10px 22px', borderRadius: '10px', fontWeight: 700, fontSize: '0.9rem' }}
               >
-                💳 Régler ma place par CB
+                {t('💳 Régler ma place par CB')}
               </a>
               <div style={{ fontSize: '0.75rem', color: '#b45309', marginTop: 8 }}>
-                Tu préfères régler sur place ? Aucun souci, ta réservation reste valable.
+                {t('Tu préfères régler sur place ? Aucun souci, ta réservation reste valable.')}
               </div>
             </div>
           )}
@@ -290,21 +309,25 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
           <div style={{ background: '#f0faf0', border: '1px solid #c8e6c9', borderRadius: '10px', padding: '12px 16px', marginBottom: '16px', fontSize: '0.875rem', color: '#2e7d32', display: 'flex', alignItems: 'flex-start', gap: '8px', textAlign: 'left' }}>
             <Mail size={16} style={{ flexShrink: 0, marginTop: 2 }} />
             <div>
-              Email envoyé à <strong>{email}</strong>
+              {t('Email envoyé à')} <strong>{email}</strong>
               {!isConnected && magicLinkSent && (
-                <><br /><span style={{ fontSize: '0.8125rem', color: '#1b5e20' }}>Il contient un lien pour accéder à ton espace en un clic.</span></>
+                <><br /><span style={{ fontSize: '0.8125rem', color: '#1b5e20' }}>{t('Il contient un lien pour accéder à ton espace en un clic.')}</span></>
               )}
             </div>
           </div>
 
           {serieResult && (
             <div style={{ background: '#fef6ec', border: '1px solid #fde8d0', borderRadius: '10px', padding: '12px 16px', marginBottom: '16px', fontSize: '0.875rem', color: '#7c4a03', textAlign: 'left' }}>
-              <strong>{serieResult.totalBooked} séance{serieResult.totalBooked > 1 ? 's' : ''} suivante{serieResult.totalBooked > 1 ? 's' : ''} réservée{serieResult.totalBooked > 1 ? 's' : ''}</strong>
+              <strong>{serieResult.totalBooked > 1
+                ? t('{n} séances suivantes réservées', { n: serieResult.totalBooked })
+                : t('{n} séance suivante réservée', { n: serieResult.totalBooked })}</strong>
               {serieResult.totalSkipped > 0 && (
                 <>
                   <br />
                   <span style={{ fontSize: '0.8125rem' }}>
-                    {serieResult.totalSkipped} non disponible{serieResult.totalSkipped > 1 ? 's' : ''} (complet, déjà inscrit ou annulé).
+                    {serieResult.totalSkipped > 1
+                      ? t('{n} non disponibles (complet, déjà inscrit ou annulé).', { n: serieResult.totalSkipped })
+                      : t('{n} non disponible (complet, déjà inscrit ou annulé).', { n: serieResult.totalSkipped })}
                   </span>
                 </>
               )}
@@ -314,18 +337,18 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
           <div style={{ background: '#fffaf0', border: '1px solid #ffe0b2', borderRadius: '10px', padding: '12px 16px', marginBottom: '20px', fontSize: '0.8125rem', color: '#7c4a03', display: 'flex', alignItems: 'flex-start', gap: '8px', textAlign: 'left' }}>
             <Shield size={15} style={{ flexShrink: 0, marginTop: 2 }} />
             {canCancel
-              ? <span>Tu peux annuler depuis ton espace jusqu'à <strong>{getDelaiPourCours(profile, cours.type_cours)}h avant la séance</strong>.</span>
-              : <span>Pour toute annulation, <strong>contacte directement ton studio</strong>.</span>}
+              ? <span>{t("Tu peux annuler depuis ton espace jusqu'à")} <strong>{t('{n}h avant la séance', { n: getDelaiPourCours(profile, cours.type_cours) })}</strong>.</span>
+              : <span>{t('Pour toute annulation,')} <strong>{t('contacte directement ton studio')}</strong>.</span>}
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {isConnected && (
               <Link href={`/p/${studioSlug}/espace`} className="portail-btn-primary" style={{ maxWidth: '320px', margin: '0 auto', width: '100%' }}>
-                Voir mon espace
+                {t('Voir mon espace')}
               </Link>
             )}
             <Link href={`/p/${studioSlug}`} className={isConnected ? 'portail-btn-ghost' : 'portail-btn-primary'} style={{ maxWidth: '320px', margin: '0 auto', width: '100%' }}>
-              Voir d'autres cours
+              {t("Voir d'autres cours")}
             </Link>
           </div>
         </div>
@@ -340,7 +363,7 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
   return (
     <div>
       <Link href={`/p/${studioSlug}`} className="portail-back-link">
-        <ArrowLeft size={15} /> Retour aux cours
+        <ArrowLeft size={15} /> {t('Retour aux cours')}
       </Link>
 
       {/* Fiche cours */}
@@ -364,19 +387,19 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
           <span className="portail-tag portail-tag-rose" style={{ marginBottom: '14px', display: 'inline-block' }}>{cours.type_cours}</span>
         )}
         <div className="resa-details">
-          <div className="resa-detail-row"><Calendar size={15} /><span>{formatDate(cours.date)}</span></div>
-          <div className="resa-detail-row"><Clock size={15} /><span>{formatHeure(cours.heure)}{cours.duree_minutes ? ` · ${cours.duree_minutes} min` : ''}</span></div>
+          <div className="resa-detail-row"><Calendar size={15} /><span>{formatDate(cours.date, langue, locale)}</span></div>
+          <div className="resa-detail-row"><Clock size={15} /><span>{formatHeure(cours.heure, langue)}{cours.duree_minutes ? ` · ${cours.duree_minutes} ${t('min')}` : ''}</span></div>
           {(cours.format === 'visio' || cours.format === 'hybride') && (
-            <div className="resa-detail-row">🖥<span>En ligne, le lien de la séance sera dans ton espace élève</span></div>
+            <div className="resa-detail-row">🖥<span>{t('En ligne, le lien de la séance sera dans ton espace élève')}</span></div>
           )}
           {cours.lieu && <div className="resa-detail-row"><MapPin size={15} /><span>{cours.lieu}</span></div>}
           {cours.tarif_unitaire > 0 && (
             <div className="resa-detail-row">
               <span style={{ fontWeight: 800, fontSize: '0.95rem', width: 15, textAlign: 'center', flexShrink: 0 }}>€</span>
               {cours.carnets_acceptes === true ? (
-                <span><strong>{Number(cours.tarif_unitaire).toFixed(2).replace('.', ',')} €</strong> la séance, ou inclus dans les carnets/abos compatibles</span>
+                <span><strong>{Number(cours.tarif_unitaire).toFixed(2).replace('.', ',')} €</strong> {t('la séance, ou inclus dans les carnets/abos compatibles')}</span>
               ) : (
-                <span>Évènement payant · <strong>{Number(cours.tarif_unitaire).toFixed(2).replace('.', ',')} €</strong>, à régler auprès du studio</span>
+                <span>{t('Évènement payant ·')} <strong>{Number(cours.tarif_unitaire).toFixed(2).replace('.', ',')} €</strong>{t(', à régler auprès du studio')}</span>
               )}
             </div>
           )}
@@ -384,11 +407,11 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
             <div className="resa-detail-row">
               <Users size={15} />
               <span>
-                {afficherInscrits && <>{nbInscrits}/{cours.capacite_max} inscrits</>}
+                {afficherInscrits && <>{t('{n}/{max} inscrits', { n: nbInscrits, max: cours.capacite_max })}</>}
                 {complet
-                  ? <span className="portail-tag portail-tag-amber" style={{ marginLeft: afficherInscrits ? '8px' : '0' }}>Complet</span>
+                  ? <span className="portail-tag portail-tag-amber" style={{ marginLeft: afficherInscrits ? '8px' : '0' }}>{t('Complet')}</span>
                   : afficherInscrits && places <= 3
-                  ? <span className="portail-tag portail-tag-amber" style={{ marginLeft: '8px' }}>{places} place{places > 1 ? 's' : ''} restante{places > 1 ? 's' : ''}</span>
+                  ? <span className="portail-tag portail-tag-amber" style={{ marginLeft: '8px' }}>{places > 1 ? t('{n} places restantes', { n: places }) : t('{n} place restante', { n: places })}</span>
                   : null
                 }
               </span>
@@ -412,14 +435,14 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
               {/* prixEssaiCours = prix de CETTE séance (tarif par type v92),
                   calculé serveur ; fallback prix unique si prop absente. */}
               {profile.essai_paiement === 'gratuit'
-                ? 'Premier cours offert'
-                : `Premier cours d'essai · ${prixEssaiCours ?? profile.essai_prix}€`}
+                ? t('Premier cours offert')
+                : t("Premier cours d'essai · {prix}€", { prix: prixEssaiCours ?? profile.essai_prix })}
             </div>
             <div className="resa-essai-sub">
-              Tu n'es pas encore client·e ? Profite d'un cours d'essai pour découvrir le studio.
+              {t("Tu n'es pas encore client·e ? Profite d'un cours d'essai pour découvrir le studio.")}
             </div>
           </div>
-          <span className="resa-essai-cta">Réserver en essai →</span>
+          <span className="resa-essai-cta">{t('Réserver en essai →')}</span>
         </Link>
       )}
 
@@ -428,22 +451,22 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
       {!passe && !complet && !annule && canCancel && (() => {
         const delai = getDelaiPourCours(profile, cours.type_cours);
         const eval2 = evaluerAnnulation(profile, cours.date, cours.heure, cours.type_cours);
-        const limiteStr = eval2.dateLimite ? formatDateLimite(eval2.dateLimite) : null;
+        const limiteStr = eval2.dateLimite ? formatLimite(eval2.dateLimite, langue, locale) : null;
         // Conséquence honnête d'une annulation tardive — affinée par la
         // prévision (B2f) : on sait ce qui arriverait à CETTE élève.
         const consequence = prevision?.kind === 'carnet'
-          ? 'Après, la séance sera décomptée de ton carnet.'
+          ? t('Après, la séance sera décomptée de ton carnet.')
           : prevision?.kind === 'unite' || Number(cours.tarif_unitaire) > 0
-          ? 'Après, la séance restera due.'
-          : 'Après, la séance sera due (décomptée de ton carnet si tu en utilises un).';
+          ? t('Après, la séance restera due.')
+          : t('Après, la séance sera due (décomptée de ton carnet si tu en utilises un).');
         return (
           <div className="resa-policy">
             <Shield size={15} style={{ flexShrink: 0, marginTop: 2 }} />
             <div>
-              <strong style={{ display: 'block', marginBottom: 2 }}>Annulation flexible</strong>
+              <strong style={{ display: 'block', marginBottom: 2 }}>{t('Annulation flexible')}</strong>
               {limiteStr
-                ? <>Annulation libre jusqu'au <strong>{limiteStr}</strong> ({delai}h avant la séance). {consequence}</>
-                : <>Annulation libre jusqu'à <strong>{delai}h avant la séance</strong>. {consequence}</>
+                ? <>{t("Annulation libre jusqu'au")} <strong>{limiteStr}</strong> {t('({n}h avant la séance).', { n: delai })} {consequence}</>
+                : <>{t("Annulation libre jusqu'à")} <strong>{t('{n}h avant la séance', { n: delai })}</strong>. {consequence}</>
               }
             </div>
           </div>
@@ -455,8 +478,8 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
         <div className="resa-policy">
           <Shield size={15} style={{ flexShrink: 0, marginTop: 2 }} />
           <div>
-            <strong style={{ display: 'block', marginBottom: 2 }}>Annulation</strong>
-            Pour annuler ou modifier ta réservation, <strong>contacte directement ton studio</strong>.
+            <strong style={{ display: 'block', marginBottom: 2 }}>{t('Annulation')}</strong>
+            {t('Pour annuler ou modifier ta réservation,')} <strong>{t('contacte directement ton studio')}</strong>.
           </div>
         </div>
       )}
@@ -470,24 +493,24 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
             {prevision.kind === 'carnet' ? '🎟' : prevision.kind === 'unite' ? '💶' : 'ℹ️'}
           </span>
           <div>
-            <strong style={{ display: 'block', marginBottom: 2 }}>Ta séance</strong>
+            <strong style={{ display: 'block', marginBottom: 2 }}>{t('Ta séance')}</strong>
             {prevision.kind === 'carnet' && (
-              <>Elle sera décomptée de <strong>{prevision.nom}</strong>
+              <>{t('Elle sera décomptée de')} <strong>{prevision.nom}</strong>
                 {prevision.resteApres != null
-                  ? <>, il te restera <strong>{prevision.resteApres} séance{prevision.resteApres > 1 ? 's' : ''}</strong> après celle-ci.</>
-                  : <> (illimité).</>}
+                  ? <>{t(', il te restera')} <strong>{prevision.resteApres > 1 ? t('{n} séances', { n: prevision.resteApres }) : t('{n} séance', { n: prevision.resteApres })}</strong> {t('après celle-ci.')}</>
+                  : <> {t('(illimité).')}</>}
               </>
             )}
             {prevision.kind === 'unite' && (
-              <>{prevision.carnetInapplicable && <>Ton carnet ne couvre pas ce type de cours : </>}
-                elle est à <strong>{Number(prevision.montant).toFixed(2).replace('.', ',').replace(',00', '')} €</strong>, à régler auprès du studio.
+              <>{prevision.carnetInapplicable && <>{t('Ton carnet ne couvre pas ce type de cours :')} </>}
+                {t('elle est à')} <strong>{Number(prevision.montant).toFixed(2).replace('.', ',').replace(',00', '')} €</strong>{t(', à régler auprès du studio.')}
               </>
             )}
             {prevision.kind === 'incompatible' && (
-              <>Ton carnet actuel ne couvre pas ce type de cours : la séance sera à régler selon les règles du studio.</>
+              <>{t('Ton carnet actuel ne couvre pas ce type de cours : la séance sera à régler selon les règles du studio.')}</>
             )}
             {prevision.kind === 'sans_carnet' && (
-              <>Tu n'as pas de carnet ou d'abonnement actif pour ce cours, parles-en à ton studio si besoin.</>
+              <>{t("Tu n'as pas de carnet ou d'abonnement actif pour ce cours, parles-en à ton studio si besoin.")}</>
             )}
           </div>
         </div>
@@ -497,31 +520,31 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
       {annule ? (
         <div className="portail-card" style={{ textAlign: 'center', color: '#888' }}>
           <AlertCircle size={32} style={{ margin: '0 auto 8px', display: 'block', color: '#dc2626' }} />
-          <p style={{ margin: '0 0 12px', fontWeight: 600 }}>Cette séance a été annulée par le studio.</p>
+          <p style={{ margin: '0 0 12px', fontWeight: 600 }}>{t('Cette séance a été annulée par le studio.')}</p>
           <Link href={`/p/${studioSlug}`} style={{ fontSize: '0.875rem', color: '#d4a0a0', fontWeight: 600, textDecoration: 'none' }}>
-            Voir d'autres cours →
+            {t("Voir d'autres cours →")}
           </Link>
         </div>
       ) : passe ? (
         <div className="portail-card" style={{ textAlign: 'center', color: '#888' }}>
           <AlertCircle size={32} style={{ margin: '0 auto 8px', display: 'block', opacity: 0.5 }} />
-          <p style={{ margin: 0 }}>Cette séance est passée.</p>
+          <p style={{ margin: 0 }}>{t('Cette séance est passée.')}</p>
         </div>
       ) : alreadyRegistered ? (
         <div className="portail-card" style={{ textAlign: 'center', padding: '32px 24px' }}>
           <CheckCircle size={40} style={{ color: '#4caf50', margin: '0 auto 12px', display: 'block' }} />
           <h2 style={{ fontSize: '1.125rem', fontWeight: 700, margin: '0 0 8px', color: '#1a1a2e' }}>
-            Tu es déjà inscrit·e à ce cours
+            {t('Tu es déjà inscrit·e à ce cours')}
           </h2>
           <p style={{ color: '#666', margin: '0 0 20px', fontSize: '0.9375rem' }}>
-            Retrouve cette réservation dans ton espace personnel.
+            {t('Retrouve cette réservation dans ton espace personnel.')}
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             <Link href={`/p/${studioSlug}/espace`} className="portail-btn-primary" style={{ maxWidth: 280, margin: '0 auto', width: '100%' }}>
-              Voir mon espace
+              {t('Voir mon espace')}
             </Link>
             <Link href={`/p/${studioSlug}`} className="portail-btn-ghost" style={{ maxWidth: 280, margin: '0 auto', width: '100%' }}>
-              Voir d'autres cours
+              {t("Voir d'autres cours")}
             </Link>
           </div>
         </div>
@@ -534,9 +557,9 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
           />
         ) : (
           <div className="portail-card" style={{ textAlign: 'center' }}>
-            <h2 style={{ fontSize: '1.0625rem', fontWeight: 700, margin: '0 0 8px', color: '#1a1a2e' }}>Cours complet</h2>
+            <h2 style={{ fontSize: '1.0625rem', fontWeight: 700, margin: '0 0 8px', color: '#1a1a2e' }}>{t('Cours complet')}</h2>
             <p style={{ color: '#555', fontSize: '0.9rem', margin: 0 }}>
-              Pour être prévenu·e si une place se libère, <strong>contacte directement ton studio</strong>.
+              {t('Pour être prévenu·e si une place se libère,')} <strong>{t('contacte directement ton studio')}</strong>.
             </p>
           </div>
         )
@@ -544,18 +567,18 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
         /* Studio Essentiel (vitrine, B3c) : pas de réservation en ligne —
            les infos du cours restent visibles, la résa se fait en direct. */
         <div className="portail-card" style={{ textAlign: 'center' }}>
-          <h2 style={{ fontSize: '1.0625rem', fontWeight: 700, margin: '0 0 8px', color: '#1a1a2e' }}>Réserver ta place</h2>
+          <h2 style={{ fontSize: '1.0625rem', fontWeight: 700, margin: '0 0 8px', color: '#1a1a2e' }}>{t('Réserver ta place')}</h2>
           <p style={{ color: '#555', fontSize: '0.9rem', margin: 0 }}>
-            Ce studio prend les réservations en direct : <strong>contacte-le pour réserver</strong> (ses coordonnées sont sur sa page).
+            {t('Ce studio prend les réservations en direct :')} <strong>{t('contacte-le pour réserver')}</strong> {t('(ses coordonnées sont sur sa page).')}
           </p>
         </div>
       ) : (
         <div className="portail-card">
-          <h2 style={{ fontSize: '1.0625rem', fontWeight: 700, margin: '0 0 16px', color: '#1a1a2e' }}>Réserver ma place</h2>
+          <h2 style={{ fontSize: '1.0625rem', fontWeight: 700, margin: '0 0 16px', color: '#1a1a2e' }}>{t('Réserver ma place')}</h2>
 
           {isConnected && (
             <div style={{ background: '#f0faf0', border: '1px solid #c8e6c9', borderRadius: '10px', padding: '10px 14px', marginBottom: '16px', fontSize: '0.8125rem', color: '#2e7d32', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              ✓ Connecté·e en tant que <strong>{email}</strong>
+              {t('✓ Connecté·e en tant que')} <strong>{email}</strong>
             </div>
           )}
 
@@ -564,26 +587,26 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
                 — juste un récap et un bouton. */}
             {isConnected && nom ? (
               <div style={{ background: '#faf8f5', border: '1px solid #eee', borderRadius: 12, padding: '12px 14px', marginBottom: 14, fontSize: '0.875rem', color: '#555' }}>
-                Tu réserves au nom de <strong>{nom}</strong> ({email}).
+                {t('Tu réserves au nom de')} <strong>{nom}</strong> ({email}).
               </div>
             ) : (
               <>
                 <div className="portail-field">
-                  <label className="portail-label" htmlFor="resa-nom">Prénom et nom *</label>
+                  <label className="portail-label" htmlFor="resa-nom">{t('Prénom et nom *')}</label>
                   <input
                     id="resa-nom"
                     type="text"
                     className="portail-input"
                     value={nom}
                     onChange={e => setNom(e.target.value)}
-                    placeholder="Marie Dupont"
+                    placeholder={t('Marie Dupont')}
                     required
                     minLength={2}
                     autoComplete="name"
                   />
                 </div>
                 <div className="portail-field">
-                  <label className="portail-label" htmlFor="resa-email">Email *</label>
+                  <label className="portail-label" htmlFor="resa-email">{t('Email *')}</label>
                   <input
                     id="resa-email"
                     type="email"
@@ -591,26 +614,26 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
                     value={email}
                     onChange={e => setEmail(e.target.value)}
                     readOnly={isConnected}
-                    placeholder="marie@exemple.fr"
+                    placeholder={t('marie@exemple.fr')}
                     required
                     autoComplete="email"
                   />
                   {!isConnected && (
                     <p style={{ fontSize: '0.75rem', color: '#aaa', margin: '6px 0 0' }}>
-                      On t'enverra un lien pour accéder à ton espace et gérer tes réservations.
+                      {t("On t'enverra un lien pour accéder à ton espace et gérer tes réservations.")}
                     </p>
                   )}
                 </div>
                 {!isConnected && (
                   <div className="portail-field">
-                    <label className="portail-label" htmlFor="resa-tel">Téléphone <span style={{ color: '#aaa', fontWeight: 400 }}>(optionnel)</span></label>
+                    <label className="portail-label" htmlFor="resa-tel">{t('Téléphone')} <span style={{ color: '#aaa', fontWeight: 400 }}>{t('(optionnel)')}</span></label>
                     <input
                       id="resa-tel"
                       type="tel"
                       className="portail-input"
                       value={tel}
                       onChange={e => setTel(e.target.value)}
-                      placeholder="06 12 34 56 78"
+                      placeholder={t('06 12 34 56 78')}
                       autoComplete="tel"
                     />
                   </div>
@@ -630,16 +653,16 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
                   />
                   <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: 600, fontSize: '0.875rem', color: '#7c4a03' }}>
-                      M'inscrire aussi aux séances suivantes
+                      {t("M'inscrire aussi aux séances suivantes")}
                     </div>
                     <div style={{ fontSize: '0.8125rem', color: '#888', marginTop: 2, lineHeight: 1.4 }}>
-                      Toutes les occurrences récurrentes de ce cours seront réservées d'un coup.
+                      {t("Toutes les occurrences récurrentes de ce cours seront réservées d'un coup.")}
                     </div>
                   </div>
                 </label>
                 {serieActive && (
                   <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid #fde8d0' }}>
-                    <label style={{ display: 'block', fontSize: '0.75rem', color: '#888', marginBottom: 4 }}>Jusqu'au</label>
+                    <label style={{ display: 'block', fontSize: '0.75rem', color: '#888', marginBottom: 4 }}>{t("Jusqu'au")}</label>
                     <input
                       type="date"
                       className="portail-input"
@@ -691,10 +714,10 @@ export default function CoursReservationClient({ cours, profile, nbInscrits, stu
               className="portail-btn-primary"
             >
               {loading ? <Loader size={16} className="spin" /> : null}
-              {loading ? 'Réservation en cours…' : 'Confirmer ma réservation'}
+              {loading ? t('Réservation en cours…') : t('Confirmer ma réservation')}
             </button>
             <p style={{ textAlign: 'center', fontSize: '0.8125rem', color: '#aaa', margin: '12px 0 0' }}>
-              En réservant, tu acceptes les <a href="/legal/cgu" target="_blank" rel="noopener noreferrer" style={{ color: '#d4a0a0' }}>CGU</a> d'IziSolo.
+              {t('En réservant, tu acceptes les')} <a href="/legal/cgu" target="_blank" rel="noopener noreferrer" style={{ color: '#d4a0a0' }}>{t('CGU')}</a> {t("d'IziSolo.")}
             </p>
           </form>
         </div>

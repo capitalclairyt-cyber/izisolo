@@ -2,6 +2,7 @@ import PortailLayoutClient from './PortailLayoutClient';
 import { fetchStudioPublic, ogPortail } from '@/lib/portail-metadata';
 import { createAdminClient } from '@/lib/supabase-admin';
 import { stylePortail } from '@/lib/couleurs-marque';
+import { languePortail } from '@/lib/i18n-portail-serveur';
 
 /**
  * Layout server du portail élève.
@@ -49,6 +50,10 @@ export default async function PortailLayout({ children, params }) {
   // (le portail est PUBLIC, il n'y a pas de session pour lire le profil).
   // Sans la migration, `couleurs` reste null et le portail garde la palette
   // du métier — exactement le comportement d'avant.
+  // La langue du portail (2026-09-22) : cookie de la visiteuse > réglage du
+  // studio (v121) > français. Lecture séparée et défensive, comme les couleurs.
+  const langue = await languePortail(studioSlug);
+
   let couleurs = null;
   try {
     const admin = createAdminClient();
@@ -67,7 +72,7 @@ export default async function PortailLayout({ children, params }) {
           Les rôles sont dérivés avec un plancher de contraste, jamais la
           couleur brute sur du texte (lib/embed-couleurs). */}
       <div style={couleurs || undefined} data-marque={couleurs ? 'perso' : undefined}>
-        <PortailLayoutClient studioSlug={studioSlug}>
+        <PortailLayoutClient studioSlug={studioSlug} langue={langue}>
           {children}
         </PortailLayoutClient>
       </div>

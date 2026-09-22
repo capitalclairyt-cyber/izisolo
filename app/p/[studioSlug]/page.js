@@ -17,9 +17,12 @@ import { urlPortail } from '@/lib/studio-host';
 import { after } from 'next/server';
 import { headers } from 'next/headers';
 import { compterVue } from '@/lib/vues-portail-service';
+import { traducteurPortail } from '@/lib/i18n-portail-serveur';
 
 export async function generateMetadata({ params }) {
   const { studioSlug } = await params;
+  // Le titre et la description parlent la langue de la visiteuse (2026-09-22).
+  const t = await traducteurPortail(studioSlug);
   // Lecture publique du studio via admin : les RLS bloquent un élève connecté
   // (authenticated ≠ prof) → sans ça, "Studio introuvable" pour les élèves.
   // On ne sélectionne QUE des champs publics (jamais de secrets Stripe).
@@ -29,9 +32,9 @@ export async function generateMetadata({ params }) {
     .eq('studio_slug', studioSlug)
     .single();
 
-  if (!profile) return { title: 'Studio introuvable' };
+  if (!profile) return { title: t('Studio introuvable') };
   return {
-    title: `${profile.studio_nom} · Réserver un cours`,
+    title: t('{studio} · Réserver un cours', { studio: profile.studio_nom }),
     // Canonique posée ici et PAS sur le layout /p/* (2026-08-28) : sur le
     // layout, elle serait héritée par /espace, /essai, /connexion et les pages
     // de cours, qui se déclareraient toutes comme des copies de l'accueil.
@@ -40,8 +43,8 @@ export async function generateMetadata({ params }) {
     alternates: { canonical: urlPortail(studioSlug) },
     ...ogPortail({
       studio: profile,
-      titre: `${profile.studio_nom} · Réserver un cours`,
-      description: `${profile.metier || 'Studio'} à ${profile.ville || 'France'}. Réserve tes cours en ligne.`,
+      titre: t('{studio} · Réserver un cours', { studio: profile.studio_nom }),
+      description: t('{metier} à {ville}. Réserve tes cours en ligne.', { metier: profile.metier || 'Studio', ville: profile.ville || 'France' }),
     }),
   };
 }

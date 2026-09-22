@@ -17,43 +17,46 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Home, User, MessageCircle, Plus, CalendarDays } from 'lucide-react';
+import { useLangue } from '@/components/portail/LangueProvider';
 
 export default function BottomNav({ studioSlug, unread = 0 }) {
   const pathname = usePathname();
+  // La barre parle la langue de la visiteuse (2026-09-22).
+  const { t } = useLangue();
 
   const isActiveExact = (path) => pathname === path;
   const isActiveStarts = (prefix) => pathname.startsWith(prefix);
 
   return (
-    <div className="bnav-wrap" aria-label="Navigation principale">
+    <div className="bnav-wrap" aria-label={t('Navigation principale')}>
       <nav className="bnav-bar">
         <Link
           href={`/p/${studioSlug}`}
           className={`bnav-btn ${isActiveExact(`/p/${studioSlug}`) ? 'is-active' : ''}`}
-          aria-label="Accueil, cours du studio"
+          aria-label={t('Accueil, cours du studio')}
         >
           <span className="bnav-ico">
             <Home size={23} strokeWidth={isActiveExact(`/p/${studioSlug}`) ? 1.7 : 1.4} />
           </span>
-          <span className="bnav-lbl">Cours</span>
+          <span className="bnav-lbl">{t('Cours')}</span>
         </Link>
 
         <Link
           href={`/p/${studioSlug}/espace`}
           className={`bnav-btn ${isActiveExact(`/p/${studioSlug}/espace`) ? 'is-active' : ''}`}
-          aria-label="Mon espace"
+          aria-label={t('Mon espace')}
         >
           <span className="bnav-ico">
             <CalendarDays size={23} strokeWidth={isActiveExact(`/p/${studioSlug}/espace`) ? 1.7 : 1.4} />
           </span>
-          <span className="bnav-lbl">Espace</span>
+          <span className="bnav-lbl">{t('Espace')}</span>
         </Link>
 
         {/* Bouton + central — Réserver */}
         <Link
           href={`/p/${studioSlug}`}
           className="bnav-plus"
-          aria-label="Réserver un cours"
+          aria-label={t('Réserver un cours')}
         >
           <Plus size={23} strokeWidth={1.7} />
         </Link>
@@ -61,7 +64,7 @@ export default function BottomNav({ studioSlug, unread = 0 }) {
         <Link
           href={`/p/${studioSlug}/espace/messages`}
           className={`bnav-btn ${isActiveStarts(`/p/${studioSlug}/espace/messages`) ? 'is-active' : ''}`}
-          aria-label={`Messages${unread > 0 ? ` (${unread} non lus)` : ''}`}
+          aria-label={unread > 0 ? t('Messages ({n} non lus)', { n: unread }) : t('Messages')}
         >
           <span className="bnav-ico">
             <MessageCircle size={23} strokeWidth={isActiveStarts(`/p/${studioSlug}/espace/messages`) ? 1.7 : 1.4} />
@@ -69,18 +72,18 @@ export default function BottomNav({ studioSlug, unread = 0 }) {
               <span className="bnav-badge">{unread > 9 ? '9+' : unread}</span>
             )}
           </span>
-          <span className="bnav-lbl">Messages</span>
+          <span className="bnav-lbl">{t('Messages')}</span>
         </Link>
 
         <Link
           href={`/p/${studioSlug}/espace`}
           className={`bnav-btn ${isActiveExact(`/p/${studioSlug}/mes-credits`) ? 'is-active' : ''}`}
-          aria-label="Mon profil"
+          aria-label={t('Mon profil')}
         >
           <span className="bnav-ico">
             <User size={23} strokeWidth={isActiveExact(`/p/${studioSlug}/mes-credits`) ? 1.7 : 1.4} />
           </span>
-          <span className="bnav-lbl">Profil</span>
+          <span className="bnav-lbl">{t('Profil')}</span>
         </Link>
       </nav>
 

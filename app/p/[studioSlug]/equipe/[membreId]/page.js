@@ -6,6 +6,7 @@ import { membrePourPortail, prenomIntervenante } from '@/lib/intervenante';
 import { pageDeLIntervenante } from '@/lib/ponts';
 import { coursDejaCommence } from '@/lib/dates';
 import { fetchStudioPublic, ogPortail } from '@/lib/portail-metadata';
+import { traducteurPortail } from '@/lib/i18n-portail-serveur';
 
 /**
  * /p/[studioSlug]/equipe/[membreId] — la page d'UNE intervenante sur le
@@ -13,17 +14,20 @@ import { fetchStudioPublic, ogPortail } from '@/lib/portail-metadata';
  * intervenante »). Sa photo, sa bio, ses prochaines séances ici, et « Sa
  * page » si elle a relié la sienne (pont 5, v115). Même minimisation que
  * l'onglet L'équipe : jamais un email, jamais un membre sans prénom.
+ * La page parle la langue de la visiteuse (2026-09-22) : cookie > studio > fr.
  */
 export async function generateMetadata({ params }) {
   const { studioSlug, membreId } = await params;
+  const t = await traducteurPortail(studioSlug);
   const studio = await fetchStudioPublic(studioSlug);
   const { data: m } = await supabaseAdmin.from('studio_membres').select('prenom, nom').eq('id', membreId).maybeSingle();
-  const nom = m?.prenom ? `${m.prenom}${m.nom ? ` ${m.nom}` : ''}` : 'L\'équipe';
-  return { title: `${nom} · ${studio?.studio_nom || 'Studio'}`, ...ogPortail({ studio, description: `${nom} donne des cours chez ${studio?.studio_nom || 'ce studio'}.` }) };
+  const nom = m?.prenom ? `${m.prenom}${m.nom ? ` ${m.nom}` : ''}` : t('L\'équipe');
+  return { title: `${nom} · ${studio?.studio_nom || 'Studio'}`, ...ogPortail({ studio, description: t('{nom} donne des cours chez {studio}.', { nom, studio: studio?.studio_nom || t('ce studio') }) }) };
 }
 
 export default async function IntervenantePage({ params }) {
   const { studioSlug, membreId } = await params;
+  const t = await traducteurPortail(studioSlug);
   const supabase = supabaseAdmin;
   const { data: profile } = await supabase.from('profiles').select('id, studio_nom, studio_slug, portail_actif').eq('studio_slug', studioSlug).maybeSingle();
   if (!profile || profile.portail_actif === false) notFound();
@@ -52,7 +56,7 @@ export default async function IntervenantePage({ params }) {
     }
   } catch { /* pré-v115 */ }
 
-  const fmt = (d) => new Date(`${d}T12:00:00`).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+  const fmt = (d) => new Date(`${d}T12:00:00`).toLocaleDateString(t.locale, { weekday: 'long', day: 'numeric', month: 'long' });
   return (
     <main className="pi-page" data-testid="page-intervenante">
       <Link href={`/p/${studioSlug}?tab=equipe`} className="pi-retour">← {profile.studio_nom}</Link>
@@ -62,22 +66,22 @@ export default async function IntervenantePage({ params }) {
           : <span className="pi-photo pi-initiale" aria-hidden="true">{pub.prenom.charAt(0)}</span>}
         <div>
           <h1 className="pi-nom">{pub.prenom}{pub.nom ? ` ${pub.nom}` : ''}</h1>
-          <p className="pi-sous">{prenomIntervenante(membre)} donne des cours chez {profile.studio_nom}.</p>
-          {saPage && <a href={`/p/${saPage.slug}`} className="pi-sa-page" data-testid="intervenante-sa-page">Sa page : {saPage.nom} →</a>}
+          <p className="pi-sous">{t('{nom} donne des cours chez {studio}.', { nom: prenomIntervenante(membre), studio: profile.studio_nom })}</p>
+          {saPage && <a href={`/p/${saPage.slug}`} className="pi-sa-page" data-testid="intervenante-sa-page">{t('Sa page : {nom} →', { nom: saPage.nom })}</a>}
         </div>
       </header>
       {pub.bio && <p className="pi-bio">{pub.bio}</p>}
       <section className="pi-seances">
-        <h2 className="pi-titre">Ses prochaines séances ici</h2>
+        <h2 className="pi-titre">{t('Ses prochaines séances ici')}</h2>
         {seances.length === 0 ? (
-          <p className="pi-vide">Aucune séance publique à venir pour l&apos;instant.</p>
+          <p className="pi-vide">{t('Aucune séance publique à venir pour l\'instant.')}</p>
         ) : (
           <ul className="pi-liste">
             {seances.map(c => (
               <li key={c.id} data-testid="intervenante-seance">
                 <Link href={`/p/${studioSlug}/cours/${c.id}`}>
                   <strong>{c.nom}</strong>
-                  <span>{fmt(c.date)}{c.heure ? ` à ${String(c.heure).slice(0, 5)}` : ''}{c.format === 'visio' ? ' · en ligne' : (c.lieu ? ` · ${c.lieu}` : '')}</span>
+                  <span>{fmt(c.date)}{c.heure ? ` ${t('à {heure}', { heure: String(c.heure).slice(0, 5) })}` : ''}{c.format === 'visio' ? ` · ${t('en ligne')}` : (c.lieu ? ` · ${c.lieu}` : '')}</span>
                 </Link>
               </li>
             ))}

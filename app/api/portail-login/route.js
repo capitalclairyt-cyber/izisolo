@@ -5,6 +5,8 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { sendPortailMagicLink } from '@/lib/portail-magic-link';
 import { checkRateLimitIP } from '@/lib/antibot';
 import { reportError } from '@/lib/report';
+import { langueDepuisRequete } from '@/lib/i18n-portail-serveur';
+import { traducteur } from '@/lib/i18n-portail';
 
 /**
  * POST /api/portail-login — Demande de lien de connexion ÉLÈVE (self-service).
@@ -20,14 +22,20 @@ import { reportError } from '@/lib/report';
  *     vide / le spam vers des studios inexistants)
  */
 export const POST = withRoute({ auth: 'public' }, async ({ request: req }) => {
+  // Le français tant que la requête n'est pas lue : le catch final s'en sert.
+  let t = traducteur('fr');
   try {
     const { email, studioSlug } = await req.json();
 
+    // La langue de l'élève (2026-09-22) : cookie de la visiteuse > réglage du
+    // studio > français. Elle sert aux messages d'erreur ET à l'email envoyé.
+    t = traducteur(await langueDepuisRequete(req, studioSlug));
+
     if (!email || !email.includes('@')) {
-      return NextResponse.json({ error: 'Email invalide' }, { status: 400 });
+      return NextResponse.json({ error: t('Email invalide') }, { status: 400 });
     }
     if (!studioSlug) {
-      return NextResponse.json({ error: 'Studio manquant' }, { status: 400 });
+      return NextResponse.json({ error: t('Studio manquant') }, { status: 400 });
     }
 
     // Rate-limit IP : route publique qui déclenche un email signé du studio
@@ -44,13 +52,16 @@ export const POST = withRoute({ auth: 'public' }, async ({ request: req }) => {
       .single();
 
     if (studioErr || !studio) {
-      return NextResponse.json({ error: 'Studio introuvable' }, { status: 404 });
+      return NextResponse.json({ error: t('Studio introuvable') }, { status: 404 });
     }
 
     // Frontière des plans (2026-09-07) : pas de lien magique vers un espace
     // que le studio n'a pas (Essentiel).
     if (!studioCan(studio, 'espace_eleve')) {
-      return NextResponse.json({ error: `${studio.studio_nom || 'Ce studio'} n'a pas activé l'espace élève en ligne : contacte-le directement.`, code: 'PLAN_REQUIS' }, { status: 403 });
+      return NextResponse.json({
+        error: t("{studio} n'a pas activé l'espace élève en ligne : contacte-le directement.", { studio: studio.studio_nom || t('Ce studio') }),
+        code: 'PLAN_REQUIS',
+      }, { status: 403 });
     }
 
     const result = await sendPortailMagicLink({
@@ -58,6 +69,7 @@ export const POST = withRoute({ auth: 'public' }, async ({ request: req }) => {
       studioSlug,
       studioNom: studio.studio_nom,
       profPrenom: studio.prenom,
+      langue: t.langue,
     });
 
     if (result.error) {
@@ -67,6 +79,6 @@ export const POST = withRoute({ auth: 'public' }, async ({ request: req }) => {
     return NextResponse.json({ ok: true });
   } catch (err) {
     reportError('[portail-login] error:', err);
-    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
+    return NextResponse.json({ error: t('Erreur serveur') }, { status: 500 });
   }
 });

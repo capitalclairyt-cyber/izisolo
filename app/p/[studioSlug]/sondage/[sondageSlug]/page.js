@@ -4,9 +4,11 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { notFound } from 'next/navigation';
 import SondageReponseClient from './SondageReponseClient';
 import { resoudreFicheEleve } from '@/lib/fiche-eleve';
+import { traducteurPortail } from '@/lib/i18n-portail-serveur';
 
 export async function generateMetadata({ params }) {
   const { studioSlug, sondageSlug } = await params;
+  const t = await traducteurPortail(studioSlug);
   // Lecture publique du sondage via admin : les RLS bloquent un élève connecté
   // (authenticated ≠ prof). Select restreint à des champs publics.
   const supabase = supabaseAdmin;
@@ -16,16 +18,17 @@ export async function generateMetadata({ params }) {
     .eq('slug', sondageSlug)
     .eq('profiles.studio_slug', studioSlug)
     .maybeSingle();
-  if (!sondage) return { title: 'Sondage introuvable' };
+  if (!sondage) return { title: t('Sondage introuvable') };
   return {
     title: `${sondage.titre} · ${sondage.profiles.studio_nom}`,
-    description: `Aide ${sondage.profiles.studio_nom} à construire son planning idéal.`,
+    description: t('Aide {studio} à construire son planning idéal.', { studio: sondage.profiles.studio_nom }),
     robots: { index: false, follow: false },
   };
 }
 
 export default async function SondagePublicPage({ params }) {
   const { studioSlug, sondageSlug } = await params;
+  const t = await traducteurPortail(studioSlug);
   // Contenu PUBLIC (studio, sondage, créneaux) via admin : les RLS bloquent un
   // élève connecté (authenticated ≠ prof) → sans ça, notFound() pour l'élève.
   // Le select sur profiles ne liste que des champs publics (pas de secrets).
@@ -43,8 +46,8 @@ export default async function SondagePublicPage({ params }) {
   if (!studioCan(profile, 'sondages')) {
     return (
       <div data-testid="sondage-indisponible" style={{ maxWidth: 520, margin: '48px auto', padding: '32px 24px', textAlign: 'center', background: '#fff', borderRadius: 16, border: '1px solid #f0ebe8' }}>
-        <h1 style={{ fontSize: '1.25rem', margin: '0 0 10px' }}>Ce sondage n&apos;est pas ouvert</h1>
-        <p style={{ color: '#6b6560', lineHeight: 1.55 }}>{profile.studio_nom} n&apos;a pas activé les sondages en ligne pour le moment. Parle-lui directement de tes créneaux préférés.</p>
+        <h1 style={{ fontSize: '1.25rem', margin: '0 0 10px' }}>{t("Ce sondage n'est pas ouvert")}</h1>
+        <p style={{ color: '#6b6560', lineHeight: 1.55 }}>{t("{studio} n'a pas activé les sondages en ligne pour le moment. Parle-lui directement de tes créneaux préférés.", { studio: profile.studio_nom })}</p>
       </div>
     );
   }

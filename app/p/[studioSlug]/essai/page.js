@@ -7,8 +7,14 @@ import { resolveClientInfo, filterCoursVisibles } from '@/lib/visibilite';
 import { compterPlacesOccupeesParCours } from '@/lib/presences';
 import { notFound } from 'next/navigation';
 import EssaiClient from './EssaiClient';
+import { traducteurPortail } from '@/lib/i18n-portail-serveur';
 
-export const metadata = { title: 'Cours d\'essai' };
+// Le titre de l'onglet suit la langue du portail (cookie > studio > fr).
+export async function generateMetadata({ params }) {
+  const { studioSlug } = await params;
+  const t = await traducteurPortail(studioSlug);
+  return { title: t("Cours d'essai") };
+}
 
 async function getData(studioSlug) {
   // Contenu PUBLIC (studio + cours futurs) via admin : les RLS bloquent un

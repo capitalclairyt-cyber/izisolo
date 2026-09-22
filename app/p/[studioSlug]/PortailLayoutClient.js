@@ -6,17 +6,20 @@ import { User, MessageCircle } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { ToastProvider } from '@/components/ui/ToastProvider';
 import BottomNav from '@/components/portail/BottomNav';
-import { escapeIlike } from '@/lib/utils';
+import LangueProvider, { LangueSwitch, useLangue } from '@/components/portail/LangueProvider';
 
-export default function PortailLayoutClient({ studioSlug, children }) {
+export default function PortailLayoutClient({ studioSlug, langue = 'fr', children }) {
   return (
-    <ToastProvider>
-      <PortailLayoutInner studioSlug={studioSlug}>{children}</PortailLayoutInner>
-    </ToastProvider>
+    <LangueProvider langue={langue}>
+      <ToastProvider>
+        <PortailLayoutInner studioSlug={studioSlug}>{children}</PortailLayoutInner>
+      </ToastProvider>
+    </LangueProvider>
   );
 }
 
 function PortailLayoutInner({ studioSlug, children }) {
+  const { t } = useLangue();
   const [prenom, setPrenom] = useState(null); // null = chargement en cours
   const [unread, setUnread] = useState(0);
 
@@ -78,8 +81,8 @@ function PortailLayoutInner({ studioSlug, children }) {
             <Link
               href={`/p/${studioSlug}/espace/messages`}
               className="portail-msg-icon"
-              aria-label={unread > 0 ? `Messages (${unread} non lus)` : 'Messages'}
-              title="Mes messages"
+              aria-label={unread > 0 ? t('Messages ({n} non lus)', { n: unread }) : t('Messages')}
+              title={t('Mes messages')}
             >
               <MessageCircle size={18} />
               {unread > 0 && (
@@ -93,9 +96,11 @@ function PortailLayoutInner({ studioSlug, children }) {
             </Link>
           ) : (
             <Link href={`/p/${studioSlug}/espace`} className="portail-espace-btn">
-              Mon espace
+              {t('Mon espace')}
             </Link>
           )}
+          {/* FR / EN (2026-09-22) : le choix de la visiteuse, sur son appareil. */}
+          <LangueSwitch />
         </div>
       </header>
 
@@ -109,11 +114,11 @@ function PortailLayoutInner({ studioSlug, children }) {
       )}
 
       <footer className="portail-footer">
-        <span>Propulsé par <a href="https://www.izisolo.fr" target="_blank" rel="noopener noreferrer">IziSolo</a></span>
+        <span>{t('Propulsé par')} <a href="https://www.izisolo.fr" target="_blank" rel="noopener noreferrer">IziSolo</a></span>
         <span className="portail-footer-sep">·</span>
         <a href="/legal/cgu">CGU</a>
         <span className="portail-footer-sep">·</span>
-        <a href="/legal/rgpd">Confidentialité</a>
+        <a href="/legal/rgpd">{t('Confidentialité')}</a>
       </footer>
 
       <style jsx global>{`

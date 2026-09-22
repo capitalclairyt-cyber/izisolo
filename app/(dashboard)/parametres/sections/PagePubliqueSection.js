@@ -50,6 +50,24 @@ export default function PagePubliqueSection({ profile, setProfile, setDirty }) {
       setOffresEspaceBusy(false);
     }
   };
+  // v121 : la langue par défaut du portail. Route DÉDIÉE, enregistré au clic.
+  const [langueBusy, setLangueBusy] = useState(false);
+  const languePortail = profile?.langue_portail === 'en' ? 'en' : 'fr';
+  const choisirLangue = async (langue) => {
+    if (langue === languePortail) return;
+    setLangueBusy(true);
+    try {
+      const res = await fetch('/api/profile/langue-portail', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ langue }) });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json.error || 'Réglage non enregistré');
+      setProfile(prev => ({ ...prev, langue_portail: json.langue }));
+      toast.success(json.langue === 'en' ? "Ta page et l'espace de tes élèves s'ouvrent en anglais." : "Ta page et l'espace de tes élèves s'ouvrent en français.");
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setLangueBusy(false);
+    }
+  };
   // v117 : le lien d'avis Google + l'email automatique. Route DÉDIÉE (jamais
   // dans le payload de la carte), avec SON bouton Enregistrer : un lien
   // refusé ou une migration manquante ne coûte que ce réglage.
@@ -246,6 +264,29 @@ export default function PagePubliqueSection({ profile, setProfile, setDirty }) {
           <p className="form-hint">Enregistré tout de suite. Désactivé (tu vends ailleurs), la section « Les offres du studio » disparaît de leur espace.</p>
           <EnSavoirPlus>
             <p>Activé : leur espace liste ton catalogue, avec « Payer en ligne » ou « Demander ». Désactivé : leurs paiements, carnets et factures restent visibles, et tu continues d&apos;attribuer tes offres depuis les fiches.</p>
+          </EnSavoirPlus>
+        </div>
+        {/* La langue du portail (v121, 2026-09-22 : les élèves anglophones de Romain). */}
+        <div className="form-group" data-testid="langue-portail">
+          <label className="form-label">Langue de ma page et de l&apos;espace de mes élèves</label>
+          <div style={{ display: 'flex', gap: 8 }}>
+            {[['fr', 'Français'], ['en', 'English']].map(([code, libelle]) => (
+              <button
+                key={code}
+                type="button"
+                onClick={() => choisirLangue(code)}
+                disabled={langueBusy}
+                className={`izi-btn ${languePortail === code ? 'izi-btn-primary' : 'izi-btn-secondary'}`}
+                aria-pressed={languePortail === code}
+                data-testid={`langue-portail-${code}`}
+              >
+                {libelle}
+              </button>
+            ))}
+          </div>
+          <p className="form-hint">Enregistré tout de suite. Tes élèves gardent un bouton FR / EN en haut de ta page pour choisir la leur.</p>
+          <EnSavoirPlus>
+            <p>En anglais : la page publique, la réservation, la connexion, l&apos;espace élève et les emails de confirmation et de connexion. Tes textes à toi (bio, noms de cours, FAQ) restent tels que tu les as écrits. Les emails de rappel et d&apos;annulation restent en français pour l&apos;instant.</p>
           </EnSavoirPlus>
         </div>
       </CarteReglage>

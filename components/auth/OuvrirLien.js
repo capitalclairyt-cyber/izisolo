@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useLangue } from '@/components/portail/LangueProvider';
 
 /**
  * OuvrirLien — l'écran qui sépare « le lien a été chargé » de « la personne
@@ -24,8 +25,14 @@ import { useState } from 'react';
  * Composant sans requête ni hook de données : il rend un formulaire natif
  * (marche sans JavaScript), le petit état ne sert qu'à griser le bouton
  * après l'appui, pour ne pas poster deux fois le même jeton.
+ *
+ * Partagé par le portail élève (/p/[slug]/connecte) et le côté prof
+ * (/auth/ouvrir) : les libellés viennent en props, déjà dans la bonne langue ;
+ * seul le « Un instant… » interne passe par useLangue(), qui rend le français
+ * hors du provider du portail.
  */
 export default function OuvrirLien({ action, champs = {}, titre, texte, bouton, note }) {
+  const { t } = useLangue();
   const [envoye, setEnvoye] = useState(false);
   return (
     <div className="ouvrir-lien">
@@ -38,7 +45,7 @@ export default function OuvrirLien({ action, champs = {}, titre, texte, bouton, 
             <input key={k} type="hidden" name={k} value={v} />
           ))}
           <button type="submit" className="ouvrir-lien-btn" disabled={envoye}>
-            {envoye ? 'Un instant…' : bouton}
+            {envoye ? t('Un instant…') : bouton}
           </button>
         </form>
         {note && <p className="ouvrir-lien-note">{note}</p>}

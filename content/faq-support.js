@@ -452,4 +452,11 @@ export const FAQ_SUPPORT = [
     a: "Neuf fois sur dix, c'est qu'elle est DÉJÀ sur la séance : elle a réservé depuis ta page, ou tu l'as inscrite avant. Le modal d'ajout ne propose que les élèves qui ne sont pas encore sur la liste, sinon il fabriquerait une inscription en double. Depuis le 22 septembre il te le dit en toutes lettres quand tu tapes son nom (« Catherine Mazoyer est déjà sur cette séance (présent·e) ») et ne propose plus de créer une fiche en double : remonte dans ta liste de pointage, elle y est. Si elle n'y est vraiment pas, vérifie sa fiche : une élève archivée ou passée « inactive » n'est plus proposée à l'ajout, il suffit de la réactiver depuis sa fiche.",
     lien: { href: '/aide#pointage', label: 'Voir le pas-à-pas' },
   },
+  {
+    // La langue du portail (2026-09-22, Romain à Chessy : cinq élèves
+    // anglophones arrêtées à la connexion, sans jamais réserver). AJOUTÉE EN FIN.
+    q: "Mes élèves ne parlent pas français : ma page et leur espace peuvent être en anglais ?",
+    a: "Oui. Paramètres → Ma page publique → « Ce que ta page montre » → « Langue de ma page et de l'espace de mes élèves » : Français ou English, enregistré tout de suite. En anglais, ta page publique, la réservation, la connexion, l'espace élève et les emails de confirmation de réservation et de lien de connexion parlent anglais. Tes textes à toi (bio, noms de cours, FAQ, noms d'offres) restent tels que tu les as écrits : l'app ne traduit jamais ce que tu as saisi. Quel que soit ton réglage, chaque visiteuse garde un bouton FR / EN en haut de ta page pour choisir sa langue, et ce choix tient sur son appareil. Les emails de rappel de séance et d'annulation restent en français pour l'instant. Un point à connaître : une élève qui ouvre « Mon espace » avant d'avoir réservé arrive sur un écran qui lui propose directement tes prochaines séances avec un bouton Réserver, dans sa langue, pour qu'elle ne s'arrête pas à la connexion en croyant avoir fini.",
+    lien: { href: '/aide#page-publique', label: 'Voir le pas-à-pas' },
+  },
 ];

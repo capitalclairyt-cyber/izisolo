@@ -15,9 +15,15 @@ import { masquerLiensSiNonBranche, lienPaiementSeance, catalogueEspaceVisible } 
 import { lireReglementConfig, referenceVirement } from '@/lib/reglement';
 import { studioCan } from '@/lib/plan-guard';
 import { chargerAvisGoogle, lienAvis } from '@/lib/avis-google';
+import { traducteurPortail } from '@/lib/i18n-portail-serveur';
 
 // Le template racine ajoute déjà « — IziSolo » ; l'OG studio vient du layout portail.
-export const metadata = { title: 'Mon espace', robots: { index: false, follow: false } };
+// Le titre suit la langue du portail (cookie de la visiteuse > réglage du studio).
+export async function generateMetadata({ params }) {
+  const { studioSlug } = await params;
+  const t = await traducteurPortail(studioSlug);
+  return { title: t('Mon espace'), robots: { index: false, follow: false } };
+}
 
 // ─── Mode démo : données fake pour que le prof voie son portail comme une
 // élève fictive. Active uniquement si ?demo=1 ET viewer = prof du studio. ──
@@ -157,6 +163,9 @@ async function getData(studioSlug, user) {
   // garantie par les filtres. Sans ça, les RLS bloquent l'élève (qui n'est pas
   // le prof) → la lecture du profil studio renvoie null → notFound().
   const supabase = supabaseAdmin;
+  // Les quelques textes de secours construits ici partent au navigateur dans
+  // la langue du portail.
+  const t = await traducteurPortail(studioSlug);
 
   // Studio (+ règles d'annulation pour application dans EspaceClient ;
   // + champs de plan pour studioCan — le lien de paiement par séance est une
@@ -210,7 +219,27 @@ async function getData(studioSlug, user) {
   const catalogueMasque = !catalogueVisible;
 
   if (!client) {
-    return { profile, client: null, aVenir: [], passes: [], paiements: [], offresStripe: offresStripe || [], abonnements: [], aRegler: [], catalogueMasque };
+    // Compte connecté, mais aucune fiche dans CE studio (2026-09-22, Romain :
+    // cinq élèves se sont arrêtées ici sans jamais réserver). L'écran
+    // d'accueil liste les prochaines séances PUBLIQUES avec un bouton
+    // Réserver : une personne sans fiche n'a droit qu'au public (visibilité
+    // inscrits / abonnés / fidèles suppose une fiche), jamais une annulée.
+    let seancesOuvertes = [];
+    try {
+      const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Paris' });
+      const { data: ouvertes } = await supabase
+        .from('cours')
+        .select('id, nom, date, heure, duree_minutes, type_cours, lieu, format, capacite_max')
+        .eq('profile_id', profile.id)
+        .eq('est_annule', false)
+        .eq('visibilite', 'public')
+        .gte('date', today)
+        .order('date', { ascending: true })
+        .order('heure', { ascending: true })
+        .limit(8);
+      seancesOuvertes = ouvertes || [];
+    } catch { /* l'accueil se rend sans la liste */ }
+    return { profile, client: null, aVenir: [], passes: [], paiements: [], offresStripe: offresStripe || [], abonnements: [], aRegler: [], catalogueMasque, seancesOuvertes };
   }
 
   // Mes paiements + abonnements actifs (pour afficher le solde)
@@ -360,7 +389,7 @@ async function getData(studioSlug, user) {
     )
     .map(p => ({
       id: p.id,
-      cours_nom: p.cours?.nom || 'Séance',
+      cours_nom: p.cours?.nom || t('Séance'),
       cours_date: p.cours?.date || null,
     }));
 
@@ -587,6 +616,7 @@ export default async function EspacePage({ params, searchParams }) {
       adhesions={data.adhesions || []}
       nbStudios={data.nbStudios || 1}
       lienAvis={data.lienAvisGoogle || null}
+      seancesOuvertes={data.seancesOuvertes || []}
       studioSlug={studioSlug}
       userEmail={user.email}
     />

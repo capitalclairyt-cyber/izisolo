@@ -4,14 +4,12 @@ import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { MapPin, Calendar, Clock, ChevronRight, ChevronLeft, ChevronDown, Search, CreditCard, Ticket, CalendarCheck, Zap, Instagram, Facebook, Globe, Award, BookOpen, LayoutGrid, List, Check, Loader, User, BadgeCheck, Building2 } from 'lucide-react';
-import { phraseAilleurs } from '@/lib/ponts';
 import { toneCours, vignetteCours, altVignette, imageOptimisable } from '@/lib/vignette-cours';
 import { useToast } from '@/components/ui/ToastProvider';
 import { matchRecherche } from '@/lib/utils';
 import { essaiVarieParType, minPrixEssai } from '@/lib/essai-tarif';
-import { libelleSeances } from '@/lib/offres-seances';
-import { confirmationEleve } from '@/lib/demande-offre';
-import { grouperSeances, libelleGroupe } from '@/lib/seances-groupees';
+import { grouperSeances } from '@/lib/seances-groupees';
+import { useLangue } from '@/components/portail/LangueProvider';
 
 // next/image ne peut optimiser que les hosts déclarés dans
 // next.config.mjs → images.remotePatterns (AUDIT-PERF 2.9 : la couverture
@@ -42,51 +40,106 @@ function fmtIsoDate(date) {
   const d = String(date.getDate()).padStart(2, '0');
   return `${y}-${m}-${d}`;
 }
-function fmtWeekRange(start) {
+// Les tableaux français (JOURS, MOIS) restent la source en français ; en
+// anglais, la date se formate par le locale du navigateur (2026-09-22).
+function fmtWeekRange(start, langue, locale) {
   const end = addDays(start, 6);
   const sameMonth = start.getMonth() === end.getMonth();
   const sameYear  = start.getFullYear() === end.getFullYear();
+  const mois = (d) => (langue === 'en' ? d.toLocaleDateString(locale, { month: 'short' }) : MOIS[d.getMonth()]);
   if (sameMonth) {
-    return `${start.getDate()}–${end.getDate()} ${MOIS[end.getMonth()]}${sameYear ? '' : ' ' + end.getFullYear()}`;
+    return `${start.getDate()}–${end.getDate()} ${mois(end)}${sameYear ? '' : ' ' + end.getFullYear()}`;
   }
-  return `${start.getDate()} ${MOIS[start.getMonth()]} – ${end.getDate()} ${MOIS[end.getMonth()]}`;
+  return `${start.getDate()} ${mois(start)} – ${end.getDate()} ${mois(end)}`;
 }
 const JOURS_LONG = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+function nomJourLong(date, langue, locale) {
+  return langue === 'en' ? date.toLocaleDateString(locale, { weekday: 'long' }) : JOURS_LONG[date.getDay()];
+}
 
 const TYPE_ICONS = { carnet: Ticket, abonnement: CalendarCheck, cours_unique: Zap, adhesion: BadgeCheck };
 
 const JOURS = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
 const MOIS = ['jan', 'fév', 'mar', 'avr', 'mai', 'jun', 'jul', 'aoû', 'sep', 'oct', 'nov', 'déc'];
 
-function formatDateCourt(dateStr) {
+function formatDateCourt(dateStr, t, langue, locale) {
   const [y, m, d] = dateStr.split('-').map(Number);
   const date = new Date(y, m - 1, d);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const diff = Math.round((date - today) / (1000 * 60 * 60 * 24));
-  if (diff === 0) return 'Aujourd\'hui';
-  if (diff === 1) return 'Demain';
+  if (diff === 0) return t('Aujourd\'hui');
+  if (diff === 1) return t('Demain');
+  if (langue === 'en') return date.toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'short' });
   return `${JOURS[date.getDay()]} ${d} ${MOIS[m - 1]}`;
 }
 
-function formatHeure(h) {
+// « 18h30 » en français, « 18:30 » en anglais.
+function formatHeure(h, langue) {
   if (!h) return '';
   const [hh, mm] = h.split(':');
+  if (langue === 'en') return `${parseInt(hh)}:${mm}`;
   return mm === '00' ? `${parseInt(hh)}h` : `${parseInt(hh)}h${mm}`;
 }
 
+/** Un entier >= 1, ou null (même borne que lib/offres-seances, qui parle français). */
+function borneEntier(v) {
+  const n = parseInt(v, 10);
+  return Number.isFinite(n) && n >= 1 ? n : null;
+}
+
+// Les phrases de lib/offres-seances (libelleSeances), lib/seances-groupees
+// (libelleGroupe) et lib/ponts (phraseAilleurs) sont écrites en français dans
+// des modules PURS partagés avec le tableau de bord de la prof : le portail les
+// recompose ici, mot pour mot en français, et traduites par t() sinon.
+function libelleSeancesT(offre, t) {
+  const total   = borneEntier(offre?.seances);
+  const cadence = borneEntier(offre?.seances_par_semaine);
+  if (total && cadence) {
+    return total > 1
+      ? t('{n} séances au total, {c} par semaine maximum', { n: total, c: cadence })
+      : t('{n} séance au total, {c} par semaine maximum', { n: total, c: cadence });
+  }
+  if (total)   return total > 1 ? t('{n} séances au total', { n: total }) : t('{n} séance au total', { n: total });
+  if (cadence) return cadence > 1 ? t('{n} séances par semaine', { n: cadence }) : t('{n} séance par semaine', { n: cadence });
+  return t('Séances illimitées');
+}
+
+function libelleGroupeT(resume, fmtH, t) {
+  if (!resume?.nb) return '';
+  if (!resume.premiere || !resume.derniere || resume.premiere === resume.derniere) {
+    return t('{n} créneaux', { n: resume.nb });
+  }
+  return t('{n} créneaux, de {debut} à {fin}', { n: resume.nb, debut: fmtH(resume.premiere), fin: fmtH(resume.derniere) });
+}
+
+function phraseAilleursT(structures, t) {
+  const l = structures || [];
+  if (l.length === 0) return null;
+  const noms = l.length === 1
+    ? l[0].nom
+    : t('{liste} et {dernier}', { liste: l.slice(0, -1).map(s => s.nom).join(', '), dernier: l[l.length - 1].nom });
+  return t('Je donne aussi des cours à {noms}', { noms });
+}
+
 function PlacesBadge({ capacite, inscrits, afficherInscrits = true }) {
+  const { t } = useLangue();
   if (!capacite) return null;
   const dispo = capacite - inscrits;
   // "Complet" reste toujours affiché (info utile). Si la jauge est masquée
   // (afficherInscrits=false), on n'expose pas le détail places/inscrits.
-  if (dispo <= 0) return <span className="portail-tag portail-tag-amber">Complet</span>;
+  if (dispo <= 0) return <span className="portail-tag portail-tag-amber">{t('Complet')}</span>;
   if (!afficherInscrits) return null;
-  if (dispo <= 3) return <span className="portail-tag portail-tag-amber">{dispo} place{dispo > 1 ? 's' : ''}</span>;
-  return <span className="portail-tag portail-tag-green">Places disponibles</span>;
+  if (dispo <= 3) return <span className="portail-tag portail-tag-amber">{dispo > 1 ? t('{n} places', { n: dispo }) : t('{n} place', { n: dispo })}</span>;
+  return <span className="portail-tag portail-tag-green">{t('Places disponibles')}</span>;
 }
 
 export default function PortailHome({ profile, cours, offresStripe = [], offresPubliques = [], sondageActif = null, studioSlug, isPreview = false, isDemo = false, currentClient = null, reservedCoursIds = [], canReserve = true, essaiVisible = true, canDemander = true, surchargesEssai = null, tonsParType = null, vignettesParType = null, tabInitial = null, equipe = [], liensEquipe = {}, ailleurs = [] }) {
+  // Le portail parle la langue de la visiteuse (2026-09-22) : t() rend le
+  // français par défaut, l'anglais si elle l'a choisi ou si le studio l'a réglé.
+  const { t, langue, locale } = useLangue();
+  const fmtH = (h) => formatHeure(h, langue);
+  const fmtDate = (d) => formatDateCourt(d, t, langue, locale);
   // v111 : les profs de la structure. Le filtre et l'onglet n'apparaissent
   // qu'à partir de deux personnes (une prof seule n'a rien à filtrer).
   const [filterProf, setFilterProf] = useState('');
@@ -126,18 +179,18 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
         // 409 « déjà inscrit » → on bascule quand même en « Inscrit·e »
         if (res.status === 409 && /déjà inscrit/i.test(json.error || '')) {
           setReserved(prev => new Set(prev).add(c.id));
-          toast.warning('Tu es déjà inscrit·e à ce cours.');
+          toast.warning(t('Tu es déjà inscrit·e à ce cours.'));
           return;
         }
         // Complet → renvoyer vers la page du cours (liste d'attente)
         if (res.status === 409 && /complet/i.test(json.error || '')) {
-          toast.warning('Ce cours est complet : rejoins la liste d\'attente depuis sa page.');
+          toast.warning(t('Ce cours est complet : rejoins la liste d\'attente depuis sa page.'));
           return;
         }
-        throw new Error(json.error || 'La réservation a échoué');
+        throw new Error(json.error || t('La réservation a échoué'));
       }
       setReserved(prev => new Set(prev).add(c.id));
-      toast.success('C\'est réservé ! 🌿');
+      toast.success(t('C\'est réservé ! 🌿'));
     } catch (e) {
       toast.error(e.message);
     } finally {
@@ -191,33 +244,35 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
           <span className="portail-cours-info">
             <span className="portail-cours-nom">{modele.nom}</span>
             <span className="portail-cours-details">
-              <span><Clock size={12} /> {libelleGroupe(resume, formatHeure)}</span>
-              {enLigne && <span>🖥 En ligne</span>}
+              <span><Clock size={12} /> {libelleGroupeT(resume, fmtH, t)}</span>
+              {enLigne && <span>🖥 {t('En ligne')}</span>}
               {modele.lieu && <span><MapPin size={12} /> {modele.lieu}</span>}
-              {modele.intervenante && <span className="portail-prof"><User size={12} /> avec {modele.intervenante}</span>}
+              {modele.intervenante && <span className="portail-prof"><User size={12} /> {t('avec {prenom}', { prenom: modele.intervenante })}</span>}
               {modele.type_cours && <span className={`portail-tag portail-tag-${tone}`}>{modele.type_cours}</span>}
               {Number(modele.tarif_unitaire) > 0 && (
                 <span className="portail-tag portail-tag-amber">
-                  {Number(modele.tarif_unitaire).toFixed(2).replace('.', ',').replace(',00', '')} €{modele.carnets_acceptes === true ? ' ou carnet' : ' / séance'}
+                  {modele.carnets_acceptes === true
+                    ? t('{prix} € ou carnet', { prix: Number(modele.tarif_unitaire).toFixed(2).replace('.', ',').replace(',00', '') })
+                    : t('{prix} € / séance', { prix: Number(modele.tarif_unitaire).toFixed(2).replace('.', ',').replace(',00', '') })}
                 </span>
               )}
             </span>
             {/* Les horaires restent LISIBLES sans déplier : le pli range, il ne
                 cache pas l'offre. */}
             <span className="portail-groupe-heures">
-              {resume.heures.map(h => <span key={h} className="portail-groupe-heure">{formatHeure(h)}</span>)}
+              {resume.heures.map(h => <span key={h} className="portail-groupe-heure">{fmtH(h)}</span>)}
             </span>
           </span>
           <span className="portail-groupe-right">
             {resume.toutComplet
-              ? <span className="portail-groupe-complet">Complet</span>
+              ? <span className="portail-groupe-complet">{t('Complet')}</span>
               : resume.placesRestantes !== null && (
                   <span className="portail-groupe-places">
-                    {resume.placesRestantes} place{resume.placesRestantes > 1 ? 's' : ''}
+                    {resume.placesRestantes > 1 ? t('{n} places', { n: resume.placesRestantes }) : t('{n} place', { n: resume.placesRestantes })}
                   </span>
                 )}
             <span className="portail-groupe-toggle">
-              {ouvert ? 'Replier' : 'Choisir mon heure'}
+              {ouvert ? t('Replier') : t('Choisir mon heure')}
               <ChevronDown size={15} className={ouvert ? 'pivote' : ''} />
             </span>
           </span>
@@ -244,7 +299,7 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
     const dispo = c.capacite_max ? c.capacite_max - c.nbInscrits : null;
     const complet = dispo !== null && dispo <= 0;
     if (canQuickBook && reserved.has(c.id)) {
-      return <span className="portail-resa-done"><Check size={13} /> Inscrit·e</span>;
+      return <span className="portail-resa-done"><Check size={13} /> {t('Inscrit·e')}</span>;
     }
     if (canQuickBook && !complet) {
       // <span role=button> (et non <button>) car la carte est un <Link> (<a>) :
@@ -261,7 +316,7 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
           onClick={activate}
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') activate(e); }}
         >
-          {busy ? <><Loader size={13} className="spin" /> …</> : 'Réserver'}
+          {busy ? <><Loader size={13} className="spin" /> …</> : t('Réserver')}
         </span>
       );
     }
@@ -293,8 +348,8 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
           className={`portail-creneau ${complet ? 'complet' : ''}`}
         >
           <span className="portail-creneau-heure">
-            <Clock size={13} /> {formatHeure(c.heure)}
-            {c.duree_minutes ? <span className="portail-creneau-duree">{c.duree_minutes} min</span> : null}
+            <Clock size={13} /> {fmtH(c.heure)}
+            {c.duree_minutes ? <span className="portail-creneau-duree">{c.duree_minutes} {t('min')}</span> : null}
           </span>
           <span className="portail-creneau-right">
             <PlacesBadge capacite={c.capacite_max} inscrits={c.nbInscrits} afficherInscrits={profile.afficher_inscrits !== false} />
@@ -324,13 +379,17 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
         <div className="portail-cours-info">
           <div className="portail-cours-nom">{c.nom}</div>
           <div className="portail-cours-details">
-            <span><Clock size={12} /> {formatHeure(c.heure)}{c.duree_minutes ? ` · ${c.duree_minutes}min` : ''}</span>
-            {enLigne && <span>🖥 En ligne</span>}
+            <span><Clock size={12} /> {fmtH(c.heure)}{c.duree_minutes ? ` · ${c.duree_minutes}${t('min')}` : ''}</span>
+            {enLigne && <span>🖥 {t('En ligne')}</span>}
             {c.lieu && <span><MapPin size={12} /> {c.lieu}</span>}
-            {c.intervenante && <span className="portail-prof"><User size={12} /> avec {c.intervenante}</span>}
+            {c.intervenante && <span className="portail-prof"><User size={12} /> {t('avec {prenom}', { prenom: c.intervenante })}</span>}
             {c.type_cours && <span className={`portail-tag portail-tag-${tone}`}>{c.type_cours}</span>}
             {Number(c.tarif_unitaire) > 0 && (
-              <span className="portail-tag portail-tag-amber">{Number(c.tarif_unitaire).toFixed(2).replace('.', ',').replace(',00', '')} €{c.carnets_acceptes === true ? ' ou carnet' : ' / séance'}</span>
+              <span className="portail-tag portail-tag-amber">
+                {c.carnets_acceptes === true
+                  ? t('{prix} € ou carnet', { prix: Number(c.tarif_unitaire).toFixed(2).replace('.', ',').replace(',00', '') })
+                  : t('{prix} € / séance', { prix: Number(c.tarif_unitaire).toFixed(2).replace('.', ',').replace(',00', '') })}
+              </span>
             )}
           </div>
         </div>
@@ -379,7 +438,7 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
 
   const envoyerDemandeOffre = async (offre) => {
     if (!demandeForm.prenom.trim() || !demandeForm.email.trim()) {
-      setDemandeEtat(p => ({ ...p, [offre.id]: 'erreur:Ton prénom et ton email, pour que le studio puisse te répondre.' }));
+      setDemandeEtat(p => ({ ...p, [offre.id]: 'erreur:' + t('Ton prénom et ton email, pour que le studio puisse te répondre.') }));
       return;
     }
     setDemandeEtat(p => ({ ...p, [offre.id]: 'envoi' }));
@@ -390,10 +449,16 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
         body: JSON.stringify({ offreId: offre.id, prenom: demandeForm.prenom, email: demandeForm.email }),
       });
       const json = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(json.error || 'Demande impossible pour le moment.');
+      if (!res.ok) throw new Error(json.error || t('Demande impossible pour le moment.'));
+      // La phrase de lib/demande-offre (confirmationEleve), recomposée ici pour
+      // être traduite : le mot « demande » reste central, rien n'est promis.
+      const studio = profile?.studio_nom || t('ton studio');
+      const confirmation = offre.nom
+        ? t('Demande envoyée pour « {offre} ». {studio} la reçoit et revient vers toi pour le règlement. Rien n\'est débité, rien n\'est réservé pour l\'instant.', { offre: offre.nom, studio })
+        : t('Demande envoyée. {studio} la reçoit et revient vers toi pour le règlement. Rien n\'est débité, rien n\'est réservé pour l\'instant.', { studio });
       setDemandeEtat(p => ({
         ...p,
-        [offre.id]: json.message || confirmationEleve({ offreNom: offre.nom, studioNom: profile?.studio_nom }),
+        [offre.id]: json.message || confirmation,
       }));
       setDemandeOffreId('');
     } catch (e) {
@@ -580,7 +645,7 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
           padding: '10px 14px', borderRadius: 10, marginBottom: 16,
           fontSize: '0.8125rem', display: 'flex', alignItems: 'center', gap: 8,
         }}>
-          👁 <strong>Mode aperçu</strong> : tu vois ton brouillon, pas encore publié.
+          👁 <strong>{t('Mode aperçu')}</strong> {t(': tu vois ton brouillon, pas encore publié.')}
         </div>
       )}
 
@@ -597,8 +662,8 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
         }}>
           <span style={{ fontSize: '1.4rem' }}>👁️</span>
           <div style={{ flex: 1, minWidth: 200 }}>
-            <strong>Mode démo</strong> : tu visites ton portail comme une élève.
-            <span style={{ fontWeight: 400, opacity: 0.85 }}> Réserve un cours pour tester, ou ouvre l'espace élève fictif (Camille, carnet 10 séances).</span>
+            <strong>{t('Mode démo')}</strong> {t(': tu visites ton portail comme une élève.')}
+            <span style={{ fontWeight: 400, opacity: 0.85 }}> {t('Réserve un cours pour tester, ou ouvre l\'espace élève fictif (Camille, carnet 10 séances).')}</span>
           </div>
           <Link
             href={`/p/${studioSlug}/espace?demo=1`}
@@ -613,7 +678,7 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
               flexShrink: 0,
             }}
           >
-            Voir l'espace démo →
+            {t('Voir l\'espace démo →')}
           </Link>
         </div>
       )}
@@ -641,7 +706,7 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
               {sondageActif.titre}
             </div>
             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 2 }}>
-              Aide {profile.studio_nom} à construire son planning idéal, 30 secondes
+              {t('Aide {studio} à construire son planning idéal, 30 secondes', { studio: profile.studio_nom })}
             </div>
           </div>
           <span style={{
@@ -649,29 +714,29 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
             padding: '6px 12px', borderRadius: 99,
             fontSize: '0.75rem', fontWeight: 700,
             flexShrink: 0,
-          }}>Répondre →</span>
+          }}>{t('Répondre →')}</span>
         </Link>
       )}
 
       {/* Bloc "Prochain cours" — conversion immédiate, calculé live */}
       {prochainCours && (
         <Link href={`/p/${studioSlug}/cours/${prochainCours.id}${demoQS}`} className="portail-next-cours reveal">
-          <div className="portail-next-cours-eyebrow">Prochain cours</div>
+          <div className="portail-next-cours-eyebrow">{t('Prochain cours')}</div>
           <div className="portail-next-cours-body">
             <div className="portail-next-cours-main">
               <div className="portail-next-cours-nom">{prochainCours.nom}</div>
               <div className="portail-next-cours-meta">
                 <Calendar size={13} />
-                <span>{formatDateCourt(prochainCours.date)}</span>
+                <span>{fmtDate(prochainCours.date)}</span>
                 {prochainCours.heure && (
                   <>
                     <span className="portail-next-cours-sep">·</span>
                     <Clock size={13} />
-                    <span>{formatHeure(prochainCours.heure)}</span>
+                    <span>{fmtH(prochainCours.heure)}</span>
                   </>
                 )}
                 {(prochainCours.format === 'visio' || prochainCours.format === 'hybride') && (
-                  <div className="hero-meta-item">🖥 <span>En ligne</span></div>
+                  <div className="hero-meta-item">🖥 <span>{t('En ligne')}</span></div>
                 )}
                 {prochainCours.lieu && (
                   <>
@@ -684,10 +749,10 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
             </div>
             <span className="portail-next-cours-cta">
               {!canReserve
-                ? <>Voir le cours <ChevronRight size={14} /></>
+                ? <>{t('Voir le cours')} <ChevronRight size={14} /></>
                 : prochainCours.capacite_max && (prochainCours.capacite_max - prochainCours.nbInscrits) <= 0
-                  ? <>Complet · liste d'attente <ChevronRight size={14} /></>
-                  : <>Réserver <ChevronRight size={14} /></>}
+                  ? <>{t('Complet · liste d\'attente')} <ChevronRight size={14} /></>
+                  : <>{t('Réserver')} <ChevronRight size={14} /></>}
             </span>
           </div>
         </Link>
@@ -705,13 +770,13 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
             <div className="portail-essai-cta-title">
               {/* Tarif par type (v92) : « dès X € » quand le prix varie selon le cours */}
               {profile.essai_paiement === 'gratuit'
-                ? 'Réserve ton cours d\'essai offert'
+                ? t('Réserve ton cours d\'essai offert')
                 : essaiVarieParType(profile, surchargesEssai)
-                  ? `Réserve ton cours d\'essai · dès ${minPrixEssai(profile, surchargesEssai)}€`
-                  : `Réserve ton cours d\'essai · ${profile.essai_prix}€`}
+                  ? t('Réserve ton cours d\'essai · dès {prix}€', { prix: minPrixEssai(profile, surchargesEssai) })
+                  : t('Réserve ton cours d\'essai · {prix}€', { prix: profile.essai_prix })}
             </div>
             <div className="portail-essai-cta-sub">
-              Découvre le studio dans l'ambiance d'un vrai cours.
+              {t('Découvre le studio dans l\'ambiance d\'un vrai cours.')}
             </div>
           </div>
           <ChevronRight size={18} className="portail-essai-cta-arrow" />
@@ -732,7 +797,7 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
           <p>{accrocheBio}</p>
           {bioTronquee && (
             <button type="button" className="portail-accroche-lien" onClick={() => setTab('propos')}>
-              Lire la suite <ChevronRight size={13} />
+              {t('Lire la suite')} <ChevronRight size={13} />
             </button>
           )}
         </div>
@@ -747,7 +812,7 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
           onClick={() => setTab('cours')}
           className={`portail-tab ${tab === 'cours' ? 'is-active' : ''}`}
         >
-          <Calendar size={14} /> Cours
+          <Calendar size={14} /> {t('Cours')}
         </button>
         {hasAbout && (
           <button
@@ -757,7 +822,7 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
             onClick={() => setTab('propos')}
             className={`portail-tab ${tab === 'propos' ? 'is-active' : ''}`}
           >
-            <Award size={14} /> À propos
+            <Award size={14} /> {t('À propos')}
           </button>
         )}
         {hasTarifs && (
@@ -768,7 +833,7 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
             onClick={() => setTab('tarifs')}
             className={`portail-tab ${tab === 'tarifs' ? 'is-active' : ''}`}
           >
-            <Ticket size={14} /> Tarifs
+            <Ticket size={14} /> {t('Tarifs')}
           </button>
         )}
         {aUneEquipe && (
@@ -780,7 +845,7 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
             className={`portail-tab ${tab === 'equipe' ? 'is-active' : ''}`}
             data-testid="portail-tab-equipe"
           >
-            <User size={14} /> L'équipe
+            <User size={14} /> {t('L\'équipe')}
           </button>
         )}
         {hasInfos && (
@@ -791,7 +856,7 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
             onClick={() => setTab('infos')}
             className={`portail-tab ${tab === 'infos' ? 'is-active' : ''}`}
           >
-            <MapPin size={14} /> Infos
+            <MapPin size={14} /> {t('Infos')}
           </button>
         )}
       </div>
@@ -800,7 +865,7 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
       {tab === 'cours' && <>
       {/* Switch vue + nav semaine */}
       <div className="portail-view-bar">
-        <div className="portail-view-toggle" role="tablist" aria-label="Mode d'affichage">
+        <div className="portail-view-toggle" role="tablist" aria-label={t('Mode d\'affichage')}>
           <button
             type="button"
             role="tab"
@@ -808,7 +873,7 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
             onClick={() => setViewMode('week')}
             className={`portail-view-btn ${viewMode === 'week' ? 'is-active' : ''}`}
           >
-            <LayoutGrid size={13} /> Semaine
+            <LayoutGrid size={13} /> {t('Semaine')}
           </button>
           <button
             type="button"
@@ -817,7 +882,7 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
             onClick={() => setViewMode('list')}
             className={`portail-view-btn ${viewMode === 'list' ? 'is-active' : ''}`}
           >
-            <List size={13} /> Liste
+            <List size={13} /> {t('Liste')}
           </button>
         </div>
         {viewMode === 'week' && (
@@ -826,16 +891,16 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
               type="button"
               onClick={() => setWeekStart(addDays(weekStart, -7))}
               className="portail-week-nav-btn"
-              aria-label="Semaine précédente"
+              aria-label={t('Semaine précédente')}
             >
               <ChevronLeft size={16} />
             </button>
-            <span className="portail-week-label">{fmtWeekRange(weekStart)}</span>
+            <span className="portail-week-label">{fmtWeekRange(weekStart, langue, locale)}</span>
             <button
               type="button"
               onClick={() => setWeekStart(addDays(weekStart, 7))}
               className="portail-week-nav-btn"
-              aria-label="Semaine suivante"
+              aria-label={t('Semaine suivante')}
             >
               <ChevronRight size={16} />
             </button>
@@ -851,7 +916,7 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
             type="text"
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="Rechercher un cours…"
+            placeholder={t('Rechercher un cours…')}
             className="portail-search-input"
           />
         </div>
@@ -860,20 +925,20 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
             <button
               onClick={() => setFilterType('')}
               className={`portail-pill ${!filterType ? 'active' : ''}`}
-            >Tous</button>
-            {types.map(t => (
+            >{t('Tous')}</button>
+            {types.map(ty => (
               <button
-                key={t}
-                onClick={() => setFilterType(filterType === t ? '' : t)}
-                className={`portail-pill ${filterType === t ? 'active' : ''}`}
-              >{t}</button>
+                key={ty}
+                onClick={() => setFilterType(filterType === ty ? '' : ty)}
+                className={`portail-pill ${filterType === ty ? 'active' : ''}`}
+              >{ty}</button>
             ))}
           </div>
         )}
         {/* v111 : filtrer par prof, dès que deux profs donnent des cours. */}
         {profs.length > 1 && (
           <div className="portail-type-pills portail-prof-pills" data-testid="portail-filtre-profs">
-            <button type="button" onClick={() => setFilterProf('')} className={`portail-pill ${!filterProf ? 'active' : ''}`}>Toutes les profs</button>
+            <button type="button" onClick={() => setFilterProf('')} className={`portail-pill ${!filterProf ? 'active' : ''}`}>{t('Toutes les profs')}</button>
             {profs.map(p => (
               <button key={p.id} type="button" onClick={() => setFilterProf(filterProf === p.id ? '' : p.id)} className={`portail-pill ${filterProf === p.id ? 'active' : ''}`}>
                 <User size={12} /> {p.prenom}
@@ -897,9 +962,9 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
           {weekDays.filter(day => !semaineCreuse || day.cours.length > 0).map(day => (
             <div key={day.iso} className={`portail-week-day ${day.isToday ? 'is-today' : ''}`}>
               <div className="portail-week-day-label">
-                <span className="portail-week-day-name">{JOURS_LONG[day.date.getDay()]}</span>
+                <span className="portail-week-day-name">{nomJourLong(day.date, langue, locale)}</span>
                 <span className="portail-week-day-num">{day.date.getDate()}</span>
-                {day.isToday && <span className="portail-week-day-badge">Aujourd'hui</span>}
+                {day.isToday && <span className="portail-week-day-badge">{t('Aujourd\'hui')}</span>}
               </div>
               {day.cours.length === 0 ? (
                 <div className="portail-week-day-empty">—</div>
@@ -908,12 +973,12 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
           ))}
           {semaineCreuse && filteredForView.length > 0 && (
             <p className="portail-week-note">
-              Seuls les jours avec cours sont affichés.
+              {t('Seuls les jours avec cours sont affichés.')}
             </p>
           )}
           {filteredForView.length === 0 && (
             <div className="portail-empty" style={{ marginTop: 8 }}>
-              <p style={{ color: '#888', margin: 0 }}>Aucun cours cette semaine</p>
+              <p style={{ color: '#888', margin: 0 }}>{t('Aucun cours cette semaine')}</p>
             </div>
           )}
         </div>
@@ -923,18 +988,18 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
       {viewMode === 'list' && cours.length === 0 ? (
         <div className="portail-empty">
           <div style={{ fontSize: '2.5rem', marginBottom: '12px' }}>📅</div>
-          <p style={{ fontWeight: 600, margin: '0 0 6px' }}>Aucun cours à venir</p>
+          <p style={{ fontWeight: 600, margin: '0 0 6px' }}>{t('Aucun cours à venir')}</p>
           <p style={{ color: '#888', fontSize: '0.875rem', margin: 0 }}>
-            Les prochains cours seront affichés ici.
+            {t('Les prochains cours seront affichés ici.')}
           </p>
         </div>
       ) : viewMode === 'list' && grouped.length === 0 ? (
         <div className="portail-empty">
-          <p style={{ color: '#888' }}>Aucun cours correspond à ta recherche</p>
+          <p style={{ color: '#888' }}>{t('Aucun cours correspond à ta recherche')}</p>
         </div>
       ) : viewMode === 'list' && grouped.map(([date, coursDate]) => (
         <div key={date} className="portail-day-group">
-          <div className="portail-day-label">{formatDateCourt(date)}</div>
+          <div className="portail-day-label">{fmtDate(date)}</div>
           {renderJournee(coursDate)}
         </div>
       ))}
@@ -951,7 +1016,7 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
                 <div className="portail-about-meta">
                   {profile.annees_experience && (
                     <span className="portail-about-pill">
-                      <Award size={13} /> {profile.annees_experience} an{profile.annees_experience > 1 ? 's' : ''} d'expérience
+                      <Award size={13} /> {profile.annees_experience > 1 ? t('{n} ans d\'expérience', { n: profile.annees_experience }) : t('{n} an d\'expérience', { n: profile.annees_experience })}
                     </span>
                   )}
                   {profile.formations && (
@@ -992,7 +1057,7 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
             }
             return (
               <section className="portail-philo reveal">
-                <div className="portail-philo-eyebrow">Ma philosophie</div>
+                <div className="portail-philo-eyebrow">{t('Ma philosophie')}</div>
                 <div className="portail-philo-list">
                   {versets.map((v, i) => (
                     <div key={i} className="portail-philo-verset">
@@ -1016,10 +1081,10 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
               // Ce à quoi l'abonnement donne droit, avant de payer : une
               // cadence de 1×/semaine ne doit pas se découvrir à la 2e résa.
               const sub =
-                o.type === 'carnet'      ? `Carnet de ${o.seances} séances` :
-                o.type === 'abonnement'  ? [libelleSeances(o), o.duree_jours ? `${o.duree_jours} jours` : null].filter(Boolean).join(' · ') :
-                o.type === 'adhesion'    ? 'Adhésion à l\'association, pour la saison' :
-                                            'Cours à l\'unité';
+                o.type === 'carnet'      ? t('Carnet de {n} séances', { n: o.seances }) :
+                o.type === 'abonnement'  ? [libelleSeancesT(o, t), o.duree_jours ? t('{n} jours', { n: o.duree_jours }) : null].filter(Boolean).join(' · ') :
+                o.type === 'adhesion'    ? t('Adhésion à l\'association, pour la saison') :
+                                            t('Cours à l\'unité');
               const handleSpotlight = (e) => {
                 const r = e.currentTarget.getBoundingClientRect();
                 e.currentTarget.style.setProperty('--mx', `${e.clientX - r.left}px`);
@@ -1048,22 +1113,22 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
                       // Une adhésion (v113) se prend auprès de l'association,
                       // jamais par la file des offres (elle ne se vend pas
                       // par le tunnel des carnets).
-                      if (o.type === 'adhesion') return <div className="pp-demande-ok" style={{ opacity: .8 }}>À prendre auprès de l\'association</div>;
+                      if (o.type === 'adhesion') return <div className="pp-demande-ok" style={{ opacity: .8 }}>{t('À prendre auprès de l\'association')}</div>;
                       return (
                         <button type="button" className="pp-demande-btn" onClick={() => setDemandeOffreId(o.id)}>
-                          Demander cette offre
+                          {t('Demander cette offre')}
                         </button>
                       );
                     }
                     return (
                       <div className="pp-demande-form" onClick={e => e.stopPropagation()}>
                         <input
-                          className="pp-demande-input" placeholder="Ton prénom"
+                          className="pp-demande-input" placeholder={t('Ton prénom')}
                           value={demandeForm.prenom}
                           onChange={e => setDemandeForm(f => ({ ...f, prenom: e.target.value }))}
                         />
                         <input
-                          className="pp-demande-input" type="email" placeholder="Ton email"
+                          className="pp-demande-input" type="email" placeholder={t('Ton email')}
                           value={demandeForm.email}
                           onChange={e => setDemandeForm(f => ({ ...f, email: e.target.value }))}
                         />
@@ -1072,7 +1137,7 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
                           onClick={() => envoyerDemandeOffre(o)}
                           disabled={etat === 'envoi'}
                         >
-                          {etat === 'envoi' ? 'Envoi…' : 'Envoyer ma demande'}
+                          {etat === 'envoi' ? t('Envoi…') : t('Envoyer ma demande')}
                         </button>
                         {etat?.startsWith('erreur:') && <div className="pp-demande-err">{etat.slice(7)}</div>}
                       </div>
@@ -1088,7 +1153,7 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
       {/* === ONGLET L'ÉQUIPE (v111) === */}
       {tab === 'equipe' && aUneEquipe && (
         <section className="portail-equipe" data-testid="portail-equipe">
-          <h2 className="portail-section-title">L&apos;équipe</h2>
+          <h2 className="portail-section-title">{t('L\'équipe')}</h2>
           <ul className="portail-equipe-liste">
             {equipe.map(m => (
               <li key={m.id} className="portail-equipe-carte">
@@ -1101,11 +1166,11 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
                   </div>
                   {m.bio && <p className="portail-equipe-bio">{m.bio}</p>}
                   {liensEquipe[m.id] && (
-                    <a href={`/p/${liensEquipe[m.id].slug}`} className="portail-equipe-lien" data-testid="equipe-sa-page">Sa page : {liensEquipe[m.id].nom} →</a>
+                    <a href={`/p/${liensEquipe[m.id].slug}`} className="portail-equipe-lien" data-testid="equipe-sa-page">{t('Sa page : {nom} →', { nom: liensEquipe[m.id].nom })}</a>
                   )}
                   {profs.some(p => p.id === m.id) && (
                     <button type="button" className="portail-equipe-lien" onClick={() => { setFilterProf(m.id); setTab('cours'); }}>
-                      Voir ses cours
+                      {t('Voir ses cours')}
                     </button>
                   )}
                 </div>
@@ -1119,7 +1184,7 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
       {tab === 'infos' && hasInfos && <>
         {(adresseComplete || horairesVisibles) && (
           <section className="portail-venue reveal">
-            <h2 className="portail-section-title">Où nous trouver</h2>
+            <h2 className="portail-section-title">{t('Où nous trouver')}</h2>
             <div className="portail-venue-card">
               {adresseComplete && (
                 <div className="portail-venue-row">
@@ -1133,7 +1198,7 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
                         rel="noopener noreferrer"
                         className="portail-venue-link"
                       >
-                        Itinéraire Google Maps →
+                        {t('Itinéraire Google Maps →')}
                       </a>
                     )}
                   </div>
@@ -1151,7 +1216,7 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
 
         {faq.length > 0 && (
           <section className="portail-faq reveal">
-            <h2 className="portail-section-title">Questions fréquentes</h2>
+            <h2 className="portail-section-title">{t('Questions fréquentes')}</h2>
             <div className="portail-faq-list">
               {faq.map((item, i) => (
                 <details key={i} className="portail-faq-item">
@@ -1175,10 +1240,10 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
         <div className="portail-stripe-section">
           <div className="portail-stripe-header">
             <CreditCard size={16} style={{ color: '#635bff' }} />
-            <h2>Acheter en ligne</h2>
+            <h2>{t('Acheter en ligne')}</h2>
           </div>
           <p className="portail-stripe-desc">
-            Paye ton carnet ou abonnement par CB en quelques clics.
+            {t('Paye ton carnet ou abonnement par CB en quelques clics.')}
           </p>
           <div className="portail-stripe-grid">
             {offresStripe.map(o => {
@@ -1197,9 +1262,9 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
                   <div className="portail-stripe-card-info">
                     <div className="portail-stripe-card-nom">{o.nom}</div>
                     {o.type === 'abonnement' ? (
-                      <div className="portail-stripe-card-meta">{libelleSeances(o)}</div>
+                      <div className="portail-stripe-card-meta">{libelleSeancesT(o, t)}</div>
                     ) : o.seances && (
-                      <div className="portail-stripe-card-meta">{o.seances} séance{o.seances > 1 ? 's' : ''}</div>
+                      <div className="portail-stripe-card-meta">{o.seances > 1 ? t('{n} séances', { n: o.seances }) : t('{n} séance', { n: o.seances })}</div>
                     )}
                   </div>
                   <div className="portail-stripe-card-prix">
@@ -1210,7 +1275,7 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
             })}
           </div>
           <p className="portail-stripe-trust">
-            🔒 Paiement sécurisé via Stripe, IziSolo ne stocke aucune donnée bancaire.
+            🔒 {t('Paiement sécurisé via Stripe, IziSolo ne stocke aucune donnée bancaire.')}
           </p>
         </div>
       )}
@@ -1224,7 +1289,7 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
       {ailleurs.length > 0 && (
         <section className="portail-ailleurs" data-testid="portail-ailleurs">
           <Building2 size={15} />
-          <span>{phraseAilleurs(ailleurs)} :</span>
+          <span>{phraseAilleursT(ailleurs, t)} :</span>
           {ailleurs.map(s => <a key={s.id} href={`/p/${s.slug}`} className="portail-ailleurs-lien">{s.nom} →</a>)}
         </section>
       )}
@@ -1243,7 +1308,7 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
               </a>
             )}
             {profile.website_url && (
-              <a href={profile.website_url} target="_blank" rel="noopener noreferrer" className="portail-social-link" aria-label="Site web">
+              <a href={profile.website_url} target="_blank" rel="noopener noreferrer" className="portail-social-link" aria-label={t('Site web')}>
                 <Globe size={18} />
               </a>
             )}
