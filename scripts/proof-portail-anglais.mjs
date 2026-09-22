@@ -96,6 +96,19 @@ const sessionCookies = async (email) => {
 const cookieLangue = (l) => ({ name: 'izi_lang', value: l, url: BASE, sameSite: 'Lax' });
 const attendre = async (fn, ms = 60000) => { const fin = Date.now() + ms; let v; while (Date.now() < fin) { v = await fn().catch(() => null); if (v) return v; await new Promise(r => setTimeout(r, 400)); } return null; };
 
+// Le quota anti-abus de la route de réservation (5/h par IP, compteur PARTAGÉ
+// en base) : à la quatrième relance, le 429 accuse le produit pour rien. On
+// libère la clé de l'appelant LOCAL seulement, jamais un like('default:%')
+// (la table est partagée avec la prod). Patron de proof-upsell-complet.
+{
+  const { createHash } = await import('node:crypto');
+  const sel = env.IP_HASH_SALT || 'izisolo';
+  for (const ip of ['null', '::1', '127.0.0.1']) {
+    const empreinte = createHash('sha256').update(ip + sel).digest('hex').slice(0, 32);
+    await svc.from('rate_limits').delete().eq('cle', `default:${empreinte}`).then(() => {}, () => {});
+  }
+}
+
 let chromium; try { ({ chromium } = await import('playwright')); } catch { ({ chromium } = await import('@playwright/test')); }
 let browser; try { browser = await chromium.launch({ channel: 'msedge' }); } catch { browser = await chromium.launch(); }
 const erreurs = [];
@@ -228,6 +241,13 @@ try {
     await pf.waitForSelector('.portail-header', { timeout: 90000 });
     c('son cookie FR prime sur le réglage du studio', (await pf.innerText('.portail-header')).includes('Mon espace'));
     await ctxF.close();
+    // En dev, compiler les pages du portail pour ctxF peut recharger l'écran
+    // Paramètres (Fast Refresh) et refermer la carte : on la rouvre si besoin.
+    if (!(await pp.locator('[data-testid="langue-portail-fr"]').isVisible().catch(() => false))) {
+      await pp.waitForSelector('[data-carte-reglage="page_affichage"] .carte-reglage-entete', { timeout: 90000 });
+      await pp.click('[data-carte-reglage="page_affichage"] .carte-reglage-entete');
+      await pp.waitForSelector('[data-testid="langue-portail-fr"]', { timeout: 90000 });
+    }
     await pp.click('[data-testid="langue-portail-fr"]');
     const retour = await attendre(() => svc.from('profiles').select('langue_portail').eq('id', demo.id).single().then(r => (r.data?.langue_portail === 'fr' ? 'fr' : null)), 20000);
     c('retour à fr EN BASE', retour === 'fr');
