@@ -443,4 +443,13 @@ export const FAQ_SUPPORT = [
     a: "Le rappel « Paiement en attente » ne parle que des lignes qui attendent encore un règlement dans IziSolo, depuis plus de 14 jours (le seuil se règle dans Paramètres → Élèves & cours → Seuils d'alerte). Deux cas font croire le contraire. Si tu as saisi un premier chèque sur un abonnement vendu « à régler plus tard », le reste attend toujours, et c'est ce reste que la cloche rappelle : le rappel dit maintenant « reste 235 € (245 € déjà reçus, dernier par chèque le 08/09) » et compte les jours depuis ce chèque. Si le rappel parle d'une élève qui t'a réellement payée, son règlement n'est pas encore dans IziSolo : ouvre sa fiche → Paiements, la ligne est « à encaisser », clique « Encaisser » (ou « Plusieurs moyens » pour deux chèques) et le rappel disparaît aussitôt. Un rappel que tu as lu ne revient pas avant une semaine. Rien n'est jamais envoyé à l'élève.",
     lien: { href: '/aide#encaisser', label: 'Voir le pas-à-pas' },
   },
+  {
+    // « Ajouter des élèves » ne propose pas une élève déjà sur la séance
+    // (2026-09-22, retour Maude : Catherine avait réservé depuis le portail,
+    // était pointée présente, et le modal répondait « Aucun résultat »).
+    // AJOUTÉE EN FIN.
+    q: "Au pointage, « Ajouter des élèves » ne trouve pas une élève qui est pourtant dans ma base ?",
+    a: "Neuf fois sur dix, c'est qu'elle est DÉJÀ sur la séance : elle a réservé depuis ta page, ou tu l'as inscrite avant. Le modal d'ajout ne propose que les élèves qui ne sont pas encore sur la liste, sinon il fabriquerait une inscription en double. Depuis le 22 septembre il te le dit en toutes lettres quand tu tapes son nom (« Catherine Mazoyer est déjà sur cette séance (présent·e) ») et ne propose plus de créer une fiche en double : remonte dans ta liste de pointage, elle y est. Si elle n'y est vraiment pas, vérifie sa fiche : une élève archivée ou passée « inactive » n'est plus proposée à l'ajout, il suffit de la réactiver depuis sa fiche.",
+    lien: { href: '/aide#pointage', label: 'Voir le pas-à-pas' },
+  },
 ];

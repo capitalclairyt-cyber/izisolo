@@ -8,6 +8,7 @@ import {
   CheckCheck, Info, Plus, Lock, CreditCard, Sparkles
 } from 'lucide-react';
 import { formatHeure, escapeIlike, matchRecherche } from '@/lib/utils';
+import { inscritesCorrespondantes, proposerCreation, texteDejaInscrites } from '@/lib/deja-inscrite';
 import { parseDate } from '@/lib/dates';
 import { getVocabulaire } from '@/lib/vocabulaire';
 import { createClient } from '@/lib/supabase';
@@ -877,6 +878,12 @@ export default function PointageClient({ cours, presences: initialPresences, tou
   const clientsFiltres  = tousClients
     .filter(c => !clientsInscrits.has(c.id))
     .filter(c => matchRecherche(searchAdd, c.prenom, c.nom));
+  // Les inscrites que la recherche atteint (retour Maude 2026-09-22 : elle
+  // tapait « Catherine », déjà sur la séance et pointée présente, et l'écran
+  // répondait « Aucun résultat » + « Créer la fiche »). On les NOMME, et on ne
+  // propose « Créer la fiche » que si la recherche ne correspond à personne.
+  const inscritesTrouvees = inscritesCorrespondantes(searchAdd, presences);
+  const creationProposee  = proposerCreation({ query: searchAdd, proposables: clientsFiltres, inscrites: inscritesTrouvees });
 
   // ── Tri : en attente → présents → absents/excusés ─────
   // absent ET excusé partagent le rang 2 : basculer de l'un à l'autre ne
@@ -1741,12 +1748,23 @@ export default function PointageClient({ cours, presences: initialPresences, tou
                   autoFocus
                 />
                 <div className="modal-list">
+                  {/* La recherche atteint des élèves DÉJÀ sur la séance : on les
+                      nomme, avec leur état, au lieu de laisser croire que la
+                      fiche n'existe pas (retour Maude 2026-09-22). */}
+                  {inscritesTrouvees.length > 0 && (
+                    <p className="modal-deja" data-testid="deja-inscrite">
+                      <Check size={14} /> {texteDejaInscrites(inscritesTrouvees)}
+                      {clientsFiltres.length === 0 && ' Rien à ajouter : c\'est déjà dans la liste de pointage.'}
+                    </p>
+                  )}
                   {clientsFiltres.length === 0 ? (
                     <div className="modal-empty">
-                      <p style={{ margin: '0 0 12px' }}>
-                        {searchAdd ? <>Aucun résultat pour « {searchAdd.trim()} »</> : 'Tous les élèves sont déjà inscrits'}
-                      </p>
-                      {searchAdd.trim() && (
+                      {inscritesTrouvees.length === 0 && (
+                        <p style={{ margin: '0 0 12px' }}>
+                          {searchAdd ? <>Aucun résultat pour « {searchAdd.trim()} »</> : 'Tous les élèves sont déjà inscrits'}
+                        </p>
+                      )}
+                      {creationProposee && (
                         <button
                           type="button"
                           className="izi-btn izi-btn-secondary"
@@ -2348,6 +2366,13 @@ export default function PointageClient({ cours, presences: initialPresences, tou
         .modal-search { margin: 12px 16px 4px; flex-shrink: 0; }
         .modal-list   { overflow-y: auto; padding: 0 16px 24px; flex: 1; min-height: 0; }
         .modal-empty  { text-align: center; color: var(--text-muted); padding: 24px; font-size: 0.875rem; }
+        .modal-deja {
+          display: flex; align-items: flex-start; gap: 8px;
+          margin: 8px 0 4px; padding: 10px 12px; border-radius: 10px;
+          background: var(--c-bg-sage, #eef4ee); color: var(--text-primary);
+          font-size: 0.85rem; line-height: 1.4;
+        }
+        .modal-deja svg { flex-shrink: 0; margin-top: 2px; color: var(--c-sage-ink, #3b7d5e); }
         .modal-item {
           display: flex; align-items: center; gap: 12px;
           padding: 12px 0; border-bottom: 1px solid var(--border);
