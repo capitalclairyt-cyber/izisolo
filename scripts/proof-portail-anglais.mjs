@@ -52,7 +52,7 @@ let V121 = true, langueAvant = 'fr';
 {
   const { data, error } = await svc.from('profiles').select('langue_portail').eq('id', demo.id).maybeSingle();
   if (error && (['42703', 'PGRST204', 'PGRST205'].includes(error.code) || /langue_portail/.test(error.message || ''))) V121 = false;
-  else langueAvant = data?.langue_portail === 'en' ? 'en' : 'fr';
+  else langueAvant = data?.langue_portail || 'fr'; // valeur BRUTE (v123 : peut être « auto »)
 }
 console.log(`migration v121 : ${V121 ? 'APPLIQUEE (phase complète)' : 'ABSENTE (phase dégradée, relance après application)'}`);
 const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Paris' });

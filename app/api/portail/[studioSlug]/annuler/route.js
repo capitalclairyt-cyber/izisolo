@@ -13,7 +13,7 @@ import { resoudreCarnetApplicable } from '@/lib/carnet-resolution';
 import { resoudreFicheEleve } from '@/lib/fiche-eleve';
 import { promouvoirListeAttente } from '@/lib/promotion-liste-attente';
 import { reportError } from '@/lib/report';
-import { langueDepuisRequete, cookieLangueDeRequete, poserLangueFiche } from '@/lib/i18n-portail-serveur';
+import { langueDepuisRequete, memoriserLangueVisiteRequete } from '@/lib/i18n-portail-serveur';
 import { traducteur } from '@/lib/i18n-portail';
 
 export const POST = withRoute({ auth: 'public' }, async ({ request, params }) => {
@@ -84,8 +84,7 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
   // v122 : elle annule avec un cookie de langue explicite → mémorisé sur sa
   // fiche, pour que les emails sans cookie partent dans SA langue.
   {
-    const cookieL = cookieLangueDeRequete(request);
-    if (cookieL) await poserLangueFiche(supabaseAdmin, client.id, cookieL);
+    await memoriserLangueVisiteRequete(supabaseAdmin, client.id, request, studioSlug);
   }
 
   // Vérifier que la présence appartient bien à ce client dans ce studio

@@ -14,7 +14,7 @@ import { coursDejaCommence } from '@/lib/dates';
 import { getRegle } from '@/lib/regles-metier';
 import { sendEmail } from '@/lib/email';
 import { buildPortailMagicLink } from '@/lib/portail-magic-link';
-import { langueDepuisRequete, cookieLangueDeRequete, poserLangueFiche } from '@/lib/i18n-portail-serveur';
+import { langueDepuisRequete, memoriserLangueVisiteRequete } from '@/lib/i18n-portail-serveur';
 import { traducteur } from '@/lib/i18n-portail';
 
 /**
@@ -88,8 +88,7 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
   // v122 : elle réserve avec un cookie de langue explicite → mémorisé sur sa
   // fiche, pour que les emails sans cookie (rappel, annulation) partent dans SA langue.
   {
-    const cookieL = cookieLangueDeRequete(request);
-    if (cookieL) await poserLangueFiche(supabaseAdmin, client.id, cookieL);
+    await memoriserLangueVisiteRequete(supabaseAdmin, client.id, request, studioSlug);
   }
 
   // Cours de référence

@@ -27,6 +27,7 @@ import PhotoUploader from '@/components/ui/PhotoUploader';
 import CoverPhotoEditor from '@/components/ui/CoverPhotoEditor';
 import HorairesStudioEditor from './HorairesStudioEditor';
 import CarteReglage, { EnSavoirPlus } from '../CarteReglage';
+import { reglageLangueStudio } from '@/lib/i18n-portail';
 
 export default function PagePubliqueSection({ profile, setProfile, setDirty }) {
   const studioSlug = profile?.studio_slug;
@@ -52,7 +53,8 @@ export default function PagePubliqueSection({ profile, setProfile, setDirty }) {
   };
   // v121 : la langue par défaut du portail. Route DÉDIÉE, enregistré au clic.
   const [langueBusy, setLangueBusy] = useState(false);
-  const languePortail = profile?.langue_portail === 'en' ? 'en' : 'fr';
+  // v123 : trois réglages, « auto » par défaut (la langue du navigateur de chaque visiteuse).
+  const languePortail = reglageLangueStudio(profile);
   const choisirLangue = async (langue) => {
     if (langue === languePortail) return;
     setLangueBusy(true);
@@ -61,7 +63,11 @@ export default function PagePubliqueSection({ profile, setProfile, setDirty }) {
       const json = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(json.error || 'Réglage non enregistré');
       setProfile(prev => ({ ...prev, langue_portail: json.langue }));
-      toast.success(json.langue === 'en' ? "Ta page et l'espace de tes élèves s'ouvrent en anglais." : "Ta page et l'espace de tes élèves s'ouvrent en français.");
+      toast.success(
+        json.langue === 'auto'
+          ? "Ta page et l'espace de tes élèves suivent la langue de chaque visiteuse (français ou anglais)."
+          : json.langue === 'en' ? "Ta page et l'espace de tes élèves s'ouvrent en anglais." : "Ta page et l'espace de tes élèves s'ouvrent en français."
+      );
     } catch (err) {
       toast.error(err.message);
     } finally {
@@ -270,7 +276,7 @@ export default function PagePubliqueSection({ profile, setProfile, setDirty }) {
         <div className="form-group" data-testid="langue-portail">
           <label className="form-label">Langue de ma page et de l&apos;espace de mes élèves</label>
           <div style={{ display: 'flex', gap: 8 }}>
-            {[['fr', 'Français'], ['en', 'English']].map(([code, libelle]) => (
+            {[['auto', 'Automatique'], ['fr', 'Français'], ['en', 'English']].map(([code, libelle]) => (
               <button
                 key={code}
                 type="button"
@@ -284,7 +290,7 @@ export default function PagePubliqueSection({ profile, setProfile, setDirty }) {
               </button>
             ))}
           </div>
-          <p className="form-hint">Enregistré tout de suite. Tes élèves gardent un bouton FR / EN en haut de ta page pour choisir la leur.</p>
+          <p className="form-hint">Automatique : chaque visiteuse voit ta page dans la langue de son téléphone ou de son navigateur (français ou anglais). Français ou English : tout le monde arrive dans cette langue. Enregistré tout de suite, et tes élèves gardent un bouton FR / EN en haut de ta page pour choisir la leur.</p>
           <EnSavoirPlus>
             <p>En anglais : la page publique, la réservation, la connexion, l&apos;espace élève, et tous les emails et notifications qu&apos;une élève reçoit (confirmation, connexion, rappel de séance, annulation, liste d&apos;attente, essai, facture, tes messages). Une élève qui a choisi sa langue sur ta page la garde pour ses emails, même quand c&apos;est toi qui les déclenches. Tes textes à toi (bio, noms de cours, FAQ, messages) restent tels que tu les as écrits.</p>
           </EnSavoirPlus>

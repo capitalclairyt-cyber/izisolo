@@ -15,6 +15,7 @@
  */
 import { test, expect } from '@playwright/test';
 import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { auditerFichiers, listerFichiers, variablesDe } from '../../lib/i18n-audit.js';
 import EN_COMMUN from '../../lib/i18n/en-commun.js';
 import EN_HOME from '../../lib/i18n/en-home.js';
@@ -28,6 +29,7 @@ import EN_SERVICES from '../../lib/i18n/en-services.js';
 import {
   DICTIONNAIRES, LANGUES_PORTAIL, COOKIE_LANGUE, cookieLangue, interpoler, localeDe,
   normaliserLangue, resoudreLangue, traduire, traducteur, langueStudio, langueEleve,
+  langueNavigateur, reglageLangueStudio, REGLAGES_LANGUE_STUDIO, REGLAGE_LANGUE_DEFAUT,
 } from '../../lib/i18n-portail.js';
 
 const racine = process.cwd();
@@ -125,6 +127,65 @@ test.describe('i18n portail : la résolution', () => {
     expect(langueEleve({ client: {}, studio: {} })).toBe('fr');
     expect(langueEleve()).toBe('fr');
     expect(langueEleve({ client: { langue: 'klingon' }, studio: { langue_portail: 'de' } })).toBe('fr');
+  });
+
+  // v123 (2026-09-23) : le navigateur de la visiteuse en repli, « auto » par défaut.
+  test('la langue du navigateur : la première préférée qui soit fr ou en', () => {
+    expect(langueNavigateur('en-US,en;q=0.9')).toBe('en');
+    expect(langueNavigateur('fr-FR,fr;q=0.9,en;q=0.8')).toBe('fr');
+    expect(langueNavigateur('es-ES,en;q=0.8')).toBe('en');
+    expect(langueNavigateur('de-DE,de;q=0.9')).toBeNull();
+    expect(langueNavigateur('en;q=0.5, fr;q=0.9')).toBe('fr');
+    expect(langueNavigateur('*')).toBeNull();
+    expect(langueNavigateur('')).toBeNull();
+    expect(langueNavigateur(null)).toBeNull();
+    expect(langueNavigateur('fr-CA')).toBe('fr');
+  });
+
+  test('le réglage du studio : auto | fr | en, tout le reste vaut auto', () => {
+    expect(REGLAGES_LANGUE_STUDIO).toEqual(['auto', 'fr', 'en']);
+    expect(REGLAGE_LANGUE_DEFAUT).toBe('auto');
+    expect(reglageLangueStudio({ langue_portail: 'en' })).toBe('en');
+    expect(reglageLangueStudio({ langue_portail: 'FR' })).toBe('fr');
+    expect(reglageLangueStudio({ langue_portail: 'auto' })).toBe('auto');
+    expect(reglageLangueStudio({ langue_portail: null })).toBe('auto');
+    expect(reglageLangueStudio(null)).toBe('auto');
+    expect(reglageLangueStudio({ langue_portail: 'klingon' })).toBe('auto');
+  });
+
+  test('résolution : cookie > studio qui a choisi > navigateur si auto > fr', () => {
+    expect(resoudreLangue({ cookie: 'fr', studio: 'auto', navigateur: 'en' })).toBe('fr');
+    expect(resoudreLangue({ cookie: null, studio: 'auto', navigateur: 'en' })).toBe('en');
+    expect(resoudreLangue({ cookie: null, studio: 'auto', navigateur: 'fr' })).toBe('fr');
+    expect(resoudreLangue({ cookie: null, studio: 'auto', navigateur: null })).toBe('fr');
+    // Le studio a CHOISI : le navigateur ne compte plus.
+    expect(resoudreLangue({ cookie: null, studio: 'fr', navigateur: 'en' })).toBe('fr');
+    expect(resoudreLangue({ cookie: null, studio: 'en', navigateur: 'fr' })).toBe('en');
+    // Sans v123 (colonne absente → null) : le navigateur compte, comme en auto.
+    expect(resoudreLangue({ cookie: null, studio: null, navigateur: 'en' })).toBe('en');
+    // Un email n'a pas de navigateur : auto vaut français.
+    expect(langueStudio({ langue_portail: 'auto' })).toBe('fr');
+    expect(langueEleve({ client: { langue: null }, studio: { langue_portail: 'auto' } })).toBe('fr');
+  });
+
+  test('v123 : la migration dit la même chose que le code, et plus aucune surface ne pose la langue sans passer par memoriserLangueVisite', () => {
+    const sql = readFileSync(join(racine, 'migrations-v123-langue-portail-auto.sql'), 'utf8');
+    expect(sql).toContain("check (langue_portail in ('auto', 'fr', 'en'))");
+    expect(sql).toContain("set default 'auto'");
+    expect(sql).toMatch(/set langue_portail = 'auto'\s+where langue_portail = 'fr'/);
+    const surfaces = [
+      'app/p/[studioSlug]/page.js', 'app/p/[studioSlug]/espace/page.js',
+      'app/api/portail/[studioSlug]/reserver/route.js', 'app/api/portail/[studioSlug]/reserver-serie/route.js',
+      'app/api/portail/[studioSlug]/essai/route.js', 'app/api/portail/[studioSlug]/liste-attente/route.js',
+      'app/api/portail/[studioSlug]/annuler/route.js',
+    ];
+    for (const f of surfaces) {
+      const src = readFileSync(join(racine, f), 'utf8');
+      expect(src, f).toMatch(/memoriserLangueVisite(Requete)?\(/);
+      expect(src, f).not.toMatch(/poserLangueFiche\(/);
+    }
+    const carte = readFileSync(join(racine, 'app/(dashboard)/parametres/sections/PagePubliqueSection.js'), 'utf8');
+    expect(carte).toContain("['auto', 'Automatique']");
   });
 
   test('le locale suit la langue', () => {

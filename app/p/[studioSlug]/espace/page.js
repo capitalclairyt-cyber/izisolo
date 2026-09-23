@@ -15,7 +15,7 @@ import { masquerLiensSiNonBranche, lienPaiementSeance, catalogueEspaceVisible } 
 import { lireReglementConfig, referenceVirement } from '@/lib/reglement';
 import { studioCan } from '@/lib/plan-guard';
 import { chargerAvisGoogle, lienAvis } from '@/lib/avis-google';
-import { traducteurPortail, cookieLangueVisiteuse, poserLangueFiche } from '@/lib/i18n-portail-serveur';
+import { traducteurPortail, memoriserLangueVisite } from '@/lib/i18n-portail-serveur';
 
 // Le template racine ajoute déjà « — IziSolo » ; l'OG studio vient du layout portail.
 // Le titre suit la langue du portail (cookie de la visiteuse > réglage du studio).
@@ -191,10 +191,7 @@ async function getData(studioSlug, user) {
   // v122 : son choix de langue (cookie) est mémorisé sur SA fiche de CE
   // studio, pour que ses emails et ses push partent dans la même langue que
   // son écran. UPDATE séparé, conditionnel, muet sans la colonne.
-  if (client?.id) {
-    const cookieL = await cookieLangueVisiteuse();
-    if (cookieL) await poserLangueFiche(supabase, client.id, cookieL);
-  }
+  if (client?.id) await memoriserLangueVisite(supabase, client.id, studioSlug);
   // Le paiement en ligne n'est vraiment branché que si le webhook Stripe est
   // déclaré : sans lui, l'élève paie, l'argent part chez la prof, et IziSolo
   // n'en sait jamais rien (retour Manon 2026-08-26). Dans ce cas on ne propose

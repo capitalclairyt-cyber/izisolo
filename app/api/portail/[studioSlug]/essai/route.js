@@ -11,7 +11,7 @@ import { reportError } from '@/lib/report';
 import { canSeeCours, resolveClientInfo } from '@/lib/visibilite';
 import { coursDejaCommence } from '@/lib/dates';
 import { prixEssai, getEssaiPrixParType } from '@/lib/essai-tarif';
-import { langueDepuisRequete, cookieLangueDeRequete, poserLangueFiche } from '@/lib/i18n-portail-serveur';
+import { langueDepuisRequete, memoriserLangueVisiteRequete } from '@/lib/i18n-portail-serveur';
 import { traducteur } from '@/lib/i18n-portail';
 
 export const runtime = 'nodejs';
@@ -178,8 +178,7 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
       // v122 : elle demande son essai avec un cookie de langue explicite →
       // mémorisé sur la fiche que la finalisation vient de trouver ou créer,
       // pour que la suite (rappel, annulation) parte dans SA langue.
-      const cookieL = cookieLangueDeRequete(request);
-      if (cookieL && client_id) await poserLangueFiche(supabaseAdmin, client_id, cookieL);
+      if (client_id) await memoriserLangueVisiteRequete(supabaseAdmin, client_id, request, studioSlug);
     } catch (err) {
       // Refus métier de la RPC (complet sous verrou, annulé) → message propre
       // au visiteur, la demande reste réutilisable. Complet → on suggère la

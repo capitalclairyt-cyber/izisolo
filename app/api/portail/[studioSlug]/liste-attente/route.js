@@ -10,7 +10,7 @@ import { escapeIlike } from '@/lib/utils';
 import { reportError } from '@/lib/report';
 import { canSeeCours, resolveClientInfo } from '@/lib/visibilite';
 import { coursDejaCommence } from '@/lib/dates';
-import { langueDepuisRequete, cookieLangueDeRequete, poserLangueFiche } from '@/lib/i18n-portail-serveur';
+import { langueDepuisRequete, memoriserLangueVisiteRequete } from '@/lib/i18n-portail-serveur';
 import { traducteur } from '@/lib/i18n-portail';
 
 export const POST = withRoute({ auth: 'public' }, async ({ request, params }) => {
@@ -108,8 +108,7 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
   // existe → mémorisé dessus, pour que « une place s'est libérée » parte
   // dans SA langue. Sans fiche, le studio décidera.
   if (existingClient?.id) {
-    const cookieL = cookieLangueDeRequete(request);
-    if (cookieL) await poserLangueFiche(supabaseAdmin, existingClient.id, cookieL);
+    await memoriserLangueVisiteRequete(supabaseAdmin, existingClient.id, request, studioSlug);
   }
 
   // Bloquer si l'élève est déjà inscrit (presence) à ce cours

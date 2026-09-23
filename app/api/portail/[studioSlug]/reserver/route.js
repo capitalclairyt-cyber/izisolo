@@ -18,7 +18,7 @@ import { canSeeCours, resolveClientInfo } from '@/lib/visibilite';
 import { coursDejaCommence } from '@/lib/dates';
 import { urlPaiementSeance } from '@/lib/paiement-seance';
 import { lienPaiementSeance } from '@/lib/paiement-en-ligne';
-import { langueDepuisRequete, cookieLangueDeRequete, poserLangueFiche } from '@/lib/i18n-portail-serveur';
+import { langueDepuisRequete, memoriserLangueVisiteRequete } from '@/lib/i18n-portail-serveur';
 import { traducteur, localeDe } from '@/lib/i18n-portail';
 
 export const POST = withRoute({ auth: 'public' }, async ({ request, params }) => {
@@ -206,8 +206,7 @@ export const POST = withRoute({ auth: 'public' }, async ({ request, params }) =>
   // v122 : elle réserve avec un cookie de langue explicite → mémorisé sur sa
   // fiche, pour que le rappel J-1 et les autres emails partent dans SA langue.
   {
-    const cookieL = cookieLangueDeRequete(request);
-    if (cookieL) await poserLangueFiche(supabaseAdmin, clientId, cookieL);
+    await memoriserLangueVisiteRequete(supabaseAdmin, clientId, request, studioSlug);
   }
 
   // Vérifier que l'élève n'est pas déjà inscrit

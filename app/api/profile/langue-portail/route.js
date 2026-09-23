@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { withRoute } from '@/lib/api-route';
-import { LANGUES_PORTAIL, langueStudio } from '@/lib/i18n-portail';
+import { REGLAGES_LANGUE_STUDIO, reglageLangueStudio } from '@/lib/i18n-portail';
 
 /**
  * PATCH /api/profile/langue-portail — la langue par défaut du portail élève
@@ -13,7 +13,9 @@ import { LANGUES_PORTAIL, langueStudio } from '@/lib/i18n-portail';
  * et on le DIT.
  */
 const COLONNE_ABSENTE = ['42703', 'PGRST204', 'PGRST205'];
-const schema = z.object({ langue: z.enum(LANGUES_PORTAIL) });
+// v123 : « auto » (la langue du navigateur de chaque visiteuse) devient le
+// défaut. Sans v123, le CHECK de v121 refuse cette valeur (23514) : on le dit.
+const schema = z.object({ langue: z.enum(REGLAGES_LANGUE_STUDIO) });
 
 export const PATCH = withRoute({ auth: 'active', schema, perm: 'parametres' }, async ({ auth, body }) => {
   const { studioId, supabase } = auth;
@@ -22,6 +24,15 @@ export const PATCH = withRoute({ auth: 'active', schema, perm: 'parametres' }, a
     .update({ langue_portail: body.langue })
     .eq('id', studioId);
   if (error) {
+    if (body.langue === 'auto' && (error.code === '23514' || /langue_portail_check/.test(error.message || ''))) {
+      return Response.json(
+        {
+          error: "Le réglage « Automatique » n'est pas encore actif sur ton compte (mise à jour en cours). Ta page reste dans la langue choisie, et tes élèves gardent le bouton FR / EN.",
+          code: 'MIGRATION_V123_REQUISE',
+        },
+        { status: 503 }
+      );
+    }
     const migrationManquante = COLONNE_ABSENTE.includes(error.code) || /langue_portail/.test(error.message || '');
     return Response.json(
       {
@@ -40,5 +51,5 @@ export const PATCH = withRoute({ auth: 'active', schema, perm: 'parametres' }, a
 export const GET = withRoute({ auth: 'active' }, async ({ auth }) => {
   const { studioId, supabase } = auth;
   const { data, error } = await supabase.from('profiles').select('langue_portail').eq('id', studioId).maybeSingle();
-  return Response.json({ ok: true, langue: langueStudio(error ? null : data), disponible: !error });
+  return Response.json({ ok: true, langue: reglageLangueStudio(error ? null : data), disponible: !error });
 });

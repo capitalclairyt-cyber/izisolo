@@ -229,7 +229,9 @@ test.describe('Cartes repliées (lot 2) : chaque carte dit son état', () => {
   test('les résumés disent l\'état réel', () => {
     expect(resumeCarte('lieux', {}, { lieux: [{ nom: 'Salle A' }, { nom: 'Salle B' }] })).toBe('2 lieux · Salle A, Salle B');
     expect(resumeCarte('lieux', {}, { lieux: [] })).toBe('Aucun lieu pour l\'instant');
-    expect(resumeCarte('page_affichage', { afficher_tarifs: true })).toBe('horaires masqués · tarifs affichés · offres dans l\'espace élève · en français');
+    // v123 : sans réglage, la page suit le navigateur de la visiteuse (« auto ») ; « fr » est un choix.
+    expect(resumeCarte('page_affichage', { afficher_tarifs: true })).toBe('horaires masqués · tarifs affichés · offres dans l\'espace élève · langue automatique');
+    expect(resumeCarte('page_affichage', { langue_portail: 'fr' })).toContain('en français');
     expect(resumeCarte('page_affichage', { langue_portail: 'en' })).toContain('en anglais');
     expect(resumeCarte('page_affichage', { offres_espace: false })).toContain('offres hors de l\'espace élève');
     expect(resumeCarte('page_plus', { annees_experience: 9, formations: 'x', faq_publique: [{}, {}] })).toBe('9 ans d\'expérience · formations · 2 questions');
