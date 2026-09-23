@@ -35,15 +35,19 @@ export const PHOTOS = {
   maude: 'photo-maude.jpg',
 };
 
-// ── Acte 1 : la fin de mois, sur la photo du studio Reformer ────────────────
+// ── Acte 1 : le scroll-stop, sur la photo du studio Reformer ────────────────
+// Retour Colin sur la première planche : « le texte est trop petit et ne ressort
+// pas assez, il faudrait un scroll stop de tueur ». Donc : UNE phrase à la fois,
+// en très gros (tailles.hook), visible dès la première image, avec un mot en
+// cuivre, et un voile plus dense derrière le texte. Trois phrases qui se
+// remplacent : deux questions qu'une gérante se pose, puis la réponse.
 export const ACTE1 = {
-  eyebrow: 'Fin de mois, 21 h',
-  lignes: [
-    { texte: 'Tu recomptes les séances de chaque prof.', apparait: 8 },
-    { texte: 'Tu vérifies qu’aucune salle n’est prise deux fois.', apparait: 50 },
-    { texte: 'Tu devines quel cours te fait vivre.', apparait: 92 },
+  eyebrow: 'Gérante de studio',
+  phrases: [
+    { lignes: ['Tu recomptes', 'encore', 'les séances', 'de tes profs ?'], accent: 3, apparait: 0, disparait: 60 },
+    { lignes: ['Tu devines', 'quel cours', 'te fait vivre ?'], accent: 1, apparait: 62, disparait: 120 },
+    { lignes: ['Il existe un outil', 'qui fait ça.', 'Sans le reste.'], accent: 2, apparait: 122, disparait: 178, reponse: true },
   ],
-  pivot: { texte: ['Il existe un outil qui fait ça.', 'Sans le reste.'], apparait: 128 },
   fin: 178,
 };
 

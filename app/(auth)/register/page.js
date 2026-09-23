@@ -1,11 +1,29 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { Sparkles, Mail, Lock, User, CheckCircle } from 'lucide-react';
+import { TYPES_STRUCTURE, CODES_STRUCTURE, sanitizeTypeStructure, textesInscription } from '@/lib/structure';
 
+// Le type de structure choisi AVANT le compte (2026-09-23, retour Colin : « on
+// devrait différencier à l'inscription solo, assoc, studio »). Il arrive
+// pré-coché par `?structure=` (vitrines /associations et /studios, pont 1 du
+// parrainage) et reste modifiable d'un clic ; l'onboarding le relit et permet
+// encore de changer.
 export default function RegisterPage() {
+  // ⚠️ Le serveur rend cette page SANS connaître l'URL : initialiser depuis
+  // `window.location` faisait rendre « Studio » côté client et « prof seule »
+  // côté serveur, donc une erreur d'hydratation (attrapée dans la console du
+  // dev server le 2026-09-23). Le défaut est `solo`, l'URL se lit après montage.
+  const [structure, setStructure] = useState('solo');
+  useEffect(() => {
+    try {
+      const voulu = new URLSearchParams(window.location.search).get('structure');
+      if (voulu) setStructure(sanitizeTypeStructure(voulu));
+    } catch { /* rien : prof seule */ }
+  }, []);
+  const textes = textesInscription(structure);
   const [prenom, setPrenom] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -31,17 +49,15 @@ export default function RegisterPage() {
       return;
     }
 
-    // Le type de structure (lot 1 Associations & Studios) : arrivé par
-    // /parrainage/<jeton> (?structure=association) ou par un lien direct. Il
-    // voyage dans la metadata pour survivre à la confirmation d'email, et
-    // l'onboarding le relit pour pré-cocher la bonne carte.
-    let structure = null;
-    try { structure = new URLSearchParams(window.location.search).get('structure') || null; } catch { /* rien */ }
+    // Le type de structure (lot 1 Associations & Studios, cartes depuis le
+    // 2026-09-23) voyage dans la metadata pour survivre à la confirmation
+    // d'email : l'onboarding le relit pour pré-cocher la bonne carte. Une prof
+    // seule n'en pose pas (le défaut de la base est déjà `solo`).
     const { data, error: authError } = await supabase.auth.signUp({
       email: email.trim().toLowerCase(),
       password,
       options: {
-        data: { prenom, ...(structure ? { structure } : {}) },
+        data: { prenom, ...(structure !== 'solo' ? { structure } : {}) },
         emailRedirectTo: `${window.location.origin}/auth/callback?next=/onboarding`,
       },
     });
@@ -119,12 +135,36 @@ export default function RegisterPage() {
             <Sparkles size={28} />
             <h1>IziSolo</h1>
           </div>
-          <p className="auth-subtitle">Crée ton studio en 2 minutes</p>
-          <p className="auth-reassurance">30 jours de Complet pour démarrer · puis Essentiel, gratuit pour toujours · Sans carte bancaire</p>
+          <p className="auth-subtitle" data-testid="reg-titre">{textes.titre}</p>
+          <p className="auth-reassurance" data-testid="reg-reassurance">{textes.reassurance}</p>
         </div>
 
         <form onSubmit={handleRegister} className="auth-form">
           {error && <div className="auth-error">{error}</div>}
+
+          {/* C'est quoi, ton IziSolo ? Trois cartes, les mêmes qu'à l'onboarding
+              (mêmes libellés, lib/structure), pour que le plan essayé et le
+              bouton parlent de la bonne maison dès la première page. */}
+          <div className="auth-field">
+            <label id="reg-structure-label">C&apos;est quoi, ton IziSolo ?</label>
+            <div className="structure-grid" role="radiogroup" aria-labelledby="reg-structure-label" data-testid="reg-structure">
+              {CODES_STRUCTURE.map((code) => (
+                <button
+                  key={code}
+                  type="button"
+                  role="radio"
+                  aria-checked={structure === code}
+                  data-structure={code}
+                  className={`structure-card izi-card izi-card-interactive ${structure === code ? 'selected' : ''}`}
+                  onClick={() => setStructure(code)}
+                >
+                  <span className="structure-emoji">{TYPES_STRUCTURE[code].emoji}</span>
+                  <span className="structure-label">{TYPES_STRUCTURE[code].label}</span>
+                  <span className="structure-desc">{TYPES_STRUCTURE[code].description}</span>
+                </button>
+              ))}
+            </div>
+          </div>
 
           <div className="auth-field">
             <label htmlFor="prenom">Ton prénom</label>
@@ -196,7 +236,7 @@ export default function RegisterPage() {
           </label>
 
           <button type="submit" className="izi-btn izi-btn-primary auth-submit" disabled={loading || !cguAccepted}>
-            {loading ? 'Création...' : 'Créer mon studio'}
+            {loading ? 'Création...' : textes.bouton}
           </button>
         </form>
 
@@ -248,6 +288,18 @@ export default function RegisterPage() {
           font-size: 0.8125rem;
           margin-top: 6px;
         }
+        /* Les trois cartes de structure : le même dessin qu'à l'onboarding,
+           en colonne dans une carte de 420 px. */
+        .structure-grid { display: grid; grid-template-columns: 1fr; gap: 8px; margin-top: 6px; }
+        .structure-card {
+          display: flex; flex-direction: column; align-items: flex-start; gap: 3px;
+          padding: 10px 12px; text-align: left; cursor: pointer;
+          border: 2px solid var(--border); background: var(--bg-card, white); font-family: inherit;
+        }
+        .structure-card.selected { border-color: var(--brand, #b87333); background: var(--brand-light, #faf2eb); }
+        .structure-emoji { font-size: 1.2rem; }
+        .structure-label { font-weight: 600; font-size: 0.9rem; }
+        .structure-desc { font-size: 0.75rem; color: var(--text-muted); line-height: 1.35; }
         .auth-form {
           display: flex;
           flex-direction: column;

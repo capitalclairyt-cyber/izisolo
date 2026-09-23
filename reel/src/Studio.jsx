@@ -44,7 +44,10 @@ const Fond = ({ children }) => {
 // tout le temps où elle est là (sans jamais bouger d'à-coup).
 const Photo = ({ src, de, a, voile = 0.62, focale = '50% 40%' }) => {
   const frame = useCurrentFrame();
-  const entree = interpolate(frame, [de, de + 16], [0, 1], CLAMP);
+  // Une photo qui ouvre le réel est là dès la PREMIÈRE image : c'est elle
+  // qu'Instagram montre en vignette et au premier défilement, un fondu depuis
+  // le noir donnait une image 0 vide (planche du 2026-09-23).
+  const entree = de === 0 ? 1 : interpolate(frame, [de, de + 16], [0, 1], CLAMP);
   const sortie = interpolate(frame, [a - 16, a], [1, 0], CLAMP);
   const op = Math.min(entree, sortie);
   if (op <= 0) return null;
@@ -66,34 +69,44 @@ const Eyebrow = ({ L, children, couleur = C.doux, style }) => (
   </div>
 );
 
-// ── Acte 1 : la fin de mois ─────────────────────────────────────────────────
+// ── Acte 1 : le scroll-stop ─────────────────────────────────────────────────
+// Une phrase à la fois, énorme, dès la première image. Chaque phrase monte vite
+// (14 images), ligne par ligne, et laisse la place à la suivante. La dernière est
+// la réponse : elle est entièrement cuivre, sauf sa chute.
 const Acte1 = ({ L }) => {
   const frame = useCurrentFrame();
-  const monte = useMonte();
-  const sortie = interpolate(frame, [ACTE1.fin - 16, ACTE1.fin], [1, 0], CLAMP);
-  if (sortie <= 0) return null;
-  const attenue = interpolate(frame, [ACTE1.pivot.apparait, ACTE1.pivot.apparait + 22], [1, 0.45], CLAMP);
+  const { fps } = useVideoConfig();
+  const sortieActe = interpolate(frame, [ACTE1.fin - 12, ACTE1.fin], [1, 0], CLAMP);
+  if (sortieActe <= 0) return null;
+  const phrase = ACTE1.phrases.find((p) => frame >= p.apparait && frame < p.disparait + 8);
+  if (!phrase) return null;
+  const sortie = interpolate(frame, [phrase.disparait - 6, phrase.disparait], [1, 0], CLAMP);
+  const eyebrow = spring({ frame, fps, config: { damping: 200 }, durationInFrames: 18 });
   return (
-    <div style={{ position: 'absolute', left: L.marge, right: L.marge, top: L.texteHaut, opacity: sortie }}>
-      <Eyebrow L={L} style={monte(0)}>{ACTE1.eyebrow}</Eyebrow>
-      <div style={{ marginTop: 46, display: 'flex', flexDirection: 'column', gap: 26 }}>
-        {ACTE1.lignes.map((l) => {
-          const m = monte(l.apparait, 28);
+    <AbsoluteFill style={{ opacity: Math.min(sortie, sortieActe), alignItems: 'center', justifyContent: 'center' }}>
+      {/* Un voile de plus, centré sur le texte : la photo reste visible en haut et en bas. */}
+      <div style={{ position: 'absolute', left: 0, right: 0, top: '22%', bottom: '18%',
+        background: 'radial-gradient(ellipse at 50% 50%, rgba(20,15,13,0.72) 0%, rgba(20,15,13,0.45) 55%, rgba(20,15,13,0) 100%)' }} />
+      <div style={{ position: 'absolute', left: L.marge, right: L.marge, top: L.texteHaut - 40, opacity: eyebrow }}>
+        <Eyebrow L={L} couleur={C.cuivre}>{ACTE1.eyebrow}</Eyebrow>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', padding: `0 ${L.marge}px`, marginTop: -L.H * 0.04, width: '100%', boxSizing: 'border-box' }}>
+        {phrase.lignes.map((l, i) => {
+          // La première phrase est déjà posée à l'image 0 (vignette, premier
+          // défilement) : son ressort est pris avec dix images d'avance.
+          const avance = phrase.apparait === 0 ? 10 + i * 5 : 0;
+          const s = spring({ frame: frame - phrase.apparait - i * 5 + avance, fps, config: { damping: 200 }, durationInFrames: 14 });
+          const cuivre = phrase.reponse ? i !== phrase.accent : i === phrase.accent;
           return (
-            <div key={l.texte} style={{ ...m, opacity: Math.min(m.opacity, attenue), fontFamily: FONT_DISPLAY, fontWeight: 500,
-              fontSize: L.tailles.ligne, lineHeight: 1.16, letterSpacing: '-0.015em', color: C.creme,
-              fontVariationSettings: '"opsz" 120, "SOFT" 30', textShadow: '0 2px 18px rgba(0,0,0,0.35)' }}>
-              {l.texte}
+            <div key={l} style={{ opacity: s, transform: `translateY(${(1 - s) * 34}px)`, fontFamily: FONT_DISPLAY, fontWeight: 600,
+              fontSize: L.tailles.hook, lineHeight: 1.0, letterSpacing: '-0.03em', color: cuivre ? C.cuivre : C.creme,
+              fontVariationSettings: '"opsz" 144, "SOFT" 30', textShadow: '0 4px 28px rgba(0,0,0,0.55)' }}>
+              {fr(l)}
             </div>
           );
         })}
       </div>
-      <div style={{ ...monte(ACTE1.pivot.apparait, 32), marginTop: 56, fontFamily: FONT_DISPLAY, fontWeight: 600,
-        fontSize: L.tailles.pivot, lineHeight: 1.08, letterSpacing: '-0.02em', color: C.cuivre,
-        fontVariationSettings: '"opsz" 144, "SOFT" 30', textShadow: '0 2px 18px rgba(0,0,0,0.35)' }}>
-        {ACTE1.pivot.texte.map((l) => <div key={l}>{l}</div>)}
-      </div>
-    </div>
+    </AbsoluteFill>
   );
 };
 
@@ -287,7 +300,7 @@ export const Studio = ({ profil = 'reel' }) => {
   return (
     <AbsoluteFill>
       <Fond>
-        <Photo src={PHOTOS.reformer} de={0} a={ACTE1.fin + 10} voile={0.6} focale="55% 40%" />
+        <Photo src={PHOTOS.reformer} de={0} a={ACTE1.fin + 10} voile={0.5} focale="55% 40%" />
         <Photo src={PHOTOS.danse} de={ESSENTIEL.de - 6} a={ESSENTIEL.fin + 6} voile={0.66} focale="50% 45%" />
         <Acte1 L={L} />
         <Prix L={L} />

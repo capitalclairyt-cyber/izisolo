@@ -311,11 +311,16 @@ Cinq actes, 850 images (28,3 s), palette **charbon chaud** (`src/studio-formats.
 `#241d1b` → `#3d2f2a`, crème, cuivre `#e2a76f`, sauge `#9fd3b4`), hors du sable, hors de la
 lavande du « 0 € » et du bleu nuit du carrousel :
 
-1. **La fin de mois** (0 → 6 s), sur la **photo du studio Reformer** de la banque
+1. **Le scroll-stop** (0 → 6 s), sur la **photo du studio Reformer** de la banque
    (`public/icons/persona-pilates.jpg`, redimensionnée dans `public/photo-studio-reformer.jpg`)
-   sous un voile : « Tu recomptes les séances de chaque prof. / Tu vérifies qu'aucune salle
-   n'est prise deux fois. / Tu devines quel cours te fait vivre. », puis le pivot cuivre
-   « Il existe un outil qui fait ça. Sans le reste. »
+   sous un voile : UNE phrase à la fois, en très gros (118 px, `tailles.hook`), visible dès
+   la PREMIÈRE image, un mot en cuivre : « Tu recomptes encore les séances de tes profs ? »,
+   « Tu devines quel cours te fait vivre ? », puis la réponse « Il existe un outil qui fait
+   ça. Sans le reste. » Retour Colin sur la première planche : « le texte est trop petit et
+   ne ressort pas assez, il faudrait un scroll stop de tueur ». Deux règles en sont sorties :
+   une photo qui ouvre un réel n'a PAS de fondu depuis le noir (l'image 0 est la vignette et
+   le premier défilement, elle était vide), et la première phrase est déjà posée à l'image 0
+   (son ressort est pris avec dix images d'avance).
 2. **Le chiffre** (6 → 10 s) : « LE PLAN STUDIO », « 59 € » plein écran, « par mois. Toutes
    tes profs comprises. », « Pas de prix par intervenante. Pas d'engagement. Pas d'usine à
    gaz. » Le « 59 € » file ensuite dans la pastille accrochée au téléphone.

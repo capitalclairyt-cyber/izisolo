@@ -467,4 +467,11 @@ export const FAQ_SUPPORT = [
     a: "C'est réparé depuis le 23 septembre. Ta page publique charge deux mois de planning d'un coup (pour rester légère sur un téléphone), et avant cette date la flèche ▶ de la vue semaine continuait au-delà en affichant « Aucun cours cette semaine » alors que tes séances existaient bel et bien : l'écran ne savait pas, et le disait mal. Désormais, dès qu'une élève regarde plus loin, la page va chercher les séances de cette semaine (le temps de charger, elle dit « Chargement de la semaine »), et la vue liste propose « Voir les semaines suivantes » ; tout ton planning est visible et réservable jusqu'à un an à l'avance. Rien à faire de ton côté : une séance publique et non annulée est réservable dès qu'elle existe. Si une élève ne la voit toujours pas, vérifie la visibilité de la séance (réservée aux inscrit·es, abonné·es, ou privée) : c'est le seul cas où ta page en cache une, et c'est toi qui l'as choisi.",
     lien: { href: '/aide#page-publique', label: 'Voir le pas-à-pas' },
   },
+  {
+    // L'inscription différenciée (2026-09-23, retour Colin : « on devrait
+    // différencier à l'inscription solo, assoc, studio »). AJOUTÉE EN FIN.
+    q: "Je m'inscris pour une association ou un studio, pas pour moi seule : où le dire ?",
+    a: "Dès la page d'inscription : trois cartes, « Prof à mon compte », « Une association », « Un studio ». Ton choix change ce que tu essaies pendant 30 jours (Complet pour une prof seule, Association ou Studio pour une structure), le texte du bouton, et il est repris à l'étape suivante, où tu peux encore le changer et où une association renseigne son numéro RNA. Si tu arrives depuis izisolo.fr/associations ou izisolo.fr/studios, la bonne carte est déjà cochée. Quel que soit ton choix, l'essai est sans carte bancaire et se termine sur Essentiel, gratuit, si tu ne prends rien : rien ne se bloque. Et une structure a son propre compte de connexion (l'adresse de l'association ou du studio) : les profs y sont invitées ensuite depuis la page Équipe.",
+    lien: { href: '/aide#equipe', label: 'Voir le pas-à-pas' },
+  },
 ];

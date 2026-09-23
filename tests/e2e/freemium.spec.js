@@ -21,7 +21,7 @@ import {
   getTrialStatus, effectivePlan, getAccountStatus, isAccountFrozen, isReadOnly,
   needsPaymentUpdate, essaiFiniDepuisMoinsDe, planCanonique, getAdminStatus,
 } from '../../lib/trial.js';
-import {
+import { textesInscription, TEXTES_INSCRIPTION,
   TYPES_STRUCTURE, CODES_STRUCTURE, sanitizeTypeStructure, typeStructure, planEssai,
   normaliserRna, rnaValide, sanitizeRna, formaterRna, erreurRna,
 } from '../../lib/structure.js';
@@ -104,6 +104,27 @@ test.describe('l\'essai est celui de la structure', () => {
     expect(getTrialStatus(asso).planEssai).toBe('asso');
     expect(effectivePlan(asso)).toBe('asso');
     expect(getAccountStatus(asso)).toBe('trial_active');
+  });
+
+  test('l\'inscription nomme la structure et le plan essayé, par type (2026-09-23)', () => {
+    expect(textesInscription('solo').reassurance).toBe('30 jours de Complet pour démarrer · puis Essentiel, gratuit pour toujours · Sans carte bancaire');
+    expect(textesInscription('association').reassurance).toMatch(/30 jours d'Association/);
+    expect(textesInscription('association').reassurance).toMatch(/RNA/);
+    expect(textesInscription('studio').reassurance).toMatch(/30 jours de Studio/);
+    expect(textesInscription('studio').bouton).toMatch(/studio/i);
+    expect(textesInscription('association').bouton).toMatch(/association/);
+    // Un type inconnu parle à une prof seule, jamais une page vide.
+    expect(textesInscription('n\'importe quoi')).toEqual(textesInscription('solo'));
+    for (const t of Object.values(TEXTES_INSCRIPTION)) {
+      expect(t.reassurance).toContain('puis Essentiel, gratuit pour toujours');
+      expect(t.reassurance).toContain('Sans carte bancaire');
+      expect(t.reassurance.includes('\u2014')).toBe(false);
+    }
+    // La page /register rend bien les trois cartes et lit les textes de la lib.
+    const page = readFileSync('app/(auth)/register/page.js', 'utf8');
+    expect(page).toContain('textesInscription(');
+    expect(page).toContain('data-testid="reg-structure"');
+    expect(page).toContain('CODES_STRUCTURE.map');
   });
 
   test('les types : trois codes, un défaut sûr, des libellés', () => {

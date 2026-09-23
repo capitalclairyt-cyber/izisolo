@@ -383,6 +383,14 @@ try {
   await aller(pL, `${BASE}/register`);
   const tR = await texte(pL);
   c('/register : « 30 jours de Complet pour démarrer · puis Essentiel, gratuit pour toujours »', tR.includes('30 jours de Complet pour démarrer') && tR.includes('puis Essentiel, gratuit pour toujours'));
+  c('/register : les trois cartes de structure, « Prof à mon compte » cochée par défaut', (await pL.$$('[data-testid="reg-structure"] [data-structure]')).length === 3 && (await pL.getAttribute('[data-structure="solo"]', 'aria-checked')) === 'true');
+  await aller(pL, `${BASE}/register?structure=studio`);
+  // La carte se coche après le montage (l'URL se lit dans un effet, pas au rendu serveur).
+  await pL.waitForSelector('[data-structure="studio"][aria-checked="true"]', { timeout: 30000 }).catch(() => {});
+  c('/register?structure=studio : la carte Studio est cochée et la page dit « 30 jours de Studio »', (await pL.getAttribute('[data-structure="studio"]', 'aria-checked')) === 'true' && (await texte(pL)).includes('30 jours de Studio pour démarrer'));
+  await pL.click('[data-structure="association"]');
+  await pL.waitForSelector('[data-structure="association"][aria-checked="true"]', { timeout: 10000 }).catch(() => {});
+  c('… un clic sur Association change le plan essayé et le bouton', (await texte(pL)).includes('30 jours d\'Association') && (await texte(pL)).includes('Ouvrir l\'espace de mon association'));
   await ctxL.close();
   await ctxG.close();
 } finally {

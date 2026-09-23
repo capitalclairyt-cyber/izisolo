@@ -35,7 +35,7 @@ export const PROFILS = {
     texteHaut: 300,        // zone sûre Instagram : rien d'essentiel au-dessus de 200
     puces: 1640,           // ni en dessous de 1650
     logo: 1690,
-    tailles: { eyebrow: 30, ligne: 62, pivot: 82, frontiere: 70, chiffre: 300, chiffrePetit: 92, zeroLigne: 76, sous: 36, mot: 84, appel: 84, domaine: 58 },
+    tailles: { eyebrow: 30, hook: 118, ligne: 62, pivot: 82, frontiere: 70, chiffre: 300, chiffrePetit: 92, zeroLigne: 76, sous: 36, mot: 84, appel: 84, domaine: 58 },
     phone: { x: 277, y: 560, screenW: 470, hauteurEcran: 960 },
     pastille: { x: 655, y: 488, taille: 58 },
     avatar: { taille: 220 },
@@ -46,7 +46,7 @@ export const PROFILS = {
     texteHaut: 150,
     puces: 1232,
     logo: 1276,
-    tailles: { eyebrow: 26, ligne: 50, pivot: 66, frontiere: 56, chiffre: 230, chiffrePetit: 74, zeroLigne: 60, sous: 30, mot: 68, appel: 66, domaine: 48 },
+    tailles: { eyebrow: 26, hook: 92, ligne: 50, pivot: 66, frontiere: 56, chiffre: 230, chiffrePetit: 74, zeroLigne: 60, sous: 30, mot: 68, appel: 66, domaine: 48 },
     phone: { x: 350, y: 440, screenW: 380, hauteurEcran: 680 },
     pastille: { x: 700, y: 382, taille: 46 },
     avatar: { taille: 170 },
