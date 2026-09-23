@@ -84,10 +84,11 @@ async function purger() {
   if (coursTemoin) { await svc.from('cours').delete().eq('id', coursTemoin.id); coursTemoin = null; }
   await svc.from('cours').delete().eq('profile_id', demo.id).eq('nom', 'Séance témoin langue');
   if (userA) { await svc.auth.admin.deleteUser(userA).catch(() => {}); userA = null; }
-  else {
-    const { data: lst } = await svc.auth.admin.listUsers({ page: 1, perPage: 200 }).catch(() => ({ data: null }));
-    const u = lst?.users?.find(x => x.email === EMAIL_A);
-    if (u) await svc.auth.admin.deleteUser(u.id).catch(() => {});
+  // Le compte A (créé ici) ET le compte C : la route de réservation ouvre un
+  // compte élève pour l'adresse anonyme, il ne doit pas survivre à la preuve.
+  const { data: lst } = await svc.auth.admin.listUsers({ page: 1, perPage: 500 }).catch(() => ({ data: null }));
+  for (const u of lst?.users || []) {
+    if ([EMAIL_A, EMAIL_C].includes(u.email)) await svc.auth.admin.deleteUser(u.id).catch(() => {});
   }
 }
 await purger();
@@ -137,7 +138,10 @@ try {
   p.on('pageerror', e => erreurs.push('A: ' + String(e).slice(0, 160)));
   await aller(p, `${BASE}/p/${SLUG}/espace`);
   await p.waitForSelector('.portail-card', { timeout: 90000 });
-  c('l\'espace se rend en anglais', (await p.innerText('.portail-header')).includes('My account'));
+  // ⚠️ Témoin de langue sur un écran CONNECTÉ : jamais « Mon espace » dans
+  // l'en-tête, le lien devient le prénom dès que le profil est chargé (course
+  // perdue au second passage). Le pied « Propulsé par » ne bouge jamais.
+  c('l\'espace se rend en anglais', (await p.innerText('.portail-footer')).includes('Powered by'));
   if (V122) {
     c('EN BASE : clients.langue = en après la visite', (await attendre(() => langueDe(ficheA.id).then(v => (v === 'en' ? v : null)), 20000)) === 'en');
   } else {
@@ -149,7 +153,7 @@ try {
   await ctx.addCookies([cookieLangue('fr')]);
   await aller(p, `${BASE}/p/${SLUG}`);
   await p.waitForSelector('.portail-header', { timeout: 90000 });
-  c('la page du studio se rend en français', (await p.innerText('.portail-header')).includes('Mon espace'));
+  c('la page du studio se rend en français', (await p.innerText('.portail-footer')).includes('Propulsé par'));
   if (V122) c('EN BASE : clients.langue = fr après la page du studio', (await attendre(() => langueDe(ficheA.id).then(v => (v === 'fr' ? v : null)), 20000)) === 'fr');
   await ctx.clearCookies();
   await ctx.addCookies((await sessionCookies(EMAIL_A)).map(cc => ({ ...cc, url: BASE, sameSite: 'Lax' })));
@@ -159,7 +163,7 @@ try {
   if (V122) {
     await new Promise(r => setTimeout(r, 1500));
     c('sans cookie, la fiche garde sa langue (en)', (await langueDe(ficheA.id)) === 'en');
-    c('et l\'écran suit le studio (français), pas la fiche : le cookie seul décide de l\'écran', (await p.innerText('.portail-header')).includes('Mon espace'));
+    c('et l\'écran suit le studio (français), pas la fiche : le cookie seul décide de l\'écran', (await p.innerText('.portail-footer')).includes('Propulsé par'));
   }
   await ctx.close();
 
