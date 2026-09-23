@@ -1,23 +1,34 @@
 /**
- * PREUVE — la caisse Stripe SaaS (abonnements des profs), compte « Maude Yoga »
- * en LIVE (2026-09-07).
+ * PREUVE — la caisse Stripe SaaS (abonnements des profs et des structures),
+ * compte « Maude Yoga » en LIVE.
+ *
+ * Née le 2026-09-07 (Essentiel 15 € + Multi 49 €), réécrite le 2026-09-23 pour
+ * la grille freemium + structures (Colin, 2026-09-13) : Essentiel GRATUIT sans
+ * Price, Complet 29 €/mois, Association 39 €/mois ou 390 €/an, Studio 59 €/mois
+ * ou 590 €/an, Multi retiré. Le second passage du script de setup a créé les
+ * quatre nouveaux prix et archivé les deux anciens le 2026-09-23.
  *
  * Deux phases.
- *   1. AUTOMATIQUE, sans argent : un studio jetable (prof, en essai) demande un
- *      checkout Essentiel puis Multi → la route répond une URL Stripe ; la
- *      session est RELUE par l'API Stripe avec la clé live de .env.local :
- *      mode abonnement, bon Price, code promo autorisé, email de connexion
- *      comme email client, profile_id en métadonnées. La session Multi est
- *      expirée aussitôt (aucune session orpheline), la session Essentiel est
- *      gardée pour la phase 2.
- *   2. MANUELLE, argent réel : le script imprime l'URL Essentiel ; Colin y
- *      paie avec LANCEMENT50 et une vraie carte (7,50 €). Le script attend
- *      le webhook : statut actif, customer et subscription EN BASE, et la
- *      DATE DE FIN DE PÉRIODE (le point suspect : jamais écrite sur le profil
- *      de Colin malgré trois renouvellements). Puis le portail client répond
- *      une URL, l'abonnement est résilié par l'API (→ webhook deleted →
- *      statut canceled en base), le paiement est REMBOURSÉ par l'API, le
- *      client Stripe supprimé, le studio jetable purgé.
+ *   1. AUTOMATIQUE, sans argent : un studio jetable (prof seule, en essai)
+ *      demande chaque checkout à la route → les REFUS répondent leur code
+ *      (Essentiel gratuit, Multi et premium invalides, annuel hors Association
+ *      et Studio, Association réservée aux associations déclarées), Complet et
+ *      Studio répondent une URL Stripe ; chaque session est RELUE par l'API
+ *      Stripe avec la clé live de .env.local : mode abonnement, bon Price, bon
+ *      montant TTC, code promo autorisé, email de connexion, profile_id + plan
+ *      + période en métadonnées. Puis le studio jetable devient une association
+ *      (type + RNA) : Studio est refusé (hors famille), Association mensuel et
+ *      annuel répondent leurs prix. Les sessions sont expirées aussitôt, sauf
+ *      celle de Studio mensuel gardée pour la phase 2.
+ *   2. MANUELLE, argent réel : le script imprime l'URL Studio ; Colin y paie
+ *      avec LANCEMENT50 et une vraie carte (29,50 €). Le script attend le
+ *      webhook : statut actif, plan = studio, la prof seule DEVENUE studio
+ *      (type_structure posé par le webhook), customer, subscription et DATE DE
+ *      FIN DE PÉRIODE en base, la remise sur l'abonnement, la facture à 29,50 €.
+ *      Puis le portail client répond une URL, l'abonnement est résilié par
+ *      l'API (→ webhook deleted → statut canceled + retour sur Essentiel), le
+ *      paiement est REMBOURSÉ par l'API, le client Stripe supprimé, le studio
+ *      jetable purgé.
  *
  * Usage :
  *   node --env-file=.env.local scripts/proof-caisse-saas.mjs --sans-paiement   # phase 1 seule
@@ -38,14 +49,20 @@ const SANS_PAIEMENT = args.has('--sans-paiement');
 const BASE = process.env.PROOF_BASE || 'https://www.izisolo.fr';
 const EMAIL = process.env.PROOF_EMAIL || 'preuve-caisse@izisolo.fr';
 const ATTENTE_PAIEMENT_MIN = 15;
+const MONTANT_PROMO = 2950; // Studio 59 € avec LANCEMENT50 (−50 %)
 
 const need = (k) => { if (!process.env[k]) { console.error(`❌ ${k} manquante (lance avec node --env-file=.env.local)`); process.exit(1); } return process.env[k]; };
 const SUPA_URL = need('NEXT_PUBLIC_SUPABASE_URL');
 const SVC_KEY = need('SUPABASE_SERVICE_ROLE_KEY');
 const ANON_KEY = need('NEXT_PUBLIC_SUPABASE_ANON_KEY');
 const SK = need('STRIPE_SECRET_KEY');
-const PRICE_SOLO = need('STRIPE_PRICE_ID_SOLO_MENSUEL');
-const PRICE_MULTI = need('STRIPE_PRICE_ID_MULTI_MENSUEL');
+const PRICES = {
+  'pro/mensuel': { id: need('STRIPE_PRICE_ID_PRO_MENSUEL'), montant: 2900, libelle: 'Complet 29 €/mois' },
+  'asso/mensuel': { id: need('STRIPE_PRICE_ID_ASSO_MENSUEL'), montant: 3900, libelle: 'Association 39 €/mois' },
+  'asso/annuel': { id: need('STRIPE_PRICE_ID_ASSO_ANNUEL'), montant: 39000, libelle: 'Association 390 €/an' },
+  'studio/mensuel': { id: need('STRIPE_PRICE_ID_STUDIO_MENSUEL'), montant: 5900, libelle: 'Studio 59 €/mois' },
+  'studio/annuel': { id: need('STRIPE_PRICE_ID_STUDIO_ANNUEL'), montant: 59000, libelle: 'Studio 590 €/an' },
+};
 if (!SK.startsWith('sk_live')) console.log('ℹ️ clé Stripe en mode TEST : la phase 2 ne prouve pas le compte live.');
 
 const svc = createClient(SUPA_URL, SVC_KEY);
@@ -60,12 +77,14 @@ const attendre = async (fn, ms = 20000, pas = 1000) => {
 };
 const slug = `preuve-caisse-${Date.now().toString(36)}`;
 const DEBUT_RUN = new Date().toISOString();
+const colonneInconnue = (e) => e && (e.code === '42703' || e.code === 'PGRST204');
 
-let userId = null, profileId = null, customerId = null, sessionSolo = null, sessionMulti = null, subscriptionId = null;
+let userId = null, profileId = null, customerId = null, subscriptionId = null;
+const sessions = []; // toutes les sessions ouvertes par la preuve, expirées à la purge
 
 async function purger() {
-  for (const s of [sessionSolo, sessionMulti]) {
-    if (s?.id && s.status === 'open') await stripe.checkout.sessions.expire(s.id).catch(() => {});
+  for (const s of sessions) {
+    if (s?.id) await stripe.checkout.sessions.expire(s.id).catch(() => {});
   }
   if (subscriptionId) await stripe.subscriptions.cancel(subscriptionId).catch(() => {});
   if (customerId) await stripe.customers.del(customerId).catch(() => {});
@@ -76,13 +95,12 @@ async function purger() {
   } catch { /* rien */ }
   const { data: lst } = await svc.auth.admin.listUsers({ page: 1, perPage: 200 }).catch(() => ({ data: null }));
   for (const u of (lst?.users || []).filter(x => x.email === EMAIL)) {
-    await svc.from('stripe_events_processed').delete().eq('event_id', '__jamais__').then(() => {}, () => {});
     await svc.auth.admin.deleteUser(u.id).catch(() => {});
   }
 }
 await purger();
 
-// ── Studio jetable : une prof en essai, comme une vraie inscription ─────────
+// ── Studio jetable : une prof seule en essai, comme une vraie inscription ────
 {
   const { data: cree, error } = await svc.auth.admin.createUser({
     email: EMAIL, email_confirm: true, password: `Preuve-${Date.now()}!`, user_metadata: { prenom: 'Preuve' },
@@ -112,55 +130,100 @@ const idDepuisUrl = (url) => (String(url || '').match(/(cs_(?:live|test)_[A-Za-z
 
 try {
   const cookie = await sessionCookieHeader();
-  const checkout = async (plan) => {
-    const r = await fetch(`${BASE}/api/stripe/checkout-saas`, { method: 'POST', headers: { 'Content-Type': 'application/json', cookie }, body: JSON.stringify({ plan, periode: 'mensuel' }) });
+  const checkout = async (plan, periode = 'mensuel') => {
+    const r = await fetch(`${BASE}/api/stripe/checkout-saas`, { method: 'POST', headers: { 'Content-Type': 'application/json', cookie }, body: JSON.stringify({ plan, periode }) });
     return { status: r.status, corps: await r.json().catch(() => ({})) };
   };
+  const resume = (r) => `status ${r.status} · ${JSON.stringify(r.corps).slice(0, 110)}`;
+  const estUrlStripe = (r) => r.status === 200 && /checkout\.stripe\.com/.test(r.corps.url || '');
 
-  // ── 1. Checkout Essentiel ────────────────────────────────────────────────
-  console.log(`\n— 1. Checkout Essentiel (${BASE}) —`);
-  const r1 = await checkout('solo');
-  c('la route répond 200 avec une URL Stripe', r1.status === 200 && /checkout\.stripe\.com/.test(r1.corps.url || ''), `status ${r1.status} · ${JSON.stringify(r1.corps).slice(0, 120)}`);
-  const idSolo = idDepuisUrl(r1.corps.url);
-  if (idSolo) {
-    sessionSolo = await stripe.checkout.sessions.retrieve(idSolo, { expand: ['line_items'] });
-    c('session en mode abonnement, ouverte', sessionSolo.mode === 'subscription' && sessionSolo.status === 'open');
-    c('le Price est celui d\'Essentiel (15 € TTC)', sessionSolo.line_items?.data?.[0]?.price?.id === PRICE_SOLO && sessionSolo.line_items.data[0].price.unit_amount === 1500, sessionSolo.line_items?.data?.[0]?.price?.id);
-    c('les codes promo sont autorisés (LANCEMENT50 saisissable)', sessionSolo.allow_promotion_codes === true);
-    c('l\'email client = l\'email de connexion (reçus et relances d\'impayé)', (sessionSolo.customer_email || '').toLowerCase() === EMAIL);
-    c('profile_id et plan en métadonnées (le webhook s\'en sert)', sessionSolo.metadata?.profile_id === profileId && sessionSolo.metadata?.plan === 'solo');
-    c('aucun essai Stripe (les 30 jours sont comptés par IziSolo)', !sessionSolo.subscription_data?.trial_end);
-    c('retour vers Paramètres → Abonnement avec l\'id de session', /parametres\/abonnement\?abo=success&session_id=/.test(sessionSolo.success_url || ''));
+  // Relit une session ouverte par la route et vérifie son Price. `garder` =
+  // ne pas l'expirer (celle du paiement réel).
+  const verifierSession = async (r, cle, { garder = false } = {}) => {
+    const id = idDepuisUrl(r.corps.url);
+    if (!id) return null;
+    const s = await stripe.checkout.sessions.retrieve(id, { expand: ['line_items'] });
+    const attendu = PRICES[cle];
+    const price = s.line_items?.data?.[0]?.price;
+    c(`${attendu.libelle} : session en mode abonnement, ouverte`, s.mode === 'subscription' && s.status === 'open', s.status);
+    c(`${attendu.libelle} : le Price est le bon, ${attendu.montant / 100} € TTC`, price?.id === attendu.id && price?.unit_amount === attendu.montant, `${price?.id} · ${price?.unit_amount}`);
+    const [plan, periode] = cle.split('/');
+    c(`${attendu.libelle} : profile_id, plan et période en métadonnées (le webhook s'en sert)`, s.metadata?.profile_id === profileId && s.metadata?.plan === plan && s.metadata?.periode === periode, JSON.stringify(s.metadata));
+    if (garder) { sessions.push(s); return s; }
+    await stripe.checkout.sessions.expire(id);
+    const relue = await stripe.checkout.sessions.retrieve(id);
+    c(`${attendu.libelle} : session expirée (aucune session orpheline)`, relue.status === 'expired');
+    return relue;
+  };
+
+  // ── 1. Les refus, avant que Stripe ne voie quoi que ce soit ──────────────
+  console.log(`\n— 1. Les refus (prof seule, en essai · ${BASE}) —`);
+  const rSolo = await checkout('solo');
+  c('Essentiel (solo) est GRATUIT : refusé 400 PLAN_GRATUIT, rien à souscrire', rSolo.status === 400 && rSolo.corps.code === 'PLAN_GRATUIT', resume(rSolo));
+  const rMulti = await checkout('multi');
+  c('Multi (retiré le 2026-09-13) est refusé 400 PLAN_INVALIDE', rMulti.status === 400 && rMulti.corps.code === 'PLAN_INVALIDE', resume(rMulti));
+  const rPremium = await checkout('premium');
+  c('premium (legacy) est refusé 400, jamais vendu', rPremium.status === 400, resume(rPremium));
+  const rProAnnuel = await checkout('pro', 'annuel');
+  c('Complet annuel n\'existe pas : 400 PERIODE_INVALIDE', rProAnnuel.status === 400 && rProAnnuel.corps.code === 'PERIODE_INVALIDE', resume(rProAnnuel));
+  const rAssoSeule = await checkout('asso');
+  c('Association pour une prof seule : 403 ASSOCIATION_REQUISE (RNA exigé), jamais « prix non configuré »', rAssoSeule.status === 403 && rAssoSeule.corps.code === 'ASSOCIATION_REQUISE', resume(rAssoSeule));
+
+  // ── 2. Complet ───────────────────────────────────────────────────────────
+  console.log('\n— 2. Complet (29 €) —');
+  const rPro = await checkout('pro');
+  c('la route répond 200 avec une URL Stripe', estUrlStripe(rPro), resume(rPro));
+  if (estUrlStripe(rPro)) await verifierSession(rPro, 'pro/mensuel');
+
+  // ── 3. Studio, mensuel et annuel, par une prof seule ─────────────────────
+  console.log('\n— 3. Studio (59 €/mois, 590 €/an), demandé par une prof seule —');
+  const rStudio = await checkout('studio');
+  c('Studio mensuel : la route répond 200 avec une URL Stripe', estUrlStripe(rStudio), resume(rStudio));
+  let sessionStudio = null;
+  if (estUrlStripe(rStudio)) {
+    sessionStudio = await verifierSession(rStudio, 'studio/mensuel', { garder: true });
+    c('les codes promo sont autorisés (LANCEMENT50 saisissable)', sessionStudio.allow_promotion_codes === true);
+    c('l\'email client = l\'email de connexion (reçus et relances d\'impayé)', (sessionStudio.customer_email || '').toLowerCase() === EMAIL);
+    c('aucun essai Stripe (les 30 jours sont comptés par IziSolo)', !sessionStudio.subscription_data?.trial_end);
+    c('retour vers Paramètres → Abonnement avec l\'id de session', /parametres\/abonnement\?abo=success&session_id=/.test(sessionStudio.success_url || ''));
+    const rStudioBis = await checkout('studio');
+    c('re-cliquer donne la MÊME session (clé d\'idempotence)', rStudioBis.status === 200 && idDepuisUrl(rStudioBis.corps.url) === sessionStudio.id);
   }
-  const r1b = await checkout('solo');
-  c('re-cliquer donne la MÊME session (clé d\'idempotence)', r1b.status === 200 && idDepuisUrl(r1b.corps.url) === idSolo);
+  const rStudioAn = await checkout('studio', 'annuel');
+  c('Studio annuel : la route répond 200 avec une URL Stripe', estUrlStripe(rStudioAn), resume(rStudioAn));
+  if (estUrlStripe(rStudioAn)) await verifierSession(rStudioAn, 'studio/annuel');
 
-  // ── 2. Checkout Multi ────────────────────────────────────────────────────
-  console.log('\n— 2. Checkout Multi (49 €) —');
-  const r2 = await checkout('multi');
-  c('la route accepte plan=multi et répond une URL Stripe', r2.status === 200 && /checkout\.stripe\.com/.test(r2.corps.url || ''), `status ${r2.status} · ${JSON.stringify(r2.corps).slice(0, 120)}`);
-  const idMulti = idDepuisUrl(r2.corps.url);
-  if (idMulti) {
-    sessionMulti = await stripe.checkout.sessions.retrieve(idMulti, { expand: ['line_items'] });
-    c('le Price est celui de Multi (49 € TTC)', sessionMulti.line_items?.data?.[0]?.price?.id === PRICE_MULTI && sessionMulti.line_items.data[0].price.unit_amount === 4900);
-    await stripe.checkout.sessions.expire(idMulti);
-    const relue = await stripe.checkout.sessions.retrieve(idMulti);
-    c('la session Multi est expirée (aucune session orpheline)', relue.status === 'expired');
-    sessionMulti = relue;
-  }
-  const r3 = await checkout('premium');
-  c('premium (legacy) est refusé (400), jamais vendu', r3.status === 400);
-
-  // ── 3. Le vrai paiement ──────────────────────────────────────────────────
-  if (SANS_PAIEMENT || !idSolo) {
-    console.log('\n— 3. Paiement réel : non joué (--sans-paiement) —');
+  // ── 4. Une association déclarée ──────────────────────────────────────────
+  console.log('\n— 4. Association (39 €/mois, 390 €/an), par une association déclarée —');
+  const { error: eAsso } = await svc.from('profiles').update({ type_structure: 'association', rna: 'W751234567' }).eq('id', profileId);
+  if (colonneInconnue(eAsso)) {
+    console.log('  ⏭ v110 absente (type_structure) : la famille Association ne peut pas être prouvée ici.');
   } else {
-    console.log('\n— 3. Paiement réel —');
-    console.log('\n   👉 Ouvre cette URL, saisis LANCEMENT50, paie avec une vraie carte (7,50 €) :');
-    console.log(`   ${r1.corps.url}\n`);
+    c('le studio jetable est devenu une association (type + RNA en base)', !eAsso, eAsso?.message);
+    const rStudioAsso = await checkout('studio');
+    c('Studio pour une association : 403 PLAN_HORS_FAMILLE (son plan est Association)', rStudioAsso.status === 403 && rStudioAsso.corps.code === 'PLAN_HORS_FAMILLE', resume(rStudioAsso));
+    const rAsso = await checkout('asso');
+    c('Association mensuel : la route répond 200 avec une URL Stripe', estUrlStripe(rAsso), resume(rAsso));
+    if (estUrlStripe(rAsso)) await verifierSession(rAsso, 'asso/mensuel');
+    const rAssoAn = await checkout('asso', 'annuel');
+    c('Association annuel : la route répond 200 avec une URL Stripe', estUrlStripe(rAssoAn), resume(rAssoAn));
+    if (estUrlStripe(rAssoAn)) await verifierSession(rAssoAn, 'asso/annuel');
+    // Retour prof seule pour la phase 2 : c'est le webhook qui doit la faire
+    // devenir un studio quand elle paie Studio.
+    const { error: eRetour } = await svc.from('profiles').update({ type_structure: 'solo', rna: null }).eq('id', profileId);
+    c('le studio jetable redevient une prof seule', !eRetour, eRetour?.message);
+  }
+
+  // ── 5. Le vrai paiement : Studio mensuel avec LANCEMENT50 ────────────────
+  if (SANS_PAIEMENT || !sessionStudio) {
+    console.log('\n— 5. Paiement réel : non joué (--sans-paiement) —');
+  } else {
+    console.log('\n— 5. Paiement réel —');
+    console.log(`\n   👉 Ouvre cette URL, saisis LANCEMENT50, paie avec une vraie carte (${MONTANT_PROMO / 100} €) :`);
+    console.log(`   ${rStudio.corps.url}\n`);
     console.log(`   J'attends le webhook jusqu'à ${ATTENTE_PAIEMENT_MIN} min…`);
     const profil = await attendre(async () => {
-      const { data } = await svc.from('profiles').select('plan, stripe_customer_id, stripe_subscription_id, stripe_subscription_status, stripe_current_period_end').eq('id', profileId).maybeSingle();
+      const { data } = await svc.from('profiles').select('plan, type_structure, stripe_customer_id, stripe_subscription_id, stripe_subscription_status, stripe_current_period_end').eq('id', profileId).maybeSingle();
       return data?.stripe_subscription_status ? data : null;
     }, ATTENTE_PAIEMENT_MIN * 60000, 3000);
     c('le webhook a écrit le statut de l\'abonnement en base', !!profil, JSON.stringify(profil));
@@ -168,16 +231,24 @@ try {
       customerId = profil.stripe_customer_id; subscriptionId = profil.stripe_subscription_id;
       c('statut active', profil.stripe_subscription_status === 'active', profil.stripe_subscription_status);
       c('customer et subscription posés', /^cus_/.test(customerId || '') && /^sub_/.test(subscriptionId || ''));
-      c('plan = solo (Essentiel)', profil.plan === 'solo', profil.plan);
-      c('⚠️ la DATE DE FIN DE PÉRIODE est écrite (le point suspect du profil de Colin)', !!profil.stripe_current_period_end, String(profil.stripe_current_period_end));
+      c('plan = studio (lu depuis le PRICE, pas la métadonnée)', profil.plan === 'studio', profil.plan);
+      // Le type peut arriver une seconde après le plan (update séparé, §6.1).
+      const typeApres = await attendre(async () => {
+        const { data } = await svc.from('profiles').select('type_structure').eq('id', profileId).maybeSingle();
+        return data?.type_structure === 'studio' ? data : null;
+      }, 20000, 1000);
+      c('la prof seule qui achète Studio DEVIENT un studio (type_structure posé par le webhook)', !!typeApres, String(typeApres?.type_structure || profil.type_structure));
+      c('la DATE DE FIN DE PÉRIODE est écrite', !!profil.stripe_current_period_end, String(profil.stripe_current_period_end));
       const sub = await stripe.subscriptions.retrieve(subscriptionId);
       const remise = sub.discounts?.length || sub.discount ? 'oui' : 'non';
       c('LANCEMENT50 appliqué sur l\'abonnement Stripe', remise === 'oui', `discount: ${remise}`);
+      c('l\'abonnement Stripe porte le Price Studio mensuel', sub.items?.data?.[0]?.price?.id === PRICES['studio/mensuel'].id, sub.items?.data?.[0]?.price?.id);
       const inv = await stripe.invoices.list({ subscription: subscriptionId, limit: 1 });
       const facture = inv.data[0];
-      c('première facture Stripe payée à 7,50 €', facture?.status === 'paid' && facture.amount_paid === 750, `${facture?.status} ${facture?.amount_paid}`);
+      c(`première facture Stripe payée à ${MONTANT_PROMO / 100} €`, facture?.status === 'paid' && facture.amount_paid === MONTANT_PROMO, `${facture?.status} ${facture?.amount_paid}`);
 
-      // Portail client
+      // Portail client : la route choisit la configuration des STRUCTURES
+      // puisque le profil est devenu un studio.
       const rp = await fetch(`${BASE}/api/stripe/customer-portal`, { method: 'POST', headers: { cookie } });
       const cp = await rp.json().catch(() => ({}));
       c('le portail client répond une URL billing.stripe.com', rp.status === 200 && /billing\.stripe\.com/.test(cp.url || ''), `status ${rp.status} · ${JSON.stringify(cp).slice(0, 100)}`);
@@ -185,10 +256,11 @@ try {
       // Résiliation par l'API → webhook deleted → base
       await stripe.subscriptions.cancel(subscriptionId);
       const apres = await attendre(async () => {
-        const { data } = await svc.from('profiles').select('stripe_subscription_status').eq('id', profileId).maybeSingle();
+        const { data } = await svc.from('profiles').select('stripe_subscription_status, plan').eq('id', profileId).maybeSingle();
         return data?.stripe_subscription_status === 'canceled' ? data : null;
       }, 120000, 3000);
       c('résiliation → le webhook passe le statut à canceled en base', !!apres);
+      c('résiliation → retour sur Essentiel gratuit (plan = solo), jamais free ni gelé', apres?.plan === 'solo', String(apres?.plan));
       subscriptionId = null;
 
       // Remboursement
