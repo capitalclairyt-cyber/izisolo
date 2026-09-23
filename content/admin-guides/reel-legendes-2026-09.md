@@ -3,7 +3,7 @@ titre: "🎬 Légendes · le réel principal « Ton studio dans ta poche »"
 description: "La légende Instagram du réel, le texte LinkedIn et son premier commentaire, la légende du carrousel, écrits dans la voix de Maude, avec un bouton Copier pour publier depuis le téléphone."
 maj: "2026-09-08"
 groupe: "Légendes à coller"
-ordre: 6
+ordre: 7
 ---
 
 > Le réel (41 s, vertical) est dans `reseaux/reel/izisolo-reel.mp4`. Il est muet :

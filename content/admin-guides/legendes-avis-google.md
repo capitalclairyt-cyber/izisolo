@@ -3,7 +3,7 @@ titre: "⭐ Légendes · Avis Google (« Tes élèves t'adorent. Google ne le sa
 description: "Tout ce qu'il faut coller pour annoncer la demande d'avis Google : la légende du réel, la couverture, la story, le post LinkedIn et son premier commentaire, le post pour la page Facebook, et les réponses aux questions qui vont arriver. Voix de Maude, bouton Copier."
 maj: "2026-09-15"
 groupe: "Légendes à coller"
-ordre: 3
+ordre: 4
 ---
 
 > **Ce que la fonction fait, et rien d'autre** : la prof colle une fois le lien

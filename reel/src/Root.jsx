@@ -15,6 +15,8 @@ import { Gratuit, DUREE_GRATUIT } from './Gratuit';
 import { PROFILS as PROFILS_GRATUIT } from './gratuit-scenes';
 import { CarrouselAvis, LARGEUR_CARROUSEL, HAUTEUR_CARROUSEL } from './CarrouselAvis';
 import { Avis, DUREE_AVIS } from './Avis';
+import { Studio, DUREE_STUDIO } from './Studio';
+import { PROFILS as PROFILS_STUDIO } from './studio-formats';
 import { FPS, H, W } from './theme';
 
 // Trois familles : le réel complet (Instagram / Facebook), pour la landing un
@@ -46,6 +48,12 @@ export const RemotionRoot = () => (
     <Composition id="CarrouselAvis" component={CarrouselAvis} defaultProps={{ slide: 1, palette: 'bleu' }}
       durationInFrames={1} fps={FPS} width={LARGEUR_CARROUSEL} height={HAUTEUR_CARROUSEL} />
     <Composition id="Avis" component={Avis} durationInFrames={DUREE_AVIS} fps={FPS} width={W} height={H} />
+    {/* Le reel « plan Studio » (2026-09-23) : deux formats, la MEME composition,
+        rendus par scripts/rendre-studio.mjs (npm run plan-studio). */}
+    <Composition id="PlanStudio" component={Studio} defaultProps={{ profil: 'reel' }}
+      durationInFrames={DUREE_STUDIO} fps={FPS} width={PROFILS_STUDIO.reel.W} height={PROFILS_STUDIO.reel.H} />
+    <Composition id="PlanStudio-Feed" component={Studio} defaultProps={{ profil: 'feed' }}
+      durationInFrames={DUREE_STUDIO} fps={FPS} width={PROFILS_STUDIO.feed.W} height={PROFILS_STUDIO.feed.H} />
     <Composition id="Clip-migration" component={MigrationClip} durationInFrames={DUREE_CLIP_MIGRATION} fps={FPS} width={LARGEUR_CLIP} height={hauteurClip(1558)} />
     {SCENES.map((scene) => (
       <Composition key={`f-${scene.id}`} id={`Fonction-${scene.id}`} component={Fonction} defaultProps={{ sceneId: scene.id }}

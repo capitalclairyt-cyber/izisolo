@@ -3,7 +3,7 @@ titre: "🎬 Légendes · les cinq réels POV et les formats courts"
 description: "Les légendes des cinq réels texte pur (soirée, chèques, tableur, remplaçante, URSSAF) et des formats déclencheurs (avant/après, réponse au DM, rentrée, une fonction par réel). Voix de Maude, bouton Copier."
 maj: "2026-09-15"
 groupe: "Légendes à coller"
-ordre: 4
+ordre: 5
 ---
 
 > Les cinq réels (13 s, verticaux, muets) sont dans `reseaux/reel/pov/`, les formats

@@ -295,3 +295,58 @@ téléphone au-dessus d'elles, mesuré sur la planche de contact, pas deviné.
 fusionner). Conséquence : le réel **Freemium ne se rendait plus du tout** depuis ce jour-là
 (`TypeError: undefined is not iterable` sur l'écran « Les carnets »). Le repère est restauré
 et le script fusionne désormais.
+
+
+## Le réel « plan Studio » (2026-09-23)
+
+Demande Colin, le jour où la caisse Stripe des structures a été branchée et prouvée par
+un vrai paiement (52/52) : « on attaque les studios avec une belle offre de lancement »,
+« on met en avant le fait que notre plan Studio n'est pas une usine à gaz, avec uniquement
+des fonctions essentielles et pensées par des profs », « des photos de notre banque dans
+nos réels », et « un like et un DM pour obtenir le code promo ». Le réel boosté « 0 € »
+avait ramené Romain (un studio de danse) et Aurore : c'est le message chiffré qui
+convertit, pas le format, et les patrons de studio sont bien sur Instagram.
+
+Cinq actes, 850 images (28,3 s), palette **charbon chaud** (`src/studio-formats.js` :
+`#241d1b` → `#3d2f2a`, crème, cuivre `#e2a76f`, sauge `#9fd3b4`), hors du sable, hors de la
+lavande du « 0 € » et du bleu nuit du carrousel :
+
+1. **La fin de mois** (0 → 6 s), sur la **photo du studio Reformer** de la banque
+   (`public/icons/persona-pilates.jpg`, redimensionnée dans `public/photo-studio-reformer.jpg`)
+   sous un voile : « Tu recomptes les séances de chaque prof. / Tu vérifies qu'aucune salle
+   n'est prise deux fois. / Tu devines quel cours te fait vivre. », puis le pivot cuivre
+   « Il existe un outil qui fait ça. Sans le reste. »
+2. **Le chiffre** (6 → 10 s) : « LE PLAN STUDIO », « 59 € » plein écran, « par mois. Toutes
+   tes profs comprises. », « Pas de prix par intervenante. Pas d'engagement. Pas d'usine à
+   gaz. » Le « 59 € » file ensuite dans la pastille accrochée au téléphone.
+3. **Cinq écrans réels** (10 → 19 s), 1,7 s chacun : l'équipe et sa rémunération convenue,
+   les salles sous leur lieu, **le toast qui refuse une seconde séance dans la même salle**,
+   le relevé du mois d'une prof (« Montant dû 240 € »), l'analyse (« Résultat 493 € »).
+4. **Pas une usine à gaz** (19 → 23 s), sur la **photo du studio de danse**
+   (`persona-danse.jpg`) : « L'essentiel d'un studio. Pensé avec des profs. », ce que le
+   plan fait, et ce qu'il ne fait pas (« Pas de paie, pas de partie double : ton comptable
+   garde son métier. »).
+5. **L'appel** (23,5 → 28 s) : le **portrait de Maude** (`maude-studio.jpg`) en médaillon,
+   « Offre de lancement · Studio à moitié prix pendant trois mois. », la pastille crème
+   « Envoie STUDIO en message », « 29,50 € par mois pour démarrer, puis 59 €. Jusqu'au
+   31 décembre. Je t'envoie le code, et j'installe ton studio avec toi, gratuitement. »
+   Le like se demande dans la légende, en une ligne, jamais comme condition : Meta déclasse
+   les publications qui réclament un like.
+
+- **Les captures viennent d'un studio JETABLE** : le démo Atelier Soleil est une prof
+  seule, sans équipe rémunérée, sans salles, sans Compta. `node scripts/shoot-reel-studio.mjs`
+  (depuis la racine, contre la prod) crée « Studio Ondine » (deux profs rémunérées, deux
+  salles, douze élèves, un mois de séances pointées, trois dépenses réglées), se connecte
+  avec sa session, prend les cinq captures mobile (`public/studio-*.jpg` + repères
+  `studio*` fusionnés dans `manifest.json`), et PURGE tout, même en échec. Aucun email ne
+  part (tout en @example.com). Le toast du refus est provoqué pour de vrai (une seconde
+  séance dans la Salle Reformer à 18:00) et le script vérifie qu'il n'a rien écrit.
+- **Deux formats, une composition** : `PlanStudio` (1080×1920) et `PlanStudio-Feed`
+  (1080×1350). Le défilement d'un écran est écrit pour le 9:16 ; en 4:5, `defilementPour`
+  remonte l'écran quand la cible sort de la fenêtre visible (le toast était coupé sur la
+  planche du feed, attrapé sur l'image, pas dans le code).
+- **Rendu** : `npm run plan-studio [reel|feed]` → `reseaux/reel/plan-studio/plan-studio.mp4`
+  (9,4 Mo), `plan-studio-feed.mp4` (7,9 Mo), `plan-studio-couverture.jpg` (image 272),
+  `plan-studio-fin.jpg`. Légendes prêtes à coller : guide admin `legendes-plan-studio.md`
+  (Instagram, Facebook, LinkedIn, story, le DM qui donne le code, les objections des gérants
+  dont ClassPass et Wellpass, et ce qu'on ne dit jamais).

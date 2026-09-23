@@ -11,7 +11,8 @@
     "pov": "node scripts/rendre-pov.mjs",
     "formats": "node scripts/rendre-formats.mjs",
     "carrousel": "node scripts/rendre-carrousel.mjs",
-    "gratuit": "node scripts/rendre-gratuit.mjs"
+    "gratuit": "node scripts/rendre-gratuit.mjs",
+    "plan-studio": "node scripts/rendre-studio.mjs"
   },
   "dependencies": {
     "@remotion/cli": "4.0.522",

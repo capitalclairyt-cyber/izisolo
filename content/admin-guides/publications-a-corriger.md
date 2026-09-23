@@ -3,7 +3,7 @@ titre: "🩹 Les publications déjà en ligne : ce qu'il faut corriger"
 description: "Relu le 10 septembre dans l'export Instagram : quatre publications disent quelque chose de faux ou de périmé (14 jours, tarif à vie, chiffre inventé, relances automatiques). Les légendes de remplacement, à coller sans republier."
 maj: "2026-09-15"
 groupe: "Légendes à coller"
-ordre: 8
+ordre: 9
 ---
 
 ## Relu le 10 septembre

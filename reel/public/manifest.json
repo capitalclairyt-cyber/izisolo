@@ -35,6 +35,38 @@
     "carnet": [
       589,
       1688
+    ],
+    "studioRemu": [
+      360,
+      1137
+    ],
+    "studioReleve": [
+      190,
+      1944
+    ],
+    "studioRecettes": [
+      190,
+      1254
+    ],
+    "studioMarge": [
+      795,
+      4344
+    ],
+    "studioSalle": [
+      330,
+      1729
+    ],
+    "studioToast": [
+      360,
+      1295
+    ],
+    "studioResultat": [
+      190,
+      1415
+    ],
+    "studioLeaResultat": [
+      534,
+      3721
     ]
   },
   "agenda": {
@@ -106,5 +138,25 @@
   "avis-affiche": {
     "w": 720,
     "h": 1018
+  },
+  "studio-equipe": {
+    "w": 720,
+    "h": 3349
+  },
+  "studio-releve": {
+    "w": 720,
+    "h": 3552
+  },
+  "studio-analyse": {
+    "w": 720,
+    "h": 6774
+  },
+  "studio-salles": {
+    "w": 720,
+    "h": 2308
+  },
+  "studio-chevauchement": {
+    "w": 720,
+    "h": 1558
   }
 }
