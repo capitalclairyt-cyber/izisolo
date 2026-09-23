@@ -79,6 +79,10 @@ export default function AideEleve({ studioNom = null, studioSlug, sansCatalogue 
       r: <>{t('En bas de ton espace, le bloc')} <strong>{t('« Un mot sur {studio} ? »', { studio })}</strong> {t('a un bouton')} <strong>{t('« Laisser un avis Google »')}</strong> {t(": il ouvre la fiche Google du studio directement sur « Écrire un avis » (il faut être connecté·e à un compte Google). Tu écris ce que tu penses vraiment, il n'y a rien en échange. Il se peut aussi que {studio} te l'ait proposé une fois par email après quelques séances : c'est le même lien.", { studio })}</>,
     }] : []),
     {
+      q: t('Je ne vois pas les cours du mois prochain ?'),
+      r: <>{t('Le planning charge deux mois, puis la suite dès que tu la regardes : en vue semaine, la flèche')} <strong>▶</strong> {t('va chercher chaque semaine (« Chargement de la semaine » le temps de la réponse), et en vue liste le bouton')} <strong>{t('« Voir les semaines suivantes »')}</strong> {t("affiche la suite, jusqu'à un an à l'avance. Si une semaine reste vide, c'est que {studio} n'y a rien programmé pour l'instant.", { studio })}</>,
+    },
+    {
       q: t("Comment installer l'app sur mon téléphone ?"),
       r: <>{t("Ton espace s'installe comme une vraie app, sans App Store. Android + Chrome : menu")} <strong>⋮</strong> {t("→ « Installer l'application ». iPhone : bouton")} <strong>{t('Partager')}</strong> {t("→ « Sur l'écran d'accueil ». Ensuite, ouvre toujours depuis l'icône : tu restes connecté·e, sans redemander de lien par email.")}</>,
     },

@@ -45,7 +45,9 @@ async function getData(studioSlug) {
     .lte('date', in60)
     .order('date', { ascending: true })
     .order('heure', { ascending: true })
-    .limit(60);
+    // 240, plus 60 : Yoga Bien-être avait 58 séances sur 60 jours le
+    // 2026-09-23, la limite coupait déjà la fin de sa fenêtre en silence.
+    .limit(240);
 
   // Visibilité : un cours réservé aux inscrits/abonnés/fidèles ne doit pas
   // apparaître dans le sélecteur d'essai pour un visiteur qui n'y a pas droit

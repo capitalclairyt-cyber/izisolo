@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { MapPin, Calendar, Clock, ChevronRight, ChevronLeft, ChevronDown, Search, CreditCard, Ticket, CalendarCheck, Zap, Instagram, Facebook, Globe, Award, BookOpen, LayoutGrid, List, Check, Loader, User, BadgeCheck, Building2 } from 'lucide-react';
@@ -10,6 +10,7 @@ import { matchRecherche } from '@/lib/utils';
 import { essaiVarieParType, minPrixEssai } from '@/lib/essai-tarif';
 import { grouperSeances } from '@/lib/seances-groupees';
 import { useLangue } from '@/components/portail/LangueProvider';
+import { plageManquante, plageSuivante, semaineHorsHorizon, fusionnerSeances, finHorizon } from '@/lib/portail-fenetre';
 
 // next/image ne peut optimiser que les hosts déclarés dans
 // next.config.mjs → images.remotePatterns (AUDIT-PERF 2.9 : la couverture
@@ -134,20 +135,54 @@ function PlacesBadge({ capacite, inscrits, afficherInscrits = true }) {
   return <span className="portail-tag portail-tag-green">{t('Places disponibles')}</span>;
 }
 
-export default function PortailHome({ profile, cours, offresStripe = [], offresPubliques = [], sondageActif = null, studioSlug, isPreview = false, isDemo = false, currentClient = null, reservedCoursIds = [], canReserve = true, essaiVisible = true, canDemander = true, surchargesEssai = null, tonsParType = null, vignettesParType = null, tabInitial = null, equipe = [], liensEquipe = {}, ailleurs = [] }) {
+export default function PortailHome({ profile, cours, fenetreFin = null, offresStripe = [], offresPubliques = [], sondageActif = null, studioSlug, isPreview = false, isDemo = false, currentClient = null, reservedCoursIds = [], canReserve = true, essaiVisible = true, canDemander = true, surchargesEssai = null, tonsParType = null, vignettesParType = null, tabInitial = null, equipe = [], liensEquipe = {}, ailleurs = [] }) {
   // Le portail parle la langue de la visiteuse (2026-09-22) : t() rend le
   // français par défaut, l'anglais si elle l'a choisi ou si le studio l'a réglé.
   const { t, langue, locale } = useLangue();
   const fmtH = (h) => formatHeure(h, langue);
   const fmtDate = (d) => formatDateCourt(d, t, langue, locale);
+  // ── Les séances au-delà de la fenêtre (2026-09-23, retour Manon / Soleya) ──
+  // La page ne charge que 60 jours. Avant, ▶ continuait dans le vide et la
+  // semaine du 23 novembre disait « Aucun cours cette semaine » à des élèves
+  // qui avaient huit séances à réserver. Désormais on SAIT jusqu'où on a
+  // chargé (chargeJusqu), on va chercher la suite à la demande, et tant que la
+  // réponse n'est pas là, l'écran dit « chargement », jamais « aucun ».
+  const todayIsoRef = fmtIsoDate(new Date());
+  const [coursCharges, setCoursCharges] = useState(cours || []);
+  const [chargeJusqu, setChargeJusqu] = useState(fenetreFin || fmtIsoDate(addDays(new Date(), 60)));
+  const [chargement, setChargement] = useState(null);      // { de, a } en cours
+  const [erreurPlage, setErreurPlage] = useState(null);    // { de, a, message }
+  const enCoursRef = useRef(null);
+  const chargerPlage = useCallback(async (plage) => {
+    if (!plage) return;
+    const cle = plage.de + '|' + plage.a;
+    if (enCoursRef.current === cle) return;
+    enCoursRef.current = cle;
+    setChargement(plage);
+    setErreurPlage(null);
+    try {
+      const res = await fetch(`/api/portail/${studioSlug}/seances?de=${plage.de}&a=${plage.a}`, { credentials: 'same-origin' });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json.error || t('Impossible de charger ces séances pour le moment.'));
+      setCoursCharges(prev => fusionnerSeances(prev, json.cours || []));
+      // Une plage lue et VIDE compte comme chargée : « Aucun cours cette
+      // semaine » devient alors vrai, il ne l'était pas avant la réponse.
+      setChargeJusqu(prev => (json.a > prev ? json.a : prev));
+    } catch (e) {
+      setErreurPlage({ ...plage, message: String(e.message || e) });
+    } finally {
+      if (enCoursRef.current === cle) enCoursRef.current = null;
+      setChargement(null);
+    }
+  }, [studioSlug, t]);
   // v111 : les profs de la structure. Le filtre et l'onglet n'apparaissent
   // qu'à partir de deux personnes (une prof seule n'a rien à filtrer).
   const [filterProf, setFilterProf] = useState('');
   const profs = useMemo(() => {
     const vues = new Map();
-    for (const c of cours) if (c.intervenante_id && c.intervenante) vues.set(c.intervenante_id, c.intervenante);
+    for (const c of coursCharges) if (c.intervenante_id && c.intervenante) vues.set(c.intervenante_id, c.intervenante);
     return [...vues].map(([id, prenom]) => ({ id, prenom }));
-  }, [cours]);
+  }, [coursCharges]);
   const aUneEquipe = (equipe || []).length >= 2;
   // Suffixe de query pour préserver le mode demo dans les liens internes
   const demoQS = isDemo ? '?demo=1' : '';
@@ -479,11 +514,20 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
   const weekEnd = addDays(weekStart, 6);
   const weekStartIso = fmtIsoDate(weekStart);
   const weekEndIso   = fmtIsoDate(weekEnd);
+  // La semaine affichée dépasse ce qui est chargé → on demande la suite.
+  const manque = viewMode === 'week' ? plageManquante(weekStartIso, weekEndIso, chargeJusqu, todayIsoRef) : null;
+  useEffect(() => {
+    if (manque && !(erreurPlage && erreurPlage.de === manque.de && erreurPlage.a === manque.a)) chargerPlage(manque);
+  }, [manque?.de, manque?.a]);
+  const semaineEnChargement = !!manque && (!!chargement || !erreurPlage);
+  const semaineSuivanteHorsHorizon = semaineHorsHorizon(fmtIsoDate(addDays(weekStart, 7)), todayIsoRef);
+  const suiteListe = viewMode === 'list' ? plageSuivante(chargeJusqu, todayIsoRef) : null;
+  const horizonIso = finHorizon(todayIsoRef);
 
   // Tous les types uniques présents dans les cours
   const types = useMemo(() => {
-    return [...new Set(cours.map(c => c.type_cours).filter(Boolean))];
-  }, [cours]);
+    return [...new Set(coursCharges.map(c => c.type_cours).filter(Boolean))];
+  }, [coursCharges]);
 
   const filtered = useMemo(() => {
     // Masque les cours déjà commencés : un cours de 9h disparaît à 9h00,
@@ -491,7 +535,7 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
     const todayIso = fmtIsoDate(new Date());
     const now = new Date();
     const nowHH = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
-    return cours.filter(c => {
+    return coursCharges.filter(c => {
       if (c.date < todayIso) return false;
       if (c.date === todayIso && c.heure && c.heure.slice(0, 5) <= nowHH) return false;
       const matchSearch = matchRecherche(search, c.nom, c.type_cours, c.lieu, c.intervenante);
@@ -499,7 +543,7 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
       const matchProf = !filterProf || c.intervenante_id === filterProf;
       return matchSearch && matchType && matchProf;
     });
-  }, [cours, search, filterType, filterProf]);
+  }, [coursCharges, search, filterType, filterProf]);
 
   // En mode "semaine" on filtre aussi par plage de dates
   const filteredForView = useMemo(() => {
@@ -901,6 +945,8 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
               onClick={() => setWeekStart(addDays(weekStart, 7))}
               className="portail-week-nav-btn"
               aria-label={t('Semaine suivante')}
+              disabled={semaineSuivanteHorsHorizon}
+              data-testid="portail-semaine-suivante"
             >
               <ChevronRight size={16} />
             </button>
@@ -976,10 +1022,24 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
               {t('Seuls les jours avec cours sont affichés.')}
             </p>
           )}
-          {filteredForView.length === 0 && (
-            <div className="portail-empty" style={{ marginTop: 8 }}>
+          {filteredForView.length === 0 && semaineEnChargement && (
+            <div className="portail-empty" style={{ marginTop: 8 }} data-testid="portail-semaine-chargement">
+              <p style={{ color: '#888', margin: 0 }}><span className="portail-spin"><Loader size={14} /></span> {t('Chargement de la semaine…')}</p>
+            </div>
+          )}
+          {manque && !chargement && erreurPlage && (
+            <div className="portail-empty" style={{ marginTop: 8 }} data-testid="portail-semaine-erreur">
+              <p style={{ color: '#888', margin: '0 0 8px' }}>{t('Impossible de charger cette semaine.')}</p>
+              <button type="button" className="portail-btn-suite" onClick={() => chargerPlage(manque)}>{t('Réessayer')}</button>
+            </div>
+          )}
+          {filteredForView.length === 0 && !semaineEnChargement && !erreurPlage && (
+            <div className="portail-empty" style={{ marginTop: 8 }} data-testid="portail-semaine-vide">
               <p style={{ color: '#888', margin: 0 }}>{t('Aucun cours cette semaine')}</p>
             </div>
+          )}
+          {semaineSuivanteHorsHorizon && (
+            <p className="portail-week-note" data-testid="portail-horizon">{t("Le planning s'affiche jusqu'à un an à l'avance.")}</p>
           )}
         </div>
       )}
@@ -1003,6 +1063,29 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
           {renderJournee(coursDate)}
         </div>
       ))}
+      {viewMode === 'list' && (
+        <div className="portail-liste-suite" data-testid="portail-liste-suite">
+          {erreurPlage && !chargement && (
+            <p className="portail-week-note" data-testid="portail-liste-erreur">{t('Impossible de charger ces séances pour le moment.')}</p>
+          )}
+          {suiteListe ? (
+            <button
+              type="button"
+              className="portail-btn-suite"
+              onClick={() => chargerPlage(suiteListe)}
+              disabled={!!chargement}
+              data-testid="portail-liste-plus"
+            >
+              {chargement ? <><span className="portail-spin"><Loader size={14} /></span> {t('Chargement…')}</> : t('Voir les semaines suivantes')}
+            </button>
+          ) : (
+            <p className="portail-week-note" data-testid="portail-horizon">{t("Le planning s'affiche jusqu'à un an à l'avance.")}</p>
+          )}
+          <p className="portail-week-note" data-testid="portail-liste-jusqu">
+            {t("Planning affiché jusqu'au {date}", { date: fmtDate(chargeJusqu < horizonIso ? chargeJusqu : horizonIso) })}
+          </p>
+        </div>
+      )}
       </>}
       {/* === / ONGLET COURS === */}
 
@@ -1693,6 +1776,18 @@ export default function PortailHome({ profile, cours, offresStripe = [], offresP
           color: #888; cursor: pointer; transition: all .15s;
         }
         .portail-week-nav-btn:hover { color: #1a1612; border-color: #1a1612; }
+        .portail-week-nav-btn:disabled { opacity: .35; cursor: default; }
+        .portail-week-nav-btn:disabled:hover { color: #888; border-color: #ecdfd5; }
+        /* La suite du planning à la demande (2026-09-23) */
+        .portail-liste-suite { display: flex; flex-direction: column; align-items: center; gap: 8px; margin: 8px 0 20px; }
+        .portail-btn-suite {
+          display: inline-flex; align-items: center; gap: 6px;
+          padding: 9px 16px; border-radius: 999px; font: inherit; font-size: 0.875rem; font-weight: 600;
+          background: white; border: 1px solid #ecdfd5; color: #1a1612; cursor: pointer; transition: all .15s;
+        }
+        .portail-btn-suite:hover { border-color: #1a1612; }
+        .portail-btn-suite:disabled { opacity: .6; cursor: default; }
+        .portail-spin { display: inline-flex; animation: spin 1s linear infinite; vertical-align: -2px; }
         .portail-week-label {
           padding: 0 10px; min-width: 110px; text-align: center;
         }

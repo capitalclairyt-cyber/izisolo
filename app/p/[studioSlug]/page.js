@@ -2,15 +2,15 @@ import { createServerClient } from '@/lib/supabase-server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { notFound } from 'next/navigation';
 import PortailHome from './PortailHome';
-import { resolveClientInfo, filterCoursVisibles } from '@/lib/visibilite';
+import { resolveClientInfo } from '@/lib/visibilite';
 import { ogPortail } from '@/lib/portail-metadata';
 import { studioCan } from '@/lib/plan-guard';
-import { presenceOccupePlace, compterPlacesOccupeesParCours } from '@/lib/presences';
-import { coursDejaCommence } from '@/lib/dates';
-import { reportError } from '@/lib/report';
+import { presenceOccupePlace } from '@/lib/presences';
 import { getEssaiPrixParType } from '@/lib/essai-tarif';
-import { chargerVignettesConfig, chargerPhotosCours, greffePhotos } from '@/lib/vignette-cours';
-import { lireIntervenantes, chargerIntervenantes, equipePourPortail, prenomIntervenante } from '@/lib/intervenante';
+import { chargerVignettesConfig } from '@/lib/vignette-cours';
+import { chargerIntervenantes, equipePourPortail } from '@/lib/intervenante';
+import { chargerSeancesPortail, lireSeancesBrutes } from '@/lib/portail-seances-service';
+import { finFenetre } from '@/lib/portail-fenetre';
 import { structuresCitees, pageDeLIntervenante } from '@/lib/ponts';
 import { masquerLiensSiNonBranche } from '@/lib/paiement-en-ligne';
 import { urlPortail } from '@/lib/studio-host';
@@ -57,7 +57,11 @@ async function getStudioData(studioSlug) {
   // Heure de PARIS (le serveur Vercel est en UTC : entre minuit et 2 h l'été,
   // « aujourd'hui » était hier — B1b).
   const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Paris' });
-  const in60 = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toLocaleDateString('sv-SE', { timeZone: 'Europe/Paris' });
+  // La page ne charge que 60 jours (lib/portail-fenetre) : au-delà, la vue
+  // semaine et la liste vont chercher la suite par /api/portail/[slug]/seances
+  // jusqu'à un an devant (2026-09-23, retour Manon : ses élèves lisaient
+  // « Aucun cours cette semaine » sur une semaine de novembre bien remplie).
+  const fenetreFin = finFenetre(today);
 
   const { data: profile } = await supabase
     .from('profiles')
@@ -98,19 +102,11 @@ async function getStudioData(studioSlug) {
     .limit(1)
     .maybeSingle();
 
-  const [{ data: coursRaw }, { data: offresStripe }, { data: offresPubliques }, { data: sondageActif }] = await Promise.all([
-    supabase
-      .from('cours')
-      .select('id, nom, date, heure, duree_minutes, type_cours, lieu, capacite_max, est_annule, recurrence_parent_id, visibilite, tarif_unitaire, carnets_acceptes, format')
-      .eq('profile_id', profile.id)
-      .eq('est_annule', false)
-      .gte('date', today)
-      .lte('date', in60)
-      .order('date', { ascending: true })
-      .order('heure', { ascending: true })
-      // 240 (≈4 séances/jour sur 60 j) : la limite 60 coupait les semaines
-      // LOINTAINES en silence dès ~10 séances/semaine (B1b).
-      .limit(240),
+  // Paginée (lib/portail-seances-service) : plus aucune limite ne coupe une
+  // fenêtre en silence (la limite 240 d'avant, née en B1b, aurait coupé un
+  // studio à 5 séances par jour).
+  const [coursRaw, { data: offresStripe }, { data: offresPubliques }, { data: sondageActif }] = await Promise.all([
+    lireSeancesBrutes(supabase, profile.id, today, fenetreFin).catch(() => []),
     supabase
       .from('offres')
       .select('id, nom, type, prix, seances, seances_par_semaine, duree_jours, stripe_payment_link')
@@ -129,7 +125,6 @@ async function getStudioData(studioSlug) {
   const ssrClient = await createServerClient();
   const { data: { user } } = await ssrClient.auth.getUser();
   const clientInfo = user ? await resolveClientInfo(supabase, profile.id, user) : null; // v83 : FK d'abord
-  const cours = filterCoursVisibles(coursRaw || [], clientInfo);
   // v122 : le bouton FR / EN de l'en-tête pose un cookie puis rafraîchit
   // cette page ; si l'élève est connue ici, son choix est mémorisé sur sa
   // fiche pour ses emails et ses push (UPDATE séparé, muet sans la colonne).
@@ -154,39 +149,19 @@ async function getStudioData(studioSlug) {
     reservedCoursIds = (pres || []).filter(presenceOccupePlace).map(p => p.cours_id);
   }
 
-  // Places occupées par cours — RPC d'agrégat v89 (formule v74 en SQL).
-  // Avant : .in(240 ids) sur les LIGNES presences → cap PostgREST 1000
-  // silencieux → jauges fausses dès un studio bien rempli (AUDIT-PERF cat 1.1).
-  const coursIds = (cours || []).map(c => c.id);
-  let presencesCounts = {};
-  if (coursIds.length > 0) {
-    try {
-      presencesCounts = await compterPlacesOccupeesParCours(supabase, coursIds);
-    } catch (presErr) {
-      // Jauges à 0 plutôt que page morte — la RPC reserver_place re-vérifie
-      // la capacité sous verrou à la réservation de toute façon.
-      reportError('[portail] comptage places err:', presErr, { route: `/p/${studioSlug}` });
-    }
-  }
-
-  // Filtrer les cours du jour dont l'heure est déjà passée — horloge unique
-  // Paris (lib/dates), le calcul local serveur UTC gardait ~2 h de trop.
-  const coursFutur = (cours || []).filter(c => !coursDejaCommence(c));
-
-  // v99 — l'identité visuelle du planning : le ton et la vignette de chaque
-  // TYPE de cours (config du studio) plus la photo propre à certaines séances.
-  // Les 3 colonnes se chargent À PART (elles ne vont jamais dans un select
-  // principal, anti-pattern §12), puis les photos sont greffées sur les cours
-  // pour que l'affichage n'ait qu'un seul objet à lire.
-  // v111 (lot 1 Assos & Studios) : QUI donne chaque séance, et l'équipe de la
-  // structure pour l'onglet « L'équipe ». Lectures séparées et défensives :
-  // pré-v103/v111, cartes vides, rien ne change.
-  const [apparence, photosSeances, intervenantsParCours, membresBruts] = await Promise.all([
+  // v99 — le ton et la vignette de chaque TYPE de cours (config du studio),
+  // v111 — l'équipe de la structure pour l'onglet « L'équipe ». Lectures
+  // séparées et défensives : pré-migration, cartes vides, rien ne change.
+  const [apparence, membresBruts] = await Promise.all([
     chargerVignettesConfig(supabase, profile.id),
-    chargerPhotosCours(supabase, coursFutur.map(c => c.id)),
-    lireIntervenantes(supabase, coursFutur.map(c => c.id)),
     chargerIntervenantes(supabase, profile.id),
   ]);
+  // Les séances telles que CETTE visiteuse les voit (visibilité, déjà
+  // commencées écartées, places v89, prénom v111, photo v99) : même chaîne que
+  // la route qui sert les semaines au-delà de la fenêtre.
+  const coursAffiches = await chargerSeancesPortail(supabase, profile, {
+    clientInfo, brutes: coursRaw, membres: membresBruts, route: `/p/${studioSlug}`,
+  });
   const equipe = equipePourPortail(profile, membresBruts);
   // Pont 5 (v115) : « Sa page » sur la carte d'une intervenante qui a relié,
   // et « Je donne aussi des cours à … » quand CE portail est celui d'une prof
@@ -208,14 +183,6 @@ async function getStudioData(studioSlug) {
       ailleurs = structuresCitees(mesApp, structures || [], profile.id);
     }
   } catch { /* pré-v115 */ }
-  const intervenantes = Object.fromEntries(
-    membresBruts.map(m => [m.id, prenomIntervenante(m)]).filter(([, p]) => !!p)
-  );
-  // Le propriétaire donne ses cours sous SON prénom (profil), pas un email.
-  for (const m of membresBruts) {
-    if (m.role === 'proprietaire' && profile.prenom) intervenantes[m.id] = profile.prenom;
-  }
-
   // Le paiement en ligne n'est branché que si le webhook Stripe est déclaré.
   // Sans lui, la visiteuse paierait sur un vrai lien dont IziSolo n'apprendrait
   // jamais rien (retour Manon 2026-08-26) : on retire les liens, la grille
@@ -243,13 +210,9 @@ async function getStudioData(studioSlug) {
     estProprietaire: user?.id === profile.id,
     profile: enrichi ? profile : { ...profile, bio: null, philosophie: null, formations: null, annees_experience: null, faq_publique: [] },
     canDemander,
-    cours: greffePhotos(coursFutur.map(c => ({
-      ...c,
-      nbInscrits: presencesCounts[c.id] || 0,
-      // Le prénom de la prof qui donne la séance (v111), ou null.
-      intervenante: intervenantsParCours[c.id] ? (intervenantes[intervenantsParCours[c.id]] || null) : null,
-      intervenante_id: intervenantsParCours[c.id] || null,
-    })), photosSeances),
+    cours: coursAffiches,
+    // La dernière date chargée : au-delà, PortailHome demande la suite à la route.
+    fenetreFin,
     equipe,
     liensEquipe,
     ailleurs,
@@ -312,6 +275,7 @@ export default async function PortailPage({ params, searchParams }) {
     <PortailHome
       profile={profile}
       cours={data.cours}
+      fenetreFin={data.fenetreFin}
       offresStripe={data.offresStripe}
       offresPubliques={data.offresPubliques}
       sondageActif={data.sondageActif}
