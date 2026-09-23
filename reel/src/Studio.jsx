@@ -266,7 +266,10 @@ const Appel = ({ L }) => {
   return (
     <AbsoluteFill style={{ opacity: voile, background: `linear-gradient(155deg, ${C.fond2} 0%, ${C.fond} 58%, #1a1412 100%)`,
       alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', marginTop: -L.H * 0.04, padding: `0 ${L.marge}px` }}>
+      {/* La salle de yoga aux tapis déroulés, sous un voile dense : le lieu où
+          l'on finit, derrière le portrait de Maude et l'offre. */}
+      <Photo src={PHOTOS.yoga} de={d} a={DUREE + 40} voile={0.74} focale="50% 62%" />
+      <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', marginTop: -L.H * 0.04, padding: `0 ${L.marge}px` }}>
         <div style={{ width: T, height: T, borderRadius: '50%', overflow: 'hidden', border: `6px solid ${C.cuivre}`,
           boxShadow: '0 20px 60px rgba(0,0,0,0.5)', opacity: Math.min(1, avatar * 1.3), transform: `scale(${interpolate(avatar, [0, 1], [0.7, 1])})` }}>
           <Img src={staticFile('photo-maude.jpg')} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: '50% 28%' }} />
@@ -300,8 +303,8 @@ export const Studio = ({ profil = 'reel' }) => {
   return (
     <AbsoluteFill>
       <Fond>
-        <Photo src={PHOTOS.reformer} de={0} a={ACTE1.fin + 10} voile={0.5} focale="55% 40%" />
-        <Photo src={PHOTOS.danse} de={ESSENTIEL.de - 6} a={ESSENTIEL.fin + 6} voile={0.66} focale="50% 45%" />
+        <Photo src={PHOTOS.reformer} de={0} a={ACTE1.fin + 10} voile={0.52} focale="50% 50%" />
+        <Photo src={PHOTOS.danse} de={ESSENTIEL.de - 6} a={ESSENTIEL.fin + 6} voile={0.64} focale="50% 55%" />
         <Acte1 L={L} />
         <Prix L={L} />
         <Ecrans L={L} />

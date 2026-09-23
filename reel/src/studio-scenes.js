@@ -24,14 +24,17 @@ export const dims = (nom) => ({ src: `${nom}.jpg`, imgW: manifest[nom].w, imgH: 
 export { PALETTE, TEINTES, PROFILS, DUREE, IMAGE_COUVERTURE } from './studio-formats';
 
 // ── Les photos de la banque ─────────────────────────────────────────────────
-// Deux vraies photos de studio (public/icons/persona-pilates.jpg, le Reformer
-// sur mur vert ; persona-danse.jpg, la scène de danse) et le portrait de Maude
-// devant son enseigne, redimensionnés dans public/ par scripts/shoot-reel-studio
-// (sharp, hauteur 1920). Elles s'affichent sous un voile sombre : le texte
-// reste lisible, la photo donne le lieu.
+// Trois vraies photos de studio choisies par Colin le 2026-09-23 (Pexels,
+// sources dans public/icons/CREDITS-PHOTOS.md) : le studio Reformer aux miroirs
+// en arche (Paulina Vargas), la salle de danse aux barres et miroirs (cottonbro
+// studio), la salle de yoga aux tapis déroulés (Zulema Laborde), plus le
+// portrait de Maude devant son enseigne. Redimensionnées dans public/ (sharp,
+// hauteur 1920). Elles s'affichent sous un voile sombre : le texte reste
+// lisible, la photo donne le lieu. Aucun visage : le lieu, pas une inconnue.
 export const PHOTOS = {
   reformer: 'photo-studio-reformer.jpg',
   danse: 'photo-studio-danse.jpg',
+  yoga: 'photo-studio-yoga.jpg',
   maude: 'photo-maude.jpg',
 };
 

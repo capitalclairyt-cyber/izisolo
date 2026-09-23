@@ -311,9 +311,9 @@ Cinq actes, 850 images (28,3 s), palette **charbon chaud** (`src/studio-formats.
 `#241d1b` → `#3d2f2a`, crème, cuivre `#e2a76f`, sauge `#9fd3b4`), hors du sable, hors de la
 lavande du « 0 € » et du bleu nuit du carrousel :
 
-1. **Le scroll-stop** (0 → 6 s), sur la **photo du studio Reformer** de la banque
-   (`public/icons/persona-pilates.jpg`, redimensionnée dans `public/photo-studio-reformer.jpg`)
-   sous un voile : UNE phrase à la fois, en très gros (118 px, `tailles.hook`), visible dès
+1. **Le scroll-stop** (0 → 6 s), sur la **photo du studio Reformer aux miroirs en arche**
+   (Paulina Vargas, Pexels ; `public/icons/studio-reformer-arches.jpg`, redimensionnée dans
+   `public/photo-studio-reformer.jpg`) sous un voile : UNE phrase à la fois, en très gros (118 px, `tailles.hook`), visible dès
    la PREMIÈRE image, un mot en cuivre : « Tu recomptes encore les séances de tes profs ? »,
    « Tu devines quel cours te fait vivre ? », puis la réponse « Il existe un outil qui fait
    ça. Sans le reste. » Retour Colin sur la première planche : « le texte est trop petit et
@@ -327,17 +327,25 @@ lavande du « 0 € » et du bleu nuit du carrousel :
 3. **Cinq écrans réels** (10 → 19 s), 1,7 s chacun : l'équipe et sa rémunération convenue,
    les salles sous leur lieu, **le toast qui refuse une seconde séance dans la même salle**,
    le relevé du mois d'une prof (« Montant dû 240 € »), l'analyse (« Résultat 493 € »).
-4. **Pas une usine à gaz** (19 → 23 s), sur la **photo du studio de danse**
-   (`persona-danse.jpg`) : « L'essentiel d'un studio. Pensé avec des profs. », ce que le
+4. **Pas une usine à gaz** (19 → 23 s), sur la **photo de la salle de danse aux barres et
+   miroirs** (cottonbro studio, Pexels ; `studio-danse-barres.jpg`) : « L'essentiel d'un studio. Pensé avec des profs. », ce que le
    plan fait, et ce qu'il ne fait pas (« Pas de paie, pas de partie double : ton comptable
    garde son métier. »).
-5. **L'appel** (23,5 → 28 s) : le **portrait de Maude** (`maude-studio.jpg`) en médaillon,
+5. **L'appel** (23,5 → 28 s), sur la **salle de yoga aux tapis déroulés** (Zulema Laborde,
+   Pexels ; `studio-yoga-tapis.jpg`) sous un voile dense : le **portrait de Maude**
+   (`maude-studio.jpg`) en médaillon,
    « Offre de lancement · Studio à moitié prix pendant trois mois. », la pastille crème
    « Envoie STUDIO en message », « 29,50 € par mois pour démarrer, puis 59 €. Jusqu'au
    31 décembre. Je t'envoie le code, et j'installe ton studio avec toi, gratuitement. »
    Le like se demande dans la légende, en une ligne, jamais comme condition : Meta déclasse
    les publications qui réclament un like.
 
+- **Les trois photos de studio sont entrées dans la banque le 2026-09-23** (choix Colin
+  sur dix candidates Pexels cherchées par un agent, aperçus seulement puis originaux
+  téléchargés après son accord) : sources, auteurs et licence dans
+  `public/icons/CREDITS-PHOTOS.md`. Les deux photos persona d'avant (Reformer sur mur vert,
+  scène de danse) ne servent plus au réel. Aucun visage dans les trois : le lieu, pas une
+  inconnue. Elles ne vont pas sur la landing (règle « zéro faux »).
 - **Les captures viennent d'un studio JETABLE** : le démo Atelier Soleil est une prof
   seule, sans équipe rémunérée, sans salles, sans Compta. `node scripts/shoot-reel-studio.mjs`
   (depuis la racine, contre la prod) crée « Studio Ondine » (deux profs rémunérées, deux
