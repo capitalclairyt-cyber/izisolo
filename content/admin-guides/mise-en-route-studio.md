@@ -1,7 +1,7 @@
 ---
 titre: "🚀 Mise en route d'un nouveau studio"
 description: "Le programme détaillé pour installer une nouvelle prof, de la création du compte aux premiers gestes du quotidien."
-maj: 2026-08-21
+maj: 2026-09-25
 groupe: "Démo & installation"
 ordre: 2
 ---
@@ -10,7 +10,9 @@ ordre: 2
 > Trois formats possibles : en visio avec elle (elle pilote, partage d'écran,
 > on guide), en CONCIERGE (l'équipe crée le studio via /admin/studios/nouveau,
 > le paramètre pour elle, puis lui envoie le lien d'appropriation ; les étapes
-> 1 et 2 sont alors faites PAR NOUS) ou en autonomie guidée (on lui envoie ce parcours, la checklist
+> 1 et 2 sont alors faites PAR NOUS ; quand son planning et ses tarifs sont
+> déjà connus, Colin peut monter tout l'espace d'un coup par script, il ne
+> reste que la vérification et l'envoi du lien) ou en autonomie guidée (on lui envoie ce parcours, la checklist
 > du tableau de bord fait le reste). Durée réaliste en visio : 30 à 45 min
 > pour l'essentiel (étapes 1 à 6), le reste en autonomie.
 >

@@ -64,3 +64,7 @@ izisolo-audit-strategique-2026.pdf
 proof-*.pdf
 # Captures des preuves navigateur (regénérées à chaque run)
 docs/proof-*/
+
+# Espaces prof montés par scripts/parametrer-espace-prof.mjs (coordonnées de tiers, hors repo ; seul exemple.json est versionné)
+/scripts/espaces/*
+!/scripts/espaces/exemple.json

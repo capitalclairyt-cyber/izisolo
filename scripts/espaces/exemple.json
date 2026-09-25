@@ -1,0 +1,84 @@
+{
+  "_": "Description d'un espace prof pour scripts/parametrer-espace-prof.mjs. Les clés qui commencent par « _ » sont des commentaires. Copier ce fichier en <prenom-nom>.json (ignoré par git : coordonnées de tiers).",
+
+  "prenom": "Léa",
+  "nom": "Exemple",
+  "email": "lea@exemple-de-prof.fr",
+  "telephone": "06 00 00 00 00",
+
+  "studio": {
+    "nom": "Léa Yoga",
+    "_metier": "yoga | pilates | danse | musique | coaching | arts | autre",
+    "metier": "yoga",
+    "_type_structure": "solo (défaut) | association | studio",
+    "type_structure": "solo",
+    "ville": "Lyon",
+    "code_postal": "69001",
+    "adresse": null,
+    "pays": "FR"
+  },
+
+  "page": {
+    "_": "Tout est facultatif. types_cours remplace la liste par défaut du métier ; chaque type cité par une série ou une offre doit y être.",
+    "types_cours": ["Hatha", "Yin"],
+    "bio": "Deux phrases sur elle, jamais inventées : ce qu'elle dit d'elle-même sur son site.",
+    "formations": "Yoga 200 h · Yin yoga",
+    "annees_experience": null,
+    "website_url": "https://www.exemple-de-prof.fr",
+    "instagram_url": "https://www.instagram.com/exemple/",
+    "facebook_url": null,
+    "portail_message": "Bienvenue ! Réserve ta place ici 🌿",
+    "afficher_tarifs": true
+  },
+
+  "lieux": [
+    { "cle": "salle", "nom": "Salle des Lilas", "adresse": "3 rue des Lilas", "ville": "Lyon" }
+  ],
+
+  "series": [
+    {
+      "_": "Une série HEBDOMADAIRE = une ligne recurrences + une séance par semaine entre date_debut et date_fin. date_debut doit tomber le jour demandé (1 = lundi … 7 = dimanche). tarif_unitaire = prix à la séance porté par chaque occurrence ; carnets_acceptes = un carnet peut aussi la couvrir (cours mixte).",
+      "nom": "Hatha du mardi",
+      "type_cours": "Hatha",
+      "jour": 2,
+      "heure": "18:30",
+      "duree_minutes": 75,
+      "lieu": "salle",
+      "capacite_max": 12,
+      "date_debut": "2026-09-29",
+      "date_fin": "2027-06-29",
+      "exclure_feries": true,
+      "exclure_vacances": false,
+      "zone_vacances": null,
+      "visibilite": "public",
+      "tarif_unitaire": 15,
+      "carnets_acceptes": true,
+      "notes": null,
+      "_format": "presentiel (défaut) | visio (alors lieu ignoré, lien_visio facultatif en https)"
+    }
+  ],
+
+  "offres": [
+    {
+      "_": "type carnet : seances obligatoire, duree_jours facultatif (null = sans expiration). type abonnement : duree_jours (glissant) OU date_debut + date_fin (saison) ; mode_seances illimite | cadence | total, seances_par_semaine pour cadence/total, seances pour total. types_cours_autorises facultatif (vide = tous les cours).",
+      "nom": "Carnet 10 séances",
+      "type": "carnet",
+      "prix": 125,
+      "seances": 10,
+      "duree_jours": null,
+      "types_cours_autorises": ["Hatha"]
+    },
+    {
+      "nom": "Abonnement à l'année",
+      "type": "abonnement",
+      "prix": 330,
+      "duree_jours": 365,
+      "mode_seances": "illimite",
+      "types_cours_autorises": ["Hatha"]
+    }
+  ],
+
+  "a_confirmer": [
+    "Ce que le dry-run doit rappeler à l'humain avant d'envoyer le lien : les points où l'on n'a pas voulu deviner."
+  ]
+}
