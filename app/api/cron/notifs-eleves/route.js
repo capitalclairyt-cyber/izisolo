@@ -92,7 +92,7 @@ export const GET = withRoute({ auth: 'cron' }, async ({ request }) => {
   // plus bas : jamais une requête par élève.
   const languesStudios = await chargerLanguesStudios(supabase, (profiles || []).map(p => p.id));
   const traducteurPour = (languesFiches, clientId, profileId) => traducteur(langueEleve({
-    client: { langue: languesFiches.get(clientId) },
+    client: languesFiches.get(clientId) || null,
     studio: { langue_portail: languesStudios.get(profileId) },
   }));
 

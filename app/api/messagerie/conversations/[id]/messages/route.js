@@ -133,7 +133,7 @@ export const POST = withRoute({ auth: 'user' }, async ({ request, params, auth }
           const languesStudios = await chargerLanguesStudios(supabase, [profile.id]);
           const studioLangue = { langue_portail: languesStudios.get(profile.id) };
           await Promise.all((cls || []).filter(c => c.email).map(c => {
-            const t = traducteur(langueEleve({ client: { langue: languesFiches.get(c.id) }, studio: studioLangue }));
+            const t = traducteur(langueEleve({ client: languesFiches.get(c.id) || null, studio: studioLangue }));
             return sendPushToEmail(c.email, {
               title: t('{studio} — message au groupe', { studio: profile.studio_nom || t('Ton studio') }),
               body: (body.content || '').slice(0, 120) || t('Nouveau message'),

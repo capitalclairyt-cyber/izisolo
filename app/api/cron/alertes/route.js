@@ -127,7 +127,7 @@ export const GET = withRoute({ auth: 'cron' }, async () => {
   const languesFiches = await chargerLanguesFiches(supabaseAdmin, clientIds);
   const languesStudios = await chargerLanguesStudios(supabaseAdmin, profileIds);
   const traducteurPour = (client, profile) => traducteur(langueEleve({
-    client: { langue: languesFiches.get(client.id) },
+    client: languesFiches.get(client.id) || null,
     studio: { langue_portail: languesStudios.get(profile.id) },
   }));
 

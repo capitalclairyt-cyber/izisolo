@@ -176,7 +176,7 @@ export const GET = withRoute({ auth: 'cron' }, async () => {
     if (!client || !client.email) continue;
     if (!wantsNotif(client.notif_prefs, 'message', 'eleve', 'email')) { totalSkipped++; continue; }
     const t = traducteur(langueEleve({
-      client: { langue: languesFiches.get(client.id) },
+      client: languesFiches.get(client.id) || null,
       studio: { langue_portail: languesStudios.get(client.profile_id) },
     }));
 

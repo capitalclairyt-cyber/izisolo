@@ -27,11 +27,11 @@ import { createClient } from '@supabase/supabase-js';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';
-import { traduire } from '../lib/i18n-portail.js';
+import { traduire, langueEleve } from '../lib/i18n-portail.js';
 
 const BASE = process.env.PROOF_BASE || 'http://localhost:3333';
 const EN = (fr, vars) => traduire('en', fr, vars);
-const EMAILS = { vide: 'temoin-langue-auto-a@example.com', fr: 'temoin-langue-auto-b@example.com', choisi: 'temoin-langue-auto-c@example.com', anon: 'temoin-langue-auto-d@example.com' };
+const EMAILS = { vide: 'temoin-langue-auto-a@example.com', fr: 'temoin-langue-auto-b@example.com', choisi: 'temoin-langue-auto-c@example.com', anon: 'temoin-langue-auto-d@example.com', devinee: 'temoin-langue-auto-e@example.com' };
 
 const env = Object.fromEntries(
   readFileSync(join(process.cwd(), '.env.local'), 'utf8')
@@ -54,6 +54,9 @@ const poserStudio = async (v) => { const { error } = await svc.from('profiles').
 const erreurAuto = await poserStudio('auto');
 const V123 = !erreurAuto;
 console.log(`migration v123 : ${V123 ? 'APPLIQUEE (phase complète)' : 'ABSENTE (phase dégradée, relance après application)'}` + (erreurAuto ? ` [${erreurAuto.code}]` : ''));
+// v124 : la provenance d'une langue mémorisée (choisie par le bouton, ou devinée du navigateur).
+const V124 = !(await svc.from('clients').select('langue_deduite').limit(1)).error;
+console.log(`migration v124 : ${V124 ? 'APPLIQUEE (la provenance est prouvée)' : 'ABSENTE (une langue devinée compte comme choisie, comme avant ; relance après application)'}`);
 await poserStudio('fr');
 
 const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Paris' });
@@ -98,6 +101,7 @@ const sessionCookies = async (email) => {
   return cookies.map(cc => ({ ...cc, url: BASE, sameSite: 'Lax' }));
 };
 const langueFiche = async (id) => (await svc.from('clients').select('langue').eq('id', id).single()).data?.langue ?? null;
+const ficheEntiere = async (id) => (await svc.from('clients').select(V124 ? 'langue, langue_deduite' : 'langue').eq('id', id).single()).data || null;
 
 await fetch(`${BASE}/p/${SLUG}`).catch(() => {});
 await fetch(`${BASE}/api/profile/langue-portail`).catch(() => {});
@@ -127,6 +131,12 @@ try {
   console.log('\n— B. Paramètres → Ce que ta page montre : « Automatique » —');
   const ctxP = await browser.newContext({ viewport: { width: 1280, height: 1000 } });
   await ctxP.addCookies(await sessionCookies('camille@atelier-soleil.fr'));
+  // Préchauffe : sur un serveur de dev FROID, la première compilation de
+  // /parametres/page recharge l'écran en plein clic (Fast Refresh, §12) et
+  // referme la carte : la réponse du PATCH devenait illisible et le bouton
+  // « Automatique » introuvable (2 KO fantômes le 2026-09-25). On ouvre donc
+  // l'écran une fois pour rien avant de mesurer.
+  { const p0 = await ctxP.newPage(); await p0.goto(`${BASE}/parametres/page`, { waitUntil: 'domcontentloaded', timeout: 120000 }); await p0.waitForSelector('[data-carte-reglage="page_affichage"] .carte-reglage-entete', { timeout: 90000 }).catch(() => {}); await p0.close(); }
   const pp = await ctxP.newPage();
   pp.on('pageerror', e => erreurs.push('P: ' + String(e).slice(0, 160)));
   await pp.goto(`${BASE}/parametres/page`, { waitUntil: 'domcontentloaded', timeout: 120000 });
@@ -187,6 +197,25 @@ try {
     };
     c('élève sans langue, navigateur en-GB : l\'écran est en anglais', (await visite(EMAILS.vide, 'en-GB,en;q=0.9')) === 'en');
     c('et sa fiche prend « en » EN BASE', (await attendre(() => langueFiche(idVide).then(v => (v === 'en' ? v : null)), 20000)) === 'en');
+    if (V124) {
+      // ── D bis. La provenance (v124) : devinée ≠ choisie ─────────────────
+      console.log('\n— D bis. v124 : une langue devinée porte son drapeau, suit le navigateur, et s\'efface derrière le choix du studio ; une langue choisie reste —');
+      c('« en » est marquée DEVINÉE (langue_deduite = true)', (await ficheEntiere(idVide))?.langue_deduite === true);
+      c('pour un email, studio auto → anglais (la langue devinée sert)', langueEleve({ client: await ficheEntiere(idVide), studio: { langue_portail: 'auto' } }) === 'en');
+      c('pour un email, studio qui a CHOISI « fr » → français (le choix du studio efface la langue devinée)', langueEleve({ client: await ficheEntiere(idVide), studio: { langue_portail: 'fr' } }) === 'fr');
+      c('son téléphone repasse en français : la fiche devinée suit (« fr », toujours devinée)', await (async () => { await visite(EMAILS.vide, 'fr-FR,fr;q=0.9'); const f = await attendre(() => ficheEntiere(idVide).then(v => (v?.langue === 'fr' ? v : null)), 20000); return f?.langue === 'fr' && f?.langue_deduite === true; })());
+      // Le bouton EN (cookie) : un CHOIX, qui remplace la langue devinée et retire le drapeau.
+      const ctxC = await ctxNav('fr-FR,fr;q=0.9');
+      await ctxC.addCookies([...(await sessionCookies(EMAILS.vide)), { name: 'izi_lang', value: 'en', url: BASE, sameSite: 'Lax' }]);
+      const pc = await ctxC.newPage();
+      await pc.goto(`${BASE}/p/${SLUG}`, { waitUntil: 'domcontentloaded', timeout: 120000 });
+      await pc.waitForSelector('.portail-footer', { timeout: 90000 });
+      await ctxC.close();
+      const choisie = await attendre(() => ficheEntiere(idVide).then(v => (v?.langue === 'en' && v?.langue_deduite === false ? v : null)), 20000);
+      c('le bouton EN (cookie) pose « en » CHOISIE (langue_deduite = false)', !!choisie);
+      c('pour un email, studio qui a choisi « fr » → anglais quand même (le choix de l\'élève prime)', langueEleve({ client: choisie, studio: { langue_portail: 'fr' } }) === 'en');
+      c('et un navigateur français ne la fait plus bouger (une langue choisie ne se devine plus)', await (async () => { await visite(EMAILS.vide, 'fr-FR,fr;q=0.9'); await new Promise(r => setTimeout(r, 1500)); const f = await ficheEntiere(idVide); return f?.langue === 'en' && f?.langue_deduite === false; })());
+    }
     c('élève dont la fiche dit « fr », navigateur en-GB : l\'écran suit le navigateur (anglais)', (await visite(EMAILS.fr, 'en-GB,en;q=0.9')) === 'en');
     await new Promise(r => setTimeout(r, 1500));
     c('mais sa fiche reste « fr » (le navigateur ne remplace jamais un choix)', (await langueFiche(idFr)) === 'fr');
@@ -198,6 +227,9 @@ try {
   }
 
   // ── E. La route de réservation parle la langue du navigateur ───────────
+  // ⚠️ Le quota anti-abus de la route (5/h) vit AUSSI en mémoire du serveur :
+  // deux runs dans l'heure sans redémarrer le dev server répondent 429 ici,
+  // et ce n'est pas le produit (la clé en base est libérée au démarrage).
   console.log('\n— E. La route de réservation : refus dans la langue du navigateur si « auto », en français si le studio a choisi —');
   if (coursPasse) {
     const post = (acceptLanguage, cookie) => fetch(`${BASE}/api/portail/${SLUG}/reserver`, {

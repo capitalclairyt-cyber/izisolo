@@ -77,7 +77,7 @@ export const POST = withRoute({ auth: 'active', perm: 'cours_gerer' }, async ({ 
   const languesFiches = await chargerLanguesFiches(supabaseAdmin, (presences || []).map(r => r.client?.id));
   const languesStudios = await chargerLanguesStudios(supabaseAdmin, [studioId]);
   const traducteurPour = (clientId) => traducteur(langueEleve({
-    client: clientId ? { langue: languesFiches.get(clientId) } : null,
+    client: clientId ? (languesFiches.get(clientId) || null) : null,
     studio: { langue_portail: languesStudios.get(studioId) },
   }));
   // Date, heure et « quand » dans la langue de l'élève :
@@ -226,7 +226,7 @@ export const POST = withRoute({ auth: 'active', perm: 'cours_gerer' }, async ({ 
       if (entry.email && process.env.RESEND_API_KEY) {
         try {
           const t = traducteur(langueEleve({
-            client: entry.client_id ? { langue: languesAttente.get(entry.client_id) } : null,
+            client: entry.client_id ? (languesAttente.get(entry.client_id) || null) : null,
             studio: { langue_portail: languesStudios.get(studioId) },
           }));
           const { quand } = quandPour(t);

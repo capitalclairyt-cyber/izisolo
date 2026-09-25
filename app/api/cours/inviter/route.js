@@ -49,7 +49,7 @@ export const POST = withRoute({ auth: 'active', schema: coursInviterSchema, perm
   const languesFiches = await chargerLanguesFiches(supabaseAdmin, (presences || []).map(p => p.clients?.id));
   const languesStudios = await chargerLanguesStudios(supabaseAdmin, [profile.id]);
   const traducteurPour = (clientId) => traducteur(langueEleve({
-    client: clientId ? { langue: languesFiches.get(clientId) } : null,
+    client: clientId ? (languesFiches.get(clientId) || null) : null,
     studio: { langue_portail: languesStudios.get(profile.id) },
   }));
 

@@ -129,6 +129,36 @@ test.describe('i18n portail : la résolution', () => {
     expect(langueEleve({ client: { langue: 'klingon' }, studio: { langue_portail: 'de' } })).toBe('fr');
   });
 
+  // v124 (2026-09-25, Yasmine / Health Moment) : une langue DEVINÉE du
+  // navigateur n'est pas une langue CHOISIE. Elle vaut tant que le studio est
+  // en « auto », et s'efface derrière son choix.
+  test('v124 : une langue devinée s\'efface derrière le choix du studio, une langue choisie jamais', () => {
+    const devinee = { langue: 'en', langue_deduite: true };
+    const choisie = { langue: 'en', langue_deduite: false };
+    expect(langueEleve({ client: devinee, studio: { langue_portail: 'auto' } })).toBe('en');
+    expect(langueEleve({ client: devinee, studio: { langue_portail: null } })).toBe('en');
+    expect(langueEleve({ client: devinee, studio: { langue_portail: 'fr' } })).toBe('fr');
+    expect(langueEleve({ client: devinee, studio: { langue_portail: 'en' } })).toBe('en');
+    expect(langueEleve({ client: { langue: 'fr', langue_deduite: true }, studio: { langue_portail: 'en' } })).toBe('en');
+    expect(langueEleve({ client: choisie, studio: { langue_portail: 'fr' } })).toBe('en');
+    expect(langueEleve({ client: { langue: 'en' }, studio: { langue_portail: 'fr' } })).toBe('en'); // pré-v124 : sans drapeau = choisie
+    expect(langueEleve({ client: { langue: null, langue_deduite: true }, studio: { langue_portail: 'auto' } })).toBe('fr');
+    const sql = readFileSync(join(racine, 'migrations-v124-langue-deduite.sql'), 'utf8');
+    expect(sql).toContain('add column if not exists langue_deduite boolean not null default false');
+    expect(sql).toMatch(/set langue_deduite = true/);
+    expect(sql).toMatch(/coalesce\(p\.langue_portail, 'auto'\) = 'auto'/);
+    // Les lecteurs par lot passent la fiche ENTIÈRE (langue + provenance) : plus
+    // aucun appelant n'enveloppe la valeur de la Map dans { langue: … }.
+    const src = (f) => readFileSync(join(racine, f), 'utf8');
+    for (const f of ['app/api/cron/alertes/route.js', 'app/api/cron/digest-messagerie/route.js', 'app/api/cron/notifs-eleves/route.js', 'lib/messagerie-email.js', 'app/api/cours/[coursId]/annuler/route.js', 'lib/i18n-portail-serveur.js']) {
+      expect(src(f), f).not.toMatch(/\{ langue: langues\w+\.get\(/);
+    }
+    const serveur = src('lib/i18n-portail-serveur.js');
+    expect(serveur).toContain("select('id, langue, langue_deduite')");
+    expect(serveur).toContain('langue_deduite: true');
+    expect(serveur).toContain('langue_deduite: false');
+  });
+
   // v123 (2026-09-23) : le navigateur de la visiteuse en repli, « auto » par défaut.
   test('la langue du navigateur : la première préférée qui soit fr ou en', () => {
     expect(langueNavigateur('en-US,en;q=0.9')).toBe('en');

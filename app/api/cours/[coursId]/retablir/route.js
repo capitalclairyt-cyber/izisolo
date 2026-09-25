@@ -75,7 +75,7 @@ export const POST = withRoute({ auth: 'active', perm: 'cours_gerer' }, async ({ 
   const languesFiches = await chargerLanguesFiches(supabaseAdmin, plan.aPrevenir.map(r => r.client?.id));
   const languesStudios = await chargerLanguesStudios(supabaseAdmin, [studioId]);
   const traducteurPour = (clientId) => traducteur(langueEleve({
-    client: clientId ? { langue: languesFiches.get(clientId) } : null,
+    client: clientId ? (languesFiches.get(clientId) || null) : null,
     studio: { langue_portail: languesStudios.get(studioId) },
   }));
   const messagePour = (t, prenom) => {
