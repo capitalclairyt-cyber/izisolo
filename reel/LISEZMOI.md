@@ -381,9 +381,13 @@ fin commune, « Commente STUDIO » (AppelStudio), avec un titre par variante.
 - `npm run conv [id ...]` (`scripts/rendre-conversation.mjs`) rend les MP4 (H.264, CRF 18,
   muets) et deux images par variante (`-bulles.jpg` = la dernière bulle, `-fin.jpg` = la
   carte) dans `../../reseaux/reel/conversation/`, HORS repo.
-- Le défilement est calculé, pas mesuré (le navigateur ne mesure pas pendant le rendu) :
-  `hauteurBulle` estime ~14,5 px par caractère ; avec 16 le fil remontait trop et laissait
-  un trou sous la dernière bulle (vu sur le still, pas dans le code).
+- La pile est ancrée en BAS de la zone : ce qui déborde disparaît par le haut, la dernière
+  bulle est toujours entière. À chaque entrée (les trois points, puis la bulle qui les
+  remplace) la pile saute de la hauteur de l'élément ; ce saut est compensé AU PIXEL puis
+  relâché en 14 images. Les hauteurs sont MESURÉES avec la vraie police (`fillTextBox` de
+  `@remotion/layout-utils`, mot par mot, l'heure comprise) : une estimation par caractère
+  laissait quelques pixels d'écart à chaque bulle, la saccade que Colin a vue le 26/09.
+  Vérifier ce genre de mouvement sur des images CONSÉCUTIVES, jamais sur un still.
 - Règles d'écriture : les mêmes que les POV. ⚠️ La dernière bulle ne dit que « IziSolo » :
   deux douleurs (23 h, remplaçante) se règlent avec des fonctions du plan Complet, la ligne
   « Gratuit, sans carte, pour toujours » ne vit que sur la carte de fin. « prénoms

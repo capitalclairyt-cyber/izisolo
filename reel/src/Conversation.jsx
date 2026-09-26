@@ -1,4 +1,6 @@
+import { useMemo } from 'react';
 import { AbsoluteFill, interpolate, spring, useCurrentFrame, useVideoConfig } from 'remotion';
+import { fillTextBox } from '@remotion/layout-utils';
 import { FONT_BODY, P } from './theme';
 import { Fond } from './composants/Fond';
 import { Logo } from './composants/Logo';
@@ -25,19 +27,35 @@ const LARGEUR_BULLE = 540;
 const TAILLE = 31;
 const INTERLIGNE = 40;
 
-// Hauteur approchée d'une bulle (le navigateur ne mesure pas pendant le rendu).
-// Elle ne sert qu'à ADOUCIR la montée du fil à chaque arrivée : la pile est
-// ancrée en bas de la zone, donc la dernière bulle est toujours entière, quelle
-// que soit l'erreur d'estimation (avec une pile ancrée en haut et un défilement
-// calculé, trois fils sur cinq coupaient « IziSolo », vu sur les stills).
-const hauteurBulle = (texte) => Math.ceil((texte.length * 15) / (LARGEUR_BULLE - 56)) * INTERLIGNE + 30;
 const GAP = 14;
+const POINTS_H = 49; // les trois points : 18 + 13 + 18
+const PADDING_BULLE = 26; // 14 en haut, 12 en bas
+
+// La hauteur EXACTE d'une bulle, mesurée avec la vraie police par
+// @remotion/layout-utils (mot par mot, l'heure comprise, à la largeur de la
+// bulle). Une estimation « tant de pixels par caractère » se trompait de
+// quelques pixels, et comme la pile est ancrée en bas, chaque bulle qui
+// entrait faisait sauter tout le fil de la différence : la saccade que Colin
+// a vue (2026-09-26). Avec la mesure, la compensation est au pixel.
+const hauteurBulle = (m) => {
+  const boite = fillTextBox({ maxBoxWidth: LARGEUR_BULLE - 48, maxLines: 40 });
+  let lignes = 1;
+  fr(m.texte).split(' ').forEach((mot, i) => {
+    if (boite.add({ text: (i ? ' ' : '') + mot, fontFamily: FONT_BODY, fontSize: TAILLE, fontWeight: 500 }).newLine) lignes++;
+  });
+  boite.add({ text: '  ', fontFamily: FONT_BODY, fontSize: TAILLE, fontWeight: 500 }); // la marge de l'heure
+  if (boite.add({ text: m.heure + (m.de === 'moi' ? ' ✓✓' : ''), fontFamily: FONT_BODY, fontSize: 19, fontWeight: 500 }).newLine) lignes++;
+  return lignes * INTERLIGNE + PADDING_BULLE;
+};
 
 const Bulle = ({ de, texte, heure, apparait }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
+  // Montée dès l'image `apparait` (à 0 d'opacité, mais DANS la pile) : la
+  // compensation du saut de layout commence à cette image-là, la bulle doit
+  // occuper sa place au même instant.
+  if (frame < apparait) return null;
   const s = spring({ frame: frame - apparait, fps, config: { damping: 14, stiffness: 170 }, durationInFrames: 26 });
-  if (s <= 0) return null;
   const moi = de === 'moi';
   return (
     <div style={{ display: 'flex', justifyContent: moi ? 'flex-end' : 'flex-start', opacity: s,
@@ -124,18 +142,23 @@ export const Conversation = ({ varianteId }) => {
 
   // La pile est ancrée en BAS de la zone (comme une vraie messagerie) : ce qui
   // déborde disparaît par le haut, la dernière bulle est toujours entière. À
-  // chaque arrivée (bulle ou trois points), la pile saute de la hauteur du
-  // nouvel élément ; on compense ce saut puis on le relâche en 14 images pour
-  // que le fil MONTE au lieu de sauter.
-  const visibles = c.messages.filter((m) => m.apparait <= frame);
+  // chaque changement de layout (les trois points qui entrent, puis qui
+  // sortent quand la bulle entre), la pile saute de la différence de hauteur ;
+  // on compense ce saut AU PIXEL (hauteurs mesurées) puis on le relâche en
+  // 14 images, pour que le fil MONTE au lieu de sauter.
   const enCours = c.messages.find((m) => m.ecritDe !== null && frame >= m.ecritDe && frame < m.apparait);
   const dispo = ZONE_BAS - ZONE_HAUT;
-  const derniere = visibles.length ? visibles[visibles.length - 1] : null;
-  const arriveeBulle = derniere ? derniere.apparait : -1e9;
-  const arriveePoints = enCours ? enCours.ecritDe : -1e9;
-  const [arrivee, hauteurNouvelle] = arriveePoints > arriveeBulle ? [arriveePoints, 60 + GAP] : [arriveeBulle, derniere ? hauteurBulle(derniere.texte) + GAP : 0];
-  const glisse = spring({ frame: frame - arrivee, fps, config: { damping: 200 }, durationInFrames: 14 });
-  const decalage = -hauteurNouvelle * (1 - glisse);
+  const evenements = useMemo(() => {
+    const liste = [];
+    for (const m of c.messages) {
+      if (m.ecritDe !== null) liste.push({ frame: m.ecritDe, delta: POINTS_H + GAP });
+      liste.push({ frame: m.apparait, delta: hauteurBulle(m) + GAP - (m.ecritDe !== null ? POINTS_H + GAP : 0) });
+    }
+    return liste;
+  }, [c]);
+  const dernier = evenements.filter((e) => e.frame <= frame).at(-1);
+  const glisse = dernier ? spring({ frame: frame - dernier.frame, fps, config: { damping: 200 }, durationInFrames: 14 }) : 1;
+  const decalage = dernier ? -dernier.delta * (1 - glisse) : 0;
 
   return (
     <AbsoluteFill>
