@@ -4,6 +4,7 @@ import {
   fetchAllRows, countParProfil, enrichirProfil,
   mrrEstime, repartitionStatuts, funnelActivation,
 } from '@/lib/admin-stats';
+import { inscriptionsParSource, sanitizeAcquisition } from '@/lib/acquisition';
 
 async function getStats(supabase) {
   const today = new Date();
@@ -19,11 +20,13 @@ async function getStats(supabase) {
 
   const emailById = {};
   const lastSignInById = {};
+  const acquisitionById = {};
   try {
     const { data: page } = await supabase.auth.admin.listUsers({ page: 1, perPage: 1000 });
     for (const u of page?.users || []) {
       emailById[u.id] = u.email;
       lastSignInById[u.id] = u.last_sign_in_at || null;
+      acquisitionById[u.id] = sanitizeAcquisition(u.user_metadata?.acquisition);
     }
   } catch (e) { console.error('[admin] listUsers:', e?.message); }
 
@@ -45,7 +48,7 @@ async function getStats(supabase) {
     }, {}),
   };
 
-  const enrichis = (profils || []).map(p => enrichirProfil(p, emailById, lastSignInById, usage));
+  const enrichis = (profils || []).map(p => enrichirProfil(p, emailById, lastSignInById, usage, acquisitionById));
   const reels = enrichis.filter(p => !p.est_test);
 
   return {
@@ -54,6 +57,10 @@ async function getStats(supabase) {
     mrr: mrrEstime(enrichis),
     statuts: repartitionStatuts(enrichis),
     funnel: funnelActivation(enrichis),
+    // La mesure d'une campagne sans balise Google : les comptes par source
+    // (utm_* de l'annonce), avec le funnel de chacune. Coût par studio
+    // onboardé = dépense Google Ads / « onboardés » de la ligne Google Ads.
+    parSource: inscriptionsParSource(enrichis, { depuis: trenteJours }),
     nbComptesTest: enrichis.length - reels.length,
     newUsersMonth: reels.filter(p => (p.created_at || '') >= firstOfMonth).length,
     // GMV élèves (volume encaissé par les profs via l'app) — pouls d'usage réel
@@ -166,6 +173,40 @@ export default async function AdminDashboard() {
               </div>
             );
           })}
+        </div>
+      </div>
+
+      {/* D'où viennent les inscriptions (utm_* de l'annonce, sans balise Google) */}
+      <div className="admin-card">
+        <h2 className="admin-subtitle" style={{ marginTop: 0 }}>D'où viennent les inscriptions (comptes réels)</h2>
+        <p style={{ color: '#64748b', fontSize: '0.8125rem', margin: '0 0 12px' }}>
+          La source lue dans l'URL d'arrivée (utm_*), sans cookie ni balise. Coût par studio onboardé = dépense de la campagne ÷ « Onboardés » de sa ligne.
+        </p>
+        <div className="admin-table-wrap">
+          <table className="admin-table" data-testid="admin-par-source">
+            <thead>
+              <tr>
+                <th>Source</th>
+                <th>Inscrits</th>
+                <th>Dont 30 j</th>
+                <th>Onboardés</th>
+                <th>Avec cours</th>
+                <th>Avec élèves</th>
+              </tr>
+            </thead>
+            <tbody>
+              {stats.parSource.map(r => (
+                <tr key={r.source}>
+                  <td>{r.source}</td>
+                  <td>{r.inscrits}</td>
+                  <td>{r.recents}</td>
+                  <td>{r.onboardes}</td>
+                  <td>{r.avecCours}</td>
+                  <td>{r.avecEleves}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
 

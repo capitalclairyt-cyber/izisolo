@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { Sparkles, Mail, Lock, User, CheckCircle } from 'lucide-react';
 import { TYPES_STRUCTURE, CODES_STRUCTURE, sanitizeTypeStructure, textesInscription } from '@/lib/structure';
+import { lireAcquisition } from '@/lib/acquisition';
 
 // Le type de structure choisi AVANT le compte (2026-09-23, retour Colin : « on
 // devrait différencier à l'inscription solo, assoc, studio »). Il arrive
@@ -17,10 +18,15 @@ export default function RegisterPage() {
   // côté serveur, donc une erreur d'hydratation (attrapée dans la console du
   // dev server le 2026-09-23). Le défaut est `solo`, l'URL se lit après montage.
   const [structure, setStructure] = useState('solo');
+  // D'où vient l'inscription (campagne Google Ads, 2026-09-26) : les utm_* de
+  // l'URL, recopiés par LienCta depuis la page d'atterrissage, partent dans la
+  // metadata du compte. Aucun cookie : sans utm, rien n'est posé (lib/acquisition).
+  const [acq, setAcq] = useState(null);
   useEffect(() => {
     try {
       const voulu = new URLSearchParams(window.location.search).get('structure');
       if (voulu) setStructure(sanitizeTypeStructure(voulu));
+      setAcq(lireAcquisition(window.location.search));
     } catch { /* rien : prof seule */ }
   }, []);
   const textes = textesInscription(structure);
@@ -57,7 +63,7 @@ export default function RegisterPage() {
       email: email.trim().toLowerCase(),
       password,
       options: {
-        data: { prenom, ...(structure !== 'solo' ? { structure } : {}) },
+        data: { prenom, ...(structure !== 'solo' ? { structure } : {}), ...(acq ? { acquisition: acq } : {}) },
         emailRedirectTo: `${window.location.origin}/auth/callback?next=/onboarding`,
       },
     });
@@ -139,7 +145,7 @@ export default function RegisterPage() {
           <p className="auth-reassurance" data-testid="reg-reassurance">{textes.reassurance}</p>
         </div>
 
-        <form onSubmit={handleRegister} className="auth-form">
+        <form onSubmit={handleRegister} className="auth-form" data-acq-source={acq?.source || undefined}>
           {error && <div className="auth-error">{error}</div>}
 
           {/* C'est quoi, ton IziSolo ? Trois cartes, les mêmes qu'à l'onboarding

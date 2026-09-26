@@ -92,6 +92,7 @@ export default function DemandesClient({ demandes: initiales, migrationManquante
                 {d.studio_nom && <span style={{ color: '#999' }}> · {d.studio_nom}</span>}
                 {d.activite && <span style={{ color: '#999' }}> · {d.activite}</span>}
                 {d.ville && <span style={{ color: '#999' }}> · {d.ville}</span>}
+                {d.source && <span style={{ color: '#b87333' }}> · via {d.source}</span>}
               </div>
               <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                 {enRetard && (

@@ -6,6 +6,7 @@ import { reportError } from '@/lib/report';
 import {
   sanitizeDemande, cequiManque, renderEmailAccuse, renderEmailInterne,
 } from '@/lib/demande-studio';
+import { sanitizeAcquisition, resumeAcquisition } from '@/lib/acquisition';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -42,6 +43,10 @@ export const POST = withRoute({ auth: 'public' }, async ({ request }) => {
 
   const { ok, erreur, valeurs } = sanitizeDemande(brut);
   if (!ok) return Response.json({ error: erreur }, { status: 400 });
+  // D'où vient la demande (utm_* de l'annonce, recopiés par la page). Jamais
+  // dans l'insert : la colonne `source` n'existe qu'avec v125, et une demande
+  // doit passer avec ou sans elle (patron poserLienVisio v86).
+  const source = resumeAcquisition(sanitizeAcquisition(brut.acquisition));
 
   const admin = createAdminClient();
   const { data: demande, error } = await admin
@@ -55,7 +60,7 @@ export const POST = withRoute({ auth: 'public' }, async ({ request }) => {
     // autant — l'email interne part quand même, et il contient TOUT ce qu'il
     // faut pour créer le studio à la main.
     reportError('[demande-studio] insert:', error, { route: '/api/demande-studio' });
-    const interne = renderEmailInterne(valeurs);
+    const interne = renderEmailInterne({ ...valeurs, source });
     await sendEmail({
       to: EMAIL_EQUIPE,
       subject: `${interne.subject} (⚠ non enregistrée)`,
@@ -64,7 +69,17 @@ export const POST = withRoute({ auth: 'public' }, async ({ request }) => {
       categorie: 'transactionnel',
     });
   } else {
-    const interne = renderEmailInterne(valeurs);
+    if (source) {
+      const { error: errSource } = await admin
+        .from('demandes_studio')
+        .update({ source })
+        .eq('id', demande.id);
+      // Pré-v125 (PGRST204) : la demande est enregistrée, seule la source manque.
+      if (errSource && !['PGRST204', '42703'].includes(errSource.code)) {
+        reportError('[demande-studio] source:', errSource, { route: '/api/demande-studio' });
+      }
+    }
+    const interne = renderEmailInterne({ ...valeurs, source });
     await sendEmail({
       to: EMAIL_EQUIPE,
       subject: interne.subject,

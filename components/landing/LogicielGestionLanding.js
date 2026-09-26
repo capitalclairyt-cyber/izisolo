@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import Link from 'next/link';
+import Link from './LienCta'; // next/link + utm_* recopiés (lib/acquisition)
 import { Nav, Footer, FinalCta, Pricing } from './Sections';
 import ComparatifsLies from './ComparatifsLies';
 import StylesPageSeo from './StylesPageSeo';

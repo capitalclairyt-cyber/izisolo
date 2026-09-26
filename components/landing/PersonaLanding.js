@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import { Nav, Footer, FAQ, FinalCta, Pricing } from './Sections';
 import { IziSoloLogo, YogaLotusIllu, YogaTreeIllu, SunCurveIllu } from './Brand';
-import Link from 'next/link';
+import Link from './LienCta'; // next/link + utm_* recopiés (lib/acquisition)
 import Image from 'next/image';
 import { CITIES } from '@/content/cities';
 import ComparatifsLies from './ComparatifsLies';

@@ -6,6 +6,7 @@ import { useSearchParams } from 'next/navigation';
 import { Nav, Footer } from './Sections';
 import ScrollReveal from './ScrollReveal';
 import { ACTIVITES, DELAI_HEURES } from '@/lib/demande-studio';
+import { lireAcquisition } from '@/lib/acquisition';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // « On crée ton studio » — le guichet public de la création concierge (v96).
@@ -30,12 +31,15 @@ const VIDE = {
 // le routeur ne l'ayant pas encore poussée quand l'effet de l'enfant tourne.
 const MESSAGE_CHANGER = "Je viens d'une autre appli. Je vous envoie mon export d'élèves, mon planning, mes tarifs et, pour chaque carnet en cours, le nombre de séances restantes.";
 
-function PreremplirDepuisSrc({ setForm }) {
+function PreremplirDepuisSrc({ setForm, setAcq }) {
   const params = useSearchParams();
   const src = params.get('src');
   useEffect(() => {
     if (src === 'changer') setForm(f => (f.message ? f : { ...f, message: MESSAGE_CHANGER }));
   }, [src, setForm]);
+  // La source (utm_* de l'annonce, lib/acquisition) part avec la demande :
+  // c'est ce qui permet de lire, dans /admin/demandes, d'où vient une prospecte.
+  useEffect(() => { setAcq(lireAcquisition(params)); }, [params, setAcq]);
   return null;
 }
 
@@ -47,6 +51,7 @@ export default function CreerMonStudio() {
   const [envoi, setEnvoi] = useState(false);
   const [erreur, setErreur] = useState('');
   const [envoyee, setEnvoyee] = useState(null); // { emailEnvoye }
+  const [acq, setAcq] = useState(null);
 
   const set = (k) => (e) => setForm(f => ({ ...f, [k]: e.target.value }));
 
@@ -59,7 +64,7 @@ export default function CreerMonStudio() {
       const res = await fetch('/api/demande-studio', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, verif_hp: hp }),
+        body: JSON.stringify({ ...form, verif_hp: hp, ...(acq ? { acquisition: acq } : {}) }),
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(json.error || 'Envoi impossible pour le moment.');
@@ -74,7 +79,7 @@ export default function CreerMonStudio() {
   return (
     <div className="izi-landing-root" data-palette="sable">
       <ScrollReveal />
-      <Suspense fallback={null}><PreremplirDepuisSrc setForm={setForm} /></Suspense>
+      <Suspense fallback={null}><PreremplirDepuisSrc setForm={setForm} setAcq={setAcq} /></Suspense>
       <Nav />
       <main>
         <section className="cms-hero">

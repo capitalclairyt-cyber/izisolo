@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import Link from 'next/link';
+import Link from './LienCta'; // next/link + utm_* recopiés (lib/acquisition)
 import { Nav, Footer } from './Sections';
 import ScrollReveal from './ScrollReveal';
 import { PLANS } from '@/lib/constantes';

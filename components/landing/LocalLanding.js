@@ -20,7 +20,7 @@
  *   discipline : 'yoga' | 'pilates' | 'danse' (default 'yoga')
  */
 
-import Link from 'next/link';
+import Link from './LienCta'; // next/link + utm_* recopiés (lib/acquisition)
 import { CITIES } from '@/content/cities';
 import { CITIES_EXTRA } from '@/content/cities-extra';
 import { CITIES_EXTRA_PILATES } from '@/content/cities-extra-pilates';

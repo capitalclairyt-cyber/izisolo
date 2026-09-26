@@ -51,7 +51,8 @@ export default function Calculateur() {
     const caStages = stagesActif ? stagesTrim / 3 : 0;
     const caBrut = caCollectif + caParticuliers + caEntreprise + caStages;
 
-    const izisolo = izisoloActif ? 17 : 0;
+    // Complet à 29 €/mois (le plan Essentiel est à 0 €) : on modélise le plan payant, jamais un prix qui n'existe plus.
+    const izisolo = izisoloActif ? 29 : 0;
 
     // Micro-entreprise : URSSAF 21,2 % du CA brut
     // EI au réel : approximé à 40 % du bénéfice (CA - charges hors URSSAF)
@@ -354,7 +355,7 @@ export default function Calculateur() {
             <span className="toggle-track"><span className="toggle-thumb"></span></span>
             <span className="toggle-label">
               Application de gestion IziSolo
-              <span className="toggle-hint">15 €/mois · économise 4-6h/sem d&apos;admin</span>
+              <span className="toggle-hint">Complet à 29 €/mois, Essentiel à 0 € · économise 4-6h/sem d&apos;admin</span>
             </span>
           </label>
         </div>

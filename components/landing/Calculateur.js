@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
+import Link from './LienCta'; // next/link + utm_* recopiés (lib/acquisition)
 import { Nav, Footer } from './Sections';
 import { IziSoloLogo } from './Brand';
 import ScrollReveal from './ScrollReveal';

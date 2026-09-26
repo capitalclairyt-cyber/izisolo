@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
+import Link from './LienCta'; // next/link + utm_* recopiés (lib/acquisition)
 import Image from 'next/image';
 import { IziSoloLogo } from './Brand';
 import { FAQ_ITEMS } from '@/content/faq';
