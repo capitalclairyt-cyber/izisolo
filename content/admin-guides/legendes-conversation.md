@@ -13,7 +13,8 @@ ordre: 10
 > la réponse à donner est dans le guide **Répondre à un commentaire STUDIO**.
 >
 > Les prénoms des bulles sont des prénoms d'exemple (Camille, Sophie), et le réel le
-> dit en bas de l'écran. Un réel tous les deux jours, jamais deux « conversation » à
+> dit en bas de l'écran. Chaque réel a sa couleur de fond (lavande, bleu nuit, bordeaux,
+> terracotta, charbon), aucun n'est sur le sable : le feed en avait trop. Un réel tous les deux jours, jamais deux « conversation » à
 > la suite : alterner avec un POV ou un réel d'écran. Chaque bloc a un bouton **Copier**.
 >
 > Règles de la bible réseaux appliquées : voix de Maude en « je », aucun nom de

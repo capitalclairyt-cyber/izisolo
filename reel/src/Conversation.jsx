@@ -2,11 +2,27 @@ import { useMemo } from 'react';
 import { AbsoluteFill, interpolate, spring, useCurrentFrame, useVideoConfig } from 'remotion';
 import { fillTextBox } from '@remotion/layout-utils';
 import { FONT_BODY, P } from './theme';
-import { Fond } from './composants/Fond';
 import { Logo } from './composants/Logo';
 import { Telephone } from './composants/Telephone';
 import { AppelStudio } from './composants/AppelStudio';
-import { VARIANTES, chrono } from './conversation-variantes';
+import { PALETTES, VARIANTES, chrono } from './conversation-variantes';
+
+// Le fond de la variante : un dégradé sombre et deux halos qui dérivent
+// lentement (le patron de Fond.jsx, aux couleurs de la palette).
+const FondCouleur = ({ pal, children }) => {
+  const frame = useCurrentFrame();
+  const d1 = interpolate(frame, [0, 600], [0, 120]);
+  const d2 = interpolate(frame, [0, 600], [0, -90]);
+  return (
+    <AbsoluteFill style={{ background: `linear-gradient(160deg, ${pal.fond} 0%, ${pal.fond2} 100%)` }}>
+      <div style={{ position: 'absolute', left: -220 + d1, top: -180, width: 780, height: 780, borderRadius: '50%',
+        background: `radial-gradient(circle, ${pal.halo1}30 0%, ${pal.halo1}00 70%)` }} />
+      <div style={{ position: 'absolute', right: -280 + d2, bottom: -140, width: 880, height: 880, borderRadius: '50%',
+        background: `radial-gradient(circle, ${pal.halo2}2e 0%, ${pal.halo2}00 70%)` }} />
+      {children}
+    </AbsoluteFill>
+  );
+};
 
 // Le réel « conversation » : une messagerie dans un téléphone, deux profs, la
 // douleur d'un côté, ce qu'on fait aujourd'hui de l'autre (2026-09-26). Le
@@ -135,6 +151,7 @@ const EnTete = ({ contact }) => (
 
 export const Conversation = ({ varianteId }) => {
   const v = VARIANTES.find((x) => x.id === varianteId) || VARIANTES[0];
+  const pal = PALETTES[v.palette] || PALETTES.lavande;
   const c = chrono(v);
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
@@ -162,13 +179,13 @@ export const Conversation = ({ varianteId }) => {
 
   return (
     <AbsoluteFill>
-      <Fond>
+      <FondCouleur pal={pal}>
         <div style={{ position: 'absolute', left: 0, right: 0, top: 150, textAlign: 'center', opacity: entree, fontFamily: FONT_BODY, fontWeight: 600,
-          fontSize: 26, letterSpacing: '0.12em', textTransform: 'uppercase', color: P.accentDeep }}>
+          fontSize: 26, letterSpacing: '0.12em', textTransform: 'uppercase', color: pal.doux }}>
           {v.eyebrow}
         </div>
         <div style={{ position: 'absolute', inset: 0, opacity: entree, transform: `translateY(${(1 - entree) * 50}px)` }}>
-          <Telephone {...TEL}>
+          <Telephone {...TEL} bezelCouleur={pal.bezel} ombre={`0 40px 90px rgba(0,0,0,0.45), 0 0 0 2px ${pal.creme}22`}>
             <div style={{ position: 'absolute', inset: 0, background: '#efe7dc' }} />
             <div style={{ position: 'absolute', left: 30, right: 30, top: ZONE_HAUT, height: dispo, overflow: 'hidden' }}>
               <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, display: 'flex', flexDirection: 'column', gap: GAP, transform: `translateY(${-decalage}px)` }}>
@@ -189,10 +206,10 @@ export const Conversation = ({ varianteId }) => {
             <Clavier />
           </Telephone>
         </div>
-        <div style={{ position: 'absolute', left: 90, top: 1700, opacity: 0.85 }}><Logo size={34} /></div>
-        <div style={{ position: 'absolute', right: 90, top: 1712, fontFamily: FONT_BODY, fontSize: 22, color: P.inkSoft, opacity: 0.8 }}>prénoms d’exemple</div>
-      </Fond>
-      <AppelStudio depuis={c.cta} titre={v.fin} />
+        <div style={{ position: 'absolute', left: 90, top: 1700, opacity: 0.9 }}><Logo size={34} couleur={pal.goutte} encre={pal.creme} /></div>
+        <div style={{ position: 'absolute', right: 90, top: 1712, fontFamily: FONT_BODY, fontSize: 22, color: pal.doux, opacity: 0.85 }}>prénoms d’exemple</div>
+      </FondCouleur>
+      <AppelStudio depuis={c.cta} titre={v.fin} palette={{ fond: pal.fond, fond2: pal.fond2, encre: pal.creme, doux: pal.doux, pill: pal.pill, pillTexte: pal.pillTexte, fleche: pal.halo1, goutte: pal.goutte }} />
     </AbsoluteFill>
   );
 };

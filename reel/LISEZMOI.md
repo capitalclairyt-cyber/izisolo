@@ -369,7 +369,7 @@ lavande du « 0 € » et du bleu nuit du carrousel :
 Demande Colin devant une pub Scalapay dans son fil : « une conversation entre profs
 qui répond à une douleur ». Cinq réels de ~20 secondes : une messagerie DESSINÉE dans
 un téléphone (rien n'est capturé, rien ne se périme, aucune marque de messagerie :
-sable, sauge et blanc de la charte), deux profs, celle qui a la douleur écrit, l'autre
+sauge et blanc de la charte dans les bulles), deux profs, celle qui a la douleur écrit, l'autre
 répond avec ce qu'elle fait aujourd'hui, les trois points « en train d'écrire » avant
 chaque réponse, et le nom de l'appli seulement à la dernière bulle. Puis la carte de
 fin commune, « Commente STUDIO » (AppelStudio), avec un titre par variante.
@@ -392,4 +392,13 @@ fin commune, « Commente STUDIO » (AppelStudio), avec un titre par variante.
   deux douleurs (23 h, remplaçante) se règlent avec des fonctions du plan Complet, la ligne
   « Gratuit, sans carte, pour toujours » ne vit que sur la carte de fin. « prénoms
   d'exemple » est écrit en bas de l'image.
+- **Un fond de couleur par variante, aucun sable** (retour Colin le 26/09 : « il y a trop de
+  sable sur notre compte ») : `PALETTES` dans `conversation-variantes.js`, chaque variante
+  nomme la sienne (`palette`). Dimanche = lavande nuit, chèques = bleu nuit, 23 h = bordeaux,
+  remplaçante = terracotta, URSSAF = charbon chaud ; un dégradé sombre et deux halos qui
+  dérivent (`FondCouleur`), le téléphone clair se détache dessus, et l'eyebrow, la coque, la
+  goutte du logo et la carte de fin (bouton, flèche, textes) suivent la même palette par la
+  prop `palette` d'`AppelStudio` (sans elle, les autres réels gardent le sable). Pas de vert
+  en fond, le feed en a déjà. Vérifié sur une planche par variante et sur deux cartes de fin
+  (bouton crème sur terracotta, jaune sur bleu nuit).
 - Légendes prêtes à coller : guide admin `legendes-conversation.md`.

@@ -21,9 +21,25 @@
 //
 // Ce fichier est PUR (aucun import Remotion) : le script de rendu Node le lit.
 
+// Une couleur de fond par variante, aucune sable (retour Colin 2026-09-26 :
+// « il y a trop de sable sur notre compte ») : un dégradé sombre et deux halos
+// qui dérivent, le téléphone se détache dessus. Les cinq sont distinctes entre
+// elles et reprennent celles déjà posées sur le compte (lavande du réel 0 €,
+// bleu nuit du carrousel avis, charbon chaud du réel Studio) ; pas de vert
+// (le feed en a déjà). Le crème est le sable de la charte : la marque reste.
+// `pill` / `pillTexte` : le bouton « Commente STUDIO » de la carte de fin.
+export const PALETTES = {
+  lavande:    { fond: '#3b2a5c', fond2: '#5b4184', halo1: '#8fd7ae', halo2: '#f6a8bf', creme: '#f7f2ea', doux: '#d3c4ec', bezel: '#1d1730', pill: '#8fd7ae', pillTexte: '#14402c', goutte: '#f6a8bf' },
+  bleuNuit:   { fond: '#1b3358', fond2: '#254470', halo1: '#efb84a', halo2: '#7fa6d9', creme: '#f2f1ea', doux: '#b8c6dd', bezel: '#0f1d33', pill: '#efb84a', pillTexte: '#1a2233', goutte: '#efb84a' },
+  bordeaux:   { fond: '#5a2b3f', fond2: '#7a3a54', halo1: '#f1bd4f', halo2: '#f6a8bf', creme: '#fbf1ee', doux: '#e4bfcc', bezel: '#2e1620', pill: '#f1bd4f', pillTexte: '#2e1a22', goutte: '#f1bd4f' },
+  terracotta: { fond: '#6e3520', fond2: '#9a4a2b', halo1: '#f7d9a8', halo2: '#e2a76f', creme: '#fbf3ea', doux: '#eccbb5', bezel: '#2a1610', pill: '#fbf3ea', pillTexte: '#6e3520', goutte: '#f7d9a8' },
+  charbon:    { fond: '#241d1b', fond2: '#3d2f2a', halo1: '#e2a76f', halo2: '#9fd3b4', creme: '#f7f2ea', doux: '#d8c9bb', bezel: '#15100e', pill: '#e2a76f', pillTexte: '#3a2410', goutte: '#e2a76f' },
+};
+
 export const VARIANTES = [
   {
     id: 'dimanche',
+    palette: 'lavande',
     eyebrow: 'Une conversation entre deux profs',
     contact: { nom: 'Camille', sous: 'prof de pilates', initiale: 'C' },
     messages: [
@@ -40,6 +56,7 @@ export const VARIANTES = [
   },
   {
     id: 'cheques',
+    palette: 'bleuNuit',
     eyebrow: 'Une conversation entre deux profs',
     contact: { nom: 'Sophie', sous: 'prof de yoga', initiale: 'S' },
     messages: [
@@ -56,6 +73,7 @@ export const VARIANTES = [
   },
   {
     id: 'soiree',
+    palette: 'bordeaux',
     eyebrow: 'Une conversation entre deux profs',
     contact: { nom: 'Camille', sous: 'prof de yoga', initiale: 'C' },
     messages: [
@@ -72,6 +90,7 @@ export const VARIANTES = [
   },
   {
     id: 'remplacante',
+    palette: 'terracotta',
     eyebrow: 'Une conversation entre deux profs',
     contact: { nom: 'Sophie', sous: 'prof de pilates', initiale: 'S' },
     messages: [
@@ -88,6 +107,7 @@ export const VARIANTES = [
   },
   {
     id: 'urssaf',
+    palette: 'charbon',
     eyebrow: 'Une conversation entre deux profs',
     contact: { nom: 'Camille', sous: 'prof de yoga', initiale: 'C' },
     messages: [
