@@ -363,3 +363,29 @@ lavande du « 0 € » et du bleu nuit du carrousel :
   `plan-studio-fin.jpg`. Légendes prêtes à coller : guide admin `legendes-plan-studio.md`
   (Instagram, Facebook, LinkedIn, story, le DM qui donne le code, les objections des gérants
   dont ClassPass et Wellpass, et ce qu'on ne dit jamais).
+
+## Les réels « conversation entre profs » (2026-09-26)
+
+Demande Colin devant une pub Scalapay dans son fil : « une conversation entre profs
+qui répond à une douleur ». Cinq réels de ~20 secondes : une messagerie DESSINÉE dans
+un téléphone (rien n'est capturé, rien ne se périme, aucune marque de messagerie :
+sable, sauge et blanc de la charte), deux profs, celle qui a la douleur écrit, l'autre
+répond avec ce qu'elle fait aujourd'hui, les trois points « en train d'écrire » avant
+chaque réponse, et le nom de l'appli seulement à la dernière bulle. Puis la carte de
+fin commune, « Commente STUDIO » (AppelStudio), avec un titre par variante.
+
+- Textes et chronologie dans `src/conversation-variantes.js` (PUR : le script de rendu
+  le lit ; `chrono(variante)` calcule l'arrivée de chaque bulle, la carte et la durée
+  depuis `RYTHME`) ; le composant dans `src/Conversation.jsx` ; une composition
+  `Conv-<id>` par variante (dimanche, cheques, soiree, remplacante, urssaf).
+- `npm run conv [id ...]` (`scripts/rendre-conversation.mjs`) rend les MP4 (H.264, CRF 18,
+  muets) et deux images par variante (`-bulles.jpg` = la dernière bulle, `-fin.jpg` = la
+  carte) dans `../../reseaux/reel/conversation/`, HORS repo.
+- Le défilement est calculé, pas mesuré (le navigateur ne mesure pas pendant le rendu) :
+  `hauteurBulle` estime ~14,5 px par caractère ; avec 16 le fil remontait trop et laissait
+  un trou sous la dernière bulle (vu sur le still, pas dans le code).
+- Règles d'écriture : les mêmes que les POV. ⚠️ La dernière bulle ne dit que « IziSolo » :
+  deux douleurs (23 h, remplaçante) se règlent avec des fonctions du plan Complet, la ligne
+  « Gratuit, sans carte, pour toujours » ne vit que sur la carte de fin. « prénoms
+  d'exemple » est écrit en bas de l'image.
+- Légendes prêtes à coller : guide admin `legendes-conversation.md`.

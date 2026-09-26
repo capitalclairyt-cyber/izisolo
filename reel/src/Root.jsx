@@ -17,6 +17,8 @@ import { CarrouselAvis, LARGEUR_CARROUSEL, HAUTEUR_CARROUSEL } from './Carrousel
 import { Avis, DUREE_AVIS } from './Avis';
 import { Studio, DUREE_STUDIO } from './Studio';
 import { PROFILS as PROFILS_STUDIO } from './studio-formats';
+import { Conversation } from './Conversation';
+import { VARIANTES as CONVERSATIONS, dureeConversation } from './conversation-variantes';
 import { FPS, H, W } from './theme';
 
 // Trois familles : le réel complet (Instagram / Facebook), pour la landing un
@@ -30,6 +32,10 @@ export const RemotionRoot = () => (
     {VARIANTES.map((v) => (
       <Composition key={v.id} id={`Pov-${v.id}`} component={Pov} defaultProps={{ varianteId: v.id }}
         durationInFrames={DUREE_POV} fps={FPS} width={W} height={H} />
+    ))}
+    {CONVERSATIONS.map((v) => (
+      <Composition key={v.id} id={`Conv-${v.id}`} component={Conversation} defaultProps={{ varianteId: v.id }}
+        durationInFrames={dureeConversation(v.id)} fps={FPS} width={W} height={H} />
     ))}
     <Composition id="Split" component={Split} durationInFrames={SPLIT.duree} fps={FPS} width={W} height={H} />
     <Composition id="ReponseDM" component={ReponseDM} durationInFrames={REPONSE_DM.duree} fps={FPS} width={W} height={H} />

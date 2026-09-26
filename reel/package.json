@@ -9,6 +9,7 @@
     "videos": "node scripts/preparer-videos.mjs",
     "clips": "node scripts/rendre-clips.mjs",
     "pov": "node scripts/rendre-pov.mjs",
+    "conv": "node scripts/rendre-conversation.mjs",
     "formats": "node scripts/rendre-formats.mjs",
     "carrousel": "node scripts/rendre-carrousel.mjs",
     "gratuit": "node scripts/rendre-gratuit.mjs",
